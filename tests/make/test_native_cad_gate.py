@@ -272,6 +272,33 @@ class NativeCadGateTest(unittest.TestCase):
             "digitally-verified-not-print-ready",
         )
 
+    def test_print_ready_requirement_rejects_a_passing_lower_tier(self):
+        self._rewrite_claim_declarations(
+            product_status=NATIVE_CAD_NON_PRINT_READY_TIER,
+            print_ready_claim=False,
+        )
+
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(
+                lambda *args, **kwargs: VerifierProcessResult.from_bytes(0),
+                evidence_stage="playtest",
+                require_print_ready=True,
+            )
+
+        rejection = caught.exception
+        self.assertEqual(rejection.failure_code, "cad-not-print-ready")
+        self.assertEqual(
+            rejection.evidence.verification_tier,
+            NATIVE_CAD_NON_PRINT_READY_TIER,
+        )
+        self.assertFalse(rejection.evidence.thickness_gate_required)
+        self.assertFalse(rejection.evidence.print_ready_eligible)
+        self.assertEqual(rejection.evidence.evidence_stage, "playtest")
+        self.assertEqual(
+            json.loads(rejection.evidence_path.read_text()),
+            rejection.evidence.to_dict(),
+        )
+
     def test_status_alone_cannot_weaken_the_cad_gate(self):
         self._rewrite_claim_declarations(
             product_status=NATIVE_CAD_NON_PRINT_READY_TIER

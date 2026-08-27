@@ -16,20 +16,23 @@ its `gen_step()` straight from it, with no second look at the photo.
 deliverable is the spec in `templates/build_spec.md`, which hands off to
 `cad`.
 
-The spec has seven sections, in this order, and an eighth when the object
-moves under power:
+The spec has seven sections, in this order, and an eighth when the object has a
+functional electrical load or moves under power:
 
 1. **Overall read** — what the object is, its archetype, its construction family.
 2. **Top view** (plan, looking down −Z).
 3. **Front view** (elevation, looking along +Y).
-4. **Side view** (elevation, looking along +X).
+4. **Side view** (elevation, looking along +X) — then **4b, component
+   descriptions**: every visible component written out in words, before any
+   decision about parts.
 5. **Size** — real-world dimensions in mm, with the scale anchor that produced them.
 6. **Decomposition** — printed parts, the standard elements sourced from a
    catalog, then the feature tree inside each.
 7. **Per-feature detail + build123d operation** — one row per feature: geometry,
    numbers, the exact API call, the plane/selector it runs on, boolean order.
-8. **Mechanism** — *only when a part is driven*: the archetype, the drive, the
-   kinematic parameters, the feasibility assertion, and the motion conditions.
+8. **Powered system / mechanism** — the power boundary and electrical loads;
+   when a part is driven, also the archetype, kinematic parameters, feasibility
+   assertion and motion conditions.
 
 ## The one rule that makes this skill work
 
@@ -69,6 +72,8 @@ repository checkout:
 ```bash
 IMAGE_TO_CAD_SKILL_ROOT="$(workshop skills path)/image-to-cad"
 DESIGN_REFERENCE_SKILL_ROOT="$(workshop skills path)/design-reference"
+STEP_PARTS_SKILL_ROOT="$(workshop skills path)/step-parts"
+CAD_SKILL_ROOT="$(workshop skills path)/cad"
 ```
 
 The measuring scripts need `pillow`, `numpy` and `scipy` — `requirements.txt`
@@ -83,6 +88,19 @@ grid_overlay.py     read an organic outline off a labelled grid (step 2)
 render_views.py     build the model and draw its silhouette     (step 8)
 check_likeness.py   score that silhouette against the reference (step 8)
 ref_silhouette.py   flatten a reference the mask cannot hold     (step 8)
+```
+
+Four of the five carry fixtures. Run them after any change to the mask, the
+cross-check, or the scoring — a mask that drops a region and a gate that
+mis-scores a silhouette both fail silently and in the plausible direction,
+which is why each fixture also runs the naive alternative and prints what the
+rule is worth:
+
+```bash
+python <skill-dir>/scripts/measure_image.py   --self-check
+python <skill-dir>/scripts/check_likeness.py  --self-check
+python <skill-dir>/scripts/ref_silhouette.py  --self-check
+python <skill-dir>/scripts/render_views.py    --self-check
 ```
 
 
@@ -186,6 +204,18 @@ feature's build123d construction family is uncertain. It is not useful as a
 substitute silhouette for a unique organic subject. Record the one or two
 form-and-feature queries worth running after decomposition; never search by
 product name alone and then copy the nearest-looking object.
+
+**G. Is any light functional?** A glowing region, coloured lens, beacon,
+headlamp, tail lamp, light strip, illuminated button or backlight is a powered
+landmark unless the brief explicitly makes it inert decoration. Inventory its
+function, position, colour, behavior and luminous surface, but do not identify
+an exact LED/module from appearance. Trigger `$electromechanical-integration`
+now: it automatically searches GitHub for a licensed integration analogy,
+`step.parts` for exact bought geometry, and then manufacturer/public CAD
+services on a confirmed catalog miss. If the lamp is removable, discovery must
+select the exact mating socket and contacts at the same time; a lamp MPN without
+its receiver is not a completed component choice. Every search outcome becomes
+provenance; a login wall is unavailable, not a miss.
 
 ---
 
@@ -422,11 +452,71 @@ shot: `references/view-inference.md`.
 
 ---
 
+## Step 4b — Describe every component, before deciding any part
+
+Spec section **4b**. One prose entry per **visible component** — what a person
+pointing at the object would name — written before the first thought about how
+it prints. Body, stripe, fins, tail cavity, socket, lamp, post, base: seven
+things a viewer sees, which may still be three printed parts. Which is which is
+Step 5's question, and answering it early is how a component vanishes before
+anyone has described it.
+
+**The two neighbouring sections cannot hold this.** Steps 2–4 describe the whole
+object's silhouette, one view at a time; Step 7 describes build123d calls, by
+which point the shape is settled and the only open question is which API makes
+it. Nothing in between asks what each component *looks like*. So a component
+that is never written down is not caught by a failing gate — it is simply
+absent, and the model validates, prints and assembles without it.
+
+Prose, not a table. The detail that carries a likeness is never in the same
+place twice: on one component it is that the nose stops in a small spherical
+cap instead of a point, on another that only the **inner** face of each fin is
+painted, across a strip 5–8 mm wide, so the flame appears only when the lamp is
+lit and the object goes quiet when it is off. A column called "Visual
+requirement" reduces both to a clause, and a construction family — "loft through
+changing sections" — states how to build a shape while saying nothing about
+which shape.
+
+Each entry carries form, size with ranges rather than false precision, how the
+component meets its neighbours, the detail that only shows on a second look,
+and **what breaks if it is wrong**. That last one is where a real tolerance can
+be written: *the post enters the belly at 15–20° from horizontal, nose up and
+canted slightly left; a few degrees off and the lamp stops looking like it is
+climbing* tells a later reader that ±5 mm on the base diameter is nothing and
+±3° on the post is everything. No dimension table can say that, because the
+table's columns are the same for every row.
+
+Two boundaries the description has to settle, because a single view cannot:
+
+- **A seam or a colour change?** A stripe running through the whole cross
+  section and a stripe painted on the surface are identical in the photograph
+  and different solids in CAD.
+- **A component or a bought part?** A lamp that is visibly part of the
+  silhouette is a component to be described here *and* a bought part to be
+  selected in 6c — describing it does not excuse skipping the catalog, and
+  buying it does not excuse leaving it out of the form.
+
+An entry that says no more than its bounding box is not a description. Look
+again, or write plainly that the component is not resolvable from the available
+views and carry that into Assumptions. An honest gap is recoverable; a box
+nobody questioned is not.
+
+Every entry then gets a row in 4b's component ledger, and every row has to
+survive to delivery — through Step 5's split, through `check_landmarks.py`, and
+into the likeness renders.
+
+---
+
 ## Step 5 — Decompose
 
 Two levels, and **do not confuse them**:
 
 ### 5a. Printed parts — default to ONE
+
+Do not open this step until 4b describes every component. Splitting first
+answers "what is this object made of" with "what is convenient to print", and
+each printed part here must account for whole components from 4b — if one is in
+no part, say where it went.
 
 Follow the `cad` skill's rule: most consumer objects are **one sculpted body**.
 Split into separate printed parts **only** when the object physically must come
@@ -467,16 +557,17 @@ after union unless the cut is what makes the shape possible.
 Decomposition heuristics, and how to spot base-solid candidates in a photo:
 `references/decomposition.md`.
 
-### 5c. Source the standard elements — write the search log
+### 5c. Source standard and bought elements — write the search log
 
-Every element Step 1E flagged gets a row in spec section **6c**, whether the
-search hit or missed. Search `$step-parts` on the measured numbers, then decide
-one of three, and **state which**:
+Every element Step 1E and every bought electrical item Step 1G flagged gets a
+row in spec section **6c**, whether the search hit or missed. Search
+`$step-parts` on the measured numbers or exact MPN, then decide one of three,
+and **state which**:
 
 | Decision | When | What the spec records |
 |---|---|---|
 | **catalog STEP** | a hit at or near your measured parameter | the `id`, the delta from your measurement, and that `cad` imports it via `cadgen.step_scene.import_step` |
-| **pocket only** | the component is bought, not printed — bearing, magnet, PCB | the pocket size, derived from the catalog record's real dimensions |
+| **pocket only** | the component is bought, not printed — bearing, magnet, PCB | the local STEP path and its `sha256`, and that the cavity is derived from that file rather than typed |
 | **authored stand-in** | a hit exists but you are deliberately not using it, or the search missed | **the reason**, in one line |
 
 The third row is the one people skip. Rejecting a catalog hit can be legitimate,
@@ -486,7 +577,50 @@ oversight.
 A **miss is a result**, not a blank. Record the query that missed so the next
 turn does not pay for the same search twice.
 
-### 5d. If anything is driven, solve the mechanism before Step 6
+**A hit is a file, not a number.** Download it into `<project-dir>/ref/`, for
+the reason the reference images live there — a seat derived from a STEP in a
+temporary directory cannot be re-verified once that directory is cleaned out:
+
+```bash
+python "$STEP_PARTS_SKILL_ROOT/scripts/download_step_part.py" --id <part-id> \
+    --download --out-dir <project-dir>/ref
+```
+
+Then **do not write the component's own dimensions into the spec**. A servo,
+LED module, bearing or board owns its dimensions in a datasheet rather than in
+this repository, so a pocket sized by hand cannot be audited by anything: every gate
+in the toolchain passes a bracket whose seat is 2 mm too shallow for the motor
+it was drawn for. The spec records the file and the pose; `cad` derives the
+cavity and the screw pattern from that file with `scripts/cadmount.py`.
+
+Every component the model must physically hold then gets a row in spec section
+**6e**, which becomes `measure/mounts.json` for `scripts/check_mount`. Without
+that row the seat has no gate at all — `validate`, `interfere`, `check_fit`,
+`check_motion` and `check_mesh` all pass a bracket whose screw holes were never
+drilled. `$cad`'s `references/bought-parts.md` carries the rest.
+
+### 5d. If anything is powered or driven, solve it before Step 6
+
+A functional light needs spec section **8** even when nothing moves. Inventory
+the emitter/module, driver/control, visible lens/light-pipe/diffuser, source,
+complete power path and physical wire route. Read
+`$electromechanical-integration`'s `references/lighting-discovery.md` and let it
+run the GitHub → `step.parts` → manufacturer/public-CAD search sequence without
+waiting for another user request. The image owns the light's visible position
+and optic; the exact MPN, ratings and package geometry come from the selected
+component evidence.
+
+A removable lamp also needs spec section **6f** before geometry begins. Select
+the exact socket and contacts, prefer the purchased receiver documented for the
+lamp family, and give each bought part its own 6c row and 6e mount. Record the
+interface datum, lugs, insertion depth, lock rotation/direction, derived
+clearance, retention stop, electrical/tool access, and IDs for all five motions:
+insert clear, lock clear, locked pull blocked, unlock clear, remove clear. A
+custom printed receiver is not permission to invent the mate: it requires
+authoritative geometry, bought contacts, `cadfits` derivation and a stated
+reason a purchased socket was not used. Specify a three-clearance physical fit
+coupon made in the final material/process/orientation with the exact hardware;
+until its status is `passed`, report real-world fit as unverified.
 
 A part that moves under a **driving force** — a band, a spring, a motor,
 gravity, a hand crank — needs spec section **8** as well as its row in 5a. The
@@ -498,7 +632,26 @@ this section is `[inferred]` and `[assumed]` most of the way down, which is
 exactly why it must be written out here instead of left to the build turn to
 improvise.
 
-Three things, in order:
+**Every functional electrical load owes a complete power boundary.** A motor,
+servo, solenoid or light is a load, never an energy source. The spec states
+whether its source is onboard or external, the source voltage/current and
+compatibility evidence, the switch or controller, one complete path per
+independently rated branch, the connectors and wire route, and how the source
+is replaced, charged or disconnected. Every battery holder, switch, controller,
+connector, emitter/module or board that the product physically carries gets a
+6c catalog row and, when seated, a 6e mount declaration; wires at least get a
+routed clearance envelope and strain relief. Visible lenses, bezels and
+diffusers remain product geometry. An external source still needs an inlet or
+lead, connector and strain relief at the product boundary.
+
+When the brief asks for a self-contained or portable product that runs, spins,
+moves or emits light, do not silently put the battery, switch or wiring outside
+CAD scope. If
+the image and brief do not settle onboard power versus a tethered supply, ask
+that one question before Step 6 because the answer changes the body, service
+access and mass distribution.
+
+For a driven mechanism, three more things, in order:
 
 1. **Name the archetype.** "Runs on a rubber band" is a power source, not a
    mechanism. A crank-rocker four-bar, a slider-crank, a pull-back flywheel and
@@ -586,104 +739,13 @@ organic feature, preserve its silhouette envelope and mark the row's risk as a
 deliberate simplification; do not let a rectangular primitive become the default
 stand-in.
 
-For high-likeness figurines, separate **silhouette mass** from **surface
-decoration** in the spec. Build and validate the large organic core solids first:
-torso, head, tail, limbs, perch/base. Then add colour bands, wrinkles, ridges,
-scales, spikes, beads, and texture as shallow surface details with bounded
-penetration, or as separate labelled visual skins. Do not specify a full-depth
-band or spike field that cuts through a lofted body unless the table also names
-the boolean/overlap limit that keeps the resulting solid non-self-intersecting.
-
-For any explicit 90-95% likeness target, the **spec itself has a completeness
-gate before CAD starts**. A short intent document, prompt-style visual target,
-or placement-only table is not a build spec; it is a flow failure because the
-CAD step will invent primitive stand-ins. The spec must include, at minimum:
-view coverage and reconstruction notes, a measurement audit including tool
-limitations, observed side/front station tables for the main organic silhouette,
-a scale anchor with ratios, printable-part decomposition, connector/shared
-dimension tables when modular, one build123d operation row per feature with
-numbers and risks, named parameters that own shared dimensions, a proportion
-ledger, and a verification checklist. If those sections cannot be populated
-from the images, stop and measure/probe the images again before writing CAD.
-
-If the details are separate labelled solids, place them as true surface skins:
-tangent or with a tiny visible clearance from the core, and non-overlapping with
-each other. Do not assume "same visual module" hides collisions. The CAD
-interference gate walks leaf solids inside compounds; a compound of overlapping
-colour patches, tail joints, eye discs, mouth beads, or bark rings still fails
-`inspect interfere`. If a decoration must overlap to be manufactured as one
-body, boolean-fuse that local group into one validated solid before review;
-otherwise keep it outside the core with clearance.
-
-For tight decorative curls, do not start with a swept Archimedean spiral. A tube
-following a small-radius spiral can self-intersect while still looking like the
-right construction. Use a collision-safe approximation first — a torus/partial
-ring, a few non-touching arcs, or an obviously separated raised spiral line —
-and only refine to a real spiral after validation and interference pass. The
-same applies to crest and dorsal markers: when the surface height is uncertain,
-place the first version clearly outside the core, not "almost embedded".
-
-For bead rows, pupils, nostrils, separate jaw skins, torus tails, and other small
-visual cues, specify a clearance at least equal to the small detail's radius
-unless the pieces are locally fused and revalidated. Tiny decorative overlaps
-still fail `inspect interfere`; do not spend a run on a connector stem, bead row,
-or stripe that is optional for silhouette until the primary body, head, perch,
-and tail curl clear the gate.
-
-Do not solve interference by making the object explode visually. For a
-high-likeness target, a gap between a cue and its core is a defect whether or
-not anything renders it. If a required cue reads as floating — eye discs,
-mouth beads, jaw patches, dorsal spikes, crest, stripes, or tail curl — the next
-spec must group that cue with its local core and prove the local group before
-assembling the whole model.
-
-Do not solve interference by moving a required feature out of the reference
-pose. A side-view part can be shifted along the hidden depth axis and still pass
-the side silhouette while becoming wrong in 3D: a tail no longer rooted in the
-body, toe pads no longer gripping the branch, or colour bands standing off the
-skin as rods. For 90-95% likeness, the spec must name maximum visible gap or
-contact constraints for every defining feature, and CAD must satisfy those
-constraints in the actual assembly pose.
-
-A complete station table still needs the right section vocabulary. For a
-90-95% organic target, radius-only elliptical stations are insufficient when
-the reference shows a flattened flank, keel, cheek, brow, or asymmetric belly;
-record the cross-section shape and landmark rails at each station. Sparse ruled
-ellipse lofts tend to produce a faceted barrel even when their side envelope is
-correct. Likewise, a defining blade such as a casque, crest, ear, or fin is not
-allowed to become a constant-depth extruded side polygon: give it at least three
-depth stations and loft the rounded volume. Capsule chains are acceptable only
-as pose/contact probes for limbs; a reviewable high-likeness limb needs tapered
-segment lofts and explicit joint transition masses. Conformal colour shells
-also need measured boundary curves in side/profile space; intersecting a shell
-with repeated full-height slabs produces technically conformal but visually
-uniform bands.
-
-Local groups are not enough; the assembly placement also needs a preflight. For
-any high-likeness figurine with head/body, tail/body, limb/body, or feet/perch
-contacts, the spec must include a placement table with the intended relation and
-a minimum/maximum contact allowance for each pair. Run `inspect interfere` on
-the full assembly and, if it fails, treat the run as a failed output.
-
-Do not replace a defining silhouette with a generic safe primitive when the
-target is 90-95% likeness. Safe approximations are acceptable only as temporary
-gate probes; in the delivered spec, defining cues must use a form family that
-matches the image.
-
-Do not trust a risky swept organic feature because a standalone helper or
-approximation once looked plausible. Tail spirals, curled tubes, horns, and
-crest chains must be validated as the actual emitted part entry before the
-combined assembly can be considered reviewable. A passing interference check
-does not rescue a `validate` failure on the same run; record it as failed,
-update the spec/skill lesson, and start the next version fresh.
-
-Likewise, a visual assembly pose is not allowed to rely on large overlaps.
-For every seated module in a multi-part figurine — head into body, tail into
-body, limb into body, foot on perch — write one row that names whether it is
-`clearance`, `intentional seated contact`, or `cosmetic near-contact`. If it is
-not a real connector, leave a visible air/contact relation rather than sinking
-the parts into each other. The downstream CAD run must be able to pass
-`inspect interfere` before any likeness score is claimed.
+**A high-likeness organic subject carries more rules than a family choice.**
+Separating silhouette mass from surface decoration, the contact and clearance
+rows every seated module owes before the assembly is posed, the section
+vocabulary a station table needs beyond a radius, and why a required cue may
+not be solved by moving it along the hidden axis are in
+`references/high-likeness-organic.md`. **Load it for any animal, figurine or
+character, and always for an explicit 90-95 % likeness target.**
 
 Then, per feature, name the **selector** — this is where image-derived specs
 most often fail to build:
@@ -731,46 +793,14 @@ spec as assertions to check after generation with `scripts/inspect`, ±10%:
 A ledger makes the next edit turn cheap: the numbers name exactly which aspect
 of the form drifted.
 
-**Multi-component scene landmark gate.** A scene with many repeated pieces can
-match its broad archetype while missing most defining landmarks.
-Before CAD starts, inventory the visible landmarks by category and give each a
-count, placement rule, or ratio where the image supports one:
-
-- outer silhouette and frame tiers;
-- region boundaries and their layers;
-- repeated-site density and exclusion zones, measured as rows/columns or
-  occupied area rather than described as "many";
-- repeated-piece count and distribution, including whether the layout is
-  regular, sparse, clustered, or deliberately irregular;
-- one silhouette checklist per defining module;
-- rule- or prose-required accessories that are absent from the hero image.
-
-The operation table must have a row for every landmark, and the verification
-checklist must score the categories separately. Do not
-assign a single 90-95% likeness number until every defining category has its own
-finding.
-
-When a reference shows a manageable number of repeated, individually visible
-pieces (up to roughly 50), record their observed normalized centroids or a
-traceable placement table. Do not replace an irregular photographed layout with
-a grid sampler, farthest-point distribution, or random seed merely because the
-count is correct. Those algorithms create a conspicuous new composition. Use a
-procedural distribution only when the reference itself is procedural or when
-the user asked for a new playable setup rather than a reproduction; record that
-choice as `[assumed]`.
-
-If those pieces must occupy legal sites, observed centroids are evidence, not
-final assembly coordinates. Map
-each centroid to one **unique** valid site, enforce every exclusion zone, and
-record the displacement or a maximum allowed snap distance. Run a local audit
-that proves count, uniqueness, site membership, and exclusion-zone clearance.
-A visually plausible centroid can still occupy an excluded region;
-full-assembly interference catches the collision late, while the placement
-audit prevents it before geometry.
-
-Any defining landmark whose bbox is under roughly 15% of the whole scene needs
-a local verification target in the spec. A full-scene render cannot prove a
-small feature even when it technically exists.
+**A scene of many repeated pieces needs a landmark gate of its own.** A layout
+can match its archetype while missing most of what defines it, and a procedural
+distribution silently replaces a photographed composition with a new one. The
+categories to inventory, the point at which observed centroids stop being
+evidence and become assembly coordinates, and the local placement audit that
+has to prove count, uniqueness and exclusion-zone clearance are in
+`references/repeated-scene.md`. **Load it whenever the reference shows
+repeated, individually visible pieces.**
 
 **Then critique your own spec** against these, and fix what fails:
 
@@ -796,7 +826,7 @@ analysis — ask one question.
 
 ---
 
-## Step 8 — Measure the likeness, do not estimate it
+## Step 8 — Specify the likeness gate; CAD measures it
 
 The spec's proportion ledger is checked against the *model*. Nothing in the
 toolchain checks the model against the *photograph* — which is the only
@@ -804,206 +834,70 @@ question an image-derived model exists to answer, and the one every other gate
 leaves open. `validate`, `interfere`, `check_fit` and `check_motion` can all
 pass a figure that is 60 % of the way there.
 
-So render the model from the reference viewpoints and score it. The renderer
-is `render_views.py`, beside the gate; it builds the shape from the
-**generator** rather than from the `.step`, so the picture is answerable to the
-code and not to an artifact that may predate it.
+This skill has no generator yet, so it cannot honestly render or score a model.
+In the spec, list every usable reference as a stable `LABEL=ref/<file>` pair,
+set the per-view threshold (default 0.90), and give every landmark a local
+verification target. Do not claim a likeness result during this spec phase.
+
+The later CAD phase renders the model from those reference viewpoints and
+scores it. The renderer is `render_views.py`, beside the gate; it builds the
+shape from the **generator** rather than from the `.step`, so the picture is
+answerable to the code and not to an artifact that may predate it.
 
 In this repository the CAD runner owns the final integrated form. It also
 requires the spec/source and landmark audits, writes the four orthogonal review
 views, checks the fresh STEP against the source, and persists the run record:
 
 ```bash
-CADGEN_WARM=1 python skills/cad/scripts/verify_project <project-dir> \
-    --fresh --exports --image-derived \
+CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> \
+    --fresh --exports --image-derived --unpowered \
     --likeness-ref side=ref/03-side.png \
     --likeness-ref front=ref/02-front.png \
     --likeness-ref rear=ref/04-rear.png
 ```
 
-The standalone commands below remain the iteration tools; the integrated final
-run is the completion gate.
+Replace `--unpowered` with `--powered` whenever section 8a declares a functional
+electrical load. Image-derived final mode requires one of those explicit
+classifications, so a missing `measure/power.json` cannot become a quiet skip.
 
-```bash
-python <skill-dir>/scripts/render_views.py <project-dir>/<name>.step.py \
-    --match ref/03-side.png  --label side \
-    --match ref/02-front.png --label front \
-    --match ref/04-rear.png  --label rear \
-    --search-fov 0,25,40 -o snap
-```
+The CAD phase's own iteration tools — searching the camera with `--match`
+instead of guessing it, flattening a reference whose mask cannot be trusted,
+replaying a stored pose so an IoU delta belongs to the shape rather than to the
+camera, and measuring an otherwise unobservable dimension by sweeping it
+through the gate — are in `references/likeness-gate.md`, with what each costs.
+Read it while writing the verification checklist so the handoff carries exact
+commands; the document-only phase still runs none of them.
 
-**Use `--match`, not `--view`, against a photograph.** A photo has an unknown
-azimuth, elevation and focal length; an orthographic render compared against
-one taken 15 degrees off will miss 0.90 however right the model is, and what
-you would then be measuring is how well you guessed the camera. `--match`
-searches the pose space and scores with this gate's own `normalise`/`compare`,
-so it keeps the pose that maximises the number the gate will print. Measured on
-a perspective reference: the same model scored **0.865 with a fixed
-orthographic camera and 0.974 with the camera searched**. Reserve `--view` for
-the orthogonal set a human reviews, and for a reference that is itself an
-orthographic drawing.
+Treat 0.90 as the target, not the pass mark for an unreviewed first attempt,
+and read the score as a **floor on the disagreement, never a ceiling on
+quality**: it is blind to colour, and on a multi-material reference colour is
+much of what a human compares.
 
-It prints the recovered angles, and they are worth reading. A pose far from the
-one the photograph plainly shows is a finding, not a pass: the search has found
-the best available fit to a shape that is wrong somewhere else.
+Two rules the gate enforces rather than advises:
 
-**And when the search recovers nearly the *same* pose for viewpoints that are
-plainly different, the finding is in the reference, not the model.** That is the
-tell for a mask failure: the search is fitting the reference's holes rather than
-its outline, and no amount of shape work will move it.
+- **The delivered round has to be the best round.** A run scoring below the
+  best that view has ever recorded fails as `regressed-from-best`, however far
+  above the floor it lands — against the floor alone, every round between it
+  and 1.0 reads `ok`, so the loop can wander downhill and still deliver.
+  Overriding it costs `--accept-regression "<reason>"`.
+- **The floor cannot be lowered on run 1.** `--accept-mismatch` needs a
+  `--report`, and needs two earlier rounds recorded *for the view being
+  scored*, against that same reference — rounds spent on another viewpoint do
+  not buy it. A mismatch accepted before anything tried to fix it was never
+  measured against an attempt, so it cannot justify changing the comparison
+  floor. `--accept-regression` likewise needs a `--report`: with no history
+  there is no best for it to override.
+- **The loop stops after three rounds that move nothing.** `stalled` or
+  `regressing` three times running — any `improving` round resets the count —
+  and the verdict becomes `stalled out`. It still exits non-zero: rendering a
+  shape again does not make it resemble anything. What changes is the
+  instruction. The edits have stopped reaching what this gate sees, so the
+  remaining decision is whether the measured mismatch is acceptable, and that
+  one is the user's, and the gate prints the form of the command that records
+  it.
 
-### Flatten a reference the mask cannot hold — `ref_silhouette.py`
-
-Both the gate and `measure_image.py` pull the reference silhouette out with one
-luminance threshold around an estimated background, plus a *chromatic* shadow
-test. A studio render of a **multi-colour object on a neutral ground** defeats
-that from both sides at once, and neither side announces itself:
-
-- at the default threshold the mask punches **holes** in the object — every
-  region whose luma sits inside the threshold band goes: a white shaft end, a
-  signature, the specular highlight on a bore wall or a barb. The reference
-  then measures 10–26 % holey and the model is scored against a perforated
-  target;
-- lower the threshold and the holes close, but the soft **cast shadow** comes
-  in — shadow rejection is chromatic, so on a grey object over a grey ground it
-  has nothing to work with, and the shadow adds material under the subject that
-  reads as *the model is too small*.
-
-Measured on one such reference set, on geometry that did not change between the
-three columns:
-
-| reference | mask @28 | mask @14 | flattened |
-|---|---|---|---|
-| front | 0.784 | 0.849 | **0.945** |
-| hero | 0.787 | 0.787 | **0.916** |
-| iso | 0.787 | 0.809 | **0.890** |
-
-That is the difference between "this model is 20 % wrong" and "this model is
-right", reported by the same gate about the same solid — and the pose search
-had been landing 17° from the true camera the whole time.
-
-The remedy is the one this skill already prescribes for line art: **make the
-reference measurable, then measure it with the unchanged instrument.**
-
-```bash
-python <skill-dir>/scripts/ref_silhouette.py <project-dir>/ref/*.png
-python <skill-dir>/scripts/ref_silhouette.py --self-check
-```
-
-It writes `<stem>-sil.png` beside each original and leaves the originals alone.
-The rule knows nothing about the model — *ground-like* pixels (low saturation,
-mid luminance) **connected to the frame border** are background, everything
-else is object, holes filled. A cast shadow is ground-like and reaches the
-border, so it goes; a specular highlight is ground-like but enclosed, so it
-stays. Nothing is drawn, moved or smoothed.
-
-Then point `--match` and the gate at the flattened files, and say in the README
-that you did. The script reports how far the new outline sits from the tool's
-own mask over the rows a contact shadow cannot reach, and exits non-zero if the
-outline moved — that report is what makes this a measurement rather than a
-retouch, so quote it.
-
-It cannot separate a subject from a *cluttered* background: the whole rule rests
-on the ground being one flat colour, which is what a render gives you and a
-photo in the wild does not.
-
-Then run the gate on the pairs it wrote — `render_views.py` prints the command:
-
-```bash
-python <skill-dir>/scripts/check_likeness.py \
-    --pair snap/side.png  ref/03-side.png  --label side \
-    --pair snap/front.png ref/02-front.png --label front \
-    --pair snap/rear.png  ref/04-rear.png  --label rear \
-    --min 0.90 --report measure/likeness.md
-```
-
-It normalises both silhouettes to a common height — height only, so the aspect
-ratio stays in the comparison — and reports IoU per view plus twelve horizontal
-bands giving the model's width as a fraction of the reference's. **The bands
-are the point.** An IoU says the model is wrong; a band ratio of 0.39 at 0.83
-from the top says the model is 60 % too narrow near its base, which is one
-edit, not an afternoon.
-
-**A whole-object reference must contain the whole object.** If its extracted
-silhouette touches any image edge, `render_views.py --match` and
-`check_likeness.py` refuse it: height normalisation would otherwise turn a
-clipped top or base into a false shape defect, and camera search would optimise
-against the crop. Keep that frame as qualitative evidence and select a complete
-view for the numeric gate. `--allow-clipped-reference` exists only for an
-explicit partial-feature comparison; it is not a way to make a cropped
-whole-object view count as a completion gate.
-
-`render_views.py` draws nothing but the object, so there is no burnt-in view
-label — a chip like "ISO" is object to any threshold and stretches the bounding
-box to the frame edge, which scored one early front view at IoU 0.10 with the
-model blameless. The gate keeps only the largest connected blob as a second
-line of defence.
-
-Every pose is recorded in `snap/poses.json`, and **`--poses-from` composes with
-`--match`**: give it both and each reference is scored against its *stored*
-camera instead of a fresh search. That is what makes the iteration loop honest —
-the IoU delta between two runs belongs to the shape, because the camera did not
-move — and it is also almost the whole cost of the command. Measured on a
-six-part model, three references, `--search-fov 0,25,40`:
-
-| the same command line | time | IoU |
-|---|---|---|
-| searching | **59.2 s** | 0.954 / 0.914 / 0.891 |
-| `--poses-from snap/poses.json` | **7.8 s** | 0.954 / 0.914 / 0.891 |
-
-Identical numbers, 7.6× faster, and the output says `(replayed camera -- not
-searched)` on every line so a replay is never mistaken for a search. So the
-sweep loop is: **search once, replay while you edit, search again at the end** —
-the last search matters because a big shape change moves the best pose with it.
-
-Two more costs worth knowing before a sweep, from the same model:
-
-- **The build123d import is 5.2 s of every invocation** and a whole render is
-  6.3 s. Twenty-five separate calls during one sweep spend 2 minutes on nothing
-  but imports; put every `--view` and every `--match` in one call.
-- **`--search-fov 0,25,40` costs 2.6×** what a single FOV does (23.1 s vs
-  13.1 s for one reference). It is for the final measurement against a
-  perspective reference, not for the loop. `--compare-step` adds 5.6 s and
-  belongs only in the final run.
-
-### A dimension no view measures can still be measured — through the gate
-
-Three-quarter views constrain depth only weakly and a single front view not at
-all, so the axial chain of a reconstruction is usually the one number left as
-`[assumed]`. It does not have to be. `--match` searches the camera and
-`check_likeness` scores the silhouette, so **sweeping one parameter and reading
-the IoU is a measurement against the references**, not a guess — and it is cheap,
-because after the first tessellation each searched pose costs ~20 ms.
-
-Sweep one parameter at a time with everything else fixed, and write the table
-into the spec beside the value you took:
-
-| `CHAMBER_L` | front | hero | iso |
-|---|---|---|---|
-| 17.5 | 0.948 | 0.908 | 0.876 |
-| 22.5 | 0.951 | 0.913 | 0.882 |
-| **26.0** | 0.945 | **0.916** | **0.890** |
-| 34.0 | 0.951 | 0.914 | 0.892 |
-
-Read the *shape* of the curve, not just its maximum. Two outcomes matter as much
-as a peak:
-
-- **A plateau** means the references stop constraining the parameter there. Take
-  the low end of the plateau and say the constraint is weak — a value picked
-  from the far end of a flat region is `[assumed]` wearing a measurement's
-  clothes.
-- **A flat line** means the feature is invisible from every reference angle, and
-  then **do not claim it**. On the pump above, a conical rear from Ø80.5 down to
-  Ø50 moved the 3/4 silhouettes by 0.4 % of their area and the IoU by less than
-  0.001 — the cover lugs and the barbs set the envelope and the rear sits inside
-  it. A shape the references cannot see is not evidence for a feature, and
-  modelling one anyway is invention with a number attached.
-
-Read the score as a **floor on the disagreement, never a ceiling on quality**:
-it is blind to colour, and on a multi-material reference colour is much of what
-a human compares.
-
-Treat 0.90 as the target, not the pass mark for an unreviewed first attempt.
+So the spec's job here is to set a threshold that is defensible for the
+viewpoint, not one already discounted for a model nobody has built yet.
 
 ## Ask only about preferences
 
@@ -1023,9 +917,24 @@ an image gives no scale anchor, ask for one governing real-world dimension.
 
 ## Output
 
-Fill in `templates/build_spec.md`. Write it to the user's workspace as
-`<object_name>_spec.md` (absolute path) so the `cad` turn can read it, and
-also render the spec inline in your reply — the user reads it before approving.
+Fill in `templates/build_spec.md`. Write it **into the project directory**
+as `<project-dir>/<object_name>_spec.md` (absolute path) so the `cad` turn can
+read it, and also render the spec inline in your reply — the user reads it
+before approving.
+
+**Name the project directory in the spec.** Every downstream path — `ref/`,
+`measure/mounts.json`, `part_<role>.step.py`, every `<project-dir>` in every
+command this skill prints — is relative to a directory that nothing else in
+the pipeline names. Use `output/<object_name>/` with the object's own name in
+snake_case, and never a placeholder (`project_name`, `object_name`,
+`my_project`, anything in angle brackets); `check_layout` fails a scaffold name
+before anything is built.
+
+The spec belongs inside that directory for the same reason. Final verification
+reads the project's own `README.md` and `*_spec.md` to find an assembly path
+that prose documents and no `measure/motion.json` proves — a spec parked in the
+workspace root is invisible to it, and the check silently finds nothing to
+check.
 
 If the user gives an output root, run/version pattern, or "new folder every
 run" rule, the spec path and every downstream CAD path must use that exact
@@ -1049,6 +958,8 @@ The spec maps onto `cad` one-to-one:
 | Ledger assertions, print checks | checks run after generation — `scripts/inspect refs --facts` for bounds, targeted `measure`/`align` for the rest |
 | Printed parts (5a) | labelled children of the `cadgen.assembly.AssemblyHelper` compound |
 | Catalog search log (5c / spec 6c) | `cad` skips its own `$step-parts` pass for every row already decided here, and imports each catalog hit with `cadgen.step_scene.import_step` |
+| Mount declarations (5c / spec 6e) | `measure/mounts.json` for `scripts/check_mount`, including the exact component path and `sha256` copied from 6c; the seat and bolt pattern `cad` derives from each component's own STEP with `scripts/cadmount.py` rather than typing them |
+| Removable-light interfaces (5d / spec 6f) | schema 3 `measure/power.json`, the purchased socket seat or `cadfits`-derived printed receiver, five linked conditions in `measure/motion.json`, and the physical fit-coupon status |
 | Design-reference log (5e / spec 6d) | reference-only construction evidence; `cad` may reuse the named idiom but does not import or execute the fetched excerpt |
 | Feature table (Step 6), in order | the body of `gen_step()` |
 | Mechanism (spec 8) | the kinematic parameters and the feasibility `assert` in `<name>_lib.py`, and `measure/motion.json` for `scripts/check_motion` |
@@ -1058,7 +969,8 @@ The spec maps onto `cad` one-to-one:
 
 `cad` then runs the final project workflow through
 `scripts/verify_project --image-derived`, supplying every usable reference as
-`--likeness-ref LABEL=PATH`. Geometry and manufacturing claims remain
+`--likeness-ref LABEL=PATH`, with `--powered` whenever section 8a contains a
+functional electrical load and `--unpowered` otherwise. Geometry and manufacturing claims remain
 deterministic; the sibling renderer supplies the separate visual evidence and
 cannot substitute for validate, interference, fit, mesh, motion, mount, or
 thickness checks. A source repair that leaves this spec stale is a failed
@@ -1093,9 +1005,34 @@ Load only when the trigger applies:
 - `$design-reference` — analogous parametric designs and cited build123d
   excerpts. **Load when Step 1F identifies a mechanical/product construction
   question; do not load it for bought components or as a source of scale.**
+- `$electromechanical-integration` and its
+  `references/lighting-discovery.md` — automatic GitHub, catalog and public-CAD
+  discovery; authoritative electrical/optical evidence; power paths and CAD
+  handoff. **Load whenever Step 1G finds functional lighting or any other
+  functional electrical load.**
+- `$cad`'s `references/bought-parts.md` — fetching a bought component's STEP,
+  deriving the cavity and the screw pattern from that file, why offsetting an
+  imported solid silently loses features, and what `check_mount` still cannot
+  answer. **Load whenever the model has to hold a motor, servo, LED module,
+  bearing, board or any purchased part** — that is every Step 1E/1G row modelled
+  as a seat rather than as printed geometry.
 - `references/build123d-operations.md` — the full form→operation mapping with
   runnable snippets, the selector cookbook, boolean-order rules, and the
   specific build failure each choice prevents. **Load before writing Step 6.**
+- `references/high-likeness-organic.md` — silhouette mass versus surface
+  decoration, seated-contact and clearance rows, the section vocabulary a
+  station table needs beyond a radius, and why a cue may not be moved along the
+  hidden axis to clear interference. **Load for any animal, figurine or
+  character, and always for an explicit 90-95 % likeness target.**
+- `references/repeated-scene.md` — the per-category landmark inventory, when an
+  observed centroid becomes an assembly coordinate, and the placement audit
+  that runs before geometry. **Load whenever the reference shows repeated,
+  individually visible pieces.**
+- `references/likeness-gate.md` — the CAD phase's iteration loop: searching the
+  camera with `--match`, flattening an untrustworthy reference, replaying a
+  stored pose, sweeping one parameter through the gate, and what each costs.
+  **Load when writing the spec's verification checklist**, so the handoff names
+  exact commands.
 
 ## Non-negotiables
 
@@ -1115,6 +1052,16 @@ Load only when the trigger applies:
   lengths, and carries a feasibility `assert`. Every deterministic gate in the
   toolchain passes a linkage that cannot complete its cycle; nothing downstream
   will catch what this section omits.
+- **Every functional electrical load has a complete power chain.** A motor,
+  servo, solenoid or light is not an energy source. Section 8 names the onboard
+  or external source, protection where required, switch/controller, connectors,
+  wire route, return path, service access and voltage/current compatibility.
+  Lighting also records function, colour and behavior plus every GitHub and
+  public component-service search outcome. A removable lamp also names its
+  exact socket/contact system, complete mating geometry, five-phase motion
+  contract and real-hardware coupon; CAD alone may never be described as proof
+  of physical fit. A self-contained or portable powered product may not lose
+  its battery and switch as an unapproved "outside CAD scope" assumption.
 - **No geometry.** This skill writes markdown. If the user wants the model,
   hand off to `cad`.
 - **Never present a single 3/4 photo as three observed views.** Name the
@@ -1129,6 +1076,11 @@ Load only when the trigger applies:
   `check_likeness.py` against the reference views, quote the mean IoU and the
   worst band, and say which edit the band names. "Looks close" is the claim
   this skill exists to replace with a number.
+- **Score every round, not just the last one.** Comparing renders by eye between
+  edits is the same claim under a different name, and it leaves nothing behind:
+  a rebuild loop that renders many times and scores once cannot say whether
+  any of the twelve helped. Run the gate with `--report` after each edit and let
+  the history's delta column decide whether to keep the change or revert it.
 - **Search the camera before blaming the shape.** A fixed orthographic render
   against a photograph measures your guess at the viewpoint, not the model —
   0.865 and 0.974 on the same geometry. Quote the recovered pose alongside the
@@ -1137,15 +1089,16 @@ Load only when the trigger applies:
 ## Required final response
 
 1. **One sentence** — what the object is and what you spec'd.
-2. **The spec** — inline, all seven sections, plus section 8 when a part is
-   driven.
+2. **The spec** — inline, all seven sections, plus section 8 when any electrical
+   load is functional or a part is driven.
 3. **Spec file path** — absolute.
 4. **Confidence summary** — one line: how many views were observed vs
    reconstructed, and which single assumption most affects the result.
 5. **Assumptions** — the `[assumed]` values as bullets, scale anchor first, each
    phrased as something the user can correct in one edit.
-6. **Sourcing** — one line per standard element: catalog hit used, hit rejected
-   with the reason, or search missed. Say "no standard elements" if Step 1E
+6. **Sourcing** — one line per standard element or bought powered component:
+   catalog hit used, hit rejected with the reason, search missed, or service
+   unavailable. Say "no standard or powered elements" only if Steps 1E and 1G
    found none. Silence here reads as "never looked".
 7. **Design references** — ids used with the named construction lesson, the
    recorded query miss, or `N/A` with the reason.

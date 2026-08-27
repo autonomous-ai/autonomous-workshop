@@ -1,6 +1,6 @@
 ---
 name: autonomous-workshop
-description: Run, resume, or diagnose one Autonomous Workshop Wish through Match, Invent, Make, Playtest, Release, and Deliver using native Codex Goals, tools, and subagents while preserving deterministic host gates and human-controlled effects.
+description: Run, resume, or diagnose one Autonomous Workshop Wish through Match, Invent, Make, Playtest, and terminal Release using native Codex Goals, tools, and subagents while preserving deterministic host gates and host-controlled effects.
 ---
 
 # Autonomous Workshop
@@ -24,7 +24,7 @@ skill is your workflow playbook, not a separate agent process.
    - Match: [references/wish-match.md](references/wish-match.md)
    - Invent: [references/invent.md](references/invent.md)
    - Make or Playtest: [references/make-playtest.md](references/make-playtest.md)
-   - Release or Deliver:
+   - Release:
      [references/release-deliver.md](references/release-deliver.md)
 5. Read [references/effects-and-recovery.md](references/effects-and-recovery.md)
    before a resume, retry, ambiguous result, or effect-related wait.
@@ -62,8 +62,8 @@ report one concrete need without claiming completion. Native Goals guide Codex
 work; they never advance host stages or replace durable checkpoints, gates,
 round budgets, or invalidation.
 
-Wish is a host-created input and Deliver is a host-owned effect boundary, so
-neither is an agent Goal. This design follows Codex's official patterns for
+Wish is a host-created input, so it is not an agent Goal. Publication is the
+host-owned effect portion of Release. This design follows Codex's official patterns for
 [durable Goals](https://learn.chatgpt.com/use-cases/follow-goals) and
 [eval-driven difficult work](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
 
@@ -147,15 +147,19 @@ large pasted JSON object for run-local evidence.
 The host alone sequences:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Make <-> Playtest -> Release
+                 ^                    |
+                 `-- concept revision-'
 ```
 
-A finalized `improve` or `block` Playtest returns to the host. The host applies
-the round budget and invalidates downstream evidence before checkpointing a
-new Make attempt. The sealed Invent result remains the design authority;
-Codex creates the new Make Goal, interprets the exact feedback, and performs
-the repair. Reviews after delivery may inform a future Wish but never rewrite
-a completed run.
+A finalized `improve` or `block` Playtest returns to the host. Each actionable
+feedback item explicitly marks either a Make repair or a fundamental Invent
+revision. The host follows that structured marker without judging its prose,
+applies the shared round budget, and invalidates the selected dependency chain
+before checkpointing the next Make or Invent attempt. For re-Invent, the next
+packet binds the exact prior Invented and failing Playtested/feedback bytes.
+Reviews after delivery may inform a future Wish but never rewrite a completed
+run.
 
 Release prepares a self-contained, printable `MANUAL.pdf` that can teach the
 new owner without a website, video, QR code, or phone. It also prepares bounded
@@ -165,12 +169,10 @@ visually reviews the exact PDF, but it does not publish, print, pack, or ship
 it. Codex never receives Factory, payment, manufacturing, postage, or carrier
 credentials and must not perform those effects directly.
 
-Local Release succeeds from the sealed product, passing Playtest, and validated
-manual package alone. Factory import and publication are optional host effects;
-missing credentials or an unavailable site never invalidates the manual or
-returns the run to Release. A user-supplied `--publish` is host-recorded
-authority for that optional effect, not permission for Codex to publish,
-manufacture, buy, ship, or claim delivery. Stop with a clear need when a tool
-required to create the local package is missing, bounded repair is exhausted,
-or an agent-owned result is unknown. Never convert a wait or ambiguity into
-success.
+Release succeeds only when the host has reverified full-tier,
+thickness-checked, print-ready CAD, validated the exact `MANUAL.pdf`, published
+both through Factory, and authenticated public hash readback. Missing
+credentials or an unavailable service leaves Release waiting and resumable;
+the effect ledger reconciles before any retry. Codex never receives effect
+credentials and must not publish, manufacture, buy, ship, or claim delivery.
+Never convert a wait or ambiguity into success.

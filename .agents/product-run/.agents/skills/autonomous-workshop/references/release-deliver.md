@@ -1,4 +1,4 @@
-# Release and Deliver contracts
+# Terminal Release contract
 
 Read `STAGE.json`. It binds the exact Made product, passing Playtest contract
 and evidence, selected Inventor custom agent and Taste hashes, universal
@@ -68,10 +68,12 @@ Verified**; **Physically Verified** requires a future trusted host receipt that
 proves the exact released bytes were built and checked. Missing verification
 never blocks Release.
 
-Website copy limits are not manual design constraints and must not make a valid
-local Release fail. Keep `product.json` concise and factual. The host may later
-transport its exact supported subset, model bytes, and `MANUAL.pdf` through an
-authorized adapter; it must not rewrite the sealed manual.
+Website copy limits are not manual design constraints. Keep `product.json`
+concise and factual so the host can transport its exact supported subset,
+model bytes, and `MANUAL.pdf` through the required Release adapter without
+rewriting the sealed manual. If Factory cannot accept or verify the exact
+handoff, Release waits or fails closed; Codex must not change truthful product
+content merely to fit a remote marketing field.
 
 Run:
 
@@ -83,18 +85,13 @@ Run:
 
 The deterministic finalizer writes `artifacts/release/release.json` and the
 compact outcome. Complete the Release Goal only after it succeeds, then return
-to the host. The host validates and seals the exact manual, metadata, and
-product bytes. That local gate advances independently of any Factory effect.
+to the host. The host reruns the current full-tier CAD gate, validates the
+exact manual and package, publishes the ready-to-print CAD plus `MANUAL.pdf`,
+and requires authenticated public hash readback before Release completes.
+Missing credentials or a transient or ambiguous server result leaves Release
+waiting; the host reconciles its durable effect ledger before retrying.
 
-## Deliver is a host effect boundary
-
-Do not create a native Goal for Deliver. Stop truthfully after the host accepts
-Release. Codex may summarize what future production, hands-on QA, manual
-printing, packing, and carrier evidence would be needed, but it must not buy,
-manufacture, publish, ship, or access credentials.
-
-The current Workshop has no Deliver effect adapter or Delivered contract. The
-host returns a durable waiting checkpoint after Release. A future, separately
-reviewed host integration may advance only from authenticated production, QA,
-packing, and carrier receipts bound to these exact hashes. A plan, page, label
-draft, or unconfirmed request is not delivery.
+Do not create Goals for Printing, Deliver, or Review. Those are
+Operations-owned stages after the executable Workshop lifecycle. Codex may
+state truthful limitations, but it must not buy, manufacture, publish, ship,
+access credentials, or claim physical completion.

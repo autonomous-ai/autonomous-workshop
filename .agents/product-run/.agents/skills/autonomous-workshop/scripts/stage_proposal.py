@@ -41,14 +41,21 @@ PLAYTESTED_KIND = "autonomous-workshop.playtested"
 RELEASE_KIND = "autonomous-workshop.release"
 
 STAGES = ("match", "invent", "make", "playtest", "release")
-JOBS = ("wish", "invent", "make", "playtest", "release", "deliver")
-PLAYTEST_FEEDBACK_INVALIDATES = frozenset(("playtest", "release", "deliver"))
+JOBS = ("wish", "invent", "make", "playtest", "release")
+PLAYTEST_MAKE_INVALIDATES = ("playtest", "release")
+PLAYTEST_INVENT_INVALIDATES = (
+    "invent",
+    "make",
+    "playtest",
+    "release",
+)
+PLAYTEST_FEEDBACK_INVALIDATES = frozenset(PLAYTEST_INVENT_INVALIDATES)
 FORWARD = {
     "match": "invent",
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
+    "release": "complete",
 }
 STAGE_FIELDS = {
     "schema_version",
@@ -1296,10 +1303,38 @@ def _feedback(value: Any) -> dict[str, Any]:
     invalidates = _array(item["invalidates"], "feedback invalidates", nonempty=True)
     if any(stage not in PLAYTEST_FEEDBACK_INVALIDATES for stage in invalidates):
         raise ProposalError(
-            "feedback invalidates must contain only playtest, release, or deliver; "
-            "the verdict already routes the repair to Make"
+            "feedback invalidates contains a stage outside the repair lifecycle"
+        )
+    if len(invalidates) != len(set(invalidates)):
+        raise ProposalError("feedback invalidates must not contain duplicates")
+    if "invent" in invalidates:
+        if item["severity"] not in ("improve", "block"):
+            raise ProposalError(
+                "only actionable feedback may request concept revision"
+            )
+        if set(invalidates) != set(PLAYTEST_INVENT_INVALIDATES):
+            raise ProposalError(
+                "concept revision must invalidate Invent and every downstream stage"
+            )
+    elif tuple(invalidates) != PLAYTEST_MAKE_INVALIDATES:
+        raise ProposalError(
+            "Make repair feedback must invalidate playtest and release"
         )
     return dict(item)
+
+
+def _playtest_transition(playtested: Mapping[str, Any]) -> str:
+    """Follow the authored invalidation marker without judging feedback prose."""
+
+    if playtested["verdict"] == "pass":
+        return "release"
+    if any(
+        feedback["severity"] in ("improve", "block")
+        and "invent" in feedback["invalidates"]
+        for feedback in playtested["feedback"]
+    ):
+        return "invent"
+    return "make"
 
 
 def _validate_playtested(
@@ -1757,12 +1792,31 @@ def _contract_path(stage: str, round_index: Any) -> str:
     if stage == "match":
         return MATCH_PATH
     if stage == "invent":
-        return INVENT_PATH
+        raise ProposalError("Invent contract path requires its STAGE inputs")
     if stage == "make":
         return "artifacts/make/r%04d/made.json" % round_index
     if stage == "playtest":
         return "artifacts/playtest/r%04d/playtested.json" % round_index
     return "artifacts/release/release.json"
+
+
+def _stage_contract_path(stage: Mapping[str, Any]) -> str:
+    if stage["stage"] != "invent":
+        return _contract_path(stage["stage"], stage["round"])
+    inputs = _mapping(stage["inputs"], "Invent STAGE inputs", nonempty=True)
+    contract_path = _safe_relative(
+        inputs.get("contract_path", INVENT_PATH), "Invent contract_path"
+    ).as_posix()
+    repair_round = inputs.get("repair_round")
+    expected = (
+        INVENT_PATH
+        if repair_round is None
+        else "artifacts/invent/r%04d/invented.json"
+        % _positive_int(repair_round, "Invent repair_round")
+    )
+    if contract_path != expected:
+        raise ProposalError("Invent contract_path is not canonical for this revision")
+    return contract_path
 
 
 def _seal(
@@ -1772,7 +1826,7 @@ def _seal(
     *,
     transition: str,
 ) -> dict[str, Any]:
-    contract_path = _contract_path(stage["stage"], stage["round"])
+    contract_path = _stage_contract_path(stage)
     contract_bytes = canonical_json(contract)
     if len(contract_bytes) > MAX_CONTRACT_BYTES:
         raise ProposalError("stage contract exceeds the native artifact limit")
@@ -1893,10 +1947,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             source,
             evidence_root_value=args.evidence_root,
         )
-        if contract["verdict"] == "pass":
-            transition = "release"
-        else:
-            transition = "make"
+        transition = _playtest_transition(contract)
     elif args.command == "release":
         contract = _release_contract(
             run_root,

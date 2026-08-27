@@ -26,7 +26,8 @@ While pursuing the Goal:
    deterministic tool policy, and every evidence-linked feedback item from a
    prior Playtest.
 2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
-   `design-reference`, and `step-parts` skills under `.agents/skills/` to
+   `design-reference`, `electromechanical-integration`, and `step-parts`
+   skills under `.agents/skills/` to
    create or repair the actual product artifact. Use native subagents for bounded mechanism, CAD, or
    review tasks when useful.
 3. **Evaluate:** Build the artifact, run narrow deterministic checkers, inspect
@@ -137,12 +138,24 @@ source with exactly `checks`, `feedback`, and `verdict`. Every required check
 id must appear once and cite its config and evidence file. Never invent
 physical trials, human players, measurements, or results. Every failing check
 must name the concrete product or design area and the repair direction.
-Invalidate Playtest and its downstream evidence; the host returns every
-evidence-backed failure directly to Make, where the next Goal repairs the
-product against the same sealed Invent result. Each feedback `invalidates`
-array may therefore contain only `playtest`, `release`, and `deliver`. Do not
-put `make` in that array: the failed verdict and proposed transition already
-route the work to a new Make attempt. Then run:
+
+Choose the repair boundary explicitly in each actionable feedback item's
+`invalidates` array. This is the Manager's authored judgment; the host follows
+the marker mechanically and never interprets the finding prose:
+
+- For an implementation defect that can be repaired while preserving the
+  sealed concept, use exactly `["playtest", "release"]`. The host returns to
+  Make with the prior Invent result still authoritative.
+- For a fundamental concept defect that Make cannot repair without violating
+  the sealed design authority, use exactly
+  `["invent", "make", "playtest", "release"]`. The host returns to Invent and
+  provides the exact prior Invented contract, failing Playtested contract, and
+  canonical feedback bytes with independent hashes.
+
+If actionable findings choose both scopes, concept revision wins because it
+invalidates the broader dependency chain. Do not request re-Invent merely to
+gain another repair attempt; either route consumes the same bounded round
+budget. Then run:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
@@ -155,9 +168,10 @@ The deterministic finalizer validates evidence coverage and writes the
 canonical Playtested contract. Complete the Playtest Goal after it succeeds
 and return to the host, regardless of the truthful verdict.
 
-For `improve` or `block`, the host alone consumes a bounded round, invalidates
-downstream evidence, and checkpoints the transition back to Make. The host
-does not interpret or repair the product or design. In the next Make Goal,
-Codex reads the exact feedback, decides the repair within the sealed Invent
-direction, and runs the new build/evaluation loop. Only a host-verified pass
-for the current Made bytes can advance to Release.
+For `improve` or `block`, the host alone consumes one shared bounded round,
+invalidates the explicitly selected dependency chain, and checkpoints the
+transition to Make or Invent. The host does not classify, interpret, or repair
+the product or design. A re-Invent packet binds the exact failed design and
+evidence so the new concept remains a traceable revision rather than a fresh
+Wish. Only a host-verified pass for the current Made bytes can advance to
+Release.

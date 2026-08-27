@@ -27,6 +27,7 @@ from workshop.workflow.stage_gates import (
     MATCH_ASSIGNMENT_PATH,
     MATCH_GATE_ID,
     StageGateEvidence,
+    StageGateDecision,
     evaluate_invent_stage,
     evaluate_match_stage,
     invent_gate_subject_sha256,
@@ -114,6 +115,31 @@ class NativeStageGateTest(unittest.TestCase):
         (self.run_root / "agent-outcome.json").write_bytes(
             canonical_json(proposal.to_dict())
         )
+
+    def test_failed_playtest_gate_accepts_only_explicit_repair_destinations(self):
+        evidence = StageGateEvidence(
+            stage="playtest",
+            gate_id="playtest.release-v1",
+            validator_version="1.0.0",
+            passed=False,
+            checkpoint_sha256=self.checkpoint_sha256,
+            subject_sha256=digest("1"),
+            outcome_sha256=digest("2"),
+            artifact_path="artifacts/playtest/r0001/playtested.json",
+            artifact_sha256=digest("3"),
+            checks={"verdict": "block"},
+        )
+
+        for transition in ("make", "invent"):
+            with self.subTest(transition=transition):
+                self.assertEqual(
+                    StageGateDecision(
+                        evidence=evidence, transition=transition
+                    ).transition,
+                    transition,
+                )
+        with self.assertRaisesRegex(ContractError, "Make or Invent"):
+            StageGateDecision(evidence=evidence, transition="release")
 
     def test_strict_reader_binds_checkpoint_and_full_subject(self):
         artifact = self.artifact(MATCH_ASSIGNMENT_PATH, self.assignment.to_dict())

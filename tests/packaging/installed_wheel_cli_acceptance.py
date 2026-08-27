@@ -28,6 +28,7 @@ SCHEMA_OWNERS = {
 SKILL_PATHS = {
     "cad": "make/skills/cad",
     "design-reference": "make/skills/design-reference",
+    "electromechanical-integration": "make/skills/electromechanical-integration",
     "image-to-cad": "make/skills/image-to-cad",
     "manual-design": "release/skills/manual-design",
     "step-parts": "make/skills/step-parts",

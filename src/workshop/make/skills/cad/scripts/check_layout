@@ -11,8 +11,10 @@ That is what the third rule below is for: the two-tier split is easy to reach
 and then easy to outgrow, and a library that has quietly passed the Tier 3
 threshold looks identical to a healthy one from every other gate.
 
-Three rules, all failing:
+Four rules, all failing:
 
+* `placeholder-project-name` — the project directory still has a scaffold name
+  such as `project_name` or `object_name`.
 * `unsplit-entry` — an entry over the thresholds with no `part_*` beside it.
 * `missing-assembly-entry` — part entries with no combined assembly entry.
 * `oversized-library` — a project WITH part entries whose importable modules
@@ -52,6 +54,16 @@ MAX_LIBRARY_CODE_LINES = 400
 
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
+CAD_ARTIFACT_SUFFIXES = {".step", ".stp", ".stl", ".3mf", ".glb"}
+
+# Reject only a small, unmistakable scaffold vocabulary rather than guessing
+# whether an ordinary short name is generic.
+PLACEHOLDER_PROJECT_NAMES = {
+    "project_name",
+    "object_name",
+    "my_project",
+    "your_project",
+}
 
 # Subdirectories of a project that hold no geometry, so nothing in them is a
 # library module: probes and ledgers, references, exported artifacts.
@@ -169,6 +181,36 @@ def iter_entries(root: Path):
         yield path
 
 
+def is_placeholder_project_name(path: Path) -> bool:
+    normalized = path.name.strip().lower().replace("-", "_").replace(" ", "_")
+    return normalized in PLACEHOLDER_PROJECT_NAMES or "<" in path.name or ">" in path.name
+
+
+def iter_placeholder_projects(root: Path):
+    """Named project dirs, including abandoned artifact-only runs.
+
+    Entry discovery cannot see a directory after its sources were removed, so
+    a worktree-level scan also treats direct CAD artifacts or the standard
+    ``ref``/``measure`` companions as evidence that a placeholder-named
+    directory was used as a project.
+    """
+    candidates = [root, *(path for path in root.rglob("*") if path.is_dir())]
+    for directory in candidates:
+        relative_parts = directory.relative_to(root).parts
+        if any(part in IGNORED_DIR_NAMES for part in relative_parts):
+            continue
+        if not is_placeholder_project_name(directory):
+            continue
+        children = list(directory.iterdir())
+        has_project_evidence = directory == root or any(
+            (child.is_file() and child.suffix.lower() in CAD_ARTIFACT_SUFFIXES)
+            or (child.is_dir() and child.name in {"ref", "measure", "__cadgen__"})
+            for child in children
+        )
+        if has_project_evidence:
+            yield directory
+
+
 def check(root: Path) -> list[dict]:
     entries = list(iter_entries(root))
     by_dir: dict[Path, list[Path]] = {}
@@ -176,9 +218,31 @@ def check(root: Path) -> list[dict]:
         by_dir.setdefault(path.parent, []).append(path)
 
     findings: list[dict] = []
+    placeholder_dirs = set(iter_placeholder_projects(root))
+    for directory in sorted(placeholder_dirs):
+        findings.append({
+            "path": str(directory.relative_to(root)) or ".",
+            "rule": "placeholder-project-name",
+            "detail": (
+                f"{directory.name!r} is an unexpanded scaffold name; rename the directory "
+                "to the concrete object name before building"
+            ),
+        })
     for directory, paths in sorted(by_dir.items()):
         part_entries = [p for p in paths if p.name.startswith(PART_PREFIX)]
         assembly_entries = [p for p in paths if not p.name.startswith(PART_PREFIX)]
+
+        for entry in assembly_entries:
+            entry_name = entry.name.removesuffix(ENTRY_SUFFIX)
+            if is_placeholder_project_name(Path(entry_name)):
+                findings.append({
+                    "path": str(entry.relative_to(root)),
+                    "rule": "placeholder-project-name",
+                    "detail": (
+                        f"combined entry {entry.name!r} still has a scaffold name; "
+                        "rename it to the concrete object name before building"
+                    ),
+                })
 
         if part_entries and not assembly_entries:
             findings.append({
@@ -236,7 +300,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("root", nargs="?", default=".", help="directory to scan (default: cwd)")
     parser.add_argument("--json", action="store_true", help="emit findings as JSON")
+    parser.add_argument("--self-check", action="store_true", help="run static layout fixtures")
     args = parser.parse_args()
+
+    if args.self_check:
+        return self_check()
 
     root = Path(args.root).resolve()
     if not root.is_dir():
@@ -256,6 +324,47 @@ def main() -> int:
         print(f"  {finding['path']}\n    [{finding['rule']}] {finding['detail']}\n", file=sys.stderr)
     print("See skills/cad/references/project-structure.md for the layout.", file=sys.stderr)
     return 1
+
+
+def self_check() -> int:
+    """Exercise placeholder discovery without importing any CAD dependency."""
+    import tempfile
+
+    ok = True
+
+    def assert_rule(claim: str, root: Path, path: str) -> None:
+        nonlocal ok
+        got = check(root)
+        hit = any(item["rule"] == "placeholder-project-name" and item["path"] == path
+                  for item in got)
+        print(f"{'ok  ' if hit else 'FAIL'} {claim}")
+        ok &= hit
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        abandoned = root / "project_name"
+        abandoned.mkdir()
+        (abandoned / "part_body.stl").write_text("solid fixture\n", encoding="utf-8")
+        assert_rule("parent scan catches an artifact-only placeholder project",
+                    root, "project_name")
+
+        real = root / "lamp"
+        real.mkdir()
+        (real / "project_name.step.py").write_text(
+            f"def {GEN_MARKER}():\n    return None\n", encoding="utf-8")
+        assert_rule("combined entry stem cannot remain a placeholder",
+                    root, "lamp/project_name.step.py")
+
+        clean = root / "real_project"
+        clean.mkdir()
+        (clean / "real_project.step.py").write_text(
+            f"def {GEN_MARKER}():\n    return None\n", encoding="utf-8")
+        hit = not check(clean)
+        print(f"{'ok  ' if hit else 'FAIL'} a concrete Tier 1 project remains valid")
+        ok &= hit
+
+    print("\nall fixtures pass" if ok else "\nself-check FAILED")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

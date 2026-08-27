@@ -44,7 +44,7 @@ _FORWARD = {
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
+    "release": "complete",
 }
 
 
@@ -240,11 +240,19 @@ class StageGateDecision:
             raise ContractError("stage gate decision requires host evidence")
         expected = _FORWARD.get(self.evidence.stage)
         if self.evidence.stage == "playtest" and not self.evidence.passed:
-            if self.transition != "make":
+            if self.transition not in ("make", "invent"):
                 raise ContractError(
-                    "failed Playtest gate must return actionable feedback to Make"
+                    "failed Playtest gate must return explicit feedback to Make or Invent"
                 )
         elif self.evidence.passed:
+            if self.evidence.stage == "release" and self.transition in (
+                "complete",
+                "deliver",
+            ):
+                # ``deliver`` is accepted only to read and finish a run whose
+                # immutable pre-terminal-Release finalizer still proposes that
+                # historical transition. New runs complete at Release.
+                return
             if expected is None or self.transition != expected:
                 raise ContractError("passed stage gate has an invalid transition")
         elif self.transition is not None:
@@ -398,6 +406,8 @@ def evaluate_invent_stage(
     run_root: Any,
     expected_checkpoint_sha256: str,
     assignment: NativeMatchAssignment,
+    expected_subject_sha256: Optional[str] = None,
+    expected_artifact_path: str = INVENTED_PATH,
 ) -> StageGateDecision:
     """Validate Invented against the accepted Match assignment."""
 
@@ -406,14 +416,22 @@ def evaluate_invent_stage(
     require_sha256(expected_checkpoint_sha256, "expected Invent checkpoint sha256")
     if proposal.checkpoint_sha256 != expected_checkpoint_sha256:
         raise StateConflict("Invent proposal belongs to another checkpoint")
-    expected_subject_sha256 = invent_gate_subject_sha256(assignment)
-    if proposal.subject_sha256 != expected_subject_sha256:
+    subject_sha256 = (
+        invent_gate_subject_sha256(assignment)
+        if expected_subject_sha256 is None
+        else require_sha256(
+            expected_subject_sha256, "expected Invent subject sha256"
+        )
+    )
+    if proposal.subject_sha256 != subject_sha256:
         raise StateConflict("Invent proposal subject is not the full Invent input vector")
+    if not isinstance(expected_artifact_path, str) or not expected_artifact_path:
+        raise ContractError("expected Invent artifact path is invalid")
     artifact = _ready_artifact(
         proposal,
         stage="invent",
         transition="make",
-        canonical_path=INVENTED_PATH,
+        canonical_path=expected_artifact_path,
     )
     invented = NativeInvented.from_mapping(
         _artifact_document(run_root, artifact, label="Invented artifact")

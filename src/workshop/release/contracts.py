@@ -98,11 +98,11 @@ class ReleaseContext:
 
 @dataclass(frozen=True)
 class ProductRelease:
-    """One locally verified and sealed customer Release package.
+    """The locally verified package component of terminal Release.
 
-    This contract deliberately stops at exact local bytes.  A Factory draft or
-    public page is optional host-owned enrichment with its own durable receipt;
-    it is not part of Release acceptance.
+    This narrow contract deliberately stops at exact local bytes. The Workflow
+    host separately requires a durable Factory effect receipt and authenticated
+    public readback before the Release checkpoint can complete.
     """
 
     root: Path

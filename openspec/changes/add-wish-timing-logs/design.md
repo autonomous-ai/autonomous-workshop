@@ -2,14 +2,14 @@
 
 See `proposal.md` for motivation and `specs/workshop/wish-run-progress/spec.md` for observable behavior. The latest main branch already has a privacy-safe progress subsystem: `NativeRunProgress` durably records bounded native-turn activity, `_NativeProgressTracker` binds it to the authoritative checkpoint, and the CLI's live activity renderer reports throttled foreground updates. It does not expose timestamps for host operations or paired durations.
 
-Repository ownership still requires `src/cli/` to own presentation, `src/workshop/runtime/` to own native-runtime contracts and trusted progress data, and `src/workshop/workflow/` to own lifecycle boundaries. The current lifecycle is Wish → Match → Invent → Make ↔ Playtest → Release → Deliver; Concept is no longer a stage, and publication is an optional post-Release Factory effect.
+Repository ownership still requires `src/cli/` to own presentation, `src/workshop/runtime/` to own native-runtime contracts and trusted progress data, and `src/workshop/workflow/` to own lifecycle boundaries. The current lifecycle is Wish → Match → Invent → Make ↔ Playtest → Release. Verified Factory publication is the required host-owned effect inside terminal Release; historical Deliver checkpoints remain readable migration inputs only.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
 - Extend the existing live progress facility without replacing its durable current-turn record or native activity vocabulary.
-- Make host setup, native invocation, proposal verification, deterministic gates, and optional publication independently measurable.
+- Make host setup, native invocation, proposal verification, deterministic gates, and required publication independently measurable.
 - Give `wish` and `resume` one fixed timing vocabulary while retaining existing receipts, checkpoint bytes, session behavior, and error paths.
 - Make wall timestamps and elapsed durations deterministic in tests.
 
@@ -52,7 +52,7 @@ The shared runtime helper emits `started`, records a monotonic start value, then
 | `session.start` / `session.resume` | One native runtime invocation only |
 | `outcome.process` | Read, validate, dispatch, and apply an `agent-outcome.json` proposal |
 | `gate.evaluate` | The stage-owned deterministic evaluator and checkpoint transition |
-| `effect.factory` | Optional Factory publication/reconciliation when attempted |
+| `effect.factory` | Required Factory publication/reconciliation inside Release, including resumable replay |
 
 `outcome.process` can contain `gate.evaluate`, and Release processing can contain `effect.factory`. Parent durations are aggregate; child durations attribute the work inside them. Proposal recovery emits preparation and processing spans but no session span because it launches no native turn.
 
@@ -66,7 +66,7 @@ Workflow timing spans call only the optional timing observer. They are not seria
 
 The workflow supplies validated product and stage identifiers when opening a span. UTC wall time supports correlation across logs. A monotonic clock supplies elapsed milliseconds, clamped nonnegative, so wall-clock corrections do not corrupt duration.
 
-Gate timing wraps the actual evaluator dispatch inside outcome processing. Factory timing wraps only the host-owned optional publication call after Release has already been durably accepted. Native timing wraps only the launcher call, while the existing activity callback can continue to emit `reasoning`, `tool`, `subagent`, or heartbeat updates inside that span.
+Gate timing wraps the actual evaluator dispatch inside outcome processing. Factory timing wraps only the host-owned publication/reconciliation call nested in the Release gate, including host-side replay of a pending Release proposal. Native timing wraps only the launcher call, while the existing activity callback can continue to emit `reasoning`, `tool`, `subagent`, or heartbeat updates inside that span.
 
 ### 5. One CLI renderer presents activity and timing on the selected stream
 
@@ -91,7 +91,7 @@ Refactor the live renderer into a Wish-progress renderer with an activity method
 
 1. Resolve the pre-update implementation conflicts in favor of the latest main progress and lifecycle architecture.
 2. Add the timing event and span beside the existing durable progress contract, with deterministic clock tests.
-3. Instrument initialization, stage preparation, session invocation, outcome/gate processing, and optional Factory publication.
+3. Instrument initialization, stage preparation, session invocation, outcome/gate processing, and required Factory publication.
 4. Extend the CLI renderer and both Wish entry points while preserving stream routing.
 5. Run focused and full validation, then retain the old pre-update stash until the integrated result is verified.
 

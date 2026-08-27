@@ -1,6 +1,6 @@
 # ADR 0013: Make Release manual-first and publication optional
 
-- Status: Accepted
+- Status: Superseded by ADR 0014
 - Date: 2026-08-27
 - Supersedes: the page-first Release details in ADR 0012
 

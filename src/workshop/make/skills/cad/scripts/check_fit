@@ -6,7 +6,7 @@ they say the solid is sound and that nothing clashes in assembly pose, not that
 each part sits on the bed. This gate answers the part of the printable/connector
 question that needs no project knowledge:
 
-    print-datum       every part_*.step.py returns min(Z) == 0
+    print-datum       every selected printable entry returns min(Z) == 0
     bed-footprint     its footprint fits the stated bed, in either yaw
     empty-part        it has positive volume
     build-error       the entry generator runs at all
@@ -18,8 +18,8 @@ anything, so they are notes rather than failures unless --strict is given:
                           is a defect only if the README calls it one piece
     no-project-fit-audit  2+ printable parts with no local fit/print audit
 
-Every part entry is built here, so this is the only check that compares the
-*source* against the print claim. It deliberately does not redo interference:
+Every selected printable entry is built here, so this is the only check that
+compares the *source* against the print claim. It deliberately does not redo interference:
 `scripts/inspect interfere` already answers that with exact B-rep booleans.
 
 Three of the six mandated items still need project knowledge and cannot be
@@ -30,6 +30,7 @@ entries and no local audit, that gap is reported as `no-project-fit-audit`.
 
     scripts/check_fit                       # scan the worktree
     scripts/check_fit <project-dir>
+    scripts/check_fit <project-dir> --entry <project-dir>/<name>.step.py
     scripts/check_fit --bed 256 256
     scripts/check_fit --json
 
@@ -39,6 +40,7 @@ Exit 0 when every printable part conforms, 1 when any fails, 2 on bad usage.
 from __future__ import annotations
 
 import argparse
+import ast
 import contextlib
 import importlib.util
 import io
@@ -87,18 +89,78 @@ IGNORED_DIR_NAMES = {
 GEN_FUNC = "gen_" + "step"
 
 
-def iter_part_entries(root: Path):
-    """Yield part_*.step.py paths, grouped by the directory that holds them."""
-    by_dir: dict[Path, list[Path]] = {}
+def declared_printable(path: Path) -> bool | None:
+    """Read an optional module-level ``PRINTABLE = bool`` without importing CAD."""
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in tree.body:
+        value = None
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "PRINTABLE"
+            for target in node.targets
+        ):
+            value = node.value
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "PRINTABLE"
+        ):
+            value = node.value
+        if value is not None:
+            if isinstance(value, ast.Constant) and isinstance(value.value, bool):
+                return value.value
+            raise ValueError(f"{path}: PRINTABLE must be the literal True or False")
+    return None
+
+
+def iter_printable_entries(root: Path):
+    """Yield actual print targets, grouped by their project directory."""
+    entries_by_dir: dict[Path, list[Path]] = {}
     for path in sorted(root.rglob("*" + ENTRY_SUFFIX)):
         rel_parts = path.relative_to(root).parts[:-1]
         if any(part in IGNORED_DIR_NAMES for part in rel_parts):
             continue
-        if not path.name.startswith(PART_PREFIX):
-            continue
         if GEN_FUNC not in path.read_text(encoding="utf-8", errors="replace"):
             continue
-        by_dir.setdefault(path.parent, []).append(path)
+        entries_by_dir.setdefault(path.parent, []).append(path)
+
+    by_dir: dict[Path, list[Path]] = {}
+    for project, entries in entries_by_dir.items():
+        parts = [path for path in entries if path.name.startswith(PART_PREFIX)]
+        assemblies = [path for path in entries if not path.name.startswith(PART_PREFIX)]
+        selected = [path for path in parts if declared_printable(path) is not False]
+        if parts:
+            selected.extend(
+                path for path in assemblies if declared_printable(path) is True
+            )
+        elif len(assemblies) == 1 and declared_printable(assemblies[0]) is not False:
+            selected.append(assemblies[0])
+        if selected:
+            by_dir[project] = sorted(selected)
+    return by_dir
+
+
+def explicit_entries(root: Path, raw_entries: list[str]) -> dict[Path, list[Path]]:
+    """Resolve explicitly selected printable entries beneath ``root``."""
+    by_dir: dict[Path, list[Path]] = {}
+    cwd = Path.cwd().resolve()
+    for raw in raw_entries:
+        candidate = Path(raw)
+        if not candidate.is_absolute():
+            from_cwd = (cwd / candidate).resolve()
+            candidate = from_cwd if from_cwd.is_file() else (root / candidate).resolve()
+        else:
+            candidate = candidate.resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError as error:
+            raise ValueError(f"entry must stay inside {root}: {candidate}") from error
+        if not candidate.is_file() or not candidate.name.endswith(ENTRY_SUFFIX):
+            raise ValueError(f"not a *{ENTRY_SUFFIX} entry: {candidate}")
+        if GEN_FUNC not in candidate.read_text(encoding="utf-8", errors="replace"):
+            raise ValueError(f"{candidate} defines no {GEN_FUNC}()")
+        if declared_printable(candidate) is False:
+            raise ValueError(f"{candidate} declares PRINTABLE = False")
+        by_dir.setdefault(candidate.parent, []).append(candidate)
     return by_dir
 
 
@@ -314,6 +376,15 @@ def check_project(project: Path, root: Path, paths: list[Path],
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("root", nargs="?", default=".", help="directory to scan (default: cwd)")
+    parser.add_argument(
+        "--entry",
+        action="append",
+        default=[],
+        help=(
+            "explicit printable *.step.py entry beneath root; repeat as needed. "
+            "Use this for a Tier 1 or combined one-piece print target"
+        ),
+    )
     parser.add_argument("--bed", nargs=2, type=float, metavar=("X", "Y"),
                         default=list(DEFAULT_BED), help="bed size in mm (default: 220 220)")
     parser.add_argument("--strict", action="store_true",
@@ -327,7 +398,11 @@ def main() -> int:
         return 2
     bed = (args.bed[0], args.bed[1])
 
-    by_dir = iter_part_entries(root)
+    try:
+        by_dir = explicit_entries(root, args.entry) if args.entry else iter_printable_entries(root)
+    except (OSError, SyntaxError, ValueError) as error:
+        print(f"check_fit: {error}", file=sys.stderr)
+        return 2
     raised: list[dict] = []
     measurements: list[dict] = []
     for project, paths in sorted(by_dir.items()):
@@ -353,7 +428,7 @@ def main() -> int:
         return 1 if findings else 0
 
     if not by_dir:
-        print("check_fit: no part_*.step.py entries found")
+        print("check_fit: no printable entries found")
         return 0
 
     failed = {f["path"] for f in findings}

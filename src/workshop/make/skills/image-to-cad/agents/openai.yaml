@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image to CAD"
+  short_description: "Read a reference image into a buildable CAD spec"
+  default_prompt: "Use $image-to-cad to turn a reference image into a measured build spec with confidence-tagged dimensions, ready for $cad to implement."

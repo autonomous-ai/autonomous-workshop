@@ -39,7 +39,7 @@ FORWARD = {
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
+    "release": "complete",
 }
 
 
@@ -622,7 +622,7 @@ class StageProposalToolTest(unittest.TestCase):
             "finding": "The deterministic check failed.",
             "change": "Revise the exact product and rerun the check.",
             "evidence_refs": [failed["evidence_ref"]],
-            "invalidates": ["playtest", "release", "deliver"],
+            "invalidates": ["playtest", "release"],
         }
         self.write_json(
             "drafts/playtest-failed.json",
@@ -647,10 +647,40 @@ class StageProposalToolTest(unittest.TestCase):
             "make",
         )
 
-        feedback["invalidates"] = ["make", "playtest", "release"]
+        feedback["severity"] = "block"
+        feedback["area"] = "invent"
+        feedback["change"] = "Revise the concept before rebuilding the product."
+        feedback["invalidates"] = ["invent", "make", "playtest", "release"]
+        self.write_json(
+            "drafts/playtest-reinvent.json",
+            {"checks": checks, "feedback": [feedback], "verdict": "block"},
+        )
+        self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest-reinvent.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+        )
+        reinvent_document, reinvent_bytes = self.assert_canonical_file(
+            "artifacts/playtest/r0001/playtested.json"
+        )
+        self.assertEqual(reinvent_document["verdict"], "block")
+        self.assertEqual(
+            NativePlaytested.from_mapping(reinvent_document).proposed_transition,
+            "invent",
+        )
+        self.assert_outcome(
+            "playtest",
+            "artifacts/playtest/r0001/playtested.json",
+            reinvent_bytes,
+            "invent",
+        )
+
+        feedback["invalidates"] = ["invent", "playtest", "release"]
         self.write_json(
             "drafts/playtest-invalid-invalidation.json",
-            {"checks": checks, "feedback": [feedback], "verdict": "improve"},
+            {"checks": checks, "feedback": [feedback], "verdict": "block"},
         )
         rejected = self.run_tool(
             "playtest",
@@ -661,7 +691,7 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn(
-            "the verdict already routes the repair to Make",
+            "every downstream stage",
             rejected.stderr,
         )
 
@@ -826,7 +856,7 @@ class StageProposalToolTest(unittest.TestCase):
             "release",
             "artifacts/release/release.json",
             release_bytes,
-            "deliver",
+            "complete",
         )
 
         invalid_product_cases = (

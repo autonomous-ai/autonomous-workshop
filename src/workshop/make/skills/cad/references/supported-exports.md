@@ -1,6 +1,6 @@
 # Supported exports
 
-Read this file when the user requests STL, 3MF, or native GLB output files from CAD geometry. For a `.step` file, use `scripts/gen --write` (see `step-generation.md`) — `scripts/export` writes mesh formats only. For 2D DXF output, use the `$dxf` skill; DXF uses a separate `gen_dxf()` contract in a dedicated `<name>.dxf.py` drawing generator (never inside a `.step.py`).
+Read this file when the user requests STL, 3MF, or native GLB output files from CAD geometry. For a `.step` file, use `scripts/gen --write` (see `step-generation.md`) — `scripts/export` writes mesh formats only. For 2D DXF output, use the `$dxf` skill when it is installed — it is a separate sibling skill and is not bundled here; DXF uses a separate `gen_dxf()` contract in a dedicated `<name>.dxf.py` drawing generator (never inside a `.step.py`).
 
 ## Policy
 

@@ -85,7 +85,7 @@ docs = ["src/workshop/playtest/README.md"]
 [[components]]
 id = "release"
 name = "Release"
-purpose = "Create the product page, manual, and authenticated private publication handoff."
+purpose = "Publish the exact ready-to-print CAD package and validated MANUAL.pdf with authenticated public readback."
 primary_role = "Release maintainer"
 backup_role = "Release backup maintainer"
 primary_github = ["@deehw"]
@@ -95,20 +95,6 @@ risk = "high"
 source = ["src/workshop/release/**"]
 tests = ["tests/release/**"]
 docs = ["src/workshop/release/README.md"]
-
-[[components]]
-id = "deliver"
-name = "Deliver"
-purpose = "Own the truthful post-Release wait boundary until separately authorized physical effects are implemented."
-primary_role = "Deliver maintainer"
-backup_role = "Deliver backup maintainer"
-primary_github = ["@deehw"]
-backup_github = []
-backup_status = "vacant"
-risk = "high"
-source = ["src/workshop/deliver/**"]
-tests = ["tests/deliver/**"]
-docs = ["src/workshop/deliver/README.md"]
 
 [[components]]
 id = "workflow"
@@ -121,7 +107,7 @@ backup_github = []
 backup_status = "vacant"
 risk = "critical"
 source = ["src/workshop/workflow/**"]
-tests = ["tests/workflow/**", "tests/integration/**", "tests/end_to_end/**"]
+tests = ["tests/workflow/**", "tests/end_to_end/**"]
 docs = ["src/workshop/workflow/README.md", "docs/ARCHITECTURE.md"]
 
 [[components]]
@@ -219,7 +205,7 @@ backup_github = []
 backup_status = "vacant"
 risk = "standard"
 source = ["inventors/**"]
-tests = ["tests/inventors/**"]
+tests = []
 docs = ["inventors/README.md"]
 
 [[components]]
@@ -232,6 +218,6 @@ primary_github = ["@deehw"]
 backup_github = []
 backup_status = "vacant"
 risk = "critical"
-source = [".github/**", ".gitattributes", ".gitignore", "src/workshop/__init__.py", "src/workshop/_validation.py", "src/workshop/errors.py", "docs/**", "tools/**", "web/**", "changes/**", "MANIFEST.in", "setup.py", "pyproject.toml", "uv.lock", "LICENSE", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md", "MAINTAINERS.md", "GOVERNANCE.md", "SECURITY.md", "CODE_OF_CONDUCT.md", "SUPPORT.md"]
-tests = ["tests/architecture/**", "tests/packaging/**", "tests/fixtures/**"]
+source = [".github/**", ".gitattributes", ".gitignore", "src/workshop/__init__.py", "src/workshop/_validation.py", "src/workshop/errors.py", "docs/**", "tools/**", "changes/**", "MANIFEST.in", "setup.py", "pyproject.toml", "uv.lock", "LICENSE", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md", "MAINTAINERS.md", "GOVERNANCE.md", "SECURITY.md", "CODE_OF_CONDUCT.md", "SUPPORT.md"]
+tests = ["tests/architecture/**", "tests/packaging/**"]
 docs = ["README.md", "CONTRIBUTING.md", "src/cli/README.md"]

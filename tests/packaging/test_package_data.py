@@ -35,6 +35,7 @@ class PackageDataTest(unittest.TestCase):
             {
                 "cad",
                 "design-reference",
+                "electromechanical-integration",
                 "image-to-cad",
                 "manual-design",
                 "step-parts",
@@ -43,6 +44,7 @@ class PackageDataTest(unittest.TestCase):
         expected_owners = {
             "cad": "make",
             "design-reference": "make",
+            "electromechanical-integration": "make",
             "image-to-cad": "make",
             "manual-design": "release",
             "step-parts": "make",

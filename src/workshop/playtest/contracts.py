@@ -11,14 +11,18 @@ from workshop.playtest.service import Playtest
 
 
 _SEVERITIES = frozenset(("note", "improve", "block"))
-_FEEDBACK_INVALIDATION_STAGES = frozenset(
-    ("make", "playtest", "release", "deliver")
+_ACTIVE_FEEDBACK_INVALIDATION_STAGES = frozenset(
+    ("invent", "make", "playtest", "release")
 )
+# Read historical Make-feedback contracts that named the former executable
+# Deliver wait boundary. New finalizers never author this marker.
+_FEEDBACK_INVALIDATION_STAGES = _ACTIVE_FEEDBACK_INVALIDATION_STAGES | {"deliver"}
+_CONCEPT_REVISION_INVALIDATIONS = _ACTIVE_FEEDBACK_INVALIDATION_STAGES
 
 
 @dataclass(frozen=True)
 class Feedback:
-    """One actionable Playtest finding that sends the product back to Make."""
+    """One authored Playtest finding with an explicit invalidation boundary."""
 
     code: str
     area: str
@@ -26,7 +30,7 @@ class Feedback:
     finding: str
     change: str
     evidence_refs: Sequence[str] = field(default_factory=tuple)
-    invalidates: Sequence[str] = ("playtest", "release", "deliver")
+    invalidates: Sequence[str] = ("playtest", "release")
 
     def __post_init__(self) -> None:
         bounded_text(self.code, "feedback code", 200)
@@ -41,10 +45,30 @@ class Feedback:
             raise ContractError("feedback evidence_refs must be non-empty strings")
         if any(item not in _FEEDBACK_INVALIDATION_STAGES for item in invalidates):
             raise ContractError(
-                "feedback invalidates a stage outside the Make repair loop"
+                "feedback invalidates a stage outside the repair lifecycle"
             )
+        if len(invalidates) != len(set(invalidates)):
+            raise ContractError("feedback invalidates must not contain duplicates")
+        if "invent" in invalidates:
+            if self.severity not in ("improve", "block"):
+                raise ContractError(
+                    "only actionable feedback may request concept revision"
+                )
+            if set(invalidates) != _CONCEPT_REVISION_INVALIDATIONS:
+                raise ContractError(
+                    "concept revision must invalidate Invent and every downstream stage"
+                )
         object.__setattr__(self, "evidence_refs", refs)
         object.__setattr__(self, "invalidates", invalidates)
+
+    @property
+    def requests_concept_revision(self) -> bool:
+        """Return the agent-authored routing choice without judging its prose."""
+
+        return (
+            self.severity in ("improve", "block")
+            and "invent" in self.invalidates
+        )
 
     def to_dict(self):
         return {

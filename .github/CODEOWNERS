@@ -17,8 +17,6 @@
 /tests/playtest/ @deehw
 /src/workshop/release/ @deehw
 /tests/release/ @deehw
-/src/workshop/deliver/ @deehw
-/tests/deliver/ @deehw
 
 # Orchestration and platform
 /src/workshop/workflow/ @deehw
@@ -26,7 +24,6 @@
 /src/workshop/_validation.py @deehw
 /src/workshop/errors.py @deehw
 /tests/workflow/ @deehw
-/tests/integration/ @deehw
 /tests/end_to_end/ @deehw
 /src/workshop/product/ @deehw
 /tests/product/ @deehw
@@ -45,8 +42,6 @@
 /src/cli/ @deehw
 /tests/cli/ @deehw
 /inventors/ @deehw
-/tests/inventors/ @deehw
-/web/ @deehw
 
 # Repository and release controls
 /.github/ @deehw
@@ -54,7 +49,6 @@
 /tools/ @deehw
 /tests/architecture/ @deehw
 /tests/packaging/ @deehw
-/tests/fixtures/ @deehw
 /.gitattributes @deehw
 /.gitignore @deehw
 /MANIFEST.in @deehw

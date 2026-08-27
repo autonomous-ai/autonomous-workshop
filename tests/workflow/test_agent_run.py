@@ -54,6 +54,9 @@ class AgentRunTest(unittest.TestCase):
         references = self.skill / "references"
         references.mkdir()
         (references / "make-playtest.md").write_bytes(b"exact gate guidance\n")
+        (references / "release-terminal-v1.md").write_bytes(
+            b"terminal Release capability\n"
+        )
         self.run_root = self.root / "run"
         self.host_state_root = self.root / "host-state"
         self.product_id = "wish-run-1"
@@ -133,6 +136,9 @@ class AgentRunTest(unittest.TestCase):
             ".agents/skills/autonomous-workshop/SKILL.md": b"# Workshop skill\n",
             ".agents/skills/autonomous-workshop/references/make-playtest.md": (
                 b"exact gate guidance\n"
+            ),
+            ".agents/skills/autonomous-workshop/references/release-terminal-v1.md": (
+                b"terminal Release capability\n"
             ),
         }
         self.assertEqual(stat.S_IMODE(run.run_root.stat().st_mode), 0o700)
@@ -517,25 +523,40 @@ class AgentRunTest(unittest.TestCase):
             ("invent", "make"),
             ("make", "playtest"),
             ("playtest", "release"),
-            ("release", "deliver"),
-            ("deliver", "complete"),
+            ("release", "complete"),
         ):
             checkpoint = self.advance(run, stage, transition)
 
         self.assertTrue(checkpoint.complete)
-        self.assertEqual(checkpoint.stage, "deliver")
+        self.assertEqual(checkpoint.stage, "release")
         self.assertEqual(checkpoint.round_index, 1)
         self.assertEqual(set(checkpoint.stage_artifacts), set(
-            ("wish", "match", "invent", "make", "playtest", "release", "deliver")
+            ("wish", "match", "invent", "make", "playtest", "release")
         ))
         with self.assertRaises(TransitionError):
             run.apply_outcome(
                 AgentOutcome(
-                    stage="deliver",
+                    stage="release",
                     status="failed",
                     needs=("already complete",),
                 )
             )
+
+    def test_new_run_cannot_propose_the_obsolete_deliver_transition(self):
+        run = self.create()
+        for stage, transition in (
+            ("wish", "match"),
+            ("match", "invent"),
+            ("invent", "make"),
+            ("make", "playtest"),
+            ("playtest", "release"),
+        ):
+            self.advance(run, stage, transition)
+
+        outcome = self.outcome(run, "release", "deliver")
+        with self.assertRaisesRegex(TransitionError, "complete the Workshop"):
+            run.apply_outcome(outcome, gate=self.gate(run, outcome))
+        self.assertEqual(run.snapshot().stage, "release")
 
     def test_wait_is_resumable_but_failure_is_terminal_and_neither_advances(self):
         waiting_run = self.create()
@@ -607,7 +628,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual((checkpoint.stage, checkpoint.round_index), ("make", 2))
         self.assertEqual(
             checkpoint.invalidated_stages,
-            ("playtest", "release", "deliver"),
+            ("playtest", "release"),
         )
         self.assertEqual(
             checkpoint.stage_artifacts["playtest"][0], failed_playtest.artifacts[0]
@@ -630,7 +651,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(len(checkpoint.stage_artifacts["make"]), 2)
         self.assertEqual(
             checkpoint.invalidated_stages,
-            ("playtest", "release", "deliver"),
+            ("playtest", "release"),
         )
         second_failure = self.outcome(
             run,
@@ -642,6 +663,73 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaisesRegex(TransitionError, "budget"):
             run.apply_outcome(
                 second_failure, gate=self.gate(run, second_failure, passed=False)
+            )
+        self.assertEqual(run.snapshot().stage, "playtest")
+
+    def test_concept_feedback_returns_to_invent_and_consumes_shared_round(self):
+        run = self.create(max_rounds=3)
+        self.reach_playtest(run)
+        before = run.snapshot()
+        prior_invent = before.stage_artifacts["invent"]
+        prior_make = before.stage_artifacts["make"]
+
+        failed_playtest = self.outcome(
+            run,
+            "playtest",
+            "invent",
+            name="concept-failure.json",
+            content=b'{"result":"revise-concept"}\n',
+        )
+        checkpoint = run.apply_outcome(
+            failed_playtest,
+            gate=self.gate(run, failed_playtest, passed=False),
+        )
+
+        self.assertEqual((checkpoint.stage, checkpoint.round_index), ("invent", 2))
+        self.assertEqual(
+            checkpoint.invalidated_stages,
+            ("invent", "make", "playtest", "release"),
+        )
+        self.assertEqual(checkpoint.stage_artifacts["invent"], prior_invent)
+        self.assertEqual(checkpoint.stage_artifacts["make"], prior_make)
+        self.assertEqual(
+            checkpoint.stage_artifacts["playtest"][0],
+            failed_playtest.artifacts[0],
+        )
+
+        revised_invent = self.outcome(
+            run,
+            "invent",
+            "make",
+            name="revision-02.json",
+            content=b'{"concept":"revised"}\n',
+        )
+        checkpoint = run.apply_outcome(
+            revised_invent,
+            gate=self.gate(run, revised_invent),
+        )
+
+        self.assertEqual((checkpoint.stage, checkpoint.round_index), ("make", 2))
+        self.assertEqual(
+            checkpoint.stage_artifacts["invent"],
+            revised_invent.artifacts,
+        )
+        self.assertNotIn("make", checkpoint.stage_artifacts)
+        self.assertNotIn("playtest", checkpoint.stage_artifacts)
+        self.assertEqual(
+            checkpoint.invalidated_stages,
+            ("make", "playtest", "release"),
+        )
+
+    def test_concept_revision_cannot_exceed_shared_round_budget(self):
+        run = self.create(max_rounds=1)
+        self.reach_playtest(run)
+        failed_playtest = self.outcome(run, "playtest", "invent")
+
+        with self.assertRaisesRegex(TransitionError, "budget"):
+            run.apply_outcome(
+                failed_playtest,
+                gate=self.gate(run, failed_playtest, passed=False),
             )
         self.assertEqual(run.snapshot().stage, "playtest")
 
@@ -741,24 +829,13 @@ class AgentRunTest(unittest.TestCase):
                 stage="release",
                 status="ready",
                 artifacts=tuple(release_artifacts),
-                proposed_transition="deliver",
+                proposed_transition="complete",
             )
             checkpoint = run.apply_outcome(release, gate=self.gate(run, release))
-            self.assertEqual(checkpoint.stage, "deliver")
+            self.assertEqual(checkpoint.stage, "release")
+            self.assertTrue(checkpoint.complete)
             self.assertEqual(sealed_bytes(), cumulative_limit)
             self.assertLessEqual(max(simulated_sizes.values()), 16 * mib)
-
-            beyond_limit = sized_outcome(
-                "deliver",
-                "complete",
-                "one-byte-over.json",
-                1,
-            )
-            gate = self.gate(run, beyond_limit)
-            with self.assertRaisesRegex(ArtifactError, "total limit"):
-                run.apply_outcome(beyond_limit, gate=gate)
-            self.assertEqual(run.snapshot().stage, "deliver")
-            self.assertEqual(sealed_bytes(), cumulative_limit)
 
     def test_passing_playtest_cannot_return_to_make_and_failure_cannot_advance(self):
         run = self.create()

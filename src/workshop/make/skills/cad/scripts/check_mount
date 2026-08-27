@@ -416,6 +416,24 @@ def load_manifest(source: str) -> dict:
     return manifest
 
 
+def mount_specs(manifest: dict) -> list[dict]:
+    """Validate mount identity before paying to build the CAD assembly."""
+    mounts = manifest.get("mounts", [])
+    if not isinstance(mounts, list) or not mounts:
+        raise ManifestError("manifest declares no mounts")
+    seen: set[str] = set()
+    for index, item in enumerate(mounts):
+        if not isinstance(item, dict):
+            raise ManifestError(f"mounts[{index}] must be an object")
+        mount_id = item.get("id")
+        if not isinstance(mount_id, str) or not mount_id.strip():
+            raise ManifestError(f"mounts[{index}].id is required")
+        if mount_id in seen:
+            raise ManifestError(f"duplicate mount id {mount_id!r}")
+        seen.add(mount_id)
+    return mounts
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("project", help="project directory holding the assembly entry")
@@ -445,6 +463,7 @@ def main() -> int:
 
     try:
         manifest = load_manifest(source)
+        mounts = [] if args.list_parts else mount_specs(manifest)
         entry = find_assembly_entry(project, manifest.get("assembly"))
         shape = build_assembly(entry)
         parts = index_parts(shape)
@@ -463,17 +482,9 @@ def main() -> int:
             print(f"{name}  (ambiguous - use its dotted path)")
         return 0
 
-    mounts = manifest.get("mounts", [])
-    if not isinstance(mounts, list) or not mounts:
-        print("check_mount: manifest declares no mounts", file=sys.stderr)
-        return 2
-
     findings: list[dict] = []
     measurements: list[dict] = []
     for index, spec in enumerate(mounts):
-        if not isinstance(spec, dict):
-            print(f"check_mount: mounts[{index}] must be an object", file=sys.stderr)
-            return 2
         measured: dict = {}
         findings.extend(run_mount(spec, project, shape, parts, index, measured))
         measurements.append(measured)

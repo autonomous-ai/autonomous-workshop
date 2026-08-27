@@ -43,7 +43,9 @@ All implementation and product-run work must preserve these boundaries:
   stopping condition: the current stage finalizer succeeds. Only one Goal is
   active at a time. Codex works toward it by observing, acting, evaluating exact output,
   and improving. That loop is native-agent behavior, not a Python program.
-  Wish and Deliver remain host boundaries rather than agent Goals.
+  Wish is a host boundary rather than an agent Goal. Authenticated publication
+  is the host-owned effect portion of Release; physical Operations begin only
+  after Workshop completes.
 - An Inventor is a declared specialist bundle. `TASTE.md` governs creative
   judgment; `inventor.json` identifies the specialist and binds its exact
   extension trees; the required `<id>-inventor` skill defines its
@@ -78,11 +80,14 @@ candidate fan-out, model judges, stage-role views, or repair reasoning.
 
 Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0012-codex-orchestrated-runtime.md`, and
-`docs/adr/0013-manual-first-release.md` before changing the CLI, runtime,
+`docs/adr/0013-manual-first-release.md`, and
+`docs/adr/0014-terminal-published-release.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
-supersedes ADR 0012's page-first Release details. The native-session path is the
-production architecture. Preserve useful deterministic contracts and tests; do
-not reintroduce removed cognitive orchestration as a compatibility layer.
+supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
+optional-publication and executable-Deliver details. The native-session path is
+the production architecture. Preserve useful deterministic contracts and
+tests; do not reintroduce removed cognitive orchestration as a compatibility
+layer.
 
 ## Repository ownership
 

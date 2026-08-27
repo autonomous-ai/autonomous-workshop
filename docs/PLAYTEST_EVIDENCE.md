@@ -93,12 +93,19 @@ of the Made product.
 - Every feedback item identifies its area, severity, observed finding, concrete
   next change, evidence references, and invalidated stages.
 
-A failed Playtest proposes a return to Make. The host preserves that exact
-Playtested contract as feedback, advances the bounded round, and invalidates
-downstream evidence. The host does not interpret or repair the product. Codex
-reads the evidence and runs the build/check/repair work inside the next Make
-Goal; it does not edit previously sealed Made or Playtest files until they
-appear to pass.
+A failed Playtest chooses its repair boundary explicitly through those
+structured invalidations. `["playtest", "release"]` returns an implementation
+defect to Make. `["invent", "make", "playtest", "release"]` returns a
+fundamental concept defect to Invent. If actionable findings use both scopes,
+the broader Invent revision wins. The host follows these authored markers
+mechanically; it never classifies the prose or decides how the product should
+change.
+
+Both routes consume the same bounded round. For re-Invent, the host preserves
+and exposes the exact prior Invented contract, failing Playtested contract, and
+canonical feedback bytes with independent hashes. Codex therefore revises a
+traceable design lineage rather than restarting from the Wish. Previously
+sealed Made and Playtest files remain immutable evidence.
 
 Reaching the configured round limit stops truthfully. It never lowers required
 checks or converts an incomplete result into Release.
@@ -136,5 +143,6 @@ means no public verification badge was recorded. A future **Physically
 Verified** level requires a trusted host receipt proving that the exact
 released bytes were built and checked. Model-authored evidence cannot raise it.
 
-Deliver owns real print, hands-on QA, packing, and carrier evidence. A Factory
-page—even a public one—is not delivery evidence.
+After Workshop publishes the verified Release, Operations owns printing,
+hands-on QA, packing, delivery, and the customer-review loop. A public page is
+the handoff, not evidence that those physical steps happened.

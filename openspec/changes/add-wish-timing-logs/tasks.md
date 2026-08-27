@@ -13,7 +13,7 @@
 - [x] 3.1 Add an optional timing observer to `start_native_run` and `resume_native_run` without changing the existing activity observer; verify callers that omit timing retain their current results and durable `NativeRunProgress` bytes.
 - [x] 3.2 Instrument `run.initialize`, `stage.prepare`, and `session.start`/`session.resume` at their actual workflow boundaries; verify new Wish, resumed session, repeated stage, wait, failure, and already-written-outcome paths emit the correct spans without adding native turns or retries.
 - [x] 3.3 Instrument `outcome.process` and nested `gate.evaluate` around current Match, Invent, Make, Playtest, and Release evaluators; verify checkpoint transitions, gate receipts, proposal cleanup, rejection recovery, and exception behavior remain unchanged.
-- [x] 3.4 Instrument optional post-Release Factory publication as `effect.factory`; verify missing credentials, unavailable/ambiguous publication, success, and reconciliation preserve local Release validity and emit no credentials, provider response, exception text, or user-authored content.
+- [x] 3.4 Instrument required Factory publication/reconciliation inside terminal Release as `effect.factory`; verify missing credentials, unavailable/ambiguous publication, success, and resumable pending-proposal replay preserve Release authority and emit no credentials, provider response, exception text, or user-authored content.
 
 ## 4. CLI Rendering
 
@@ -22,4 +22,4 @@
 
 ## 5. Acceptance
 
-- [ ] 5.1 Run focused runtime-progress, CLI, native-host, and native full-run tests, then the full offline test suite, `openspec validate add-wish-timing-logs --strict`, `tools/scan_secrets.py`, and `git diff --check`; verify all checks pass and no generated run workspace, private artifact, or unrelated user change is added.
+- [x] 5.1 Run focused runtime-progress, CLI, native-host, and native full-run tests, then the full offline test suite, `openspec validate add-wish-timing-logs --strict`, `tools/scan_secrets.py`, and `git diff --check`; verify all checks pass and no generated run workspace, private artifact, or unrelated user change is added.

@@ -31,8 +31,10 @@ Factory policy. Sending a deliberately low price to discover the minimum from
 a rejection would turn an error string into an API and is not acceptable.
 
 Until the contract below exists, Workshop must not submit an explicit listing
-price or describe Factory's returned auto-listing price as cost. Local Release
-and Deliver remain valid when pricing or optional publication is unavailable.
+price or describe Factory's returned auto-listing price as cost. That pricing
+limitation does not weaken terminal Release: the exact ready-to-print CAD and
+`MANUAL.pdf` still require public Factory publication and authenticated hash
+readback under the current no-explicit-price path.
 
 ## Smallest sufficient Factory API
 
@@ -196,8 +198,8 @@ the smallest fail-closed Workshop flow is:
    authenticated readback; never blindly publish again.
 6. Complete the effect only when authenticated readback proves the exact quote
    id, priced history, price, currency, active listing, SKU, and published
-   history. Otherwise leave optional publication pending/unknown without
-   invalidating local Release.
+   history. Otherwise leave Release waiting or failed according to the typed
+   effect outcome; never downgrade it to a successful local-only Release.
 
 Workshop must not calculate Factory's floor, parse a rejection message, use
 archive size or file counts as cost, ask the product-run agent to choose a

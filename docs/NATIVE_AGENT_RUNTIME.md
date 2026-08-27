@@ -3,9 +3,11 @@
 This is the operating map for people and coding agents building Autonomous
 Workshop. It is authoritative together with
 [ADR 0012](adr/0012-codex-orchestrated-runtime.md),
-[ADR 0013](adr/0013-manual-first-release.md), and the repository
+[ADR 0013](adr/0013-manual-first-release.md),
+[ADR 0014](adr/0014-terminal-published-release.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
-Release details.
+Release details; ADR 0014 supersedes their optional-publication and
+executable-Deliver details.
 
 ## Two different agent contexts
 
@@ -26,7 +28,11 @@ then launches one native Codex session in that directory before Match. That
 same session performs all cognitive and tool-using work through Release:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Make <-> Playtest -> Release
+                 ^                    |
+                 `-- concept revision-'
+
+Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
 Codex owns understanding, native search, concept exploration, design, CAD and
@@ -44,8 +50,9 @@ the current `STAGE.json`, proof artifacts and checks, and the verifiable
 stopping condition that the stage finalizer succeeds. Codex observes, acts,
 evaluates the actual artifact, and improves while pursuing that Goal. This is
 native-agent behavior inside the Goal, not a Python loop. The Goal completes
-only after the finalizer succeeds, then Codex returns to the host. Wish and
-Deliver are host boundaries and do not receive agent Goals.
+only after the finalizer succeeds, then Codex returns to the host. Wish is a
+host boundary and does not receive an agent Goal. Factory publication is the
+host-owned effect portion of Release.
 
 This follows Codex's official guidance for [durable
 Goals](https://learn.chatgpt.com/use-cases/follow-goals) and [eval-driven
@@ -270,9 +277,9 @@ authenticated physical receipt explicitly proves more. They cannot establish
 successful printing, physical fit, durability, or human response by
 themselves.
 
-The Wish gate is host-validated before the first native Match turn. Deliver is
-also host/effect work; native stage packets currently cover Match, Invent,
-Make, Playtest, and Release.
+The Wish gate is host-validated before the first native Match turn. Native
+stage packets cover Match, Invent, Make, Playtest, and Release; the host alone
+performs Release's authenticated publication effect.
 
 ## Run-local proposal finalizer
 
@@ -316,12 +323,18 @@ Codex completes the active Goal and returns control. The host rereads the
 proposal and artifact tree independently, reruns its trusted gates, seals all
 accepted bytes, and alone decides the transition.
 
-Playtest is the only backward transition: a verdict of `improve` or `block`
-proposes Make and preserves exact evidence as feedback. The host applies the
-round budget and invalidation; Codex interprets the feedback and performs the
-repair in the next Make Goal. A new Make revision invalidates old Playtest and
-Release evidence. The sealed Invent result remains the design authority across
-those rounds.
+Playtest owns the backward transitions. A verdict of `improve` or `block`
+preserves exact evidence and uses each feedback record's explicit invalidation
+boundary to propose Make or Invent. `["playtest", "release"]` is an
+implementation repair; `["invent", "make", "playtest", "release"]` is a
+fundamental concept revision. If actionable findings use both, the broader
+Invent revision wins. The host follows these authored markers without judging
+their prose and applies one shared bounded round budget to both routes.
+
+A Make repair keeps the sealed Invent result authoritative. A concept revision
+receives the exact prior Invented and failing Playtested/feedback bytes with
+independent hashes, then invalidates every downstream product revision. New
+Make or Invent bytes invalidate their old downstream evidence.
 
 ## Invent-to-Make design handoff
 
@@ -372,7 +385,7 @@ thickness, in isolation. That compatibility receipt remains ineligible for a
 print-ready claim: stronger geometric replay does not erase the legacy
 product's explicit uncertainty about slicing, physical printing, or fit.
 
-## Manual-first Release and optional publication
+## Terminal published Release
 
 Codex prepares `artifacts/release/package` with at least:
 
@@ -398,10 +411,11 @@ The PDF worker supports Linux and macOS. Linux requires `RLIMIT_AS`; macOS
 skips only fully unbounded memory limits that Darwin cannot lower. Both retain
 CPU, file, timeout, parser, and render bounds; other platforms fail closed.
 
-Local Release advances to Deliver without Factory. The default CLI creates no
-publication. `--publish` records explicit authority for an optional host effect
-against the already released bytes. Missing credentials or a remote outage
-does not invalidate Release. Local credentials belong in the private
+Release completes only after the host replays full-tier,
+thickness-checked, print-ready CAD, validates the exact `MANUAL.pdf`, imports
+the exact CAD/manual handoff, publishes it, and verifies public page and manual
+readback hashes. Missing credentials or a remote outage leaves Release waiting
+and resumable; the durable effect ledger reconciles before retry. Local credentials belong in the private
 `$WORKSHOP_HOME/credentials/factory.env` file and are loaded lazily only after
 the native turn exits. Codex 0.145.0 or newer runs with Workshop's strict
 permission profile: all filesystem reads are denied by default, the exact
@@ -437,7 +451,8 @@ Canonical product-run sources live at:
 ```text
 .agents/product-run/AGENTS.md
 .agents/product-run/.agents/skills/autonomous-workshop/**
-src/workshop/make/skills/{cad,design-reference,image-to-cad,step-parts}/**
+src/workshop/make/skills/{cad,design-reference,electromechanical-integration,
+                          image-to-cad,step-parts}/**
 src/workshop/release/skills/manual-design/**
 inventors/<id>/{inventor.json,TASTE.md,skills/**}
 ```
@@ -494,17 +509,18 @@ private Wish demonstrate that:
 1. one session id spans every native stage;
 2. stale checkpoint or subject hashes are rejected;
 3. changed artifact bytes fail their next gate;
-4. failed Playtest evidence returns directly to a new Make round and
-   invalidates downstream work;
+4. failed Playtest evidence returns to Make or Invent exactly as its structured
+   feedback declares, consumes the shared round budget, and invalidates the
+   selected dependency chain;
 5. every sealed Made result remains bound to the exact accepted Invent result
    it was built from;
 6. Release claims exactly match passing evidence and its exact `MANUAL.pdf`
    passes bounded structural validation;
 7. no credential reaches the native subprocess or its readable filesystem;
-8. local Release reaches Deliver without Factory, while `--publish` is
-   required for optional public promotion and any remote receipt binds the
-   exact Release package; and
-9. the run does not claim Deliver without physical receipts.
+8. terminal Release requires exact full-tier print-ready CAD, validated
+   `MANUAL.pdf`, and authenticated public readback bound to those hashes; and
+9. the executable Workshop run ends at Release and makes no claim of physical
+   printing, delivery, or review.
 
 ## Engine portability
 

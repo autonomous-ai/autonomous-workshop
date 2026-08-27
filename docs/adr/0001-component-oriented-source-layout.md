@@ -4,6 +4,9 @@
 - Date: 2026-08-25
 - Owners: Repository maintainer and all component DRIs
 
+ADR 0014 supersedes this record's executable `deliver/` component. The shared
+namespace, source layout, and component-ownership rules remain accepted.
+
 ## Context
 
 The original Python implementation grew as one flat `inventor_workshop`

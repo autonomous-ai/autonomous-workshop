@@ -18,7 +18,7 @@ The system SHALL preserve the existing privacy-safe native activity and durable 
 - **AND** no timing event is treated as evidence that a stage or effect succeeded
 
 ### Requirement: Wish runs emit timestamped operation boundaries
-The system SHALL emit a timing event before entering each applicable high-level operation during `workshop wish` and `workshop resume`: run initialization for a new Wish, stage-input preparation, native-session start or resume, agent-outcome processing, deterministic gate evaluation, and optional Factory publication when attempted. Each event SHALL identify the product id, lifecycle stage, fixed operation name, state, and an ISO-8601 UTC timestamp, and SHALL be flushed promptly.
+The system SHALL emit a timing event before entering each applicable high-level operation during `workshop wish` and `workshop resume`: run initialization for a new Wish, stage-input preparation, native-session start or resume, agent-outcome processing, deterministic gate evaluation, and required Factory publication or reconciliation. Each event SHALL identify the product id, lifecycle stage, fixed operation name, state, and an ISO-8601 UTC timestamp, and SHALL be flushed promptly.
 
 #### Scenario: A new Wish reports initialization
 - **WHEN** a user starts `workshop wish`
@@ -31,7 +31,7 @@ The system SHALL emit a timing event before entering each applicable high-level 
 - **AND** existing bounded activity updates can appear before the matching terminal event
 
 #### Scenario: Host work is distinguishable from native time
-- **WHEN** the host prepares stage input, processes an agent outcome, evaluates a deterministic gate, or attempts optional Factory publication
+- **WHEN** the host prepares stage input, processes an agent outcome, evaluates a deterministic gate, or performs required Factory publication or reconciliation
 - **THEN** timing events identify that operation separately from the native-session operation
 
 #### Scenario: Proposal recovery is timed without another native turn
@@ -77,10 +77,10 @@ Timing events SHALL use only validated product and lifecycle identifiers, fixed 
 - **WHEN** a Wish objective or context contains a sensitive value
 - **THEN** live progress identifies the run by product id without reproducing that value
 
-#### Scenario: Optional publication fails with private response content
+#### Scenario: Required publication waits without exposing private response content
 - **WHEN** Factory publication raises an error containing provider details
 - **THEN** the timing event records only the failed fixed operation and elapsed duration
-- **AND** existing publication reconciliation and Release validity remain authoritative
+- **AND** the existing Release wait, reconciliation ledger, and authenticated readback remain authoritative
 
 #### Scenario: A progress sink fails
 - **WHEN** writing live diagnostic progress fails

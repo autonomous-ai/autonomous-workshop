@@ -582,7 +582,6 @@ class NativeHostTest(unittest.TestCase):
                         "of",
                         "my",
                         "dog",
-                        "--publish",
                         "--json",
                     )
                 )
@@ -621,6 +620,7 @@ class NativeHostTest(unittest.TestCase):
             for skill_name in (
                 "cad",
                 "design-reference",
+                "electromechanical-integration",
                 "image-to-cad",
                 "manual-design",
                 "step-parts",
@@ -1357,11 +1357,14 @@ class NativeHostTest(unittest.TestCase):
                 self.assertEqual(recovered["native_turns"], 2)
                 self.assertEqual(recovered["progress"]["status"], "available")
 
-    def test_native_commands_default_to_private_draft(self):
+    def test_native_commands_have_no_optional_publication_mode(self):
         command = parser()
-        self.assertFalse(command.parse_args(("wish", "a moon")).publish)
-        self.assertFalse(command.parse_args(("resume", "wish-one")).publish)
-        self.assertTrue(command.parse_args(("wish", "a moon", "--publish")).publish)
+        self.assertFalse(hasattr(command.parse_args(("wish", "a moon")), "publish"))
+        self.assertFalse(
+            hasattr(command.parse_args(("resume", "wish-one")), "publish")
+        )
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            command.parse_args(("wish", "a moon", "--publish"))
 
 
 if __name__ == "__main__":

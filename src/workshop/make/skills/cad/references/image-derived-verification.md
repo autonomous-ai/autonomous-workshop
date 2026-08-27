@@ -8,16 +8,29 @@ final workflow is:
 
 ```bash
 CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports \
-  --image-derived \
+  --image-derived --unpowered \
   --likeness-ref hero=ref/hero.png \
   --likeness-ref side=ref/side.png
 ```
+
+Replace `--unpowered` with `--powered` whenever the approved spec declares a
+functional electrical load. The mode requires one explicit classification;
+`--powered` also requires `measure/power.json`.
 
 Reference paths must remain inside the project. Give every usable viewpoint;
 do not choose only the image the model happens to match best. The runner writes
 the orthogonal review set and searched reference poses under `snap/`, records
 the cameras in `snap/poses.json`, writes `measure/likeness.md`, and fails when
-any pair is below `--likeness-min` (0.90 by default). It also runs
+any pair is below the 0.90 delivery floor. The integrated runner never lowers
+that floor. If the same view against the same reference has reached three
+consecutive non-improving rounds, stop the edit loop and put the decision back
+to the user. An explicit
+`--likeness-accept-mismatch "<why this measured mismatch is acceptable>"` on
+the final runner can then unblock delivery. The raw likeness gate remains a
+failure; `measure/verification-pipeline.md` reports `PASS (1 accepted failing
+gate)` and records the score and exact reason. Errors, an unaccepted regression,
+or a fresh improving row still fail. If the fresh gate passes, the runner warns
+that the flag was unnecessary and records no acceptance note. It also runs
 `render_views.py --compare-step`; a drift finding means the exported STEP is
 not the geometry the source currently builds.
 

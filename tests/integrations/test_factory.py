@@ -591,6 +591,11 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertIn("MANUAL.pdf", archive.namelist())
             self.assertNotIn("MANUAL.md", archive.namelist())
             self.assertEqual(archive.read("MANUAL.pdf"), manual)
+            self.assertNotIn("assembled.step", archive.namelist())
+            self.assertEqual(
+                archive.read("assembled.stl"),
+                (self.made.artifact_root / "assembled.stl").read_bytes(),
+            )
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(
                 facts["manual"],
@@ -598,6 +603,10 @@ class FactoryReleaseTest(unittest.TestCase):
                     "path": "MANUAL.pdf",
                     "sha256": hashlib.sha256(manual).hexdigest(),
                 },
+            )
+            self.assertEqual(
+                facts["primary_model"]["path"],
+                "assembled.stl",
             )
             self.assertEqual(facts["release"], self.page)
 

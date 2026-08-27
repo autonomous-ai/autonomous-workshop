@@ -1,10 +1,11 @@
-"""Credential-free local Release proposal for one native-agent product run.
+"""Credential-free authored Release proposal for one native-agent product run.
 
-The native Codex session assembles the complete customer package without
-credentials or remote effects.  This module binds exact Made and Playtested
-inputs to exact package bytes so the trusted host can accept a local
-``ProductRelease`` first.  Factory import and publication are separate,
-optional host effects with their own receipts.
+The native coding-agent session assembles the complete customer package
+without credentials or remote effects. This module binds exact Made and
+Playtested inputs to exact package bytes so the trusted host can validate the
+local ``ProductRelease`` component first. The workflow's terminal Release gate
+then revalidates print-ready CAD and requires host-owned Factory publication
+with authenticated readback.
 """
 
 from __future__ import annotations
