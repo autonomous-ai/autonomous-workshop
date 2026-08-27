@@ -359,6 +359,10 @@ dependencies, active content, credentials, or remote receipts. The trusted
 host parses, bounds, rehashes, and seals the exact PDF; it never scores beauty
 or promotes digital evidence into a physical claim.
 
+The PDF worker supports Linux and macOS. Linux requires `RLIMIT_AS`; macOS
+skips only fully unbounded memory limits that Darwin cannot lower. Both retain
+CPU, file, timeout, parser, and render bounds; other platforms fail closed.
+
 Local Release advances to Deliver without Factory. The default CLI creates no
 publication. `--publish` records explicit authority for an optional host effect
 against the already released bytes. Missing credentials or a remote outage

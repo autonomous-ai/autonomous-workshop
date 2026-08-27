@@ -37,13 +37,12 @@ MAX_PDF_EXTRACTED_TEXT_CHARACTERS = 4 * 1024 * 1024
 MAX_PDF_FILTER_CHAIN = 8
 MAX_RENDER_DIMENSION = 1_536
 MAX_RENDER_PIXELS = 4_000_000
-# Darwin reserves a very large virtual address range before this script starts;
-# a sub-gigabyte RLIMIT_AS therefore cannot be installed there even though the
-# resident process is small.  The parser's decoded-stream, image, page-tree,
-# object, CPU, and wall-clock caps remain the effective hostile-input bounds.
-MAX_PROCESS_ADDRESS_BYTES = (
-    40 * 1024 * 1024 * 1024 if sys.platform == "darwin" else 384 * 1024 * 1024
-)
+# Darwin reserves a very large virtual address range before this script starts.
+# Its unbounded address-family limits are handled explicitly below; finite
+# inherited limits are still tightened to this ceiling.  Linux uses the smaller
+# ceiling as an additional hostile-input bound.
+MAX_LINUX_PROCESS_ADDRESS_BYTES = 384 * 1024 * 1024
+MAX_DARWIN_PROCESS_ADDRESS_BYTES = 40 * 1024 * 1024 * 1024
 MAX_PROCESS_CPU_SECONDS = 6
 MAX_PROCESS_WALL_SECONDS = 12
 PDF_WORD_RE_MINIMUM = 4
@@ -181,36 +180,112 @@ def _resource_limit_signal(_signum: int, _frame: Any) -> None:
     raise PdfRejected("exceeded PDF validation resource limits")
 
 
-def _cap_resource(resource_module: Any, name: str, maximum: int) -> None:
+def _cap_resource(
+    resource_module: Any,
+    name: str,
+    maximum: int,
+    *,
+    required: bool,
+    allow_unbounded: bool = False,
+) -> bool:
     resource_id = getattr(resource_module, name, None)
     if resource_id is None:
-        return
-    current_soft, current_hard = resource_module.getrlimit(resource_id)
+        if required:
+            raise PdfRejected("requires %s process resource limits" % name)
+        return False
+    try:
+        current_soft, current_hard = resource_module.getrlimit(resource_id)
+    except (OSError, TypeError, ValueError) as exc:
+        raise PdfRejected("could not inspect %s process resource limit" % name) from exc
     infinity = resource_module.RLIM_INFINITY
+    if allow_unbounded and current_soft == infinity and current_hard == infinity:
+        return False
     soft = maximum if current_soft == infinity else min(current_soft, maximum)
     if current_hard != infinity:
         soft = min(soft, current_hard)
     # A soft limit bounds the worker without irreversibly lowering the hard
     # limit inherited by the tiny validation process.  Some POSIX platforms
     # reject a hard memory limit below their already-reserved address space.
-    resource_module.setrlimit(resource_id, (soft, current_hard))
-
-
-def _install_resource_limits() -> None:
     try:
-        import resource
-    except ImportError as exc:  # pragma: no cover - fail closed off POSIX
-        raise PdfRejected("requires POSIX process resource limits") from exc
+        resource_module.setrlimit(resource_id, (soft, current_hard))
+        observed_soft, _observed_hard = resource_module.getrlimit(resource_id)
+    except (OSError, TypeError, ValueError) as exc:
+        raise PdfRejected("could not install %s process resource limit" % name) from exc
+    if observed_soft == infinity or observed_soft > soft:
+        raise PdfRejected("could not verify %s process resource limit" % name)
+    return True
 
-    _cap_resource(resource, "RLIMIT_AS", MAX_PROCESS_ADDRESS_BYTES)
-    _cap_resource(resource, "RLIMIT_DATA", MAX_PROCESS_ADDRESS_BYTES)
-    _cap_resource(resource, "RLIMIT_RSS", MAX_PROCESS_ADDRESS_BYTES)
-    _cap_resource(resource, "RLIMIT_CPU", MAX_PROCESS_CPU_SECONDS)
-    _cap_resource(resource, "RLIMIT_NOFILE", 64)
-    signal.signal(signal.SIGALRM, _resource_limit_signal)
-    if hasattr(signal, "SIGXCPU"):
-        signal.signal(signal.SIGXCPU, _resource_limit_signal)
-    signal.alarm(MAX_PROCESS_WALL_SECONDS)
+
+def _install_resource_limits(
+    *,
+    _platform: str | None = None,
+    _resource_module: Any = None,
+    _signal_module: Any = None,
+) -> None:
+    selected_platform = sys.platform if _platform is None else _platform
+    if selected_platform not in ("darwin", "linux"):
+        raise PdfRejected("unsupported PDF validation platform: %s" % selected_platform)
+
+    if _resource_module is None:
+        try:
+            import resource as _resource_module
+        except ImportError as exc:  # pragma: no cover - fail closed off POSIX
+            raise PdfRejected("requires POSIX process resource limits") from exc
+    if _signal_module is None:
+        _signal_module = signal
+
+    if selected_platform == "linux":
+        maximum_address_bytes = MAX_LINUX_PROCESS_ADDRESS_BYTES
+        _cap_resource(
+            _resource_module,
+            "RLIMIT_AS",
+            maximum_address_bytes,
+            required=True,
+        )
+        for name in ("RLIMIT_DATA", "RLIMIT_RSS"):
+            _cap_resource(
+                _resource_module,
+                name,
+                maximum_address_bytes,
+                required=False,
+            )
+    else:
+        maximum_address_bytes = MAX_DARWIN_PROCESS_ADDRESS_BYTES
+        # CPython on macOS rejects lowering the inherited infinite
+        # address/data/RSS soft limits even when the hard limit remains
+        # infinite.  Skip only that exact platform case.  Finite inherited
+        # memory limits are preserved or tightened, and every other failure is
+        # still a rejection.
+        for name in ("RLIMIT_AS", "RLIMIT_DATA", "RLIMIT_RSS"):
+            _cap_resource(
+                _resource_module,
+                name,
+                maximum_address_bytes,
+                required=False,
+                allow_unbounded=True,
+            )
+
+    _cap_resource(
+        _resource_module,
+        "RLIMIT_CPU",
+        MAX_PROCESS_CPU_SECONDS,
+        required=True,
+    )
+    _cap_resource(
+        _resource_module,
+        "RLIMIT_NOFILE",
+        64,
+        required=True,
+    )
+    try:
+        sigalrm = _signal_module.SIGALRM
+        _signal_module.signal(sigalrm, _resource_limit_signal)
+        sigxcpu = getattr(_signal_module, "SIGXCPU", None)
+        if sigxcpu is not None:
+            _signal_module.signal(sigxcpu, _resource_limit_signal)
+        _signal_module.alarm(MAX_PROCESS_WALL_SECONDS)
+    except (AttributeError, OSError, TypeError, ValueError) as exc:
+        raise PdfRejected("could not install PDF validation timeout") from exc
 
 
 def _finite_number(value: Any, label: str) -> float:
