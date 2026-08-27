@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import shutil
 import stat
 import subprocess
 import sys
@@ -10,13 +11,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from workshop.artifacts import build_artifact_manifest
 from workshop.workflow.native_run import (
     _MAX_NATIVE_TURNS,
     native_run_paths,
     resume_native_run,
     start_native_run,
 )
-from workshop.errors import ArtifactError
+from workshop.errors import ArtifactError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
@@ -35,8 +37,11 @@ from workshop.release.verification import (
     read_product_verification,
 )
 from workshop.runtime import CodexRecoverableInvocationError, Receipt
+from workshop.runtime.agent_assets import ProductRunAgentAssets
 from workshop.wish import Wish
 from workshop.workflow import AgentRun
+from workshop.workflow.agent_run import AgentArtifact, AgentOutcome
+from workshop.workflow.proposals import AgentOutcomeProposal
 
 
 _OBSERVED_AT = "2026-08-26T00:00:00+00:00"
@@ -556,6 +561,149 @@ class _OneSessionProductAgent:
         return self._turn(arguments)
 
 
+class _LegacyReleaseProductAgent(_OneSessionProductAgent):
+    """Finish through the Markdown Release contract frozen in an older run."""
+
+    assert_legacy_packet = True
+
+    def _author_release(self, run_root, stage):
+        inputs = stage["inputs"]
+        if self.assert_legacy_packet:
+            if inputs["release_contract"] != {
+                "native_release_schema_version": 1,
+                "manual_path": "MANUAL.md",
+                "product_schema_version": 3,
+                "product_status": "page-ready",
+            }:
+                raise AssertionError("legacy run received today's Release contract")
+            if inputs["required_package_files"] != ["MANUAL.md", "product.json"]:
+                raise AssertionError("legacy run was told to author MANUAL.pdf")
+
+        made = inputs["made"]
+        playtested = inputs["playtested"]
+        claims = {}
+        for check in playtested["checks"]:
+            observations = check["observations"]
+            claims[check["check_id"]] = {
+                "passed": check["passed"],
+                "evidence_class": observations["evidence_class"],
+                "claims": observations["claims"],
+                "evidence_ref": check["evidence_ref"],
+                "evidence_sha256": check["evidence_sha256"],
+                "evaluator": check["evaluator"],
+                "evaluator_version": check["evaluator_version"],
+            }
+        evidence_refs = ["made:product.json"]
+        playtest_ref = "playtest:%s" % next(iter(claims))
+        package_root_value = inputs["package_root"]
+        package_root = run_root / package_root_value
+        package_root.mkdir(parents=True, exist_ok=True)
+        (package_root / "MANUAL.md").write_text(
+            "# Orbit Dog Draughts\n\nSet up and play English draughts safely.\n",
+            encoding="utf-8",
+        )
+        product = {
+            "schema_version": 3,
+            "kind": "workshop.release-package",
+            "status": "page-ready",
+            "title": made["product"]["title"],
+            "summary": made["product"]["summary"],
+            "hero": {
+                "headline": "Orbit Dog Draughts",
+                "body": "A compact orbital draughts set with tactile dog-pack pieces.",
+                "visual_direction": "Show only the exact sealed board and pieces.",
+                "evidence_refs": evidence_refs,
+            },
+            "cinematic": {
+                "headline": "Two packs enter orbit",
+                "body": "The familiar game becomes a small tabletop space mission.",
+                "visual_direction": "Use the exact assembled model from a low angle.",
+                "evidence_refs": evidence_refs,
+            },
+            "use_case": {
+                "headline": "Set up and play",
+                "body": (
+                    "Place every piece on its starting waypoint, then use standard "
+                    "English draughts movement and captures. The orbital artwork and "
+                    "dog-pack silhouettes change the object while preserving the "
+                    "familiar rules for a complete tabletop match."
+                ),
+                "visual_direction": "Show the exact starting arrangement.",
+                "evidence_refs": evidence_refs,
+            },
+            "story_blocks": [
+                {
+                    "headline": "Digitally checked",
+                    "body": (
+                        "This exact sealed revision completed the Workshop's required "
+                        "digital checks. The cited records bind each statement to the "
+                        "tested files and disclose that no physical print, fit, or human "
+                        "play session has been claimed by this package."
+                    ),
+                    "visual_direction": "Pair the exact model with a restrained check motif.",
+                    "evidence_refs": [playtest_ref],
+                }
+            ],
+            "what_arrives": list(made["product"]["components"]),
+            "limitations": list(made["product"]["limitations"]),
+            "product_artifact_sha256": made["product_manifest"]["artifact_sha256"],
+            "playtest_evidence_artifact_sha256": playtested["evidence_manifest"][
+                "artifact_sha256"
+            ],
+            "claims": claims,
+        }
+        product_bytes = _canonical_json(product)
+        (package_root / "product.json").write_bytes(product_bytes)
+        release = NativeRelease(
+            schema_version=1,
+            round=stage["round"],
+            made_sha256=made["made_sha256"],
+            playtested_sha256=playtested["playtested_sha256"],
+            product_artifact_sha256=made["product_manifest"]["artifact_sha256"],
+            playtest_evidence_artifact_sha256=playtested["evidence_manifest"][
+                "artifact_sha256"
+            ],
+            package_root=package_root_value,
+            package_manifest=build_artifact_manifest(
+                package_root, created_at="content-addressed"
+            ),
+            manual_path="MANUAL.md",
+            product_json_path="product.json",
+            product_json_sha256=_sha256(product_bytes),
+            product=product,
+        )
+        contract_path_value = inputs["contract_path"]
+        contract_bytes = _canonical_json(release.to_dict())
+        contract_path = run_root / contract_path_value
+        contract_path.parent.mkdir(parents=True, exist_ok=True)
+        contract_path.write_bytes(contract_bytes)
+        outcome = AgentOutcome(
+            stage="release",
+            status="ready",
+            artifacts=(
+                AgentArtifact(
+                    path=contract_path_value,
+                    sha256=_sha256(contract_bytes),
+                ),
+            ),
+            proposed_transition="deliver",
+        )
+        proposal = AgentOutcomeProposal(
+            checkpoint_sha256=stage["checkpoint_sha256"],
+            subject_sha256=stage["subject_sha256"],
+            outcome=outcome,
+        )
+        (run_root / "agent-outcome.json").write_bytes(
+            _canonical_json(proposal.to_dict())
+        )
+
+
+class _ManualFirstDowngradeProductAgent(_LegacyReleaseProductAgent):
+    """Try to submit the readable legacy schema from a manual-first run."""
+
+    assert_legacy_packet = False
+
+
 class _TimeoutOnceProductAgent(_OneSessionProductAgent):
     """Checkpoint one session, time out, then finish it on host continuation."""
 
@@ -738,6 +886,15 @@ class NativeFullRunTest(unittest.TestCase):
             )
             release_packet = launcher.stage_packets[-1]
             self.assertEqual(
+                release_packet["inputs"]["release_contract"],
+                {
+                    "native_release_schema_version": 2,
+                    "manual_path": "MANUAL.pdf",
+                    "product_schema_version": 4,
+                    "product_status": "manual-ready",
+                },
+            )
+            self.assertEqual(
                 release_packet["inputs"]["required_package_files"],
                 ["MANUAL.pdf", "product.json"],
             )
@@ -764,6 +921,152 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertIn("release", checkpoint.stage_artifacts)
             self.assertTrue(
                 (paths.workspace / "artifacts/release/package/MANUAL.pdf").is_file()
+            )
+
+    def test_frozen_legacy_run_receives_and_finishes_its_markdown_release(self):
+        launcher = _LegacyReleaseProductAgent()
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository = Path(__file__).resolve().parents[2]
+            legacy_root = root / "legacy-assets"
+            constitution = legacy_root / ".agents/product-run/AGENTS.md"
+            constitution.parent.mkdir(parents=True)
+            shutil.copy2(
+                repository / ".agents/product-run/AGENTS.md",
+                constitution,
+            )
+            skill_root = (
+                legacy_root
+                / ".agents/product-run/.agents/skills/autonomous-workshop"
+            )
+            shutil.copytree(
+                repository
+                / ".agents/product-run/.agents/skills/autonomous-workshop",
+                skill_root,
+            )
+            (skill_root / "scripts/pdf_validator.py").unlink()
+            assets = ProductRunAgentAssets(
+                constitution=constitution,
+                skill_root=skill_root,
+                sha256="0" * 64,
+                source="package",
+            )
+            home = root / "workshop-home"
+            wish = Wish.create(
+                "legacy-markdown-release",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                constraints={"audience": "14+", "manufacture": "not-authorized"},
+                context={"source": "legacy-release-regression"},
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.product_run_agent_assets",
+                return_value=assets,
+            ), mock.patch(
+                "workshop.workflow.native_run._product_run_inventor_source_root",
+                return_value=repository / "inventors",
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ):
+                receipt = start_native_run(wish)
+                paths = native_run_paths(wish.product_id)
+                checkpoint = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+
+            self.assertEqual(receipt["stage"], "deliver")
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(checkpoint.stage, "deliver")
+            release_packet = launcher.stage_packets[-1]
+            self.assertEqual(
+                release_packet["inputs"]["required_package_files"],
+                ["MANUAL.md", "product.json"],
+            )
+            self.assertEqual(
+                release_packet["inputs"]["release_contract"][
+                    "native_release_schema_version"
+                ],
+                1,
+            )
+            package = paths.workspace / "artifacts/release/package"
+            self.assertTrue((package / "MANUAL.md").is_file())
+            self.assertFalse((package / "MANUAL.pdf").exists())
+            release_gate = _read_json(
+                sorted((paths.host_state / "gates").glob("*-release.json"))[-1]
+            )
+            self.assertEqual(release_gate["evidence"]["checks"]["manual_path"], "MANUAL.md")
+            self.assertEqual(
+                release_gate["evidence"]["checks"][
+                    "native_release_schema_version"
+                ],
+                1,
+            )
+
+    def test_manual_first_run_cannot_downgrade_to_the_readable_legacy_schema(self):
+        launcher = _ManualFirstDowngradeProductAgent()
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            wish = Wish.create(
+                "manual-first-no-downgrade",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                constraints={"audience": "14+", "manufacture": "not-authorized"},
+                context={"source": "release-downgrade-regression"},
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ), self.assertRaisesRegex(
+                StateConflict, "materialized Release protocol"
+            ):
+                start_native_run(wish)
+
+            release_packet = launcher.stage_packets[-1]
+            self.assertEqual(
+                release_packet["inputs"]["release_contract"][
+                    "native_release_schema_version"
+                ],
+                2,
+            )
+            self.assertEqual(
+                release_packet["inputs"]["required_package_files"],
+                ["MANUAL.pdf", "product.json"],
             )
 
     def _run_playtest_routing_case(

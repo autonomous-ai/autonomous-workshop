@@ -57,6 +57,8 @@ from workshop.playtest.native import NativePlaytested
 from workshop.product import ToyBlueprint
 from workshop.release.contracts import ProductRelease, ReleaseContext
 from workshop.release.native import (
+    NATIVE_RELEASE_LEGACY_MANUAL_PATH,
+    NATIVE_RELEASE_MANUAL_PATH,
     NativeRelease,
     NativeReleasePackage,
 )
@@ -137,6 +139,12 @@ _RECOVERABLE_BACKOFF_JITTER_SPAN = 0.5
 _FACTORY_CREDENTIALS_NEED = (
     "Factory credentials for the selected Inventor are missing or malformed; "
     "configure a complete matching username/password pair, then resume this run."
+)
+_PRODUCT_RUN_FINALIZER_INPUT = (
+    ".agents/skills/autonomous-workshop/scripts/stage_proposal.py"
+)
+_PRODUCT_RUN_PDF_VALIDATOR_INPUT = (
+    ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
 )
 
 
@@ -771,6 +779,38 @@ def materialized_agent_instructions_sha256(
         digest.update(encoded_path)
         digest.update(content_digest)
     return digest.hexdigest()
+
+
+def _materialized_release_contract(
+    checkpoint: AgentRunCheckpoint,
+) -> Mapping[str, Any]:
+    """Select Release semantics from this run's immutable tool capability.
+
+    Manual-first Release added a required, sibling ``pdf_validator.py`` to the
+    materialized finalizer tree.  Historical runs do not contain that exact
+    input and can only produce the legacy Markdown contract.  Resume must not
+    project today's source-checkout contract onto either frozen toolchain.
+    """
+
+    if not isinstance(checkpoint, AgentRunCheckpoint):
+        raise ContractError("Release contract requires an AgentRun checkpoint")
+    inputs = checkpoint.input_sha256s
+    if _PRODUCT_RUN_FINALIZER_INPUT not in inputs:
+        raise StateConflict("native run lacks its materialized stage finalizer")
+    manual_first = _PRODUCT_RUN_PDF_VALIDATOR_INPUT in inputs
+    if manual_first:
+        return {
+            "native_release_schema_version": 2,
+            "manual_path": NATIVE_RELEASE_MANUAL_PATH,
+            "product_schema_version": 4,
+            "product_status": "manual-ready",
+        }
+    return {
+        "native_release_schema_version": 1,
+        "manual_path": NATIVE_RELEASE_LEGACY_MANUAL_PATH,
+        "product_schema_version": 3,
+        "product_status": "page-ready",
+    }
 
 
 def native_stage_prompt(stage: str) -> str:
@@ -1534,6 +1574,8 @@ def _prepare_stage_input(
                         if playtested.verdict != "pass":
                             raise TransitionError("Release requires a passing Playtest")
                         context["playtested"] = playtested
+                        release_contract = _materialized_release_contract(checkpoint)
+                        context["release_contract"] = release_contract
                         subject_inputs = {
                             "wish_sha256": checkpoint.wish_sha256,
                             "taste_sha256": assignment.selected_taste_sha256,
@@ -1545,6 +1587,7 @@ def _prepare_stage_input(
                                 playtested.evidence_manifest.artifact_sha256
                             ),
                             "round": checkpoint.round_index,
+                            "release_contract": release_contract,
                         }
                         subject = _stage_subject("release", subject_inputs)
                         inputs = {
@@ -1560,7 +1603,11 @@ def _prepare_stage_input(
                             },
                             "package_root": "artifacts/release/package",
                             "contract_path": "artifacts/release/release.json",
-                            "required_package_files": ["MANUAL.pdf", "product.json"],
+                            "release_contract": release_contract,
+                            "required_package_files": [
+                                release_contract["manual_path"],
+                                "product.json",
+                            ],
                         }
 
     packet = {
@@ -2364,6 +2411,17 @@ def _evaluate_release_stage(
     release = _read_contract(
         run.run_root, artifact, NativeRelease, label="native Release contract"
     )
+    expected_release = context.get("release_contract")
+    if (
+        not isinstance(expected_release, Mapping)
+        or release.schema_version
+        != expected_release.get("native_release_schema_version")
+        or release.manual_path != expected_release.get("manual_path")
+    ):
+        raise StateConflict(
+            "native Release contract differs from the run's materialized "
+            "Release protocol"
+        )
     release.assert_context(context["made"], context["playtested"])
     verified = _accept_local_release(run, release, context=context)
     try:
@@ -2410,6 +2468,7 @@ def _evaluate_release_stage(
             ),
             "product_artifact_sha256": release.product_artifact_sha256,
             "manual_path": release.manual_path,
+            "native_release_schema_version": release.schema_version,
             "package_tree_rehashed": True,
             "local_release_sealed": True,
             **verification_checks,
@@ -2717,6 +2776,43 @@ def _native_progress_receipt(
         return {"status": "unavailable"}, fallback_turns
 
 
+def _draft_publication_intent_state(
+    paths: NativeRunPaths, receipt: Receipt
+) -> Optional[str]:
+    """Return an exact draft's durable publish state without mutating its ledger."""
+
+    ledger_path = paths.host_state / "factory-effects.sqlite3"
+    if not ledger_path.exists() and not ledger_path.is_symlink():
+        return None
+    product_id = receipt.details.get("product_id")
+    if not isinstance(product_id, str) or not product_id:
+        raise StateConflict("Factory draft receipt lacks its Workshop product id")
+    intent = EffectLedger.inspect_latest(
+        ledger_path,
+        product_id,
+        "factory-publish",
+    )
+    if intent is None:
+        return None
+    details = receipt.details
+    if (
+        intent.pack_sha256 != receipt.payload_sha256
+        or intent.product_artifact_sha256 != receipt.artifact_sha256
+        or intent.release_sha256 != details.get("release_sha256")
+        or intent.playtest_evidence_sha256
+        != details.get("playtest_evidence_sha256")
+        or intent.handoff_artifact_sha256
+        != details.get("handoff_artifact_sha256")
+        or intent.request.get("product_page_sha256")
+        != details.get("product_page_sha256")
+        or intent.request.get("manual_sha256") != details.get("manual_sha256")
+    ):
+        raise StateConflict(
+            "Factory publication intent belongs to different Release bytes"
+        )
+    return intent.state
+
+
 def _native_receipt(
     checkpoint: AgentRunCheckpoint,
     *,
@@ -2789,6 +2885,34 @@ def _native_receipt(
                             effect_run, verified.release
                         )
                     )
+                elif receipt.is_verified_draft:
+                    try:
+                        publish_state = _draft_publication_intent_state(
+                            paths, receipt
+                        )
+                    except WorkshopError:
+                        publication = {
+                            "status": "unavailable",
+                            "requested": bool(publish_requested),
+                            "verified": False,
+                            "reason": (
+                                "Optional Factory publication state could not "
+                                "be verified; the sealed local Release remains "
+                                "valid."
+                            ),
+                        }
+                    else:
+                        if publish_state in ("sending", "unknown"):
+                            publication = {
+                                "status": "unknown",
+                                "requested": bool(publish_requested),
+                                "verified": False,
+                                "reason": (
+                                    "Factory publication requires authenticated "
+                                    "reconciliation and will not be blindly "
+                                    "retried."
+                                ),
+                            }
         else:
             ledger = paths.host_state / "factory-effects.sqlite3"
             if ledger.exists() or ledger.is_symlink():

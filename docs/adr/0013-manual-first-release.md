@@ -49,6 +49,15 @@ Historical NativeRelease schema v1 uses `MANUAL.md` with product schema v3 and
 under their original rules and hashes; they are not silently reinterpreted as
 new PDF-first releases.
 
+Resume also preserves the Release authoring capability frozen into the run.
+The host derives the Release packet from the immutable materialized finalizer
+tree: a hash-bound sibling PDF validator selects schema v2, while an older
+finalizer without that capability selects schema v1. The selected contract is
+bound into the stage subject and enforced again at the Release gate. Updating
+the host or source checkout therefore cannot instruct a legacy session to
+produce a file its run-local finalizer does not support, and a new manual-first
+run cannot downgrade to the readable legacy schema.
+
 ## Consequences
 
 - The physical box has one canonical customer guide.

@@ -20,6 +20,7 @@ from workshop.product import ToyBlueprint
 from workshop.workflow.native_run import (
     _MAX_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
+    _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
     _native_run_mutation_lock,
@@ -37,7 +38,12 @@ from workshop.runtime import (
 )
 from workshop.runtime.progress import NativeRunProgress
 from workshop.wish import Wish
-from workshop.workflow.agent_run import AgentArtifact, AgentOutcome, AgentRun
+from workshop.workflow.agent_run import (
+    AgentArtifact,
+    AgentOutcome,
+    AgentRun,
+    AgentRunCheckpoint,
+)
 from workshop.workflow.proposals import AgentOutcomeProposal
 
 
@@ -246,6 +252,72 @@ class _UnboundRecoverableLauncher(_FakeLauncher):
 
 
 class NativeHostTest(unittest.TestCase):
+    @staticmethod
+    def _release_protocol_checkpoint(*, manual_first):
+        inputs = {
+            ".agents/skills/autonomous-workshop/scripts/stage_proposal.py": "a" * 64,
+        }
+        if manual_first:
+            inputs[
+                ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
+            ] = "b" * 64
+        return AgentRunCheckpoint(
+            product_id="release-protocol-fixture",
+            stage="release",
+            status="active",
+            revision=4,
+            round_index=1,
+            max_rounds=4,
+            wish_sha256="c" * 64,
+            run_root_sha256="d" * 64,
+            host_state_root_sha256="e" * 64,
+            checkpoint_sha256="f" * 64,
+            input_sha256s=inputs,
+            inventor_roster=(),
+            stage_artifacts={},
+            invalidated_stages=(),
+        )
+
+    def test_release_contract_follows_the_frozen_run_finalizer_capability(self):
+        legacy = _materialized_release_contract(
+            self._release_protocol_checkpoint(manual_first=False)
+        )
+        current = _materialized_release_contract(
+            self._release_protocol_checkpoint(manual_first=True)
+        )
+
+        self.assertEqual(
+            legacy,
+            {
+                "native_release_schema_version": 1,
+                "manual_path": "MANUAL.md",
+                "product_schema_version": 3,
+                "product_status": "page-ready",
+            },
+        )
+        self.assertEqual(
+            current,
+            {
+                "native_release_schema_version": 2,
+                "manual_path": "MANUAL.pdf",
+                "product_schema_version": 4,
+                "product_status": "manual-ready",
+            },
+        )
+
+    def test_release_contract_fails_closed_without_a_materialized_finalizer(self):
+        checkpoint = self._release_protocol_checkpoint(manual_first=False)
+        checkpoint = AgentRunCheckpoint(
+            **{
+                **checkpoint.__dict__,
+                "input_sha256s": {},
+            }
+        )
+        with self.assertRaisesRegex(
+            StateConflict, "materialized stage finalizer"
+        ):
+            _materialized_release_contract(checkpoint)
+
     def test_second_mutating_host_fails_while_run_lock_is_held(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
