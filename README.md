@@ -1,12 +1,16 @@
 # Autonomous Workshop
 
-You wish for a toy that doesn't exist. A few days later, it arrives at your door. 
+You wish for a toy that doesn't exist. A few days later, it arrives at your door.
 
 Not from a shelf. From your imagination.
 
 Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, and Release before handing the toy to Operations for Printing, Delivery, and Review](docs/images/workshop-floorplan.svg?version=release-operations-handoff-v5)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, and Release before handing the toy to Operations for Printing, Delivery, and Review](docs/images/workshop-floorplan.svg?version=terminal-release-operations-v6)](docs/images/workshop-floorplan.svg)
+
+Workshop's executable workflow ends at a public Release: exact ready-to-print
+CAD plus the in-box `MANUAL.pdf`. From there, Operations prints, packs,
+delivers, and learns from customer Reviews—which can inspire the next Wish.
 
 ## Meet some of the inventors
 
@@ -72,9 +76,24 @@ one works the same whether there are five of them or a thousand.
 
 ## Quick start
 
-Requires Python 3.11 or newer and a signed-in Codex CLI 0.145.0 or newer.
-Workshop uses the developer's existing Codex subscription for all reasoning
-and tool use.
+Requires Python 3.11 or newer, `uv`, and Codex CLI 0.145.0 or newer. Workshop
+uses one signed-in Codex session for all reasoning and tool use.
+
+### 1. Sign in to Codex
+
+Install or update the [Codex CLI](https://learn.chatgpt.com/docs/codex/cli),
+then sign in with ChatGPT and confirm the active authentication method:
+
+```bash
+codex login
+codex login status
+```
+
+`codex login` opens the browser sign-in flow. See the official
+[Codex authentication guide](https://learn.chatgpt.com/docs/auth) for API-key,
+managed-workspace, and headless-device options.
+
+### 2. Start a Workshop
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
@@ -84,6 +103,18 @@ uv run workshop doctor
 uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
+
+`workshop doctor` checks the Inventor catalog, Codex version and sign-in,
+packaged agent assets, and host-only Factory credential configuration without
+printing secrets. Fix any reported need before expecting a run to complete.
+Factory credentials are required only by the host, when Release publishes the
+final CAD and manual; see the
+[credential setup](docs/PUBLISH_SEALED_PRODUCT.md#credentials).
+
+Starting `workshop wish` authorizes required public Factory publication of that
+run's exact Release; there is no separate `--publish` mode. If credentials are
+missing or publication cannot be reconciled, Release waits safely for
+`workshop resume` instead of claiming completion.
 
 Every Wish first creates one private persistent project under
 `$WORKSHOP_HOME/runs/<wish-id>/workspace`, populates its product-run `AGENTS.md`,
@@ -105,6 +136,12 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
 Workshop code ends after it verifies and publishes Release. Printing, physical
 delivery, and customer Review remain part of the complete toy journey, handled
 by the Operations team.
+
+Release delivers three facts about the same exact bytes:
+
+- full-tier, thickness-checked, ready-to-print CAD;
+- a self-contained printable `MANUAL.pdf` for the box; and
+- authenticated public Factory readback proving those CAD and manual hashes.
 
 For each active Match, Invent, Make, Playtest, or Release attempt,
 Codex creates one native Goal with one objective, proof artifacts, and a
@@ -233,6 +270,10 @@ uv run workshop create inventor \
   --taste ./TASTE.md
 ```
 
+The file must be named `TASTE.md`. Workshop preserves its exact bytes, derives
+the Inventor id from the frontmatter name, creates the required specialist
+skill, and validates the finished bundle before reporting success.
+
 A useful `TASTE.md` has a name, a discriminating one-line description, and a
 recognizable point of view:
 
@@ -289,8 +330,8 @@ imported accidentally.
 Trusted checkpoints, receipts, credentials, and effect state live outside the
 coding-agent working directory under `$WORKSHOP_HOME/state/<wish-id>/`. The
 private project remains useful and inspectable without exposing host authority.
-Only the host's optional sanitized post-publication projection belongs in the
-repository `toys/` directory.
+Factory publication is required for Release; only the later act of copying a
+sanitized public example into the repository `toys/` directory is optional.
 
 Shared code is organized by architecture component under `src/workshop/`:
 `product`, `wish`, `match`, `invent`, `make`, `playtest`, `release`,
@@ -314,6 +355,7 @@ ownership and dependency rules.
 ## Check it works
 
 ```bash
+codex login status
 uv run workshop doctor
 PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'
 uv run workshop inventors --root inventors
