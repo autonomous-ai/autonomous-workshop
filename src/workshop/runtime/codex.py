@@ -471,6 +471,53 @@ def _run_policy_before_codex_fs_helper(
     )
 
 
+def _run_policy_before_venv_launcher_directory(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> Optional[_CodexRunPolicy]:
+    """Return the exact policy from before venv launcher traversal was granted.
+
+    A PEP 405 launcher is commonly a relative symlink inside ``bin`` (or
+    ``Scripts``).  When the surrounding checkout is denied, granting only the
+    launcher and its resolved base interpreter is insufficient for the Codex
+    sandbox to traverse that symlink.  New policies therefore trust the real
+    launcher directory read-only.  This helper reconstructs only the exact
+    immediately preceding policy so already-bound native sessions can resume
+    under the corrected, narrower-than-checkout grant.
+    """
+
+    executable = Path(sys.executable)
+    marker = executable.parent.parent / "pyvenv.cfg"
+    if not marker.is_file() or marker.is_symlink():
+        return None
+    launcher_directory = str(executable.parent)
+    matching = tuple(
+        identity
+        for identity in run_policy.trusted_python_runtime_paths
+        if identity.path == launcher_directory
+    )
+    if len(matching) != 1 or not stat.S_ISDIR(matching[0].resolved_mode):
+        raise CodexInvocationError(
+            "Codex runtime policy has no unique venv launcher directory"
+        )
+    predecessor_paths = tuple(
+        identity
+        for identity in run_policy.trusted_python_runtime_paths
+        if identity.path != launcher_directory
+    )
+    return _CodexRunPolicy(
+        permission_config_arguments=_permission_config_arguments(
+            run_root,
+            predecessor_paths,
+            run_policy.trusted_codex_runtime_paths,
+        ),
+        trusted_python_runtime_paths=predecessor_paths,
+        trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
+        environment_allowlist=run_policy.environment_allowlist,
+        environment_overrides=run_policy.environment_overrides,
+    )
+
+
 def codex_supports_native_workshop(version: str) -> bool:
     """Return whether Codex supports Workshop goals, agents, and profiles."""
 
@@ -599,6 +646,11 @@ def _python_runtime_permission_identities(
             continue
     marker = executable.parent.parent / "pyvenv.cfg"
     if marker.is_file() and not marker.is_symlink():
+        # A venv launcher is commonly a chain of relative symlinks.  The
+        # enclosing checkout remains denied, so the sandbox needs this one
+        # trusted directory to traverse the launcher while preserving PEP 405
+        # discovery and the isolated venv dependency set.
+        candidates.add(executable.parent)
         candidates.add(marker)
     for key in ("stdlib", "platstdlib", "purelib", "platlib"):
         value = sysconfig.get_path(key)
@@ -1524,36 +1576,46 @@ class CodexNativeSessionLauncher:
             self.reasoning_effort,
             run_policy,
         )
+        policy_before_venv_directory = (
+            _run_policy_before_venv_launcher_directory(root, run_policy)
+        )
+        historical_policy = (
+            run_policy
+            if policy_before_venv_directory is None
+            else policy_before_venv_directory
+        )
         policy_before_codex_helper = _run_policy_before_codex_fs_helper(
             root,
-            run_policy,
+            historical_policy,
         )
+        predecessor_policies: list[tuple[_CodexRunPolicy, bool]] = [
+            (
+                _run_policy_before_workshop_python(historical_policy),
+                True,
+            ),
+            (policy_before_codex_helper, False),
+            (
+                _run_policy_before_workshop_python(
+                    policy_before_codex_helper
+                ),
+                False,
+            )
+        ]
+        if policy_before_venv_directory is not None:
+            predecessor_policies.insert(
+                0,
+                (policy_before_venv_directory, True),
+            )
         predecessor_runtime_config_sha256s = tuple(
             dict.fromkeys(
-                (
-                    _runtime_config_sha256(
-                        self.cli_version,
-                        self.model,
-                        self.reasoning_effort,
-                        _run_policy_before_workshop_python(run_policy),
-                    ),
-                    _runtime_config_sha256(
-                        self.cli_version,
-                        self.model,
-                        self.reasoning_effort,
-                        policy_before_codex_helper,
-                        include_codex_runtime_paths=False,
-                    ),
-                    _runtime_config_sha256(
-                        self.cli_version,
-                        self.model,
-                        self.reasoning_effort,
-                        _run_policy_before_workshop_python(
-                            policy_before_codex_helper
-                        ),
-                        include_codex_runtime_paths=False,
-                    ),
+                _runtime_config_sha256(
+                    self.cli_version,
+                    self.model,
+                    self.reasoning_effort,
+                    policy,
+                    include_codex_runtime_paths=include_codex_runtime_paths,
                 )
+                for policy, include_codex_runtime_paths in predecessor_policies
             )
         )
         thread_id, checkpoint_sha256 = self._load_checkpoint(

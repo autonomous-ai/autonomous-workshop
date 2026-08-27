@@ -69,6 +69,7 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
             pass
     marker = executable.parent.parent / "pyvenv.cfg"
     if marker.is_file() and not marker.is_symlink():
+        runtime_paths.add(executable.parent)
         runtime_paths.add(marker)
     for key in ("stdlib", "platstdlib", "purelib", "platlib"):
         value = sysconfig.get_path(key)
@@ -504,6 +505,12 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(
                 filesystem[str(Path(sys.executable).resolve(strict=True))], "read"
             )
+            marker = Path(sys.executable).parent.parent / "pyvenv.cfg"
+            if marker.is_file() and not marker.is_symlink():
+                self.assertEqual(
+                    filesystem[str(Path(sys.executable).parent)],
+                    "read",
+                )
             self.assertEqual(filesystem[TEST_CODEX_BINARY], "read")
             self.assertNotIn("/fixture/codex-home", filesystem)
             self.assertTrue(outcome.used_web_search)
@@ -985,8 +992,17 @@ class CodexNativeSessionTest(unittest.TestCase):
                 root,
                 launcher.binary,
             )
+            historical_policy = (
+                codex_runtime._run_policy_before_venv_launcher_directory(
+                    root,
+                    current_policy,
+                )
+                or current_policy
+            )
             predecessor_policy = (
-                codex_runtime._run_policy_before_workshop_python(current_policy)
+                codex_runtime._run_policy_before_workshop_python(
+                    historical_policy
+                )
             )
             predecessor_runtime_sha256 = codex_runtime._runtime_config_sha256(
                 launcher.cli_version,
@@ -1024,6 +1040,200 @@ class CodexNativeSessionTest(unittest.TestCase):
                 payload["checkpoint_sha256"],
             )
 
+    def test_venv_policy_grants_launcher_directory_and_accepts_exact_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            container = Path(temporary).resolve()
+            root = container / "run"
+            venv = container / "trusted-venv"
+            bin_dir = venv / "bin"
+            root.mkdir()
+            bin_dir.mkdir(parents=True)
+            (venv / "pyvenv.cfg").write_text(
+                "home = %s\ninclude-system-site-packages = false\n"
+                % Path(sys.executable).resolve(strict=True).parent,
+                encoding="utf-8",
+            )
+            launcher_path = bin_dir / "python3"
+            launcher_path.symlink_to(Path(sys.executable).resolve(strict=True))
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            with mock.patch.object(
+                codex_runtime.sys,
+                "executable",
+                str(launcher_path),
+            ):
+                started = self.start(launcher, root)
+                checkpoint = self.host_state(root) / "codex-session.json"
+                payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+                current_policy = codex_runtime._codex_run_policy(
+                    root,
+                    launcher.binary,
+                )
+                current_paths = {
+                    item.path for item in current_policy.trusted_python_runtime_paths
+                }
+                self.assertIn(str(bin_dir), current_paths)
+                filesystem_override = next(
+                    value
+                    for value in factory.calls[0][0]
+                    if value.startswith(
+                        "permissions.workshop-product-run.filesystem="
+                    )
+                )
+                filesystem = tomllib.loads(filesystem_override)["permissions"][
+                    "workshop-product-run"
+                ]["filesystem"]
+                self.assertEqual(filesystem[str(bin_dir)], "read")
+                self.assertEqual(
+                    factory.calls[0][1]["env"]["WORKSHOP_PYTHON"],
+                    str(launcher_path),
+                )
+
+                predecessor_policy = (
+                    codex_runtime._run_policy_before_venv_launcher_directory(
+                        root,
+                        current_policy,
+                    )
+                )
+                self.assertIsNotNone(predecessor_policy)
+                predecessor_paths = {
+                    item.path
+                    for item in predecessor_policy.trusted_python_runtime_paths
+                }
+                self.assertEqual(
+                    predecessor_paths,
+                    current_paths - {str(bin_dir)},
+                )
+                predecessor_runtime_sha256 = (
+                    codex_runtime._runtime_config_sha256(
+                        launcher.cli_version,
+                        launcher.model,
+                        launcher.reasoning_effort,
+                        predecessor_policy,
+                    )
+                )
+                payload["runtime_config_sha256"] = predecessor_runtime_sha256
+                identity = {
+                    key: value
+                    for key, value in payload.items()
+                    if key != "checkpoint_sha256"
+                }
+                payload["checkpoint_sha256"] = codex_runtime._sha256_json(
+                    identity
+                )
+                checkpoint.write_text(
+                    json.dumps(payload, sort_keys=True, separators=(",", ":"))
+                    + "\n",
+                    encoding="utf-8",
+                )
+                os.chmod(checkpoint, 0o600)
+
+                resumed = self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 2)
+            resumed_filesystem_override = next(
+                value
+                for value in factory.calls[1][0]
+                if value.startswith(
+                    "permissions.workshop-product-run.filesystem="
+                )
+            )
+            resumed_filesystem = tomllib.loads(resumed_filesystem_override)[
+                "permissions"
+            ]["workshop-product-run"]["filesystem"]
+            self.assertEqual(resumed_filesystem[str(bin_dir)], "read")
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+            self.assertEqual(
+                resumed.binding.checkpoint_sha256,
+                payload["checkpoint_sha256"],
+            )
+
+    def test_resume_rejects_never_shipped_venv_feature_predecessors(self):
+        marker = Path(sys.executable).parent.parent / "pyvenv.cfg"
+        if not marker.is_file() or marker.is_symlink():
+            self.skipTest("test runner is not using a PEP 405 virtual environment")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [{"stdout": self.start_events()}]
+            )
+            self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            original = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
+            current_without_helper = (
+                codex_runtime._run_policy_before_codex_fs_helper(
+                    root,
+                    current_policy,
+                )
+            )
+            never_shipped = (
+                (
+                    codex_runtime._run_policy_before_workshop_python(
+                        current_policy
+                    ),
+                    True,
+                ),
+                (current_without_helper, False),
+                (
+                    codex_runtime._run_policy_before_workshop_python(
+                        current_without_helper
+                    ),
+                    False,
+                ),
+            )
+            for policy, include_codex_runtime_paths in never_shipped:
+                with self.subTest(policy=policy):
+                    payload = dict(original)
+                    payload["runtime_config_sha256"] = (
+                        codex_runtime._runtime_config_sha256(
+                            launcher.cli_version,
+                            launcher.model,
+                            launcher.reasoning_effort,
+                            policy,
+                            include_codex_runtime_paths=(
+                                include_codex_runtime_paths
+                            ),
+                        )
+                    )
+                    identity = {
+                        key: value
+                        for key, value in payload.items()
+                        if key != "checkpoint_sha256"
+                    }
+                    payload["checkpoint_sha256"] = (
+                        codex_runtime._sha256_json(identity)
+                    )
+                    checkpoint.write_text(
+                        json.dumps(
+                            payload,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        )
+                        + "\n",
+                        encoding="utf-8",
+                    )
+                    os.chmod(checkpoint, 0o600)
+
+                    with self.assertRaisesRegex(
+                        ContractError,
+                        "binding is invalid",
+                    ):
+                        self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 1)
+
     def test_resume_accepts_exact_pre_codex_helper_policy_predecessor(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1041,10 +1251,17 @@ class CodexNativeSessionTest(unittest.TestCase):
                 root,
                 launcher.binary,
             )
+            historical_policy = (
+                codex_runtime._run_policy_before_venv_launcher_directory(
+                    root,
+                    current_policy,
+                )
+                or current_policy
+            )
             predecessor_policy = (
                 codex_runtime._run_policy_before_codex_fs_helper(
                     root,
-                    current_policy,
+                    historical_policy,
                 )
             )
             payload["runtime_config_sha256"] = (
