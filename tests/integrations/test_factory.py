@@ -488,6 +488,63 @@ class FactoryReleaseTest(unittest.TestCase):
 
         self.assertTrue(receipt.is_verified_draft)
 
+    def test_private_import_normalizes_nested_assembled_stl_to_root_primary(self):
+        product = self.made.artifact_root
+        nested = product / "cad/project/assembled.stl"
+        nested.parent.mkdir(parents=True)
+        nested.write_bytes((product / "assembled.stl").read_bytes())
+        (product / "assembled.stl").unlink()
+        self.made = Made.from_root(product, self.made.product)
+        self.context = ReleaseContext(self.made)
+        release_page = json.loads(
+            (self.release / "product.json").read_text(encoding="utf-8")
+        )
+        release_page["product_artifact_sha256"] = self.made.artifact_sha256
+        (self.release / "product.json").write_bytes(canonical_json(release_page))
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+        transport = FactoryTransport()
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            self.assertIn("verified-toy.stl", archive.namelist())
+            self.assertNotIn("cad/project/assembled.stl", archive.namelist())
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(facts["primary_model"]["path"], "verified-toy.stl")
+
+    def test_private_import_rejects_ambiguous_nested_assembled_stls(self):
+        product = self.made.artifact_root
+        content = (product / "assembled.stl").read_bytes()
+        (product / "assembled.stl").unlink()
+        for relative in ("cad/a/assembled.stl", "cad/b/assembled.stl"):
+            path = product / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+        self.made = Made.from_root(product, self.made.product)
+        self.context = ReleaseContext(self.made)
+        release_page = json.loads(
+            (self.release / "product.json").read_text(encoding="utf-8")
+        )
+        release_page["product_artifact_sha256"] = self.made.artifact_sha256
+        (self.release / "product.json").write_bytes(canonical_json(release_page))
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+
+        with self.assertRaisesRegex(
+            ContractError, "ambiguous assembled STL outputs"
+        ):
+            self.writer(FactoryTransport())(
+                self.context, self.release, self.manifest
+            )
+
     def test_generator_primary_is_included_but_creator_outputs_are_not(self):
         product = self.made.artifact_root
         (product / "assembled.stl").unlink()

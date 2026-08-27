@@ -230,14 +230,30 @@ def _sealed_primary(context: Any) -> Mapping[str, str]:
     if assembled.is_file() and canonical.is_file():
         if assembled.read_bytes() != canonical.read_bytes():
             raise ContractError("root primary STL files diverge")
-    selected = assembled if assembled.is_file() else canonical if canonical.is_file() else None
-    if selected is not None:
-        content = selected.read_bytes()
+    selected_path = (
+        "assembled.stl"
+        if assembled.is_file()
+        else canonical.name if canonical.is_file() else None
+    )
+    if selected_path is None:
+        nested_assembled = sorted(
+            entry.path
+            for entry in context.made.artifact_manifest.entries
+            if PurePosixPath(entry.path).name == "assembled.stl"
+        )
+        if len(nested_assembled) > 1:
+            raise ContractError("Made contains ambiguous assembled STL outputs")
+        if nested_assembled:
+            selected_path = nested_assembled[0]
+    if selected_path is not None:
+        content = _read_bound_file(
+            root, context.made.artifact_manifest, selected_path
+        )
         if not content:
             raise ContractError("Factory primary STL is empty")
         return {
             "kind": "mesh",
-            "path": selected.name,
+            "path": selected_path,
             "sha256": hashlib.sha256(content).hexdigest(),
         }
 
@@ -610,7 +626,9 @@ def _build_model_handoff(
         and entry.path not in primary_aliases
     ]
     transport_primary = primary_source
-    if sealed_primary["kind"] == "mesh" and included_stls:
+    if sealed_primary["kind"] == "mesh" and (
+        included_stls or len(PurePosixPath(primary_source).parts) > 1
+    ):
         transport_primary = context.wish.product_id + ".stl"
         existing = _manifest_entry(manifest, transport_primary)
         if existing is not None and existing.sha256 != primary_sha256:
