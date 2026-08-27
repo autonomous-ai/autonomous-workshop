@@ -1,0 +1,24 @@
+# Verification pipeline record
+
+- Recorded: 2026-08-27T18:09:48+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 20.46 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-173926-02d670f7/workspace/.agents/skills/cad/scripts/check_layout' artifacts/make/r0001/product/cad` | rc=0 | 0.03 |
+| 2 | `design_refs verify  # NOT RUN: no ref/external directory; no fetched design reference is declared` | skipped | 0.00 |
+| 3 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-173926-02d670f7/workspace/.agents/skills/cad/scripts/gen' artifacts/make/r0001/product/cad/assembled.step.py --write --json` | rc=0 | 4.61 |
+| 4 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-173926-02d670f7/workspace/.agents/skills/cad/scripts/check_fit' artifacts/make/r0001/product/cad --bed 220.0 220.0 --entry artifacts/make/r0001/product/cad/assembled.step.py --strict` | rc=0 | 4.41 |
+| 5 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 artifacts/make/r0001/product/cad/measure/check_fit.py` | rc=0 | 0.01 |
+| 6 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 artifacts/make/r0001/product/cad/measure/check_spec.py` | rc=0 | 0.02 |
+| 7 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 8 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 9 | `check_motion  # NOT RUN: no documented mating/assembly action and no moving joint is declared` | skipped | 0.00 |
+| 10 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-173926-02d670f7/workspace/.agents/skills/cad/scripts/inspect' batch (3 JSONL requests)` | rc=0 | 4.85 |
+| 11 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-173926-02d670f7/workspace/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/assembled.step --glb --json` | rc=0 | 0.62 |
+| 12 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-173926-02d670f7/workspace/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/assembled.step --stl --json` | rc=0 | 0.63 |
+| 13 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-173926-02d670f7/workspace/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/assembled.stl --bed 220x220x220` | rc=0 | 0.40 |
+| 14 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3.11 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-173926-02d670f7/workspace/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/assembled.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-assembled.md` | rc=0 | 4.89 |
