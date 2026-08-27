@@ -136,6 +136,20 @@ selection is folded into the first active creative stage, so there is no
 separate Match turn. Disabled stages pass through without a native turn,
 artifact, gate, or fabricated evidence.
 
+Each effort has its own exact route diagram.
+
+#### Spark
+
+[![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
+
+#### Forge (default)
+
+[![Forge: Wish, Invent, Make, Release, then Operations](docs/images/effort-forge.svg)](docs/images/effort-forge.svg)
+
+#### Quest
+
+[![Quest: Wish, Invent, Make, Playtest, Release, then Operations](docs/images/effort-quest.svg)](docs/images/effort-quest.svg)
+
 Workshop code ends after it verifies and publishes Release. Printing, physical
 delivery, and customer Review remain part of the complete toy journey, handled
 by the Operations team.

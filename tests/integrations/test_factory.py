@@ -310,7 +310,7 @@ class FactoryTransport:
                     self.import_status, {}, b'{"error":"request rejected"}'
                 )
             return HttpResponse(201, {}, json.dumps(self.design()).encode())
-        if method == "GET" and url.endswith("/MANUAL.pdf"):
+        if method == "GET" and url.endswith("/manual.pdf"):
             self.project_file_reads += 1
             return HttpResponse(
                 200, {"Content-Type": "application/pdf"}, self.manual_bytes
@@ -612,7 +612,7 @@ class FactoryReleaseTest(unittest.TestCase):
         )
         self.assertEqual(
             receipt.details["manual_url"],
-            "https://cdn.autonomous.ai/projects/history-1/MANUAL.pdf",
+            "https://cdn.autonomous.ai/projects/history-1/manual.pdf",
         )
         self.assertEqual(
             receipt.details["manual_readback_sha256"],
@@ -657,7 +657,7 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(transport.imports, 1)
         self.assertEqual(transport.project_file_reads, 1)
         manual_call = next(
-            call for call in transport.calls if call[1].endswith("/MANUAL.pdf")
+            call for call in transport.calls if call[1].endswith("/manual.pdf")
         )
         self.assertNotIn("Authorization", manual_call[2])
 
@@ -1428,7 +1428,7 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         self.assertEqual(transport.project_file_reads, 2)
         self.assertEqual(
             receipt.details["manual_url"],
-            "https://cdn.autonomous.ai/projects/history-1/MANUAL.pdf",
+            "https://cdn.autonomous.ai/projects/history-1/manual.pdf",
         )
         self.assertEqual(
             receipt.details["manual_readback_sha256"],
