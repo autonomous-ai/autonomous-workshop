@@ -80,8 +80,8 @@ An Inventor owns:
 
 Workshop owns:
 
-- Wish identity and the Match -> Invent -> Make <-> Playtest -> Release ->
-  Deliver lifecycle;
+- Wish identity and the executable Match -> Invent -> Make <-> Playtest ->
+  Release lifecycle;
 - the root Codex session, checkpoint protocol, invalidation, and round budgets;
 - one native Codex Goal for each active Match, Invent, Make, Playtest, or
   Release attempt, with observe -> act -> evaluate -> improve behavior inside
@@ -111,10 +111,11 @@ Use these lifecycle names consistently:
   per part.
 - **Make** creates the mechanical, CAD, and printable product artifacts.
 - **Playtest** checks the exact Make and returns bounded repair feedback.
-- **Release** creates the manual and complete evidence-bound, page-ready product
-  content; the host owns any authorized private Factory handoff.
-- **Deliver** waits for separately authorized production, physical QA, packing,
-  and carrier receipts.
+- **Release** seals the printable manual, revalidates the exact print-ready CAD,
+  and ends only after the host publishes both through Factory with authenticated
+  hash readback.
+- **Printing**, **Deliver**, and **Review** continue the product journey after
+  Release under Operations; they are not executable Workshop components.
 
 Concept work is temporarily completed and verified inside Invent, so Concept is
 not a separate active stage. Provider credentials remain host-owned effect

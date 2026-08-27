@@ -10,9 +10,9 @@ mass-production tiers. Manufacture, shipment, and delivery are separate
 fulfillment statuses and never raise a verification level by themselves.
 
 Verification is an optional public projection, not a lifecycle gate. Existing
-Make and Playtest gates remain authoritative. A missing, malformed, or
-unwritable public verification record must not block Release, Factory
-publication, or Deliver; it means only that no public badge was recorded.
+Make, Playtest, and terminal Release gates remain authoritative. A missing,
+malformed, or unwritable public verification record must not block Release's
+required Factory publication; it means only that no public badge was recorded.
 
 ## Authority
 
@@ -80,8 +80,8 @@ proof may be attached later without rerunning or blocking the digital workflow.
 
 ## The public manifest
 
-As a best-effort post-Release enrichment, the host writes the canonical
-public-safe file at:
+As best-effort enrichment after validating Release's exact local inputs and
+public Factory receipt, the host writes the canonical public-safe file at:
 
 ```text
 artifacts/release/VERIFICATION.json

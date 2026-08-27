@@ -24,6 +24,9 @@ A public snapshot contains only:
 - the exact public primary STL under `model/` when the Factory primary is a
   mesh.
 
+Historical schema-v1 snapshots may retain `MANUAL.md`; they are legacy
+evidence and are never rewritten or presented as a current terminal Release.
+
 Snapshots never contain the private Wish, Codex transcript, host checkpoint,
 Factory receipt, generated G-code, internal evidence tree, or product-run agent
 configuration. Projection is optional and never counts as Release gate

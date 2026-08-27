@@ -509,10 +509,11 @@ def try_materialize_digital_verification(
 ) -> ProductVerification | None:
     """Best-effort public enrichment that can never become a Release gate.
 
-    The exact Make, Playtest, and Release gates have already run before this
-    helper is appropriate. Any validation, filesystem, serialization, or other
-    enrichment failure yields no public record; it does not reclassify the
-    accepted product or authorize a fabricated level.
+    The exact Make and Playtest gates, local Release-package validation, and
+    required Factory publication have already succeeded when this helper is
+    called inside terminal Release evaluation. Any validation, filesystem,
+    serialization, or other enrichment failure yields no public record; it
+    does not reclassify the validated product or authorize a fabricated level.
     """
 
     try:

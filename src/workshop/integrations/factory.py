@@ -2688,7 +2688,7 @@ class FactoryReleaseWriter:
 
 
 class FactoryPublicTransition:
-    """Promote one exact private Factory draft after explicit CLI authority."""
+    """Promote one exact private draft under the Wish's Release authority."""
 
     def __init__(self, ledger: EffectLedger, session: FactoryAgentSession) -> None:
         if not isinstance(ledger, EffectLedger):

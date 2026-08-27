@@ -2669,7 +2669,7 @@ def _publication_release_context(
 def _existing_release_for_promotion(
     run: AgentRun, checkpoint: AgentRunCheckpoint
 ) -> _VerifiedRelease:
-    """Revalidate a sealed local Release after lifecycle acceptance."""
+    """Revalidate exact authored Release bytes for publication or migration."""
 
     if checkpoint.stage not in ("release", "deliver") or checkpoint.status not in (
         "active",
@@ -2909,8 +2909,8 @@ def _evaluate_release_stage(
         )
     except Exception:
         # Public verification is optional enrichment. It must never become a
-        # second Release, Factory, or Deliver gate, including if the helper
-        # itself regresses rather than returning its documented ``None``.
+        # second Release or Factory gate, including if the helper itself
+        # regresses rather than returning its documented ``None``.
         verification = None
     additional = _manifest_agent_artifacts(
         release.package_root, release.package_manifest

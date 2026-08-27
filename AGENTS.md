@@ -80,11 +80,14 @@ candidate fan-out, model judges, stage-role views, or repair reasoning.
 
 Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0012-codex-orchestrated-runtime.md`, and
-`docs/adr/0013-manual-first-release.md` before changing the CLI, runtime,
+`docs/adr/0013-manual-first-release.md`, and
+`docs/adr/0014-terminal-published-release.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
-supersedes ADR 0012's page-first Release details. The native-session path is the
-production architecture. Preserve useful deterministic contracts and tests; do
-not reintroduce removed cognitive orchestration as a compatibility layer.
+supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
+optional-publication and executable-Deliver details. The native-session path is
+the production architecture. Preserve useful deterministic contracts and
+tests; do not reintroduce removed cognitive orchestration as a compatibility
+layer.
 
 ## Repository ownership
 

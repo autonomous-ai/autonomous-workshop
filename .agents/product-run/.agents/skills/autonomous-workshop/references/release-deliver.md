@@ -68,10 +68,12 @@ Verified**; **Physically Verified** requires a future trusted host receipt that
 proves the exact released bytes were built and checked. Missing verification
 never blocks Release.
 
-Website copy limits are not manual design constraints and must not make a valid
-local Release fail. Keep `product.json` concise and factual. The host may later
-transport its exact supported subset, model bytes, and `MANUAL.pdf` through an
-authorized adapter; it must not rewrite the sealed manual.
+Website copy limits are not manual design constraints. Keep `product.json`
+concise and factual so the host can transport its exact supported subset,
+model bytes, and `MANUAL.pdf` through the required Release adapter without
+rewriting the sealed manual. If Factory cannot accept or verify the exact
+handoff, Release waits or fails closed; Codex must not change truthful product
+content merely to fit a remote marketing field.
 
 Run:
 

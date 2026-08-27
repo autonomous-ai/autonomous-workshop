@@ -1,8 +1,9 @@
 # ADR 0012: Codex-orchestrated native runtime
 
-- Status: Accepted and implemented
+- Status: Accepted
 - Date: 2026-08-26
 - Owners: Workflow, Runtime, and lifecycle component maintainers
+- Superseded in part by: ADR 0013 and ADR 0014
 
 ## Context
 

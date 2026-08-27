@@ -12,15 +12,11 @@ other effect credentials. It may prepare local artifacts and a compact effect
 request for the host.
 
 The host may execute an effect only when the run's recorded authorization
-covers that exact action and target. Explicit human authorization is required
-before public publication, spending or purchasing, starting manufacture,
-buying postage, shipment, or another irreversible/customer-visible action.
-Private draft creation also stays behind the host boundary and occurs only
-when the recorded run policy permits it.
-
-The CLI defaults to private output. `--publish` records a prospective public
-publication request in host-only state; it never exposes authority or
-credentials to Codex and does not authorize manufacture or delivery.
+covers that exact action and target. Starting a Wish authorizes the one public
+Factory publication required to complete Release for those exact product
+bytes. It does not authorize spending or purchasing, starting manufacture,
+buying postage, shipment, or another physical/customer-account effect.
+Private import and public promotion both stay behind the host boundary.
 
 Authorization is narrow and prospective. Approval for one artifact hash,
 environment, account, price, or shipment does not cover changed bytes, another
@@ -85,8 +81,8 @@ artifact; inspect any partial workspace writes and rerun their gates.
   attempt directory rather than mutating evidence already cited by a receipt.
 - Recompute manifests after every material change. A stale hash or receipt is a
   failure, not a warning.
-- A new Make revision invalidates Playtest, Release, and Deliver evidence
-  for the prior bytes. Run those gates again in order.
+- A new Make revision invalidates Playtest and Release evidence for the prior
+  bytes. Run those gates again in order.
 - Respect the host's exclusive mutation lock and bounded Make–Playtest round
   budget. Concurrent work must stop at a typed need instead of racing the
   checkpoint.

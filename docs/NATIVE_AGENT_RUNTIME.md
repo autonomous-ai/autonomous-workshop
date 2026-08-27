@@ -3,9 +3,11 @@
 This is the operating map for people and coding agents building Autonomous
 Workshop. It is authoritative together with
 [ADR 0012](adr/0012-codex-orchestrated-runtime.md),
-[ADR 0013](adr/0013-manual-first-release.md), and the repository
+[ADR 0013](adr/0013-manual-first-release.md),
+[ADR 0014](adr/0014-terminal-published-release.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
-Release details.
+Release details; ADR 0014 supersedes their optional-publication and
+executable-Deliver details.
 
 ## Two different agent contexts
 

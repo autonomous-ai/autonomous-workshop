@@ -110,8 +110,8 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   workspace.
 - During Release, use the materialized `manual-design` skill to create and
   inspect the exact printable `MANUAL.pdf`. It must stand alone in the box;
-  optional website metadata, QR links, and publication are not substitutes for
-  teaching the owner how to use the product safely.
+  website metadata, QR links, and the required public page are not substitutes
+  for teaching the owner how to use the product safely.
 - Return only the bounded outcome required by the workflow skill: stage,
   status, changed artifact paths and hashes, gate references, needs, and the
   proposed next transition.

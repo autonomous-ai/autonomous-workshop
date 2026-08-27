@@ -88,7 +88,7 @@
   <!-- External feedback lanes -->
   <path class="feedback-ai" d="M 220 1150 H 116 C 92 1150, 80 1136, 80 1114 V 976 C 80 956, 94 950, 116 950 H 218"/>
   <path class="feedback-ai" d="M 220 1176 H 54 C 38 1176, 30 1160, 30 1142 V 776 C 30 756, 46 750, 68 750 H 218"/>
-  <path class="feedback-human" d="M 780 1885 H 884 C 912 1885, 925 1867, 925 1844 V 752 C 925 732, 910 730, 884 730 H 782"/>
+  <path class="feedback-human" d="M 780 1885 H 884 C 912 1885, 925 1867, 925 1844 V 252 C 925 232, 910 230, 884 230 H 782"/>
 
   <!-- Side-loop labels -->
   <g>
