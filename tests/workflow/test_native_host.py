@@ -20,6 +20,7 @@ from workshop.product import ToyBlueprint
 from workshop.workflow.native_run import (
     _MAX_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
+    _current_make_proposal_rejection,
     _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
@@ -281,6 +282,18 @@ class _UnboundRecoverableLauncher(_FakeLauncher):
 
 
 class NativeHostTest(unittest.TestCase):
+    def test_newer_cad_rejection_supersedes_resolved_make_proposal_feedback(self):
+        proposal_rejection = {"failure_code": "make-product-metadata-invalid"}
+        cad_rejection = {"failure_code": "declared-cad-output-changed"}
+
+        self.assertIs(
+            _current_make_proposal_rejection(None, proposal_rejection),
+            proposal_rejection,
+        )
+        self.assertIsNone(
+            _current_make_proposal_rejection(cad_rejection, proposal_rejection)
+        )
+
     @staticmethod
     def _release_protocol_checkpoint(*, manual_first):
         inputs = {

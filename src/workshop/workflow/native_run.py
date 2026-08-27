@@ -1396,6 +1396,24 @@ def native_stage_prompt(stage: str) -> str:
     )
 
 
+def _current_make_proposal_rejection(
+    cad_gate_rejection: Optional[Mapping[str, Any]],
+    make_proposal_rejection: Optional[Mapping[str, Any]],
+) -> Optional[Mapping[str, Any]]:
+    """Hide proposal feedback once a newer CAD gate proves it was repaired.
+
+    The historical proposal-rejection chain remains durably validated and
+    auditable. A CAD rejection can exist only after the replacement Made
+    proposal passed its authored contract checks, so presenting the older
+    proposal feedback as still actionable would direct the next native turn
+    away from the current deterministic failure.
+    """
+
+    if cad_gate_rejection is not None:
+        return None
+    return make_proposal_rejection
+
+
 def _recoverable_native_turn_backoff_seconds(
     checkpoint: AgentRunCheckpoint,
     attempted_turns: int,
@@ -1946,6 +1964,10 @@ def _prepare_stage_input(
     context: dict[str, Any] = {"roster": roster}
     cad_gate_rejection = _read_cad_gate_rejection(run, checkpoint)
     make_proposal_rejection = _read_make_proposal_rejection(run, checkpoint)
+    make_proposal_rejection = _current_make_proposal_rejection(
+        cad_gate_rejection,
+        make_proposal_rejection,
+    )
     normal_transition = {
         "match": "invent",
         "invent": "make",
