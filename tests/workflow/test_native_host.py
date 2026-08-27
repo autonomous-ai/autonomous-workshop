@@ -830,6 +830,7 @@ class NativeHostTest(unittest.TestCase):
             self.assertTrue((workspace / "agent-outcome.json").is_file())
 
             resumed = _FakeLauncher()
+            timing_events = []
             with mock.patch.dict(
                 os.environ, environment, clear=True
             ), mock.patch(
@@ -839,7 +840,10 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=resumed,
             ):
-                receipt = resume_native_run(product_id)
+                receipt = resume_native_run(
+                    product_id,
+                    timing_observer=timing_events.append,
+                )
 
             self.assertEqual(receipt["stage"], "invent")
             self.assertEqual(receipt["status"], "waiting")
@@ -857,6 +861,26 @@ class NativeHostTest(unittest.TestCase):
                     ]
                 ),
                 1,
+            )
+            match_starts = [
+                event.operation
+                for event in timing_events
+                if event.stage == "match" and event.state == "started"
+            ]
+            invent_starts = [
+                event.operation
+                for event in timing_events
+                if event.stage == "invent" and event.state == "started"
+            ]
+            self.assertEqual(
+                match_starts,
+                ["stage.prepare", "outcome.process", "gate.evaluate"],
+            )
+            self.assertNotIn("session.start", match_starts)
+            self.assertNotIn("session.resume", match_starts)
+            self.assertEqual(
+                invent_starts,
+                ["stage.prepare", "session.resume", "outcome.process"],
             )
 
     def test_recoverable_timeout_continues_same_session_inside_one_command(self):
@@ -1179,6 +1203,61 @@ class NativeHostTest(unittest.TestCase):
             ["starting", "reasoning", "tool", "running"],
         )
 
+    def test_start_and_resume_emit_paired_timing_without_changing_turns(self):
+        launcher = _FakeLauncher()
+        events = []
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "timed-progress-wish"
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ):
+                started = start_native_run(
+                    Wish.create(product_id, "private objective value"),
+                    timing_observer=events.append,
+                )
+                resumed = resume_native_run(
+                    product_id,
+                    timing_observer=events.append,
+                )
+
+        self.assertEqual((started["native_turns"], resumed["native_turns"]), (1, 2))
+        starts = [event for event in events if event.state == "started"]
+        terminals = [event for event in events if event.state != "started"]
+        self.assertEqual(len(starts), len(terminals))
+        self.assertEqual(
+            [event.operation for event in starts],
+            [
+                "run.initialize",
+                "stage.prepare",
+                "session.start",
+                "outcome.process",
+                "stage.prepare",
+                "session.resume",
+                "outcome.process",
+            ],
+        )
+        self.assertEqual(
+            [
+                (event.product_id, event.stage, event.operation)
+                for event in starts
+            ],
+            [
+                (event.product_id, event.stage, event.operation)
+                for event in terminals
+            ],
+        )
+        rendered = repr([event.to_dict() for event in events])
+        self.assertNotIn("private objective value", rendered)
+        self.assertNotIn("fixture stops after one native turn", rendered)
+
     def test_invalid_activity_observer_is_rejected_before_run_creation(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -1188,6 +1267,22 @@ class NativeHostTest(unittest.TestCase):
                 start_native_run(
                     Wish.create("invalid-progress-sink", "a bounded clockwork toy"),
                     activity_observer="not-callable",
+                )
+
+            self.assertFalse(home.exists())
+
+    def test_invalid_timing_observer_is_rejected_before_run_creation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), self.assertRaisesRegex(ContractError, "observer must be callable"):
+                start_native_run(
+                    Wish.create(
+                        "invalid-timing-sink",
+                        "a bounded clockwork toy",
+                    ),
+                    timing_observer="not-callable",
                 )
 
             self.assertFalse(home.exists())

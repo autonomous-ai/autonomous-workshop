@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from cli.main import main, parser
+from workshop.runtime.progress import WishRunTimingEvent
 
 
 cli_main = importlib.import_module("cli.main")
@@ -30,6 +31,17 @@ def native_receipt(*, status="waiting", stage="match", published=False, progress
     if progress is not None:
         receipt["progress"] = progress
     return receipt
+
+
+def timing_event(*, state="started", elapsed_ms=None, operation="session.start"):
+    return WishRunTimingEvent(
+        observed_at="2026-08-27T03:14:15.926Z",
+        product_id="wish-one",
+        stage="match",
+        operation=operation,
+        state=state,
+        elapsed_ms=elapsed_ms,
+    )
 
 
 class NativeCommandTest(unittest.TestCase):
@@ -108,9 +120,16 @@ class NativeCommandTest(unittest.TestCase):
     def test_wish_calls_only_native_start_and_keeps_json_stdout_clean(self):
         observed = {}
 
-        def start(wish, *, publish_requested, activity_observer):
+        def start(
+            wish,
+            *,
+            publish_requested,
+            activity_observer,
+            timing_observer,
+        ):
             observed["wish"] = wish
             observed["publish_requested"] = publish_requested
+            timing_observer(timing_event())
             for activity in (
                 "starting",
                 "reasoning",
@@ -121,6 +140,9 @@ class NativeCommandTest(unittest.TestCase):
                 "completed",
             ):
                 activity_observer(activity)
+            timing_observer(
+                timing_event(state="completed", elapsed_ms=2_375)
+            )
             return native_receipt()
 
         stdout = StringIO()
@@ -141,6 +163,13 @@ class NativeCommandTest(unittest.TestCase):
         self.assertIn("process is still running", stderr.getvalue())
         self.assertIn("using a tool for the current stage", stderr.getvalue())
         self.assertIn("turn complete; Workshop is verifying it", stderr.getvalue())
+        self.assertIn(
+            "[2026-08-27T03:14:15.926Z] wish=wish-one stage=match "
+            "operation=session.start state=started",
+            stderr.getvalue(),
+        )
+        self.assertIn("state=completed elapsed_ms=2375", stderr.getvalue())
+        self.assertNotIn("a moon that waddles", stderr.getvalue())
         self.assertEqual(stderr.getvalue().count("process is still running"), 1)
         self.assertEqual(stderr.getvalue().count("using a tool"), 1)
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
@@ -158,29 +187,66 @@ class NativeCommandTest(unittest.TestCase):
         start.assert_called_once()
         self.assertTrue(start.call_args.kwargs["publish_requested"])
 
+    def test_human_wish_timing_uses_stdout_and_flushes(self):
+        def start(
+            wish,
+            *,
+            publish_requested,
+            activity_observer,
+            timing_observer,
+        ):
+            del wish, publish_requested, activity_observer
+            timing_observer(timing_event(operation="stage.prepare"))
+            timing_observer(
+                timing_event(
+                    operation="stage.prepare",
+                    state="completed",
+                    elapsed_ms=42,
+                )
+            )
+            return native_receipt()
+
+        stdout = StringIO()
+        stderr = StringIO()
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-one"
+        ), mock.patch(
+            "cli.main.start_native_run", side_effect=start
+        ), mock.patch.object(
+            stdout, "flush", wraps=stdout.flush
+        ) as flush, redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(("wish", "private human objective"))
+
+        self.assertEqual(result, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertIn("operation=stage.prepare state=started", stdout.getvalue())
+        self.assertIn("state=completed elapsed_ms=42", stdout.getvalue())
+        self.assertNotIn("private human objective", stdout.getvalue())
+        self.assertGreaterEqual(flush.call_count, 2)
+
     def test_live_native_activity_repeats_only_throttled_running_updates(self):
         output = StringIO()
-        activity = cli_main._LiveNativeActivity(output)
+        progress = cli_main._LiveWishProgress(output)
         with mock.patch(
             "cli.main.time.monotonic",
             side_effect=(100.0, 129.9, 130.0),
         ):
-            activity("running")
-            activity("running")
-            activity("running")
+            progress.activity("running")
+            progress.activity("running")
+            progress.activity("running")
 
         self.assertEqual(output.getvalue().count("process is still running"), 2)
 
     def test_live_native_activity_rate_limits_high_churn_classes(self):
         output = StringIO()
-        activity = cli_main._LiveNativeActivity(output)
+        progress = cli_main._LiveWishProgress(output)
         with mock.patch(
             "cli.main.time.monotonic",
             side_effect=(100.0, 100.5, 102.0),
         ):
-            activity("reasoning")
-            activity("tool")
-            activity("tool")
+            progress.activity("reasoning")
+            progress.activity("tool")
+            progress.activity("tool")
 
         self.assertEqual(output.getvalue().count("reasoning"), 1)
         self.assertEqual(output.getvalue().count("using a tool"), 1)
@@ -268,8 +334,24 @@ class NativeCommandTest(unittest.TestCase):
         )
 
     def test_resume_calls_only_native_resume_and_has_strict_wait_policy(self):
-        def resume_run(product_id, *, publish_requested, activity_observer):
+        def resume_run(
+            product_id,
+            *,
+            publish_requested,
+            activity_observer,
+            timing_observer,
+        ):
+            timing_observer(
+                timing_event(operation="session.resume")
+            )
             activity_observer("tool")
+            timing_observer(
+                timing_event(
+                    operation="session.resume",
+                    state="completed",
+                    elapsed_ms=911,
+                )
+            )
             return native_receipt(stage="make")
 
         stdout = StringIO()
@@ -285,9 +367,12 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(resume.call_args.args, ("wish-one",))
         self.assertTrue(resume.call_args.kwargs["publish_requested"])
         self.assertTrue(callable(resume.call_args.kwargs["activity_observer"]))
+        self.assertTrue(callable(resume.call_args.kwargs["timing_observer"]))
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "make")
         self.assertIn("exact native Codex session", stderr.getvalue())
         self.assertIn("using a tool for the current stage", stderr.getvalue())
+        self.assertIn("operation=session.resume state=started", stderr.getvalue())
+        self.assertIn("state=completed elapsed_ms=911", stderr.getvalue())
 
     def test_failed_native_run_exits_one_even_without_strict(self):
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(

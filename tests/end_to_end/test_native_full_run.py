@@ -815,6 +815,7 @@ class NativeFullRunTest(unittest.TestCase):
     def test_release_without_factory_credentials_reaches_deliver(self):
         launcher = _OneSessionProductAgent()
         effects = _FactoryEffects()
+        timing_events = []
 
         def verify_cad(made, **arguments):
             return SimpleNamespace(
@@ -862,7 +863,11 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.materialize_public_example_if_source_checkout",
                 side_effect=RuntimeError("unexpected public example regression"),
             ):
-                receipt = start_native_run(wish, publish_requested=True)
+                receipt = start_native_run(
+                    wish,
+                    publish_requested=True,
+                    timing_observer=timing_events.append,
+                )
                 paths = native_run_paths(wish.product_id)
                 run = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state
@@ -915,6 +920,19 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(len(launcher.finalizer_commands), 5)
             self.assertEqual(effects.writer_calls, [])
             self.assertEqual(effects.publish_calls, [])
+            factory_events = [
+                event
+                for event in timing_events
+                if event.operation == "effect.factory"
+            ]
+            self.assertEqual(
+                [event.state for event in factory_events],
+                ["started", "failed"],
+            )
+            self.assertNotIn(
+                "Factory credentials",
+                repr([event.to_dict() for event in factory_events]),
+            )
             self.assertFalse((paths.host_state / "release-effect-wait.json").exists())
             self.assertFalse((paths.host_state / "release-effect.json").exists())
             self.assertFalse((paths.host_state / "factory-effects.sqlite3").exists())
@@ -1541,6 +1559,7 @@ class NativeFullRunTest(unittest.TestCase):
     def test_one_native_session_runs_every_stage_and_host_seals_the_release(self):
         launcher = _OneSessionProductAgent()
         effects = _FactoryEffects()
+        promotion_timing = []
         cad_calls = []
 
         def verify_cad(made, **arguments):
@@ -1597,7 +1616,9 @@ class NativeFullRunTest(unittest.TestCase):
                 effect_path = paths.host_state / "release-effect.json"
                 self.assertFalse(effect_path.exists())
                 receipt = resume_native_run(
-                    wish.product_id, publish_requested=True
+                    wish.product_id,
+                    publish_requested=True,
+                    timing_observer=promotion_timing.append,
                 )
                 run = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state
@@ -1615,6 +1636,16 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(receipt["publication"]["status"], "public")
             self.assertTrue(receipt["publication"]["verified"])
             self.assertEqual(receipt["publication"]["page_url"], _PAGE_URL)
+            self.assertEqual(
+                [
+                    (event.stage, event.operation, event.state)
+                    for event in promotion_timing
+                ],
+                [
+                    ("deliver", "effect.factory", "started"),
+                    ("deliver", "effect.factory", "completed"),
+                ],
+            )
             self.assertEqual(checkpoint.stage, "deliver")
             self.assertEqual(checkpoint.status, "waiting")
             self.assertEqual(

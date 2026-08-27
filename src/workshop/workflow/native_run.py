@@ -90,9 +90,11 @@ from workshop.runtime.progress import (
     NATIVE_PROGRESS_FILENAME,
     SAFE_NATIVE_ACTIVITY_CLASSES,
     NativeRunProgress,
+    WishRunTimingObserver,
     begin_native_progress,
     native_progress_turn_floor,
     trusted_native_progress,
+    wish_run_timing_span,
     write_native_progress,
 )
 from workshop.wish import Wish
@@ -1671,6 +1673,14 @@ def _validated_activity_observer(
     return observer
 
 
+def _validated_timing_observer(
+    observer: Optional[WishRunTimingObserver],
+) -> Optional[WishRunTimingObserver]:
+    if observer is not None and not callable(observer):
+        raise ContractError("Wish run timing observer must be callable")
+    return observer
+
+
 def _combined_activity_observer(
     tracker: _NativeProgressTracker,
     observer: Optional[Callable[[str], None]],
@@ -2717,89 +2727,117 @@ def _process_agent_outcome(
     subject_sha256: str,
     context: Mapping[str, Any],
     publish_requested: bool,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> AgentRunCheckpoint:
-    proposal = read_agent_outcome_proposal(
-        run.run_root,
-        expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
-        expected_subject_sha256=subject_sha256,
-    )
-    run.validate_outcome(proposal.outcome)
-    if proposal.outcome.status != "ready":
-        updated = run.apply_outcome(proposal.outcome)
+    with wish_run_timing_span(
+        timing_observer,
+        product_id=checkpoint.product_id,
+        stage=checkpoint.stage,
+        operation="outcome.process",
+    ):
+        proposal = read_agent_outcome_proposal(
+            run.run_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+            expected_subject_sha256=subject_sha256,
+        )
+        run.validate_outcome(proposal.outcome)
+        if proposal.outcome.status != "ready":
+            updated = run.apply_outcome(proposal.outcome)
+            _remove_agent_outcome(run.run_root)
+            return updated
+
+        additional: tuple[AgentArtifact, ...] = ()
+        with wish_run_timing_span(
+            timing_observer,
+            product_id=checkpoint.product_id,
+            stage=checkpoint.stage,
+            operation="gate.evaluate",
+        ):
+            if checkpoint.stage == "match":
+                decision = evaluate_match_stage(
+                    proposal,
+                    run_root=run.run_root,
+                    expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+                    wish_sha256=checkpoint.wish_sha256,
+                    roster=context["roster"],
+                )
+            elif checkpoint.stage == "invent":
+                decision = evaluate_invent_stage(
+                    proposal,
+                    run_root=run.run_root,
+                    expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+                    assignment=context["assignment"],
+                )
+            elif checkpoint.stage == "make":
+                try:
+                    decision, additional = _evaluate_make_stage(
+                        proposal,
+                        run=run,
+                        checkpoint=checkpoint,
+                        subject_sha256=subject_sha256,
+                        context=context,
+                    )
+                except NativeCadGateError as rejection:
+                    _persist_cad_gate_rejection(
+                        run, checkpoint, proposal, rejection
+                    )
+                    _remove_agent_outcome(run.run_root)
+                    return checkpoint
+            elif checkpoint.stage == "playtest":
+                try:
+                    decision, additional = _evaluate_playtest_stage(
+                        proposal,
+                        run=run,
+                        checkpoint=checkpoint,
+                        subject_sha256=subject_sha256,
+                        context=context,
+                    )
+                except NativeCadGateError as rejection:
+                    _persist_cad_gate_rejection(
+                        run, checkpoint, proposal, rejection
+                    )
+                    _remove_agent_outcome(run.run_root)
+                    return checkpoint
+            elif checkpoint.stage == "release":
+                decision, additional = _evaluate_release_stage(
+                    proposal,
+                    run=run,
+                    checkpoint=checkpoint,
+                    subject_sha256=subject_sha256,
+                    context=context,
+                )
+            else:  # pragma: no cover - guarded by packet preparation
+                raise TransitionError(
+                    "native stage cannot consume an agent proposal"
+                )
+
+            _persist_gate_decision(run, checkpoint, decision)
+            updated = run.apply_outcome(
+                proposal.outcome,
+                gate=decision.receipt,
+                gate_subject_sha256=subject_sha256,
+                additional_artifacts=additional,
+            )
         _remove_agent_outcome(run.run_root)
+        if checkpoint.stage == "release" and publish_requested:
+            # Release is already durably accepted and bound to Deliver before
+            # any optional credential-bearing call begins. A missing credential
+            # or unavailable/ambiguous publication changes only publication
+            # status; the Factory adapter's ledger owns safe reconciliation.
+            try:
+                with wish_run_timing_span(
+                    timing_observer,
+                    product_id=checkpoint.product_id,
+                    stage=checkpoint.stage,
+                    operation="effect.factory",
+                ):
+                    _promote_existing_release(run, updated)
+            except (
+                _FactoryCredentialsUnavailable,
+                _OptionalPublicationUnavailable,
+            ):
+                pass
         return updated
-
-    additional: tuple[AgentArtifact, ...] = ()
-    if checkpoint.stage == "match":
-        decision = evaluate_match_stage(
-            proposal,
-            run_root=run.run_root,
-            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
-            wish_sha256=checkpoint.wish_sha256,
-            roster=context["roster"],
-        )
-    elif checkpoint.stage == "invent":
-        decision = evaluate_invent_stage(
-            proposal,
-            run_root=run.run_root,
-            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
-            assignment=context["assignment"],
-        )
-    elif checkpoint.stage == "make":
-        try:
-            decision, additional = _evaluate_make_stage(
-                proposal,
-                run=run,
-                checkpoint=checkpoint,
-                subject_sha256=subject_sha256,
-                context=context,
-            )
-        except NativeCadGateError as rejection:
-            _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
-            _remove_agent_outcome(run.run_root)
-            return checkpoint
-    elif checkpoint.stage == "playtest":
-        try:
-            decision, additional = _evaluate_playtest_stage(
-                proposal,
-                run=run,
-                checkpoint=checkpoint,
-                subject_sha256=subject_sha256,
-                context=context,
-            )
-        except NativeCadGateError as rejection:
-            _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
-            _remove_agent_outcome(run.run_root)
-            return checkpoint
-    elif checkpoint.stage == "release":
-        decision, additional = _evaluate_release_stage(
-            proposal,
-            run=run,
-            checkpoint=checkpoint,
-            subject_sha256=subject_sha256,
-            context=context,
-        )
-    else:  # pragma: no cover - guarded by packet preparation
-        raise TransitionError("native stage cannot consume an agent proposal")
-
-    _persist_gate_decision(run, checkpoint, decision)
-    updated = run.apply_outcome(
-        proposal.outcome,
-        gate=decision.receipt,
-        gate_subject_sha256=subject_sha256,
-        additional_artifacts=additional,
-    )
-    _remove_agent_outcome(run.run_root)
-    if checkpoint.stage == "release" and publish_requested:
-        # Release is already durably accepted and bound to Deliver before any
-        # optional credential-bearing call begins. A missing credential or an
-        # unavailable/ambiguous publication can change only publication
-        # status; the Factory adapter's ledger owns safe reconciliation.
-        try:
-            _promote_existing_release(run, updated)
-        except (_FactoryCredentialsUnavailable, _OptionalPublicationUnavailable):
-            pass
-    return updated
 
 
 def _wait_at_deliver(run: AgentRun) -> AgentRunCheckpoint:
@@ -2836,6 +2874,7 @@ def _run_native_session(
     launcher: CodexNativeSessionLauncher,
     publish_requested: bool,
     activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
     """Advance through native stages until complete, wait, or failure."""
 
@@ -2853,7 +2892,15 @@ def _run_native_session(
                 paths, checkpoint, updated, activity="completed"
             )
             return updated, last_session, turns, action
-        subject, unused_packet, context = _prepare_stage_input(run, checkpoint)
+        with wish_run_timing_span(
+            timing_observer,
+            product_id=checkpoint.product_id,
+            stage=checkpoint.stage,
+            operation="stage.prepare",
+        ):
+            subject, unused_packet, context = _prepare_stage_input(
+                run, checkpoint
+            )
         del unused_packet
 
         if _agent_outcome_exists(run.run_root):
@@ -2866,6 +2913,7 @@ def _run_native_session(
                     subject_sha256=subject,
                     context=context,
                     publish_requested=publish_requested,
+                    timing_observer=timing_observer,
                 )
             except StateConflict:
                 recovered_progress.observe("failed")
@@ -2890,13 +2938,19 @@ def _run_native_session(
         )
         launcher_failure: Optional[WorkshopError] = None
         try:
-            last_session = _launcher_call(
-                launcher,
-                method,
-                checkpoint=checkpoint,
-                paths=paths,
-                activity_observer=turn_activity_observer,
-            )
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="session.%s" % method,
+            ):
+                last_session = _launcher_call(
+                    launcher,
+                    method,
+                    checkpoint=checkpoint,
+                    paths=paths,
+                    activity_observer=turn_activity_observer,
+                )
         except WorkshopError as exc:
             # The finalizer is an exact filesystem protocol, independent of the
             # Codex event-stream terminal signal.  A provider timeout or a
@@ -2940,6 +2994,7 @@ def _run_native_session(
                 subject_sha256=subject,
                 context=context,
                 publish_requested=publish_requested,
+                timing_observer=timing_observer,
             )
         except WorkshopError:
             progress.observe("failed")
@@ -3203,42 +3258,50 @@ def start_native_run(
     *,
     publish_requested: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Persist one Wish and immediately start its whole-run native session.
 
-    ``activity_observer`` receives only content-free native activity classes.
-    It is optional presentation telemetry and cannot change the run result.
+    Both observers receive only bounded, content-free progress. They are
+    optional presentation telemetry and cannot change the run result.
     """
 
     activity_observer = _validated_activity_observer(activity_observer)
-    assets = product_run_agent_assets()
-    wish_bytes = canonical_wish_bytes(wish)
-    domain_skill_roots = product_run_domain_skill_roots()
-    inventor_source_root = _product_run_inventor_source_root(assets)
-    paths = native_run_paths(wish.product_id, create=True)
-    try:
-        run = AgentRun.create(
-            paths.workspace,
-            paths.host_state,
-            product_id=wish.product_id,
-            wish_bytes=wish_bytes,
-            product_run_constitution_source=assets.constitution,
-            skill_root=assets.skill_root,
-            domain_skill_roots=domain_skill_roots,
-            inventor_source_root=inventor_source_root,
-            max_rounds=4,
-        )
-    except Exception:
-        # Asset validation normally happens before reserving the run container.
-        # AgentRun also validates all materialized inputs before creating its
-        # workspace.  If either boundary still fails early, release only this
-        # exact empty reservation so the same Wish id can be retried.  A
-        # partial workspace or host state is deliberately preserved.
+    timing_observer = _validated_timing_observer(timing_observer)
+    with wish_run_timing_span(
+        timing_observer,
+        product_id=wish.product_id,
+        stage="wish",
+        operation="run.initialize",
+    ):
+        assets = product_run_agent_assets()
+        wish_bytes = canonical_wish_bytes(wish)
+        domain_skill_roots = product_run_domain_skill_roots()
+        inventor_source_root = _product_run_inventor_source_root(assets)
+        paths = native_run_paths(wish.product_id, create=True)
         try:
-            paths.workspace.parent.rmdir()
-        except OSError:
-            pass
-        raise
+            run = AgentRun.create(
+                paths.workspace,
+                paths.host_state,
+                product_id=wish.product_id,
+                wish_bytes=wish_bytes,
+                product_run_constitution_source=assets.constitution,
+                skill_root=assets.skill_root,
+                domain_skill_roots=domain_skill_roots,
+                inventor_source_root=inventor_source_root,
+                max_rounds=4,
+            )
+        except Exception:
+            # Asset validation normally happens before reserving the run
+            # container. AgentRun also validates all materialized inputs before
+            # creating its workspace. If either boundary still fails early,
+            # release only this exact empty reservation so the same Wish id can
+            # be retried. A partial workspace or host state is preserved.
+            try:
+                paths.workspace.parent.rmdir()
+            except OSError:
+                pass
+            raise
     with _native_run_mutation_lock(paths):
         _record_authorization(
             paths,
@@ -3254,6 +3317,7 @@ def start_native_run(
             launcher=launcher,
             publish_requested=publish_requested,
             activity_observer=activity_observer,
+            timing_observer=timing_observer,
         )
         return {
             **_native_receipt(
@@ -3276,6 +3340,7 @@ def _resume_native_run_locked(
     paths: NativeRunPaths,
     publish_requested: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Mutate one native run while its process lock is held."""
 
@@ -3292,7 +3357,13 @@ def _resume_native_run_locked(
         and checkpoint.status in ("active", "waiting", "complete")
     ):
         try:
-            promoted = _promote_existing_release(run, checkpoint)
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="effect.factory",
+            ):
+                promoted = _promote_existing_release(run, checkpoint)
         except _FactoryCredentialsUnavailable:
             promotion_action = "publication-not-created"
         except _OptionalPublicationUnavailable:
@@ -3334,6 +3405,7 @@ def _resume_native_run_locked(
         launcher=launcher,
         publish_requested=authorization["publish_requested"],
         activity_observer=activity_observer,
+        timing_observer=timing_observer,
     )
     if action == "started":
         action = "started-after-interruption"
@@ -3354,14 +3426,16 @@ def resume_native_run(
     *,
     publish_requested: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Resume one exact native session under an exclusive host mutation lock.
 
-    ``activity_observer`` receives only content-free native activity classes.
-    It is optional presentation telemetry and cannot change the run result.
+    Both observers receive only bounded, content-free progress. They are
+    optional presentation telemetry and cannot change the run result.
     """
 
     activity_observer = _validated_activity_observer(activity_observer)
+    timing_observer = _validated_timing_observer(timing_observer)
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
         run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
@@ -3373,6 +3447,7 @@ def resume_native_run(
             paths=paths,
             publish_requested=publish_requested,
             activity_observer=activity_observer,
+            timing_observer=timing_observer,
         )
 
 

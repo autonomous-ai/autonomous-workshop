@@ -53,6 +53,7 @@ from workshop.runtime.package_data import (
     packaged_inventors_root,
     product_run_domain_skill_roots,
 )
+from workshop.runtime.progress import WishRunTimingEvent
 from workshop.wish import Wish, generate_wish_id
 from workshop.workflow import native_run_status, resume_native_run, start_native_run
 
@@ -73,8 +74,8 @@ _LIVE_ACTIVITY_MESSAGES = {
 }
 
 
-class _LiveNativeActivity:
-    """Render bounded, content-free foreground progress without log churn."""
+class _LiveWishProgress:
+    """Render bounded Wish timing and native activity without log churn."""
 
     def __init__(self, stream: TextIO) -> None:
         self._stream = stream
@@ -83,7 +84,7 @@ class _LiveNativeActivity:
         self._last_active_at: Optional[float] = None
         self._last_running_at: Optional[float] = None
 
-    def __call__(self, activity: str) -> None:
+    def activity(self, activity: str) -> None:
         message = _LIVE_ACTIVITY_MESSAGES.get(activity)
         if message is None:
             return
@@ -110,6 +111,19 @@ class _LiveNativeActivity:
                     self._last_active_at = now
                 self._last_non_running = activity
             print(message, file=self._stream, flush=True)
+
+    def timing(self, event: WishRunTimingEvent) -> None:
+        fields = [
+            "[%s]" % event.observed_at,
+            "wish=%s" % event.product_id,
+            "stage=%s" % event.stage,
+            "operation=%s" % event.operation,
+            "state=%s" % event.state,
+        ]
+        if event.elapsed_ms is not None:
+            fields.append("elapsed_ms=%d" % event.elapsed_ms)
+        with self._lock:
+            print(" ".join(fields), file=self._stream, flush=True)
 
 
 def _shell_command(*parts: Any) -> str:
@@ -277,6 +291,7 @@ def _wish(args: argparse.Namespace) -> int:
         context={"source": "workshop-cli"},
     )
     progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
     print("Starting one native Codex session before Match...", file=progress, flush=True)
     if not args.publish:
@@ -288,7 +303,8 @@ def _wish(args: argparse.Namespace) -> int:
     receipt = start_native_run(
         wish,
         publish_requested=args.publish,
-        activity_observer=_LiveNativeActivity(progress),
+        activity_observer=live_progress.activity,
+        timing_observer=live_progress.timing,
     )
     if args.json:
         _print_json(receipt)
@@ -308,6 +324,7 @@ def _status(args: argparse.Namespace) -> int:
 
 def _resume(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
     print(
         "Resuming the exact native Codex session for %s..." % args.product_id,
         file=progress,
@@ -316,7 +333,8 @@ def _resume(args: argparse.Namespace) -> int:
     receipt = resume_native_run(
         args.product_id,
         publish_requested=args.publish,
-        activity_observer=_LiveNativeActivity(progress),
+        activity_observer=live_progress.activity,
+        timing_observer=live_progress.timing,
     )
     if args.json:
         _print_json(receipt)
