@@ -170,8 +170,8 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(stderr.getvalue().count("using a tool"), 1)
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
-        self.assertEqual(observed["effort"], "forge")
-        self.assertIn("Effort: Forge", stderr.getvalue())
+        self.assertEqual(observed["effort"], "spark")
+        self.assertIn("Effort: Spark", stderr.getvalue())
         native_start.assert_called_once()
 
     def test_wish_strict_wait_exits_one_without_a_publication_flag(self):
@@ -185,7 +185,7 @@ class NativeCommandTest(unittest.TestCase):
 
     def test_human_wish_timing_uses_stdout_and_flushes(self):
         def start(wish, *, effort, activity_observer, timing_observer):
-            self.assertEqual(effort, "forge")
+            self.assertEqual(effort, "spark")
             del wish, activity_observer
             timing_observer(timing_event(operation="stage.prepare"))
             timing_observer(

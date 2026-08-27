@@ -124,8 +124,8 @@ skills, and Inventor roster, and then starts one native Codex session with that
 project as its working directory. Choose how much creative depth the run gets:
 
 ```text
-Spark: Wish -> Make -> Release
-Forge: Wish -> Invent -> Make -> Release       (default)
+Spark: Wish -> Make -> Release                 (default)
+Forge: Wish -> Invent -> Make -> Release
 Quest: Wish -> Invent -> Make -> Playtest -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
@@ -138,11 +138,11 @@ artifact, gate, or fabricated evidence.
 
 Each effort has its own exact route diagram.
 
-#### Spark
+#### Spark (default)
 
 [![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
 
-#### Forge (default)
+#### Forge
 
 [![Forge: Wish, Invent, Make, Release, then Operations](docs/images/effort-forge.svg)](docs/images/effort-forge.svg)
 

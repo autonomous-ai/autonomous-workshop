@@ -738,7 +738,7 @@ class NativeHostTest(unittest.TestCase):
             prompt = arguments["prompt"]
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
-            self.assertIn("current invent stage", prompt)
+            self.assertIn("current make stage", prompt)
             self.assertIn("Create one native Codex goal", prompt)
             self.assertIn("successful finalization as its stopping condition", prompt)
             self.assertIn("inspecting, acting, evaluating, and improving", prompt)
@@ -754,10 +754,10 @@ class NativeHostTest(unittest.TestCase):
             self.assertNotIn("FACTORY", prompt)
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
-            self.assertEqual(receipt["effort"], "forge")
-            self.assertIn("Effort: Forge", stderr.getvalue())
+            self.assertEqual(receipt["effort"], "spark")
+            self.assertIn("Effort: Spark", stderr.getvalue())
             self.assertIn(
-                "Starting one native Codex session for Invent",
+                "Starting one native Codex session for Make",
                 stderr.getvalue(),
             )
 

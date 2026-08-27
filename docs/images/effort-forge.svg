@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-labelledby="title description">
   <title id="title">Forge effort route: Wish to Invent to Make to Release</title>
-  <desc id="description">Forge is the default Autonomous Workshop route. Inventor selection happens inside Invent, followed by Make and Release. Playtest is passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
+  <desc id="description">Forge is the balanced Autonomous Workshop route. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Invent, followed by Make and Release. Playtest is passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/></filter>
     <marker id="arrow" viewBox="0 0 12 12" markerWidth="18" markerHeight="18" refX="11" refY="6" orient="auto" markerUnits="userSpaceOnUse" overflow="visible"><polygon points="0,0 12,6 0,12" fill="#525b66"/></marker>
@@ -24,13 +24,13 @@
   </defs>
 
   <rect width="1200" height="820" rx="28" fill="#f5f2ec"/>
-  <text x="55" y="64" class="eyebrow orange">FORGE · DEFAULT ROUTE</text>
+  <text x="55" y="64" class="eyebrow orange">FORGE · BALANCED ROUTE</text>
   <text x="55" y="108" class="title">Explore the idea, then engineer it.</text>
   <text x="55" y="139" class="subtitle">Invent adds dedicated research and concept exploration before Make; Playtest remains truthfully omitted.</text>
 
   <g filter="url(#shadow)"><rect x="55" y="185" width="1090" height="68" rx="18" class="manager"/></g>
   <text x="83" y="212" class="eyebrow" fill="#376b61">WORKSHOP MANAGER</text>
-  <text x="83" y="237" class="body">The host freezes Forge, keeps durable gates, and owns authenticated publication; Codex does the creative work.</text>
+  <text x="83" y="237" class="body">The host freezes Forge and owns gates + publication; each active attempt gets one Codex Goal.</text>
 
   <path class="route" d="M 195 355 H 240"/>
   <path class="route" d="M 450 355 H 495"/>
@@ -43,21 +43,21 @@
   <text x="78" y="386" class="body">Exact words.</text>
 
   <g filter="url(#shadow)"><rect x="240" y="285" width="210" height="150" rx="20" class="active"/></g>
-  <text x="265" y="315" class="eyebrow orange">SELECTION HERE</text>
+  <text x="265" y="315" class="eyebrow orange">CODEX GOAL · INVENT</text>
   <text x="265" y="350" class="heading">INVENT</text>
   <text x="265" y="377" class="body">Choose the Inventor.</text>
   <text x="265" y="399" class="body">Research + explore.</text>
   <text x="265" y="421" class="body">Verify the concept.</text>
 
   <g filter="url(#shadow)"><rect x="495" y="285" width="210" height="150" rx="20" class="active"/></g>
-  <text x="520" y="315" class="eyebrow orange">ENGINEER IT</text>
+  <text x="520" y="315" class="eyebrow orange">CODEX GOAL · MAKE</text>
   <text x="520" y="350" class="heading">MAKE</text>
   <text x="520" y="377" class="body">Build mechanical CAD.</text>
   <text x="520" y="399" class="body">Inspect exact output.</text>
   <text x="520" y="421" class="body">Pass the Make gate.</text>
 
   <g filter="url(#shadow)"><rect x="750" y="285" width="210" height="150" rx="20" class="active"/></g>
-  <text x="775" y="315" class="eyebrow orange">VERIFIED + PUBLIC</text>
+  <text x="775" y="315" class="eyebrow orange">CODEX GOAL · RELEASE</text>
   <text x="775" y="350" class="heading">RELEASE</text>
   <text x="775" y="377" class="body">Seal CAD + manual.</text>
   <text x="775" y="399" class="body">Read back hashes.</text>

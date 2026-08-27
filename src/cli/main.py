@@ -783,8 +783,8 @@ def parser() -> argparse.ArgumentParser:
         default=DEFAULT_WORKSHOP_EFFORT,
         metavar="MODE",
         help=(
-            "creative depth: spark (Wish->Make->Release), "
-            "forge (Wish->Invent->Make->Release; default), or "
+            "creative depth: spark (Wish->Make->Release; default), "
+            "forge (Wish->Invent->Make->Release), or "
             "quest (Wish->Invent->Make->Playtest->Release)"
         ),
     )
