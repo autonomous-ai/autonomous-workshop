@@ -161,6 +161,16 @@ reports those fields plus elapsed seconds; it never stores or displays prompts,
 messages, reasoning, tool arguments or output, paths, agent identities, thread
 ids, or credentials.
 
+Foreground `workshop wish` and `workshop resume` commands also render those
+same content-free classes while the native turn is active. Repeated event
+classes are collapsed, high-churn activity is rate-limited, and the five-second
+liveness signal is printed at most once every 30 seconds. Long turns therefore
+remain visibly alive without copying native event volume into the outer log. In
+`--json` mode all live progress is flushed to stderr; stdout remains exactly one
+final machine-readable JSON receipt. The renderer describes completed agent
+messages only as progress reports: their content is neither exposed nor
+interpreted as proof that the current stage is actually finishing.
+
 All progress delivery is serialized on a bounded daemon queue; observer-owned
 code never runs on the launcher thread. Terminal delivery waits only briefly
 for a healthy local sink so ordinary status is deterministic. A permanently

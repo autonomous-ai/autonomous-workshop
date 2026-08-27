@@ -117,6 +117,22 @@ class _FakeLauncher:
         return _FakeOutcome(arguments)
 
 
+class _ReportingFakeLauncher(_FakeLauncher):
+    @staticmethod
+    def _report(arguments, activities):
+        observer = arguments["activity_observer"]
+        for activity in activities:
+            observer(activity)
+
+    def start(self, **arguments):
+        self._report(arguments, ("starting", "reasoning", "event-owned content"))
+        return super().start(**arguments)
+
+    def resume(self, **arguments):
+        self._report(arguments, ("tool", "running", "event-owned content"))
+        return super().resume(**arguments)
+
+
 class _FinalizedMatchThenFailLauncher(_FakeLauncher):
     """Simulate a launcher failure after the exact Match finalizer boundary."""
 
@@ -1051,6 +1067,57 @@ class NativeHostTest(unittest.TestCase):
                 "message",
             ):
                 self.assertNotIn(forbidden, private)
+
+    def test_start_and_resume_surface_only_safe_non_authoritative_activity(self):
+        launcher = _ReportingFakeLauncher()
+        observed = []
+
+        def observe(activity):
+            observed.append(activity)
+            if activity == "reasoning":
+                raise RuntimeError("presentation sink failed")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "foreground-progress-wish"
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ):
+                started = start_native_run(
+                    Wish.create(product_id, "a toy that shows bounded progress"),
+                    activity_observer=observe,
+                )
+                resumed = resume_native_run(
+                    product_id,
+                    activity_observer=observe,
+                )
+
+        self.assertEqual(started["status"], "waiting")
+        self.assertEqual(resumed["status"], "waiting")
+        self.assertEqual(
+            observed,
+            ["starting", "reasoning", "tool", "running"],
+        )
+
+    def test_invalid_activity_observer_is_rejected_before_run_creation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), self.assertRaisesRegex(ContractError, "observer must be callable"):
+                start_native_run(
+                    Wish.create("invalid-progress-sink", "a bounded clockwork toy"),
+                    activity_observer="not-callable",
+                )
+
+            self.assertFalse(home.exists())
 
     def test_progress_throttles_active_event_churn_but_forces_terminal_classes(self):
         progress = NativeRunProgress(

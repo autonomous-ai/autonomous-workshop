@@ -108,22 +108,41 @@ class NativeCommandTest(unittest.TestCase):
     def test_wish_calls_only_native_start_and_keeps_json_stdout_clean(self):
         observed = {}
 
-        def start(wish, *, publish_requested):
+        def start(wish, *, publish_requested, activity_observer):
             observed["wish"] = wish
             observed["publish_requested"] = publish_requested
+            for activity in (
+                "starting",
+                "reasoning",
+                "running",
+                "running",
+                "tool",
+                "tool",
+                "completed",
+            ):
+                activity_observer(activity)
             return native_receipt()
 
         stdout = StringIO()
         stderr = StringIO()
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
             "cli.main.start_native_run", side_effect=start
-        ) as native_start, redirect_stdout(stdout), redirect_stderr(stderr):
+        ) as native_start, mock.patch(
+            "cli.main.time.monotonic",
+            side_effect=(100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0),
+        ), redirect_stdout(stdout), redirect_stderr(stderr):
             result = main(("wish", "a", "moon", "that", "waddles", "--json"))
 
         self.assertEqual(result, 0)
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "match")
         self.assertIn("Starting one native Codex session", stderr.getvalue())
         self.assertIn("not published by default", stderr.getvalue())
+        self.assertIn("reasoning about the current stage", stderr.getvalue())
+        self.assertIn("process is still running", stderr.getvalue())
+        self.assertIn("using a tool for the current stage", stderr.getvalue())
+        self.assertIn("turn complete; Workshop is verifying it", stderr.getvalue())
+        self.assertEqual(stderr.getvalue().count("process is still running"), 1)
+        self.assertEqual(stderr.getvalue().count("using a tool"), 1)
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
         self.assertFalse(observed["publish_requested"])
@@ -138,6 +157,33 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 1)
         start.assert_called_once()
         self.assertTrue(start.call_args.kwargs["publish_requested"])
+
+    def test_live_native_activity_repeats_only_throttled_running_updates(self):
+        output = StringIO()
+        activity = cli_main._LiveNativeActivity(output)
+        with mock.patch(
+            "cli.main.time.monotonic",
+            side_effect=(100.0, 129.9, 130.0),
+        ):
+            activity("running")
+            activity("running")
+            activity("running")
+
+        self.assertEqual(output.getvalue().count("process is still running"), 2)
+
+    def test_live_native_activity_rate_limits_high_churn_classes(self):
+        output = StringIO()
+        activity = cli_main._LiveNativeActivity(output)
+        with mock.patch(
+            "cli.main.time.monotonic",
+            side_effect=(100.0, 100.5, 102.0),
+        ):
+            activity("reasoning")
+            activity("tool")
+            activity("tool")
+
+        self.assertEqual(output.getvalue().count("reasoning"), 1)
+        self.assertEqual(output.getvalue().count("using a tool"), 1)
 
     def test_status_is_read_only_native_inspection(self):
         stdout = StringIO()
@@ -222,18 +268,26 @@ class NativeCommandTest(unittest.TestCase):
         )
 
     def test_resume_calls_only_native_resume_and_has_strict_wait_policy(self):
+        def resume_run(product_id, *, publish_requested, activity_observer):
+            activity_observer("tool")
+            return native_receipt(stage="make")
+
         stdout = StringIO()
         stderr = StringIO()
         with mock.patch(
-            "cli.main.resume_native_run", return_value=native_receipt(stage="make")
+            "cli.main.resume_native_run", side_effect=resume_run
         ) as resume, redirect_stdout(stdout), redirect_stderr(stderr):
             result = main(
                 ("resume", "wish-one", "--publish", "--strict", "--json")
             )
         self.assertEqual(result, 1)
-        resume.assert_called_once_with("wish-one", publish_requested=True)
+        resume.assert_called_once()
+        self.assertEqual(resume.call_args.args, ("wish-one",))
+        self.assertTrue(resume.call_args.kwargs["publish_requested"])
+        self.assertTrue(callable(resume.call_args.kwargs["activity_observer"]))
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "make")
         self.assertIn("exact native Codex session", stderr.getvalue())
+        self.assertIn("using a tool for the current stage", stderr.getvalue())
 
     def test_failed_native_run_exits_one_even_without_strict(self):
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(

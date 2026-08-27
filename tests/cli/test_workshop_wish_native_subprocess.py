@@ -121,6 +121,16 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
             self.assertEqual(receipt["kind"], "native-agent-run")
             self.assertEqual(receipt["stage"], "match")
             self.assertEqual(receipt["publication"]["status"], "not-created")
+            self.assertIn(
+                "Native Codex: reported progress for the current stage.",
+                progress.getvalue(),
+            )
+            self.assertNotIn("finalizing the current stage", progress.getvalue())
+            self.assertIn(
+                "Native Codex: turn complete; Workshop is verifying it.",
+                progress.getvalue(),
+            )
+            self.assertNotIn("fixture complete", progress.getvalue())
 
             workspace = home / "runs" / receipt["product_id"] / "workspace"
             self.assertTrue((home / "state" / receipt["product_id"]).is_dir())

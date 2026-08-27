@@ -144,6 +144,11 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
+While `wish` or `resume` is active, the foreground command prints only coarse,
+content-free activity such as reasoning, tool use, and a throttled liveness
+heartbeat. With `--json`, that live activity goes to stderr and stdout remains
+one final JSON receipt.
+
 Once the exact Codex session is checkpointed, the same `wish` or `resume`
 command automatically resumes it after a native-turn timeout or recognized
 provider disconnect. Each continuation uses bounded jittered backoff and is

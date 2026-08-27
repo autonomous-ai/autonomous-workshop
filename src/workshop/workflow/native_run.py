@@ -17,7 +17,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Callable, Mapping, Optional, Sequence
 
 try:
     import fcntl
@@ -88,6 +88,7 @@ from workshop.runtime.package_data import (
 )
 from workshop.runtime.progress import (
     NATIVE_PROGRESS_FILENAME,
+    SAFE_NATIVE_ACTIVITY_CLASSES,
     NativeRunProgress,
     begin_native_progress,
     native_progress_turn_floor,
@@ -1640,7 +1641,7 @@ def _launcher_call(
     *,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
-    activity_observer: Optional[Any] = None,
+    activity_observer: Optional[Callable[[str], None]] = None,
 ) -> CodexNativeSessionOutcome:
     arguments = {
         "product_id": checkpoint.product_id,
@@ -1659,6 +1660,40 @@ def _launcher_call(
         ) from None
     except CodexInvocationError as exc:
         raise WorkshopError("native Codex session did not complete: %s" % exc) from None
+
+
+def _validated_activity_observer(
+    observer: Optional[Callable[[str], None]],
+) -> Optional[Callable[[str], None]]:
+    if observer is not None and not callable(observer):
+        raise ContractError("native run activity observer must be callable")
+    return observer
+
+
+def _combined_activity_observer(
+    tracker: _NativeProgressTracker,
+    observer: Optional[Callable[[str], None]],
+) -> Callable[[str], None]:
+    """Persist and optionally surface only host-selected activity classes.
+
+    The native launcher normally isolates this callback on its bounded progress
+    queue. Keep the fan-out independently failure-safe as well so a future
+    adapter or deterministic fake cannot turn presentation telemetry into
+    lifecycle authority.
+    """
+
+    def observe(activity: str) -> None:
+        if activity not in SAFE_NATIVE_ACTIVITY_CLASSES:
+            return
+        tracker.observe(activity)
+        if observer is None:
+            return
+        try:
+            observer(activity)
+        except Exception:
+            return
+
+    return observe
 
 
 def _host_evidence_sha256(value: Mapping[str, Any]) -> str:
@@ -2799,6 +2834,7 @@ def _run_native_session(
     *,
     launcher: CodexNativeSessionLauncher,
     publish_requested: bool,
+    activity_observer: Optional[Callable[[str], None]] = None,
 ) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
     """Advance through native stages until complete, wait, or failure."""
 
@@ -2847,6 +2883,10 @@ def _run_native_session(
         _remove_agent_outcome(run.run_root)
         method = "resume" if _session_status(paths) == "checkpointed" else "start"
         progress = _NativeProgressTracker.begin(paths, checkpoint)
+        turn_activity_observer = _combined_activity_observer(
+            progress,
+            activity_observer,
+        )
         launcher_failure: Optional[WorkshopError] = None
         try:
             last_session = _launcher_call(
@@ -2854,7 +2894,7 @@ def _run_native_session(
                 method,
                 checkpoint=checkpoint,
                 paths=paths,
-                activity_observer=progress.observe,
+                activity_observer=turn_activity_observer,
             )
         except WorkshopError as exc:
             # The finalizer is an exact filesystem protocol, independent of the
@@ -3161,9 +3201,15 @@ def start_native_run(
     wish: Wish,
     *,
     publish_requested: bool = False,
+    activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Mapping[str, Any]:
-    """Persist one Wish and immediately start its whole-run native session."""
+    """Persist one Wish and immediately start its whole-run native session.
 
+    ``activity_observer`` receives only content-free native activity classes.
+    It is optional presentation telemetry and cannot change the run result.
+    """
+
+    activity_observer = _validated_activity_observer(activity_observer)
     assets = product_run_agent_assets()
     wish_bytes = canonical_wish_bytes(wish)
     domain_skill_roots = product_run_domain_skill_roots()
@@ -3206,6 +3252,7 @@ def start_native_run(
             paths,
             launcher=launcher,
             publish_requested=publish_requested,
+            activity_observer=activity_observer,
         )
         return {
             **_native_receipt(
@@ -3227,6 +3274,7 @@ def _resume_native_run_locked(
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
     publish_requested: bool = False,
+    activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Mapping[str, Any]:
     """Mutate one native run while its process lock is held."""
 
@@ -3284,6 +3332,7 @@ def _resume_native_run_locked(
         paths,
         launcher=launcher,
         publish_requested=authorization["publish_requested"],
+        activity_observer=activity_observer,
     )
     if action == "started":
         action = "started-after-interruption"
@@ -3303,9 +3352,15 @@ def resume_native_run(
     product_id: str,
     *,
     publish_requested: bool = False,
+    activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Mapping[str, Any]:
-    """Resume one exact native session under an exclusive host mutation lock."""
+    """Resume one exact native session under an exclusive host mutation lock.
 
+    ``activity_observer`` receives only content-free native activity classes.
+    It is optional presentation telemetry and cannot change the run result.
+    """
+
+    activity_observer = _validated_activity_observer(activity_observer)
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
         run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
@@ -3316,6 +3371,7 @@ def resume_native_run(
             checkpoint=checkpoint,
             paths=paths,
             publish_requested=publish_requested,
+            activity_observer=activity_observer,
         )
 
 

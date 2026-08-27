@@ -12,9 +12,11 @@ import shutil
 import stat
 import subprocess
 import sys
+import threading
+import time
 import unicodedata
 from pathlib import Path
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence, TextIO
 
 from workshop.artifacts.core import MAX_PACK_BYTES
 from workshop.artifacts.pack import bundle_artifact, plan_artifact, seal_artifact
@@ -56,6 +58,58 @@ from workshop.workflow import native_run_status, resume_native_run, start_native
 
 
 _INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
+_LIVE_ACTIVE_INTERVAL_SECONDS = 2.0
+_LIVE_RUNNING_INTERVAL_SECONDS = 30.0
+_LIVE_CHURN_ACTIVITY = frozenset(("reasoning", "tool", "subagent"))
+_LIVE_ACTIVITY_MESSAGES = {
+    "starting": "Native Codex: starting the current stage.",
+    "running": "Native Codex: process is still running.",
+    "reasoning": "Native Codex: reasoning about the current stage.",
+    "tool": "Native Codex: using a tool for the current stage.",
+    "subagent": "Native Codex: coordinating a subagent.",
+    "finalizing": "Native Codex: reported progress for the current stage.",
+    "completed": "Native Codex: turn complete; Workshop is verifying it.",
+    "failed": "Native Codex: turn stopped; Workshop is checking the result.",
+}
+
+
+class _LiveNativeActivity:
+    """Render bounded, content-free foreground progress without log churn."""
+
+    def __init__(self, stream: TextIO) -> None:
+        self._stream = stream
+        self._lock = threading.Lock()
+        self._last_non_running: Optional[str] = None
+        self._last_active_at: Optional[float] = None
+        self._last_running_at: Optional[float] = None
+
+    def __call__(self, activity: str) -> None:
+        message = _LIVE_ACTIVITY_MESSAGES.get(activity)
+        if message is None:
+            return
+        now = time.monotonic()
+        with self._lock:
+            if activity == "running":
+                if (
+                    self._last_running_at is not None
+                    and now - self._last_running_at
+                    < _LIVE_RUNNING_INTERVAL_SECONDS
+                ):
+                    return
+                self._last_running_at = now
+            else:
+                if activity == self._last_non_running:
+                    return
+                if activity in _LIVE_CHURN_ACTIVITY:
+                    if (
+                        self._last_active_at is not None
+                        and now - self._last_active_at
+                        < _LIVE_ACTIVE_INTERVAL_SECONDS
+                    ):
+                        return
+                    self._last_active_at = now
+                self._last_non_running = activity
+            print(message, file=self._stream, flush=True)
 
 
 def _shell_command(*parts: Any) -> str:
@@ -231,7 +285,11 @@ def _wish(args: argparse.Namespace) -> int:
             file=progress,
             flush=True,
         )
-    receipt = start_native_run(wish, publish_requested=args.publish)
+    receipt = start_native_run(
+        wish,
+        publish_requested=args.publish,
+        activity_observer=_LiveNativeActivity(progress),
+    )
     if args.json:
         _print_json(receipt)
     else:
@@ -255,7 +313,11 @@ def _resume(args: argparse.Namespace) -> int:
         file=progress,
         flush=True,
     )
-    receipt = resume_native_run(args.product_id, publish_requested=args.publish)
+    receipt = resume_native_run(
+        args.product_id,
+        publish_requested=args.publish,
+        activity_observer=_LiveNativeActivity(progress),
+    )
     if args.json:
         _print_json(receipt)
     else:
