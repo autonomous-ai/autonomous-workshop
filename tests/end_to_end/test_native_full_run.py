@@ -1366,6 +1366,40 @@ class NativeFullRunTest(unittest.TestCase):
             ["block", "block", "block"],
         )
 
+    def test_a_worse_round_redirects_the_next_make_to_the_best_sealed_round(self):
+        one = {
+            "code": "waypoint-misalignment",
+            "area": "make",
+            "severity": "block",
+            "finding": "Waypoints miss the grid.",
+            "change": "Center every waypoint on a playable square.",
+            "evidence_refs": ["results/mechanical-check.json"],
+            "invalidates": ["playtest", "release", "deliver"],
+        }
+        two = {**one, "code": "piece-wobble", "finding": "Pieces wobble in the recess.",
+               "change": "Deepen the recess by 0.5 mm."}
+        launcher, checkpoint = self._run_playtest_routing_case(
+            playtest_plan=[("block", [one]), ("block", [one, two])],
+            wish_name="orbit-dog-worse-round",
+            context_source="native-repair-base-test",
+        )
+        self.assertEqual(checkpoint.round_index, 3)
+        make_packets = [p for p in launcher.stage_packets if p["stage"] == "make"]
+        self.assertEqual([p["round"] for p in make_packets], [1, 2, 3])
+        self.assertIsNone(make_packets[0]["inputs"]["repair_base"])
+        self.assertIsNone(make_packets[1]["inputs"]["repair_base"])
+        base = make_packets[2]["inputs"]["repair_base"]
+        self.assertEqual(base["round"], 1)
+        self.assertEqual(base["product_root"], "artifacts/make/r0001/product")
+        self.assertEqual(
+            [entry["machine_failures"] for entry in make_packets[2]["inputs"]["score_history"]],
+            [1, 2],
+        )
+        playtest_packets = [p for p in launcher.stage_packets if p["stage"] == "playtest"]
+        self.assertEqual(base["made_sha256"], playtest_packets[0]["inputs"]["made"]["made_sha256"])
+        self.assertNotEqual(base["made_sha256"], playtest_packets[1]["inputs"]["made"]["made_sha256"])
+        self.assertEqual(base["made_artifact"]["path"], "artifacts/make/r0001/made.json")
+
     def test_cad_gate_rejections_resume_with_hash_bound_same_stage_feedback(self):
         launcher = _OneSessionProductAgent()
         effects = _FactoryEffects()

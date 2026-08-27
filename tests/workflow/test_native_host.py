@@ -27,7 +27,9 @@ from workshop.workflow.native_run import (
     NativeRunPaths,
     _NativeProgressTracker,
     _design_vault_binding,
+    _best_round,
     _playtest_score_history,
+    _repair_base,
     _run_design_vault,
     _score_trend,
     _native_run_mutation_lock,
@@ -737,6 +739,80 @@ class NativeHostTest(unittest.TestCase):
             (gates / "0010-playtest.json").write_text(json.dumps({"evidence": {"checks": []}}), encoding="utf-8")
             with self.assertRaisesRegex(StateConflict, "malformed: 0010-playtest.json"):
                 _playtest_score_history(host)
+
+    def test_repair_base_names_the_best_sealed_round_only_when_the_last_is_worse(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            run = SimpleNamespace(run_root=root / "run", host_state_root=root / "host")
+            run.run_root.mkdir()
+            gates = run.host_state_root / "gates"
+            gates.mkdir(parents=True)
+
+            def playtest(revision, round_index, failing, actionable, medians=None):
+                checks = {"round": round_index, "verdict": "pass" if not (failing or actionable) else "block",
+                          "failing_checks": failing, "actionable_feedback": actionable,
+                          "score_median": medians, "score_spread": None, "score_reads": None,
+                          "vault_leads_confirmed": 0}
+                (gates / ("%04d-playtest.json" % revision)).write_text(
+                    json.dumps({"evidence": {"checks": checks}}), encoding="utf-8")
+
+            def make(revision, round_index, made_sha256):
+                relative = "artifacts/make/r%04d/made.json" % round_index
+                sealed = run.run_root / relative
+                sealed.parent.mkdir(parents=True, exist_ok=True)
+                content = json.dumps({"made_sha256": made_sha256}).encode()
+                sealed.write_bytes(content)
+                (gates / ("%04d-make.json" % revision)).write_text(json.dumps({"evidence": {
+                    "artifact_path": relative, "artifact_sha256": hashlib.sha256(content).hexdigest(),
+                    "checks": {"round": round_index, "made_sha256": made_sha256}}}), encoding="utf-8")
+
+            self.assertIsNone(_best_round([]))
+            self.assertIsNone(_repair_base(run, []))
+            make(3, 1, "a" * 64); playtest(4, 1, 0, 1)
+            history = _playtest_score_history(run.host_state_root)
+            self.assertEqual(history[0]["machine_failures"], 1)
+            self.assertIsNone(_repair_base(run, history))       # only round, nothing to redirect to
+            make(5, 2, "b" * 64); playtest(6, 2, 1, 2)
+            history = _playtest_score_history(run.host_state_root)
+            self.assertEqual(_best_round(history)["round"], 1)
+            base = _repair_base(run, history)
+            self.assertEqual(base["round"], 1)
+            self.assertEqual(base["product_root"], "artifacts/make/r0001/product")
+            self.assertEqual(base["made_sha256"], "a" * 64)
+            self.assertEqual(base["made_artifact"]["path"], "artifacts/make/r0001/made.json")
+            make(7, 3, "c" * 64); playtest(8, 3, 0, 1, {"play": 9.0})
+            history = _playtest_score_history(run.host_state_root)
+            # rounds 1 and 3 tie on machine failures; round 3's scores win the tie
+            self.assertEqual(_best_round(history)["round"], 3)
+            self.assertIsNone(_repair_base(run, history))       # last round is the best
+            playtest(9, 4, 0, 3)
+            history = _playtest_score_history(run.host_state_root)
+            self.assertEqual(_repair_base(run, history)["round"], 3)
+            # legacy receipts without counts are never candidates
+            legacy = [{"round": 1, "machine_failures": None}, {"round": 2, "machine_failures": 2}]
+            self.assertEqual(_best_round(legacy)["round"], 2)
+            self.assertIsNone(_repair_base(run, [{"round": 5, "machine_failures": None}]))
+            # tampering with the sealed contract or the receipt fails closed
+            sealed = run.run_root / "artifacts/make/r0003/made.json"
+            original = sealed.read_bytes()
+            sealed.write_bytes(original + b" ")
+            with self.assertRaisesRegex(StateConflict, "differs from its receipt"):
+                _repair_base(run, history)
+            sealed.unlink()
+            with self.assertRaisesRegex(StateConflict, "round 3 is missing"):
+                _repair_base(run, history)
+            sealed.write_bytes(original)
+            (gates / "0007-make.json").write_text("{broken", encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "unreadable: 0007-make.json"):
+                _repair_base(run, history)
+            (gates / "0007-make.json").write_text(json.dumps({"evidence": {
+                "artifact_path": "../escape.json", "artifact_sha256": "0" * 64,
+                "checks": {"round": 3, "made_sha256": "c" * 64}}}), encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "artifact path is unsafe"):
+                _repair_base(run, history)
+            (gates / "0007-make.json").unlink()
+            self.assertIsNone(_repair_base(run, history))       # no receipt for the best round
+            self.assertIsNone(_repair_base(SimpleNamespace(run_root=root, host_state_root=root / "nowhere"), history))
 
     def test_run_design_vault_is_bound_by_hash_or_absent(self):
         with tempfile.TemporaryDirectory() as temporary:

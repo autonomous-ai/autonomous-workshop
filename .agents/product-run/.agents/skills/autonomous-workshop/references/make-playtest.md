@@ -34,7 +34,11 @@ While pursuing the Goal:
    round's medians and spreads), `regression` (dimensions the last repair
    made worse, with the delta), and `ambiguous` (dimensions readers disagreed
    on). A repair that fixes the cited failure while a regression grows is not
-   an improvement; address the regression in the same round.
+   an improvement; address the regression in the same round. When the host
+   sets `repair_base`, the previous round scored strictly worse than an
+   earlier sealed round by machine counts (failing checks plus actionable
+   feedback): start this round's repair from that sealed `product_root` and
+   `made_sha256`, not from the last revision.
 2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
    `design-reference`, and `step-parts` skills under `.agents/skills/` to
    create or repair the actual product artifact. Use native subagents for bounded mechanism, CAD, or

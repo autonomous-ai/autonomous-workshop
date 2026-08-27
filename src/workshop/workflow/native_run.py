@@ -904,6 +904,8 @@ def _playtest_score_history(host_state_root: Path) -> list[dict[str, Any]]:
             raise StateConflict("Playtest gate receipt is unreadable: %s" % path.name) from exc
         if not isinstance(checks, Mapping):
             raise StateConflict("Playtest gate receipt is malformed: %s" % path.name)
+        failing = checks.get("failing_checks")
+        actionable = checks.get("actionable_feedback")
         history.append(
             {
                 "round": checks.get("round"),
@@ -912,9 +914,111 @@ def _playtest_score_history(host_state_root: Path) -> list[dict[str, Any]]:
                 "score_median": checks.get("score_median"),
                 "score_spread": checks.get("score_spread"),
                 "vault_leads_confirmed": checks.get("vault_leads_confirmed"),
+                "machine_failures": (
+                    failing + actionable
+                    if isinstance(failing, int) and isinstance(actionable, int)
+                    else None
+                ),
             }
         )
     return history
+
+
+def _best_round(history: Sequence[Mapping[str, Any]]) -> Optional[Mapping[str, Any]]:
+    """The round a repair should start from: fewest machine failures first.
+
+    Ties break on the higher score sum, then the earlier round.  Rounds sealed
+    without machine counts are not candidates.  Reader scores never outrank a
+    deterministic count; they only separate rounds the counts cannot.
+    """
+
+    candidates = [
+        item
+        for item in history
+        if isinstance(item.get("machine_failures"), int) and isinstance(item.get("round"), int)
+    ]
+    if not candidates:
+        return None
+
+    def key(item: Mapping[str, Any]) -> tuple[int, float, int]:
+        median = item.get("score_median")
+        total = (
+            sum(value for value in median.values() if isinstance(value, (int, float)))
+            if isinstance(median, Mapping)
+            else 0.0
+        )
+        return (item["machine_failures"], -total, item["round"])
+
+    return min(candidates, key=key)
+
+
+def _sealed_make_binding(
+    run: AgentRun, round_index: int
+) -> Optional[dict[str, Any]]:
+    """The host's own Make receipt for one round, re-verified against the sealed file."""
+
+    gates = run.host_state_root / "gates"
+    if not gates.is_dir():
+        return None
+    for path in sorted(gates.iterdir()):
+        if not path.name.endswith("-make.json") or path.is_symlink():
+            continue
+        try:
+            document = json.loads(path.read_bytes().decode("utf-8"))
+            evidence = document["evidence"]
+            checks = evidence["checks"]
+            if checks.get("round") != round_index:
+                continue
+            artifact_path = evidence["artifact_path"]
+            artifact_sha256 = evidence["artifact_sha256"]
+            made_sha256 = checks["made_sha256"]
+        except (OSError, UnicodeError, ValueError, KeyError, TypeError) as exc:
+            raise StateConflict("Make gate receipt is unreadable: %s" % path.name) from exc
+        sealed = run.run_root / _safe_relative_posix(artifact_path)
+        try:
+            content = sealed.read_bytes()
+        except OSError as exc:
+            raise StateConflict("sealed Make contract for round %d is missing" % round_index) from exc
+        if hashlib.sha256(content).hexdigest() != artifact_sha256:
+            raise StateConflict("sealed Make contract for round %d differs from its receipt" % round_index)
+        return {
+            "round": round_index,
+            "product_root": "artifacts/make/r%04d/product" % round_index,
+            "made_sha256": made_sha256,
+            "made_artifact": {"path": artifact_path, "sha256": artifact_sha256},
+        }
+    return None
+
+
+def _safe_relative_posix(value: Any) -> Path:
+    if not isinstance(value, str) or not value or value.startswith("/") or ".." in value.split("/"):
+        raise StateConflict("Make gate receipt artifact path is unsafe")
+    return Path(*value.split("/"))
+
+
+def _repair_base(
+    run: AgentRun, history: Sequence[Mapping[str, Any]]
+) -> Optional[dict[str, Any]]:
+    """Name the best sealed round when the last round scored worse than it.
+
+    The loop otherwise repairs the last revision, and the last revision is not
+    always the best one: a repair can trade one cited failure for two new
+    ones.  Only a strictly worse last round redirects the next Make; a
+    better-or-equal last round carries earlier fixes forward.
+    """
+
+    if not history:
+        return None
+    last = history[-1]
+    best = _best_round(history)
+    if (
+        best is None
+        or not isinstance(last.get("machine_failures"), int)
+        or best["round"] == last.get("round")
+        or last["machine_failures"] <= best["machine_failures"]
+    ):
+        return None
+    return _sealed_make_binding(run, best["round"])
 
 
 def _score_trend(history: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -1641,6 +1745,7 @@ def _prepare_stage_input(
                         ),
                         "score_history": score_history,
                         **_score_trend(score_history),
+                        "repair_base": _repair_base(run, score_history),
                         "host_cad_gate_rejection": cad_gate_rejection,
                         "product_root": "artifacts/make/r%04d/product"
                         % checkpoint.round_index,
@@ -2017,6 +2122,7 @@ def _evaluate_make_stage(
         artifact_path=artifact.path,
         artifact_sha256=artifact.sha256,
         checks={
+            "round": checkpoint.round_index,
             "made_sha256": made.made_sha256,
             "product_artifact_sha256": canonical.artifact_sha256,
             "product_tree_rehashed": True,
@@ -2288,6 +2394,10 @@ def _evaluate_playtest_stage(
             "cad_verification_passed": cad_evidence.passed,
             "verdict": playtested.verdict,
             "round": checkpoint.round_index,
+            "failing_checks": sum(1 for check in playtested.checks if not check.passed),
+            "actionable_feedback": sum(
+                1 for item in playtested.feedback if item.severity in ("improve", "block")
+            ),
             "vault_leads_answered": answered["answered"],
             "vault_leads_confirmed": answered["confirmed"],
             **scores,
