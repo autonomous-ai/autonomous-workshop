@@ -88,6 +88,11 @@ Workshop does not currently submit a price or claim that Factory's returned
 listing price is unit cost. An explicit price must wait for a hash-bound cost
 basis or authoritative Factory fulfilment quote; agent-authored prose, archive
 size, and the number of CAD representations are not cost evidence.
+The current Factory API has no such monetary response: its authenticated slice
+endpoint binds real CuraEngine profile and material totals to a design history,
+but does not return a quote or minimum price. The exact backend contract needed
+before Workshop may submit a price is documented in
+[Factory fulfillment quote contract](FACTORY_FULFILLMENT_QUOTE_CONTRACT.md).
 
 For a PDF-first Release, authenticated Factory readback supplies the immutable
 CDN `project_url` for that exact design history. The host derives only
