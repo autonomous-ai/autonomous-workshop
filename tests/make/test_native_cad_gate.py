@@ -52,13 +52,20 @@ class NativeCadGateTest(unittest.TestCase):
             "components": ["observatory"],
             "instructions": "Explore the craters.",
             "limitations": ["Digital checks only"],
+            "cad": {"primary_entry": "cad/project/moon.step.py"},
         }
         product_bytes = (
             json.dumps(product, sort_keys=True, separators=(",", ":")) + "\n"
         ).encode("utf-8")
         (product_root / "product.json").write_bytes(product_bytes)
         (project / "moon.step.py").write_text("def build():\n    return None\n")
-        (project / "moon.step").write_bytes(b"ISO-10303-21;\n")
+        (project / "review.step.py").write_text("def build():\n    return None\n")
+        (project / "moon.step").write_bytes(
+            b"ISO-10303-21;\nHEADER;\n"
+            b"FILE_NAME('Open CASCADE Shape Model','2026-01-01T00:00:00',"
+            b"('Author'),('Open CASCADE'),'processor','system','Unknown');\n"
+            b"ENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n"
+        )
         (project / "moon.stl").write_bytes(b"solid moon\nendsolid moon\n")
         verification = b'{"ok":true,"validator":"cad-final"}\n'
         (validation / "cad-build.json").write_bytes(verification)
@@ -117,7 +124,7 @@ class NativeCadGateTest(unittest.TestCase):
                     for path in copied.rglob("*")
                     if path.is_file()
                 ),
-                ["moon.step", "moon.step.py", "moon.stl"],
+                ["moon.step", "moon.step.py", "moon.stl", "review.step.py"],
             )
             (copied / "__cadgen__").mkdir()
             (copied / "__cadgen__/cache").write_bytes(b"temporary")
@@ -137,7 +144,15 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(observed["command"][0], sys.executable)
         self.assertEqual(Path(observed["command"][1]), self.verifier)
         self.assertEqual(
-            observed["command"][3:], ("--fresh", "--exports", "--strict-fit")
+            observed["command"][3:],
+            (
+                "--assembly",
+                "moon.step.py",
+                "--fresh",
+                "--exports",
+                "--strict-fit",
+                "--no-report",
+            ),
         )
         self.assertEqual(observed["environment"]["PYTHONDONTWRITEBYTECODE"], "1")
         self.assertNotIn("FACTORY_PASSWORD", observed["environment"])
@@ -173,6 +188,31 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(len(caught.exception.evidence.stdout.content), 64)
         self.assertTrue(caught.exception.evidence_path.is_file())
 
+    def test_step_header_timestamp_change_is_not_treated_as_geometry_drift(self):
+        def runner(command, **arguments):
+            del arguments
+            step = Path(command[2]) / "moon.step"
+            step.write_bytes(
+                step.read_bytes().replace(
+                    b"2026-01-01T00:00:00", b"2026-08-27T15:48:37"
+                )
+            )
+            return VerifierProcessResult.from_bytes(0)
+
+        evidence = self._verify(runner)
+        self.assertTrue(evidence.passed)
+
+    def test_step_geometry_byte_change_still_fails_closed(self):
+        def runner(command, **arguments):
+            del arguments
+            step = Path(command[2]) / "moon.step"
+            step.write_bytes(step.read_bytes() + b"#1=GEOMETRY_CHANGE;\n")
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(runner)
+        self.assertEqual(caught.exception.failure_code, "declared-cad-output-changed")
+
     def test_nonzero_without_truncation_fails_closed(self):
         def runner(command, **arguments):
             del command, arguments
@@ -196,6 +236,8 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertFalse(caught.exception.evidence.source_tree_unchanged)
 
     def test_changed_declared_file_in_isolated_copy_fails_closed(self):
+        sealed_step = (self.product_root / "cad/project/moon.step").read_bytes()
+
         def runner(command, **arguments):
             del arguments
             Path(command[2], "moon.step").write_bytes(b"different")
@@ -207,7 +249,7 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(caught.exception.failure_code, "declared-cad-output-changed")
         self.assertEqual(
             (self.product_root / "cad/project/moon.step").read_bytes(),
-            b"ISO-10303-21;\n",
+            sealed_step,
         )
 
     def test_symlinks_missing_or_untrusted_verifier_fail_before_invocation(self):

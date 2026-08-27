@@ -188,16 +188,22 @@ class ConceptImagesAdapter:
     def _draw_one(
         self, role: str, instruction: str, references: Sequence[bytes]
     ) -> bytes:
-        payload = json.dumps(
-            {
-                "model": self._config.model,
-                "prompt": instruction,
-                "reference_images": [
-                    base64.b64encode(reference).decode("ascii")
-                    for reference in references
-                ],
-            }
-        ).encode("utf-8")
+        payload_document: dict[str, object] = {
+            "model": self._config.model,
+            "prompt": instruction,
+        }
+        if references:
+            payload_document["input_references"] = [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "data:image/png;base64,%s"
+                        % base64.b64encode(reference).decode("ascii")
+                    },
+                }
+                for reference in references
+            ]
+        payload = json.dumps(payload_document).encode("utf-8")
         request = urllib.request.Request(
             self._config.endpoint,
             data=payload,
@@ -210,7 +216,9 @@ class ConceptImagesAdapter:
         last_reason = "no attempt was made"
         for attempt in range(1, self._config.max_retry_attempts + 1):
             try:
-                with self._opener(request, self._config.timeout_seconds) as response:
+                with self._opener(
+                    request, timeout=self._config.timeout_seconds
+                ) as response:
                     status = getattr(response, "status", 200)
                     body = response.read(MAX_RESPONSE_BYTES + 1)
             except urllib.error.HTTPError as exc:
@@ -256,6 +264,12 @@ class ConceptImagesAdapter:
         if not isinstance(document, dict):
             raise ConceptImageDrawError(role, "response is not a JSON object")
         encoded = document.get("image_base64")
+        if encoded is None:
+            images = document.get("data")
+            if isinstance(images, list) and len(images) == 1:
+                image = images[0]
+                if isinstance(image, dict):
+                    encoded = image.get("b64_json")
         if not isinstance(encoded, str) or not encoded:
             raise ConceptImageDrawError(role, "response contains no image data")
         try:

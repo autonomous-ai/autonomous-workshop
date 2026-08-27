@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import signal
 import stat
 import subprocess
@@ -282,7 +283,10 @@ def _copy_declared_project(
 
 
 def _assert_copied_inputs_unchanged(
-    project_root: Path, entries: Sequence[ArtifactEntry]
+    project_root: Path,
+    entries: Sequence[ArtifactEntry],
+    *,
+    source_root: Optional[Path] = None,
 ) -> None:
     for entry in entries:
         relative = _safe_relative(entry.path, "native CAD project entry")
@@ -291,11 +295,28 @@ def _assert_copied_inputs_unchanged(
             "isolated CAD project entry %s" % entry.path,
             entry.bytes,
         )
-        if (
+        changed = (
             len(content) != entry.bytes
             or hashlib.sha256(content).hexdigest() != entry.sha256
             or bool(identity.st_mode & stat.S_IXUSR) != entry.executable
-        ):
+        )
+        if changed and source_root is not None and relative.suffix == ".step":
+            source, source_identity = _read_regular(
+                source_root.joinpath(*relative.parts),
+                "sealed CAD project entry %s" % entry.path,
+                entry.bytes,
+            )
+            timestamp_pattern = re.compile(
+                rb"(FILE_NAME\('[^']*',')\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(')"
+            )
+            normalized_source = timestamp_pattern.sub(rb"\1<TIMESTAMP>\2", source, count=1)
+            normalized_copy = timestamp_pattern.sub(rb"\1<TIMESTAMP>\2", content, count=1)
+            changed = (
+                normalized_copy != normalized_source
+                or bool(source_identity.st_mode & stat.S_IXUSR) != entry.executable
+                or bool(identity.st_mode & stat.S_IXUSR) != entry.executable
+            )
+        if changed:
             raise ArtifactError("CAD verifier changed a declared project file: %s" % entry.path)
 
 
@@ -701,6 +722,22 @@ def verify_native_made_cad(
         raise ArtifactError("native Made CAD project differs from its declared inventory")
     project_sha256 = _entries_sha256(entries)
 
+    assembly_relative: Optional[PurePosixPath] = None
+    cad_document = made.product.get("cad")
+    if isinstance(cad_document, Mapping) and cad_document.get("primary_entry") is not None:
+        primary_entry = _safe_relative(
+            cad_document.get("primary_entry"),
+            "native Made primary CAD entry",
+        )
+        try:
+            assembly_relative = primary_entry.relative_to(project_relative)
+        except ValueError as exc:
+            raise ContractError(
+                "native Made primary CAD entry must be inside its CAD project"
+            ) from exc
+        if assembly_relative.as_posix() not in declared_project_files:
+            raise ArtifactError("native Made primary CAD entry is not declared")
+
     verifier_relative = _safe_relative(NATIVE_CAD_VERIFIER_PATH, "native CAD verifier")
     verifier_parent = _checked_directory(
         root, verifier_relative.parent, "native CAD verifier directory"
@@ -719,10 +756,10 @@ def verify_native_made_cad(
         "<python>",
         NATIVE_CAD_VERIFIER_PATH,
         "<isolated-cad-project>",
-        "--fresh",
-        "--exports",
-        "--strict-fit",
     )
+    if assembly_relative is not None:
+        normalized_command += ("--assembly", assembly_relative.as_posix())
+    normalized_command += ("--fresh", "--exports", "--strict-fit", "--no-report")
     selected_runner = runner or run_bounded_verifier
     result: Optional[VerifierProcessResult] = None
     source_unchanged = True
@@ -737,10 +774,10 @@ def verify_native_made_cad(
             python_executable,
             str(verifier_path),
             str(isolated_project),
-            "--fresh",
-            "--exports",
-            "--strict-fit",
         )
+        if assembly_relative is not None:
+            command += ("--assembly", assembly_relative.as_posix())
+        command += ("--fresh", "--exports", "--strict-fit", "--no-report")
         environment = dict(minimal_tool_environment())
         environment["TMPDIR"] = str(temporary_root)
         try:
@@ -771,7 +808,11 @@ def verify_native_made_cad(
             failure_code = "sealed-product-changed"
         if source_unchanged:
             try:
-                _assert_copied_inputs_unchanged(isolated_project, entries)
+                _assert_copied_inputs_unchanged(
+                    isolated_project,
+                    entries,
+                    source_root=project_root,
+                )
             except (ArtifactError, ContractError):
                 failure_code = "declared-cad-output-changed"
         if failure_code is None:

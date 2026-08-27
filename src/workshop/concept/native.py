@@ -520,6 +520,7 @@ class NativeConcept:
         concept_root = root.joinpath(*relative.parts)
         if concept_root.is_symlink() or not concept_root.is_dir():
             raise ArtifactError("native Concept tree is unavailable")
+        recovered_pre_render_descriptor = False
         current = (
             build_artifact_manifest(
                 concept_root, created_at=self.concept_manifest.created_at
@@ -528,7 +529,33 @@ class NativeConcept:
             else _source_manifest(concept_root, self.concept_manifest.created_at)
         )
         if current.to_dict() != self.concept_manifest.to_dict():
-            raise ArtifactError("native Concept tree differs from its manifest")
+            if not self.images_rendered:
+                expected_entries = {
+                    entry.path: entry for entry in self.concept_manifest.entries
+                }
+                current_entries = {entry.path: entry for entry in current.entries}
+                unchanged_sources = (
+                    set(current_entries) == set(expected_entries)
+                    and all(
+                        current_entries[path] == expected_entries[path]
+                        for path in expected_entries
+                        if path != self.descriptor_path
+                    )
+                )
+                if unchanged_sources:
+                    descriptor_document, unused_content = _strict_json_object(
+                        concept_root / self.descriptor_path,
+                        "native Concept partially sealed descriptor.json",
+                    )
+                    del unused_content
+                    recovered = _recover_pre_render_descriptor(
+                        descriptor_document, concept_root
+                    )
+                    recovered_pre_render_descriptor = (
+                        recovered == _thaw(self.descriptor)
+                    )
+            if not recovered_pre_render_descriptor:
+                raise ArtifactError("native Concept tree differs from its manifest")
 
         def _read_bound(path_field: str, sha_field: str, label: str) -> dict[str, Any]:
             relative_path = _safe_relative(getattr(self, path_field), label)
@@ -558,7 +585,7 @@ class NativeConcept:
             )
         descriptor = _read_bound(
             "descriptor_path", "descriptor_sha256", "native Concept descriptor.json"
-        )
+        ) if not recovered_pre_render_descriptor else _thaw(self.descriptor)
         if descriptor != _thaw(self.descriptor):
             raise ContractError("native Concept descriptor differs from descriptor.json")
         derived_wish_document = _read_bound(
@@ -676,6 +703,44 @@ def _seal_descriptor(node: Any, concept_root: Path) -> Any:
             key: _seal_descriptor(value, concept_root) for key, value in node.items()
         }
     raise ContractError("native Concept descriptor is not a valid descriptor tree")
+
+
+def _recover_pre_render_descriptor(node: Any, concept_root: Path) -> Any:
+    """Verify a partially sealed descriptor and recover its pre-render shape."""
+
+    if isinstance(node, Mapping) and set(node) == {"path", "sha256"}:
+        relative = _safe_relative(node["path"], "native Concept image path")
+        require_sha256(node["sha256"], "native Concept image sha256")
+        path = concept_root.joinpath(*relative.parts)
+        try:
+            identity = path.lstat()
+            content = path.read_bytes()
+            after = path.lstat()
+        except OSError as exc:
+            raise ArtifactError(
+                "native Concept partially sealed image is unavailable: %s"
+                % relative.as_posix()
+            ) from exc
+        if (
+            path.is_symlink()
+            or not stat.S_ISREG(identity.st_mode)
+            or (identity.st_dev, identity.st_ino, identity.st_mtime_ns, identity.st_size)
+            != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+            or hashlib.sha256(content).hexdigest() != node["sha256"]
+        ):
+            raise ArtifactError(
+                "native Concept partially sealed image changed: %s"
+                % relative.as_posix()
+            )
+        return {"path": relative.as_posix()}
+    if isinstance(node, Mapping):
+        return {
+            key: _recover_pre_render_descriptor(value, concept_root)
+            for key, value in node.items()
+        }
+    raise ContractError(
+        "native Concept partially sealed descriptor is not a valid descriptor tree"
+    )
 
 
 def seal_rendered_concept(concept: NativeConcept, run_root: Path) -> NativeConcept:

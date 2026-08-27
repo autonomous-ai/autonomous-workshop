@@ -10,6 +10,7 @@ from pathlib import Path
 
 from workshop.concept.native import NativeConcept, seal_rendered_concept
 from workshop.concept.native_gate import evaluate_concept_brief
+from workshop.errors import ArtifactError
 from workshop.invent.native import NativeInvented
 from workshop.match.native import (
     InventorRoster,
@@ -363,6 +364,14 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
         self.assertTrue(sealed.images_rendered)
         sealed.validate_concept_tree(self.run_root)
         self.assertNotEqual(sealed.concept_sha256, from_finalizer.concept_sha256)
+
+        recovered = from_finalizer.validate_concept_tree(self.run_root)
+        self.assertEqual(recovered.descriptor, tree.descriptor)
+        resealed = seal_rendered_concept(from_finalizer, self.run_root)
+        self.assertEqual(resealed.to_dict(), sealed.to_dict())
+        (tree.root / tree.descriptor["front"]["path"]).write_bytes(b"tampered")
+        with self.assertRaisesRegex(ArtifactError, "partially sealed image changed"):
+            from_finalizer.validate_concept_tree(self.run_root)
 
         outcome_document = json.loads(
             (self.run_root / "agent-outcome.json").read_bytes().decode("utf-8")
