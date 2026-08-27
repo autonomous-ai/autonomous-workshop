@@ -154,18 +154,39 @@ class ScriptedStream:
         self.callbacks = dict(callbacks or {})
         self.stop_event = stop_event
         self.start_event = start_event
+        self._index = 0
+        self._remainder = None
+        self._started = False
 
     def __iter__(self):
-        if self.start_event is not None:
-            self.start_event.wait(timeout=2)
-        if self.stop_event is not None:
-            self.stop_event.wait(timeout=2)
-            return
-        for index, value in enumerate(self.values):
-            callback = self.callbacks.get(index)
+        while True:
+            value = self.readline()
+            if value in ("", b""):
+                return
+            yield value
+
+    def readline(self, size=-1):
+        if not self._started:
+            self._started = True
+            if self.start_event is not None:
+                self.start_event.wait(timeout=2)
+            if self.stop_event is not None:
+                self.stop_event.wait(timeout=2)
+                return ""
+        if self._remainder is None:
+            if self._index >= len(self.values):
+                return ""
+            callback = self.callbacks.get(self._index)
             if callback is not None:
                 callback()
-            yield value
+            self._remainder = self.values[self._index]
+            self._index += 1
+        value = self._remainder
+        if size is not None and size >= 0 and len(value) > size:
+            self._remainder = value[size:]
+            return value[:size]
+        self._remainder = None
+        return value
 
 
 class FakeProcess:
@@ -400,6 +421,8 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(factory.processes[0].stdin.value, "run this exact Wish")
             self.assertEqual(call["cwd"], str(root))
             self.assertIs(call["start_new_session"], True)
+            self.assertEqual(call["encoding"], "utf-8")
+            self.assertEqual(call["errors"], "strict")
             self.assertEqual(call["env"]["TMPDIR"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TMP"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TEMP"], str(root / ".tmp"))
@@ -1582,11 +1605,62 @@ class CodexNativeSessionTest(unittest.TestCase):
                 cli_version="0.144.9",
             )
 
+    def test_long_valid_event_stream_is_reduced_without_a_cumulative_buffer(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            reasoning = event(
+                {
+                    "type": "item.updated",
+                    "item": {
+                        "id": "reasoning-large",
+                        "type": "reasoning",
+                        "text": "r" * (MAX_CODEX_EVENT_BYTES // 3),
+                    },
+                }
+            )
+            events = [
+                event({"type": "thread.started", "thread_id": THREAD_ID}),
+                reasoning,
+                reasoning,
+                reasoning,
+                reasoning,
+                event({"type": "turn.completed", "usage": {}}),
+            ]
+            self.assertGreater(
+                sum(len(value.encode("utf-8")) for value in events),
+                MAX_CODEX_EVENT_BYTES,
+            )
+            self.assertTrue(
+                all(
+                    len(value.encode("utf-8")) <= MAX_CODEX_EVENT_BYTES
+                    for value in events
+                )
+            )
+            launcher, unused_factory = self.launcher([{"stdout": events}])
+
+            outcome = self.start(launcher, root)
+
+            self.assertEqual(outcome.status, "completed")
+
     def test_bounds_timeout_and_failures_are_terminated_and_redacted(self):
         secret = "FACTORY_PASSWORD=never-show-this"
         cases = (
             (
-                {"stdout": ["x" * (MAX_CODEX_EVENT_BYTES + 1)]},
+                {
+                    "stdout": [
+                        event(
+                            {
+                                "type": "item.updated",
+                                "item": {
+                                    "id": "oversized-event",
+                                    "type": "reasoning",
+                                    "text": "x" * MAX_CODEX_EVENT_BYTES,
+                                },
+                            }
+                        )
+                    ]
+                },
                 "event stream",
             ),
             (

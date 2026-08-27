@@ -18,7 +18,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional
+from typing import Any, Callable, Iterator, Mapping, Optional
 
 from workshop.errors import ContractError
 from workshop.runtime.execution import (
@@ -35,6 +35,9 @@ ALLOWED_WORKSHOP_MODELS = frozenset(
 CODEX_PERMISSION_PROFILE = "workshop-product-run"
 MINIMUM_CODEX_NATIVE_RUNTIME_VERSION = (0, 145, 0)
 DEFAULT_CODEX_TIMEOUT_SECONDS = 3_600
+# A hard bound for one JSONL event record.  Native turns can legitimately emit
+# many events while tools and subagents work; those records are reduced and
+# discarded as they arrive, so their cumulative size is not a memory bound.
 MAX_CODEX_EVENT_BYTES = 1 * 1024 * 1024
 MAX_CODEX_PROMPT_BYTES = 1 * 1024 * 1024
 MAX_CODEX_MESSAGE_BYTES = 64 * 1024
@@ -1418,6 +1421,8 @@ class CodexNativeSessionLauncher:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                encoding="utf-8",
+                errors="strict",
                 bufsize=1,
                 cwd=str(run_root),
                 env=_codex_run_environment(run_root, run_policy),
@@ -1485,7 +1490,6 @@ class CodexNativeSessionLauncher:
         timer.daemon = True
         timer.start()
 
-        stdout_size = 0
         used_web_search = False
         observed_thread_id: Optional[str] = None
         turn_completed = False
@@ -1500,13 +1504,7 @@ class CodexNativeSessionLauncher:
                     "Codex native session could not receive its prompt"
                 ) from None
 
-            for raw in process.stdout:
-                text = _stream_text(raw)
-                stdout_size += len(text.encode("utf-8", errors="replace"))
-                if stdout_size > MAX_CODEX_EVENT_BYTES:
-                    raise CodexInvocationError(
-                        "Codex native event stream exceeded its safe size limit"
-                    )
+            for text in _bounded_native_event_lines(process.stdout):
                 event = _decode_native_event(text)
                 event_type = event.get("type")
                 activity = _safe_activity_for_event(event)
@@ -1684,6 +1682,63 @@ def _stream_text(value: Any) -> str:
                 "Codex native session event stream was invalid"
             ) from None
     raise CodexInvocationError("Codex native session event stream was invalid")
+
+
+def _validated_native_event_line(raw: Any) -> str:
+    text = _stream_text(raw)
+    try:
+        size = len(text.encode("utf-8"))
+    except UnicodeError:
+        raise CodexInvocationError(
+            "Codex native session event stream was invalid"
+        ) from None
+    if size > MAX_CODEX_EVENT_BYTES:
+        raise CodexInvocationError(
+            "Codex native event stream record exceeded its safe size limit"
+        )
+    return text
+
+
+def _bounded_native_event_lines(stream: Any) -> Iterator[str]:
+    """Yield JSONL records with constant memory per discarded event.
+
+    The Codex event channel is a stream, not an evidence buffer.  A long native
+    turn can therefore safely exceed ``MAX_CODEX_EVENT_BYTES`` in aggregate as
+    long as each independently decoded record stays within that hard bound.
+    ``readline(size)`` is important here: ordinary file iteration may allocate
+    an attacker-sized line before the caller gets a chance to measure it.
+
+    Deterministic stream doubles used by embedders may expose only iteration;
+    retain that narrow compatibility path while applying the same per-record
+    byte check after every yielded value.
+    """
+
+    readline = getattr(stream, "readline", None)
+    if callable(readline):
+        while True:
+            try:
+                # Text streams bound characters rather than encoded bytes.
+                # UTF-8 uses at most four bytes per character, so this still
+                # gives a small fixed allocation ceiling; the exact byte bound
+                # below remains authoritative.
+                raw = readline(MAX_CODEX_EVENT_BYTES + 1)
+            except (OSError, ValueError, UnicodeError):
+                raise CodexInvocationError(
+                    "Codex native session event stream was invalid"
+                ) from None
+            if raw in ("", b""):
+                return
+            yield _validated_native_event_line(raw)
+        return
+
+    try:
+        iterator = iter(stream)
+    except TypeError:
+        raise CodexInvocationError(
+            "Codex native session event stream was invalid"
+        ) from None
+    for raw in iterator:
+        yield _validated_native_event_line(raw)
 
 
 def _decode_native_event(line: str) -> Mapping[str, Any]:

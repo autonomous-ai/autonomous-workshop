@@ -126,6 +126,14 @@ through the normal gate before considering any continuation. Provider
 transport classification uses only exact anchored diagnostics on the private,
 bounded launcher channel; generic or unrecognized stderr fails closed.
 
+The JSONL event channel is reduced incrementally rather than accumulated as a
+turn transcript. Each individual event has a hard byte limit and is decoded,
+validated, classified into safe progress, and then discarded; an oversized or
+malformed record still fails closed. A legitimate long turn may emit more than
+that limit in aggregate because cumulative bytes consume no growing host
+buffer. The one-hour process timeout, isolated-process cleanup, per-message
+limit, and whole-run native-turn budget remain the surrounding resource bounds.
+
 ### Privacy-safe progress status
 
 `workshop status <wish-id>` is read-only and never opens or resumes Codex. While
