@@ -37,9 +37,13 @@ Split into a separate printed part **only** if at least one is true:
 5. **It must be a different material or colour**, and the user said so.
 6. **It is a purchased component**, not printed at all — bearing, magnet, screw,
    PCB, motor. These are *not* printed parts; they are pockets in a printed part.
-   Spec the pocket, not the component — and search `$step-parts` for it first,
-   because the pocket's size comes from the component's real dimensions, not
-   from your estimate of them. Log the hit or the miss in spec section 6c.
+   Spec the pocket, not the component — and search `$step-parts` for it first.
+   Then **do not spec the pocket as a number either**: download the component's
+   STEP into `<project-dir>/ref/` and let `cadmount` derive the cavity and the
+   screw pattern from that file, because a dimension typed from a datasheet is
+   one nothing downstream can check. Log the hit or the miss in spec section
+   6c, and give every seated component a row in 6e so `check_mount` can measure
+   the seat the generator actually cut.
 
 If none is true: **one part**. When genuinely unsure: **one part**. A unified
 body looks better, prints better, and has nothing to misfit.

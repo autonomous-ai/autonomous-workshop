@@ -1,0 +1,4 @@
+interface:
+  display_name: "Electromechanical Integration"
+  short_description: "Research powered loads, lighting, wiring, and CAD"
+  default_prompt: "Use $electromechanical-integration to discover suitable powered components and specify their power, control, wiring, lighting, and CAD integration."

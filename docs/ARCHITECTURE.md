@@ -152,8 +152,8 @@ and repairs or revises the product inside the next Goal.
 - understanding the Wish and Match reasoning;
 - native search and source provenance;
 - concept exploration and design decisions;
-- use of CAD, image-to-CAD, design-reference, STEP-parts, rendering, and other
-  materialized skills;
+- use of CAD, image-to-CAD, design-reference, STEP-parts,
+  electromechanical-integration, rendering, and other materialized skills;
 - creation and repair of product files;
 - AI Playtest perspectives and evidence-linked feedback;
 - the printable `MANUAL.pdf`, evidence-bound claims, and bounded Release facts;

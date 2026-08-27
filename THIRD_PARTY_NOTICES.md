@@ -5,7 +5,8 @@ required materials retain their own licenses.
 
 ## Peter's product-to-CAD tools
 
-The `cad`, `design-reference`, `image-to-cad`, and `step-parts` skills under
+The `cad`, `design-reference`, `electromechanical-integration`,
+`image-to-cad`, and `step-parts` skills under
 `src/workshop/make/skills/` derive from
 [`autonomous-ai/autonomous-product-to-cad`](https://github.com/autonomous-ai/autonomous-product-to-cad).
 Their exact reviewed revisions and local adaptations are recorded in
@@ -17,8 +18,8 @@ Thompson Labs LLC. The complete vendored `cadgen` 0.4.19 source inside the CAD
 skill, and the pinned `cadgen==0.4.19` distribution dependency, carry the same
 included MIT notice.
 
-The pinned upstream `design-reference` and `image-to-cad` trees do not contain
-standalone license files. Their inclusion does not imply that the MIT license
+The pinned upstream `design-reference`, `electromechanical-integration`, and
+`image-to-cad` trees do not contain standalone license files. Their inclusion does not imply that the MIT license
 above applies to them. `design-reference` can explicitly download a separately
 licensed dataset restricted to non-commercial research; fetched references
 retain their own license and provenance records.

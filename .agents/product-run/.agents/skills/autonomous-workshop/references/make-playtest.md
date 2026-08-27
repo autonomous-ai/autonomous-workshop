@@ -26,7 +26,8 @@ While pursuing the Goal:
    deterministic tool policy, and every evidence-linked feedback item from a
    prior Playtest.
 2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
-   `design-reference`, and `step-parts` skills under `.agents/skills/` to
+   `design-reference`, `electromechanical-integration`, and `step-parts`
+   skills under `.agents/skills/` to
    create or repair the actual product artifact. Use native subagents for bounded mechanism, CAD, or
    review tasks when useful.
 3. **Evaluate:** Build the artifact, run narrow deterministic checkers, inspect

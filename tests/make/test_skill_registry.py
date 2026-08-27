@@ -45,6 +45,7 @@ class SkillFingerprintTest(unittest.TestCase):
             {
                 "cad",
                 "design-reference",
+                "electromechanical-integration",
                 "image-to-cad",
                 "step-parts",
             },
