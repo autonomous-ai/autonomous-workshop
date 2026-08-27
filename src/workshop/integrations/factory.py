@@ -211,11 +211,16 @@ def _sealed_primary(context: Any) -> Mapping[str, str]:
     context.made.assert_current()
     root = Path(context.made.artifact_root).resolve(strict=True)
     product = _read_json_file(root / "product.json", "Made product.json")
-    project = _read_json_file(root / "project.json", "Made project.json")
     if _canonical_sha256(product) != _canonical_sha256(context.made.product):
         raise ContractError("Made product facts do not match sealed product.json")
-    if project.get("id") != context.wish.product_id:
-        raise ContractError("sealed project.json id must equal Wish product_id")
+    # ``product.json`` is the canonical Make metadata contract.  Older Made
+    # trees may also carry ``project.json``; validate it when present without
+    # making that legacy file a prerequisite for a Factory handoff.
+    project_path = root / "project.json"
+    if project_path.exists() or project_path.is_symlink():
+        project = _read_json_file(project_path, "Made project.json")
+        if project.get("id") != context.wish.product_id:
+            raise ContractError("sealed project.json id must equal Wish product_id")
 
     assembled = root / "assembled.stl"
     canonical = root / (context.wish.product_id + ".stl")

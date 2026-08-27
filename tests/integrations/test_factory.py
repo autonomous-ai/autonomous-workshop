@@ -468,6 +468,26 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(transport.use_case_writes, 1)
         self.assertEqual(transport.story_block_writes, 1)
 
+    def test_private_import_accepts_canonical_make_tree_without_project_json(self):
+        product = self.made.artifact_root
+        (product / "project.json").unlink()
+        self.made = Made.from_root(product, self.made.product)
+        self.context = ReleaseContext(self.made)
+        release_page = json.loads(
+            (self.release / "product.json").read_text(encoding="utf-8")
+        )
+        release_page["product_artifact_sha256"] = self.made.artifact_sha256
+        (self.release / "product.json").write_bytes(canonical_json(release_page))
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+
+        receipt = self.writer(FactoryTransport())(
+            self.context, self.release, self.manifest
+        )
+
+        self.assertTrue(receipt.is_verified_draft)
+
     def test_generator_primary_is_included_but_creator_outputs_are_not(self):
         product = self.made.artifact_root
         (product / "assembled.stl").unlink()
