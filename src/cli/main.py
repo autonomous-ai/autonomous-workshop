@@ -35,6 +35,7 @@ from workshop.contributors import (
 )
 from workshop.errors import WorkshopError
 from workshop.invent.vault import Vault, VaultError, bundled_vault_root, seed_vault
+from workshop.playtest.evidence_ledger import harvest, read_ledger, recall, review_queue
 from workshop.make.skill_registry import (
     discover_skills,
     fingerprint_skill_tree,
@@ -751,6 +752,15 @@ def _vault(args: argparse.Namespace) -> int:
                 % (report["written"], report["kept"], destination)
             )
         return 0
+    if args.action == "review":
+        queue = review_queue(default_workshop_home())
+        if args.json:
+            _print_json(queue)
+        else:
+            for entry in queue:
+                print("%-40s %d dismissal(s)" % (entry["file"], entry["dismissals"]))
+            print("%d review file(s) under %s" % (len(queue), default_workshop_home() / "vault" / "_review"))
+        return 0
     root = _vault_root(args)
     if not root.is_dir():
         raise VaultError(
@@ -782,6 +792,36 @@ def _vault(args: argparse.Namespace) -> int:
             for fix in finding["suggested_fixes"]:
                 print("    fix: %s" % fix)
         print("%d finding(s) for %s" % (len(findings), ", ".join(args.paths)))
+    return 0
+
+
+def _evidence(args: argparse.Namespace) -> int:
+    home = default_workshop_home()
+    if args.action == "harvest":
+        report = harvest(home, home / "runs", home / "state")
+        if args.json:
+            _print_json(report)
+        else:
+            print(
+                "evidence: %d row(s) from %d product(s) rebuilt at %s"
+                % (report["rows"], report["products"], home / "evidence" / "evidence.jsonl")
+            )
+            for item in report["unreadable"]:
+                print("skipped (unreadable or unverifiable): %s" % item)
+        return 0
+    if args.action == "list":
+        rows = read_ledger(home)
+    else:
+        rows = recall(home, args.mechanisms, limit=args.limit)
+    if args.json:
+        _print_json(rows)
+    else:
+        for row in rows:
+            print(
+                "%-8s w%d %-32s %s: %s"
+                % (row["severity"], row["weight"], row["ref"], row["symptom"] or "-", row["finding"][:100])
+            )
+        print("%d row(s)" % len(rows))
     return 0
 
 
@@ -912,7 +952,7 @@ def parser() -> argparse.ArgumentParser:
     vault = subcommands.add_parser(
         "vault", help="seed, lint, or query the host-owned design vault"
     )
-    vault.add_argument("action", choices=("seed", "lint", "check"))
+    vault.add_argument("action", choices=("seed", "lint", "check", "review"))
     vault.add_argument("paths", nargs="*", help="node paths for `check`")
     vault.add_argument(
         "--root", type=Path, help="vault directory (default: $WORKSHOP_HOME/vault)"
@@ -922,6 +962,15 @@ def parser() -> argparse.ArgumentParser:
     )
     vault.add_argument("--json", action="store_true")
     vault.set_defaults(handler=_vault)
+
+    evidence = subcommands.add_parser(
+        "evidence", help="rebuild or recall the cross-run Playtest evidence ledger"
+    )
+    evidence.add_argument("action", choices=("harvest", "list", "recall"))
+    evidence.add_argument("mechanisms", nargs="*", help="vault mechanism nodes for `recall`")
+    evidence.add_argument("--limit", type=int, default=10)
+    evidence.add_argument("--json", action="store_true")
+    evidence.set_defaults(handler=_evidence)
     return command
 
 

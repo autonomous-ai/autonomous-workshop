@@ -65,6 +65,7 @@ from workshop.match.native import (
     InventorRosterEntry,
 )
 from workshop.playtest.native import NativePlaytested
+from workshop.playtest.evidence_ledger import append_rows, build_rows, recall, write_back
 from workshop.product import ToyBlueprint
 from workshop.product.blueprints import SCORE_AMBIGUOUS_SPREAD
 from workshop.release.contracts import ProductRelease, ReleaseContext
@@ -1043,6 +1044,69 @@ def _score_trend(history: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     return {"regression": regression, "ambiguous": ambiguous}
 
 
+def _record_playtest_evidence(
+    checkpoint: AgentRunCheckpoint, context: Mapping[str, Any]
+) -> dict[str, int]:
+    """Bank the sealed round's feedback for later runs; never before sealing.
+
+    The gate receipt and checkpoint are already durable, so a ledger failure
+    surfaces as a host error without touching the run; `workshop evidence
+    harvest` rebuilds the ledger from those receipts at any time.
+    """
+
+    sealed = context.get("sealed_playtest")
+    if not sealed:  # pragma: no cover - playtest evaluation always stashes it
+        return {"written": 0, "kept": 0, "banked": 0, "queued": 0}
+    playtested: NativePlaytested = sealed["playtested"]
+    document = playtested.to_dict()
+    rows = build_rows(
+        checkpoint.product_id,
+        checkpoint.round_index,
+        document,
+        sealed["leads"],
+        sealed["mechanisms"],
+    )
+    home = _workshop_home()
+    report = dict(append_rows(home, rows))
+    lead_by_id = {lead["id"]: lead for lead in sealed["leads"]}
+    dismissals = []
+    for check in document["checks"]:
+        if check["check_id"] != "agent-playtest":
+            continue
+        for answer in check["observations"].get("vault_leads", []):
+            if answer.get("verdict") == "dismissed" and answer.get("lead") in lead_by_id:
+                dismissals.append(
+                    {
+                        "lead": answer["lead"],
+                        "nodes": list(lead_by_id[answer["lead"]]["nodes"]),
+                        "why": answer.get("why", ""),
+                    }
+                )
+    report.update(
+        write_back(
+            home,
+            rows,
+            dismissals,
+            product_id=checkpoint.product_id,
+            round_index=checkpoint.round_index,
+        )
+    )
+    return report
+
+
+def _prior_evidence(
+    checkpoint: AgentRunCheckpoint, vault: Optional[Vault], invented: NativeInvented
+) -> list[dict[str, Any]]:
+    if vault is None:
+        return []
+    mechanisms = [
+        node
+        for node in vault.resolve_concept_mechanisms(invented.concept).values()
+        if node is not None
+    ]
+    return recall(_workshop_home(), mechanisms, exclude_product=checkpoint.product_id)
+
+
 def native_stage_prompt(stage: str) -> str:
     """Give the native session a compact pointer, never Wish or host secrets."""
 
@@ -1707,6 +1771,7 @@ def _prepare_stage_input(
             common["vault_leads"] = (
                 vault.leads_for_concept(invented.concept) if vault is not None else []
             )
+            common["prior_evidence"] = _prior_evidence(checkpoint, vault, invented)
             common["invented_artifact"] = {
                 **_artifact_binding(invented_artifact),
                 "invented_sha256": invented.invented_sha256,
@@ -2349,6 +2414,20 @@ def _evaluate_playtest_stage(
         vault.leads_for_concept(context["invented"].concept) if vault is not None else []
     )
     answered = playtested.assert_vault_leads_answered(leads)
+    mechanisms = (
+        sorted(
+            node
+            for node in vault.resolve_concept_mechanisms(context["invented"].concept).values()
+            if node is not None
+        )
+        if vault is not None
+        else []
+    )
+    context["sealed_playtest"] = {
+        "playtested": playtested,
+        "leads": leads,
+        "mechanisms": mechanisms,
+    }
     scores: dict[str, Any] = {"score_reads": None, "score_median": None, "score_spread": None}
     if vault is not None:
         summary = playtested.assert_scored(
@@ -2400,6 +2479,11 @@ def _evaluate_playtest_stage(
             ),
             "vault_leads_answered": answered["answered"],
             "vault_leads_confirmed": answered["confirmed"],
+            "vault_leads": [
+                {"id": lead["id"], "kind": lead["kind"], "nodes": list(lead["nodes"])}
+                for lead in leads
+            ],
+            "mechanisms": mechanisms,
             **scores,
         },
     )
@@ -3062,6 +3146,8 @@ def _process_agent_outcome(
         additional_artifacts=additional,
     )
     _remove_agent_outcome(run.run_root)
+    if checkpoint.stage == "playtest":
+        _record_playtest_evidence(checkpoint, context)
     if checkpoint.stage == "release" and publish_requested:
         # Release is already durably accepted and bound to Deliver before any
         # optional credential-bearing call begins. A missing credential or an

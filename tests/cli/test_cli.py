@@ -56,6 +56,7 @@ class NativeCommandTest(unittest.TestCase):
                 "skills",
                 "schemas",
                 "vault",
+                "evidence",
             },
         )
         for removed in (
@@ -649,6 +650,43 @@ class VaultCommandTest(unittest.TestCase):
             code, out, _ = self.run_cli("vault", "lint", "--bundled", "--json")
             self.assertIn(code, (0, 1))
             self.assertGreater(json.loads(out)["nodes"], 100)
+
+    def test_evidence_and_review_commands_read_the_workshop_home(self):
+        from tests.playtest.test_evidence_ledger import LEAD, LEAD_B, playtested_document
+        from workshop.playtest.evidence_ledger import append_rows, build_rows, write_back
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            rows = build_rows("wish-a", 1, playtested_document(), [LEAD, LEAD_B], ["mechanisms/hand-off"])
+            append_rows(home, rows)
+            (home / "vault" / "anti-patterns").mkdir(parents=True)
+            (home / "vault" / "anti-patterns" / "idle-player.md").write_text(
+                "---\ntype: anti-pattern\nname: Idle Player\n---\n## Notes\n", encoding="utf-8")
+            write_back(home, rows, [{"lead": LEAD_B["id"], "nodes": LEAD_B["nodes"], "why": "No."}],
+                       product_id="wish-a", round_index=1)
+            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": temporary}):
+                code, out, _ = self.run_cli("evidence", "list")
+                self.assertEqual(code, 0)
+                self.assertIn("wish-a#r1:loose-fit", out)
+                self.assertIn("3 row(s)", out)
+                code, out, _ = self.run_cli("evidence", "recall", "mechanisms/hand-off", "--limit", "1", "--json")
+                self.assertEqual(json.loads(out)[0]["ref"], "wish-a#r1:loose-fit")
+                code, out, _ = self.run_cli("evidence", "recall", "mechanisms/none")
+                self.assertIn("0 row(s)", out)
+                code, out, _ = self.run_cli("vault", "review")
+                self.assertIn("wish-a-r1.md", out)
+                self.assertIn("1 review file(s)", out)
+                code, out, _ = self.run_cli("vault", "review", "--json")
+                self.assertEqual(json.loads(out)[0]["dismissals"], 1)
+                code, out, _ = self.run_cli("evidence", "harvest")
+                self.assertEqual(code, 0)
+                self.assertIn("0 row(s) from 0 product(s)", out)
+                code, out, _ = self.run_cli("evidence", "harvest", "--json")
+                self.assertEqual(json.loads(out)["rows"], 0)
+                (home / "state" / "wish-x" / "gates").mkdir(parents=True)
+                (home / "state" / "wish-x" / "gates" / "0004-playtest.json").write_text("{", encoding="utf-8")
+                code, out, _ = self.run_cli("evidence", "harvest")
+                self.assertIn("skipped (unreadable or unverifiable): wish-x/0004-playtest.json", out)
 
     def test_vault_defaults_to_the_workshop_home_and_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:

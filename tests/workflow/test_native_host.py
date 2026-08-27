@@ -29,6 +29,7 @@ from workshop.workflow.native_run import (
     _design_vault_binding,
     _best_round,
     _playtest_score_history,
+    _prior_evidence,
     _repair_base,
     _run_design_vault,
     _score_trend,
@@ -813,6 +814,9 @@ class NativeHostTest(unittest.TestCase):
             (gates / "0007-make.json").unlink()
             self.assertIsNone(_repair_base(run, history))       # no receipt for the best round
             self.assertIsNone(_repair_base(SimpleNamespace(run_root=root, host_state_root=root / "nowhere"), history))
+
+    def test_prior_evidence_is_empty_for_runs_without_a_vault_snapshot(self):
+        self.assertEqual(_prior_evidence(SimpleNamespace(product_id="wish-x"), None, None), [])
 
     def test_run_design_vault_is_bound_by_hash_or_absent(self):
         with tempfile.TemporaryDirectory() as temporary:

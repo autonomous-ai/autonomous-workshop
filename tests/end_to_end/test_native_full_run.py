@@ -19,7 +19,7 @@ from workshop.workflow.native_run import (
     start_native_run,
 )
 from workshop.errors import ArtifactError, StateConflict
-from workshop.invent.vault import Vault
+from workshop.invent.vault import Vault, seed_vault
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
@@ -214,12 +214,13 @@ def _fixture_components():
 class _OneSessionProductAgent:
     """A deterministic stand-in for one resumed native Codex session."""
 
-    def __init__(self, *, playtest_plan=None):
+    def __init__(self, *, playtest_plan=None, confirm_first_lead=False):
         self.starts = []
         self.resumes = []
         self.stage_packets = []
         self.finalizer_commands = []
         self.playtest_plan = list(playtest_plan) if playtest_plan else []
+        self.confirm_first_lead = confirm_first_lead
 
     @staticmethod
     def _checkpoint(arguments):
@@ -482,6 +483,13 @@ class _OneSessionProductAgent:
             }
             for lead in inputs.get("vault_leads", [])
         ]
+        if self.confirm_first_lead and answers and feedback:
+            answers[0] = {
+                "lead": answers[0]["lead"],
+                "verdict": "confirmed",
+                "why": "Observed in this revision's seeded games.",
+                "feedback_code": feedback[0]["code"],
+            }
         base = {1: 8, 2: 6}.get(stage["round"], 7)
         reads = [
             {
@@ -1365,6 +1373,91 @@ class NativeFullRunTest(unittest.TestCase):
             [entry["verdict"] for entry in make_packets[3]["inputs"]["score_history"]],
             ["block", "block", "block"],
         )
+
+    def test_confirmed_leads_reach_the_next_wish_and_the_host_vault(self):
+        finding = {
+            "code": "idle-seat",
+            "area": "play",
+            "severity": "block",
+            "finding": "One seat idles while the other resolves captures.",
+            "change": "Resolve captures simultaneously.",
+            "evidence_refs": ["results/agent-playtest.json"],
+            "invalidates": ["playtest", "release", "deliver"],
+        }
+        effects = _FactoryEffects()
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            home.mkdir()
+            seed_vault(home / "vault")
+            first = _OneSessionProductAgent(playtest_plan=[("block", [finding])], confirm_first_lead=True)
+            second = _OneSessionProductAgent()
+            launchers = iter((first, second))
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root", return_value=None
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                side_effect=lambda *a, **k: next(launchers),
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad", side_effect=verify_cad
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials", side_effect=effects.credentials
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter", side_effect=effects.writer
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession", side_effect=effects.session
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition", side_effect=effects.transition
+            ):
+                wish_a = Wish.create(
+                    "orbit-dog-a",
+                    "Build a pocket draughts set inspired by my orbit-loving dog.",
+                    constraints={"audience": "14+"},
+                    context={"source": "native-ledger-test"},
+                )
+                receipt_a = start_native_run(wish_a, publish_requested=False)
+                wish_b = Wish.create(
+                    "orbit-dog-b",
+                    "Build a pocket draughts set for my other dog.",
+                    constraints={"audience": "14+"},
+                    context={"source": "native-ledger-test"},
+                )
+                receipt_b = start_native_run(wish_b, publish_requested=False)
+
+                self.assertEqual((receipt_a["stage"], receipt_b["stage"]), ("deliver", "deliver"))
+                first_leads = [p for p in first.stage_packets if p["stage"] == "playtest"][0]["inputs"]["vault_leads"]
+                confirmed_symptom = first_leads[0]["nodes"][1]
+                ledger = (home / "evidence" / "evidence.jsonl").read_text(encoding="utf-8").splitlines()
+                rows = [json.loads(line) for line in ledger]
+                self.assertEqual([row["ref"] for row in rows], ["orbit-dog-a#r1:idle-seat"])
+                self.assertEqual(rows[0]["symptom"], confirmed_symptom)
+                self.assertEqual(rows[0]["weight"], 3)
+                self.assertIn("mechanisms/stacking-and-balancing", rows[0]["mechanisms"])
+                node = home / "vault" / (confirmed_symptom + ".md")
+                self.assertIn("- [orbit-dog-a#r1:idle-seat] block:", node.read_text(encoding="utf-8"))
+                review = home / "vault" / "_review" / "orbit-dog-a-r1.md"
+                self.assertTrue(review.is_file())
+                self.assertEqual(
+                    [p["inputs"]["prior_evidence"] for p in first.stage_packets if p["stage"] in ("make", "playtest")],
+                    [[], [], [], []],
+                )
+                for stage in ("make", "playtest"):
+                    packet = [p for p in second.stage_packets if p["stage"] == stage][0]
+                    self.assertEqual([row["ref"] for row in packet["inputs"]["prior_evidence"]], ["orbit-dog-a#r1:idle-seat"])
+                self.assertEqual(receipt_a["rounds"][0]["vault_leads_confirmed"], 1)
 
     def test_a_worse_round_redirects_the_next_make_to_the_best_sealed_round(self):
         one = {
