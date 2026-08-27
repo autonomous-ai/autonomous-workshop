@@ -545,6 +545,9 @@ class StageProposalToolTest(unittest.TestCase):
 
     def test_playtest_derives_file_hashes_and_loop_transition(self):
         made = self.create_made()
+        replay_work = self.run_root / "work/playtest/r0001/replay.py"
+        replay_work.parent.mkdir(parents=True)
+        replay_work.write_text("print('replay')\n", encoding="utf-8")
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
         evidence_root.mkdir(parents=True)
         config = b'{"seed":42,"version":1}\n'
@@ -594,6 +597,11 @@ class StageProposalToolTest(unittest.TestCase):
         playtested = NativePlaytested.from_mapping(playtested_document)
         playtested.assert_context(made, self.blueprint)
         playtested.validate_evidence_tree(self.run_root, made)
+        self.assertTrue(replay_work.exists())
+        self.assertNotIn(
+            "replay.py",
+            {entry.path for entry in playtested.evidence_manifest.entries},
+        )
         self.assertEqual(
             {item.config_sha256 for item in playtested.checks}, {sha256(config)}
         )
@@ -656,6 +664,62 @@ class StageProposalToolTest(unittest.TestCase):
             "the verdict already routes the repair to Make",
             rejected.stderr,
         )
+
+    def test_playtest_rejects_working_tree_debris_inside_evidence(self):
+        made = self.create_made()
+        evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
+        evidence_root.mkdir(parents=True)
+        (evidence_root / "config.json").write_bytes(b'{"version":1}\n')
+        debris = evidence_root / "__pycache__/replay.pyc"
+        debris.parent.mkdir()
+        debris.write_bytes(b"temporary bytecode")
+        checks = []
+        for check_id in self.blueprint.required_playtest_checks():
+            evidence_ref = "%s.json" % check_id
+            (evidence_root / evidence_ref).write_bytes(
+                canonical_json({"check": check_id, "ok": True}) + b"\n"
+            )
+            checks.append(
+                {
+                    "check_id": check_id,
+                    "passed": True,
+                    "evaluator": "workshop-host",
+                    "evaluator_version": "1.0.0",
+                    "config_ref": "config.json",
+                    "evidence_ref": evidence_ref,
+                    "observed_at": "2026-08-26T00:00:00Z",
+                    "observations": {"ok": True},
+                }
+            )
+        self.write_stage(
+            "playtest",
+            {
+                "made": made.to_dict(),
+                "required_check_ids": list(
+                    self.blueprint.required_playtest_checks()
+                ),
+            },
+            round_index=1,
+        )
+        self.write_json(
+            "drafts/playtest.json",
+            {"checks": checks, "feedback": [], "verdict": "pass"},
+        )
+
+        rejected = self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+            expected=2,
+        )
+
+        self.assertIn("path excluded by manifest policy", rejected.stderr)
+        self.assertFalse(
+            (self.run_root / "artifacts/playtest/r0001/playtested.json").exists()
+        )
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_release_seals_exact_codex_authored_page_and_matches_native_release(self):
         made = self.create_made()

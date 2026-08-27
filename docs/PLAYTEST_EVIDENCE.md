@@ -56,6 +56,15 @@ exact version, cites a config file and evidence file inside the Playtest
 evidence tree, records an explicit UTC observation time, and includes non-empty
 observations. `self-report` and `trust-me` are not evaluators.
 
+Temporary replay work belongs under `work/playtest/rNNNN/`, outside the sealed
+evidence tree. That includes wrappers, redundant source copies, caches, and
+transient renders. Prefer replaying sealed Made source directly; if an isolated
+copy is necessary, keep it only in that work area. A canonical config records
+the Made path and hash, exact command, seed, and tool version. The evidence tree
+contains only canonical configs and final static outputs cited by checks—not
+copied source trees, caches, transcripts, or JSONL streams. The authored
+three-field proposal stays under `drafts/`.
+
 The session then runs:
 
 ```bash

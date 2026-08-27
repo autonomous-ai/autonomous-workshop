@@ -117,6 +117,16 @@ While pursuing the Goal:
    sharpen feedback. Do not modify the sealed Made product during Playtest or
    reason a failed check into a pass.
 
+Keep replay work separate from evidence. Run temporary wrappers, redundant
+source copies, caches, and transient renders under `work/playtest/rNNNN/`, where
+`NNNN` is the current zero-padded round. Prefer replaying the already sealed
+Made source directly; if isolation is necessary, copy it only into that work
+area. Record the Made path and hash, exact command, seed, and tool version in a
+canonical config file. Put only those configs and the final static outputs
+cited by checks under the exact `evidence_root`; do not duplicate Made source,
+working trees, cache directories, transcripts, or JSONL streams there. Keep the
+three-field authored proposal under `drafts/`.
+
 Leave the exact evidence tree requested by `STAGE.json` and one authored JSON
 source with exactly `checks`, `feedback`, and `verdict`. Every required check
 id must appear once and cite its config and evidence file. Never invent

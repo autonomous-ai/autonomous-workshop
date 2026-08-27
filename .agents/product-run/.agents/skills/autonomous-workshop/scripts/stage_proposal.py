@@ -1849,7 +1849,12 @@ def _parser() -> argparse.ArgumentParser:
         "--source", required=True, help="Run-local Playtest authored JSON."
     )
     playtest.add_argument(
-        "--evidence-root", required=True, help="Run-local Playtest evidence tree."
+        "--evidence-root",
+        required=True,
+        help=(
+            "Run-local Playtest evidence tree containing only canonical configs "
+            "and final cited outputs; keep replay work outside it."
+        ),
     )
 
     release = subparsers.add_parser("release", help="Seal one factual package tree.")
