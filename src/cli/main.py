@@ -43,7 +43,7 @@ from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.execution import codex_subprocess_environment
 from workshop.runtime.credentials import (
     factory_credential_environment,
-    validate_factory_credential_configuration,
+    factory_service_credential_environment,
 )
 from workshop.runtime.codex import (
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
@@ -70,7 +70,9 @@ _LIVE_ACTIVITY_MESSAGES = {
     "subagent": "Native Codex: coordinating a subagent.",
     "finalizing": "Native Codex: reported progress for the current stage.",
     "completed": "Native Codex: turn complete; Workshop is verifying it.",
-    "failed": "Native Codex: turn stopped; Workshop is checking the result.",
+    "failed": (
+        "Native Codex: turn ended; Workshop is checking for a valid stage proposal."
+    ),
 }
 
 
@@ -464,7 +466,9 @@ def _doctor_agent_assets() -> dict[str, str]:
 def _doctor_factory() -> dict[str, str]:
     try:
         credential_environment = factory_credential_environment()
-        validate_factory_credential_configuration(credential_environment)
+        service_environment = factory_service_credential_environment(
+            credential_environment
+        )
     except WorkshopError as exc:
         return _check_record(
             "factory-credentials",
@@ -475,9 +479,9 @@ def _doctor_factory() -> dict[str, str]:
                 "file or configure a complete host environment pair."
             ),
         )
-    password = bool(credential_environment.get("FACTORY_PASSWORD"))
-    generic_username = bool(credential_environment.get("FACTORY_USERNAME"))
-    scoped_usernames = tuple(
+    password = bool(service_environment.get("FACTORY_PASSWORD"))
+    username = bool(service_environment.get("FACTORY_USERNAME"))
+    legacy_scoped_username = any(
         name
         for name, value in credential_environment.items()
         if name.startswith("FACTORY_")
@@ -485,12 +489,28 @@ def _doctor_factory() -> dict[str, str]:
         and name != "FACTORY_USERNAME"
         and bool(value)
     )
-    username = generic_username or bool(scoped_usernames)
     if username and password:
+        if legacy_scoped_username:
+            return _check_record(
+                "factory-credentials",
+                "ready",
+                (
+                    "One legacy Factory username is available as Workshop's "
+                    "host-only service account for every Inventor."
+                ),
+                next_step=(
+                    "Rename the legacy scoped username variable to "
+                    "FACTORY_USERNAME; its old scope no longer grants or limits "
+                    "publication authority."
+                ),
+            )
         return _check_record(
             "factory-credentials",
             "ready",
-            "A complete host-only Factory credential pair is available.",
+            (
+                "One complete host-only Workshop Factory service-account pair "
+                "is available for every Inventor."
+            ),
         )
     if not username and not password:
         return _check_record(
@@ -501,15 +521,20 @@ def _doctor_factory() -> dict[str, str]:
                 "Factory publication."
             ),
             next_step=(
-                "Configure a Factory username and FACTORY_PASSWORD in the private "
-                "$WORKSHOP_HOME/credentials/factory.env file."
+                "Configure the Workshop service account as FACTORY_USERNAME and "
+                "FACTORY_PASSWORD in the private "
+                "$WORKSHOP_HOME/credentials/factory.env file; Wish users do not "
+                "supply Factory credentials."
             ),
         )
     return _check_record(
         "factory-credentials",
         "needs-attention",
-        "Factory credentials are only partially configured.",
-        next_step="Configure a username and FACTORY_PASSWORD together in the host environment.",
+        "Workshop's Factory service-account credentials are only partially configured.",
+        next_step=(
+            "Configure FACTORY_USERNAME and FACTORY_PASSWORD together in the "
+            "host environment."
+        ),
     )
 
 

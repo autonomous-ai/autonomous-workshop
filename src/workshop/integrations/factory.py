@@ -1448,11 +1448,16 @@ class FactoryAgentCredentials:
 
 
 def factory_credentials_from_environment(
-    inventor_id: str,
     environ: Mapping[str, str],
 ) -> FactoryAgentCredentials:
-    if not isinstance(inventor_id, str) or not _INVENTOR_ID.fullmatch(inventor_id):
-        raise ContractError("Factory inventor_id must be a canonical slug")
+    """Create the host-owned Workshop service-account credential.
+
+    Factory authentication is independent of the Inventor selected for a
+    product run. Inventor provenance is carried by the sealed Release facts;
+    authenticated effect ownership is bound separately through Factory's
+    returned owner id and the durable receipts.
+    """
+
     if not isinstance(environ, Mapping):
         raise ContractError("Factory credential environment must be a mapping")
     username = environ.get("FACTORY_USERNAME")
@@ -1461,10 +1466,7 @@ def factory_credentials_from_environment(
         raise ContractError("Factory agent credentials are not configured")
     if not isinstance(username, str) or not isinstance(password, str):
         raise ContractError("Factory username/password must be configured together")
-    credentials = FactoryAgentCredentials(username, password)
-    if credentials.username.casefold() != inventor_id.casefold():
-        raise ContractError("Factory username must exactly match the selected inventor_id")
-    return credentials
+    return FactoryAgentCredentials(username, password)
 
 
 @dataclass(frozen=True)
@@ -1624,6 +1626,13 @@ class FactoryAgentSession:
                     "Factory agent login returned HTTP %s" % response.status
                 )
             token, identity = self._login_value(response)
+            if identity.username.casefold() != self._credentials.username.casefold():
+                self._access_token = None
+                self._identity = None
+                raise FactoryCredentialRejected(
+                    "Factory login identity did not match the configured "
+                    "Workshop service account"
+                )
             self._access_token = token
             self._identity = identity
             return identity
@@ -1929,8 +1938,6 @@ class FactoryReleaseWriter:
             raise ContractError("Factory inventor_id must be a canonical slug")
         if not isinstance(credentials, FactoryAgentCredentials):
             raise ContractError("Factory Release writer requires typed credentials")
-        if credentials.username.casefold() != inventor_id.casefold():
-            raise ContractError("Factory account must match the selected inventor")
         self.inventor_id = inventor_id
         self.ledger = ledger
         self.session = FactoryAgentSession(
@@ -2515,8 +2522,6 @@ class FactoryReleaseWriter:
         if FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(context.made.product):
             raise ContractError("Made product facts contain Release page fields")
         identity = self.session.login()
-        if identity.username.casefold() != self.inventor_id.casefold():
-            raise ContractError("authenticated Factory account does not match Inventor")
         client = FactoryClient(self.session.authenticated_transport)
 
         product_facts = {

@@ -814,14 +814,14 @@ class _FactoryEffects:
         self.credentials_value = SimpleNamespace(
             username="alice", password=self.secret
         )
-        self.credential_requests = []
+        self.credential_requests = 0
         self.writer_calls = []
         self.session_calls = []
         self.publish_calls = []
         self.ledgers = []
 
-    def credentials(self, inventor_id):
-        self.credential_requests.append(inventor_id)
+    def credentials(self):
+        self.credential_requests += 1
         return self.credentials_value
 
     def writer(self, ledger, inventor_id, credentials):
@@ -2040,7 +2040,7 @@ class NativeFullRunTest(unittest.TestCase):
                 )
                 self.assertEqual(made.product["title"], "Orbit Dog Draughts")
 
-            self.assertEqual(effects.credential_requests, ["alice"])
+            self.assertEqual(effects.credential_requests, 1)
             self.assertEqual(len(effects.writer_calls), 2)
             self.assertIs(effects.writer_calls[0][2], effects.credentials_value)
             self.assertEqual(len(effects.ledgers), 1)

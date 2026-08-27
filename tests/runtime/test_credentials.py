@@ -7,6 +7,7 @@ from workshop.errors import ContractError
 from workshop.runtime.credentials import (
     factory_credential_environment,
     factory_credential_file,
+    factory_service_credential_environment,
     validate_factory_credential_configuration,
 )
 
@@ -41,6 +42,20 @@ class FactoryCredentialBoundaryTest(unittest.TestCase):
                 values,
                 {
                     "FACTORY_ALICE_USERNAME": "alice",
+                    "FACTORY_PASSWORD": "environment-secret",
+                },
+            )
+            overridden = factory_credential_environment(
+                {
+                    "WORKSHOP_HOME": str(home),
+                    "FACTORY_USERNAME": "workshop.publisher",
+                    "FACTORY_PASSWORD": "environment-secret",
+                }
+            )
+            self.assertEqual(
+                overridden,
+                {
+                    "FACTORY_USERNAME": "workshop.publisher",
                     "FACTORY_PASSWORD": "environment-secret",
                 },
             )
@@ -122,15 +137,13 @@ class FactoryCredentialBoundaryTest(unittest.TestCase):
                 )
             self.assertNotIn("'alice'", str(raised.exception))
 
-    def test_validates_scoped_identity_and_shared_password_pairing(self):
+    def test_normalizes_one_service_account_and_rejects_identity_ambiguity(self):
         valid = (
-            {"FACTORY_USERNAME": "Alice", "FACTORY_PASSWORD": "secret"},
-            {"FACTORY_ALICE_USERNAME": "Alice", "FACTORY_PASSWORD": "secret"},
             {
-                "FACTORY_ALICE_USERNAME": "alice",
-                "FACTORY_LEO_SMITH_USERNAME": "LEO-SMITH",
+                "FACTORY_USERNAME": "workshop.publisher",
                 "FACTORY_PASSWORD": "secret",
             },
+            {"FACTORY_ALICE_USERNAME": "Alice", "FACTORY_PASSWORD": "secret"},
             {},
         )
         for values in valid:
@@ -143,12 +156,24 @@ class FactoryCredentialBoundaryTest(unittest.TestCase):
                 "exactly match",
             ),
             (
-                {"FACTORY_USERNAME": "not an inventor", "FACTORY_PASSWORD": "secret"},
-                "canonical inventor_id",
+                {
+                    "FACTORY_USERNAME": "workshop.publisher",
+                    "FACTORY_ALICE_USERNAME": "alice",
+                    "FACTORY_PASSWORD": "secret",
+                },
+                "only one Workshop service account",
             ),
             (
                 {"FACTORY_ALICE__BOB_USERNAME": "alice--bob", "FACTORY_PASSWORD": "secret"},
                 "canonical inventor_id",
+            ),
+            (
+                {
+                    "FACTORY_ALICE_USERNAME": "alice",
+                    "FACTORY_LEO_SMITH_USERNAME": "LEO-SMITH",
+                    "FACTORY_PASSWORD": "secret",
+                },
+                "only one Workshop service account",
             ),
             ({"FACTORY_USERNAME": "alice"}, "configured together"),
             ({"FACTORY_PASSWORD": "secret"}, "configured together"),
@@ -159,6 +184,28 @@ class FactoryCredentialBoundaryTest(unittest.TestCase):
                 ContractError, message
             ):
                 validate_factory_credential_configuration(values)
+
+        self.assertEqual(
+            factory_service_credential_environment(
+                {
+                    "FACTORY_USERNAME": "workshop.publisher",
+                    "FACTORY_PASSWORD": "secret",
+                }
+            ),
+            {
+                "FACTORY_USERNAME": "workshop.publisher",
+                "FACTORY_PASSWORD": "secret",
+            },
+        )
+        self.assertEqual(
+            factory_service_credential_environment(
+                {
+                    "FACTORY_ALICE_USERNAME": "Alice",
+                    "FACTORY_PASSWORD": "secret",
+                }
+            ),
+            {"FACTORY_USERNAME": "Alice", "FACTORY_PASSWORD": "secret"},
+        )
 
 
 if __name__ == "__main__":

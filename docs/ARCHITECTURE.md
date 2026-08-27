@@ -269,11 +269,13 @@ on that mutable ordering. Draft and public evidence are accepted only when
 authenticated readback preserves the declared category slug.
 
 Starting `workshop wish` authorizes this one required publication for the exact
-run bytes; there is no separate publish mode. Factory credentials are stored
-outside the run in the private Workshop home, loaded only between native
-turns, and never copied into the run workspace or coding-agent process. Missing
-credentials leave Release incomplete. A public page is the terminal digital
-handoff, never a printing or delivery receipt.
+run bytes; there is no separate publish mode. One host-owned Workshop Factory
+service account publishes every Inventor's Release. Its credentials are stored
+outside the run in the private Workshop home, loaded only between native turns,
+and never copied into the run workspace or coding-agent process. Inventor
+provenance stays in the sealed Release facts rather than being inferred from
+the publisher username. Missing credentials leave Release incomplete. A public
+page is the terminal digital handoff, never a printing or delivery receipt.
 
 ## Shared implementation
 

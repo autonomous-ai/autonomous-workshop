@@ -79,17 +79,30 @@ when no native agent turn is running. Never put credentials in a Wish, prompt,
 coding-agent subprocess receives a scrubbed environment.
 
 The private file uses strict `NAME=raw-value` lines; it is not evaluated by a
-shell, so literal surrounding single or double quotes are invalid. A generic
-account uses `FACTORY_USERNAME` together with `FACTORY_PASSWORD`. For a scoped
-account, the variable name encodes the canonical Inventor id and its value must
-match it case-insensitively—for example, `FACTORY_LEO_USERNAME=leo`, or
-`FACTORY_LEO_SMITH_USERNAME=leo-smith`. All scoped usernames share the one
-`FACTORY_PASSWORD`.
+shell, so literal surrounding single or double quotes are invalid. Configure
+exactly one Workshop service account with `FACTORY_USERNAME` and
+`FACTORY_PASSWORD`. This account publishes every Release regardless of which
+Inventor Match selected; a person running `workshop wish` never supplies a
+Factory username or password.
 
-Run `uv run workshop doctor` to validate names, identity bindings, pair
+For migration, exactly one legacy scoped username such as
+`FACTORY_ALICE_USERNAME=alice` is temporarily accepted with
+`FACTORY_PASSWORD`, but its variable name no longer grants or limits authority
+to that Inventor. Multiple scoped usernames, or a generic and scoped username
+together, are rejected as ambiguous. Rename the legacy key to
+`FACTORY_USERNAME`.
+
+Run `uv run workshop doctor` to validate account singularity, pair
 completeness, file permissions, and syntax without printing any secret value.
-Missing or rejected credentials leave Release waiting with a concrete need;
-they do not create a successful private-only Release.
+At login, the returned Factory username must match the configured service
+account. Authenticated owner ids and exact artifact hashes remain bound through
+import, publication, reconciliation, and readback receipts. Missing or rejected
+credentials leave Release waiting with a concrete need; they do not create a
+successful private-only Release.
+
+Factory may display the Workshop service account as the public author. The
+actual Inventor remains independently bound in the sealed product facts; it is
+not inferred from the Factory login identity.
 
 ## Recovery
 

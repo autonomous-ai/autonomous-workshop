@@ -238,6 +238,13 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(output.getvalue().count("reasoning"), 1)
         self.assertEqual(output.getvalue().count("using a tool"), 1)
 
+    def test_failed_activity_neutrally_reports_proposal_check(self):
+        output = StringIO()
+        cli_main._LiveWishProgress(output).activity("failed")
+
+        self.assertIn("checking for a valid stage proposal", output.getvalue())
+        self.assertNotIn("turn stopped", output.getvalue())
+
     def test_status_is_read_only_native_inspection(self):
         stdout = StringIO()
         with mock.patch(
@@ -464,16 +471,48 @@ class DoctorTest(unittest.TestCase):
         self.assertIn("exactly match", check["detail"])
         self.assertNotIn(secret_username, json.dumps(check))
 
-    def test_generic_factory_pair_remains_ready(self):
+    def test_generic_factory_service_account_is_ready_for_every_inventor(self):
         with mock.patch(
             "cli.main.factory_credential_environment",
             return_value={
-                "FACTORY_USERNAME": "inventor-from-run",
+                "FACTORY_USERNAME": "alice",
                 "FACTORY_PASSWORD": "secret",
             },
         ):
             check = cli_main._doctor_factory()
         self.assertEqual(check["status"], "ready")
+        self.assertIn("service-account pair", check["detail"])
+        self.assertIn("every Inventor", check["detail"])
+
+    def test_one_legacy_scoped_username_is_ready_with_migration_guidance(self):
+        with mock.patch(
+            "cli.main.factory_credential_environment",
+            return_value={
+                "FACTORY_ALICE_USERNAME": "alice",
+                "FACTORY_PASSWORD": "secret",
+            },
+        ):
+            check = cli_main._doctor_factory()
+        self.assertEqual(check["status"], "ready")
+        self.assertIn("service account for every Inventor", check["detail"])
+        self.assertIn("FACTORY_USERNAME", check["next"])
+
+    def test_multiple_factory_accounts_fail_without_printing_values(self):
+        first = "alice"
+        second = "leo-smith"
+        with mock.patch(
+            "cli.main.factory_credential_environment",
+            return_value={
+                "FACTORY_ALICE_USERNAME": first,
+                "FACTORY_LEO_SMITH_USERNAME": second,
+                "FACTORY_PASSWORD": "secret",
+            },
+        ):
+            check = cli_main._doctor_factory()
+        self.assertEqual(check["status"], "needs-attention")
+        self.assertIn("only one Workshop service account", check["detail"])
+        self.assertNotIn(first, json.dumps(check))
+        self.assertNotIn(second, json.dumps(check))
 
     def test_repository_agent_assets_include_executable_cad_verifier(self):
         self.assertEqual(cli_main._doctor_agent_assets()["status"], "ready")

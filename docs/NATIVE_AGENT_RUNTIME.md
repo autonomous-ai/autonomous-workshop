@@ -415,9 +415,12 @@ Release completes only after the host replays full-tier,
 thickness-checked, print-ready CAD, validates the exact `MANUAL.pdf`, imports
 the exact CAD/manual handoff, publishes it, and verifies public page and manual
 readback hashes. Missing credentials or a remote outage leaves Release waiting
-and resumable; the durable effect ledger reconciles before retry. Local credentials belong in the private
-`$WORKSHOP_HOME/credentials/factory.env` file and are loaded lazily only after
-the native turn exits. Codex 0.145.0 or newer runs with Workshop's strict
+and resumable; the durable effect ledger reconciles before retry. Local
+credentials belong in the private `$WORKSHOP_HOME/credentials/factory.env`
+file and are loaded lazily only after the native turn exits. One Workshop-owned
+Factory service account publishes every Inventor's Release; Inventor provenance
+remains independently sealed in the product facts and never selects
+credentials. Codex 0.145.0 or newer runs with Workshop's strict
 permission profile: all filesystem reads are denied by default, the exact
 absolute toy project is writable, immutable instructions remain read-only,
 only minimal tool paths plus the identity-bound Workshop Python runtime and

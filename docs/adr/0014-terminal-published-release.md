@@ -34,10 +34,13 @@ same exact bytes:
    manual hashes.
 
 `workshop wish` grants this Release-publication authority; there is no normal
-`--publish` mode. Credentials stay host-only. Missing credentials and typed
-transient or ambiguous effects produce a resumable Release wait, backed by the
-idempotent ledger and exact pending proposal. Permanent contract, receipt, and
-integrity failures remain visible and do not become outage loops.
+`--publish` mode. One host-owned Workshop Factory service account publishes
+every Inventor's Release; users do not provide Factory credentials and the
+selected Inventor does not choose the publisher identity. Credentials stay
+host-only. Missing credentials and typed transient or ambiguous effects produce
+a resumable Release wait, backed by the idempotent ledger and exact pending
+proposal. Permanent contract, receipt, and integrity failures remain visible
+and do not become outage loops.
 
 Historical Deliver checkpoints remain readable but are never reported as a
 current successful Release merely because an old page is public. A frozen

@@ -80,6 +80,7 @@ from workshop.runtime import (
     EffectLedger,
     Receipt,
     factory_credential_environment,
+    factory_service_credential_environment,
 )
 from workshop.runtime.agent_assets import (
     parse_inventor_custom_agent_bytes,
@@ -134,12 +135,19 @@ _RELEASE_EFFECT_WAIT_NAME = "release-effect-wait.json"
 _PUBLIC_EXAMPLE_STATUS_NAME = "public-example.json"
 _CAD_GATE_REJECTIONS_DIRECTORY = "cad-gate-rejections"
 _CAD_GATE_REJECTION_KIND = "autonomous-workshop.cad-gate-rejection"
+_MAKE_PROPOSAL_REJECTIONS_DIRECTORY = "make-proposal-rejections"
+_MAKE_PROPOSAL_REJECTION_KIND = "autonomous-workshop.make-proposal-rejection"
+_MAKE_PROPOSAL_REJECTION_HEAD_KIND = (
+    "autonomous-workshop.make-proposal-rejection-head"
+)
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
 _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
 _SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _MAX_STAGE_INPUT_BYTES = 512 * 1024
 _MAX_CAD_GATE_REJECTION_BYTES = 64 * 1024
 _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES = 8 * 1024
+_MAX_MAKE_PROPOSAL_REJECTION_BYTES = 256 * 1024
+_MAX_MAKE_PROPOSAL_REJECTION_FEEDBACK_CHARS = 2_000
 _MAX_LEGACY_CAD_GATE_EVIDENCE_BYTES = 3 * 1024 * 1024
 _MAX_NATIVE_TURNS = 32
 _RECOVERABLE_BACKOFF_BASE_SECONDS = 1.0
@@ -147,8 +155,8 @@ _RECOVERABLE_BACKOFF_MAX_SECONDS = 30.0
 _RECOVERABLE_BACKOFF_JITTER_MIN = 0.75
 _RECOVERABLE_BACKOFF_JITTER_SPAN = 0.5
 _FACTORY_CREDENTIALS_NEED = (
-    "Factory credentials for the selected Inventor are missing or malformed; "
-    "configure a complete matching username/password pair, then resume this run."
+    "Factory credentials for Workshop's service account are missing or malformed; "
+    "configure FACTORY_USERNAME and FACTORY_PASSWORD, then resume this run."
 )
 _FACTORY_PUBLICATION_NEED = (
     "Factory publication could not be verified; restore server connectivity, "
@@ -203,6 +211,14 @@ class _VerifiedRelease:
 
 class _RecoverableNativeTurn(WorkshopError):
     """Internal typed signal for a checkpoint-bound turn continuation."""
+
+
+@dataclass(frozen=True)
+class _MakeProposalRejected(Exception):
+    """A valid Make envelope whose agent-authored candidate failed its contract."""
+
+    failure_code: str
+    feedback: str
 
 
 @dataclass(frozen=True)
@@ -2289,19 +2305,11 @@ def _evaluate_playtest_stage(
     return StageGateDecision(evidence=evidence, transition=transition), additional
 
 
-def _factory_credentials(inventor_id: str) -> Any:
-    credential_environment = factory_credential_environment()
-    suffix = inventor_id.upper().replace("-", "_")
-    username = credential_environment.get("FACTORY_%s_USERNAME" % suffix)
-    if not isinstance(username, str) or not username:
-        username = credential_environment.get("FACTORY_USERNAME")
-    password = credential_environment.get("FACTORY_PASSWORD")
-    environment: dict[str, str] = {}
-    if isinstance(username, str) and username:
-        environment["FACTORY_USERNAME"] = username
-    if isinstance(password, str) and password:
-        environment["FACTORY_PASSWORD"] = password
-    return factory_credentials_from_environment(inventor_id, environment)
+def _factory_credentials() -> Any:
+    credential_environment = factory_service_credential_environment(
+        factory_credential_environment()
+    )
+    return factory_credentials_from_environment(credential_environment)
 
 
 def _release_effect_path(run: AgentRun) -> Path:
@@ -2772,7 +2780,7 @@ def _attempt_release_publication(
             )
             return receipt, False
         try:
-            credentials = _factory_credentials(verified.inventor_id)
+            credentials = _factory_credentials()
         except ContractError:
             raise _FactoryCredentialsUnavailable(verified.inventor_id) from None
         ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
@@ -3605,7 +3613,7 @@ def _native_receipt(
                 )
                 verified = _existing_release_for_promotion(effect_run, checkpoint)
                 try:
-                    _factory_credentials(verified.inventor_id)
+                    _factory_credentials()
                 except ContractError:
                     publication["reason"] = _FACTORY_CREDENTIALS_NEED
                     if _FACTORY_CREDENTIALS_NEED not in needs:

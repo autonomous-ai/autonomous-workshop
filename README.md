@@ -107,8 +107,9 @@ uv run workshop wish \
 `workshop doctor` checks the Inventor catalog, Codex version and sign-in,
 packaged agent assets, and host-only Factory credential configuration without
 printing secrets. Fix any reported need before expecting a run to complete.
-Factory credentials are required only by the host, when Release publishes the
-final CAD and manual; see the
+Factory credentials belong to one Workshop-owned service account, not to the
+person making a Wish or the Inventor selected during Match. They are required
+only by the host when Release publishes the final CAD and manual; see the
 [credential setup](docs/PUBLISH_SEALED_PRODUCT.md#credentials).
 
 Starting `workshop wish` authorizes required public Factory publication of that
@@ -171,11 +172,12 @@ Release waiting for `workshop resume`.
 
 Factory credentials live in the host-only
 `$WORKSHOP_HOME/credentials/factory.env` file (0600 inside a 0700 directory),
-or in a compatible host environment for ephemeral deployments. They are loaded
-only outside a native agent turn and are never passed into Codex. Publication
-does not claim that a physical toy or its manual was printed, packed, or
-delivered. Printing, delivery, and review belong to the Operations workflow
-after Workshop Release.
+or in a compatible host environment for ephemeral deployments. The deployment
+configures one `FACTORY_USERNAME` / `FACTORY_PASSWORD` service-account pair;
+Wish users never enter Factory credentials. They are loaded only outside a
+native agent turn and are never passed into Codex. Publication does not claim
+that a physical toy or its manual was printed, packed, or delivered. Printing,
+delivery, and review belong to the Operations workflow after Workshop Release.
 
 The command prints a Wish ID. Use that ID to inspect or continue the same
 session after a process interruption:

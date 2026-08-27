@@ -123,18 +123,17 @@ class ScriptedSessionTransport:
 class FactorySessionTest(unittest.TestCase):
     def test_credentials_are_exact_and_redacted(self):
         credentials = factory_credentials_from_environment(
-            "alice",
-            {"FACTORY_USERNAME": "alice", "FACTORY_PASSWORD": "test-secret"},
+            {
+                "FACTORY_USERNAME": "workshop.publisher",
+                "FACTORY_PASSWORD": "test-secret",
+            },
         )
-        self.assertEqual(credentials.username, "alice")
-        self.assertNotIn("alice", repr(credentials))
+        self.assertEqual(credentials.username, "workshop.publisher")
+        self.assertNotIn("workshop.publisher", repr(credentials))
         self.assertNotIn("test-secret", repr(credentials))
         with self.assertRaisesRegex(ContractError, "configured together"):
-            factory_credentials_from_environment("alice", {"FACTORY_USERNAME": "alice"})
-        with self.assertRaisesRegex(ContractError, "exactly match"):
             factory_credentials_from_environment(
-                "bob",
-                {"FACTORY_USERNAME": "alice", "FACTORY_PASSWORD": "test-secret"},
+                {"FACTORY_USERNAME": "workshop.publisher"}
             )
 
     def test_bearer_is_memory_only_cached_and_same_origin(self):
@@ -179,6 +178,38 @@ class FactorySessionTest(unittest.TestCase):
             rejected_session.login()
         self.assertNotIn("test-secret", str(raised.exception))
         self.assertNotIn("provider-secret", str(raised.exception))
+
+    def test_login_identity_must_match_configured_service_account(self):
+        def wrong_identity(method, url, headers, body, timeout):
+            return HttpResponse(
+                200,
+                {"Content-Type": "application/json"},
+                json.dumps(
+                    {
+                        "access_token": "wrong-account-token",
+                        "token_type": "Bearer",
+                        "expires_in": 31_536_000,
+                        "user": {
+                            "id": "owner-other",
+                            "username": "other-service-account",
+                        },
+                    }
+                ).encode(),
+            )
+
+        session = FactoryAgentSession(
+            FactoryAgentCredentials("alice", "test-secret"),
+            transport=wrong_identity,
+        )
+        with self.assertRaisesRegex(
+            FactoryCredentialRejected, "configured Workshop service account"
+        ) as raised:
+            session.login()
+        rendered = str(raised.exception)
+        self.assertNotIn("alice", rendered)
+        self.assertNotIn("test-secret", rendered)
+        self.assertNotIn("other-service-account", rendered)
+        self.assertEqual(repr(session), "FactoryAgentSession(authenticated=false)")
 
     def test_manual_readback_is_pinned_and_never_sends_a_bearer(self):
         transport = FactoryTransport()
@@ -453,6 +484,17 @@ class FactoryReleaseTest(unittest.TestCase):
             self.release, created_at="content-addressed"
         )
         return manual
+
+    def test_workshop_service_account_can_publish_for_another_inventor(self):
+        receipt = FactoryReleaseWriter(
+            self.ledger,
+            "mira-fold",
+            FactoryAgentCredentials("alice", "test-secret"),
+            transport=FactoryTransport(),
+        )(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(receipt.owner_id, "owner-alice")
 
     def _reseal_product(self, made_product=None):
         product = self.made.artifact_root
