@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "a2b4fa36536bee232be22c39804fab3fb4c80749cd667579b9fb949377bfc86c",
+      "kind": "codex-skill",
+      "name": "mira-fold-inventor",
+      "path": "skills/mira-fold-inventor"
+    }
+  ],
+  "id": "mira-fold",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}
