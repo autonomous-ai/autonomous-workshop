@@ -407,6 +407,38 @@ class StageProposalToolTest(unittest.TestCase):
             "playtest",
         )
 
+    def test_make_rejects_product_metadata_the_host_would_reject(self):
+        product_root, product, _, _ = self.create_product()
+        concept = self.create_concept()
+        product.pop("summary")
+        (product_root / "product.json").write_bytes(canonical_json(product))
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "concept": concept.to_dict(),
+            },
+            round_index=1,
+        )
+
+        result = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("Make product summary", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+        self.assertFalse(
+            (self.run_root / "artifacts/make/r0001/made.json").exists()
+        )
+
     def test_playtest_derives_file_hashes_and_loop_transition(self):
         made = self.create_made()
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"

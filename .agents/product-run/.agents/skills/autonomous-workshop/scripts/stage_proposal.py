@@ -1640,6 +1640,8 @@ def _make_contract(
         "Make product.json",
     )
     _mapping(product_document, "Make product.json", nonempty=True)
+    _bounded_text(product_document.get("title"), "Make product title", 2_000)
+    _bounded_text(product_document.get("summary"), "Make product summary", 2_000)
     declared_components = product_document.get("components")
     if not isinstance(declared_components, list) or not all(
         isinstance(item, str) for item in declared_components

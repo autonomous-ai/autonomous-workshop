@@ -48,8 +48,10 @@ measure exact geometry, or validate a contract; they do not plan repairs,
 score Taste, route agents, or control the loop.
 
 Leave the product tree at the exact `product_root` in `STAGE.json`. It must
-include the required root product metadata, CAD project, assembled STEP/STL
-outputs, and deterministic CAD verification file. Map mechanisms, rules,
+include root `product.json` metadata with non-empty `title` and `summary` plus
+`components` containing exactly the concept brief's component keys. It must
+also include the CAD project, assembled STEP/STL outputs, and deterministic
+CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions. Then run:
 
