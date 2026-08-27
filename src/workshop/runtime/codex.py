@@ -1463,6 +1463,13 @@ class CodexNativeSessionLauncher:
             )
         cancel_proposal_timer()
         stderr_thread.join(timeout=max(0.0, min(1.0, deadline - time.monotonic())))
+        for stream in (process.stdout, process.stderr):
+            close = getattr(stream, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except (OSError, ValueError):
+                    pass
 
         if timed_out.is_set():
             raise CodexInvocationError("Codex native session timed out")
