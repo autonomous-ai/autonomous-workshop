@@ -353,7 +353,13 @@ def validate_context_record(
 
 
 def validate_stage_packet_inputs(packet_path: Path, *, run_root: Path) -> tuple[str, ...]:
-    """Rehash every path/digest pair that the host placed in a stage packet."""
+    """Rehash explicit run-root bindings that the host placed in stage inputs.
+
+    Embedded stage contracts contain their own artifact-relative paths and
+    manifests (for example Concept ``brief_path=brief.json``).  Production
+    contract validation owns those internal roots; only direct ``STAGE.inputs``
+    bindings use paths relative to the run root.
+    """
 
     packet = _read_json(packet_path, 512 * 1024)
     inputs = packet.get("inputs")
@@ -371,21 +377,9 @@ def validate_stage_packet_inputs(packet_path: Path, *, run_root: Path) -> tuple[
             raise MockSessionEvidenceError("%s input bytes are stale" % label)
         observed.append(path_value)
 
-    def walk(value: Any, label: str) -> None:
-        if isinstance(value, Mapping):
-            if "path" in value and "sha256" in value:
-                verify(value["path"], value["sha256"], label)
-            for key, item in value.items():
-                if isinstance(key, str) and key.endswith("_path"):
-                    digest_key = key[:-5] + "_sha256"
-                    if digest_key in value:
-                        verify(item, value[digest_key], "%s.%s" % (label, key[:-5]))
-                walk(item, "%s.%s" % (label, key))
-        elif isinstance(value, list):
-            for index, item in enumerate(value):
-                walk(item, "%s[%d]" % (label, index))
-
-    walk(inputs, "inputs")
+    for key, value in inputs.items():
+        if isinstance(value, Mapping) and "path" in value and "sha256" in value:
+            verify(value["path"], value["sha256"], "inputs.%s" % key)
     if len(observed) != len(set(observed)):
         observed = list(dict.fromkeys(observed))
     return tuple(observed)

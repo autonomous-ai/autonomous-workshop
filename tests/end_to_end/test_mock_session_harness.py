@@ -239,7 +239,17 @@ class MockSessionContextRecordTest(unittest.TestCase):
             "invented_artifact": {
                 "path": "artifacts/invent/invented.json",
                 "sha256": hashlib.sha256(b"accepted upstream").hexdigest(),
-            }
+            },
+            "concept": {
+                "concept_root": "artifacts/concept/r0001/concept",
+                "brief_path": "brief.json",
+                "brief_sha256": "f" * 64,
+                "concept_manifest": {
+                    "entries": [
+                        {"path": "brief.json", "sha256": "f" * 64}
+                    ]
+                },
+            },
         }
         _write_json(self.packet_path, packet)
         self.assertEqual(
