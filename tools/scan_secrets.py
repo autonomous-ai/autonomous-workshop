@@ -16,8 +16,8 @@ CREDENTIAL_FILENAMES = frozenset(("panda-auth.json", "portal-auth.json"))
 CONTENT_RULES = {
     "private-key": re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     "github-token": re.compile(rb"gh[pousr]_[A-Za-z0-9]{20,}"),
-    "anthropic-key": re.compile(rb"sk-ant-[A-Za-z0-9_-]{20,}"),
-    "openai-key": re.compile(rb"sk-(?:proj-)?[A-Za-z0-9_-]{32,}"),
+    "anthropic-key": re.compile(rb"(?<![A-Za-z0-9])sk-ant-[A-Za-z0-9_-]{20,}"),
+    "openai-key": re.compile(rb"(?<![A-Za-z0-9])sk-(?:proj-)?[A-Za-z0-9_-]{32,}"),
     "google-api-key": re.compile(rb"AIza[0-9A-Za-z_-]{30,}"),
     "telegram-token": re.compile(rb"(?<![A-Za-z0-9])[0-9]{7,12}:[A-Za-z0-9_-]{30,}"),
     "credentialed-mongodb-uri": re.compile(rb"mongodb(?:\+srv)?://[^\s:/]+:[^\s/@]+@"),
