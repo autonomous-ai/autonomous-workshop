@@ -24,11 +24,15 @@ from workshop.errors import ManifestError, WorkshopError
 
 BUNDLED_INVENTOR_IDS = ("abo", "alice", "bob", "eve", "ivy", "leo")
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
-PRODUCT_RUN_DOMAIN_SKILLS = (
-    "cad",
-    "design-reference",
-    "image-to-cad",
-    "step-parts",
+_PRODUCT_RUN_DOMAIN_SKILL_PATHS = (
+    ("cad", Path("make/skills/cad")),
+    ("design-reference", Path("make/skills/design-reference")),
+    ("image-to-cad", Path("make/skills/image-to-cad")),
+    ("manual-design", Path("release/skills/manual-design")),
+    ("step-parts", Path("make/skills/step-parts")),
+)
+PRODUCT_RUN_DOMAIN_SKILLS = tuple(
+    name for name, _relative in _PRODUCT_RUN_DOMAIN_SKILL_PATHS
 )
 _MAX_BUNDLED_FILE_BYTES = 512 * 1024
 
@@ -37,16 +41,20 @@ class PackageDataError(WorkshopError):
     """Installed Workshop data is absent, malformed, or changed."""
 
 
+def _workshop_package_root(package_file: Path) -> Path:
+    package_path = Path(package_file).resolve()
+    return next(
+        (parent for parent in package_path.parents if parent.name == "workshop"),
+        package_path.parent,
+    )
+
+
 def packaged_data_root(group: str, package_file: Path) -> Optional[Path]:
     """Return a component-owned package-data directory when it is present."""
 
     if group not in ("inventors", "schemas", "skills"):
         raise ValueError("unknown Workshop package-data group: %s" % group)
-    package_path = Path(package_file).resolve()
-    package_root = next(
-        (parent for parent in package_path.parents if parent.name == "workshop"),
-        package_path.parent,
-    )
+    package_root = _workshop_package_root(package_file)
     relative = {
         "inventors": Path("contributors/_inventors"),
         "schemas": Path("."),
@@ -71,14 +79,12 @@ def product_run_domain_skill_roots(
 ) -> Mapping[str, Path]:
     """Return the exact component-owned skills exposed to a product run."""
 
-    root = packaged_data_root(
-        "skills", Path(__file__) if package_file is None else Path(package_file)
+    package_root = _workshop_package_root(
+        Path(__file__) if package_file is None else Path(package_file)
     )
-    if root is None:
-        raise PackageDataError("this Workshop installation has no Make skills")
     selected: dict[str, Path] = {}
-    for name in PRODUCT_RUN_DOMAIN_SKILLS:
-        candidate = root / name
+    for name, relative in _PRODUCT_RUN_DOMAIN_SKILL_PATHS:
+        candidate = package_root / relative
         if candidate.is_symlink() or not candidate.is_dir():
             raise PackageDataError("missing product-run domain skill: %s" % name)
         skill_file = candidate / "SKILL.md"

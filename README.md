@@ -6,7 +6,7 @@ Not from a shelf. From your imagination.
 
 Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, Release, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=agentic-runtime-toys-v3)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, Release, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=manual-first-release-v4)](docs/images/workshop-floorplan.svg)
 
 ## Meet some of the inventors
 
@@ -115,12 +115,13 @@ assessments unless the host replays deterministic evidence or a physical
 receipt explicitly proves more. AI evidence never proves a successful print,
 physical fit, durability, or human response.
 
-Release is deliberately broader than “instructions.” Codex writes `MANUAL.md`
-and canonical schema-v3 page-ready product data: evidence-bound hero,
-cinematic, use-case, story-block, what-arrives, limitation, and claim content.
-Factory transports those exact sealed page and model bytes; it does not own a
-creative enrichment step. The default is private. Add `--publish` only when
-the verified page should be promoted to a public Factory listing:
+Release centers the moment the owner opens the box. Codex designs a
+self-contained printable `MANUAL.pdf`, renders and inspects every page, and
+seals it with exact product facts and passing evidence. The manual must teach
+the product without a website, video, QR code, or phone. Factory import is an
+optional host effect against that already accepted Release; missing credentials
+or an unavailable site never blocks the local manual or the transition to
+Deliver. Add `--publish` only when a Factory listing is also intended:
 
 ```bash
 uv run workshop wish --publish \
@@ -131,8 +132,9 @@ Factory credentials live in the host-only
 `$WORKSHOP_HOME/credentials/factory.env` file (0600 inside a 0700 directory),
 or in a compatible host environment for ephemeral deployments. They are loaded
 only outside a native agent turn and are never passed into Codex. Publication
-does not claim that a physical toy was printed, packed, or delivered. Deliver
-waits until separately authorized production and shipment receipts exist.
+does not claim that a physical toy or its manual was printed, packed, or
+delivered. Deliver waits until separately authorized production and shipment
+receipts exist.
 
 The command prints a Wish ID. Use that ID to inspect or continue the same
 session after a process interruption:
@@ -160,8 +162,8 @@ treats model prose as proof.
 
 The selected coding-agent runtime does nearly all product work: discovery,
 Match judgment, research, concept exploration, design, CAD iteration, artifact
-inspection, AI Playtest, repair, manual writing, and complete evidence-bound
-product-page content. Manager runtime support is deliberately pluggable:
+inspection, AI Playtest, repair, printable-manual design, and bounded
+evidence-linked Release facts. Manager runtime support is deliberately pluggable:
 
 | Workshop Manager runtime | Status |
 |---|---|
@@ -266,6 +268,8 @@ imported accidentally.
   runtime, contracts, gates, and integrations.
 - [`src/workshop/make/skills/`](src/workshop/make/skills/) holds the canonical
   shared CAD and making skills.
+- [`src/workshop/release/skills/manual-design/`](src/workshop/release/skills/manual-design/)
+  holds the canonical in-box manual design and review skill.
 - [`tests/`](tests/) mirrors the component ownership and contains the full
   deterministic and installed-package acceptance suite.
 - [`docs/`](docs/) contains the architecture, runtime protocol, evidence, and

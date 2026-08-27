@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Seal authored stage work into native Workshop proposal contracts.
 
-This script intentionally uses only the Python standard library.  It runs from
-an isolated product workspace where the host has materialized an immutable
+This script runs with Workshop's trusted Python dependencies from an isolated
+product workspace where the host has materialized an immutable
 ``STAGE.json`` with exactly these top-level fields::
 
     schema_version, kind, product_id, stage, checkpoint_sha256,
@@ -24,6 +24,7 @@ import math
 import os
 import re
 import stat
+import subprocess
 import sys
 import tempfile
 from pathlib import Path, PurePosixPath
@@ -69,11 +70,9 @@ MAX_STAGE_BYTES = 4 * 1024 * 1024
 MAX_OUTCOME_BYTES = 128 * 1024
 MAX_CONTRACT_BYTES = 16 * 1024 * 1024
 MAX_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
-MAX_RELEASE_MANUAL_BYTES = 2 * 1024 * 1024
-FACTORY_CONTENT_LABEL_MAX = 40
-FACTORY_CONTENT_BODY_MIN = 180
-FACTORY_CONTENT_BODY_MAX = 400
-FACTORY_CONTENT_STORY_BLOCKS_MAX = 10
+MAX_RELEASE_MANUAL_BYTES = 16 * 1024 * 1024
+MAX_RELEASE_PDF_VALIDATOR_OUTPUT_BYTES = 4 * 1024
+RELEASE_PDF_VALIDATION_TIMEOUT_SECONDS = 15
 MAX_FILE_BYTES = 95 * 1024 * 1024
 MAX_TREE_BYTES = 512 * 1024 * 1024
 MAX_TREE_ENTRIES = 4096
@@ -190,9 +189,6 @@ FORBIDDEN_RELEASE_MEDIA_SUFFIXES = frozenset(
         ".webp",
     )
 )
-RELEASE_PAGE_SECTION_FIELDS = frozenset(
-    ("headline", "body", "visual_direction", "evidence_refs")
-)
 RELEASE_PRODUCT_FIELDS = frozenset(
     (
         "schema_version",
@@ -200,10 +196,6 @@ RELEASE_PRODUCT_FIELDS = frozenset(
         "status",
         "title",
         "summary",
-        "hero",
-        "cinematic",
-        "use_case",
-        "story_blocks",
         "what_arrives",
         "limitations",
         "product_artifact_sha256",
@@ -211,8 +203,6 @@ RELEASE_PRODUCT_FIELDS = frozenset(
         "claims",
     )
 )
-
-
 class ProposalError(Exception):
     """One deterministic proposal input is invalid or unsafe."""
 
@@ -456,6 +446,140 @@ def _read_regular(
         os.close(descriptor)
 
 
+def _workshop_python() -> Path:
+    raw = os.environ.get("WORKSHOP_PYTHON")
+    try:
+        requested = Path(raw) if isinstance(raw, str) else Path(".")
+        resolved = requested.resolve(strict=True)
+        identity = resolved.stat()
+        requested_absolute = requested.absolute()
+        invoked = Path(sys.executable).absolute()
+        actual = Path(sys.executable).resolve(strict=True)
+    except OSError as exc:
+        raise ProposalError("WORKSHOP_PYTHON is unavailable") from exc
+    if (
+        not isinstance(raw, str)
+        or not raw
+        or not requested.is_absolute()
+        or not stat.S_ISREG(identity.st_mode)
+        or raw != requested_absolute.as_posix()
+        or requested_absolute != invoked
+        or resolved != actual
+    ):
+        raise ProposalError(
+            "stage finalizer must run with the exact host-supplied WORKSHOP_PYTHON"
+        )
+    return requested_absolute
+
+
+def _pdf_validator_path() -> Path:
+    script = Path(__file__).resolve(strict=True)
+    candidate = script.with_name("pdf_validator.py")
+    try:
+        identity = candidate.lstat()
+        resolved = candidate.resolve(strict=True)
+    except OSError as exc:
+        raise ProposalError("Release PDF validator is unavailable") from exc
+    if (
+        candidate.is_symlink()
+        or not stat.S_ISREG(identity.st_mode)
+        or resolved.parent != script.parent
+    ):
+        raise ProposalError("Release PDF validator must be an immutable sibling file")
+    return resolved
+
+
+def _pdf_validator_environment() -> dict[str, str]:
+    environment = {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONNOUSERSITE": "1",
+    }
+    for name in ("PATH", "SYSTEMROOT", "TMPDIR", "WINDIR"):
+        value = os.environ.get(name)
+        if isinstance(value, str) and value:
+            environment[name] = value
+    return environment
+
+
+def _validate_pdf_manual(content: bytes) -> None:
+    """Validate PDF bytes through the exact resource-bounded sibling worker."""
+
+    if not content.startswith(b"%PDF-"):
+        raise ProposalError("Release MANUAL.pdf must have a PDF header")
+    eof = content.rfind(b"%%EOF")
+    if eof < 0 or content[eof + len(b"%%EOF") :].strip():
+        raise ProposalError("Release MANUAL.pdf must have a final PDF EOF marker")
+    python = _workshop_python()
+    validator = _pdf_validator_path()
+    try:
+        descriptor = os.open(
+            validator,
+            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
+        )
+        try:
+            if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+                raise ProposalError(
+                    "Release PDF validator must be an immutable sibling file"
+                )
+            completed = subprocess.run(
+                (
+                    str(python),
+                    "-I",
+                    "-B",
+                    "/dev/fd/%d" % descriptor,
+                    "--isolated-worker",
+                ),
+                input=content,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                cwd=str(validator.parent),
+                env=_pdf_validator_environment(),
+                timeout=RELEASE_PDF_VALIDATION_TIMEOUT_SECONDS,
+                check=False,
+                start_new_session=True,
+                pass_fds=(descriptor,),
+            )
+        finally:
+            os.close(descriptor)
+    except subprocess.TimeoutExpired as exc:
+        raise ProposalError(
+            "Release MANUAL.pdf exceeded PDF validation resource limits"
+        ) from exc
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        raise ProposalError("Release PDF validator could not be launched") from exc
+    if not 1 <= len(completed.stdout) <= MAX_RELEASE_PDF_VALIDATOR_OUTPUT_BYTES:
+        raise ProposalError("Release PDF validator returned invalid output")
+    try:
+        result = json.loads(
+            completed.stdout.decode("utf-8"), object_pairs_hook=_strict_object
+        )
+    except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        raise ProposalError("Release PDF validator returned invalid output") from exc
+    if (
+        not isinstance(result, dict)
+        or set(result) != {"error", "ok"}
+        or type(result["ok"]) is not bool
+        or completed.stdout != canonical_json(result)
+    ):
+        raise ProposalError("Release PDF validator returned invalid output")
+    if completed.returncode == 0 and result == {"error": None, "ok": True}:
+        return
+    error = result.get("error")
+    if (
+        completed.returncode != 2
+        or result.get("ok") is not False
+        or not isinstance(error, str)
+        or not error
+        or len(error) > 1_000
+        or any(ord(character) < 32 or ord(character) == 127 for character in error)
+    ):
+        raise ProposalError("Release PDF validator failed safely")
+    raise ProposalError("Release MANUAL.pdf %s" % error)
+
+
 def _hash_regular(root: Path, relative_value: str, label: str) -> tuple[str, int, bool]:
     relative = _safe_relative(relative_value, label + " path")
     descriptor, opened = _open_regular(root, relative)
@@ -552,6 +676,7 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
         run_root, tree_relative_value, label
     )
     entries: list[dict[str, Any]] = []
+    actual_directories: set[str] = set()
     for directory, dirnames, filenames in os.walk(str(tree_root), followlinks=False):
         base = Path(directory)
         kept: list[str] = []
@@ -569,6 +694,7 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
             if dirname.casefold() in EXCLUDED_DIRS or _path_is_excluded(relative):
                 raise ProposalError("%s contains a path excluded by manifest policy" % label)
             kept.append(dirname)
+            actual_directories.add(relative.as_posix())
         dirnames[:] = kept
         for filename in sorted(filenames):
             absolute = base / filename
@@ -595,6 +721,19 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
     if not entries:
         raise ProposalError("%s must contain at least one file" % label)
     entries.sort(key=lambda item: item["path"])
+    declared_directories: set[str] = set()
+    for entry in entries:
+        parent = PurePosixPath(entry["path"]).parent
+        while parent.as_posix() != ".":
+            declared_directories.add(parent.as_posix())
+            parent = parent.parent
+    if actual_directories != declared_directories:
+        unexpected = sorted(actual_directories - declared_directories)
+        missing = sorted(declared_directories - actual_directories)
+        raise ProposalError(
+            "%s has empty, undeclared, or missing directories: actual-only=%s, "
+            "file-derived-only=%s" % (label, unexpected, missing)
+        )
     total = sum(item["bytes"] for item in entries)
     if total > MAX_TREE_BYTES:
         raise ProposalError("%s exceeds the native expanded-size limit" % label)
@@ -1328,8 +1467,9 @@ def _release_page_text_list(
     *,
     maximum_items: int,
     maximum_item_length: int,
+    allow_empty: bool = False,
 ) -> list[str]:
-    items = _array(value, label, nonempty=True)
+    items = _array(value, label, nonempty=not allow_empty)
     if len(items) > maximum_items:
         raise ProposalError("%s has too many items" % label)
     result = [
@@ -1341,88 +1481,14 @@ def _release_page_text_list(
     return result
 
 
-def _release_page_section(
-    value: Any,
-    label: str,
-    *,
-    valid_evidence_refs: frozenset[str],
-) -> dict[str, Any]:
-    section = _fields(value, RELEASE_PAGE_SECTION_FIELDS, label)
-    refs = _array(section["evidence_refs"], "%s evidence_refs" % label, nonempty=True)
-    if (
-        len(refs) > 32
-        or any(
-            not isinstance(reference, str)
-            or reference not in valid_evidence_refs
-            for reference in refs
-        )
-        or len(refs) != len(set(refs))
-    ):
-        raise ProposalError(
-            "%s evidence_refs are not bound to Made or Playtest" % label
-        )
-    return {
-        "headline": _release_page_text(
-            section["headline"], "%s headline" % label, 300
-        ),
-        "body": _release_page_text(section["body"], "%s body" % label, 4_000),
-        "visual_direction": _release_page_text(
-            section["visual_direction"],
-            "%s visual_direction" % label,
-            2_000,
-        ),
-        "evidence_refs": list(refs),
-    }
-
-
-def _factory_content_text(
-    value: str, label: str, minimum: int, maximum: int
-) -> None:
-    if (
-        not minimum <= len(value) <= maximum
-        or "<" in value
-        or ">" in value
-    ):
-        raise ProposalError(
-            "%s must fit Factory's exact plain-text display limit of %d-%d "
-            "characters" % (label, minimum, maximum)
-        )
-
-
-def _validate_factory_content(product: Mapping[str, Any]) -> None:
-    story_blocks = product["story_blocks"]
-    if len(story_blocks) > FACTORY_CONTENT_STORY_BLOCKS_MAX:
-        raise ProposalError(
-            "Release story_blocks must fit Factory's exact limit of at most %d"
-            % FACTORY_CONTENT_STORY_BLOCKS_MAX
-        )
-    sections = [("use_case", product["use_case"])] + [
-        ("story_blocks[%d]" % index, block)
-        for index, block in enumerate(story_blocks)
-    ]
-    for label, section in sections:
-        _factory_content_text(
-            section["headline"],
-            "Release %s headline" % label,
-            1,
-            FACTORY_CONTENT_LABEL_MAX,
-        )
-        _factory_content_text(
-            section["body"],
-            "Release %s body" % label,
-            FACTORY_CONTENT_BODY_MIN,
-            FACTORY_CONTENT_BODY_MAX,
-        )
-
-
 def _validate_release_product(value: Any) -> dict[str, Any]:
     product = _fields(value, RELEASE_PRODUCT_FIELDS, "Release product.json")
     if (
-        product["schema_version"] != 3
+        product["schema_version"] != 4
         or product["kind"] != "workshop.release-package"
-        or product["status"] != "page-ready"
+        or product["status"] != "manual-ready"
     ):
-        raise ProposalError("Release product.json is not a page-ready package")
+        raise ProposalError("Release product.json is not a manual-ready package")
     _sha256(
         product["product_artifact_sha256"],
         "Release product artifact sha256",
@@ -1432,45 +1498,12 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
         "Release Playtest evidence sha256",
     )
     claims = _mapping(product["claims"], "Release claims", nonempty=True)
-    valid_refs = frozenset(
-        {"made:product.json"}
-        | {"playtest:%s" % check_id for check_id in claims}
-    )
-    story_blocks = _array(
-        product["story_blocks"], "Release story_blocks", nonempty=True
-    )
-    if len(story_blocks) > FACTORY_CONTENT_STORY_BLOCKS_MAX:
-        raise ProposalError(
-            "Release story_blocks must fit Factory's exact limit of at most %d"
-            % FACTORY_CONTENT_STORY_BLOCKS_MAX
-        )
     validated = {
-        "schema_version": 3,
+        "schema_version": 4,
         "kind": "workshop.release-package",
-        "status": "page-ready",
+        "status": "manual-ready",
         "title": _release_page_text(product["title"], "Release title", 300),
         "summary": _release_page_text(product["summary"], "Release summary", 2_000),
-        "hero": _release_page_section(
-            product["hero"], "Release hero", valid_evidence_refs=valid_refs
-        ),
-        "cinematic": _release_page_section(
-            product["cinematic"],
-            "Release cinematic",
-            valid_evidence_refs=valid_refs,
-        ),
-        "use_case": _release_page_section(
-            product["use_case"],
-            "Release use_case",
-            valid_evidence_refs=valid_refs,
-        ),
-        "story_blocks": [
-            _release_page_section(
-                block,
-                "Release story_blocks[%d]" % index,
-                valid_evidence_refs=valid_refs,
-            )
-            for index, block in enumerate(story_blocks)
-        ],
         "what_arrives": _release_page_text_list(
             product["what_arrives"],
             "Release what_arrives",
@@ -1482,6 +1515,7 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
             "Release limitations",
             maximum_items=100,
             maximum_item_length=2_000,
+            allow_empty=True,
         ),
         "product_artifact_sha256": product["product_artifact_sha256"],
         "playtest_evidence_artifact_sha256": product[
@@ -1489,7 +1523,6 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
         ],
         "claims": dict(claims),
     }
-    _validate_factory_content(validated)
     return validated
 
 
@@ -1626,7 +1659,7 @@ def _release_contract(
         raise ProposalError("Release package root must be %s" % expected_root)
     manifest = _tree_manifest(run_root, package_root_value, "Release package tree")
     inventory = {entry["path"]: entry for entry in manifest["entries"]}
-    for required in ("MANUAL.md", "product.json"):
+    for required in ("MANUAL.pdf", "product.json"):
         if required not in inventory:
             raise ProposalError("Release package manifest lacks %s" % required)
     forbidden_media = sorted(
@@ -1642,18 +1675,13 @@ def _release_contract(
 
     manual, _ = _read_regular(
         run_root,
-        "%s/MANUAL.md" % package_root_value,
-        "Release MANUAL.md",
+        "%s/MANUAL.pdf" % package_root_value,
+        "Release MANUAL.pdf",
         maximum=MAX_RELEASE_MANUAL_BYTES,
     )
-    if hashlib.sha256(manual).hexdigest() != inventory["MANUAL.md"]["sha256"]:
-        raise ProposalError("Release MANUAL.md changed after package hashing")
-    try:
-        manual_text = manual.decode("utf-8")
-    except UnicodeError as exc:
-        raise ProposalError("Release MANUAL.md must be UTF-8") from exc
-    if not manual_text.strip():
-        raise ProposalError("Release MANUAL.md must be substantive")
+    if hashlib.sha256(manual).hexdigest() != inventory["MANUAL.pdf"]["sha256"]:
+        raise ProposalError("Release MANUAL.pdf changed after package hashing")
+    _validate_pdf_manual(manual)
 
     product: dict[str, Any] | None = None
     product_bytes: bytes | None = None
@@ -1701,7 +1729,7 @@ def _release_contract(
         raise ProposalError("Release package changed during validation")
     product_json_sha256 = hashlib.sha256(product_bytes).hexdigest()
     identity = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": RELEASE_KIND,
         "round": round_index,
         "made_sha256": made["made_sha256"],
@@ -1710,7 +1738,7 @@ def _release_contract(
         "playtest_evidence_artifact_sha256": evidence_artifact_sha256,
         "package_root": package_root_value,
         "package_manifest": manifest,
-        "manual_path": "MANUAL.md",
+        "manual_path": "MANUAL.pdf",
         "product_json_path": "product.json",
         "product_json_sha256": product_json_sha256,
         "product": product,
@@ -1828,6 +1856,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    _workshop_python()
     run_root = _canonical_root(args.run_root)
     stage = _load_stage(run_root, args.command)
     if args.command == "match":

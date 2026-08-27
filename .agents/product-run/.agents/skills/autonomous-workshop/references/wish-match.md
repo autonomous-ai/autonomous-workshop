@@ -59,7 +59,7 @@ Write one authored JSON source with exactly `selected_inventor_id` and
 `.codex/agents/*.toml` Inventor. Then run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . match --source <match-source.json>
 ```
 

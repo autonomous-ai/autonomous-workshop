@@ -406,6 +406,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(call["env"]["PYTHONHASHSEED"], "0")
             self.assertEqual(call["env"]["PYTHONDONTWRITEBYTECODE"], "1")
             self.assertEqual(call["env"]["PYTHONNOUSERSITE"], "1")
+            self.assertEqual(
+                call["env"]["WORKSHOP_PYTHON"],
+                str(Path(sys.executable).absolute()),
+            )
             self.assertEqual(stat.S_IMODE((root / ".tmp").stat().st_mode), 0o700)
             self.assertNotIn(str(state_root), command)
             self.assertEqual(call["env"]["OPENAI_API_KEY"], "codex-auth")

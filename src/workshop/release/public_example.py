@@ -27,7 +27,11 @@ except ImportError:  # pragma: no cover - current Workshop hosts are POSIX
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError, StateConflict
 from workshop.make.native import NativeMade
-from workshop.release.native import NativeRelease
+from workshop.release.native import (
+    NATIVE_RELEASE_LEGACY_MANUAL_PATH,
+    NATIVE_RELEASE_MANUAL_PATH,
+    NativeRelease,
+)
 from workshop.runtime import Receipt
 
 
@@ -347,8 +351,8 @@ def materialize_public_example(
         raise StateConflict("public Factory slug is not safe for a repository path")
     receipt.assert_artifact(release.product_artifact_sha256)
     details = receipt.details
+    pdf_first = release.manual_path == NATIVE_RELEASE_MANUAL_PATH
     for field in (
-        "factory_content_sha256",
         "manual_sha256",
         "primary_model_sha256",
         "product_page_sha256",
@@ -359,6 +363,16 @@ def materialize_public_example(
             or re.fullmatch(r"[0-9a-f]{64}", details[field]) is None
         ):
             raise StateConflict("public Factory receipt lacks exact byte identities")
+    if pdf_first:
+        if details.get("manual_path") != NATIVE_RELEASE_MANUAL_PATH:
+            raise StateConflict("public Factory receipt belongs to a different manual path")
+    elif (
+        release.manual_path != NATIVE_RELEASE_LEGACY_MANUAL_PATH
+        or not isinstance(details.get("factory_content_sha256"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", details["factory_content_sha256"])
+        is None
+    ):
+        raise StateConflict("public Factory receipt lacks exact byte identities")
     if (
         release.made_sha256 != made.made_sha256
         or release.product_artifact_sha256
@@ -394,7 +408,7 @@ def materialize_public_example(
         package_root,
         package_entries,
         release.manual_path,
-        label="public MANUAL.md",
+        label="public %s" % release.manual_path,
     )
     product_json = _bound_bytes(
         package_root,
@@ -411,7 +425,7 @@ def materialize_public_example(
         tempfile.mkdtemp(prefix=".public-example-", dir=str(toys))
     ).resolve(strict=True)
     try:
-        _write_public_file(staging, "MANUAL.md", manual)
+        _write_public_file(staging, release.manual_path, manual)
         _write_public_file(staging, "product.json", product_json)
 
         print_files = []
@@ -496,38 +510,50 @@ def materialize_public_example(
             print_files.append(copied)
 
         page_url = _https_public_url(details.get("page_url"), "public page URL")
-        cover_url = _https_public_url(details.get("cover_url"), "public cover URL")
+        cover_url = (
+            None
+            if pdf_first
+            else _https_public_url(details.get("cover_url"), "public cover URL")
+        )
         title = str(release.product["title"])
         summary = str(release.product["summary"])
+        identities = {
+            "native_release_sha256": release.release_sha256,
+            "package_artifact_sha256": release.package_manifest.artifact_sha256,
+            "product_artifact_sha256": release.product_artifact_sha256,
+            "playtest_evidence_sha256": (
+                release.playtest_evidence_artifact_sha256
+            ),
+            "product_page_sha256": release.product_json_sha256,
+            "manual_sha256": manual_entry.sha256,
+            "primary_model_sha256": primary_sha256,
+        }
+        if pdf_first:
+            identities["manual_path"] = release.manual_path
+        else:
+            identities["factory_content_sha256"] = details.get(
+                "factory_content_sha256"
+            )
+        publication_details = {
+            "adapter": "factory",
+            "status": "public",
+            "slug": slug,
+            "page_url": page_url,
+            "observed_at": receipt.observed_at,
+            "listing": {
+                "price_cents": receipt.listing_price_cents,
+                "currency": receipt.listing_currency,
+            },
+        }
+        if cover_url is not None:
+            publication_details["cover_url"] = cover_url
         publication = {
             "schema_version": 1,
             "kind": "autonomous-workshop.public-toy-snapshot",
             "title": title,
             "inventor": {"id": inventor_id},
-            "publication": {
-                "adapter": "factory",
-                "status": "public",
-                "slug": slug,
-                "page_url": page_url,
-                "cover_url": cover_url,
-                "observed_at": receipt.observed_at,
-                "listing": {
-                    "price_cents": receipt.listing_price_cents,
-                    "currency": receipt.listing_currency,
-                },
-            },
-            "identities": {
-                "native_release_sha256": release.release_sha256,
-                "package_artifact_sha256": release.package_manifest.artifact_sha256,
-                "product_artifact_sha256": release.product_artifact_sha256,
-                "playtest_evidence_sha256": (
-                    release.playtest_evidence_artifact_sha256
-                ),
-                "product_page_sha256": release.product_json_sha256,
-                "manual_sha256": manual_entry.sha256,
-                "factory_content_sha256": details.get("factory_content_sha256"),
-                "primary_model_sha256": primary_sha256,
-            },
+            "publication": publication_details,
+            "identities": identities,
             "primary_model": primary_model,
             "print_files": print_files,
         }
@@ -535,12 +561,22 @@ def materialize_public_example(
             staging, "PUBLICATION.json", _canonical_json(publication)
         )
         heading = " ".join(title.split())
+        product_description = (
+            "the exact sealed Release facts"
+            if pdf_first
+            else "the exact sealed public Release page contract"
+        )
+        manual_description = (
+            "the exact sealed printable in-box manual"
+            if pdf_first
+            else "the exact sealed public manual"
+        )
         readme = (
             "# %s\n\n%s\n\n"
             "[View the verified public product page](%s)\n\n"
             "## Snapshot contents\n\n"
-            "- `product.json` — the exact sealed public Release page contract.\n"
-            "- `MANUAL.md` — the exact sealed public manual.\n"
+            "- `product.json` — %s.\n"
+            "- `%s` — %s.\n"
             "- `PUBLICATION.json` — sanitized public readback and byte identities.\n"
             "%s%s\n"
             "This snapshot contains no private Wish, agent session, host state, "
@@ -550,6 +586,9 @@ def materialize_public_example(
             heading,
             summary,
             page_url,
+            product_description,
+            release.manual_path,
+            manual_description,
             (
                 "- `model/` — the exact public primary STL.\n"
                 if primary_model is not None

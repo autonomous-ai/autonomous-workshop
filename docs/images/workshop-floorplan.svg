@@ -198,8 +198,8 @@
   <line x1="600" y1="1300" x2="600" y2="1400" stroke="#edc58a" stroke-width="1.5"/>
   <text x="250" y="1307" class="eyebrow eyebrow-internal">MANAGER · ITERATE + VERIFY</text>
   <text x="250" y="1341" class="heading">RELEASE</text>
-  <text x="250" y="1368" class="body">Assemble the manual, product-page facts,</text>
-  <text x="250" y="1390" class="body">evidence, attribution, and publication intent.</text>
+  <text x="250" y="1368" class="body">Design the printable in-box manual PDF.</text>
+  <text x="250" y="1390" class="body">Seal exact product facts; the website is optional.</text>
   <path class="micro" d="M 665 1308 C 735 1282, 764 1335, 730 1382 C 700 1422, 633 1393, 646 1346"/>
   <text x="697" y="1317" text-anchor="middle" class="micro-copy">OBSERVE</text>
   <text x="697" y="1339" text-anchor="middle" class="micro-copy">ACT</text>

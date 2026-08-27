@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
@@ -54,6 +55,100 @@ def canonical_json(value):
 
 def sha256(content):
     return hashlib.sha256(content).hexdigest()
+
+
+def manual_pdf(
+    *,
+    page_count=1,
+    declared_page_count=None,
+    repeated_page_references=None,
+    box=(0, 0, 297, 420),
+    text=(
+        "Moon Nook field manual. Arrange the rover, inspect every part, "
+        "and begin a safe tabletop expedition."
+    ),
+    catalog_entries=b"",
+    page_entries=b"",
+    resource_entries=b"",
+    content_suffix=b"",
+    extra_objects=None,
+):
+    def pdf_string(value):
+        return (
+            value.replace("\\", "\\\\")
+            .replace("(", "\\(")
+            .replace(")", "\\)")
+            .encode("ascii")
+        )
+
+    objects = {}
+    page_ids = [4 + index * 2 for index in range(page_count)]
+    kids = page_ids
+    if repeated_page_references is not None:
+        kids = [page_ids[0]] * repeated_page_references
+    declared = page_count if declared_page_count is None else declared_page_count
+    objects[1] = (
+        b"<< /Type /Catalog /Pages 2 0 R " + catalog_entries + b" >>"
+    )
+    objects[2] = (
+        b"<< /Type /Pages /Count "
+        + str(declared).encode("ascii")
+        + b" /Kids ["
+        + " ".join("%d 0 R" % page_id for page_id in kids).encode("ascii")
+        + b"] >>"
+    )
+    objects[3] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+    box_bytes = b" ".join(str(value).encode("ascii") for value in box)
+    for index, page_id in enumerate(page_ids, start=1):
+        content_id = page_id + 1
+        page_text = "%s Page %d." % (text, index) if text else ""
+        stream = (
+            b"BT /F1 12 Tf 24 360 Td ("
+            + pdf_string(page_text)
+            + b") Tj ET\n"
+            + content_suffix
+        )
+        objects[page_id] = (
+            b"<< /Type /Page /Parent 2 0 R /MediaBox ["
+            + box_bytes
+            + b"] /Resources << /Font << /F1 3 0 R >> "
+            + resource_entries
+            + b" >> /Contents "
+            + str(content_id).encode("ascii")
+            + b" 0 R "
+            + page_entries
+            + b" >>"
+        )
+        objects[content_id] = (
+            b"<< /Length "
+            + str(len(stream)).encode("ascii")
+            + b" >>\nstream\n"
+            + stream
+            + b"endstream"
+        )
+    objects.update(extra_objects or {})
+
+    result = bytearray(b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n")
+    offsets = {0: 0}
+    for object_number in range(1, max(objects, default=0) + 1):
+        offsets[object_number] = len(result)
+        result.extend(("%d 0 obj\n" % object_number).encode("ascii"))
+        result.extend(objects[object_number])
+        result.extend(b"\nendobj\n")
+    xref = len(result)
+    result.extend(("xref\n0 %d\n" % len(offsets)).encode("ascii"))
+    result.extend(b"0000000000 65535 f \n")
+    for object_number in range(1, len(offsets)):
+        result.extend(
+            ("%010d 00000 n \n" % offsets[object_number]).encode("ascii")
+        )
+    result.extend(
+        (
+            "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n"
+            % (len(offsets), xref)
+        ).encode("ascii")
+    )
+    return bytes(result)
 
 
 class StageProposalToolTest(unittest.TestCase):
@@ -141,7 +236,22 @@ class StageProposalToolTest(unittest.TestCase):
         path.chmod(0o600 if writable else 0o400)
         return document
 
-    def run_tool(self, *arguments, expected=0):
+    def run_tool(
+        self,
+        *arguments,
+        expected=0,
+        include_workshop_python=True,
+        workshop_python_override=None,
+    ):
+        environment = os.environ.copy()
+        if include_workshop_python:
+            environment["WORKSHOP_PYTHON"] = (
+                str(Path(sys.executable).absolute())
+                if workshop_python_override is None
+                else workshop_python_override
+            )
+        else:
+            environment.pop("WORKSHOP_PYTHON", None)
         completed = subprocess.run(
             [
                 sys.executable,
@@ -153,6 +263,7 @@ class StageProposalToolTest(unittest.TestCase):
                 *arguments,
             ],
             cwd=self.run_root,
+            env=environment,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -164,6 +275,41 @@ class StageProposalToolTest(unittest.TestCase):
             "stdout:\n%s\nstderr:\n%s" % (completed.stdout, completed.stderr),
         )
         return completed
+
+    def test_requires_the_exact_host_supplied_python(self):
+        self.write_stage("match", self.match_inputs())
+        self.write_json(
+            "drafts/match-python.json",
+            {
+                "selected_inventor_id": "eve",
+                "ranking": [item.to_dict() for item in self.assignment.ranking],
+            },
+        )
+
+        result = self.run_tool(
+            "match",
+            "--source",
+            "drafts/match-python.json",
+            expected=2,
+            include_workshop_python=False,
+        )
+
+        self.assertIn("exact host-supplied WORKSHOP_PYTHON", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        nonexact = "%s/./%s" % (
+            Path(sys.executable).absolute().parent,
+            Path(sys.executable).name,
+        )
+        result = self.run_tool(
+            "match",
+            "--source",
+            "drafts/match-python.json",
+            expected=2,
+            workshop_python_override=nonexact,
+        )
+        self.assertIn("exact host-supplied WORKSHOP_PYTHON", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def assert_canonical_file(self, relative):
         content = (self.run_root / relative).read_bytes()
@@ -366,6 +512,37 @@ class StageProposalToolTest(unittest.TestCase):
             "validation/cad-build.json",
         )
 
+    def test_make_rejects_empty_directories_before_writing_a_proposal(self):
+        product_root, _, _, _ = self.create_product()
+        (product_root / "cad/spec").mkdir()
+        (product_root / "cad/exports").mkdir()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+
+        result = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("empty, undeclared, or missing directories", result.stderr)
+        self.assertFalse(
+            (self.run_root / "artifacts/make/r0001/made.json").exists()
+        )
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_playtest_derives_file_hashes_and_loop_transition(self):
         made = self.create_made()
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
@@ -526,49 +703,15 @@ class StageProposalToolTest(unittest.TestCase):
 
         package_root = self.run_root / "artifacts/release/package"
         package_root.mkdir(parents=True)
-        (package_root / "MANUAL.md").write_text(
-            "# Moon Nook\n\nUse only as described in the factual product record.\n",
-            encoding="utf-8",
-        )
-        page_section = {
-            "headline": "A tiny observatory with a tested physical heart",
-            "body": (
-                "Moon Nook turns the accepted concept into the exact tested revision. "
-                "Place its included parts on a stable tabletop, follow the sealed manual, "
-                "and explore the documented motion without adding accessories or claiming "
-                "physical behavior beyond the recorded digital evidence."
-            ),
-            "visual_direction": "Show the assembled Moon Nook and its moving feature honestly.",
-            "evidence_refs": [
-                "made:product.json",
-                "playtest:mechanical-check",
-            ],
-        }
+        (package_root / "MANUAL.pdf").write_bytes(manual_pdf())
         product = {
-            "schema_version": 3,
+            "schema_version": 4,
             "kind": "workshop.release-package",
-            "status": "page-ready",
+            "status": "manual-ready",
             "title": made.product["title"],
-            "summary": "A page package for the exact tested Moon Nook revision.",
-            "hero": dict(page_section),
-            "cinematic": {
-                **page_section,
-                "headline": "Watch the lunar mechanism move",
-            },
-            "use_case": {
-                **page_section,
-                "headline": "Explore a tiny mechanical lunar world",
-            },
-            "story_blocks": [
-                {
-                    **page_section,
-                    "headline": "One exact tested revision",
-                }
-            ],
+            "summary": "The exact tested Moon Nook revision.",
             "what_arrives": ["One tested Moon Nook product revision", "One manual"],
-            "limitations": [
-                "Claims describe only the sealed product and Playtest evidence."
-            ],
+            "limitations": [],
             "product_artifact_sha256": made.product_manifest.artifact_sha256,
             "playtest_evidence_artifact_sha256": (
                 playtested.evidence_manifest.artifact_sha256
@@ -591,6 +734,8 @@ class StageProposalToolTest(unittest.TestCase):
             "artifacts/release/release.json"
         )
         release = NativeRelease.from_mapping(release_document)
+        self.assertEqual(release.schema_version, 2)
+        self.assertEqual(release.manual_path, "MANUAL.pdf")
         release.assert_context(made, playtested)
         release.validate_package_tree(self.run_root, made, playtested)
         self.assertEqual(release.to_dict()["product"]["claims"], expected_claims)
@@ -602,33 +747,21 @@ class StageProposalToolTest(unittest.TestCase):
             "deliver",
         )
 
-        invalid_copy_cases = (
+        invalid_product_cases = (
             (
-                {"use_case": {**product["use_case"], "body": "x" * 179}},
-                "use_case body",
+                {"hero": {"headline": "Website copy is not a Release gate."}},
+                "fields are invalid",
             ),
             (
-                {
-                    "story_blocks": [
-                        {**product["story_blocks"][0], "body": "x" * 401}
-                    ]
-                },
-                "story_blocks[0] body",
+                {"schema_version": 3, "status": "page-ready"},
+                "not a manual-ready package",
             ),
             (
-                {"use_case": {**product["use_case"], "headline": "x" * 41}},
-                "use_case headline",
-            ),
-            (
-                {
-                    "story_blocks": [
-                        dict(product["story_blocks"][0]) for _ in range(11)
-                    ]
-                },
-                "at most 10",
+                {"what_arrives": []},
+                "must not be empty",
             ),
         )
-        for changes, message in invalid_copy_cases:
+        for changes, message in invalid_product_cases:
             invalid_product = {**product, **changes}
             (package_root / "product.json").write_bytes(
                 canonical_json(invalid_product)
@@ -663,6 +796,197 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("cannot contain media", result.stderr)
 
         (package_root / "invented-image.png").unlink()
+        pdf_path = package_root / "MANUAL.pdf"
+        pdf_path.unlink()
+        (package_root / "MANUAL.md").write_text("# Legacy manual\n", encoding="utf-8")
+        result = self.run_tool(
+            "release",
+            "--package-root",
+            "artifacts/release/package",
+            expected=2,
+        )
+        self.assertIn("lacks MANUAL.pdf", result.stderr)
+        (package_root / "MANUAL.md").unlink()
+
+        expanded_stream = b"x" * (8 * 1024 * 1024 + 1)
+        compressed_stream = zlib.compress(expanded_stream, level=9)
+        run_length_stream = (
+            b"\x81x" * ((8 * 1024 * 1024) // 128 + 1) + b"\x80"
+        )
+        ascii85_stream = b"<~" + b"z" * (2 * 1024 * 1024 + 1) + b"~>"
+        oversized_jpeg = (
+            b"\xff\xd8\xff\xc0\x00\x0b\x08\x23\x28\x23\x28\x01"
+            b"\x01\x11\x00\xff\xd9"
+        )
+        inline_pixels = zlib.compress(
+            b"\x00" * ((9_000 * 9_000 + 7) // 8), level=9
+        )
+        inline_form = (
+            b"q BI /W 9000 /H 9000 /CS /G /BPC 1 /F /FlateDecode ID "
+            + inline_pixels
+            + b" EI Q\n"
+        )
+        invalid_manual_cases = (
+            (manual_pdf(page_count=0), "1 through 64 pages"),
+            (manual_pdf(page_count=65), "1 through 64 pages"),
+            (
+                manual_pdf(
+                    page_count=1,
+                    declared_page_count=1,
+                    repeated_page_references=10_000,
+                ),
+                "unreadable page tree",
+            ),
+            (manual_pdf(box=(0, 0, 0, 420)), "printable page"),
+            (manual_pdf(text=""), "meaningful extractable text"),
+            (
+                manual_pdf(
+                    catalog_entries=(
+                        b"/Names << /Dests << /Names [(x) << /S /JavaScript "
+                        b"/JS (app.alert\\(1\\)) >>] >> >>"
+                    )
+                ),
+                "active or external",
+            ),
+            (
+                manual_pdf(
+                    catalog_entries=(
+                        b"/Names << /Dests << /Names [(sound) 6 0 R] >> >>"
+                    ),
+                    extra_objects={
+                        6: b"<< /S /Sound /Sound 7 0 R >>",
+                        7: (
+                            b"<< /R 8000 /C 1 /B 8 /Length 1 >>\n"
+                            b"stream\n\x00\nendstream"
+                        ),
+                    },
+                ),
+                "forbidden PDF action: /Sound",
+            ),
+            (
+                manual_pdf(
+                    page_entries=b"/Annots [6 0 R]",
+                    extra_objects={
+                        6: (
+                            b"<< /Type /Annot /Subtype /Link /Rect [0 0 20 20] "
+                            b"/Dest [4 0 R /Fit] >>"
+                        )
+                    },
+                ),
+                "forbidden PDF object: /Annot",
+            ),
+            (
+                manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Type /XObject /Subtype /Image /Width 8193 "
+                            b"/Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 "
+                            b"/Length 1 >>\nstream\n\x00\nendstream"
+                        )
+                    },
+                ),
+                "image Width",
+            ),
+            (
+                manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Type /XObject /Subtype /Image /Width 1 /Height 1 "
+                            b"/ColorSpace /DeviceGray /BitsPerComponent 8 "
+                            b"/Filter /DCTDecode /Length "
+                            + str(len(oversized_jpeg)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + oversized_jpeg
+                            + b"\nendstream"
+                        )
+                    }
+                ),
+                "JPEG dimensions differ",
+            ),
+            (
+                manual_pdf(
+                    resource_entries=b"/XObject << /Fm1 6 0 R >>",
+                    content_suffix=b"q /Fm1 Do Q\n",
+                    extra_objects={
+                        6: (
+                            b"<< /Type /XObject /Subtype /Form /BBox [0 0 10 10] "
+                            b"/Resources << >> /Length "
+                            + str(len(inline_form)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + inline_form
+                            + b"endstream"
+                        )
+                    },
+                ),
+                "unsupported inline image",
+            ),
+            (
+                manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Filter /FlateDecode /Length "
+                            + str(len(compressed_stream)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + compressed_stream
+                            + b"\nendstream"
+                        )
+                    },
+                ),
+                "decoded PDF stream",
+            ),
+            (
+                manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Filter /RunLengthDecode /Length "
+                            + str(len(run_length_stream)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + run_length_stream
+                            + b"\nendstream"
+                        )
+                    }
+                ),
+                "oversized PDF stream",
+            ),
+            (
+                manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Filter /ASCII85Decode /Length "
+                            + str(len(ascii85_stream)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + ascii85_stream
+                            + b"\nendstream"
+                        )
+                    }
+                ),
+                "decoded bound is too large",
+            ),
+        )
+        for invalid_manual, message in invalid_manual_cases:
+            pdf_path.write_bytes(invalid_manual)
+            result = self.run_tool(
+                "release",
+                "--package-root",
+                "artifacts/release/package",
+                expected=2,
+            )
+            self.assertIn(message, result.stderr)
+
+        valid_manual = manual_pdf()
+        pdf_path.write_bytes(
+            valid_manual
+            + b" " * (16 * 1024 * 1024 - len(valid_manual) + 1)
+        )
+        result = self.run_tool(
+            "release",
+            "--package-root",
+            "artifacts/release/package",
+            expected=2,
+        )
+        self.assertIn("exceeds its byte limit", result.stderr)
+
+        pdf_path.write_bytes(valid_manual)
         (package_root / "product.json.orig").write_bytes(canonical_json(product))
         result = self.run_tool(
             "release",

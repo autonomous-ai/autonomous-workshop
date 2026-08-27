@@ -2,8 +2,10 @@
 
 This is the operating map for people and coding agents building Autonomous
 Workshop. It is authoritative together with
-[ADR 0012](adr/0012-codex-orchestrated-runtime.md) and the repository
-[agent instructions](../AGENTS.md).
+[ADR 0012](adr/0012-codex-orchestrated-runtime.md),
+[ADR 0013](adr/0013-manual-first-release.md), and the repository
+[agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
+Release details.
 
 ## Two different agent contexts
 
@@ -28,8 +30,8 @@ Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
 ```
 
 Codex owns understanding, native search, concept exploration, design, CAD and
-artifact creation, render inspection, repair, AI Playtest judgment, manual
-writing, and complete evidence-bound product-page content. Stages are durable
+artifact creation, render inspection, repair, AI Playtest judgment, printable
+manual design, and bounded evidence-linked Release facts. Stages are durable
 checkpoints, not separate model roles or one-shot API calls.
 
 The root Codex session is the Workshop Manager. Native subagents are bounded
@@ -250,27 +252,27 @@ The product workspace contains:
 ```
 
 After Codex has authored the current stage's source files or artifact tree, it
-runs that standard-library tool for exactly one stage:
+runs that deterministic tool for exactly one stage:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . match --source <match-source.json>
 
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . invent --source <invent-source.json>
 
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . make \
   --product-root <product-root> \
   --cad-project-path <path-inside-product-root> \
   --cad-verification-path <path-inside-product-root>
 
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . playtest \
   --source <playtest-source.json> \
   --evidence-root <evidence-root>
 
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . release \
   --package-root artifacts/release/package
 ```
@@ -312,29 +314,32 @@ product bytes and reruns deterministic CAD checks before advancing. No image
 provider, separate drawing effect, or second model credential sits between
 Invent and Make.
 
-## Release and publication
+## Manual-first Release and optional publication
 
-Release replaces the former instruction-only stage because it owns more than an
-instruction sheet. Codex prepares a complete schema-v3, page-ready package
-rooted at `artifacts/release/package` with at least:
+Codex prepares `artifacts/release/package` with at least:
 
-- `MANUAL.md`;
-- canonical `product.json` with `kind=workshop.release-package`,
-  `status=page-ready`, exact product/evidence hashes, evidence-bound claims,
-  `title`, `summary`, `hero`, `cinematic`, `use_case`, one or more
-  `story_blocks`, `what_arrives`, and `limitations`; each page section carries
-  `headline`, `body`, `visual_direction`, and valid `evidence_refs`;
-- any additional non-media supporting package files.
+- a self-contained printable `MANUAL.pdf` designed for the physical box;
+- canonical `product.json` bound to the exact product, passing Playtest
+  evidence, claims, contents, and limitations; and
+- optional editable source or accessible text companions.
 
-Codex authors the complete page copy and visual direction. It does not claim
-publication, manufacture, physical performance, human response, or delivery.
-The package cannot contain images, audio, video, remote-effect receipts, or
-credentials. Factory transports the host-sealed page and model bytes without
-creative enrichment.
+The current contract pair is NativeRelease schema v2 with `MANUAL.pdf` and
+product schema v4/`manual-ready`. Legacy NativeRelease schema v1 remains
+readable only with `MANUAL.md` and product schema v3/`page-ready`; legacy bytes
+retain their original validation and hashes.
 
-The default CLI policy is private. `--publish` records explicit authority for
-the host to promote the verified Factory page after the private import is
-reconciled. Local credentials belong in the private
+The materialized `manual-design` skill guides print-format choice, customer
+copy, product-derived visuals, guided first use, complete reference, care and
+safety, grayscale readability, and page-by-page visual review. Codex may use
+embedded fonts, vectors, or raster images but cannot use external PDF
+dependencies, active content, credentials, or remote receipts. The trusted
+host parses, bounds, rehashes, and seals the exact PDF; it never scores beauty
+or promotes digital evidence into a physical claim.
+
+Local Release advances to Deliver without Factory. The default CLI creates no
+publication. `--publish` records explicit authority for an optional host effect
+against the already released bytes. Missing credentials or a remote outage
+does not invalidate Release. Local credentials belong in the private
 `$WORKSHOP_HOME/credentials/factory.env` file and are loaded lazily only after
 the native turn exits. Codex 0.145.0 or newer runs with Workshop's strict
 permission profile: all filesystem reads are denied by default, the exact
@@ -353,6 +358,7 @@ Canonical product-run sources live at:
 .agents/product-run/AGENTS.md
 .agents/product-run/.agents/skills/autonomous-workshop/**
 src/workshop/make/skills/{cad,design-reference,image-to-cad,step-parts}/**
+src/workshop/release/skills/manual-design/**
 inventors/<id>/{inventor.json,TASTE.md,skills/**}
 ```
 
@@ -388,9 +394,14 @@ src/workshop/workflow/native_run.py          trusted whole-run host composition
 src/workshop/workflow/                       lifecycle and checkpoint protocol
 src/workshop/<stage>/                        contracts and deterministic gates
 src/workshop/make/skills/                    reusable Make domain skills
+src/workshop/release/skills/manual-design/   reusable Release manual skill
 src/workshop/integrations/                   credential-bearing host adapters
 tests/<component>/                           component tests
 ```
+
+The repository-owned
+[`manual-design` skill](../src/workshop/release/skills/manual-design/) is
+materialized into product runs; it is not a second workflow engine.
 
 The `src/` layout and single `workshop` namespace stay. The `cli` package is an
 installed sibling under `src/`; tests remain under top-level `tests/`.
@@ -407,10 +418,12 @@ private Wish demonstrate that:
    invalidates downstream work;
 5. every sealed Made result remains bound to the exact accepted Invent result
    it was built from;
-6. Release claims exactly match passing evidence;
+6. Release claims exactly match passing evidence and its exact `MANUAL.pdf`
+   passes bounded structural validation;
 7. no credential reaches the native subprocess or its readable filesystem;
-8. `--publish` is required for public promotion and the remote receipt binds
-   the exact Release package; and
+8. local Release reaches Deliver without Factory, while `--publish` is
+   required for optional public promotion and any remote receipt binds the
+   exact Release package; and
 9. the run does not claim Deliver without physical receipts.
 
 ## Engine portability

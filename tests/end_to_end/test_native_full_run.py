@@ -16,7 +16,7 @@ from workshop.workflow.native_run import (
     resume_native_run,
     start_native_run,
 )
-from workshop.errors import ArtifactError, StateConflict
+from workshop.errors import ArtifactError
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
@@ -64,6 +64,44 @@ def _read_json(path):
 
 def _sha256(content):
     return hashlib.sha256(content).hexdigest()
+
+
+def _manual_pdf():
+    """Return one deterministic, text-extractable A6 manual fixture."""
+
+    content = (
+        b"BT\n/F1 15 Tf\n36 370 Td\n(Orbit Dog Draughts) Tj\n"
+        b"0 -28 Td\n/F1 10 Tf\n(Set out the board and every playing piece.) Tj\n"
+        b"0 -18 Td\n(Use standard English draughts rules.) Tj\n"
+        b"0 -18 Td\n(For ages fourteen and older. Keep small parts away.) Tj\nET\n"
+    )
+    objects = (
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        (
+            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 297.64 419.53] "
+            b"/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>"
+        ),
+        b"<< /Length %d >>\nstream\n" % len(content) + content + b"endstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    )
+    document = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for number, body in enumerate(objects, 1):
+        offsets.append(len(document))
+        document.extend(b"%d 0 obj\n" % number)
+        document.extend(body)
+        document.extend(b"\nendobj\n")
+    xref = len(document)
+    document.extend(b"xref\n0 %d\n" % (len(objects) + 1))
+    document.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        document.extend(b"%010d 00000 n \n" % offset)
+    document.extend(
+        b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n"
+        % (len(objects) + 1, xref)
+    )
+    return bytes(document)
 
 
 def _failed_cad_gate(
@@ -203,7 +241,11 @@ class _OneSessionProductAgent:
         completed = subprocess.run(
             command,
             cwd=str(run_root),
-            env={"PATH": os.defpath, "PYTHONDONTWRITEBYTECODE": "1"},
+            env={
+                "PATH": os.defpath,
+                "PYTHONDONTWRITEBYTECODE": "1",
+                "WORKSHOP_PYTHON": str(Path(sys.executable).absolute()),
+            },
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -452,63 +494,15 @@ class _OneSessionProductAgent:
         package_root_value = inputs["package_root"]
         package_root = run_root / package_root_value
         package_root.mkdir(parents=True, exist_ok=True)
-        (package_root / "MANUAL.md").write_text(
-            "# Orbit Dog Draughts\n\n"
-            "## What arrives\n\nA board, two tactile piece families, and a sleeve.\n\n"
-            "## Set up and play\n\nUse standard English draughts setup and rules. "
-            "The orbital waypoints are the playable dark squares.\n\n"
-            "## Care and safety\n\nFor ages 14+. Keep the small pieces away from "
-            "young children.\n",
-            encoding="utf-8",
-        )
+        (package_root / "MANUAL.pdf").write_bytes(_manual_pdf())
         _write_json(
             package_root / "product.json",
             {
-                "schema_version": 3,
+                "schema_version": 4,
                 "kind": "workshop.release-package",
-                "status": "page-ready",
+                "status": "manual-ready",
                 "title": made["product"]["title"],
                 "summary": made["product"]["summary"],
-                "hero": {
-                    "headline": "A familiar game enters orbit",
-                    "body": "Play unchanged English draughts with tactile dog-pack pieces on a compact orbital board.",
-                    "visual_direction": "Show only the exact sealed board and both dog-pack piece families.",
-                    "evidence_refs": ["made:product.json"],
-                },
-                "cinematic": {
-                    "headline": "Every jump crosses an orbital waypoint",
-                    "body": "The concentric geometry gives a known classic a Wish-specific physical identity without changing its rules.",
-                    "visual_direction": "Use the exact assembly in a low three-quarter view with one legal jump implied.",
-                    "evidence_refs": ["made:product.json"],
-                },
-                "use_case": {
-                    "headline": "Open it and play familiar rules",
-                    "body": (
-                        "Set out the exact sealed board and both complete piece families "
-                        "on a stable tabletop, then play standard English draughts using "
-                        "the familiar rules. Return every component to the documented "
-                        "starting arrangement before a new game and use no unverified "
-                        "accessories."
-                    ),
-                    "visual_direction": "Show the complete setup without adding unverified accessories.",
-                    "evidence_refs": ["made:product.json"],
-                },
-                "story_blocks": [
-                    {
-                        "headline": "Checked against the sealed revision",
-                        "body": (
-                            "The exact sealed digital product revision passed every "
-                            "required Workshop check. Its page preserves the specific "
-                            "evidence references and disclosed limits so readers can "
-                            "distinguish automated verification from any unperformed "
-                            "physical, durability, or human-play evaluation."
-                        ),
-                        "visual_direction": "Pair the exact CAD assembly with a restrained verification motif.",
-                        "evidence_refs": [
-                            "playtest:%s" % next(iter(claims))
-                        ],
-                    }
-                ],
                 "what_arrives": list(made["product"]["components"]),
                 "limitations": list(made["product"]["limitations"]),
                 "product_artifact_sha256": made["product_manifest"][
@@ -595,7 +589,7 @@ class _FactoryEffects:
 
         def write(context, root, manifest):
             fixture.writer_calls.append((context, root, manifest))
-            if not (Path(root) / "MANUAL.md").is_file():
+            if not (Path(root) / "MANUAL.pdf").is_file():
                 raise AssertionError("Factory effect did not receive the verified manual")
             product_page_sha256 = next(
                 entry.sha256
@@ -605,7 +599,7 @@ class _FactoryEffects:
             manual_sha256 = next(
                 entry.sha256
                 for entry in manifest.entries
-                if entry.path == "MANUAL.md"
+                if entry.path == "MANUAL.pdf"
             )
             return Receipt(
                 payload_sha256=_sha256(b"fixture-model-handoff"),
@@ -617,11 +611,8 @@ class _FactoryEffects:
                 details={
                     "release_sha256": manifest.artifact_sha256,
                     "product_page_sha256": product_page_sha256,
+                    "manual_path": "MANUAL.pdf",
                     "manual_sha256": manual_sha256,
-                    "factory_content_sha256": "f" * 64,
-                    "factory_content_mapping": (
-                        "workshop-release-v3-to-factory-content-v1"
-                    ),
                     "page_url": _PAGE_URL,
                     "cover_url": _COVER_URL,
                 },
@@ -671,7 +662,7 @@ class _FactoryEffects:
 
 
 class NativeFullRunTest(unittest.TestCase):
-    def test_release_credential_wait_is_durable_and_resumes_same_session(self):
+    def test_release_without_factory_credentials_reaches_deliver(self):
         launcher = _OneSessionProductAgent()
         effects = _FactoryEffects()
 
@@ -685,10 +676,10 @@ class NativeFullRunTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
             wish = Wish.create(
-                "orbit-dog-credential-wait",
+                "orbit-dog-local-release",
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
                 constraints={"audience": "14+", "manufacture": "not-authorized"},
-                context={"source": "native-release-credential-wait-test"},
+                context={"source": "native-local-release-test"},
             )
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
@@ -717,117 +708,57 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.materialize_public_example_if_source_checkout",
                 side_effect=RuntimeError("unexpected public example regression"),
             ):
-                waiting = start_native_run(wish, publish_requested=True)
+                receipt = start_native_run(wish, publish_requested=True)
                 paths = native_run_paths(wish.product_id)
                 run = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state
                 )
-                waiting_checkpoint = run.snapshot()
+                checkpoint = run.snapshot()
 
-                self.assertEqual(waiting["status"], "waiting")
-                self.assertEqual(waiting["stage"], "release")
-                self.assertEqual(waiting["native_turns"], 5)
-                self.assertEqual(waiting["publication"]["status"], "not-created")
-                self.assertEqual(len(waiting["needs"]), 1)
-                self.assertIn("missing or malformed", waiting["needs"][0])
-                self.assertEqual(waiting_checkpoint.status, "waiting")
-                self.assertEqual(waiting_checkpoint.stage, "release")
-                self.assertFalse((paths.workspace / "agent-outcome.json").exists())
-                self.assertFalse((paths.host_state / "release-effect.json").exists())
-                wait_path = paths.host_state / "release-effect-wait.json"
-                self.assertTrue(wait_path.is_file())
-                self.assertEqual(stat.S_IMODE(wait_path.stat().st_mode), 0o600)
-                wait_document = _read_json(wait_path)
-                self.assertEqual(
-                    wait_document["waiting_checkpoint_sha256"],
-                    waiting_checkpoint.checkpoint_sha256,
-                )
-                first_release_packet = launcher.stage_packets[-1]
-                self.assertEqual(first_release_packet["stage"], "release")
-                self.assertEqual(
-                    first_release_packet["inputs"]["factory_content_constraints"],
-                    {
-                        "plain_text": True,
-                        "forbidden_characters": ["<", ">"],
-                        "headline_characters": {"minimum": 1, "maximum": 40},
-                        "body_characters": {"minimum": 180, "maximum": 400},
-                        "story_blocks_maximum": 10,
-                    },
-                )
-                first_call_count = len(launcher.starts) + len(launcher.resumes)
-
-                os.environ["FACTORY_PASSWORD"] = effects.secret
-                still_waiting = resume_native_run(
-                    wish.product_id, publish_requested=True
-                )
-                self.assertEqual(still_waiting["status"], "waiting")
-                self.assertEqual(still_waiting["stage"], "release")
-                self.assertEqual(still_waiting["native_turns"], 5)
-                self.assertEqual(
-                    still_waiting["action"], "waiting-for-factory-credentials"
-                )
-                self.assertEqual(
-                    still_waiting["checkpoint_sha256"],
-                    waiting_checkpoint.checkpoint_sha256,
-                )
-                self.assertEqual(
-                    len(launcher.starts) + len(launcher.resumes), first_call_count
-                )
-
-                os.environ["FACTORY_USERNAME"] = "alice"
-                completed_release = resume_native_run(
-                    wish.product_id, publish_requested=True
-                )
-                final_checkpoint = AgentRun.open(
-                    paths.workspace, host_state_root=paths.host_state
-                ).snapshot()
-
-            self.assertEqual(completed_release["status"], "waiting")
-            self.assertEqual(completed_release["stage"], "deliver")
-            self.assertEqual(completed_release["native_turns"], 6)
-            self.assertEqual(completed_release["publication"]["status"], "public")
-            self.assertTrue(completed_release["publication"]["verified"])
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(receipt["stage"], "deliver")
+            self.assertEqual(receipt["native_turns"], 5)
+            self.assertEqual(receipt["publication"]["status"], "not-created")
+            self.assertTrue(receipt["publication"]["requested"])
+            self.assertIn("Factory credentials", receipt["publication"]["reason"])
+            self.assertIn("Factory credentials", receipt["needs"][0])
+            self.assertEqual(checkpoint.status, "waiting")
+            self.assertEqual(checkpoint.stage, "deliver")
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(len(launcher.resumes), 4)
             self.assertEqual(
-                completed_release["publication"]["public_example"]["status"],
-                "error",
+                [packet["stage"] for packet in launcher.stage_packets],
+                ["match", "invent", "make", "playtest", "release"],
+            )
+            release_packet = launcher.stage_packets[-1]
+            self.assertEqual(
+                release_packet["inputs"]["required_package_files"],
+                ["MANUAL.pdf", "product.json"],
             )
             release_gate_path = sorted(
                 (paths.host_state / "gates").glob("*-release.json")
             )[-1]
             release_gate = _read_json(release_gate_path)
+            checks = release_gate["evidence"]["checks"]
+            self.assertTrue(checks["local_release_sealed"])
+            self.assertTrue(checks["package_tree_rehashed"])
+            self.assertEqual(checks["manual_path"], "MANUAL.pdf")
+            self.assertNotIn("publication_status", checks)
+            self.assertNotIn("factory_readback_verified", checks)
             self.assertEqual(
-                release_gate["evidence"]["checks"]["product_verification_status"],
+                checks["product_verification_status"],
                 "not-recorded",
             )
-            self.assertEqual(final_checkpoint.stage, "deliver")
-            self.assertEqual(final_checkpoint.status, "waiting")
-            self.assertEqual(len(launcher.starts), 1)
-            self.assertEqual(len(launcher.resumes), 5)
-            self.assertEqual(
-                [packet["stage"] for packet in launcher.stage_packets],
-                ["match", "invent", "make", "playtest", "release", "release"],
-            )
-            second_release_packet = launcher.stage_packets[-1]
-            self.assertNotEqual(
-                first_release_packet["checkpoint_sha256"],
-                second_release_packet["checkpoint_sha256"],
-            )
-            self.assertEqual(
-                first_release_packet["subject_sha256"],
-                second_release_packet["subject_sha256"],
-            )
-            self.assertEqual(len(launcher.finalizer_commands), 6)
-            self.assertEqual(len(effects.writer_calls), 2)
-            self.assertEqual(len(effects.publish_calls), 1)
+            self.assertEqual(len(launcher.finalizer_commands), 5)
+            self.assertEqual(effects.writer_calls, [])
+            self.assertEqual(effects.publish_calls, [])
             self.assertFalse((paths.host_state / "release-effect-wait.json").exists())
-            self.assertTrue((paths.host_state / "release-effect.json").is_file())
-            self.assertIn("release", final_checkpoint.stage_artifacts)
-            for root in (paths.workspace, paths.host_state):
-                for path in root.rglob("*"):
-                    if path.is_file():
-                        self.assertNotIn(
-                            effects.secret.encode("utf-8"), path.read_bytes()
-                        )
+            self.assertFalse((paths.host_state / "release-effect.json").exists())
+            self.assertFalse((paths.host_state / "factory-effects.sqlite3").exists())
+            self.assertIn("release", checkpoint.stage_artifacts)
+            self.assertTrue(
+                (paths.workspace / "artifacts/release/package/MANUAL.pdf").is_file()
+            )
 
     def _run_playtest_routing_case(
         self,
@@ -1337,30 +1268,13 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.FactoryPublicTransition",
                 side_effect=effects.transition,
             ):
-                draft_receipt = start_native_run(wish, publish_requested=False)
+                local_receipt = start_native_run(wish, publish_requested=False)
                 paths = native_run_paths(wish.product_id)
                 native_calls_before_promotion = len(launcher.starts) + len(
                     launcher.resumes
                 )
                 effect_path = paths.host_state / "release-effect.json"
-                current_effect = effect_path.read_bytes()
-                legacy_effect = _read_json(effect_path)
-                legacy_effect["schema_version"] = 1
-                for field in (
-                    "product_page_sha256",
-                    "manual_sha256",
-                    "factory_content_sha256",
-                    "factory_content_mapping",
-                ):
-                    legacy_effect.pop(field)
-                effect_path.write_bytes(_canonical_json(legacy_effect))
-                with self.assertRaisesRegex(
-                    StateConflict, "belongs to different bytes"
-                ):
-                    resume_native_run(
-                        wish.product_id, publish_requested=True
-                    )
-                effect_path.write_bytes(current_effect)
+                self.assertFalse(effect_path.exists())
                 receipt = resume_native_run(
                     wish.product_id, publish_requested=True
                 )
@@ -1369,10 +1283,10 @@ class NativeFullRunTest(unittest.TestCase):
                 )
                 checkpoint = run.snapshot()
 
-            self.assertEqual(draft_receipt["status"], "waiting")
-            self.assertEqual(draft_receipt["stage"], "deliver")
-            self.assertEqual(draft_receipt["native_turns"], 5)
-            self.assertEqual(draft_receipt["publication"]["status"], "draft")
+            self.assertEqual(local_receipt["status"], "waiting")
+            self.assertEqual(local_receipt["stage"], "deliver")
+            self.assertEqual(local_receipt["native_turns"], 5)
+            self.assertEqual(local_receipt["publication"]["status"], "not-created")
             self.assertEqual(receipt["status"], "waiting")
             self.assertEqual(receipt["stage"], "deliver")
             self.assertEqual(receipt["native_turns"], 5)
@@ -1438,7 +1352,7 @@ class NativeFullRunTest(unittest.TestCase):
                 )
                 self.assertEqual(made.product["title"], "Orbit Dog Draughts")
 
-            self.assertEqual(effects.credential_requests, ["alice", "alice"])
+            self.assertEqual(effects.credential_requests, ["alice"])
             self.assertEqual(len(effects.writer_calls), 2)
             self.assertIs(effects.writer_calls[0][2], effects.credentials_value)
             self.assertEqual(len(effects.ledgers), 1)
@@ -1454,7 +1368,7 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(stat.S_IMODE(effect_path.stat().st_mode), 0o600)
             effect = _read_json(effect_path)
             publication = Receipt.from_dict(effect["receipt"])
-            self.assertEqual(effect["schema_version"], 2)
+            self.assertEqual(effect["schema_version"], 3)
             self.assertEqual(effect["publication_status"], "public")
             self.assertEqual(
                 effect["product_page_sha256"],
@@ -1463,10 +1377,9 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(
                 effect["manual_sha256"], publication.details["manual_sha256"]
             )
-            self.assertEqual(
-                effect["factory_content_sha256"],
-                publication.details["factory_content_sha256"],
-            )
+            self.assertEqual(effect["manual_path"], "MANUAL.pdf")
+            self.assertNotIn("factory_content_sha256", effect)
+            self.assertNotIn("factory_content_mapping", effect)
             self.assertTrue(publication.is_verified_public)
             self.assertEqual(publication.details["page_url"], _PAGE_URL)
 
@@ -1491,7 +1404,7 @@ class NativeFullRunTest(unittest.TestCase):
                 },
                 "release": {
                     "artifacts/release/release.json",
-                    "artifacts/release/package/MANUAL.md",
+                    "artifacts/release/package/MANUAL.pdf",
                     "artifacts/release/package/product.json",
                 },
             }
@@ -1538,7 +1451,7 @@ class NativeFullRunTest(unittest.TestCase):
                     lambda: playtested.validate_evidence_tree(paths.workspace, made),
                 ),
                 (
-                    paths.workspace / "artifacts/release/package/MANUAL.md",
+                    paths.workspace / "artifacts/release/package/MANUAL.pdf",
                     lambda: release.validate_package_tree(
                         paths.workspace, made, playtested
                     ),
@@ -1576,9 +1489,8 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertTrue(
                 playtest_gate["evidence"]["checks"]["cad_verification_passed"]
             )
-            self.assertEqual(
-                release_gate["evidence"]["checks"]["publication_status"],
-                "draft",
+            self.assertTrue(
+                release_gate["evidence"]["checks"]["local_release_sealed"]
             )
             self.assertEqual(
                 release_gate["evidence"]["checks"]["product_verification_status"],

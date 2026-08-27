@@ -27,7 +27,7 @@ SCHEMA_OWNERS = {
 
 
 class PackageDataTest(unittest.TestCase):
-    def test_product_run_domain_skills_resolve_from_make_component(self):
+    def test_product_run_domain_skills_resolve_from_owning_components(self):
         roots = product_run_domain_skill_roots()
 
         self.assertEqual(
@@ -36,12 +36,21 @@ class PackageDataTest(unittest.TestCase):
                 "cad",
                 "design-reference",
                 "image-to-cad",
+                "manual-design",
                 "step-parts",
             },
         )
+        expected_owners = {
+            "cad": "make",
+            "design-reference": "make",
+            "image-to-cad": "make",
+            "manual-design": "release",
+            "step-parts": "make",
+        }
         for name, root in roots.items():
             self.assertEqual(root.name, name)
             self.assertEqual(root.parent.name, "skills")
+            self.assertEqual(root.parent.parent.name, expected_owners[name])
             self.assertTrue((root / "SKILL.md").is_file())
 
     def test_every_schema_is_owned_by_its_architecture_component(self):

@@ -1,8 +1,10 @@
 import hashlib
+import io
 import json
 import os
 import tempfile
 import unittest
+import zlib
 from dataclasses import replace
 from pathlib import Path
 from unittest import mock
@@ -20,12 +22,15 @@ from workshop.match.native import (
 from workshop.playtest.native import NativePlaytestCheck, NativePlaytested
 from workshop.product import ToyBlueprint
 from workshop.release.native import (
+    MAX_NATIVE_RELEASE_MANUAL_BYTES,
+    NATIVE_RELEASE_LEGACY_MANUAL_PATH,
     NATIVE_RELEASE_MANUAL_PATH,
     NATIVE_RELEASE_PACKAGE_ROOT,
     NATIVE_RELEASE_PATH,
     NATIVE_RELEASE_PRODUCT_PATH,
     NativeRelease,
     read_native_release,
+    validate_release_product,
 )
 from workshop.release.public_example import materialize_public_example
 from workshop.release.verification import (
@@ -52,6 +57,100 @@ def _canonical(value):
 
 def _sha(value):
     return hashlib.sha256(value).hexdigest()
+
+
+def _manual_pdf(
+    *,
+    page_count=1,
+    declared_page_count=None,
+    repeated_page_references=None,
+    box=(0, 0, 297, 420),
+    text=(
+        "Moon Nook field manual. Arrange the rover, inspect every part, "
+        "and begin a safe tabletop expedition."
+    ),
+    catalog_entries=b"",
+    page_entries=b"",
+    resource_entries=b"",
+    content_suffix=b"",
+    extra_objects=None,
+):
+    def pdf_string(value):
+        return (
+            value.replace("\\", "\\\\")
+            .replace("(", "\\(")
+            .replace(")", "\\)")
+            .encode("ascii")
+        )
+
+    objects = {}
+    page_ids = [4 + index * 2 for index in range(page_count)]
+    kids = page_ids
+    if repeated_page_references is not None:
+        kids = [page_ids[0]] * repeated_page_references
+    declared = page_count if declared_page_count is None else declared_page_count
+    objects[1] = (
+        b"<< /Type /Catalog /Pages 2 0 R " + catalog_entries + b" >>"
+    )
+    objects[2] = (
+        b"<< /Type /Pages /Count "
+        + str(declared).encode("ascii")
+        + b" /Kids ["
+        + " ".join("%d 0 R" % page_id for page_id in kids).encode("ascii")
+        + b"] >>"
+    )
+    objects[3] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+    box_bytes = b" ".join(str(value).encode("ascii") for value in box)
+    for index, page_id in enumerate(page_ids, start=1):
+        content_id = page_id + 1
+        page_text = "%s Page %d." % (text, index) if text else ""
+        stream = (
+            b"BT /F1 12 Tf 24 360 Td ("
+            + pdf_string(page_text)
+            + b") Tj ET\n"
+            + content_suffix
+        )
+        objects[page_id] = (
+            b"<< /Type /Page /Parent 2 0 R /MediaBox ["
+            + box_bytes
+            + b"] /Resources << /Font << /F1 3 0 R >> "
+            + resource_entries
+            + b" >> /Contents "
+            + str(content_id).encode("ascii")
+            + b" 0 R "
+            + page_entries
+            + b" >>"
+        )
+        objects[content_id] = (
+            b"<< /Length "
+            + str(len(stream)).encode("ascii")
+            + b" >>\nstream\n"
+            + stream
+            + b"endstream"
+        )
+    objects.update(extra_objects or {})
+
+    result = bytearray(b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n")
+    offsets = {0: 0}
+    for object_number in range(1, max(objects, default=0) + 1):
+        offsets[object_number] = len(result)
+        result.extend(("%d 0 obj\n" % object_number).encode("ascii"))
+        result.extend(objects[object_number])
+        result.extend(b"\nendobj\n")
+    xref = len(result)
+    result.extend(("xref\n0 %d\n" % len(offsets)).encode("ascii"))
+    result.extend(b"0000000000 65535 f \n")
+    for object_number in range(1, len(offsets)):
+        result.extend(
+            ("%010d 00000 n \n" % offsets[object_number]).encode("ascii")
+        )
+    result.extend(
+        (
+            "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n"
+            % (len(offsets), xref)
+        ).encode("ascii")
+    )
+    return bytes(result)
 
 
 class NativeReleaseTest(unittest.TestCase):
@@ -211,15 +310,37 @@ class NativeReleaseTest(unittest.TestCase):
             for check in self.playtested.checks
         }
 
-    def _release(self, *, product_overrides=None, extra_files=None, **overrides):
+    def _release(
+        self,
+        *,
+        schema_version=2,
+        manual_pdf=None,
+        product_overrides=None,
+        extra_files=None,
+        **overrides,
+    ):
         root = self.run_root / NATIVE_RELEASE_PACKAGE_ROOT
         root.mkdir(parents=True, exist_ok=True)
-        manual = (
-            "# Moon Nook\n\n"
-            "Arrange the rover and explore the observatory.\n\n"
-            "AI-simulated playtest evidence is disclosed in product.json.\n"
-        )
-        (root / NATIVE_RELEASE_MANUAL_PATH).write_text(manual, encoding="utf-8")
+        for obsolete_manual in (
+            NATIVE_RELEASE_LEGACY_MANUAL_PATH,
+            NATIVE_RELEASE_MANUAL_PATH,
+        ):
+            path = root / obsolete_manual
+            if path.exists() or path.is_symlink():
+                path.unlink()
+        if schema_version == 1:
+            manual_path = NATIVE_RELEASE_LEGACY_MANUAL_PATH
+            manual = (
+                "# Moon Nook\n\n"
+                "Arrange the rover and explore the observatory.\n\n"
+                "AI-simulated playtest evidence is disclosed in product.json.\n"
+            )
+            (root / manual_path).write_text(manual, encoding="utf-8")
+        else:
+            manual_path = NATIVE_RELEASE_MANUAL_PATH
+            (root / manual_path).write_bytes(
+                _manual_pdf() if manual_pdf is None else manual_pdf
+            )
         product = {
             "schema_version": 3,
             "kind": "workshop.release-package",
@@ -272,6 +393,23 @@ class NativeReleaseTest(unittest.TestCase):
             ),
             "claims": self._claims(),
         }
+        if schema_version == 2:
+            product = {
+                "schema_version": 4,
+                "kind": "workshop.release-package",
+                "status": "manual-ready",
+                "title": "Moon Nook",
+                "summary": "A tiny lunar observatory.",
+                "what_arrives": ["observatory shell", "moon rover"],
+                "limitations": [],
+                "product_artifact_sha256": (
+                    self.made.product_manifest.artifact_sha256
+                ),
+                "playtest_evidence_artifact_sha256": (
+                    self.playtested.evidence_manifest.artifact_sha256
+                ),
+                "claims": self._claims(),
+            }
         product.update(product_overrides or {})
         product_bytes = _canonical(product)
         (root / NATIVE_RELEASE_PRODUCT_PATH).write_bytes(product_bytes)
@@ -293,10 +431,11 @@ class NativeReleaseTest(unittest.TestCase):
             "package_manifest": build_artifact_manifest(
                 root, created_at="content-addressed"
             ),
-            "manual_path": NATIVE_RELEASE_MANUAL_PATH,
+            "manual_path": manual_path,
             "product_json_path": NATIVE_RELEASE_PRODUCT_PATH,
             "product_json_sha256": _sha(product_bytes),
             "product": product,
+            "schema_version": schema_version,
         }
         values.update(overrides)
         return NativeRelease(**values)
@@ -328,15 +467,377 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(loaded, NativeRelease.from_mapping(release.to_dict()))
         self.assertEqual(package.root, self.run_root / NATIVE_RELEASE_PACKAGE_ROOT)
         self.assertEqual(package.manifest, release.package_manifest)
-        self.assertEqual(package.manual_path, "MANUAL.md")
+        self.assertEqual(package.manual_path, "MANUAL.pdf")
         self.assertEqual(package.made.artifact_sha256, release.product_artifact_sha256)
         self.assertTrue(package.playtested.passed)
         self.assertEqual(dict(package.claims), dict(release.claims))
-        self.assertEqual(package.product["status"], "page-ready")
-        self.assertEqual(package.product["hero"]["evidence_refs"], ("made:product.json",))
+        self.assertEqual(package.product["status"], "manual-ready")
+        self.assertNotIn("hero", package.product)
         serialized = json.dumps(release.to_dict(), sort_keys=True)
         for forbidden in ("credentials", "factory_receipt", "site_receipt"):
             self.assertNotIn(forbidden, serialized)
+
+    def test_schema_v1_markdown_round_trips_without_hash_reinterpretation(self):
+        release = self._release(schema_version=1)
+        sealed = release.to_dict()
+        release_sha256 = sealed.pop("release_sha256")
+
+        self.assertEqual(release.manual_path, "MANUAL.md")
+        self.assertEqual(release_sha256, _sha(_canonical(sealed)))
+        self.assertEqual(NativeRelease.from_mapping(release.to_dict()), release)
+        package = release.validate_package_tree(
+            self.run_root, self.made, self.playtested
+        )
+        self.assertEqual(package.manual_path, "MANUAL.md")
+
+    def test_schema_version_binds_the_manual_filename(self):
+        release_v2 = self._release()
+        with self.assertRaisesRegex(ContractError, "schema_version 2.*MANUAL.pdf"):
+            self._rebuild_release(
+                release_v2, manual_path=NATIVE_RELEASE_LEGACY_MANUAL_PATH
+            )
+
+        release_v1 = self._release(schema_version=1)
+        with self.assertRaisesRegex(ContractError, "schema_version 1.*MANUAL.md"):
+            self._rebuild_release(release_v1, manual_path=NATIVE_RELEASE_MANUAL_PATH)
+        with self.assertRaisesRegex(ContractError, "schema_version must be 1 or 2"):
+            self._rebuild_release(release_v1, schema_version=3)
+        with self.assertRaisesRegex(ContractError, "requires product.json schema_version 4"):
+            self._release(product_overrides={"schema_version": 3})
+        with self.assertRaisesRegex(ContractError, "requires product.json schema_version 3"):
+            self._release(
+                schema_version=1,
+                product_overrides={"schema_version": 4},
+            )
+
+    def test_release_product_validator_rejects_unknown_release_schema_versions(self):
+        release = self._release()
+
+        for schema_version in (0, 3, 999, True):
+            with self.subTest(schema_version=schema_version), self.assertRaisesRegex(
+                ContractError, "schema_version must be 1 or 2"
+            ):
+                validate_release_product(
+                    release.product,
+                    release_schema_version=schema_version,
+                )
+
+    def test_pdf_manual_accepts_the_bounded_page_limit(self):
+        release = self._release(manual_pdf=_manual_pdf(page_count=64))
+
+        package = release.validate_package_tree(
+            self.run_root, self.made, self.playtested
+        )
+
+        self.assertEqual(package.manual_path, "MANUAL.pdf")
+
+    def test_pdf_manual_rejects_page_count_boxes_and_text_failures(self):
+        cases = (
+            (_manual_pdf(page_count=0), "1 through 64 pages"),
+            (_manual_pdf(page_count=65), "1 through 64 pages"),
+            (_manual_pdf(box=(0, 0, 0, 420)), "printable page"),
+            (_manual_pdf(text=""), "meaningful extractable text"),
+        )
+        for manual, message in cases:
+            with self.subTest(message=message):
+                release = self._release(manual_pdf=manual)
+                with self.assertRaisesRegex(ContractError, message):
+                    release.validate_package_tree(
+                        self.run_root, self.made, self.playtested
+                    )
+
+    def test_pdf_manual_rejects_active_and_external_features(self):
+        cases = (
+            (
+                b"/Names << /Dests << /Names [(x) << /S /JavaScript "
+                b"/JS (app.alert\\(1\\)) >>] >> >>",
+                "active or external",
+            ),
+            (
+                b"/Names << /EmbeddedFiles << /Names [(notes.txt) "
+                b"<< /Type /Filespec /F (notes.txt) >>] >> >>",
+                "active or external",
+            ),
+            (
+                b"/Names << /Dests << /Names [(x) << /S /Launch "
+                b"/Win << /F (program.exe) >> >>] >> >>",
+                "forbidden PDF action",
+            ),
+            (
+                b"/Names << /Dests << /Names [(x) << /S /URI "
+                b"/URI (https://example.test) >>] >> >>",
+                "active or external",
+            ),
+        )
+        for catalog_entries, message in cases:
+            with self.subTest(catalog_entries=catalog_entries):
+                release = self._release(
+                    manual_pdf=_manual_pdf(catalog_entries=catalog_entries)
+                )
+                with self.assertRaisesRegex(ContractError, message):
+                    release.validate_package_tree(
+                        self.run_root, self.made, self.playtested
+                    )
+
+    def test_pdf_manual_preflights_repeated_page_references_before_flattening(self):
+        manual = _manual_pdf(
+            page_count=1,
+            declared_page_count=1,
+            repeated_page_references=10_000,
+        )
+        release = self._release(manual_pdf=manual)
+
+        with self.assertRaisesRegex(ContractError, "unreadable page tree"):
+            release.validate_package_tree(self.run_root, self.made, self.playtested)
+
+    def test_pdf_manual_rejects_sound_annotations_postscript_and_opi(self):
+        sound_stream = (
+            b"<< /R 8000 /C 1 /B 8 /Length 1 >>\nstream\n\x00\nendstream"
+        )
+        cases = (
+            (
+                _manual_pdf(
+                    catalog_entries=(
+                        b"/Names << /Dests << /Names [(sound) 6 0 R] >> >>"
+                    ),
+                    extra_objects={
+                        6: b"<< /S /Sound /Sound 7 0 R >>",
+                        7: sound_stream,
+                    },
+                ),
+                "forbidden PDF action: /Sound",
+            ),
+            (
+                _manual_pdf(
+                    page_entries=b"/Annots [6 0 R]",
+                    extra_objects={
+                        6: (
+                            b"<< /Type /Annot /Subtype /Link /Rect [0 0 20 20] "
+                            b"/Dest [4 0 R /Fit] >>"
+                        )
+                    },
+                ),
+                "forbidden PDF object: /Annot",
+            ),
+            (
+                _manual_pdf(
+                    resource_entries=b"/XObject << /PS1 6 0 R >>",
+                    extra_objects={
+                        6: b"<< /Type /XObject /Subtype /PS /Length 2 >>\n"
+                        b"stream\n()\nendstream"
+                    },
+                ),
+                "forbidden PDF subtype: /PS",
+            ),
+            (
+                _manual_pdf(
+                    resource_entries=b"/XObject << /Im1 6 0 R >>",
+                    extra_objects={
+                        6: (
+                            b"<< /Type /XObject /Subtype /Image /Width 1 /Height 1 "
+                            b"/ColorSpace /DeviceGray /BitsPerComponent 8 "
+                            b"/OPI << /Type /OPI /Version 1.3 /F (outside.eps) >> "
+                            b"/Length 1 >>\nstream\n\x00\nendstream"
+                        )
+                    },
+                ),
+                "active or external",
+            ),
+        )
+        for manual, message in cases:
+            with self.subTest(message=message):
+                release = self._release(manual_pdf=manual)
+                with self.assertRaisesRegex(ContractError, message):
+                    release.validate_package_tree(
+                        self.run_root, self.made, self.playtested
+                    )
+
+    def test_pdf_manual_bounds_image_dimensions_and_every_decoded_stream(self):
+        expanded = b"x" * (8 * 1024 * 1024 + 1)
+        compressed = zlib.compress(expanded, level=9)
+        run_length = b"\x81x" * ((8 * 1024 * 1024) // 128 + 1) + b"\x80"
+        ascii85 = b"<~" + b"z" * (2 * 1024 * 1024 + 1) + b"~>"
+        oversized_jpeg = (
+            b"\xff\xd8\xff\xc0\x00\x0b\x08\x23\x28\x23\x28\x01"
+            b"\x01\x11\x00\xff\xd9"
+        )
+        inline_pixels = zlib.compress(b"\x00" * ((9_000 * 9_000 + 7) // 8), level=9)
+        inline_form = (
+            b"q BI /W 9000 /H 9000 /CS /G /BPC 1 /F /FlateDecode ID "
+            + inline_pixels
+            + b" EI Q\n"
+        )
+        cases = (
+            (
+                _manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Type /XObject /Subtype /Image /Width 8193 "
+                            b"/Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 "
+                            b"/Length 1 >>\nstream\n\x00\nendstream"
+                        )
+                    }
+                ),
+                "image Width",
+            ),
+            (
+                _manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Type /XObject /Subtype /Image /Width 1 /Height 1 "
+                            b"/ColorSpace /DeviceGray /BitsPerComponent 8 "
+                            b"/Filter /DCTDecode /Length "
+                            + str(len(oversized_jpeg)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + oversized_jpeg
+                            + b"\nendstream"
+                        )
+                    }
+                ),
+                "JPEG dimensions differ",
+            ),
+            (
+                _manual_pdf(
+                    resource_entries=b"/XObject << /Fm1 6 0 R >>",
+                    content_suffix=b"q /Fm1 Do Q\n",
+                    extra_objects={
+                        6: (
+                            b"<< /Type /XObject /Subtype /Form /BBox [0 0 10 10] "
+                            b"/Resources << >> /Length "
+                            + str(len(inline_form)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + inline_form
+                            + b"endstream"
+                        )
+                    },
+                ),
+                "unsupported inline image",
+            ),
+            (
+                _manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Filter /FlateDecode /Length "
+                            + str(len(compressed)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + compressed
+                            + b"\nendstream"
+                        )
+                    }
+                ),
+                "oversized PDF stream|decoded PDF stream",
+            ),
+            (
+                _manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Filter /RunLengthDecode /Length "
+                            + str(len(run_length)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + run_length
+                            + b"\nendstream"
+                        )
+                    }
+                ),
+                "oversized PDF stream|decoded PDF stream",
+            ),
+            (
+                _manual_pdf(
+                    extra_objects={
+                        6: (
+                            b"<< /Filter /ASCII85Decode /Length "
+                            + str(len(ascii85)).encode("ascii")
+                            + b" >>\nstream\n"
+                            + ascii85
+                            + b"\nendstream"
+                        )
+                    }
+                ),
+                "decoded bound is too large",
+            ),
+        )
+        for manual, message in cases:
+            with self.subTest(message=message):
+                release = self._release(manual_pdf=manual)
+                with self.assertRaisesRegex(ContractError, message):
+                    release.validate_package_tree(
+                        self.run_root, self.made, self.playtested
+                    )
+
+    def test_false_lantern_manual_passes_the_isolated_parser_and_renderer(self):
+        manual_path = (
+            Path(__file__).resolve().parents[2]
+            / "toys"
+            / "leo-false-lantern"
+            / "MANUAL.pdf"
+        )
+        release = self._release(manual_pdf=manual_path.read_bytes())
+
+        package = release.validate_package_tree(
+            self.run_root, self.made, self.playtested
+        )
+
+        self.assertEqual(package.manual_path, "MANUAL.pdf")
+
+    def test_pdf_manual_rejects_encryption_and_oversized_bytes(self):
+        from pypdf import PdfReader, PdfWriter
+
+        reader = PdfReader(io.BytesIO(_manual_pdf()))
+        writer = PdfWriter()
+        writer.append_pages_from_reader(reader)
+        writer.encrypt("not-for-the-customer")
+        encrypted = io.BytesIO()
+        writer.write(encrypted)
+        release = self._release(manual_pdf=encrypted.getvalue())
+        with self.assertRaisesRegex(ContractError, "must be unencrypted"):
+            release.validate_package_tree(self.run_root, self.made, self.playtested)
+
+        oversized = _manual_pdf() + b" " * (
+            MAX_NATIVE_RELEASE_MANUAL_BYTES - len(_manual_pdf()) + 1
+        )
+        with self.assertRaisesRegex(ContractError, "at most 16777216 bytes"):
+            self._release(manual_pdf=oversized)
+
+    def test_legacy_manual_needs_no_pdf_worker_and_missing_worker_fails_closed(self):
+        legacy = self._release(schema_version=1)
+        package = legacy.validate_package_tree(
+            self.run_root, self.made, self.playtested
+        )
+        self.assertEqual(package.manual_path, "MANUAL.md")
+
+        release = self._release()
+        with mock.patch(
+            "workshop.release.native._pdf_validator_asset_path",
+            side_effect=ContractError("native Release PDF validator is unavailable"),
+        ), self.assertRaisesRegex(ContractError, "validator is unavailable"):
+            release.validate_package_tree(
+                self.run_root, self.made, self.playtested
+            )
+
+    def test_product_run_uses_its_frozen_pdf_worker_without_installed_fallback(self):
+        release = self._release()
+        worker = (
+            self.run_root
+            / ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
+        )
+        worker.parent.mkdir(parents=True)
+        with self.assertRaisesRegex(ContractError, "validator is unavailable"):
+            release.validate_package_tree(
+                self.run_root, self.made, self.playtested
+            )
+
+        source = (
+            Path(__file__).resolve().parents[2]
+            / ".agents/product-run/.agents/skills/autonomous-workshop/scripts"
+            / "pdf_validator.py"
+        )
+        worker.write_bytes(source.read_bytes())
+        worker.chmod(0o400)
+
+        package = release.validate_package_tree(
+            self.run_root, self.made, self.playtested
+        )
+        self.assertEqual(package.manual_path, "MANUAL.pdf")
 
     def test_host_materializes_strict_public_digital_verification(self):
         release = self._release()
@@ -434,16 +935,16 @@ class NativeReleaseTest(unittest.TestCase):
         (self.run_root / NATIVE_RELEASE_PACKAGE_ROOT / "hero.png").unlink()
 
         release = self._release()
-        manual = self.run_root / NATIVE_RELEASE_PACKAGE_ROOT / "MANUAL.md"
-        outside = self.run_root / "outside-manual.md"
-        outside.write_text("outside\n", encoding="utf-8")
+        manual = self.run_root / NATIVE_RELEASE_PACKAGE_ROOT / release.manual_path
+        outside = self.run_root / "outside-manual.pdf"
+        outside.write_bytes(_manual_pdf())
         manual.unlink()
         manual.symlink_to(outside)
         with self.assertRaisesRegex(ArtifactError, "symlink"):
             release.validate_package_tree(self.run_root, self.made, self.playtested)
 
         manual.unlink()
-        manual.write_text("restored\n", encoding="utf-8")
+        manual.write_bytes(_manual_pdf())
         contract = self._write_contract(release)
         external_contract = self.run_root / "outside-release.json"
         external_contract.write_bytes(_canonical(release.to_dict()))
@@ -479,7 +980,7 @@ class NativeReleaseTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "fields are invalid"):
             self._release(product_overrides={"factory_enrichment": {"status": "pending"}})
 
-        with self.assertRaisesRegex(ContractError, "evidence_refs"):
+        with self.assertRaisesRegex(ContractError, "fields are invalid"):
             self._release(
                 product_overrides={
                     "hero": {
@@ -489,6 +990,19 @@ class NativeReleaseTest(unittest.TestCase):
                         "evidence_refs": ["playtest:not-a-check"],
                     }
                 }
+            )
+
+        with self.assertRaisesRegex(ContractError, "evidence_refs"):
+            self._release(
+                schema_version=1,
+                product_overrides={
+                    "hero": {
+                        "headline": "Unsupported",
+                        "body": "This copy cites evidence outside the sealed run.",
+                        "visual_direction": "No invented geometry.",
+                        "evidence_refs": ["playtest:not-a-check"],
+                    }
+                },
             )
 
     def test_rejects_copy_that_factory_cannot_display_exactly(self):
@@ -525,7 +1039,10 @@ class NativeReleaseTest(unittest.TestCase):
         for product_overrides, message in cases:
             with self.subTest(message=message):
                 with self.assertRaisesRegex(ContractError, message):
-                    self._release(product_overrides=product_overrides)
+                    self._release(
+                        schema_version=1,
+                        product_overrides=product_overrides,
+                    )
 
     def test_rejects_noncanonical_invalid_json_and_changed_bytes(self):
         release = self._release(
@@ -552,13 +1069,13 @@ class NativeReleaseTest(unittest.TestCase):
             read_native_release(self.run_root)
 
         self._write_contract(release)
-        manual = self.run_root / NATIVE_RELEASE_PACKAGE_ROOT / "MANUAL.md"
-        manual.write_text("# changed after sealing\n", encoding="utf-8")
+        manual = self.run_root / NATIVE_RELEASE_PACKAGE_ROOT / release.manual_path
+        manual.write_bytes(b"%PDF-1.7\nchanged after sealing\n%%EOF\n")
         with self.assertRaisesRegex(ArtifactError, "differs from its manifest"):
             release.validate_package_tree(self.run_root, self.made, self.playtested)
 
     def test_public_example_uses_sealed_inventory_and_never_overwrites(self):
-        release = self._release()
+        release = self._release(schema_version=1)
         entries = {
             entry.path: entry for entry in release.package_manifest.entries
         }
@@ -641,6 +1158,25 @@ class NativeReleaseTest(unittest.TestCase):
             )
         self.assertFalse((repository / "toys/eve-moon-nook").exists())
 
+        missing_cover = replace(
+            receipt,
+            details={
+                name: value
+                for name, value in receipt.details.items()
+                if name != "cover_url"
+            },
+        )
+        with self.assertRaisesRegex(StateConflict, "public cover URL"):
+            materialize_public_example(
+                repository,
+                self.run_root,
+                release=release,
+                made=self.made,
+                inventor_id="eve",
+                receipt=missing_cover,
+            )
+        self.assertFalse((repository / "toys/eve-moon-nook").exists())
+
         target = materialize_public_example(
             repository,
             self.run_root,
@@ -687,6 +1223,66 @@ class NativeReleaseTest(unittest.TestCase):
                 inventor_id="eve",
                 receipt=receipt,
             )
+
+    def test_public_example_copies_exact_pdf_manual_without_cover_or_rich_page_identity(self):
+        release = self._release()
+        entries = {
+            entry.path: entry for entry in release.package_manifest.entries
+        }
+        receipt = Receipt(
+            payload_sha256="1" * 64,
+            artifact_sha256=release.product_artifact_sha256,
+            adapter="factory",
+            status="public",
+            observed_at="2026-08-26T00:00:00Z",
+            reference="design-moon-nook-pdf",
+            details={
+                "release_sha256": release.package_manifest.artifact_sha256,
+                "product_page_sha256": release.product_json_sha256,
+                "manual_path": "MANUAL.pdf",
+                "manual_sha256": entries[release.manual_path].sha256,
+                "primary_model_path": "assembled.stl",
+                "primary_model_sha256": self.made.product["cad"][
+                    "assembled_stl"
+                ]["sha256"],
+                "page_url": (
+                    "https://www.autonomous.ai/factory/product/moon-nook-pdf"
+                ),
+            },
+            design_id="design-moon-nook-pdf",
+            slug="moon-nook-pdf",
+            owner_id="owner-eve",
+            root_id="design-moon-nook-pdf",
+            current_history_id="history-1",
+            published_history_id="history-1",
+            project_url="https://cdn.autonomous.ai/projects/moon-nook-pdf/",
+            listing_active=True,
+            listing_price_cents=2400,
+            listing_currency="USD",
+            listing_sku="MOON-NOOK-PDF-1",
+        )
+        repository = self.run_root / "pdf-repository"
+        (repository / "toys").mkdir(parents=True)
+
+        target = materialize_public_example(
+            repository,
+            self.run_root,
+            release=release,
+            made=self.made,
+            inventor_id="eve",
+            receipt=receipt,
+        )
+
+        source_manual = self.run_root / release.package_root / release.manual_path
+        self.assertEqual((target / "MANUAL.pdf").read_bytes(), source_manual.read_bytes())
+        self.assertFalse((target / "MANUAL.md").exists())
+        publication = json.loads(
+            (target / "PUBLICATION.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(publication["identities"]["manual_path"], "MANUAL.pdf")
+        self.assertNotIn("factory_content_sha256", publication["identities"])
+        self.assertNotIn("cover_url", publication["publication"])
+        self.assertIn("`MANUAL.pdf`", (target / "README.md").read_text())
 
 
 if __name__ == "__main__":

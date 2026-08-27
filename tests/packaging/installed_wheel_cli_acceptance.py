@@ -25,11 +25,16 @@ SCHEMA_OWNERS = {
     "verification-receipt.schema.json": "make",
     "receipt.schema.json": "runtime",
 }
-SKILLS = (
-    "cad",
-    "design-reference",
-    "image-to-cad",
-    "step-parts",
+SKILL_PATHS = {
+    "cad": "make/skills/cad",
+    "design-reference": "make/skills/design-reference",
+    "image-to-cad": "make/skills/image-to-cad",
+    "manual-design": "release/skills/manual-design",
+    "step-parts": "make/skills/step-parts",
+}
+SKILLS = tuple(SKILL_PATHS)
+LISTED_MAKE_SKILLS = tuple(
+    name for name, relative in SKILL_PATHS.items() if relative.startswith("make/")
 )
 INVENTORS = ("abo", "alice", "bob", "eve", "ivy", "leo")
 CODEX_THREAD_ID = "12345678-1234-5678-9234-567812345678"
@@ -190,6 +195,12 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
         _audit_zip_tree(
             archive,
             infos,
+            source_root=repository / "src" / "workshop" / "release" / "skills",
+            member_root="workshop/release/skills",
+        )
+        _audit_zip_tree(
+            archive,
+            infos,
             source_root=repository / ".agents" / "product-run",
             member_root="workshop/runtime/_agent_assets/.agents/product-run",
         )
@@ -197,12 +208,10 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
         expected_inventor_members = set()
         for inventor_id in INVENTORS:
             source_root = inventor_sources / inventor_id
-            for source in source_root.rglob("*"):
-                if not source.is_file() or source.is_symlink():
-                    continue
+            for relative, source in _source_files(source_root).items():
                 member = (
                     "workshop/contributors/_inventors/%s/%s"
-                    % (inventor_id, source.relative_to(source_root).as_posix())
+                    % (inventor_id, relative)
                 )
                 expected_inventor_members.add(member)
                 if member not in infos or archive.read(member) != source.read_bytes():
@@ -240,6 +249,7 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
             "workshop/contributors/schemas/",
             "workshop/make/schemas/",
             "workshop/make/skills/",
+            "workshop/release/skills/",
             "workshop/runtime/_agent_assets/",
             "workshop/runtime/schemas/",
         )
@@ -284,8 +294,23 @@ def _verify_declared_dependencies(python: Path, *, cwd: Path) -> None:
             "import importlib.metadata as m; "
             "requirements = m.requires('autonomous-workshop') or []; "
             "assert 'cadgen==0.4.19' in requirements, requirements; "
+            "assert 'pillow>=10.0' in requirements, requirements; "
+            "assert 'pypdf<7,>=6.16.2' in requirements, requirements; "
+            "assert 'pypdfium2<6,>=5.13' in requirements, requirements; "
+            "assert 'reportlab>=4.4' in requirements, requirements; "
             "assert m.version('cadgen') == '0.4.19'; "
-            "import cadgen; assert cadgen.__file__",
+            "import cadgen, io, pypdf, pypdfium2, reportlab; "
+            "from PIL import Image; "
+            "from reportlab.pdfgen import canvas; "
+            "from workshop.release.native import validate_release_pdf_manual; "
+            "assert all(module.__file__ for module in "
+            "(cadgen, pypdf, pypdfium2, reportlab, Image)); "
+            "buffer = io.BytesIO(); "
+            "document = canvas.Canvas(buffer, pagesize=(297.64, 419.53)); "
+            "document.drawString(36, 380, 'Installed Workshop PDF check'); "
+            "document.drawString(36, 360, 'Open the box and begin safely.'); "
+            "document.showPage(); document.save(); "
+            "validate_release_pdf_manual(buffer.getvalue())",
         ),
         cwd=cwd,
     )
@@ -470,6 +495,7 @@ for inventor_id in inventor_ids:
                 ),
                 "root_marker": (run_root / ".workshop-product-run-root").is_file(),
                 "image_to_cad": (run_root / ".agents" / "skills" / "image-to-cad" / "SKILL.md").is_file(),
+                "manual_design": (run_root / ".agents" / "skills" / "manual-design" / "SKILL.md").is_file(),
                 "stage": (run_root / "STAGE.json").is_file(),
                 "step_parts": (run_root / ".agents" / "skills" / "step-parts" / "SKILL.md").is_file(),
                 "workflow": (run_root / ".agents" / "skills" / "autonomous-workshop" / "SKILL.md").is_file(),
@@ -713,7 +739,7 @@ def _native_wish_smoke(
     )
     for skill_name in SKILLS:
         _assert_materialized_tree(
-            repository / "src" / "workshop" / "make" / "skills" / skill_name,
+            repository / "src" / "workshop" / SKILL_PATHS[skill_name],
             workspace / ".agents" / "skills" / skill_name,
         )
     expected_skill_names = {"autonomous-workshop", *SKILLS}
@@ -837,8 +863,8 @@ def acceptance(
             cwd=away,
             environment=environment,
         )
-        if tuple(item["name"] for item in skills) != SKILLS:
-            raise AssertionError("installed skill inventory is incomplete")
+        if tuple(item["name"] for item in skills) != LISTED_MAKE_SKILLS:
+            raise AssertionError("installed Make skill inventory is incomplete")
         schemas = set(
             _run(
                 (workshop, "schemas", "list"), cwd=away, environment=environment
@@ -867,7 +893,7 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--with-dependencies",
         action="store_true",
-        help="resolve declared dependencies, run pip check, and import cadgen",
+        help="resolve declared dependencies, run pip check, and import the Release toolchain",
     )
     args = parser.parse_args(argv)
     repository = Path(__file__).resolve().parents[2]

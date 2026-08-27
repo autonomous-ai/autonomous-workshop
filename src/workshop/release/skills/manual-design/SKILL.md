@@ -1,0 +1,74 @@
+---
+name: manual-design
+description: Design and verify the self-contained printable MANUAL.pdf intended for the physical toy's box. Use during Workshop Release; not for manufacturing notes, evidence reports, or product-page copy.
+---
+
+# Manual design
+
+Create the customer artifact that makes the toy understandable and delightful
+at unboxing. The finished `MANUAL.pdf` must teach the complete supported use or
+play experience without a website, phone, QR code, or prior explanation.
+
+## Design from the exact product
+
+- Inspect the Wish, selected Taste, sealed product facts, exact geometry,
+  component inventory, and passing Playtest findings before designing.
+- Depict only included parts and supported interactions. Prefer renders,
+  silhouettes, exploded views, and diagrams derived from the exact product
+  artifacts; do not invent geometry or imply unverified physical performance.
+- Choose the physical format to suit the toy and box: a card, foldout, leaflet,
+  or booklet may each be right. Decide page size, orientation, page count,
+  binding, margins, and bleed deliberately instead of defaulting every toy to
+  one template.
+- Choose an authoring method that gives the concept the strongest print result.
+  HTML/CSS-to-PDF, vector-native layout, and programmatic drawing are all valid.
+  Do not force a generic visual template across products.
+
+## Teach the whole experience
+
+Use the structure and voice that best fit the product, but make these needs easy
+to find:
+
+- an exact visual inventory with quantities and ownership or orientation cues;
+- assembly or setup expressed as short physical actions;
+- complete first-use, operation, and reset guidance;
+- for games, a guided first play plus complete turns, choices, rules, scoring,
+  and end conditions;
+- likely mistakes, ambiguous cases, and concise troubleshooting;
+- pack-away, care, and evidence-supported safety guidance.
+
+Keep production material out of customer copy: no slicer settings, tolerances,
+calibration, CAD implementation, evidence plumbing, provenance logs,
+verification mechanics, or publication workflow. Those belong in technical
+artifacts. A phone or QR code may offer optional enrichment, but never carry an
+essential step or rule.
+
+## Make print carry the meaning
+
+- Establish a clear reading path, strong hierarchy, generous usable whitespace,
+  and one obvious action or decision per instructional panel where practical.
+- Let the Wish, product character, and selected Taste shape the visual language.
+  Use original composition rather than imitating a branded manual.
+- Never encode essential state by color alone. Repeat it with names, shapes,
+  symbols, counts, patterns, or position so the guide remains complete in
+  grayscale and for readers with color-vision differences.
+- Keep type and diagrams legible at the chosen physical size. Preserve actual
+  text rather than outlining it when the authoring method permits.
+- Embed every font and asset needed to render the PDF. The final file must not
+  depend on local paths, remote images, active scripts, or external resources.
+
+## Inspect the artifact, not just its source
+
+Render every PDF page and inspect it at intended print size. Check page order,
+cropping, bleed and safe margins, text size, contrast, alignment, diagram
+accuracy, visual consistency, and any accidental blank, clipped, or overlapping
+content. Workshop provides `pypdfium2` as a portable offline renderer; a trusted
+native PDF renderer or browser is also valid. Do not add a network service or a
+license-incompatible runtime dependency merely to render it. Then render and
+inspect every page in grayscale.
+
+Read the guide once as a first-time owner and once as an operation or rules
+reference, as applicable. Revise the source and repeat both visual inspections
+until the result is clear, complete, accurate, and excellent. Save the final
+self-contained customer file as `MANUAL.pdf`; editable sources may accompany it
+but do not replace it.

@@ -123,6 +123,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "match")
         self.assertIn("Starting one native Codex session", stderr.getvalue())
+        self.assertIn("not published by default", stderr.getvalue())
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
         self.assertFalse(observed["publish_requested"])
@@ -171,6 +172,29 @@ class NativeCommandTest(unittest.TestCase):
             "2026-08-26T15:00:00.000Z)",
             stdout.getvalue(),
         )
+
+    def test_status_text_surfaces_actionable_publication_need(self):
+        stdout = StringIO()
+        receipt = native_receipt(status="waiting", stage="deliver")
+        reason = (
+            "Factory credentials are missing; configure them, then resume this run."
+        )
+        receipt["publication"] = {
+            "status": "not-created",
+            "requested": True,
+            "reason": reason,
+        }
+        receipt["needs"] = [reason, "Manufacturing remains separately authorized."]
+        with mock.patch(
+            "cli.main.native_run_status", return_value=receipt
+        ), redirect_stdout(stdout):
+            result = main(("status", "wish-one"))
+
+        self.assertEqual(result, 0)
+        output = stdout.getvalue()
+        self.assertIn("Publication note: %s" % reason, output)
+        self.assertEqual(output.count(reason), 1)
+        self.assertIn("Need: Manufacturing remains separately authorized.", output)
 
     def test_resume_calls_only_native_resume_and_has_strict_wait_policy(self):
         stdout = StringIO()
@@ -246,7 +270,7 @@ class DoctorTest(unittest.TestCase):
         self.assertIn("goals, subagents, and isolation", check["detail"])
         self.assertIn("0.145.0", check["next"])
 
-    def test_missing_factory_credentials_report_release_wait(self):
+    def test_missing_factory_credentials_are_optional_for_local_release(self):
         ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
         stdout = StringIO()
         with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
@@ -260,11 +284,12 @@ class DoctorTest(unittest.TestCase):
         ), redirect_stdout(stdout):
             result = main(("doctor", "--json"))
         receipt = json.loads(stdout.getvalue())
-        self.assertEqual(result, 1)
-        self.assertEqual(receipt["status"], "needs-attention")
+        self.assertEqual(result, 0)
+        self.assertEqual(receipt["status"], "ready")
         factory = next(item for item in receipt["checks"] if item["name"] == "factory-credentials")
-        self.assertEqual(factory["status"], "needs-attention")
-        self.assertIn("wait at Release", factory["detail"])
+        self.assertEqual(factory["status"], "ready")
+        self.assertIn("local Release remains available", factory["detail"])
+        self.assertIn("requested publication", factory["detail"])
 
     def test_partial_factory_credentials_fail_without_printing_values(self):
         secret = "do-not-print-this-value"

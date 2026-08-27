@@ -31,3 +31,11 @@ this repository.
 Earlier research examined internal Inventor projects including `text2cad`,
 `text2game`, and `vibe-ideas`. Their legacy Python workers and source snapshots
 are not shipped in this repository.
+
+## PDF rendering runtime
+
+Workshop depends on `pypdfium2` for portable offline inspection of printable
+manuals. The project is available under Apache-2.0 or BSD-3-Clause, and its
+PDFium wheels carry PDFium's BSD-style license plus notices for bundled
+third-party components. Those license files remain part of the separately
+distributed dependency wheel; Workshop does not vendor its binaries.

@@ -7,85 +7,91 @@ before acting.
 
 ## Release Goal and validation loop
 
-Create one native Codex Goal for this Release attempt. Its objective is to
-produce a complete, useful manual and page-ready customer product package whose
-claims and creative direction are traceable to the sealed product and passing
-Playtest evidence. Its stopping condition is a successful `release` finalizer
-for the current checkpoint.
+Read `.agents/skills/manual-design/SKILL.md`, then create one native Codex Goal
+for this Release attempt. Its objective is to produce the exact printable
+in-box manual and bounded product facts traceable to the sealed product and
+passing Playtest evidence. Its stopping condition is a successful `release`
+finalizer for the current checkpoint.
 
 While pursuing the Goal:
 
 1. **Observe:** Inspect the exact Made tree, passing Playtest checks and
    evidence, Wish, selected Taste, universal blueprint, and every proposed
-   product fact. Separate evidence-bound product storytelling from claims about
-   future publication, manufacture, delivery, or physical performance.
-2. **Act:** Assemble `artifacts/release/package` with substantive `MANUAL.md`,
-   canonical page-ready `product.json`, evidence-bound claims, complete hero,
-   cinematic, use-case, and story-block copy, visual direction, what arrives,
-   limitations, attribution, and any necessary non-media factual files. Cover
-   mechanics, rules, components, assembly, limitations, care, and safety.
-3. **Evaluate:** Validate every claim against exact evidence and hashes, check
-   the manual as a new owner's complete starting point, and inspect the package
-   as the source for a product page. Use an independent native fact-checker or
-   editor subagent for bounded review where useful. Run deterministic package
-   validation after meaningful changes.
-4. **Improve:** Remove unsupported language, resolve contradictions, clarify
-   missing steps, and rerun validation until the package is internally
-   consistent and evidence-complete.
+   customer fact. Separate supported product guidance from claims about future
+   publication, manufacture, delivery, or physical performance.
+2. **Act:** Assemble `artifacts/release/package` with canonical `MANUAL.pdf`,
+   evidence-bound `product.json`, and optional editable manual source. The PDF
+   is the customer artifact: cover inventory, setup, guided first use, complete
+   operation or rules, scoring where relevant, troubleshooting, pack-away,
+   care, and safety. Keep slicer settings, calibration, provenance, internal
+   evidence, and builder notes outside the customer manual.
+3. **Evaluate:** Validate every claim against exact evidence and hashes. Render
+   every PDF page, inspect it at intended print size and in grayscale, confirm
+   that all essential meaning survives without color, and check that a new
+   owner can begin without a phone or website. Use an independent native
+   fact-checker or visual editor subagent where useful. Run deterministic
+   package validation after meaningful changes.
+4. **Improve:** Remove unsupported language, resolve contradictions, repair
+   hierarchy or cramped layout, clarify missing actions, rerender, and continue
+   until both the manual and bounded metadata are internally consistent.
 
-Codex owns the fact-check/write/review/revise loop. Python validates exact
-schema, hashes, and claim bindings; it does not write copy, judge usefulness,
-invent claims, or control the loop.
+Codex owns the fact-check, design, render, review, and revise loop. Python may
+validate PDF structure, schemas, hashes, and claim bindings; it does not write
+the manual, score beauty, or control the improvement loop.
 
-The package must include UTF-8 `MANUAL.md` and canonical schema-v3
-`product.json` with `kind=workshop.release-package`, `status=page-ready`, exact
-product/evidence hashes, exact Playtest claims, `title`, `summary`, `hero`,
-`cinematic`, `use_case`, one or more `story_blocks`, `what_arrives`, and
-`limitations`. Every page section contains `headline`, `body`,
-`visual_direction`, and valid `evidence_refs`. Do not invent claims of
-manufacture, physical fit, human response, publication, delivery, or delight.
-Do not place credentials, receipts, images, audio, or video in the local
-package. Codex owns the complete page copy and visual direction; Factory later
-transports the exact sealed page and model bytes rather than creatively
-enriching them.
+The package must include a non-empty, self-contained `MANUAL.pdf` and canonical
+schema-v4 `product.json`. That JSON object has exactly these ten fields and no
+others:
 
-Do not create or edit `artifacts/release/VERIFICATION.json`. It is an optional
-host-owned, public-safe projection written only after the host independently
-accepts the exact Release package. Your Playtest evidence and Release prose
-cannot assign or raise its level. The current host can emit only **Digitally
+- `schema_version`: integer `4`;
+- `kind`: string `workshop.release-package`;
+- `status`: string `manual-ready`;
+- `title`: the exact Made product title;
+- `summary`: concise supported product description;
+- `what_arrives`: non-empty list of included-item descriptions;
+- `limitations`: list of supported limitations, which may be empty;
+- `product_artifact_sha256`: exact Made product artifact hash;
+- `playtest_evidence_artifact_sha256`: exact passing evidence artifact hash;
+- `claims`: the exact non-empty claims mapping from Playtest.
+
+Do not invent claims of manufacture, physical fit, human response,
+publication, delivery, or certification. The PDF may contain embedded fonts,
+vector art, and product-derived raster images; it must not depend on external
+resources, scripts, launch actions, attachments, credentials, or receipts.
+`MANUAL.pdf` is authoritative customer guidance. Optional source or accessible
+text companions must not contradict it.
+
+Do not create or edit `artifacts/release/VERIFICATION.json`. It is optional
+host-owned, public-safe enrichment written only after the host independently
+accepts the exact Release package. The current host can emit only **Digitally
 Verified**; **Physically Verified** requires a future trusted host receipt that
-proves the exact released bytes were built and checked. If the projection is
-unavailable, Release still succeeds and no badge is recorded.
+proves the exact released bytes were built and checked. Missing verification
+never blocks Release.
 
-For the exact `use_case` and `story_blocks` copy to render on the current
-Factory site, keep each `headline` to 1–40 plain-text characters, each `body`
-to 180–400 plain-text characters, use no `<` or `>` characters in those
-fields, and provide at most 10 story blocks. These are Factory display limits,
-not prompts for Python rewriting: the host copies compatible text exactly and
-fails the handoff rather than truncating or paraphrasing it. The imported
-design cover fills Factory's required use-case image slot. The complete
-schema-v3 page, including visual direction and evidence references, and the
-exact `MANUAL.md` remain authoritative sealed files in the uploaded project.
+Website copy limits are not manual design constraints and must not make a valid
+local Release fail. Keep `product.json` concise and factual. The host may later
+transport its exact supported subset, model bytes, and `MANUAL.pdf` through an
+authorized adapter; it must not rewrite the sealed manual.
 
 Run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . release \
   --package-root artifacts/release/package
 ```
 
 The deterministic finalizer writes `artifacts/release/release.json` and the
 compact outcome. Complete the Release Goal only after it succeeds, then return
-to the host. The host validates and seals the exact manual, page, and product
-bytes before any Factory effect.
+to the host. The host validates and seals the exact manual, metadata, and
+product bytes. That local gate advances independently of any Factory effect.
 
 ## Deliver is a host effect boundary
 
 Do not create a native Goal for Deliver. Stop truthfully after the host accepts
-Release. Codex may summarize what future production, hands-on QA, packing, and
-carrier evidence would be needed, but it must not buy, manufacture, publish,
-ship, or access credentials.
+Release. Codex may summarize what future production, hands-on QA, manual
+printing, packing, and carrier evidence would be needed, but it must not buy,
+manufacture, publish, ship, or access credentials.
 
 The current Workshop has no Deliver effect adapter or Delivered contract. The
 host returns a durable waiting checkpoint after Release. A future, separately

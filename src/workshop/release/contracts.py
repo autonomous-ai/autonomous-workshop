@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Optional
@@ -16,11 +15,14 @@ from workshop._validation import (
 from workshop.artifacts.core import ArtifactManifest, build_artifact_manifest
 from workshop.contributors import Taste
 from workshop.errors import ArtifactError, ContractError
-from workshop.runtime import Receipt
 from workshop.make.contracts import Made
 from workshop.playtest.contracts import Playtested
 from workshop.product import ToyBlueprint
-from workshop.release.native import validate_release_product
+from workshop.release.native import (
+    MAX_NATIVE_RELEASE_MANUAL_BYTES,
+    validate_release_pdf_manual,
+    validate_release_product,
+)
 from workshop.wish import Wish
 
 
@@ -38,6 +40,19 @@ def _fresh_manifest(root: Path, manifest: ArtifactManifest) -> ArtifactManifest:
     if current.to_dict() != manifest.to_dict():
         raise ArtifactError("artifact bytes changed after the job completed")
     return current
+
+
+def _canonical_json(value: Any) -> bytes:
+    try:
+        return json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError, UnicodeError) as exc:
+        raise ContractError("ProductRelease product.json must be finite JSON") from exc
 
 
 @dataclass(frozen=True)
@@ -83,14 +98,11 @@ class ReleaseContext:
 
 @dataclass(frozen=True)
 class ProductRelease:
-    """One sealed box insert, complete product page, and authenticated draft.
+    """One locally verified and sealed customer Release package.
 
-    Codex authors the evidence-bound customer page before this contract can be
-    created. Factory transports the exact sealed page and model bytes; it does
-    not own a creative enrichment step. The site receipt binds the complete
-    Release tree to an authenticated private draft for the exact product
-    artifact. A verified public receipt remains accepted for custom writers,
-    but public visibility is not part of the shared Release job.
+    This contract deliberately stops at exact local bytes.  A Factory draft or
+    public page is optional host-owned enrichment with its own durable receipt;
+    it is not part of Release acceptance.
     """
 
     root: Path
@@ -98,7 +110,6 @@ class ProductRelease:
     product_artifact_sha256: str
     manual_path: str
     claims: Mapping[str, Any]
-    site_receipt: Receipt
 
     def __post_init__(self) -> None:
         root = Path(self.root)
@@ -121,11 +132,11 @@ class ProductRelease:
         if (
             manual.is_absolute()
             or ".." in manual.parts
-            or manual.as_posix() != "MANUAL.md"
+            or manual.as_posix() not in ("MANUAL.md", "MANUAL.pdf")
             or not (root / manual).is_file()
         ):
             raise ContractError(
-                "ProductRelease manual_path must be MANUAL.md"
+                "ProductRelease manual_path must be MANUAL.md or MANUAL.pdf"
             )
         page_path = root / "product.json"
         if not page_path.is_file():
@@ -133,12 +144,31 @@ class ProductRelease:
         claims = _mapping(self.claims, "ProductRelease claims", nonempty=True)
         _fresh_manifest(root, self.manifest)
         try:
-            page_value = json.loads(page_path.read_text(encoding="utf-8"))
+            page_content = page_path.read_bytes()
+            page_value = json.loads(page_content.decode("utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise ContractError(
                 "ProductRelease product.json must be valid UTF-8 JSON"
             ) from exc
-        page = validate_release_product(page_value)
+        if page_content != _canonical_json(page_value):
+            raise ContractError(
+                "ProductRelease product.json must use canonical JSON encoding"
+            )
+        release_schema_version = 1 if manual.as_posix() == "MANUAL.md" else 2
+        page = validate_release_product(
+            page_value,
+            release_schema_version=release_schema_version,
+        )
+        if manual.as_posix() == "MANUAL.pdf":
+            try:
+                manual_content = (root / manual).read_bytes()
+            except OSError as exc:
+                raise ContractError("ProductRelease MANUAL.pdf is unreadable") from exc
+            if not 1 <= len(manual_content) <= MAX_NATIVE_RELEASE_MANUAL_BYTES:
+                raise ContractError(
+                    "ProductRelease MANUAL.pdf must be non-empty and bounded"
+                )
+            validate_release_pdf_manual(manual_content)
         if page.get("product_artifact_sha256") != self.product_artifact_sha256:
             raise ContractError(
                 "ProductRelease product.json describes different product bytes"
@@ -163,69 +193,9 @@ class ProductRelease:
                 "ProductRelease cannot seal local page media: %s"
                 % forbidden_media
             )
-        self._assert_site_receipt()
+        _fresh_manifest(root, self.manifest)
         object.__setattr__(self, "root", root.resolve(strict=True))
         object.__setattr__(self, "claims", claims)
-
-    def _assert_site_receipt(self) -> None:
-        """Require remote draft/public readback bound to Make and Release."""
-
-        if not isinstance(self.site_receipt, Receipt):
-            raise ContractError("ProductRelease requires a site Receipt")
-        self.site_receipt.assert_artifact(self.product_artifact_sha256)
-        if not (
-            self.site_receipt.is_verified_draft
-            or self.site_receipt.is_verified_public
-        ):
-            raise ContractError(
-                "ProductRelease requires an authenticated private draft "
-                "or verified public site Receipt"
-            )
-        page_url = self._site_page_url()
-        try:
-            parsed_page_url = urllib.parse.urlsplit(page_url or "")
-        except ValueError as exc:
-            raise ContractError(
-                "ProductRelease site Receipt requires a valid canonical page URL"
-            ) from exc
-        if (
-            parsed_page_url.scheme != "https"
-            or not parsed_page_url.hostname
-            or parsed_page_url.username is not None
-            or parsed_page_url.password is not None
-        ):
-            raise ContractError(
-                "ProductRelease site Receipt requires an HTTPS canonical page URL"
-            )
-        if (
-            self.site_receipt.details.get("release_sha256")
-            != self.manifest.artifact_sha256
-        ):
-            raise ContractError(
-                "ProductRelease site Receipt describes different facts or paper bytes"
-            )
-        product_entry = next(
-            (entry for entry in self.manifest.entries if entry.path == "product.json"),
-            None,
-        )
-        if (
-            product_entry is None
-            or self.site_receipt.details.get("product_page_sha256")
-            != product_entry.sha256
-        ):
-            raise ContractError(
-                "ProductRelease site Receipt describes different product-page bytes"
-            )
-
-    def _site_page_url(self) -> str:
-        """Resolve the customer page without mistaking a project CDN for it."""
-
-        page_url = self.site_receipt.details.get("page_url")
-        if isinstance(page_url, str) and page_url:
-            return page_url
-        raise ContractError(
-            "ProductRelease site Receipt requires a customer product page URL"
-        )
 
     @classmethod
     def from_root(
@@ -234,7 +204,6 @@ class ProductRelease:
         product_artifact_sha256: str,
         manual_path: str,
         claims: Mapping[str, Any],
-        site_receipt: Receipt,
     ) -> "ProductRelease":
         resolved = Path(root).resolve(strict=True)
         return cls(
@@ -243,30 +212,16 @@ class ProductRelease:
             product_artifact_sha256,
             manual_path,
             claims,
-            site_receipt,
         )
 
     @property
     def release_sha256(self) -> str:
         return self.manifest.artifact_sha256
 
-    @property
-    def page_url(self) -> str:
-        """Canonical product route; a draft receipt does not claim it is public."""
-
-        return self._site_page_url()
-
-    @property
-    def is_public(self) -> bool:
-        """Whether the optional later owner transition has verified public proof."""
-
-        return self.site_receipt.is_verified_public
-
     def assert_current(self) -> None:
         """Refuse to use output bytes changed after Release completed."""
 
         _fresh_manifest(self.root, self.manifest)
-        self._assert_site_receipt()
 
 
 __all__ = ["ReleaseContext", "ProductRelease"]

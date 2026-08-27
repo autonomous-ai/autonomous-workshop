@@ -59,7 +59,7 @@ supporting entries in `research`; label deliberate design decisions as such.
 Then run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . invent --source <invent-source.json>
 ```
 

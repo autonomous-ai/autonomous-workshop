@@ -35,17 +35,19 @@ Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
   product tree, CAD project, assemblies, and deterministic CAD verification.
 - **Playtest** inspects and simulates that exact Made revision. Evidence-linked
   failures return to Make within a bounded round budget.
-- **Release** creates `MANUAL.md` and the complete schema-v3, `page-ready`
-  product page: evidence-bound facts and claims, hero and cinematic sections,
-  use case, story blocks, what arrives, limitations, and visual direction.
+- **Release** creates and seals a self-contained printable `MANUAL.pdf` plus
+  bounded evidence-linked product facts. The manual is the canonical customer
+  artifact; website publication is optional.
 - **Deliver** is currently a truthful wait boundary. The host does not perform
   or claim manufacture, hands-on QA, packing, carrier handoff, or delivery.
   Those future effects require separate authorization and reconciled physical
   receipts bound to the exact approved bytes.
 
-Release replaces the old instruction-only name because the output is broader
-than a manual. Codex owns the complete page copy and visual direction while the
-host keeps authenticated Factory transport and publication outside the agent.
+Release is the final digital product-design stage because the in-box experience
+is part of the product. Codex owns manual structure, copy, visuals, rendering,
+and revision while the host validates exact PDF and product bytes. The host
+keeps authenticated Factory transport and every physical effect outside the
+agent.
 
 Customer Reviews happen after delivery and may inform a later Wish or revision.
 They do not mutate a completed run.
@@ -56,8 +58,8 @@ They do not mutate a completed run.
 `$WORKSHOP_HOME/runs/<wish-id>/workspace`, then starts one coding-agent session
 with that directory as its working directory before Match. The same session
 handles discovery, research, concept
-work, CAD, inspection, repair, Playtest judgment, manual writing, and
-product-page facts. `workshop resume` continues the exact recorded session id.
+work, CAD, inspection, repair, Playtest judgment, manual design, and bounded
+product facts. `workshop resume` continues the exact recorded session id.
 
 Within either command, a timed-out native turn or explicitly recognized
 provider disconnect automatically continues only after Workshop has both
@@ -149,7 +151,7 @@ feedback and repairs the product inside the next Make Goal.
   materialized skills;
 - creation and repair of product files;
 - AI Playtest perspectives and evidence-linked feedback;
-- `MANUAL.md`, evidence-bound claims, and complete page-ready Release content;
+- the printable `MANUAL.pdf`, evidence-bound claims, and bounded Release facts;
 - a compact proposal for the next host transition.
 
 ### The Python host owns
@@ -185,7 +187,7 @@ subject_sha256, next_transition, round, max_rounds, inputs
 
 The packet binds exact upstream contracts and canonical output paths for only
 the current stage. Codex authors substantive files and then invokes the
-run-local, standard-library finalizer:
+run-local deterministic finalizer:
 
 ```text
 .agents/skills/autonomous-workshop/scripts/stage_proposal.py
@@ -210,43 +212,53 @@ Release, and Deliver evidence.
 | Independent model inspection | a recorded prediction about clarity, novelty, or Taste fit | human preference or physical behavior |
 | CAD/kernel verification | topology, dimensions, required files, and exact computed geometry properties | successful physical printing or durability |
 | Slicer analysis | predicted printability under an exact machine/material/profile | a successful print or surface quality |
-| Host Factory receipt | reconciled remote draft/publication state for exact hashes | manufacture, shipment, or delivery |
+| Structurally validated manual PDF | exact sealed customer guidance, printable pages, and extractable text | beauty, comprehension, safety certification, or a physical print |
+| Host Factory receipt | reconciled optional remote draft/publication state for exact hashes | local Release success, manufacture, shipment, or delivery |
 | Future Deliver receipts | the exact production, QA, packing, or carrier event observed | a later event or customer experience |
 | Customer Review | what one verified recipient reported | universal preference or an earlier Playtest fact |
 
 Unknown, missing, stale, malformed, mismatched, or timed-out evidence cannot
 pass. A model's confidence is never independent evidence.
 
-## Release and Factory
+## Manual-first Release and optional Factory publication
 
 The local Release package is rooted at `artifacts/release/package` and contains
 at least:
 
-- substantive UTF-8 `MANUAL.md`;
-- canonical schema-v3 `product.json` with `kind=workshop.release-package`,
-  `status=page-ready`, exact Made/Playtest identities, `title`, `summary`,
-  `hero`, `cinematic`, `use_case`, one or more `story_blocks`,
-  `what_arrives`, `limitations`, and claims copied from exact Playtest evidence.
-  Every page section carries `headline`, `body`, `visual_direction`, and valid
-  `evidence_refs`.
+- self-contained `MANUAL.pdf`, bound to the package manifest and suitable for
+  printing into the physical box;
+- canonical `product.json` with exact Made/Playtest identities, concise product
+  facts, what arrives, limitations, and claims copied from exact Playtest
+  evidence;
+- optional editable manual source or accessible text companions that do not
+  contradict the PDF.
 
-Local Release data may describe the product but cannot contain credentials,
-remote receipts, images, audio, video, or unsupported claims of manufacture,
-physical performance, human response, publication, or delivery. The host
-validates and seals the package before importing it. Factory receives the
-exact sealed page, `MANUAL.md`, and model bytes; it does not creatively enrich
-them. After private import, the host projects the exact compatible use-case and
-story-block text into Factory's bounded rich-content fields, persists a
-separate hash-bound effect intent, and requires authenticated exact readback
-before publication. Copy outside Factory's documented limits is rejected, not
-silently truncated. Page sections without a semantically exact Factory field
-remain authoritative in the sealed project archive.
+The current contract pair is NativeRelease schema v2 with `MANUAL.pdf` and
+product schema v4/`manual-ready`. Legacy NativeRelease schema v1 remains
+readable only with `MANUAL.md` and product schema v3/`page-ready`; the host
+validates it under those original rules rather than upgrading it implicitly.
 
-The CLI default is private. `--publish` records explicit prospective authority
-for the host to promote the exact verified Factory page after private import
-and authenticated readback. Factory credentials are stored outside the run in
-the private Workshop home, loaded only between native turns, and never copied
-into the run workspace or Codex process. A public page is not a Deliver receipt.
+Local Release data cannot contain credentials, remote receipts, external PDF
+dependencies, active content, or unsupported claims of manufacture, physical
+performance, human response, publication, or delivery. Embedded fonts,
+vectors, and product-derived images are valid manual content. Codex renders and
+visually inspects every page; the trusted host separately parses, bounds,
+rehashes, and seals the exact PDF and package. Parser success is not an
+aesthetic or physical-verification score.
+
+Local Release advances to Deliver without contacting Factory. If requested and
+configured, the host may separately transport the exact sealed model,
+`MANUAL.pdf`, and supported product facts, persist a hash-bound effect intent,
+and require authenticated readback. Remote field limits can fail that optional
+effect but cannot invalidate the local Release.
+
+The CLI default creates no publication. `--publish` records explicit
+prospective authority for the host to import and promote the exact released
+bytes when the adapter and credentials are available. Factory credentials are
+stored outside the run in the private Workshop home, loaded only between native
+turns, and never copied into the run workspace or Codex process. Missing
+credentials leave publication `not-created`; a public page is never a Deliver
+receipt.
 
 ## Shared implementation
 
@@ -256,7 +268,7 @@ $WORKSHOP_HOME/runs/<wish-id>/workspace/
   .workshop-product-run-root exact Codex project/instruction boundary
   AGENTS.md                 product-run constitution
   .codex/agents/            sole run roster of project-scoped Inventor agents
-  .agents/skills/           materialized workflow, Make, and Inventor skills
+  .agents/skills/           materialized workflow, stage, and Inventor skills
   artifacts/                product work and evidence
 
 inventors/<id>/
@@ -286,6 +298,7 @@ src/
       skills/              canonical reusable Make domain skills
     playtest/              evidence, feedback, and Playtested contract/gate
     release/               local package and Release contract/gate
+      skills/manual-design/ canonical printable-manual design skill
     deliver/               truthful wait boundary; future physical effects
     workflow/              lifecycle/checkpoint protocol and trusted run host
     artifacts/             immutable artifact identity
@@ -300,6 +313,10 @@ $WORKSHOP_HOME/state/<wish-id>/
 
 toys/<inventor>-<slug>/    optional sanitized public examples only
 ```
+
+Release owns the canonical
+[`manual-design` skill](../src/workshop/release/skills/manual-design/); the host
+packages its exact bytes into each product-run project.
 
 The installed distribution is `autonomous-workshop`; application imports begin
 with `workshop`. The `workshop` command lives in the sibling `src/cli/` package.

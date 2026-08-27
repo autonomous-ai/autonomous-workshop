@@ -76,11 +76,13 @@ model calls, profile subprocesses, and Python-owned scoring or reward loops are
 not extension points. Never add Python prompt chains, browsing strategy,
 candidate fan-out, model judges, stage-role views, or repair reasoning.
 
-Read `docs/NATIVE_AGENT_RUNTIME.md` and ADR 0012 before changing the CLI,
-runtime, workflow, product-run instructions, or lifecycle orchestration. The
-native-session path is the production architecture. Preserve useful
-deterministic contracts and tests; do not reintroduce removed cognitive
-orchestration as a compatibility layer.
+Read `docs/NATIVE_AGENT_RUNTIME.md`,
+`docs/adr/0012-codex-orchestrated-runtime.md`, and
+`docs/adr/0013-manual-first-release.md` before changing the CLI, runtime,
+workflow, product-run instructions, or lifecycle orchestration. ADR 0013
+supersedes ADR 0012's page-first Release details. The native-session path is the
+production architecture. Preserve useful deterministic contracts and tests; do
+not reintroduce removed cognitive orchestration as a compatibility layer.
 
 ## Repository ownership
 
@@ -95,7 +97,7 @@ orchestration as a compatibility layer.
   project; its nested `.agents/skills/autonomous-workshop/` is intentionally
   invisible to repo-builder sessions.
 - `.agents/product-run/.agents/skills/autonomous-workshop/scripts/stage_proposal.py`:
-  run-local standard-library finalizer for exact stage contracts and outcome
+  run-local deterministic finalizer for exact stage contracts and outcome
   proposals; it does not reason or advance gates.
 - `tests/<component>/`: tests mirroring the component that owns the behavior.
 

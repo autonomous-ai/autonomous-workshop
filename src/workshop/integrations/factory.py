@@ -45,6 +45,8 @@ from workshop.release.native import (
     FACTORY_CONTENT_BODY_MIN,
     FACTORY_CONTENT_LABEL_MAX,
     FACTORY_CONTENT_STORY_BLOCKS_MAX,
+    LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION,
+    RELEASE_PRODUCT_SCHEMA_VERSION,
     validate_release_product,
 )
 from workshop.runtime import EffectIntent, EffectLedger, Receipt
@@ -60,7 +62,12 @@ FACTORY_IMPORT_STRING_LIMITS = {
     "description": 2_000,
 }
 FACTORY_RELEASE_PAGE_PATH = "workshop-release-page.json"
-FACTORY_RELEASE_MANUAL_PATH = "MANUAL.md"
+FACTORY_RELEASE_LEGACY_MANUAL_PATH = "MANUAL.md"
+FACTORY_RELEASE_MANUAL_PATH = FACTORY_RELEASE_LEGACY_MANUAL_PATH
+FACTORY_RELEASE_PDF_MANUAL_PATH = "MANUAL.pdf"
+FACTORY_RELEASE_MANUAL_PATHS = frozenset(
+    (FACTORY_RELEASE_LEGACY_MANUAL_PATH, FACTORY_RELEASE_PDF_MANUAL_PATH)
+)
 FACTORY_CONTENT_MAPPING = "workshop-release-v3-to-factory-content-v1"
 # Only these exact metadata files and CAD/project source types may cross the
 # Factory boundary.  This is deliberately an allowlist: a creator-facing file
@@ -69,7 +76,8 @@ FACTORY_CONTENT_MAPPING = "workshop-release-v3-to-factory-content-v1"
 FACTORY_MODEL_METADATA_PATHS = frozenset(
     (
         "_inventor-artifact.json",
-        FACTORY_RELEASE_MANUAL_PATH,
+        FACTORY_RELEASE_LEGACY_MANUAL_PATH,
+        FACTORY_RELEASE_PDF_MANUAL_PATH,
         "product.json",
         "project.json",
         FACTORY_RELEASE_PAGE_PATH,
@@ -133,6 +141,15 @@ def _canonical_json(value: Any) -> bytes:
 
 def _canonical_sha256(value: Any) -> str:
     return hashlib.sha256(_canonical_json(value)).hexdigest()
+
+
+def _manual_path_for_release_product(product: Mapping[str, Any]) -> str:
+    schema_version = product.get("schema_version")
+    if schema_version == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
+        return FACTORY_RELEASE_LEGACY_MANUAL_PATH
+    if schema_version == RELEASE_PRODUCT_SCHEMA_VERSION:
+        return FACTORY_RELEASE_PDF_MANUAL_PATH
+    raise ContractError("Factory Release product schema has no manual binding")
 
 
 def _https_url(value: Any, label: str) -> str:
@@ -666,24 +683,41 @@ def _assert_factory_handoff(content: bytes) -> None:
                 raise ContractError("Factory handoff primary model is missing") from exc
             if hashlib.sha256(primary_content).hexdigest() != primary_sha256:
                 raise ContractError("Factory handoff primary model hash differs")
+            try:
+                release_page_content = archive.read(FACTORY_RELEASE_PAGE_PATH)
+                release_page = validate_release_product(
+                    json.loads(release_page_content.decode("utf-8"))
+                )
+            except (KeyError, UnicodeError, ValueError) as exc:
+                raise ContractError(
+                    "Factory handoff Release product facts are malformed"
+                ) from exc
+            canonical_page = _canonical_json(release_page)
+            if release_page_content != canonical_page:
+                raise ContractError(
+                    "Factory handoff Release product facts are not canonical"
+                )
+            manual_path = _manual_path_for_release_product(release_page)
             manual = facts.get("manual")
             if (
                 not isinstance(manual, Mapping)
-                or manual.get("path") != FACTORY_RELEASE_MANUAL_PATH
+                or manual.get("path") != manual_path
             ):
                 raise ContractError("Factory handoff manual binding is malformed")
             manual_sha256 = require_sha256(
                 manual.get("sha256"), "Factory handoff manual sha256"
             )
             try:
-                manual_content = archive.read(FACTORY_RELEASE_MANUAL_PATH)
+                manual_content = archive.read(manual_path)
             except KeyError as exc:
-                raise ContractError("Factory handoff MANUAL.md is missing") from exc
+                raise ContractError(
+                    "Factory handoff %s is missing" % manual_path
+                ) from exc
             if (
                 not manual_content
                 or hashlib.sha256(manual_content).hexdigest() != manual_sha256
             ):
-                raise ContractError("Factory handoff MANUAL.md hash differs")
+                raise ContractError("Factory handoff %s hash differs" % manual_path)
             for name in names:
                 if not _is_factory_model_path(
                     name,
@@ -706,18 +740,6 @@ def _assert_factory_handoff(content: bytes) -> None:
                         "Factory handoff Made product.json contains Release page fields: %s"
                         % sorted(forbidden)
                     )
-            try:
-                release_page_content = archive.read(FACTORY_RELEASE_PAGE_PATH)
-                release_page = json.loads(release_page_content.decode("utf-8"))
-            except (KeyError, UnicodeError, ValueError) as exc:
-                raise ContractError(
-                    "Factory handoff Release product page is malformed"
-                ) from exc
-            canonical_page = _canonical_json(validate_release_product(release_page))
-            if release_page_content != canonical_page:
-                raise ContractError(
-                    "Factory handoff Release product page is not canonical"
-                )
     except ContractError:
         raise
     except (OSError, ValueError, zipfile.BadZipFile) as exc:
@@ -812,17 +834,27 @@ def _build_model_handoff(
     if _canonical_json(validate_release_product(release_page)) != release_page_content:
         raise ContractError("Factory handoff Release page bytes are not canonical")
     assert_packable_content(FACTORY_RELEASE_PAGE_PATH, release_page_content)
+    manual_path = _manual_path_for_release_product(release_page)
+    if not isinstance(manual_content, bytes) or not manual_content:
+        raise ContractError("Factory handoff requires sealed %s bytes" % manual_path)
+    manual_sha256 = hashlib.sha256(manual_content).hexdigest()
+    manual_binding = facts.get("manual")
+    if (
+        not isinstance(manual_binding, Mapping)
+        or manual_binding.get("path") != manual_path
+        or manual_binding.get("sha256") != manual_sha256
+    ):
+        raise ContractError("Factory handoff manual facts are not exact")
     project_payload = _canonical_json(
         {"id": context.wish.product_id, "name": release_page["title"]}
     ) + b"\n"
     assert_packable_content("project.json", project_payload)
-    if not isinstance(manual_content, bytes) or not manual_content:
-        raise ContractError("Factory handoff requires sealed MANUAL.md bytes")
-    try:
-        manual_content.decode("utf-8")
-    except UnicodeError as exc:
-        raise ContractError("Factory handoff MANUAL.md must be UTF-8") from exc
-    assert_packable_content(FACTORY_RELEASE_MANUAL_PATH, manual_content)
+    if manual_path == FACTORY_RELEASE_LEGACY_MANUAL_PATH:
+        try:
+            manual_content.decode("utf-8")
+        except UnicodeError as exc:
+            raise ContractError("Factory handoff MANUAL.md must be UTF-8") from exc
+    assert_packable_content(manual_path, manual_content)
 
     skip_paths = set()
     if occurrence is not None:
@@ -848,7 +880,7 @@ def _build_model_handoff(
             # receive the exact customer-facing manual sealed by Release.
             # Factory also requires root project.json for discovery, so the
             # boundary writes one deterministically from sealed Wish+Release.
-            if entry.path in (FACTORY_RELEASE_MANUAL_PATH, "project.json"):
+            if entry.path in FACTORY_RELEASE_MANUAL_PATHS or entry.path == "project.json":
                 continue
             if (
                 not _is_factory_model_path(
@@ -886,14 +918,15 @@ def _build_model_handoff(
         reserved = (
             "workshop-product-facts.json",
             FACTORY_RELEASE_PAGE_PATH,
-            FACTORY_RELEASE_MANUAL_PATH,
+            FACTORY_RELEASE_LEGACY_MANUAL_PATH,
+            FACTORY_RELEASE_PDF_MANUAL_PATH,
             "project.json",
         )
         if any((staging / path).exists() for path in reserved):
             raise ContractError("Made contains a reserved Factory handoff path")
         (staging / "workshop-product-facts.json").write_bytes(facts_payload)
         (staging / FACTORY_RELEASE_PAGE_PATH).write_bytes(release_page_content)
-        (staging / FACTORY_RELEASE_MANUAL_PATH).write_bytes(manual_content)
+        (staging / manual_path).write_bytes(manual_content)
         (staging / "project.json").write_bytes(project_payload)
         result = dict(build_pack(staging, destination))
     content, pack_sha256, handoff_artifact_sha256 = load_artifact_payload(destination)
@@ -913,7 +946,8 @@ def _build_model_handoff(
             "product_page_sha256": hashlib.sha256(
                 release_page_content
             ).hexdigest(),
-            "manual_sha256": hashlib.sha256(manual_content).hexdigest(),
+            "manual_path": manual_path,
+            "manual_sha256": manual_sha256,
         }
     )
     return result
@@ -1490,21 +1524,28 @@ def _release_page(root: Path) -> Tuple[Mapping[str, Any], bytes]:
 
 
 def _release_manual(
-    root: Path, manifest: ArtifactManifest
-) -> Tuple[bytes, str]:
-    path = root / FACTORY_RELEASE_MANUAL_PATH
-    entry = _manifest_entry(manifest, FACTORY_RELEASE_MANUAL_PATH)
+    root: Path,
+    manifest: ArtifactManifest,
+    release_product: Mapping[str, Any],
+) -> Tuple[bytes, str, str]:
+    manual_path = _manual_path_for_release_product(release_product)
+    path = root / manual_path
+    entry = _manifest_entry(manifest, manual_path)
     if entry is None or path.is_symlink() or not path.is_file():
-        raise ContractError("Release MANUAL.md must be a sealed regular file")
+        raise ContractError("Release %s must be a sealed regular file" % manual_path)
     try:
         content = path.read_bytes()
-        content.decode("utf-8")
-    except (OSError, UnicodeError) as exc:
-        raise ContractError("Release MANUAL.md must be readable UTF-8") from exc
+    except OSError as exc:
+        raise ContractError("Release %s must be readable" % manual_path) from exc
+    if manual_path == FACTORY_RELEASE_LEGACY_MANUAL_PATH:
+        try:
+            content.decode("utf-8")
+        except UnicodeError as exc:
+            raise ContractError("Release MANUAL.md must be readable UTF-8") from exc
     digest = hashlib.sha256(content).hexdigest()
     if not content or len(content) != entry.bytes or digest != entry.sha256:
-        raise ContractError("Release MANUAL.md differs from its sealed bytes")
-    return content, digest
+        raise ContractError("Release %s differs from its sealed bytes" % manual_path)
+    return content, digest, manual_path
 
 
 def _factory_content_text(
@@ -1715,9 +1756,16 @@ class FactoryReleaseWriter:
         ):
             raise ReceiptError("Factory Receipt belongs to different product-page bytes")
         if details.get("manual_sha256") != intent.request.get("manual_sha256"):
-            raise ReceiptError("Factory Receipt belongs to different MANUAL.md bytes")
+            raise ReceiptError("Factory Receipt belongs to different manual bytes")
+        requested_manual_path = intent.request.get("manual_path")
+        if requested_manual_path is not None and (
+            requested_manual_path != FACTORY_RELEASE_PDF_MANUAL_PATH
+            or details.get("manual_path") != requested_manual_path
+        ):
+            raise ReceiptError("Factory Receipt belongs to a different manual path")
         _https_url(details.get("page_url"), "Factory page URL")
-        _https_url(details.get("cover_url"), "Factory cover URL")
+        if requested_manual_path is None:
+            _https_url(details.get("cover_url"), "Factory cover URL")
         if details.get("content_owner") != "workshop-manager":
             raise ReceiptError("Factory import must preserve Workshop page ownership")
 
@@ -1747,6 +1795,9 @@ class FactoryReleaseWriter:
         author = observed_design.get("author")
         imported_covers = imported_design.get("thumbnail_urls")
         observed_covers = observed_design.get("thumbnail_urls")
+        pdf_first = (
+            intent.request.get("manual_path") == FACTORY_RELEASE_PDF_MANUAL_PATH
+        )
         if (
             not isinstance(metadata, Mapping)
             or observed_design.get("origin") != "import"
@@ -1760,23 +1811,27 @@ class FactoryReleaseWriter:
                     or category.get("slug") != metadata.get("category")
                 )
             )
-            or not isinstance(imported_covers, list)
-            or not imported_covers
-            or observed_covers != imported_covers
+            or (
+                not pdf_first
+                and (
+                    not isinstance(imported_covers, list)
+                    or not imported_covers
+                    or observed_covers != imported_covers
+                )
+            )
             or not isinstance(author, Mapping)
             or author.get("id") != intent.request.get("owner_id")
         ):
             raise ReceiptError("Factory readback does not preserve the exact import")
         details = dict(observed.details)
-        details.update(
-            {
-                "page_url": _factory_product_page_url(observed.slug),
-                "cover_url": _https_url(imported_covers[0], "Factory cover URL"),
-                "server_cover_urls": [
-                    _https_url(url, "Factory cover URL") for url in imported_covers
-                ],
-            }
-        )
+        details["page_url"] = _factory_product_page_url(observed.slug)
+        if not pdf_first:
+            details["cover_url"] = _https_url(
+                imported_covers[0], "Factory cover URL"
+            )
+            details["server_cover_urls"] = [
+                _https_url(url, "Factory cover URL") for url in imported_covers
+            ]
         final = Receipt.from_dict({**observed.to_dict(), "details": details})
         self._assert_private_receipt(final, intent)
         return final, observed_design
@@ -2152,6 +2207,27 @@ class FactoryReleaseWriter:
         assert completed.receipt is not None
         return completed.receipt
 
+    def _complete_release_draft(
+        self,
+        client: FactoryClient,
+        imported: Receipt,
+        page: Mapping[str, Any],
+        *,
+        product_page_sha256: str,
+        manual_sha256: str,
+    ) -> Receipt:
+        if page.get("schema_version") == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
+            return self._ensure_page_content(
+                client,
+                imported,
+                page,
+                product_page_sha256=product_page_sha256,
+                manual_sha256=manual_sha256,
+            )
+        if page.get("schema_version") != RELEASE_PRODUCT_SCHEMA_VERSION:
+            raise ContractError("Factory Release product schema is unsupported")
+        return imported
+
     def __call__(
         self,
         context: Any,
@@ -2166,11 +2242,12 @@ class FactoryReleaseWriter:
             sealed_manifest.artifact_sha256, "sealed Release sha256"
         )
         page, page_content = _release_page(release_root)
-        # Fail before creating a remote draft when Factory cannot display the
-        # exact Codex-authored use-case/story text without truncation or rewrite.
-        _factory_content_copy(page)
-        manual_content, manual_sha256 = _release_manual(
-            release_root, sealed_manifest
+        if page.get("schema_version") == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
+            # Preserve the schema-v3 rich-page projection exactly. Schema v4
+            # deliberately has no Factory-authored use-case or story content.
+            _factory_content_copy(page)
+        manual_content, manual_sha256, manual_path = _release_manual(
+            release_root, sealed_manifest, page
         )
         product_artifact_sha256 = require_sha256(
             page.get("product_artifact_sha256"), "Release product artifact sha256"
@@ -2199,7 +2276,7 @@ class FactoryReleaseWriter:
             "product": dict(context.made.product),
             "release": dict(page),
             "manual": {
-                "path": FACTORY_RELEASE_MANUAL_PATH,
+                "path": manual_path,
                 "sha256": manual_sha256,
             },
         }
@@ -2235,6 +2312,8 @@ class FactoryReleaseWriter:
             "manual_sha256": handoff["manual_sha256"],
             "metadata": dict(metadata),
         }
+        if manual_path == FACTORY_RELEASE_PDF_MANUAL_PATH:
+            request["manual_path"] = manual_path
         intent = self.ledger.prepare(
             kind="factory-import",
             product_id=context.wish.product_id,
@@ -2253,11 +2332,13 @@ class FactoryReleaseWriter:
             "manual_sha256": handoff["manual_sha256"],
             "content_owner": "workshop-manager",
         }
+        if manual_path == FACTORY_RELEASE_PDF_MANUAL_PATH:
+            proof["manual_path"] = manual_path
         if intent.state == "succeeded":
             if intent.receipt is None:
                 raise StateConflict("completed Factory import has no Receipt")
             self._assert_private_receipt(intent.receipt, intent)
-            return self._ensure_page_content(
+            return self._complete_release_draft(
                 client,
                 intent.receipt,
                 page,
@@ -2272,7 +2353,7 @@ class FactoryReleaseWriter:
             )
         if intent.state == "unknown":
             imported = self._recover_unknown(client, intent, proof)
-            return self._ensure_page_content(
+            return self._complete_release_draft(
                 client,
                 imported,
                 page,
@@ -2339,7 +2420,7 @@ class FactoryReleaseWriter:
                 "Factory accepted import but exact readback is not proven"
             ) from exc
         assert completed.receipt is not None
-        return self._ensure_page_content(
+        return self._complete_release_draft(
             client,
             completed.receipt,
             page,
@@ -2376,9 +2457,20 @@ class FactoryPublicTransition:
         return receipt
 
     @staticmethod
+    def _is_pdf_first(draft: Receipt) -> bool:
+        manual_path = draft.details.get("manual_path")
+        if manual_path is None:
+            return False
+        if manual_path != FACTORY_RELEASE_PDF_MANUAL_PATH:
+            raise ReceiptError("Factory draft has an unsupported manual path")
+        return True
+
+    @staticmethod
     def _assert_exact_content(
         design: Mapping[str, Any], draft: Receipt
     ) -> None:
+        if FactoryPublicTransition._is_pdf_first(draft):
+            return
         target = draft.details.get("factory_content")
         expected_sha256 = require_sha256(
             draft.details.get("factory_content_sha256"),
@@ -2429,24 +2521,27 @@ class FactoryPublicTransition:
         )
         manual_sha256 = require_sha256(
             draft.details.get("manual_sha256"),
-            "Factory draft MANUAL.md sha256",
+            "Factory draft manual sha256",
         )
-        factory_content_sha256 = require_sha256(
-            draft.details.get("factory_content_sha256"),
-            "Factory draft rich-content sha256",
-        )
-        if draft.details.get("factory_content_mapping") != FACTORY_CONTENT_MAPPING:
-            raise ReceiptError(
-                "Factory draft lacks the exact Workshop rich-content mapping"
+        pdf_first = self._is_pdf_first(draft)
+        factory_content_sha256: Optional[str] = None
+        if not pdf_first:
+            factory_content_sha256 = require_sha256(
+                draft.details.get("factory_content_sha256"),
+                "Factory draft rich-content sha256",
             )
-        target = draft.details.get("factory_content")
-        if (
-            not isinstance(target, Mapping)
-            or _canonical_sha256(target) != factory_content_sha256
-        ):
-            raise ReceiptError(
-                "Factory draft lacks its exact Workshop rich-content target"
-            )
+            if draft.details.get("factory_content_mapping") != FACTORY_CONTENT_MAPPING:
+                raise ReceiptError(
+                    "Factory draft lacks the exact Workshop rich-content mapping"
+                )
+            target = draft.details.get("factory_content")
+            if (
+                not isinstance(target, Mapping)
+                or _canonical_sha256(target) != factory_content_sha256
+            ):
+                raise ReceiptError(
+                    "Factory draft lacks its exact Workshop rich-content target"
+                )
         product_id = draft.details.get("product_id")
         if not isinstance(product_id, str) or not product_id:
             raise ReceiptError("Factory draft does not identify its Workshop product")
@@ -2461,8 +2556,11 @@ class FactoryPublicTransition:
             "current_history_id": draft.current_history_id,
             "product_page_sha256": product_page_sha256,
             "manual_sha256": manual_sha256,
-            "factory_content_sha256": factory_content_sha256,
         }
+        if pdf_first:
+            request["manual_path"] = FACTORY_RELEASE_PDF_MANUAL_PATH
+        else:
+            request["factory_content_sha256"] = factory_content_sha256
         intent = self.ledger.prepare(
             kind="factory-publish",
             product_id=product_id,

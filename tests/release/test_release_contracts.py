@@ -1,4 +1,5 @@
 import json
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -6,7 +7,7 @@ from pathlib import Path
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ContractError
 from workshop.release import ProductRelease
-from workshop.runtime import Receipt
+from reportlab.pdfgen import canvas
 
 
 SHA256 = "a" * 64
@@ -20,7 +21,7 @@ class ProductReleaseContractTest(unittest.TestCase):
         self.root.mkdir()
         self.claims = {"mechanical-check": {"passed": True}}
         (self.root / "MANUAL.md").write_text("# Manual\n\nUse the toy safely.\n")
-        (self.root / "product.json").write_text(
+        (self.root / "product.json").write_bytes(
             json.dumps(
                 {
                     "schema_version": 3,
@@ -71,84 +72,119 @@ class ProductReleaseContractTest(unittest.TestCase):
                     "product_artifact_sha256": SHA256,
                     "playtest_evidence_artifact_sha256": "c" * 64,
                     "claims": self.claims,
-                }
-            )
-            + "\n"
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
         )
         self.manifest = build_artifact_manifest(
             self.root, created_at="content-addressed"
         )
 
-    def receipt(
-        self,
-        *,
-        page_url=True,
-        project_url=None,
-        product_page_sha256=None,
-    ):
-        expected_product_page_sha256 = next(
-            entry.sha256
-            for entry in self.manifest.entries
-            if entry.path == "product.json"
-        )
-        details = {
-            "release_sha256": self.manifest.artifact_sha256,
-            "product_page_sha256": (
-                expected_product_page_sha256
-                if product_page_sha256 is None
-                else product_page_sha256
-            ),
-        }
-        if page_url:
-            details["page_url"] = (
-                "https://www.autonomous.ai/factory/product/current-route"
-            )
-        return Receipt(
-            payload_sha256="b" * 64,
-            artifact_sha256=SHA256,
-            adapter="factory",
-            status="draft",
-            observed_at="2026-08-26T00:00:00Z",
-            reference="design-1",
-            details=details,
-            design_id="design-1",
-            slug="current-route",
-            owner_id="owner-1",
-            root_id="design-1",
-            current_history_id="history-1",
-            project_url=project_url or "https://cdn.autonomous.ai/projects/history-1/",
-        )
-
-    def test_site_receipt_is_the_only_receipt_property(self):
-        receipt = self.receipt()
+    def test_local_release_requires_no_publication_receipt(self):
         release = ProductRelease.from_root(
-            self.root, SHA256, "MANUAL.md", self.claims, receipt
+            self.root, SHA256, "MANUAL.md", self.claims
         )
 
-        self.assertIs(release.site_receipt, receipt)
+        self.assertEqual(release.manual_path, "MANUAL.md")
+        self.assertEqual(release.release_sha256, self.manifest.artifact_sha256)
+        self.assertFalse(hasattr(release, "site_receipt"))
         self.assertFalse(hasattr(release, "publication_receipt"))
-        self.assertEqual(
-            release.page_url,
-            "https://www.autonomous.ai/factory/product/current-route",
+
+    def test_local_release_accepts_the_new_pdf_manual_path(self):
+        (self.root / "MANUAL.md").unlink()
+        output = io.BytesIO()
+        document = canvas.Canvas(output, pagesize=(297.64, 419.53))
+        document.drawString(36, 380, "Verified Toy")
+        document.drawString(36, 360, "Open the box and follow this safe first play.")
+        document.showPage()
+        document.save()
+        (self.root / "MANUAL.pdf").write_bytes(output.getvalue())
+        product_path = self.root / "product.json"
+        product = json.loads(product_path.read_text(encoding="utf-8"))
+        product["schema_version"] = 4
+        product["status"] = "manual-ready"
+        for field in ("hero", "cinematic", "use_case", "story_blocks"):
+            product.pop(field)
+        product_path.write_bytes(
+            json.dumps(
+                product,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
         )
 
-    def test_project_url_cannot_substitute_for_page_url(self):
-        receipt = self.receipt(
-            page_url=False,
-            project_url="https://www.autonomous.ai/factory/product/old-route",
+        release = ProductRelease.from_root(
+            self.root, SHA256, "MANUAL.pdf", self.claims
         )
 
-        with self.assertRaisesRegex(ContractError, "customer product page URL"):
+        self.assertEqual(release.manual_path, "MANUAL.pdf")
+        release.assert_current()
+
+    def test_local_release_rejects_schema_three_with_pdf_manual(self):
+        (self.root / "MANUAL.md").rename(self.root / "MANUAL.pdf")
+
+        with self.assertRaisesRegex(ContractError, "requires product.json schema_version 4"):
             ProductRelease.from_root(
-                self.root, SHA256, "MANUAL.md", self.claims, receipt
+                self.root, SHA256, "MANUAL.pdf", self.claims
             )
 
-    def test_receipt_must_bind_exact_product_page_bytes(self):
-        receipt = self.receipt(product_page_sha256="f" * 64)
+    def test_local_release_rejects_invalid_pdf_bytes(self):
+        (self.root / "MANUAL.md").unlink()
+        (self.root / "MANUAL.pdf").write_bytes(b"%PDF-1.7\nnot a PDF\n%%EOF\n")
+        product_path = self.root / "product.json"
+        product = json.loads(product_path.read_text(encoding="utf-8"))
+        product["schema_version"] = 4
+        product["status"] = "manual-ready"
+        for field in ("hero", "cinematic", "use_case", "story_blocks"):
+            product.pop(field)
+        product_path.write_bytes(
+            json.dumps(product, sort_keys=True, separators=(",", ":")).encode(
+                "utf-8"
+            )
+        )
 
-        with self.assertRaisesRegex(ContractError, "product-page bytes"):
+        with self.assertRaisesRegex(ContractError, "MANUAL.pdf"):
             ProductRelease.from_root(
-                self.root, SHA256, "MANUAL.md", self.claims, receipt
+                self.root, SHA256, "MANUAL.pdf", self.claims
+            )
+
+    def test_local_release_rejects_schema_four_with_markdown_manual(self):
+        product_path = self.root / "product.json"
+        product = json.loads(product_path.read_text(encoding="utf-8"))
+        product["schema_version"] = 4
+        product["status"] = "manual-ready"
+        for field in ("hero", "cinematic", "use_case", "story_blocks"):
+            product.pop(field)
+        product_path.write_bytes(
+            json.dumps(
+                product,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+
+        with self.assertRaisesRegex(ContractError, "requires product.json schema_version 3"):
+            ProductRelease.from_root(
+                self.root, SHA256, "MANUAL.md", self.claims
+            )
+
+    def test_local_release_rejects_noncanonical_product_json(self):
+        product_path = self.root / "product.json"
+        product = json.loads(product_path.read_text(encoding="utf-8"))
+        product_path.write_text(json.dumps(product, indent=2), encoding="utf-8")
+
+        with self.assertRaisesRegex(ContractError, "canonical JSON"):
+            ProductRelease.from_root(
+                self.root, SHA256, "MANUAL.md", self.claims
+            )
+
+    def test_local_release_rejects_noncanonical_manual_name(self):
+        (self.root / "guide.pdf").write_bytes(b"guide")
+
+        with self.assertRaisesRegex(ContractError, "MANUAL.md or MANUAL.pdf"):
+            ProductRelease.from_root(
+                self.root, SHA256, "guide.pdf", self.claims
             )
 
 

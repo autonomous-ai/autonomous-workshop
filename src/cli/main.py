@@ -178,12 +178,33 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                 )
             )
     publication = receipt.get("publication")
+    publication_reason = None
     if isinstance(publication, Mapping):
         page_url = publication.get("page_url")
         if isinstance(page_url, str) and page_url:
             print("Product page: %s (%s)" % (page_url, publication.get("status")))
         else:
             print("Product page: %s" % publication.get("status", "not-created"))
+        candidate_reason = publication.get("reason")
+        if (
+            isinstance(candidate_reason, str)
+            and candidate_reason
+            and (
+                publication.get("requested") is True
+                or publication.get("status") in ("unknown", "unavailable")
+            )
+        ):
+            publication_reason = candidate_reason
+            print("Publication note: %s" % candidate_reason)
+    needs = receipt.get("needs")
+    if isinstance(needs, (list, tuple)):
+        for need in needs:
+            if (
+                isinstance(need, str)
+                and need
+                and need != publication_reason
+            ):
+                print("Need: %s" % need)
     print("Track: %s" % _shell_command("workshop", "status", product_id))
     if status == "waiting":
         print("Resume: %s" % _shell_command("workshop", "resume", product_id))
@@ -200,7 +221,7 @@ def _wish(args: argparse.Namespace) -> int:
     print("Starting one native Codex session before Match...", file=progress, flush=True)
     if not args.publish:
         print(
-            "Publication: private by default; use --publish for explicit public authority.",
+            "Publication: not published by default; use --publish for explicit public authority.",
             file=progress,
             flush=True,
         )
@@ -395,11 +416,10 @@ def _doctor_factory() -> dict[str, str]:
     if not username and not password:
         return _check_record(
             "factory-credentials",
-            "needs-attention",
-            "Factory credentials are not configured; a Wish can start but will wait at Release.",
-            next_step=(
-                "Configure $WORKSHOP_HOME/credentials/factory.env or host-only "
-                "Factory environment values to complete the Release effect."
+            "ready",
+            (
+                "Factory credentials are not configured; local Release remains "
+                "available and only an explicitly requested publication needs them."
             ),
         )
     return _check_record(
@@ -616,7 +636,7 @@ def _add_publication_options(command: argparse.ArgumentParser) -> None:
         "--publish",
         dest="publish",
         action="store_true",
-        help="authorize the host to publish the verified Factory page",
+        help="authorize optional Factory publication of the verified Release",
     )
     command.set_defaults(publish=False)
 

@@ -521,6 +521,7 @@ class NativeHostTest(unittest.TestCase):
                 "cad",
                 "design-reference",
                 "image-to-cad",
+                "manual-design",
                 "step-parts",
             ):
                 self.assertTrue(

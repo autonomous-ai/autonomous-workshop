@@ -105,8 +105,9 @@ bind its exact source manifest, full Taste, and skill artifacts under
   claim a successful print, physical fit, durability, or human response from AI
   evidence. Add product-specific inspection when the artifact requires it.
 - Codex owns Match reasoning, research, concept exploration, design, CAD
-  iteration, Playtest judgment, manual writing, and the complete evidence-bound
-  product-page package.
+  iteration, Playtest judgment, and the finished in-box manual. Website
+  metadata is a secondary transport artifact, not the creative center of
+  Release.
 - Use Workshop programs only as deterministic tools. Do not build a Python
   planner, prompt chain, browser, model judge, retry loop, persona process,
   reward loop, or feedback controller.
@@ -121,7 +122,7 @@ After the current stage's authored source or artifact tree satisfies its Goal,
 run the materialized finalizer:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . <current-stage> <stage-specific-arguments>
 ```
 
@@ -156,15 +157,20 @@ Codex creates the new Make Goal, interprets the exact feedback, and performs
 the repair. Reviews after delivery may inform a future Wish but never rewrite
 a completed run.
 
-Release prepares `MANUAL.md` and canonical schema-v3 page-ready product data,
-including evidence-bound hero, cinematic, use-case, story-block, what-arrives,
-and limitation content. Codex authors the complete page package but does not
-publish it. Codex never receives Factory, payment, manufacturing, postage, or
-carrier credentials and must not perform those effects directly.
+Release prepares a self-contained, printable `MANUAL.pdf` that can teach the
+new owner without a website, video, QR code, or phone. It also prepares bounded
+evidence-linked `product.json` facts for optional website transport. Read and
+use the materialized `manual-design` skill during Release. Codex authors and
+visually reviews the exact PDF, but it does not publish, print, pack, or ship
+it. Codex never receives Factory, payment, manufacturing, postage, or carrier
+credentials and must not perform those effects directly.
 
-The default run is private. A user-supplied `--publish` is host-recorded
-authority for the host to promote a verified Factory page after reconciled
-private import; it is not permission for Codex to publish, manufacture, buy,
-ship, or claim delivery. Stop with a clear need when authorization or a
-required tool is missing, bounded repair is exhausted, or an effect outcome is
-unknown. Never convert a wait or ambiguity into success.
+Local Release succeeds from the sealed product, passing Playtest, and validated
+manual package alone. Factory import and publication are optional host effects;
+missing credentials or an unavailable site never invalidates the manual or
+returns the run to Release. A user-supplied `--publish` is host-recorded
+authority for that optional effect, not permission for Codex to publish,
+manufacture, buy, ship, or claim delivery. Stop with a clear need when a tool
+required to create the local package is missing, bounded repair is exhausted,
+or an agent-owned result is unknown. Never convert a wait or ambiguity into
+success.

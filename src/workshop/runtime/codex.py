@@ -439,7 +439,7 @@ def _python_runtime_permission_identities(
 
     ``:minimal`` covers platform tools, but it cannot know about the Python
     interpreter that installed Workshop (for example a uv, conda, or pyenv
-    runtime).  Product agents need that interpreter for the standard-library
+    runtime).  Product agents need that interpreter for the deterministic
     stage finalizer and for hash-bound CAD tools.  Grant the interpreter,
     virtual-environment marker, and standard library read-only.
 
@@ -592,6 +592,7 @@ def _codex_run_policy(run_root: Path) -> _CodexRunPolicy:
         ("TMPDIR", private_temp),
         ("TMP", private_temp),
         ("TEMP", private_temp),
+        ("WORKSHOP_PYTHON", str(Path(sys.executable).absolute())),
         *_CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES,
     )
     return _CodexRunPolicy(
@@ -645,6 +646,8 @@ def _codex_run_environment(
     if any(
         overrides.get(name) != private_temp
         for name in ("TMPDIR", "TMP", "TEMP")
+    ) or overrides.get("WORKSHOP_PYTHON") != str(
+        Path(sys.executable).absolute()
     ):
         raise CodexInvocationError(
             "Codex product-run environment does not match its bound policy"

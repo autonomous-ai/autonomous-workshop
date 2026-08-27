@@ -1,10 +1,10 @@
-"""Credential-free Release proposal for one native-agent product run.
+"""Credential-free local Release proposal for one native-agent product run.
 
-The native agent may assemble the complete local Release package.  It cannot
-authenticate to Factory or turn that package into a :class:`ProductRelease`.
-This module binds the exact Made and Playtested inputs to exact package bytes
-so the trusted host can construct ``ReleaseContext``, execute its effect
-adapter, and only then create the receipt-bearing public contract.
+The native Codex session assembles the complete customer package without
+credentials or remote effects.  This module binds exact Made and Playtested
+inputs to exact package bytes so the trusted host can accept a local
+``ProductRelease`` first.  Factory import and publication are separate,
+optional host effects with their own receipts.
 """
 
 from __future__ import annotations
@@ -13,6 +13,8 @@ import hashlib
 import json
 import os
 import stat
+import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
@@ -34,12 +36,17 @@ from workshop.playtest.native import NativePlaytested
 NATIVE_RELEASE_KIND = "autonomous-workshop.release"
 NATIVE_RELEASE_PATH = "artifacts/release/release.json"
 NATIVE_RELEASE_PACKAGE_ROOT = "artifacts/release/package"
-NATIVE_RELEASE_MANUAL_PATH = "MANUAL.md"
+NATIVE_RELEASE_MANUAL_PATH = "MANUAL.pdf"
+NATIVE_RELEASE_LEGACY_MANUAL_PATH = "MANUAL.md"
 NATIVE_RELEASE_PRODUCT_PATH = "product.json"
 MAX_NATIVE_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
-MAX_NATIVE_RELEASE_MANUAL_BYTES = 2 * 1024 * 1024
-RELEASE_PRODUCT_SCHEMA_VERSION = 3
-RELEASE_PRODUCT_STATUS = "page-ready"
+MAX_NATIVE_RELEASE_MANUAL_BYTES = 16 * 1024 * 1024
+MAX_NATIVE_RELEASE_LEGACY_MANUAL_BYTES = 2 * 1024 * 1024
+MAX_NATIVE_RELEASE_PDF_PAGES = 64
+RELEASE_PRODUCT_SCHEMA_VERSION = 4
+RELEASE_PRODUCT_STATUS = "manual-ready"
+LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION = 3
+LEGACY_RELEASE_PRODUCT_STATUS = "page-ready"
 FACTORY_CONTENT_LABEL_MAX = 40
 FACTORY_CONTENT_BODY_MIN = 180
 FACTORY_CONTENT_BODY_MAX = 400
@@ -47,7 +54,7 @@ FACTORY_CONTENT_STORY_BLOCKS_MAX = 10
 _PAGE_SECTION_FIELDS = frozenset(
     ("headline", "body", "visual_direction", "evidence_refs")
 )
-_RELEASE_PRODUCT_FIELDS = frozenset(
+_LEGACY_RELEASE_PRODUCT_FIELDS = frozenset(
     (
         "schema_version",
         "kind",
@@ -58,6 +65,20 @@ _RELEASE_PRODUCT_FIELDS = frozenset(
         "cinematic",
         "use_case",
         "story_blocks",
+        "what_arrives",
+        "limitations",
+        "product_artifact_sha256",
+        "playtest_evidence_artifact_sha256",
+        "claims",
+    )
+)
+_RELEASE_PRODUCT_FIELDS = frozenset(
+    (
+        "schema_version",
+        "kind",
+        "status",
+        "title",
+        "summary",
         "what_arrives",
         "limitations",
         "product_artifact_sha256",
@@ -108,6 +129,11 @@ _FORBIDDEN_EFFECT_FIELDS = frozenset(
         "published_history_id",
         "site_receipt",
     )
+)
+_PDF_VALIDATION_TIMEOUT_SECONDS = 15
+_PDF_VALIDATION_PROTOCOL_BYTES = 4 * 1024
+_PDF_VALIDATOR_RUN_PATH = PurePosixPath(
+    ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
 )
 
 
@@ -270,6 +296,151 @@ def _read_regular(path: Path, label: str, maximum_bytes: int) -> bytes:
         os.close(descriptor)
 
 
+def _pdf_validator_asset_path(run_root: Path | None) -> Path:
+    """Resolve the worker frozen into a run, or the installed detached fallback."""
+
+    agents_root = run_root / ".agents" if run_root is not None else None
+    if agents_root is not None and (agents_root.exists() or agents_root.is_symlink()):
+        candidate = run_root.joinpath(*_PDF_VALIDATOR_RUN_PATH.parts)
+        boundary = run_root
+    else:
+        # Detached contract validation has no product-run input tree.  A real
+        # product run always has ``.agents`` and must use the immutable worker
+        # captured in its checkpoint above.
+        from workshop.runtime.agent_assets import product_run_agent_assets
+
+        skill_root = product_run_agent_assets().skill_root
+        candidate = skill_root / "scripts" / "pdf_validator.py"
+        boundary = skill_root
+    try:
+        current = boundary
+        for index, part in enumerate(candidate.relative_to(boundary).parts):
+            current = current / part
+            identity = current.lstat()
+            if current.is_symlink() or (
+                index < len(candidate.relative_to(boundary).parts) - 1
+                and not stat.S_ISDIR(identity.st_mode)
+            ):
+                raise OSError("PDF validator path contains a link or non-directory")
+        resolved = candidate.resolve(strict=True)
+        resolved.relative_to(boundary.resolve(strict=True))
+    except (OSError, ValueError) as exc:
+        raise ContractError("native Release PDF validator is unavailable") from exc
+    if candidate.is_symlink() or not stat.S_ISREG(identity.st_mode):
+        raise ContractError("native Release PDF validator must be a regular file")
+    return resolved
+
+
+def _pdf_validator_environment() -> dict[str, str]:
+    environment = {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONNOUSERSITE": "1",
+    }
+    for name in ("PATH", "SYSTEMROOT", "TMPDIR", "WINDIR"):
+        value = os.environ.get(name)
+        if isinstance(value, str) and value:
+            environment[name] = value
+    return environment
+
+
+def validate_release_pdf_manual(
+    content: bytes, *, run_root: Path | None = None
+) -> None:
+    """Validate one PDF in an isolated, memory/CPU-bounded parser process.
+
+    Product runs pass their canonical run root so both the proposal finalizer
+    and host execute the exact worker frozen into that run. Detached
+    ``ProductRelease`` construction uses the installed, package-owned worker.
+    """
+
+    if not content.startswith(b"%PDF-"):
+        raise ContractError("native Release MANUAL.pdf must have a PDF header")
+    eof = content.rfind(b"%%EOF")
+    if eof < 0 or content[eof + len(b"%%EOF") :].strip():
+        raise ContractError(
+            "native Release MANUAL.pdf must have a final PDF EOF marker"
+        )
+    validator = _pdf_validator_asset_path(run_root)
+    python = Path(sys.executable).absolute()
+    if not python.is_absolute() or not python.is_file():
+        raise ContractError("native Release PDF validator Python is unavailable")
+    try:
+        descriptor = os.open(
+            validator,
+            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
+        )
+        try:
+            if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+                raise ContractError(
+                    "native Release PDF validator must be a regular file"
+                )
+            completed = subprocess.run(
+                (
+                    python.as_posix(),
+                    "-I",
+                    "-B",
+                    "/dev/fd/%d" % descriptor,
+                    "--isolated-worker",
+                ),
+                input=content,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                cwd=str(validator.parent),
+                env=_pdf_validator_environment(),
+                timeout=_PDF_VALIDATION_TIMEOUT_SECONDS,
+                check=False,
+                start_new_session=True,
+                pass_fds=(descriptor,),
+            )
+        finally:
+            os.close(descriptor)
+    except subprocess.TimeoutExpired as exc:
+        raise ContractError(
+            "native Release MANUAL.pdf exceeded PDF validation resource limits"
+        ) from exc
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        raise ContractError(
+            "native Release MANUAL.pdf validator could not be launched"
+        ) from exc
+    if not 1 <= len(completed.stdout) <= _PDF_VALIDATION_PROTOCOL_BYTES:
+        raise ContractError(
+            "native Release MANUAL.pdf validator returned invalid output"
+        )
+    try:
+        result = json.loads(
+            completed.stdout.decode("utf-8"), object_pairs_hook=_strict_object
+        )
+    except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        raise ContractError(
+            "native Release MANUAL.pdf validator returned invalid output"
+        ) from exc
+    if (
+        not isinstance(result, dict)
+        or set(result) != {"error", "ok"}
+        or type(result["ok"]) is not bool
+        or completed.stdout != _canonical_json(result)
+    ):
+        raise ContractError(
+            "native Release MANUAL.pdf validator returned invalid output"
+        )
+    if completed.returncode == 0 and result == {"error": None, "ok": True}:
+        return
+    error = result.get("error")
+    if (
+        completed.returncode != 2
+        or result.get("ok") is not False
+        or not isinstance(error, str)
+        or not error
+        or len(error) > 1_000
+        or any(ord(character) < 32 or ord(character) == 127 for character in error)
+    ):
+        raise ContractError("native Release MANUAL.pdf validator failed safely")
+    raise ContractError("native Release MANUAL.pdf %s" % error)
+
+
 def _expected_claims(playtested: Playtested) -> dict[str, Any]:
     claims: dict[str, Any] = {}
     for result in playtested.evidence.results:
@@ -314,12 +485,13 @@ def _page_text_list(
     *,
     maximum_items: int,
     maximum_item_length: int,
+    allow_empty: bool = False,
 ) -> list[str]:
     if (
         not isinstance(value, list)
-        or not 1 <= len(value) <= maximum_items
+        or not (0 if allow_empty else 1) <= len(value) <= maximum_items
     ):
-        raise ContractError("%s must be a non-empty bounded list" % label)
+        raise ContractError("%s must be a bounded list" % label)
     result = [
         _page_text(item, "%s item" % label, maximum_item_length)
         for item in value
@@ -395,22 +567,13 @@ def _validate_factory_content(product: Mapping[str, Any]) -> None:
         )
 
 
-def validate_release_product(value: Any) -> dict[str, Any]:
-    """Validate the exact Codex-authored customer-page contract.
-
-    The host can prove byte identity and evidence references, not the semantic
-    quality of prose.  Every page section therefore names the immutable Made
-    product or one of the sealed Playtest checks it relies on.  Factory is not
-    a copywriter or media prompt target at this boundary.
-    """
-
-    product = copy_json_mapping(value, "native Release product.json", nonempty=True)
-    if set(product) != _RELEASE_PRODUCT_FIELDS:
+def _validate_legacy_release_product(product: Mapping[str, Any]) -> dict[str, Any]:
+    if set(product) != _LEGACY_RELEASE_PRODUCT_FIELDS:
         raise ContractError("native Release product.json fields are invalid")
     if (
-        product.get("schema_version") != RELEASE_PRODUCT_SCHEMA_VERSION
+        product.get("schema_version") != LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION
         or product.get("kind") != "workshop.release-package"
-        or product.get("status") != RELEASE_PRODUCT_STATUS
+        or product.get("status") != LEGACY_RELEASE_PRODUCT_STATUS
     ):
         raise ContractError("native Release product.json is not a page-ready package")
     require_sha256(
@@ -437,9 +600,9 @@ def validate_release_product(value: Any) -> dict[str, Any]:
             % FACTORY_CONTENT_STORY_BLOCKS_MAX
         )
     validated = {
-        "schema_version": RELEASE_PRODUCT_SCHEMA_VERSION,
+        "schema_version": LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION,
         "kind": "workshop.release-package",
-        "status": RELEASE_PRODUCT_STATUS,
+        "status": LEGACY_RELEASE_PRODUCT_STATUS,
         "title": _page_text(product.get("title"), "native Release title", 300),
         "summary": _page_text(product.get("summary"), "native Release summary", 2_000),
         "hero": _page_section(
@@ -487,6 +650,82 @@ def validate_release_product(value: Any) -> dict[str, Any]:
     return validated
 
 
+def _validate_manual_release_product(product: Mapping[str, Any]) -> dict[str, Any]:
+    if set(product) != _RELEASE_PRODUCT_FIELDS:
+        raise ContractError("native Release product.json fields are invalid")
+    if (
+        product.get("schema_version") != RELEASE_PRODUCT_SCHEMA_VERSION
+        or product.get("kind") != "workshop.release-package"
+        or product.get("status") != RELEASE_PRODUCT_STATUS
+    ):
+        raise ContractError("native Release product.json is not a manual-ready package")
+    require_sha256(
+        product.get("product_artifact_sha256"),
+        "native Release product artifact sha256",
+    )
+    require_sha256(
+        product.get("playtest_evidence_artifact_sha256"),
+        "native Release Playtest evidence sha256",
+    )
+    claims = copy_json_mapping(
+        product.get("claims"), "native Release claims", nonempty=True
+    )
+    return {
+        "schema_version": RELEASE_PRODUCT_SCHEMA_VERSION,
+        "kind": "workshop.release-package",
+        "status": RELEASE_PRODUCT_STATUS,
+        "title": _page_text(product.get("title"), "native Release title", 300),
+        "summary": _page_text(product.get("summary"), "native Release summary", 2_000),
+        "what_arrives": _page_text_list(
+            product.get("what_arrives"),
+            "native Release what_arrives",
+            maximum_items=100,
+            maximum_item_length=1_000,
+        ),
+        "limitations": _page_text_list(
+            product.get("limitations"),
+            "native Release limitations",
+            maximum_items=100,
+            maximum_item_length=2_000,
+            allow_empty=True,
+        ),
+        "product_artifact_sha256": product["product_artifact_sha256"],
+        "playtest_evidence_artifact_sha256": product[
+            "playtest_evidence_artifact_sha256"
+        ],
+        "claims": claims,
+    }
+
+
+def validate_release_product(
+    value: Any,
+    *,
+    release_schema_version: int | None = None,
+) -> dict[str, Any]:
+    """Validate one exact legacy page package or manual-first package."""
+
+    if release_schema_version is not None:
+        if (
+            type(release_schema_version) is not int
+            or release_schema_version not in (1, 2)
+        ):
+            raise ContractError("native Release schema_version must be 1 or 2")
+    product = copy_json_mapping(value, "native Release product.json", nonempty=True)
+    product_schema_version = product.get("schema_version")
+    if release_schema_version is not None:
+        expected = 3 if release_schema_version == 1 else 4
+        if product_schema_version != expected:
+            raise ContractError(
+                "native Release schema_version %d requires product.json schema_version %d"
+                % (release_schema_version, expected)
+            )
+    if product_schema_version == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
+        return _validate_legacy_release_product(product)
+    if product_schema_version == RELEASE_PRODUCT_SCHEMA_VERSION:
+        return _validate_manual_release_product(product)
+    raise ContractError("native Release product.json schema_version must be 3 or 4")
+
+
 @dataclass(frozen=True)
 class NativeReleasePackage:
     """Validated, effect-free inputs for the host's Release adapter."""
@@ -519,13 +758,13 @@ class NativeRelease:
     product_json_path: str
     product_json_sha256: str
     product: Mapping[str, Any]
-    schema_version: int = 1
+    schema_version: int = 2
     kind: str = NATIVE_RELEASE_KIND
     release_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("native Release schema_version must be 1")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
+            raise ContractError("native Release schema_version must be 1 or 2")
         if self.kind != NATIVE_RELEASE_KIND:
             raise ContractError("native Release kind is invalid")
         if type(self.round) is not int or not 1 <= self.round <= 100:
@@ -544,8 +783,16 @@ class NativeRelease:
         if self.package_root != NATIVE_RELEASE_PACKAGE_ROOT:
             raise ContractError("native Release package_root is not canonical")
         _safe_relative(self.package_root, "native Release package_root")
-        if self.manual_path != NATIVE_RELEASE_MANUAL_PATH:
-            raise ContractError("native Release manual_path must be MANUAL.md")
+        expected_manual_path = (
+            NATIVE_RELEASE_LEGACY_MANUAL_PATH
+            if self.schema_version == 1
+            else NATIVE_RELEASE_MANUAL_PATH
+        )
+        if self.manual_path != expected_manual_path:
+            raise ContractError(
+                "native Release schema_version %d manual_path must be %s"
+                % (self.schema_version, expected_manual_path)
+            )
         if self.product_json_path != NATIVE_RELEASE_PRODUCT_PATH:
             raise ContractError("native Release product_json_path must be product.json")
         if not isinstance(self.package_manifest, ArtifactManifest):
@@ -557,6 +804,16 @@ class NativeRelease:
         for required in (self.manual_path, self.product_json_path):
             if required not in inventory:
                 raise ContractError("native Release manifest lacks %s" % required)
+        manual_limit = (
+            MAX_NATIVE_RELEASE_LEGACY_MANUAL_BYTES
+            if self.schema_version == 1
+            else MAX_NATIVE_RELEASE_MANUAL_BYTES
+        )
+        if not 1 <= inventory[self.manual_path].bytes <= manual_limit:
+            raise ContractError(
+                "native Release %s must be non-empty and at most %d bytes"
+                % (self.manual_path, manual_limit)
+            )
         forbidden_media = sorted(
             path
             for path in inventory
@@ -570,7 +827,9 @@ class NativeRelease:
         if inventory[self.product_json_path].sha256 != self.product_json_sha256:
             raise ContractError("native Release product.json is not bound to its manifest")
 
-        product = validate_release_product(self.product)
+        product = validate_release_product(
+            self.product, release_schema_version=self.schema_version
+        )
         if hashlib.sha256(_canonical_json(product)).hexdigest() != self.product_json_sha256:
             raise ContractError("native Release product.json hash is not canonical")
         if product.get("product_artifact_sha256") != self.product_artifact_sha256:
@@ -705,17 +964,32 @@ class NativeRelease:
         if current.to_dict() != self.package_manifest.to_dict():
             raise ArtifactError("native Release package differs from its manifest")
 
+        manual_limit = (
+            MAX_NATIVE_RELEASE_LEGACY_MANUAL_BYTES
+            if self.schema_version == 1
+            else MAX_NATIVE_RELEASE_MANUAL_BYTES
+        )
         manual = _read_regular(
             package_root / self.manual_path,
-            "native Release MANUAL.md",
-            MAX_NATIVE_RELEASE_MANUAL_BYTES,
+            "native Release %s" % self.manual_path,
+            manual_limit,
         )
-        try:
-            manual_text = manual.decode("utf-8")
-        except UnicodeError as exc:
-            raise ContractError("native Release MANUAL.md must be UTF-8") from exc
-        if not manual_text.strip():
-            raise ContractError("native Release MANUAL.md must be substantive")
+        manual_entry = next(
+            entry for entry in self.package_manifest.entries if entry.path == self.manual_path
+        )
+        if hashlib.sha256(manual).hexdigest() != manual_entry.sha256:
+            raise ArtifactError(
+                "native Release %s hash differs from its manifest" % self.manual_path
+            )
+        if self.schema_version == 1:
+            try:
+                manual_text = manual.decode("utf-8")
+            except UnicodeError as exc:
+                raise ContractError("native Release MANUAL.md must be UTF-8") from exc
+            if not manual_text.strip():
+                raise ContractError("native Release MANUAL.md must be substantive")
+        else:
+            validate_release_pdf_manual(manual, run_root=root)
 
         observed_product: dict[str, Any] | None = None
         for entry in self.package_manifest.entries:
@@ -790,9 +1064,14 @@ __all__ = [
     "FACTORY_CONTENT_BODY_MIN",
     "FACTORY_CONTENT_LABEL_MAX",
     "FACTORY_CONTENT_STORY_BLOCKS_MAX",
+    "LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION",
+    "LEGACY_RELEASE_PRODUCT_STATUS",
     "MAX_NATIVE_RELEASE_CONTRACT_BYTES",
+    "MAX_NATIVE_RELEASE_LEGACY_MANUAL_BYTES",
     "MAX_NATIVE_RELEASE_MANUAL_BYTES",
+    "MAX_NATIVE_RELEASE_PDF_PAGES",
     "NATIVE_RELEASE_KIND",
+    "NATIVE_RELEASE_LEGACY_MANUAL_PATH",
     "NATIVE_RELEASE_MANUAL_PATH",
     "NATIVE_RELEASE_PACKAGE_ROOT",
     "NATIVE_RELEASE_PATH",
@@ -802,5 +1081,6 @@ __all__ = [
     "NativeRelease",
     "NativeReleasePackage",
     "read_native_release",
+    "validate_release_pdf_manual",
     "validate_release_product",
 ]

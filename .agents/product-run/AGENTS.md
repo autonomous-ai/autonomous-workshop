@@ -103,8 +103,12 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   or write the bounded current-stage proposal. Programs do not plan, browse,
   prompt, judge, route agents, assign rewards, or decide transitions.
 - Keep substantive concepts, source notes, designs, CAD, simulations, manual
-  content, page-ready product content, and evidence in the assigned private run
+  content, bounded Release facts, and evidence in the assigned private run
   workspace.
+- During Release, use the materialized `manual-design` skill to create and
+  inspect the exact printable `MANUAL.pdf`. It must stand alone in the box;
+  optional website metadata, QR links, and publication are not substitutes for
+  teaching the owner how to use the product safely.
 - Return only the bounded outcome required by the workflow skill: stage,
   status, changed artifact paths and hashes, gate references, needs, and the
   proposed next transition.

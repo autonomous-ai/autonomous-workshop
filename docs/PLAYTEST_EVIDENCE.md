@@ -59,7 +59,7 @@ observations. `self-report` and `trust-me` are not evaluators.
 The session then runs:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . playtest \
   --source <playtest-source.json> \
   --evidence-root <STAGE evidence_root>
@@ -109,9 +109,10 @@ mismatched evidence fails closed.
 Release starts only after Playtest passes for the current Made artifact. Its
 canonical `product.json` repeats the exact product artifact hash and Playtest
 evidence artifact hash, and its claim map is derived exactly from the passing
-checks. Release may write a manual and complete page-ready product content,
-but it cannot turn simulation into customer response or CAD verification into
-manufacture.
+checks. Release may turn those supported facts into a self-contained printable
+`MANUAL.pdf` and secondary website metadata, but it cannot turn simulation into
+customer response or CAD verification into manufacture. A well-formed or
+beautiful PDF is not physical evidence.
 
 After Release succeeds, the host may derive
 `artifacts/release/VERIFICATION.json` as a best-effort public projection. The

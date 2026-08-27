@@ -49,7 +49,7 @@ dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions. Then run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . make \
   --product-root <STAGE product_root> \
   --cad-project-path <path inside product root> \
@@ -114,7 +114,7 @@ evidence-backed failure directly to Make, where the next Goal repairs the
 product against the same sealed Invent result. Then run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . playtest \
   --source <playtest-source.json> \
   --evidence-root <STAGE evidence_root>

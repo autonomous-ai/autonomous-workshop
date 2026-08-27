@@ -74,7 +74,7 @@ act, evaluate, and improve cycle inside that Goal; Python does not emulate the
 Goal or implement a reward, judge, research, or repair loop. Wish validation
 and Deliver effects remain host boundaries and do not create agent Goals.
 
-After authoring one stage, Codex invokes the materialized standard-library
+After authoring one stage, Codex invokes the materialized deterministic
 `stage_proposal.py` finalizer. It validates and hashes exact bytes, writes the
 canonical stage contract, and produces a checkpoint-bound
 `agent-outcome.json`. The host independently rereads all cited bytes, reruns
@@ -104,9 +104,9 @@ Codex owns:
 - CAD/artifact creation, native tool and skill use, inspection, and repair;
 - AI Playtest judgment and evidence-linked feedback without overriding
   deterministic results;
-- the Release package: `MANUAL.md` and the complete canonical schema-v3
-  page-ready product content, with every claim and story block bound to sealed
-  Made or Playtest evidence;
+- the Release package (originally `MANUAL.md` and schema-v3 page content;
+  superseded for new runs by the manual-first contract in ADR 0013), with every
+  claim bound to sealed Made or Playtest evidence;
 - compact needs and proposed transitions.
 
 Model prose and self-assessment are untrusted. Python does not run a parallel

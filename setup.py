@@ -180,6 +180,14 @@ class build_py(_build_py):
                             "bundled Inventor skills must not contain symlinks: %s"
                             % source_file
                         )
+                    relative_skill_file = source_file.relative_to(source_skill)
+                    if (
+                        "__pycache__" in relative_skill_file.parts
+                        or ".git" in relative_skill_file.parts
+                        or source_file.name == ".DS_Store"
+                        or source_file.name.endswith((".pyc", ".pyo"))
+                    ):
+                        continue
                     if source_file.is_dir():
                         continue
                     if not source_file.is_file():

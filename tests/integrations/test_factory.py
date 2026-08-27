@@ -190,11 +190,17 @@ class ReleaseContext:
 
 class FactoryTransport:
     def __init__(
-        self, product_id="verified-toy", *, fail_get=False, import_status=201
+        self,
+        product_id="verified-toy",
+        *,
+        fail_get=False,
+        import_status=201,
+        include_thumbnails=True,
     ):
         self.product_id = product_id
         self.fail_get = fail_get
         self.import_status = import_status
+        self.include_thumbnails = include_thumbnails
         self.public = False
         self.calls = []
         self.imports = 0
@@ -204,7 +210,7 @@ class FactoryTransport:
         self.story_block_writes = 0
 
     def design(self):
-        return {
+        design = {
             "id": "design-1",
             "slug": self.product_id,
             "owner_id": "owner-alice",
@@ -219,7 +225,6 @@ class FactoryTransport:
             "tags": ["toy"],
             "category": {"slug": "toys"},
             "author": {"id": "owner-alice"},
-            "thumbnail_urls": ["https://cdn.example/cover.png"],
             "use_case": self.use_case,
             "story_blocks": self.story_blocks,
             "listing": (
@@ -233,6 +238,9 @@ class FactoryTransport:
                 else None
             ),
         }
+        if self.include_thumbnails:
+            design["thumbnail_urls"] = ["https://cdn.example/cover.png"]
+        return design
 
     def __call__(self, method, url, headers, body, timeout):
         self.calls.append((method, url, dict(headers), body, timeout))
@@ -393,6 +401,28 @@ class FactoryReleaseTest(unittest.TestCase):
             transport=transport,
         )
 
+    def use_pdf_first_release(self):
+        manual = b"%PDF-1.7\n%\xff\xfe exact binary manual\n%%EOF\n"
+        (self.release / "MANUAL.md").unlink()
+        (self.release / "MANUAL.pdf").write_bytes(manual)
+        self.page = {
+            "schema_version": 4,
+            "kind": "workshop.release-package",
+            "status": "manual-ready",
+            "title": "Verified Toy",
+            "summary": "An exact toy page authored before Factory import.",
+            "what_arrives": ["one puzzle", "one rule card"],
+            "limitations": ["digital Playtest only"],
+            "product_artifact_sha256": self.made.artifact_sha256,
+            "playtest_evidence_artifact_sha256": self.playtest_sha256,
+            "claims": {"mechanical-check": {"passed": True}},
+        }
+        (self.release / "product.json").write_bytes(canonical_json(self.page))
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+        return manual
+
     def test_private_import_is_model_only_hash_bound_and_idempotent(self):
         transport = FactoryTransport()
         receipt = self.writer(transport)(self.context, self.release, self.manifest)
@@ -471,6 +501,91 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(transport.imports, 1)
         self.assertEqual(transport.use_case_writes, 1)
         self.assertEqual(transport.story_block_writes, 1)
+        legacy_intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertNotIn("manual_path", legacy_intent.request)
+        self.assertNotIn("manual_path", receipt.details)
+
+    def test_pdf_first_import_carries_exact_binary_manual_without_rich_content(self):
+        manual = self.use_pdf_first_release()
+        transport = FactoryTransport()
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(receipt.details["manual_path"], "MANUAL.pdf")
+        self.assertEqual(
+            receipt.details["manual_sha256"], hashlib.sha256(manual).hexdigest()
+        )
+        self.assertNotIn("factory_content", receipt.details)
+        self.assertNotIn("factory_content_sha256", receipt.details)
+        self.assertEqual(transport.use_case_writes, 0)
+        self.assertEqual(transport.story_block_writes, 0)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.request["manual_path"], "MANUAL.pdf")
+        self.assertEqual(intent.request["manual_sha256"], hashlib.sha256(manual).hexdigest())
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            self.assertIn("MANUAL.pdf", archive.namelist())
+            self.assertNotIn("MANUAL.md", archive.namelist())
+            self.assertEqual(archive.read("MANUAL.pdf"), manual)
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(
+                facts["manual"],
+                {
+                    "path": "MANUAL.pdf",
+                    "sha256": hashlib.sha256(manual).hexdigest(),
+                },
+            )
+            self.assertEqual(facts["release"], self.page)
+
+        replay = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(replay, receipt)
+        self.assertEqual(transport.imports, 1)
+
+    def test_pdf_first_import_and_public_readback_need_no_factory_thumbnails(self):
+        self.use_pdf_first_release()
+        transport = FactoryTransport(include_thumbnails=False)
+        writer = self.writer(transport)
+
+        draft = writer(self.context, self.release, self.manifest)
+        public = FactoryPublicTransition(
+            self.ledger, writer.session
+        ).publish(draft)
+
+        for receipt in (draft, public):
+            self.assertNotIn("cover_url", receipt.details)
+            self.assertNotIn("server_cover_urls", receipt.details)
+        self.assertTrue(public.is_verified_public)
+
+    def test_legacy_import_rejects_factory_readback_without_thumbnails(self):
+        transport = FactoryTransport(include_thumbnails=False)
+
+        with self.assertRaisesRegex(
+            AmbiguousEffectError, "exact readback is not proven"
+        ):
+            self.writer(transport)(self.context, self.release, self.manifest)
+
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.state, "unknown")
+        self.assertEqual(transport.use_case_writes, 0)
+
+    def test_unknown_pdf_first_import_recovers_without_resending(self):
+        self.use_pdf_first_release()
+        failed = FactoryTransport(fail_get=True)
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(failed)(self.context, self.release, self.manifest)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.state, "unknown")
+
+        recovery = FactoryTransport()
+        receipt = self.writer(recovery)(self.context, self.release, self.manifest)
+
+        self.assertEqual(receipt.details["manual_path"], "MANUAL.pdf")
+        self.assertEqual(recovery.imports, 0)
+        self.assertEqual(self.ledger.get(intent.intent_id).state, "succeeded")
 
     def test_mesh_handoff_accepts_made_without_legacy_project_json(self):
         product = self.root / "modern-product"
@@ -966,6 +1081,33 @@ def draft_receipt():
     )
 
 
+def pdf_draft_receipt():
+    return Receipt(
+        payload_sha256="f" * 64,
+        artifact_sha256="a" * 64,
+        adapter="factory",
+        status="draft",
+        observed_at=OBSERVED,
+        reference="design-1",
+        details={
+            "product_id": "verified-toy",
+            "release_sha256": "b" * 64,
+            "playtest_evidence_sha256": "c" * 64,
+            "handoff_artifact_sha256": "d" * 64,
+            "product_page_sha256": "e" * 64,
+            "manual_path": "MANUAL.pdf",
+            "manual_sha256": "1" * 64,
+            "page_url": "https://www.autonomous.ai/factory/product/verified-toy",
+        },
+        design_id="design-1",
+        slug="verified-toy",
+        owner_id="owner-alice",
+        root_id="design-1",
+        current_history_id="history-1",
+        project_url="https://cdn.autonomous.ai/projects/history-1/",
+    )
+
+
 class FactoryPublicTransitionTest(unittest.TestCase):
     def test_explicit_transition_is_fenced_then_proven_by_get(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -983,6 +1125,26 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         self.assertEqual(len(publish), 1)
         self.assertIsNone(publish[0][3])
         self.assertIn("Idempotency-Key", publish[0][2])
+
+    def test_pdf_first_transition_publishes_without_rich_content_writes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
+            transport = FactoryTransport()
+            session = FactoryAgentSession(
+                FactoryAgentCredentials("alice", "test-secret"), transport=transport
+            )
+
+            receipt = FactoryPublicTransition(ledger, session).publish(
+                pdf_draft_receipt()
+            )
+
+            intent = ledger.latest("verified-toy", "factory-publish")
+        self.assertTrue(receipt.is_verified_public)
+        self.assertEqual(receipt.details["manual_path"], "MANUAL.pdf")
+        self.assertEqual(intent.request["manual_path"], "MANUAL.pdf")
+        self.assertNotIn("factory_content_sha256", intent.request)
+        self.assertEqual(transport.use_case_writes, 0)
+        self.assertEqual(transport.story_block_writes, 0)
 
     def test_unknown_publication_never_blindly_retries(self):
         class UnknownPublish(FactoryTransport):

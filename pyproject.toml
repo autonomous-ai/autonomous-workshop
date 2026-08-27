@@ -10,7 +10,13 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
-dependencies = ["cadgen==0.4.19", "pillow>=10.0"]
+dependencies = [
+  "cadgen==0.4.19",
+  "pillow>=10.0",
+  "pypdf>=6.16.2,<7",
+  "pypdfium2>=5.13,<6",
+  "reportlab>=4.4",
+]
 
 [project.urls]
 Homepage = "https://github.com/autonomous-ai/autonomous-workshop"
@@ -35,6 +41,8 @@ workshop = [
   "make/schemas/*.json",
   "make/skills/*",
   "make/skills/**/*",
+  "release/skills/*",
+  "release/skills/**/*",
 ]
 
 [tool.setuptools.exclude-package-data]
@@ -42,4 +50,7 @@ workshop = [
   "make/skills/**/__pycache__/*",
   "make/skills/**/*.pyc",
   "make/skills/**/*.pyo",
+  "release/skills/**/__pycache__/*",
+  "release/skills/**/*.pyc",
+  "release/skills/**/*.pyo",
 ]
