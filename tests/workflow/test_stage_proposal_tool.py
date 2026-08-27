@@ -1,4 +1,5 @@
 import hashlib
+import importlib.util
 import json
 import os
 import subprocess
@@ -10,6 +11,7 @@ from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.invent.native import NativeInvented
+from tests.invent.test_native_contract import CONCEPT_VIOLATIONS, v4_concept
 from workshop.make.native import NativeMade
 from workshop.match.native import (
     InventorRoster,
@@ -195,10 +197,8 @@ class StageProposalToolTest(unittest.TestCase):
             assignment_sha256=self.assignment.assignment_sha256,
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
-            concept={
-                "title": "Moon Nook",
-                "summary": "A tiny lunar observatory shaped by the Wish.",
-            },
+            schema_version=4,
+            concept=v4_concept(),
             research={
                 "sources": [
                     {
@@ -207,6 +207,18 @@ class StageProposalToolTest(unittest.TestCase):
                     }
                 ]
             },
+        )
+        self.legacy_invented = NativeInvented(
+            wish_sha256=self.assignment.wish_sha256,
+            assignment_sha256=self.assignment.assignment_sha256,
+            taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.assignment.blueprint_sha256,
+            schema_version=3,
+            concept={
+                "title": "Moon Nook",
+                "summary": "A tiny lunar observatory shaped by the Wish.",
+            },
+            research=self.invented.to_dict()["research"],
         )
 
     def write_json(self, relative, value, *, canonical=False):
@@ -410,7 +422,7 @@ class StageProposalToolTest(unittest.TestCase):
         self.write_json(
             "drafts/invent.json",
             {
-                "concept": dict(self.invented.concept),
+                "concept": self.invented.to_dict()["concept"],
                 "research": {
                     "sources": [
                         {
@@ -432,6 +444,75 @@ class StageProposalToolTest(unittest.TestCase):
             "artifacts/invent/invented.json",
             invented_bytes,
             "make",
+        )
+
+    def test_invent_rejects_contract_violations_with_a_named_rule(self):
+        self.write_stage("invent", {"assignment": self.assignment.to_dict()})
+        for name, mutate, pattern in CONCEPT_VIOLATIONS[:3] + CONCEPT_VIOLATIONS[-3:]:
+            concept = v4_concept()
+            mutate(concept)
+            self.write_json(
+                "drafts/invent.json",
+                {"concept": concept, "research": self.invented.to_dict()["research"]},
+            )
+            with self.subTest(violation=name):
+                completed = self.run_tool(
+                    "invent", "--source", "drafts/invent.json", expected=2
+                )
+                self.assertRegex(completed.stderr, pattern)
+                self.assertFalse((self.run_root / "artifacts/invent/invented.json").exists())
+
+    def test_invent_contract_rules_match_the_host_mirror(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_under_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        tool._validate_concept_contract(v4_concept())
+        for name, mutate, pattern in CONCEPT_VIOLATIONS:
+            concept = v4_concept()
+            mutate(concept)
+            with self.subTest(violation=name):
+                with self.assertRaisesRegex(tool.ProposalError, pattern):
+                    tool._validate_concept_contract(concept)
+        legacy = self.legacy_invented.to_dict()
+        assignment = self.assignment.to_dict()
+        self.assertEqual(tool._validate_invented(legacy, assignment), legacy)
+        current = self.invented.to_dict()
+        self.assertEqual(tool._validate_invented(current, assignment), current)
+        with self.assertRaisesRegex(tool.ProposalError, "schema_version must be 3 or 4"):
+            tool._validate_invented({**legacy, "schema_version": 2}, assignment)
+        hand_written = {**current, "concept": {**current["concept"], "mechanisms": ["Bad Slug"]}}
+        with self.assertRaisesRegex(tool.ProposalError, "unique slugs"):
+            tool._validate_invented(hand_written, assignment)
+        sealed = tool._invent_contract(
+            {"inputs": {"assignment": assignment}},
+            {"concept": current["concept"], "research": current["research"]},
+        )
+        self.assertEqual(sealed["schema_version"], 4)
+        self.assertEqual(sealed, current)
+
+    def test_make_accepts_a_sealed_legacy_schema_3_invent(self):
+        self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.legacy_invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+        )
+        made_document, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
+        NativeMade.from_mapping(made_document).assert_context(
+            self.assignment, self.legacy_invented, expected_round=1
         )
 
     def test_make_hashes_exact_product_tree_and_matches_native_made(self):

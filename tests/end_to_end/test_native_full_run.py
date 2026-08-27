@@ -189,19 +189,23 @@ def _fixture_components():
     return {
         "board": {
             "name": "Board",
-            "purpose": "the playing surface",
-            "form": "flat concentric-ringed square panel",
+            "duty": "the playing surface that holds every waypoint",
+            "form": "flat concentric-ringed 200 mm square panel",
             "dimensions_mm": {"length_mm": 200.0, "width_mm": 200.0, "height_mm": 5.0},
             "placement": "centered on the table",
-            "interfaces": "pieces rest in orbital waypoint recesses",
+            "interfaces": "pieces rest in 1 mm deep orbital waypoint recesses",
+            "mates_with": ["pieces"],
+            "signature": False,
         },
         "pieces": {
             "name": "Pieces",
-            "purpose": "the two draughts piece families",
+            "duty": "the two draughts piece families that are moved and captured",
             "form": "stackable dog-silhouette discs",
             "dimensions_mm": {"length_mm": 20.0, "width_mm": 20.0, "height_mm": 8.0},
             "placement": "set out on the board's waypoints",
             "interfaces": "seat into the board's waypoint recesses",
+            "mates_with": ["board"],
+            "signature": True,
         },
     }
 
@@ -313,11 +317,16 @@ class _OneSessionProductAgent:
                         "Every playable square is an orbital waypoint and each side uses "
                         "a distinct dog-pack silhouette without changing draughts rules."
                     ),
+                    "interaction": (
+                        "Two players move dog pieces along the board's orbital "
+                        "waypoints, capture by jumping, and stack a piece to crown it."
+                    ),
                     "envelope_mm": {
                         "length_mm": 200.0,
                         "width_mm": 200.0,
                         "height_mm": 20.0,
                     },
+                    "mechanisms": ["orbital-waypoints", "stacked-crowning"],
                     "components": [
                         {"key": key, **fields}
                         for key, fields in _fixture_components().items()

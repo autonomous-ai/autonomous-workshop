@@ -56,6 +56,34 @@ category, envelope and wall thickness, print stance, distinctive features,
 each component's form, dimensions, placement, and interfaces, intended
 interaction, assumptions, and unresolved risks. Bind researched claims to the
 supporting entries in `research`; label deliberate design decisions as such.
+
+The finalizer seals the concept as Invented schema 4 and enforces this
+contract deterministically. Required `concept` fields (extra fields such as
+`signature_decision`, `print_stance`, `assumptions`, or `risks` are allowed):
+
+- `title`, `summary`: bounded text.
+- `interaction`: what the owner physically does with the product; every
+  component must either mate with another component or be named here.
+- `envelope_mm`: `{length_mm, width_mm, height_mm}`, finite, within
+  `(0, 2000]`.
+- `mechanisms`: at most 16 unique slugs (`^[a-z][a-z0-9_-]{0,62}$`); may be
+  empty for a purely static object.
+- `components`: 1 to 64 entries with exactly `key`, `name`, `form`, `duty`,
+  `dimensions_mm`, `placement`, `interfaces`, `mates_with`, `signature`.
+
+The finalizer rejects, naming the rule in parentheses:
+
+- **unbound** — `form`, `duty`, `placement`, or `interfaces` hedges a quantity
+  (`roughly 20 mm`, `~4 mm`, `several`, `a few`, `enough`, `as needed`).
+  State the number.
+- **envelope** — a component's sorted dimensions exceed the sorted envelope.
+- **component-orphan** — `mates_with` names an unknown component, the
+  component itself, or the same mate twice.
+- **signature** — not exactly one component carries `"signature": true`; the
+  box is remembered by one object.
+- **decoration** — a component with no mate in either direction whose key or
+  name never appears in `interaction`. Give it a role or remove it.
+
 Then run:
 
 ```bash

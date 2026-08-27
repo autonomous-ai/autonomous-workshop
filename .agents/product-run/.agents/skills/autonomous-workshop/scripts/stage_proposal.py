@@ -28,7 +28,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path, PurePosixPath
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
 
 STAGE_KIND = "autonomous-workshop.stage-input"
@@ -155,6 +155,41 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 INVENTOR_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 PRODUCT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 CHECK_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
+
+# Invent concept contract (Invented schema 4).  Schema 3 is the legacy shape
+# that only bound `title` and `summary`; sealed runs that predate the contract
+# keep resuming on it.  New Invent finalizations always emit schema 4.
+INVENTED_SCHEMA_VERSIONS = (3, 4)
+CONCEPT_CONTRACT_FIELDS = frozenset(
+    ("title", "summary", "interaction", "envelope_mm", "mechanisms", "components")
+)
+COMPONENT_CONTRACT_FIELDS = frozenset(
+    (
+        "key",
+        "name",
+        "form",
+        "duty",
+        "dimensions_mm",
+        "placement",
+        "interfaces",
+        "mates_with",
+        "signature",
+    )
+)
+DIMENSION_KEYS = ("length_mm", "width_mm", "height_mm")
+HEDGED_COMPONENT_FIELDS = ("form", "duty", "placement", "interfaces")
+MAX_CONCEPT_COMPONENTS = 64
+MAX_CONCEPT_MECHANISMS = 16
+MAX_DIMENSION_MM = 2000.0
+CONCEPT_SLUG_RE = re.compile(r"^[a-z][a-z0-9_-]{0,62}$")
+# A physical description that hedges a quantity is a wish, not a contract.
+NUMERIC_HEDGE_RE = re.compile(
+    r"(?i)\b(?:roughly|about|approximately|around|circa)\s+\d|~\s*\d"
+)
+QUANTITY_HEDGE_RE = re.compile(
+    r"(?i)\b(?:some|several|a few|a number of|a couple of|multiple|various|"
+    r"enough|as needed|or so)\b"
+)
 VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
 
 FORBIDDEN_RELEASE_MEDIA_SUFFIXES = frozenset(
@@ -965,6 +1000,132 @@ def _validate_assignment(value: Any) -> dict[str, Any]:
     return dict(assignment)
 
 
+def _dimensions_mm(value: Any, label: str) -> list[float]:
+    if not isinstance(value, Mapping) or set(value) != set(DIMENSION_KEYS):
+        raise ProposalError(
+            "%s must contain exactly length_mm, width_mm, and height_mm" % label
+        )
+    result: list[float] = []
+    for key in DIMENSION_KEYS:
+        item = value[key]
+        if (
+            isinstance(item, bool)
+            or not isinstance(item, (int, float))
+            or not math.isfinite(item)
+            or not 0 < item <= MAX_DIMENSION_MM
+        ):
+            raise ProposalError(
+                "%s %s must be a finite millimetre value within (0, %d]"
+                % (label, key, int(MAX_DIMENSION_MM))
+            )
+        result.append(float(item))
+    return result
+
+
+def _hedged(text: str) -> Optional[str]:
+    match = NUMERIC_HEDGE_RE.search(text) or QUANTITY_HEDGE_RE.search(text)
+    return match.group(0) if match else None
+
+
+def _validate_concept_contract(concept: Mapping[str, Any]) -> None:
+    """Deterministic buildability checks on an Invent concept (schema 4).
+
+    Every rule here is one an agent asked to self-check its own concept will
+    report as satisfied: unbound quantities, orphaned mates, decoration parts,
+    a missing or duplicated signature part, and parts larger than the envelope.
+    """
+
+    missing = sorted(CONCEPT_CONTRACT_FIELDS - set(concept))
+    if missing:
+        raise ProposalError(
+            "Invented concept lacks required contract fields: %s" % ", ".join(missing)
+        )
+    _bounded_text(concept["title"], "Invented concept title", 2_000)
+    _bounded_text(concept["summary"], "Invented concept summary", 2_000)
+    interaction = _bounded_text(
+        concept["interaction"], "Invented concept interaction", 4_000
+    ).casefold()
+    envelope = sorted(_dimensions_mm(concept["envelope_mm"], "Invented concept envelope_mm"))
+    mechanisms = _array(concept["mechanisms"], "Invented concept mechanisms")
+    if (
+        len(mechanisms) > MAX_CONCEPT_MECHANISMS
+        or any(
+            not isinstance(item, str) or CONCEPT_SLUG_RE.fullmatch(item) is None
+            for item in mechanisms
+        )
+        or len(set(mechanisms)) != len(mechanisms)
+    ):
+        raise ProposalError(
+            "Invented concept mechanisms must be at most %d unique slugs"
+            % MAX_CONCEPT_MECHANISMS
+        )
+    components = _array(concept["components"], "Invented concept components", nonempty=True)
+    if len(components) > MAX_CONCEPT_COMPONENTS:
+        raise ProposalError(
+            "Invented concept components exceed %d entries" % MAX_CONCEPT_COMPONENTS
+        )
+    parsed: dict[str, dict[str, Any]] = {}
+    for raw in components:
+        item = _fields(raw, COMPONENT_CONTRACT_FIELDS, "Invented component")
+        key = item["key"]
+        if (
+            not isinstance(key, str)
+            or CONCEPT_SLUG_RE.fullmatch(key) is None
+            or key in parsed
+        ):
+            raise ProposalError("Invented component key must be a unique slug")
+        name = _bounded_text(item["name"], "Invented component %s name" % key, 200)
+        for field_name in HEDGED_COMPONENT_FIELDS:
+            text = _bounded_text(
+                item[field_name], "Invented component %s %s" % (key, field_name), 4_000
+            )
+            hedge = _hedged(text)
+            if hedge is not None:
+                raise ProposalError(
+                    "Invented component %s %s uses an unbound quantity %r; "
+                    "state the number (unbound)" % (key, field_name, hedge)
+                )
+        dims = sorted(
+            _dimensions_mm(item["dimensions_mm"], "Invented component %s dimensions_mm" % key)
+        )
+        if any(dim > limit for dim, limit in zip(dims, envelope)):
+            raise ProposalError(
+                "Invented component %s exceeds the concept envelope (envelope)" % key
+            )
+        if type(item["signature"]) is not bool:
+            raise ProposalError("Invented component %s signature must be boolean" % key)
+        mates = _array(item["mates_with"], "Invented component %s mates_with" % key)
+        parsed[key] = {"name": name, "mates": mates, "signature": item["signature"]}
+    for key, component in parsed.items():
+        mates = component["mates"]
+        if len(set(mates)) != len(mates) or any(
+            not isinstance(mate, str) or mate == key or mate not in parsed
+            for mate in mates
+        ):
+            raise ProposalError(
+                "Invented component %s mates_with must name other existing "
+                "components exactly once (component-orphan)" % key
+            )
+    signatures = [key for key, component in parsed.items() if component["signature"]]
+    if len(signatures) != 1:
+        raise ProposalError(
+            "Invented concept must flag exactly one signature component, found %d "
+            "(signature)" % len(signatures)
+        )
+    mated: set[str] = set()
+    for key, component in parsed.items():
+        if component["mates"]:
+            mated.add(key)
+            mated.update(component["mates"])
+    for key, component in parsed.items():
+        spoken = (key, key.replace("_", " ").replace("-", " "), component["name"].casefold())
+        if key not in mated and not any(term in interaction for term in spoken):
+            raise ProposalError(
+                "Invented component %s is decoration: nothing mates with it and "
+                "the interaction never uses it (decoration)" % key
+            )
+
+
 def _validate_invented(value: Any, assignment: Mapping[str, Any]) -> dict[str, Any]:
     expected = {
         "schema_version",
@@ -980,14 +1141,20 @@ def _validate_invented(value: Any, assignment: Mapping[str, Any]) -> dict[str, A
         "invented_sha256",
     }
     invented = _fields(value, expected, "Invented")
-    if type(invented["schema_version"]) is not int or invented["schema_version"] != 3:
-        raise ProposalError("Invented schema_version must be 3")
+    if (
+        type(invented["schema_version"]) is not int
+        or invented["schema_version"] not in INVENTED_SCHEMA_VERSIONS
+    ):
+        raise ProposalError("Invented schema_version must be 3 or 4")
     if invented["kind"] != INVENTED_KIND:
         raise ProposalError("Invented kind is invalid")
     concept = _mapping(invented["concept"], "Invented concept", nonempty=True)
     research = _mapping(invented["research"], "Invented research", nonempty=True)
-    _bounded_text(concept.get("title"), "Invented concept title", 2_000)
-    _bounded_text(concept.get("summary"), "Invented concept summary", 2_000)
+    if invented["schema_version"] == 4:
+        _validate_concept_contract(concept)
+    else:
+        _bounded_text(concept.get("title"), "Invented concept title", 2_000)
+        _bounded_text(concept.get("summary"), "Invented concept summary", 2_000)
     if invented["concept_sha256"] != json_sha256(concept):
         raise ProposalError("Invented concept_sha256 is invalid")
     if invented["research_sha256"] != json_sha256(research):
@@ -1144,10 +1311,9 @@ def _invent_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dic
     authored = _fields(source, {"concept", "research"}, "Invent authored source")
     concept = _mapping(authored["concept"], "Invent concept", nonempty=True)
     research = _mapping(authored["research"], "Invent research", nonempty=True)
-    _bounded_text(concept.get("title"), "Invent concept title", 2_000)
-    _bounded_text(concept.get("summary"), "Invent concept summary", 2_000)
+    _validate_concept_contract(concept)
     identity = {
-        "schema_version": 3,
+        "schema_version": 4,
         "kind": INVENTED_KIND,
         "wish_sha256": assignment["wish_sha256"],
         "assignment_sha256": assignment["assignment_sha256"],
