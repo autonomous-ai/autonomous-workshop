@@ -1434,10 +1434,27 @@ def _concept_contract(
     concept_root_value: str,
 ) -> dict[str, Any]:
     inputs = _required_fields(
-        stage["inputs"], {"assignment", "invented"}, "Concept STAGE inputs"
+        stage["inputs"], {"assignment", "invented", "wish"}, "Concept STAGE inputs"
     )
     assignment = _validate_assignment(inputs["assignment"])
     invented = _validate_invented(inputs["invented"], assignment)
+    wish_binding = _fields(
+        inputs["wish"], {"path", "sha256"}, "Concept STAGE Wish binding"
+    )
+    if wish_binding["path"] != "WISH.json":
+        raise ProposalError("Concept STAGE Wish path must be WISH.json")
+    wish, wish_content, _ = _read_json(run_root, "WISH.json", "routed Wish")
+    wish = _fields(
+        wish,
+        {"schema_version", "product_id", "objective", "context", "constraints"},
+        "routed Wish",
+    )
+    wish_sha256 = hashlib.sha256(wish_content).hexdigest()
+    if (
+        wish_binding["sha256"] != wish_sha256
+        or assignment["wish_sha256"] != wish_sha256
+    ):
+        raise ProposalError("Concept routed Wish bytes do not match STAGE")
     round_index = stage["round"]
     expected_root = "artifacts/concept/r%04d/concept" % round_index
     if concept_root_value != expected_root:
@@ -1467,6 +1484,12 @@ def _concept_contract(
     derived_wish = _validate_derived_wish(documents["derived_wish_path"])
     if derived_wish["wish_sha256"] != assignment["wish_sha256"]:
         raise ProposalError("Concept derived Wish belongs to another Wish")
+    if (
+        derived_wish["product_id"] != wish["product_id"]
+        or derived_wish["objective"] != wish["objective"]
+        or derived_wish["context"] != wish["context"]
+    ):
+        raise ProposalError("Concept derived Wish changed the routed Wish's own words")
 
     _validate_concept_source_documents(
         brief=documents["brief_path"],

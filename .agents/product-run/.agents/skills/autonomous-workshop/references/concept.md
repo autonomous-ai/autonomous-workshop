@@ -55,7 +55,9 @@ While pursuing the Goal:
 5. **Write back the researched constraints.** Author a derived-Wish record
    inside the concept tree carrying the routed Wish's own product identifier,
    objective, and context, together with the researched constraints. Never
-   change the routed Wish's own words.
+   change the routed Wish's own words: copy `product_id`, `objective`, and
+   `context` exactly from `WISH.json`; put all new researched or design
+   decisions under the derived record's `constraints`, never into `context`.
 
 On a round that carries a standing concept and feedback that invalidated the
 design, revise rather than restart: preserve every feature the feedback did

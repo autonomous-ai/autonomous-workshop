@@ -58,12 +58,19 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.run_root = Path(self.temporary.name).resolve()
         self.blueprint = ToyBlueprint()
+        self.wish = Wish.create(
+            "run-local-toy",
+            "a lamp shaped like a moon",
+            context={"acceptance_mode": "exact-wish-binding"},
+        )
+        self.wish_bytes = canonical_json(self.wish.to_dict())
+        (self.run_root / "WISH.json").write_bytes(self.wish_bytes)
         eve = InventorRosterEntry(
             "eve", ".codex/agents/eve.toml", "a" * 64, "1" * 64, "b" * 64
         )
         self.roster = InventorRoster((eve,))
         self.assignment = NativeMatchAssignment(
-            wish_sha256="e" * 64,
+            wish_sha256=sha256(self.wish_bytes),
             inventor_roster_sha256=self.roster.roster_sha256,
             selected_inventor_id="eve",
             selected_agent_path=eve.agent_path,
@@ -109,6 +116,10 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
             "round": 1,
             "max_rounds": 4,
             "inputs": {
+                "wish": {
+                    "path": "WISH.json",
+                    "sha256": sha256(self.wish_bytes),
+                },
                 "assignment": self.assignment.to_dict(),
                 "invented": self.invented.to_dict(),
             },
@@ -276,7 +287,7 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
             "wish_sha256": self.assignment.wish_sha256,
             "product_id": "run-local-toy",
             "objective": "a lamp shaped like a moon",
-            "context": {},
+            "context": {"acceptance_mode": "exact-wish-binding"},
             "constraints": {
                 "envelope_mm": brief["envelope_mm"],
                 "wall_thickness_mm": brief["wall_thickness_mm"],
@@ -386,6 +397,27 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
         self.assertFalse(
             (self.run_root / "artifacts/concept/r0001/concept.json").exists()
         )
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_finalizer_rejects_derived_wish_that_rewrites_routed_wish(self):
+        concept_root = self.build_concept_tree()
+        derived_path = concept_root / "derived_wish.json"
+        derived = json.loads(derived_path.read_bytes().decode("utf-8"))
+        derived["objective"] = "a rewritten objective"
+        identity = dict(derived)
+        identity.pop("derived_wish_sha256")
+        derived["derived_wish_sha256"] = sha256(canonical_json(identity))
+        derived_path.write_bytes(canonical_json(derived))
+        self.write_stage(FAKE)
+
+        completed = self.run_tool(
+            "concept",
+            "--concept-root",
+            "artifacts/concept/r0001/concept",
+            expected=2,
+        )
+
+        self.assertIn("changed the routed Wish's own words", completed.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
 

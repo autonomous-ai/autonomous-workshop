@@ -356,6 +356,12 @@ class MockSessionArchitectureTest(unittest.TestCase):
         )
         source = path.read_text(encoding="utf-8")
         validate_concept_boundary_instruction(source)
+        normalized = " ".join(source.split())
+        self.assertIn(
+            "copy `product_id`, `objective`, and `context` exactly from `WISH.json`",
+            normalized,
+        )
+        self.assertIn("never into `context`", normalized)
         regressed = " ".join(source.split()).replace(
             "Missing rendered images before finalization is the expected state",
             "Rendered images are required before finalization",
