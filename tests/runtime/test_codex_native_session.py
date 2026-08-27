@@ -1270,6 +1270,56 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertFalse(process.killed)
             self.assertLessEqual(process.wait_timeouts[0], 0.25)
 
+    def test_keyboard_interrupt_reaps_process_and_preserves_exact_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+
+            def interrupt_host():
+                raise KeyboardInterrupt()
+
+            launcher, factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(),
+                        "stdout_callbacks": {1: interrupt_host},
+                        "hang_until_terminated": True,
+                    },
+                    {"stdout": self.start_events()},
+                ]
+            )
+
+            with self.assertRaises(KeyboardInterrupt):
+                self.start(launcher, root)
+
+            self.assertTrue(factory.processes[0].terminated)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            self.assertTrue(checkpoint.is_file())
+
+            outcome = self.resume(launcher, root)
+
+            self.assertEqual(outcome.status, "completed")
+            self.assertIn("resume", factory.calls[1][0])
+            self.assertIn(THREAD_ID, factory.calls[1][0])
+
+    def test_system_exit_during_stream_setup_still_reaps_process(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [{"stdout": self.start_events(), "hang_until_terminated": True}]
+            )
+
+            with mock.patch.object(
+                codex_runtime._NativeActivityReporter,
+                "start",
+                side_effect=SystemExit(7),
+            ), self.assertRaises(SystemExit) as caught:
+                self.start(launcher, root)
+
+            self.assertEqual(caught.exception.code, 7)
+            self.assertTrue(factory.processes[0].terminated)
+
     def test_agent_message_does_not_infer_turn_completion(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1400,6 +1450,61 @@ class CodexNativeSessionTest(unittest.TestCase):
                 caught.exception, CodexRecoverableInvocationError
             )
 
+    def test_process_supervisor_rejects_non_exception_error_types(self):
+        class InvalidPsutil:
+            Error = object
+            NoSuchProcess = object
+
+            @staticmethod
+            def Process(unused_process_id):
+                return None
+
+            @staticmethod
+            def process_iter(unused_attrs=()):
+                return ()
+
+        with mock.patch.object(
+            codex_runtime.importlib,
+            "import_module",
+            return_value=InvalidPsutil,
+        ):
+            self.assertIsNone(codex_runtime._psutil_api())
+
+    def test_process_session_rejects_a_reused_leader_before_signaling(self):
+        class FakePsutilError(Exception):
+            pass
+
+        class FakeNoSuchProcess(FakePsutilError):
+            pass
+
+        candidate = mock.Mock()
+        candidate.info = {"pid": 4_242}
+        candidate.pid = 4_242
+        candidate.create_time.return_value = 2_000.0
+        fake_psutil = mock.Mock()
+        fake_psutil.Error = FakePsutilError
+        fake_psutil.NoSuchProcess = FakeNoSuchProcess
+        fake_psutil.process_iter.return_value = (candidate,)
+        identity = codex_runtime._ProcessSessionIdentity(4_242, 1_000.0)
+
+        with mock.patch.object(
+            codex_runtime,
+            "_psutil_api",
+            return_value=fake_psutil,
+        ), mock.patch.object(
+            codex_runtime.os,
+            "getsid",
+            return_value=4_242,
+        ):
+            self.assertIsNone(
+                codex_runtime._signal_process_session(
+                    identity,
+                    signal.SIGTERM,
+                )
+            )
+
+        candidate.send_signal.assert_not_called()
+
     @unittest.skipUnless(hasattr(os, "killpg"), "POSIX process groups required")
     def test_group_reap_kills_a_sigterm_ignoring_tool_descendant(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1448,6 +1553,95 @@ class CodexNativeSessionTest(unittest.TestCase):
 
                 self.assertIsNotNone(process.poll())
                 self.assertFalse(forbidden_late_write.exists())
+            finally:
+                if process.poll() is None:
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    process.wait(timeout=2)
+
+    @unittest.skipUnless(
+        hasattr(os, "setpgid") and hasattr(os, "getsid"),
+        "POSIX process sessions required",
+    )
+    def test_session_reap_kills_helper_in_its_own_process_group(self):
+        psutil = codex_runtime._psutil_api()
+        if psutil is None:
+            self.skipTest("process supervisor is unavailable")
+        host_session_id = os.getsid(0)
+        host_session_identity = codex_runtime._ProcessSessionIdentity(
+            host_session_id,
+            psutil.Process(host_session_id).create_time(),
+        )
+        if codex_runtime._process_session_members(host_session_identity) is None:
+            self.skipTest("process-session enumeration is unavailable")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            child_ready = root / "child-ready"
+            forbidden_late_write = root / "late-child-write"
+            child_code = (
+                "import os,signal,time\n"
+                "from pathlib import Path\n"
+                "os.setpgid(0, 0)\n"
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                "Path(%r).write_text(str(os.getpid()), encoding='utf-8')\n"
+                "time.sleep(0.9)\n"
+                "Path(%r).write_text('survived', encoding='utf-8')\n"
+                % (str(child_ready), str(forbidden_late_write))
+            )
+            parent_code = (
+                "import subprocess,time\n"
+                "subprocess.Popen(%r)\n"
+                "time.sleep(30)\n"
+                % [sys.executable, "-c", child_code]
+            )
+            process = subprocess.Popen(
+                [sys.executable, "-c", parent_code],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            try:
+                deadline = time.monotonic() + 5.0
+                while not child_ready.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                self.assertTrue(child_ready.exists())
+                child_pid = int(child_ready.read_text(encoding="utf-8"))
+                process_group_id = codex_runtime._dedicated_process_group_id(
+                    process
+                )
+                process_session_identity = (
+                    codex_runtime._dedicated_process_session_identity(process)
+                )
+                self.assertEqual(process_group_id, process.pid)
+                self.assertIsNotNone(process_session_identity)
+                self.assertEqual(
+                    process_session_identity.session_id,
+                    process.pid,
+                )
+                self.assertEqual(os.getpgid(child_pid), child_pid)
+                self.assertEqual(os.getsid(child_pid), process.pid)
+
+                self.assertTrue(
+                    codex_runtime._terminate_safely(
+                        process,
+                        process_group_id=process_group_id,
+                        process_session_identity=process_session_identity,
+                    )
+                )
+                time.sleep(1.0)
+
+                self.assertIsNotNone(process.poll())
+                self.assertFalse(forbidden_late_write.exists())
+                self.assertEqual(
+                    codex_runtime._process_session_members(
+                        process_session_identity
+                    ),
+                    (),
+                )
             finally:
                 if process.poll() is None:
                     try:

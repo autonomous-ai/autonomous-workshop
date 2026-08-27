@@ -39,3 +39,10 @@ manuals. The project is available under Apache-2.0 or BSD-3-Clause, and its
 PDFium wheels carry PDFium's BSD-style license plus notices for bundled
 third-party components. Those license files remain part of the separately
 distributed dependency wheel; Workshop does not vendor its binaries.
+
+## Process supervision runtime
+
+Workshop depends on `psutil` to enumerate and identity-pin every member of a
+native Codex run's isolated POSIX process session before termination. `psutil`
+is distributed under the BSD 3-Clause license; its complete license remains in
+the separately distributed dependency wheel.

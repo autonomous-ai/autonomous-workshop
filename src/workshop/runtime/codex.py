@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
+import math
 import os
 import re
 import signal
@@ -964,6 +966,61 @@ class _NativeActivityReporter:
                 self._condition.notify_all()
 
 
+@dataclass(frozen=True)
+class _ProcessSessionIdentity:
+    """PID-reuse-resistant identity for one dedicated POSIX session."""
+
+    session_id: int
+    leader_create_time: float
+
+    def __post_init__(self) -> None:
+        if (
+            type(self.session_id) is not int
+            or self.session_id <= 1
+            or not isinstance(self.leader_create_time, (int, float))
+            or isinstance(self.leader_create_time, bool)
+            or not math.isfinite(float(self.leader_create_time))
+            or self.leader_create_time <= 0
+        ):
+            raise ValueError("invalid process session identity")
+
+
+class _NativeProcessGuard:
+    """Own one launched Codex process session until it is proven quiescent.
+
+    The launcher may be unwound by ``KeyboardInterrupt`` or ``SystemExit``,
+    neither of which is an ``Exception``.  Keep cleanup outside the event
+    parser's ordinary failure classification and make it idempotent because
+    timeout, stderr, and launcher threads can all discover termination at the
+    same time.
+    """
+
+    def __init__(
+        self,
+        process: Any,
+        process_group_id: Optional[int],
+        process_session_identity: Optional[_ProcessSessionIdentity],
+    ) -> None:
+        self.process = process
+        self.process_group_id = process_group_id
+        self.process_session_identity = process_session_identity
+        self._lock = threading.Lock()
+        self._reaped = False
+
+    def reap(self) -> bool:
+        with self._lock:
+            if self._reaped:
+                return True
+            reaped = _terminate_safely(
+                self.process,
+                process_group_id=self.process_group_id,
+                process_session_identity=self.process_session_identity,
+            )
+            if reaped:
+                self._reaped = True
+            return reaped
+
+
 def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
     """Classify a decoded event without forwarding any event-owned bytes."""
 
@@ -1410,36 +1467,84 @@ class CodexNativeSessionLauncher:
         expected_thread_id: Optional[str],
         bind_thread: Any,
         activity_observer: Optional[Callable[[str], None]],
+        _process_guard: Optional[_NativeProcessGuard] = None,
+        _deadline: Optional[float] = None,
     ) -> tuple[bool, Optional[str]]:
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
-        deadline = time.monotonic() + self.timeout_seconds
-        try:
-            process = self._popen_factory(
-                command,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding="utf-8",
-                errors="strict",
-                bufsize=1,
-                cwd=str(run_root),
-                env=_codex_run_environment(run_root, run_policy),
-                start_new_session=True,
+        deadline = (
+            _deadline
+            if _deadline is not None
+            else time.monotonic() + self.timeout_seconds
+        )
+        if _process_guard is None:
+            try:
+                process = self._popen_factory(
+                    command,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    encoding="utf-8",
+                    errors="strict",
+                    bufsize=1,
+                    cwd=str(run_root),
+                    env=_codex_run_environment(run_root, run_policy),
+                    start_new_session=True,
+                )
+            except (OSError, subprocess.SubprocessError, TypeError, ValueError):
+                raise CodexInvocationError(
+                    "Codex native session could not be launched"
+                ) from None
+            process_group_id = _dedicated_process_group_id(process)
+            process_session_identity = _dedicated_process_session_identity(
+                process
             )
-        except (OSError, subprocess.SubprocessError, TypeError, ValueError):
-            raise CodexInvocationError(
-                "Codex native session could not be launched"
-            ) from None
-        process_group_id = _dedicated_process_group_id(process)
-        if isinstance(process, subprocess.Popen) and process_group_id is None:
-            _terminate_safely(process)
-            raise CodexInvocationError(
-                "Codex native session could not establish process isolation"
+            supervised_members = (
+                _process_session_members(process_session_identity)
+                if process_session_identity is not None
+                else None
             )
+            if isinstance(process, subprocess.Popen) and (
+                process_group_id is None
+                or process_session_identity is None
+                or supervised_members is None
+                or process.pid not in {
+                    member.pid for member in supervised_members
+                }
+            ):
+                _terminate_safely(process)
+                raise CodexInvocationError(
+                    "Codex native session could not establish process supervision"
+                )
+            process_guard = _NativeProcessGuard(
+                process,
+                process_group_id,
+                process_session_identity,
+            )
+            try:
+                return self._stream(
+                    command=command,
+                    prompt=prompt,
+                    run_root=run_root,
+                    run_policy=run_policy,
+                    expected_thread_id=expected_thread_id,
+                    bind_thread=bind_thread,
+                    activity_observer=activity_observer,
+                    _process_guard=process_guard,
+                    _deadline=deadline,
+                )
+            finally:
+                # This is deliberately outside every ``Exception`` classifier.
+                # Graceful host exits must never strand the dedicated Codex
+                # process session, while a successfully completed turn still
+                # follows the normal terminal-event and checkpoint path below.
+                process_guard.reap()
+
+        process_guard = _process_guard
+        process = process_guard.process
         if process.stdin is None or process.stdout is None or process.stderr is None:
-            _terminate_safely(process, process_group_id=process_group_id)
+            process_guard.reap()
             raise CodexInvocationError(
                 "Codex native session streams are unavailable"
             )
@@ -1465,10 +1570,7 @@ class CodexNativeSessionLauncher:
                     ]
                     if stderr_size > MAX_CODEX_STDERR_BYTES:
                         stderr_overflow.set()
-                        _terminate_safely(
-                            process,
-                            process_group_id=process_group_id,
-                        )
+                        process_guard.reap()
                         return
             except (OSError, ValueError, UnicodeError):
                 stderr_overflow.set()
@@ -1484,7 +1586,7 @@ class CodexNativeSessionLauncher:
 
         def expire() -> None:
             timed_out.set()
-            _terminate_safely(process, process_group_id=process_group_id)
+            process_guard.reap()
 
         timer = threading.Timer(max(0.001, deadline - time.monotonic()), expire)
         timer.daemon = True
@@ -1556,7 +1658,7 @@ class CodexNativeSessionLauncher:
         except Exception as exc:
             stream_failure = exc
             activity_reporter.observe("failed")
-            _terminate_safely(process, process_group_id=process_group_id)
+            process_guard.reap()
         finally:
             timer.cancel()
 
@@ -1576,10 +1678,10 @@ class CodexNativeSessionLauncher:
                 # emitting it, so give the process a brief chance to exit and
                 # then reap it without waiting for stdout EOF indefinitely.
                 intentionally_terminated = True
-                _terminate_safely(process, process_group_id=process_group_id)
+                process_guard.reap()
                 returncode = getattr(process, "returncode", None)
             except (OSError, ValueError):
-                _terminate_safely(process, process_group_id=process_group_id)
+                process_guard.reap()
                 returncode = getattr(process, "returncode", None)
                 stream_failure = CodexInvocationError(
                     "Codex native session could not be reaped"
@@ -1589,14 +1691,11 @@ class CodexNativeSessionLauncher:
                 returncode = process.wait(timeout=max(0.001, remaining))
             except (subprocess.TimeoutExpired, OSError, ValueError):
                 timed_out.set()
-                _terminate_safely(process, process_group_id=process_group_id)
+                process_guard.reap()
                 returncode = getattr(process, "returncode", None)
         stderr_thread.join(timeout=max(0.0, min(1.0, deadline - time.monotonic())))
         activity_reporter.stop()
-        process_tree_reaped = _terminate_safely(
-            process,
-            process_group_id=process_group_id,
-        )
+        process_tree_reaped = process_guard.reap()
 
         if timed_out.is_set():
             activity_reporter.observe("failed")
@@ -1775,6 +1874,150 @@ def _dedicated_process_group_id(process: Any) -> Optional[int]:
     return process_group_id
 
 
+def _psutil_api() -> Optional[Any]:
+    """Load the declared supervisor dependency with its required API surface."""
+
+    try:
+        psutil = importlib.import_module("psutil")
+    except ImportError:
+        return None
+    error_type = getattr(psutil, "Error", None)
+    no_such_process_type = getattr(psutil, "NoSuchProcess", None)
+    if (
+        not isinstance(error_type, type)
+        or not issubclass(error_type, BaseException)
+        or not isinstance(no_such_process_type, type)
+        or not issubclass(no_such_process_type, error_type)
+        or not callable(getattr(psutil, "Process", None))
+        or not callable(getattr(psutil, "process_iter", None))
+    ):
+        return None
+    return psutil
+
+
+def _dedicated_process_session_identity(
+    process: Any,
+) -> Optional[_ProcessSessionIdentity]:
+    """Return the isolated, creation-time-bound session for a real launcher."""
+
+    process_id = getattr(process, "pid", None)
+    if (
+        type(process_id) is not int
+        or process_id <= 1
+        or not hasattr(os, "getsid")
+    ):
+        return None
+    try:
+        process_session_id = os.getsid(process_id)
+        host_session_id = os.getsid(0)
+    except (AttributeError, OSError):
+        return None
+    if process_session_id != process_id or process_session_id == host_session_id:
+        return None
+    psutil = _psutil_api()
+    if psutil is None:
+        return None
+    try:
+        create_time = psutil.Process(process_id).create_time()
+        return _ProcessSessionIdentity(process_session_id, create_time)
+    except (OSError, ValueError, psutil.Error):
+        return None
+
+
+def _process_session_members(
+    process_session_identity: Optional[_ProcessSessionIdentity],
+) -> Optional[tuple[Any, ...]]:
+    """Return identity-pinned members of one exact POSIX process session.
+
+    Codex's built-in ``codex-code-mode-host`` creates its own process group but
+    remains in the root CLI's dedicated session.  Enumerating the session is
+    therefore the portable boundary available on supported POSIX hosts.  A
+    missing dependency, denied process-table read, or ambiguous identity fails
+    closed instead of pretending that the CLI's group proves quiescence.
+    """
+
+    if (
+        not isinstance(process_session_identity, _ProcessSessionIdentity)
+        or not hasattr(os, "getsid")
+    ):
+        return None
+    psutil = _psutil_api()
+    if psutil is None:
+        return None
+    process_session_id = process_session_identity.session_id
+    try:
+        candidates = tuple(psutil.process_iter(attrs=("pid",)))
+    except (OSError, RuntimeError, psutil.Error):
+        return None
+    members: list[Any] = []
+    for candidate in candidates:
+        process_id = candidate.info.get("pid")
+        if type(process_id) is not int:
+            return None
+        # PID 0 has special "current process" meaning for ``getsid`` and PID 1
+        # can never belong to this newly created unprivileged session.
+        if process_id <= 1:
+            continue
+        try:
+            candidate_session_id = os.getsid(process_id)
+        except ProcessLookupError:
+            continue
+        except PermissionError:
+            # An unprivileged Workshop process cannot create descendants under
+            # another account or attach an unrelated process to its session.
+            # System-owned processes that hide their SID are therefore outside
+            # this exact same-user launch boundary.
+            continue
+        except OSError:
+            return None
+        if candidate_session_id != process_session_id:
+            continue
+        try:
+            # Force psutil to bind future signals to this PID's creation
+            # identity rather than to the numeric PID alone.
+            create_time = candidate.create_time()
+        except psutil.NoSuchProcess:
+            continue
+        except psutil.Error:
+            return None
+        if (
+            process_id == process_session_id
+            and create_time != process_session_identity.leader_create_time
+        ):
+            # The numeric SID was recycled for another leader after the
+            # original session ended. Never signal the replacement session.
+            return None
+        members.append(candidate)
+    return tuple(sorted(members, key=lambda member: member.pid))
+
+
+def _signal_process_session(
+    process_session_identity: _ProcessSessionIdentity,
+    signal_number: int,
+) -> Optional[int]:
+    """Signal every still-bound member and return the observed member count."""
+
+    members = _process_session_members(process_session_identity)
+    if members is None:
+        return None
+    psutil = _psutil_api()
+    if psutil is None:
+        return None
+    process_session_id = process_session_identity.session_id
+    signaled = 0
+    for member in members:
+        try:
+            if os.getsid(member.pid) != process_session_id:
+                continue
+            member.send_signal(signal_number)
+            signaled += 1
+        except (ProcessLookupError, psutil.NoSuchProcess):
+            continue
+        except (OSError, psutil.Error):
+            return None
+    return signaled
+
+
 def _signal_process_group(process_group_id: int, signal_number: int) -> bool:
     try:
         os.killpg(process_group_id, signal_number)
@@ -1808,8 +2051,63 @@ def _terminate_safely(
     process: Any,
     *,
     process_group_id: Optional[int] = None,
+    process_session_identity: Optional[_ProcessSessionIdentity] = None,
 ) -> bool:
-    """Reap the launcher and prove its dedicated process group is empty."""
+    """Reap the launcher and prove its dedicated process session is empty."""
+
+    if process_session_identity is not None:
+        process_session_id = process_session_identity.session_id
+        if (
+            process_session_id != process_group_id
+            or not hasattr(os, "getsid")
+        ):
+            return False
+        try:
+            if process_session_id == os.getsid(0):
+                return False
+        except (AttributeError, OSError):
+            return False
+        if (
+            _signal_process_session(
+                process_session_identity,
+                signal.SIGTERM,
+            )
+            is None
+        ):
+            return False
+        parent_reaped = _wait_for_process(process, 0.5)
+        members = _process_session_members(process_session_identity)
+        if members is None:
+            return False
+        if members:
+            if (
+                _signal_process_session(
+                    process_session_identity,
+                    signal.SIGKILL,
+                )
+                is None
+            ):
+                return False
+            if not parent_reaped:
+                parent_reaped = _wait_for_process(process, 0.5)
+        deadline = time.monotonic() + 0.5
+        while True:
+            members = _process_session_members(process_session_identity)
+            if members is None:
+                return False
+            if not members:
+                return parent_reaped
+            if time.monotonic() >= deadline:
+                return False
+            if (
+                _signal_process_session(
+                    process_session_identity,
+                    signal.SIGKILL,
+                )
+                is None
+            ):
+                return False
+            time.sleep(0.01)
 
     if process_group_id is not None:
         if (

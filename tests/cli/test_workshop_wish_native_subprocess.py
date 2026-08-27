@@ -7,11 +7,25 @@ from io import StringIO
 from pathlib import Path
 from unittest import mock
 
+import psutil
+
 from cli.main import main
 
 
 class WorkshopWishNativeSubprocessTest(unittest.TestCase):
     def test_wish_launches_native_codex_in_materialized_product_run(self):
+        def fixture_session_members(session_identity):
+            session_id = session_identity.session_id
+            try:
+                member = psutil.Process(session_id)
+                if os.getsid(member.pid) != session_id:
+                    return ()
+                if member.create_time() != session_identity.leader_create_time:
+                    return None
+            except (OSError, psutil.Error):
+                return ()
+            return (member,)
+
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             home = root / "workshop-home"
@@ -92,6 +106,9 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
             with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
+            ), mock.patch(
+                "workshop.runtime.codex._process_session_members",
+                side_effect=fixture_session_members,
             ), redirect_stdout(
                 output
             ), redirect_stderr(progress):

@@ -509,6 +509,7 @@ source = { editable = "." }
 dependencies = [
     { name = "cadgen" },
     { name = "pillow" },
+    { name = "psutil" },
     { name = "pypdf" },
     { name = "pypdfium2" },
     { name = "reportlab" },
@@ -518,6 +519,7 @@ dependencies = [
 requires-dist = [
     { name = "cadgen", specifier = "==0.4.19" },
     { name = "pillow", specifier = ">=10.0" },
+    { name = "psutil", specifier = ">=7.2,<8" },
     { name = "pypdf", specifier = ">=6.16.2,<7" },
     { name = "pypdfium2", specifier = ">=5.13,<6" },
     { name = "reportlab", specifier = ">=4.4" },

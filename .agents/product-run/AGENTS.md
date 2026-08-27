@@ -76,10 +76,11 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   comparison, specialist creation, or independent review when it improves the
   active Goal. Do not launch another `codex` process or build a Python worker
   scheduler.
-- Keep every tool subprocess attached to the Manager's foreground process
-  group. Do not daemonize, detach, call `setsid`/`start_new_session`, or leave a
-  background process running after a tool returns. Host timeout recovery can
-  prove only that this dedicated process group is empty before it resumes.
+- Keep every tool subprocess attached to the Manager's dedicated POSIX process
+  session. Do not daemonize, detach, call `setsid`/`start_new_session`, or leave
+  a background process running after a tool returns. Host timeout recovery
+  proves that the entire dedicated session is empty before it resumes, even
+  when a built-in helper uses another process group within that session.
 - Codex owns custom-agent spawning, routing, waiting, and synthesis. You remain
   responsible for reading `STAGE.json`, reviewing child work, and returning
   the single proposal. A child cannot advance a stage, change authority, or

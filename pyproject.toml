@@ -13,6 +13,7 @@ license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 dependencies = [
   "cadgen==0.4.19",
   "pillow>=10.0",
+  "psutil>=7.2,<8",
   "pypdf>=6.16.2,<7",
   "pypdfium2>=5.13,<6",
   "reportlab>=4.4",

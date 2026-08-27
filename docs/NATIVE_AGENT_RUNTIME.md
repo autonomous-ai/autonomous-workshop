@@ -103,12 +103,13 @@ A native turn timeout or explicitly recognized provider-transport disconnect
 does not require a person to rerun the command after the session UUID has been
 checkpointed. The launcher reports only those two cases through the typed
 `CodexRecoverableInvocationError` boundary, and only after proving that the
-previous launcher and its dedicated process group are gone, including tool or
-subagent descendants that remain attached to that group. Product-run agents
-and custom tools are forbidden from daemonizing, detaching, creating a new
-session/process group, or intentionally leaving background work behind; the
-portable host boundary cannot prove quiescence for a process that deliberately
-escapes it. While retaining the same exclusive run lock, the host counts the
+previous launcher's dedicated POSIX process session is empty. This includes
+Codex's built-in code-mode host even though that helper creates a separate
+process group inside the session. Product-run agents and custom tools are
+forbidden from daemonizing, detaching, creating a new process session, or
+intentionally leaving background work behind; the portable host boundary
+cannot prove quiescence for a process that deliberately escapes it. While
+retaining the same exclusive run lock, the host counts the
 failed attempt, preserves the unchanged stage packet, waits a bounded
 exponential delay with deterministic per-run jitter, and resumes that exact
 session for another turn. This continuation consumes the existing
@@ -125,6 +126,18 @@ checkpoint-bound `agent-outcome.json`, the host evaluates that proposal once
 through the normal gate before considering any continuation. Provider
 transport classification uses only exact anchored diagnostics on the private,
 bounded launcher channel; generic or unrecognized stderr fails closed.
+
+The launched process session is owned by an idempotent guard outside the event
+parser's ordinary `Exception` classification. A graceful host unwind such as
+Ctrl-C (`KeyboardInterrupt`) or `SystemExit` therefore terminates and reaps the
+dedicated Codex process session across all of its process groups before
+propagating the interruption. The host binds the session leader to its
+launch-time process creation identity; ambiguous identity or numeric SID reuse
+fails closed without signaling the replacement session. User cancellation is
+not converted into an automatic transport retry: if the exact
+session identity was already checkpointed, a later explicit `workshop resume`
+continues it; otherwise the run remains fail-closed. No portable subprocess
+guard can run after an uncatchable host death such as `SIGKILL` or power loss.
 
 The JSONL event channel is reduced incrementally rather than accumulated as a
 turn transcript. Each individual event has a hard byte limit and is decoded,
