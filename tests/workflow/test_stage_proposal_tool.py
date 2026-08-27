@@ -439,6 +439,39 @@ class StageProposalToolTest(unittest.TestCase):
             (self.run_root / "artifacts/make/r0001/made.json").exists()
         )
 
+    def test_make_rejects_cad_outputs_that_fresh_host_replay_rewrites(self):
+        product_root, _, _, _ = self.create_product()
+        concept = self.create_concept()
+        cache = product_root / "cad/project/__cadgen__/models/moon.step.py"
+        cache.mkdir(parents=True)
+        (cache / "assembly.json").write_text("{}")
+        (product_root / "cad/project/moon.step").write_bytes(b"derived STEP")
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "concept": concept.to_dict(),
+            },
+            round_index=1,
+        )
+
+        result = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("CAD project must be source-clean", result.stderr)
+        self.assertIn("__cadgen__", result.stderr)
+        self.assertIn("moon.step", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_playtest_derives_file_hashes_and_loop_transition(self):
         made = self.create_made()
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"

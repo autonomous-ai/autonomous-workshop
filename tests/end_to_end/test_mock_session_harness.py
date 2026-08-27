@@ -369,6 +369,24 @@ class MockSessionArchitectureTest(unittest.TestCase):
         with self.assertRaisesRegex(MockSessionEvidenceError, "lost the pre-render boundary"):
             validate_concept_boundary_instruction(regressed)
 
+    def test_make_instruction_requires_real_geometry_and_replayed_verifier(self):
+        repository = Path(__file__).resolve().parents[2]
+        source = (
+            repository
+            / ".agents/product-run/.agents/skills/autonomous-workshop/references/make-playtest.md"
+        ).read_text(encoding="utf-8")
+        for required in (
+            "module-scope `gen_step()` that returns actual geometry",
+            "generated exports rather than placeholder text",
+            "disposable exact copy of the source-clean declared",
+            ".agents/skills/cad/scripts/verify_project",
+            "--fresh --exports --strict-fit",
+            "requires this verifier to exit zero",
+            "do not include `__cadgen__`",
+            "verifier-generated reports that a fresh host",
+        ):
+            self.assertIn(required, source)
+
 
 class MockCodexPassThroughTest(unittest.TestCase):
     def setUp(self):

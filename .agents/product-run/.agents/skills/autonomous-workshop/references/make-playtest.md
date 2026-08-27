@@ -53,7 +53,30 @@ include root `product.json` metadata with non-empty `title` and `summary` plus
 also include the CAD project, assembled STEP/STL outputs, and deterministic
 CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
-rather than prose assertions. Then run:
+rather than prose assertions. A `*.step.py` filename containing parameters or
+metadata is not a CAD generator: every generated entry must define one
+module-scope `gen_step()` that returns actual geometry, and assembled STEP/STL
+files must be generated exports rather than placeholder text.
+
+Before finalizing, make a disposable exact copy of the source-clean declared
+CAD project and run the same final CAD mode the host will replay on that copy.
+Repair every failure in the declared sources, refresh the disposable copy, and
+rerun until it passes:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/verify_project \
+  <CAD project directory> --fresh --exports --strict-fit
+```
+
+Do not finalize Make merely because the contract tool is structurally ready;
+successful completion requires this verifier to exit zero on the exact project
+source bytes being submitted. Copy the verified assembled STEP/STL exports and
+a stable verification report into their declared locations outside the CAD
+project. The submitted CAD project itself must remain source-clean: keep its
+generator/helper sources, static README/spec files, and any imported STEP that
+is source-of-truth, but do not include `__cadgen__`, generated STEP/STL/GLB
+outputs, progress/lock files, or verifier-generated reports that a fresh host
+replay will rewrite. After verification and cleanup, run:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \

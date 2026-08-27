@@ -1662,6 +1662,33 @@ def _make_contract(
     )
     manifest = _tree_manifest(run_root, product_root_value, "Make product tree")
     paths = {entry["path"] for entry in manifest["entries"]}
+    project_prefix = project_relative.as_posix() + "/"
+    project_paths = {
+        path[len(project_prefix) :]
+        for path in paths
+        if path.startswith(project_prefix)
+    }
+    rewritten_project_paths = sorted(
+        path
+        for path in project_paths
+        if "__cadgen__" in PurePosixPath(path).parts
+        or PurePosixPath(path).name == "verification-pipeline.md"
+    )
+    generators = {
+        path[: -len(".step.py")]
+        for path in project_paths
+        if path.endswith(".step.py")
+    }
+    for stem in generators:
+        for suffix in (".step", ".stl", ".glb", ".3mf"):
+            candidate = stem + suffix
+            if candidate in project_paths:
+                rewritten_project_paths.append(candidate)
+    if rewritten_project_paths:
+        raise ProposalError(
+            "CAD project must be source-clean; remove verifier-generated files: %s"
+            % sorted(set(rewritten_project_paths))
+        )
     if "product.json" not in paths:
         raise ProposalError("Make product manifest lacks product.json")
     if verification_relative.as_posix() not in paths:
