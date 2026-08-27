@@ -1380,7 +1380,13 @@ def native_stage_prompt(stage: str) -> str:
         raise ContractError("native run stage is invalid")
     return (
         "Follow the local AGENTS.md and autonomous-workshop skill. "
-        "Read the host-written STAGE.json. Create one native Codex goal for the "
+        "Read the host-written STAGE.json. Treat every host-written rejection "
+        "in that packet as authoritative proof that the prior proposal failed "
+        "its host gate and that the current subject is a new stage attempt. If "
+        "the prior Goal is already complete, create a new Goal bound to this "
+        "current subject. Address the exact rejection before finalizing; never "
+        "rerun the finalizer or resubmit unchanged rejected bytes. Create one "
+        "native Codex goal for the "
         "current %s stage with successful finalization as its stopping condition; "
         "keep inspecting, acting, evaluating, and improving until that condition "
         "is met. Use the run-local deterministic proposal tool, complete the goal "

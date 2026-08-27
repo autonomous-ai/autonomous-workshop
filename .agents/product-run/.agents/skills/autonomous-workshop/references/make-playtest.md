@@ -5,6 +5,15 @@ blueprint, canonical output paths, current round, round limit, and any prior
 Playtest feedback. Verify those bytes before acting. Host rounds and
 checkpoints bound the work; Codex performs the reasoning and repair.
 
+If `STAGE.json` contains `host_make_proposal_rejection` or
+`host_cad_gate_rejection`, the previous Make finalizer did not pass the host
+gate. Read the complete rejection and its bounded diagnostics, repair the
+exact cited defect, rerun the relevant checks, and verify that the rejected
+product or evidence bytes changed before invoking the finalizer again. A
+completed Goal for the earlier subject is not completion for this new
+rejection-bound attempt. Do not merely regenerate and resubmit the same Made
+contract.
+
 ## Make Goal and improvement loop
 
 Create one native Codex Goal for the current Make attempt. Its objective is to

@@ -20,6 +20,10 @@ skill is your workflow playbook, not a separate agent process.
    intend to do.
 3. Inspect the exact sealed upstream files named in `STAGE.json`. Durable files
    and receipts override session memory and native Goal state.
+   If the packet includes a host-written rejection, the prior proposal did not
+   pass its host gate. The rejection-bound subject is a new attempt: address
+   its exact feedback and change the rejected artifact or evidence before
+   finalizing. Never resubmit unchanged rejected bytes.
 4. Read only the reference for the current stage:
    - Match: [references/wish-match.md](references/wish-match.md)
    - Invent: [references/invent.md](references/invent.md)
@@ -37,6 +41,9 @@ stages; do not create stage-specific sessions or impersonate Python workers.
 For each host-authorized Match, Invent, Make, Playtest, or Release attempt,
 create one native Codex Goal. Keep only one Goal active at a time. If the Goal
 for this exact checkpoint is already active after a resume, continue it.
+If a host rejection changed the current subject after a prior Goal completed,
+that completed Goal is stale for the new attempt; create a new Goal bound to
+the rejection-bearing subject.
 Use the Goal control exposed by the native Codex session; do not emulate Goal
 state with a workspace file, prompt chain, or Python controller.
 
