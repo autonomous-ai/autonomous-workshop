@@ -53,6 +53,13 @@ class PackageDataTest(unittest.TestCase):
             self.assertEqual(root.parent.parent.name, expected_owners[name])
             self.assertTrue((root / "SKILL.md").is_file())
 
+        manual_skill = (roots["manual-design"] / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("smallest complete physical format", manual_skill)
+        self.assertIn("two to four small pages", manual_skill)
+        self.assertIn("not fixed page-count gates", manual_skill)
+
     def test_every_schema_is_owned_by_its_architecture_component(self):
         expected = {
             name: (

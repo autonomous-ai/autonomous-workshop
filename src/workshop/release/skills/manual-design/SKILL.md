@@ -20,6 +20,11 @@ play experience without a website, phone, QR code, or prior explanation.
   or booklet may each be right. Decide page size, orientation, page count,
   binding, margins, and bleed deliberately instead of defaulting every toy to
   one template.
+- Use the smallest complete physical format and never add pages merely to make
+  the guide feel substantial. A simple one-piece toy will often fit a
+  double-sided card or two to four small pages; games, assemblies, or products
+  with real rule complexity may earn a longer booklet. Treat these as design
+  heuristics, not fixed page-count gates.
 - Choose an authoring method that gives the concept the strongest print result.
   HTML/CSS-to-PDF, vector-native layout, and programmatic drawing are all valid.
   Do not force a generic visual template across products.
