@@ -473,6 +473,18 @@ class _OneSessionProductAgent:
             verdict, feedback = self.playtest_plan.pop(0)
         else:
             verdict, feedback = "pass", []
+        answers = [
+            {
+                "lead": lead["id"],
+                "verdict": "dismissed",
+                "why": "The fixture revision has no %s exposure." % lead["nodes"][1],
+                "feedback_code": None,
+            }
+            for lead in inputs.get("vault_leads", [])
+        ]
+        for check in checks:
+            if check["check_id"] == "agent-playtest":
+                check["observations"]["vault_leads"] = answers
         source = "authored/playtest.json"
         _write_json(
             run_root / source,
@@ -1834,6 +1846,10 @@ class NativeFullRunTest(unittest.TestCase):
                 invent_gate["evidence"]["checks"]["vault_leads"], len(leads)
             )
             self.assertEqual(by_stage["playtest"]["inputs"]["vault_leads"], leads)
+            self.assertEqual(
+                playtest_gate["evidence"]["checks"]["vault_leads_answered"], len(leads)
+            )
+            self.assertEqual(playtest_gate["evidence"]["checks"]["vault_leads_confirmed"], 0)
             self.assertTrue(make_gate["evidence"]["checks"]["cad_verification_passed"])
             self.assertTrue(
                 playtest_gate["evidence"]["checks"]["cad_verification_passed"]

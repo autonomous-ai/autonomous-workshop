@@ -140,7 +140,21 @@ three-field authored proposal under `drafts/`.
 
 Leave the exact evidence tree requested by `STAGE.json` and one authored JSON
 source with exactly `checks`, `feedback`, and `verdict`. Every required check
-id must appear once and cite its config and evidence file. Never invent
+id must appear once and cite its config and evidence file.
+
+When `STAGE.json` carries `vault_leads`, the `agent-playtest` check's
+`observations` must answer every lead once under `vault_leads`:
+
+```json
+{"lead": "<id from STAGE.json>", "verdict": "confirmed", "why": "...",
+ "feedback_code": "<code of the feedback item that repairs it>"}
+{"lead": "<id>", "verdict": "dismissed", "why": "...", "feedback_code": null}
+```
+
+A confirmed lead is a risk you observed in this exact revision, so it must
+name the feedback item that carries the repair direction; a dismissed lead
+says in one sentence why the recorded risk does not apply here. Unanswered,
+duplicated, or never-issued lead ids fail the finalizer and the host gate. Never invent
 physical trials, human players, measurements, or results. Every failing check
 must name the concrete product or design area and the repair direction.
 Invalidate Playtest and its downstream evidence; the host returns every

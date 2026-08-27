@@ -14,6 +14,7 @@ from workshop.artifacts import build_artifact_manifest
 from workshop.invent.native import NativeInvented
 from tests.invent.test_native_contract import CONCEPT_VIOLATIONS, v4_concept
 from tests.invent.test_vault import write_vault
+from tests.playtest.test_native_playtested import LEAD_ANSWER_CASES
 from workshop.invent.vault import Vault
 from workshop.make.native import NativeMade
 from workshop.match.native import (
@@ -719,6 +720,95 @@ class StageProposalToolTest(unittest.TestCase):
             (self.run_root / "artifacts/make/r0001/made.json").exists()
         )
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_vault_lead_answer_rules_match_the_host_mirror(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_leads_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        for name, leads, checks, feedback, expected in LEAD_ANSWER_CASES:
+            with self.subTest(case=name):
+                if isinstance(expected, dict):
+                    self.assertEqual(tool._validate_vault_lead_answers(leads, checks, feedback), expected)
+                else:
+                    with self.assertRaisesRegex(tool.ProposalError, expected):
+                        tool._validate_vault_lead_answers(leads, checks, feedback)
+
+    def test_playtest_must_answer_issued_vault_leads(self):
+        made = self.create_made()
+        evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
+        evidence_root.mkdir(parents=True)
+        (evidence_root / "config.json").write_bytes(b'{"seed":1}\n')
+        lead = {"id": "c" * 16, "kind": "risk", "nodes": ["mechanisms/x", "anti-patterns/y"], "explanation": "", "evidence": [], "suggested_fixes": []}
+        checks = []
+        for check_id in self.blueprint.required_playtest_checks():
+            evidence_ref = "%s.json" % check_id
+            (evidence_root / evidence_ref).write_bytes(canonical_json({"check": check_id}) + b"\n")
+            checks.append(
+                {
+                    "check_id": check_id,
+                    "passed": True,
+                    "evaluator": "workshop-host",
+                    "evaluator_version": "1.0.0",
+                    "config_ref": "config.json",
+                    "evidence_ref": evidence_ref,
+                    "observed_at": "2026-08-26T00:00:00Z",
+                    "observations": {"ok": True},
+                }
+            )
+        self.write_stage(
+            "playtest",
+            {
+                "made": made.to_dict(),
+                "required_check_ids": list(self.blueprint.required_playtest_checks()),
+                "vault_leads": [lead],
+            },
+            round_index=1,
+        )
+        self.write_json(
+            "drafts/playtest.json", {"checks": checks, "feedback": [], "verdict": "pass"}
+        )
+        completed = self.run_tool(
+            "playtest", "--source", "drafts/playtest.json",
+            "--evidence-root", "artifacts/playtest/r0001/evidence", expected=2,
+        )
+        self.assertIn("unanswered: " + "c" * 16, completed.stderr)
+        for check in checks:
+            if check["check_id"] == "agent-playtest":
+                check["observations"]["vault_leads"] = [
+                    {"lead": "c" * 16, "verdict": "dismissed", "why": "No exposure.", "feedback_code": None}
+                ]
+        self.write_json(
+            "drafts/playtest.json", {"checks": checks, "feedback": [], "verdict": "pass"}
+        )
+        self.run_tool(
+            "playtest", "--source", "drafts/playtest.json",
+            "--evidence-root", "artifacts/playtest/r0001/evidence",
+        )
+        document, _ = self.assert_canonical_file("artifacts/playtest/r0001/playtested.json")
+        playtested = NativePlaytested.from_mapping(document)
+        self.assertEqual(
+            playtested.assert_vault_leads_answered([lead]),
+            {"answered": 1, "confirmed": 0, "dismissed": 1},
+        )
+        (self.run_root / "artifacts/playtest/r0001/playtested.json").unlink()
+        (self.run_root / "agent-outcome.json").unlink()
+        spec = importlib.util.spec_from_file_location("stage_proposal_playtest_run", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        import argparse
+
+        with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(Path(sys.executable).absolute())}):
+            result = tool.run(
+                argparse.Namespace(
+                    run_root=str(self.run_root),
+                    command="playtest",
+                    source="drafts/playtest.json",
+                    evidence_root="artifacts/playtest/r0001/evidence",
+                )
+            )
+        self.assertEqual(result["outcome_path"], "agent-outcome.json")
+        again, _ = self.assert_canonical_file("artifacts/playtest/r0001/playtested.json")
+        self.assertEqual(again, document)
 
     def test_playtest_derives_file_hashes_and_loop_transition(self):
         made = self.create_made()

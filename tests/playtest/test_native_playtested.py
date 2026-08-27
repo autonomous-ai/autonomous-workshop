@@ -15,12 +15,69 @@ from workshop.match.native import (
     InventorRoster,
     InventorRosterEntry,
 )
-from workshop.playtest.native import NativePlaytestCheck, NativePlaytested
+from workshop.playtest.native import (
+    NativePlaytestCheck,
+    NativePlaytested,
+    validate_vault_lead_answers,
+)
 from workshop.product import ToyBlueprint
 
 
 def _sha(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
+
+
+LEAD_A = {"id": "a" * 16, "kind": "risk", "nodes": ["mechanisms/x", "anti-patterns/y"]}
+LEAD_B = {"id": "b" * 16, "kind": "risk", "nodes": ["mechanisms/x", "anti-patterns/z"]}
+FEEDBACK = [{"code": "fix-y", "severity": "improve"}]
+
+
+def _check(answers=None, check_id="agent-playtest"):
+    observations = {"ok": True}
+    if answers is not None:
+        observations["vault_leads"] = answers
+    return {"check_id": check_id, "observations": observations}
+
+
+def _answer(lead, verdict="dismissed", why="Not exposed here.", feedback_code=None):
+    return {"lead": lead["id"], "verdict": verdict, "why": why, "feedback_code": feedback_code}
+
+
+# (name, leads, checks, feedback, expected result or error pattern) — shared with the
+# finalizer suite so the run-local mirror and the host stay identical.
+LEAD_ANSWER_CASES = (
+    ("no-leads-no-answers", [], [_check()], [], {"answered": 0, "confirmed": 0, "dismissed": 0}),
+    ("no-leads-empty-list", [], [_check([])], [], {"answered": 0, "confirmed": 0, "dismissed": 0}),
+    ("no-leads-but-answers", [], [_check([_answer(LEAD_A)])], [], "never issued"),
+    (
+        "all-dismissed",
+        [LEAD_A, LEAD_B],
+        [_check([_answer(LEAD_A), _answer(LEAD_B)]), _check(None, "mechanical-check")],
+        [],
+        {"answered": 2, "confirmed": 0, "dismissed": 2},
+    ),
+    (
+        "one-confirmed",
+        [LEAD_A, LEAD_B],
+        [_check([_answer(LEAD_A, "confirmed", "Seen in round 1.", "fix-y"), _answer(LEAD_B)])],
+        FEEDBACK,
+        {"answered": 2, "confirmed": 1, "dismissed": 1},
+    ),
+    ("bad-issued-id", [{"id": "nope"}], [_check([])], [], "lead id is invalid"),
+    ("answers-not-list", [LEAD_A], [_check("x")], [], "must be a list"),
+    ("unanswered", [LEAD_A, LEAD_B], [_check([_answer(LEAD_A)])], [], "unanswered: " + "b" * 16),
+    ("missing-observation-key", [LEAD_A], [_check()], [], "unanswered"),
+    ("no-agent-playtest-check", [LEAD_A], [_check([_answer(LEAD_A)], "mechanical-check")], [], "unanswered"),
+    ("unknown-lead", [LEAD_A], [_check([_answer(LEAD_A), _answer(LEAD_B)])], [], "not issued"),
+    ("duplicate", [LEAD_A], [_check([_answer(LEAD_A), _answer(LEAD_A)])], [], "more than once"),
+    ("bad-shape", [LEAD_A], [_check([{"lead": "a" * 16}])], [], "exactly lead, verdict"),
+    ("bad-verdict", [LEAD_A], [_check([_answer(LEAD_A, "maybe")])], [], "confirmed or dismissed"),
+    ("blank-why", [LEAD_A], [_check([_answer(LEAD_A, why="   ")])], [], "non-empty why"),
+    ("long-why", [LEAD_A], [_check([_answer(LEAD_A, why="x" * 1001)])], [], "non-empty why"),
+    ("confirmed-no-code", [LEAD_A], [_check([_answer(LEAD_A, "confirmed", "Seen.")])], FEEDBACK, "existing feedback code"),
+    ("confirmed-unknown-code", [LEAD_A], [_check([_answer(LEAD_A, "confirmed", "Seen.", "other")])], FEEDBACK, "existing feedback code"),
+    ("dismissed-with-code", [LEAD_A], [_check([_answer(LEAD_A, feedback_code="fix-y")])], FEEDBACK, "must not name feedback"),
+)
 
 
 class NativePlaytestedTest(unittest.TestCase):
@@ -152,6 +209,24 @@ class NativePlaytestedTest(unittest.TestCase):
             feedback=feedback,
             verdict=verdict,
         )
+
+    def test_vault_lead_answers_are_validated_exactly(self):
+        for name, leads, checks, feedback, expected in LEAD_ANSWER_CASES:
+            with self.subTest(case=name):
+                if isinstance(expected, dict):
+                    self.assertEqual(validate_vault_lead_answers(leads, checks, feedback), expected)
+                else:
+                    with self.assertRaisesRegex(ContractError, expected):
+                        validate_vault_lead_answers(leads, checks, feedback)
+
+    def test_contract_answers_leads_through_its_checks_and_feedback(self):
+        playtested = self._playtested()
+        self.assertEqual(
+            playtested.assert_vault_leads_answered([]),
+            {"answered": 0, "confirmed": 0, "dismissed": 0},
+        )
+        with self.assertRaisesRegex(ContractError, "unanswered"):
+            playtested.assert_vault_leads_answered([LEAD_A])
 
     def test_round_trip_covers_blueprint_and_rehashes_evidence(self):
         playtested = self._playtested()

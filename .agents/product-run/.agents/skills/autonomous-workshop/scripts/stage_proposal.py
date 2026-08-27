@@ -1743,6 +1743,75 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
     return validated
 
 
+VAULT_LEAD_CHECK_ID = "agent-playtest"
+VAULT_LEAD_VERDICTS = ("confirmed", "dismissed")
+MAX_VAULT_LEAD_WHY = 1_000
+LEAD_ID_RE = re.compile(r"^[0-9a-f]{16}$")
+
+
+def _validate_vault_lead_answers(
+    leads: Sequence[Mapping[str, Any]],
+    checks: Sequence[Mapping[str, Any]],
+    feedback: Sequence[Mapping[str, Any]],
+) -> dict[str, int]:
+    """Every issued design-vault lead must be answered exactly once (host mirror)."""
+
+    issued = {}
+    for lead in leads:
+        identifier = lead.get("id") if isinstance(lead, Mapping) else None
+        if not isinstance(identifier, str) or LEAD_ID_RE.fullmatch(identifier) is None:
+            raise ProposalError("issued vault lead id is invalid")
+        issued[identifier] = lead
+    answers: list[Any] = []
+    for check in checks:
+        if check.get("check_id") == VAULT_LEAD_CHECK_ID:
+            raw = (check.get("observations") or {}).get("vault_leads", [])
+            if not isinstance(raw, (list, tuple)):
+                raise ProposalError("vault_leads answers must be a list")
+            answers = list(raw)
+    if not issued:
+        if answers:
+            raise ProposalError("Playtest answers vault leads that were never issued")
+        return {"answered": 0, "confirmed": 0, "dismissed": 0}
+    codes = {item.get("code") for item in feedback if isinstance(item, Mapping)}
+    seen: set[str] = set()
+    confirmed = 0
+    for answer in answers:
+        if not isinstance(answer, Mapping) or set(answer) != {
+            "lead",
+            "verdict",
+            "why",
+            "feedback_code",
+        }:
+            raise ProposalError("vault lead answers need exactly lead, verdict, why, feedback_code")
+        identifier = answer["lead"]
+        if identifier not in issued:
+            raise ProposalError(
+                "vault lead answer names a lead that was not issued: %r" % (identifier,)
+            )
+        if identifier in seen:
+            raise ProposalError("vault lead %s is answered more than once" % identifier)
+        seen.add(identifier)
+        if answer["verdict"] not in VAULT_LEAD_VERDICTS:
+            raise ProposalError("vault lead %s verdict must be confirmed or dismissed" % identifier)
+        why = answer["why"]
+        if not isinstance(why, str) or not why.strip() or len(why) > MAX_VAULT_LEAD_WHY:
+            raise ProposalError("vault lead %s needs a bounded non-empty why" % identifier)
+        code = answer["feedback_code"]
+        if answer["verdict"] == "confirmed":
+            if not isinstance(code, str) or code not in codes:
+                raise ProposalError(
+                    "confirmed vault lead %s must name an existing feedback code" % identifier
+                )
+            confirmed += 1
+        elif code is not None:
+            raise ProposalError("dismissed vault lead %s must not name feedback" % identifier)
+    missing = sorted(set(issued) - seen)
+    if missing:
+        raise ProposalError("Playtest left vault leads unanswered: %s" % ", ".join(missing))
+    return {"answered": len(seen), "confirmed": confirmed, "dismissed": len(seen) - confirmed}
+
+
 def _playtest_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -1832,6 +1901,11 @@ def _playtest_contract(
     if len(observed_ids) != len(set(observed_ids)) or set(observed_ids) != set(required_ids):
         raise ProposalError("Playtest checks must cover the required check ids exactly")
     feedback = [_feedback(item) for item in _array(authored["feedback"], "Playtest feedback")]
+    _validate_vault_lead_answers(
+        _array(inputs.get("vault_leads", []), "Playtest STAGE vault_leads"),
+        checks,
+        feedback,
+    )
     failing = any(not item["passed"] for item in checks)
     actionable = any(item["severity"] in ("improve", "block") for item in feedback)
     if verdict == "pass" and (failing or actionable):

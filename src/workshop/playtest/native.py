@@ -78,6 +78,82 @@ def _safe_relative(value: Any, label: str) -> PurePosixPath:
     return candidate
 
 
+VAULT_LEAD_CHECK_ID = "agent-playtest"
+VAULT_LEAD_VERDICTS = ("confirmed", "dismissed")
+MAX_VAULT_LEAD_WHY = 1_000
+_LEAD_ID = re.compile(r"^[0-9a-f]{16}$")
+
+
+def validate_vault_lead_answers(
+    leads: Sequence[Mapping[str, Any]],
+    checks: Sequence[Mapping[str, Any]],
+    feedback: Sequence[Mapping[str, Any]],
+) -> dict[str, int]:
+    """Every issued design-vault lead must be answered exactly once.
+
+    Answers live in the ``agent-playtest`` check's observations as
+    ``vault_leads``: ``{"lead", "verdict", "why", "feedback_code"}``.  A
+    ``confirmed`` lead must name a feedback item by ``code`` so the risk it
+    confirmed becomes a repair; a ``dismissed`` lead must say why and names
+    no feedback.  With no issued leads nothing is required and nothing may be
+    answered.
+    """
+
+    issued = {}
+    for lead in leads:
+        identifier = lead.get("id") if isinstance(lead, Mapping) else None
+        if not isinstance(identifier, str) or _LEAD_ID.fullmatch(identifier) is None:
+            raise ContractError("issued vault lead id is invalid")
+        issued[identifier] = lead
+    answers: list[Any] = []
+    for check in checks:
+        if check.get("check_id") == VAULT_LEAD_CHECK_ID:
+            observations = check.get("observations") or {}
+            raw = observations.get("vault_leads", [])
+            if not isinstance(raw, (list, tuple)):
+                raise ContractError("vault_leads answers must be a list")
+            answers = list(raw)
+    if not issued:
+        if answers:
+            raise ContractError("Playtest answers vault leads that were never issued")
+        return {"answered": 0, "confirmed": 0, "dismissed": 0}
+    codes = {item.get("code") for item in feedback if isinstance(item, Mapping)}
+    seen: set[str] = set()
+    confirmed = 0
+    for answer in answers:
+        if not isinstance(answer, Mapping) or set(answer) != {
+            "lead",
+            "verdict",
+            "why",
+            "feedback_code",
+        }:
+            raise ContractError("vault lead answers need exactly lead, verdict, why, feedback_code")
+        identifier = answer["lead"]
+        if identifier not in issued:
+            raise ContractError("vault lead answer names a lead that was not issued: %r" % (identifier,))
+        if identifier in seen:
+            raise ContractError("vault lead %s is answered more than once" % identifier)
+        seen.add(identifier)
+        if answer["verdict"] not in VAULT_LEAD_VERDICTS:
+            raise ContractError("vault lead %s verdict must be confirmed or dismissed" % identifier)
+        why = answer["why"]
+        if not isinstance(why, str) or not why.strip() or len(why) > MAX_VAULT_LEAD_WHY:
+            raise ContractError("vault lead %s needs a bounded non-empty why" % identifier)
+        code = answer["feedback_code"]
+        if answer["verdict"] == "confirmed":
+            if not isinstance(code, str) or code not in codes:
+                raise ContractError(
+                    "confirmed vault lead %s must name an existing feedback code" % identifier
+                )
+            confirmed += 1
+        elif code is not None:
+            raise ContractError("dismissed vault lead %s must not name feedback" % identifier)
+    missing = sorted(set(issued) - seen)
+    if missing:
+        raise ContractError("Playtest left vault leads unanswered: %s" % ", ".join(missing))
+    return {"answered": len(seen), "confirmed": confirmed, "dismissed": len(seen) - confirmed}
+
+
 @dataclass(frozen=True)
 class NativePlaytestCheck:
     """One exact evidence file and its bounded evaluator observation."""
@@ -312,6 +388,17 @@ class NativePlaytested:
         ):
             raise ContractError("native Playtested belongs to different or incomplete inputs")
 
+    def assert_vault_leads_answered(
+        self, leads: Sequence[Mapping[str, Any]]
+    ) -> dict[str, int]:
+        """Host mirror of the run-local lead-answer rule for this contract."""
+
+        return validate_vault_lead_answers(
+            leads,
+            [check.to_dict() for check in self.checks],
+            [item.to_dict() for item in self.feedback],
+        )
+
     def validate_evidence_tree(
         self, run_root: Path, made: NativeMade
     ) -> Playtested:
@@ -353,6 +440,9 @@ class NativePlaytested:
 
 __all__ = [
     "NATIVE_PLAYTESTED_KIND",
+    "VAULT_LEAD_CHECK_ID",
+    "VAULT_LEAD_VERDICTS",
+    "validate_vault_lead_answers",
     "PLAYTEST_VERDICTS",
     "NativePlaytestCheck",
     "NativePlaytested",

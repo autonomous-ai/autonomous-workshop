@@ -2167,6 +2167,11 @@ def _evaluate_playtest_stage(
         ),
         evidence_stage="playtest",
     )
+    vault = context.get("design_vault")
+    leads = (
+        vault.leads_for_concept(context["invented"].concept) if vault is not None else []
+    )
+    answered = playtested.assert_vault_leads_answered(leads)
     passed = playtested.verdict == "pass"
     transition = "release" if passed else "make"
     if proposal.outcome.proposed_transition != transition:
@@ -2199,6 +2204,8 @@ def _evaluate_playtest_stage(
             ),
             "cad_verification_passed": cad_evidence.passed,
             "verdict": playtested.verdict,
+            "vault_leads_answered": answered["answered"],
+            "vault_leads_confirmed": answered["confirmed"],
         },
     )
     return StageGateDecision(evidence=evidence, transition=transition), additional
