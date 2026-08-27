@@ -639,6 +639,24 @@ class StageProposalToolTest(unittest.TestCase):
             "make",
         )
 
+        feedback["invalidates"] = ["make", "playtest", "release"]
+        self.write_json(
+            "drafts/playtest-invalid-invalidation.json",
+            {"checks": checks, "feedback": [feedback], "verdict": "improve"},
+        )
+        rejected = self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest-invalid-invalidation.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+            expected=2,
+        )
+        self.assertIn(
+            "the verdict already routes the repair to Make",
+            rejected.stderr,
+        )
+
     def test_release_seals_exact_codex_authored_page_and_matches_native_release(self):
         made = self.create_made()
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"

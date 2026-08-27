@@ -42,6 +42,7 @@ RELEASE_KIND = "autonomous-workshop.release"
 
 STAGES = ("match", "invent", "make", "playtest", "release")
 JOBS = ("wish", "invent", "make", "playtest", "release", "deliver")
+PLAYTEST_FEEDBACK_INVALIDATES = frozenset(("playtest", "release", "deliver"))
 FORWARD = {
     "match": "invent",
     "invent": "make",
@@ -1293,8 +1294,11 @@ def _feedback(value: Any) -> dict[str, Any]:
     if any(not isinstance(ref, str) or not ref for ref in refs):
         raise ProposalError("feedback evidence_refs must be non-empty strings")
     invalidates = _array(item["invalidates"], "feedback invalidates", nonempty=True)
-    if any(stage not in JOBS for stage in invalidates):
-        raise ProposalError("feedback invalidates an unknown stage")
+    if any(stage not in PLAYTEST_FEEDBACK_INVALIDATES for stage in invalidates):
+        raise ProposalError(
+            "feedback invalidates must contain only playtest, release, or deliver; "
+            "the verdict already routes the repair to Make"
+        )
     return dict(item)
 
 

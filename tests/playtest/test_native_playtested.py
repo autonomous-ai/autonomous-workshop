@@ -189,6 +189,31 @@ class NativePlaytestedTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "cannot contain failures"):
             self._playtested(verdict="pass", failed="agent-playtest")
 
+    def test_host_reads_make_targeted_feedback_but_rejects_upstream_stages(self):
+        accepted = Feedback(
+            code="repair-snap",
+            area="make",
+            severity="improve",
+            finding="The snap geometry failed Playtest.",
+            change="Revise the snap in the next Make attempt.",
+            evidence_refs=("mechanical-check.json",),
+            invalidates=("make", "playtest", "release"),
+        )
+
+        self.assertEqual(
+            accepted.invalidates,
+            ("make", "playtest", "release"),
+        )
+        with self.assertRaisesRegex(ContractError, "outside the Make repair loop"):
+            Feedback(
+                code="restart-invent",
+                area="invent",
+                severity="block",
+                finding="The concept should be replaced.",
+                change="Return to Invent.",
+                invalidates=("invent",),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

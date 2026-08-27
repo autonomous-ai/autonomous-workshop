@@ -111,7 +111,10 @@ physical trials, human players, measurements, or results. Every failing check
 must name the concrete product or design area and the repair direction.
 Invalidate Playtest and its downstream evidence; the host returns every
 evidence-backed failure directly to Make, where the next Goal repairs the
-product against the same sealed Invent result. Then run:
+product against the same sealed Invent result. Each feedback `invalidates`
+array may therefore contain only `playtest`, `release`, and `deliver`. Do not
+put `make` in that array: the failed verdict and proposed transition already
+route the work to a new Make attempt. Then run:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
