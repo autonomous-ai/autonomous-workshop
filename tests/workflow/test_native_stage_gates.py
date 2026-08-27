@@ -8,6 +8,9 @@ from pathlib import Path
 
 from workshop.errors import ArtifactError, ContractError, StateConflict
 from workshop.invent.native import NativeInvented
+from workshop.invent.vault import Vault
+from tests.invent.test_native_contract import v4_concept
+from tests.invent.test_vault import write_vault
 from workshop.match.native import (
     InventorRoster,
     InventorRosterEntry,
@@ -251,6 +254,62 @@ class NativeStageGateTest(unittest.TestCase):
             invent_decision.evidence.checks["concept_sha256"],
             invented.concept_sha256,
         )
+
+    def test_invent_gate_applies_the_design_vault_when_a_snapshot_is_bound(self):
+        vault = Vault.from_directory(write_vault(self.root / "vault"))
+
+        def invented_for(mechanisms, **extra):
+            concept = v4_concept()
+            concept["mechanisms"] = mechanisms
+            concept.update(extra)
+            return NativeInvented(
+                wish_sha256=self.assignment.wish_sha256,
+                assignment_sha256=self.assignment.assignment_sha256,
+                taste_sha256=self.assignment.selected_taste_sha256,
+                blueprint_sha256=self.assignment.blueprint_sha256,
+                schema_version=4,
+                concept=concept,
+                research={"sources": [{"url": "https://example.test/x", "claim": "x"}]},
+            )
+
+        def decide(invented, vault=vault):
+            artifact = self.artifact(INVENTED_PATH, invented.to_dict())
+            proposal = self.ready_proposal(
+                "invent", "make", artifact, invent_gate_subject_sha256(self.assignment)
+            )
+            return evaluate_invent_stage(
+                proposal,
+                run_root=self.run_root,
+                expected_checkpoint_sha256=self.checkpoint_sha256,
+                assignment=self.assignment,
+                vault=vault,
+            )
+
+        accepted = decide(invented_for(["hand-off", "single-token"]))
+        self.assertTrue(accepted.passed)
+        self.assertEqual(accepted.evidence.checks["design_vault_sha256"], vault.sha256)
+        self.assertEqual(accepted.evidence.checks["vault_leads"], 1)
+        novel = decide(
+            invented_for(
+                ["single-token", "rotating-drum"],
+                novel_mechanisms=[
+                    {"id": "rotating-drum", "definition": "A barrel presents one face at a time."}
+                ],
+            )
+        )
+        self.assertEqual(novel.evidence.checks["vault_leads"], 0)
+        for mechanisms, pattern in (
+            (["rotating-drum"], "mechanism-unknown"),
+            (["card-hand"], "vault-conflict"),
+            (["hand-off"], "vault-requirement"),
+        ):
+            with self.subTest(mechanisms=mechanisms):
+                with self.assertRaisesRegex(ContractError, "refused by the design vault.*" + pattern):
+                    decide(invented_for(mechanisms))
+        legacy = decide(invented_for(["rotating-drum"]), vault=None)
+        self.assertTrue(legacy.passed)
+        self.assertIsNone(legacy.evidence.checks["design_vault_sha256"])
+        self.assertEqual(legacy.evidence.checks["vault_leads"], 0)
 
     def test_subjects_are_domain_separated_complete_input_vectors(self):
         match_subject = match_gate_subject_sha256(

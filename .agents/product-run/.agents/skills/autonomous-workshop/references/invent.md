@@ -22,7 +22,10 @@ While pursuing the Goal:
 
 1. **Observe:** Read the Wish, assignment, selected custom-agent instructions,
    relevant skill resources, and any exact upstream evidence. Identify what
-   needs factual research and what needs creative exploration.
+   needs factual research and what needs creative exploration. When
+   `STAGE.json` names a `design_vault`, brief yourself on candidate
+   mechanisms with `vault_tools.py guidance` before committing to one: each
+   recorded risk carries the fix that worked.
 2. **Act:** Use Codex-native search, browsing, file tools, and specialist
    subagents to research supported facts and explore materially different
    concepts. Save source provenance beside the claims it supports. Use the
@@ -67,7 +70,10 @@ contract deterministically. Required `concept` fields (extra fields such as
 - `envelope_mm`: `{length_mm, width_mm, height_mm}`, finite, within
   `(0, 2000]`.
 - `mechanisms`: at most 16 unique slugs (`^[a-z][a-z0-9_-]{0,62}$`); may be
-  empty for a purely static object.
+  empty for a purely static object. Each slug must resolve to a design-vault
+  node (`vault_tools.py resolve <name>`, see the `design-vault` skill) or be
+  declared under the optional `novel_mechanisms` list as
+  `{"id": <slug>, "definition": <20 to 2000 characters>}`.
 - `components`: 1 to 64 entries with exactly `key`, `name`, `form`, `duty`,
   `dimensions_mm`, `placement`, `interfaces`, `mates_with`, `signature`.
 
@@ -83,6 +89,14 @@ The finalizer rejects, naming the rule in parentheses:
   box is remembered by one object.
 - **decoration** — a component with no mate in either direction whose key or
   name never appears in `interaction`. Give it a role or remove it.
+- **mechanism-unknown** — a mechanism that is neither a vault node nor a
+  declared novel mechanism; **mechanism-not-novel** — a `novel_mechanisms`
+  entry that resolves to an existing node.
+- **vault-conflict** / **vault-requirement** — the resolved mechanisms plus
+  every `constraints/*` node declare `conflicts-with`, or leave a `requires`
+  unmet. Run `vault_tools.py check <nodes> --with-constraints` before
+  finalizing. Risks reported there are not refusals; the host turns them into
+  `vault_leads` for Make and Playtest.
 
 Then run:
 

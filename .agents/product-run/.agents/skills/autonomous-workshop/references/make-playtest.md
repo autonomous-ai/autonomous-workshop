@@ -5,6 +5,12 @@ blueprint, canonical output paths, current round, round limit, and any prior
 Playtest feedback. Verify those bytes before acting. Host rounds and
 checkpoints bound the work; Codex performs the reasoning and repair.
 
+`inputs.vault_leads` lists what the design vault records against the sealed
+concept's mechanisms: `risk` entries with the anti-pattern, the recorded
+`suggested_fixes`, banked `evidence`, and a stable `id`. They are computed
+from the run's immutable vault snapshot, not authored by a model. Read them
+before building and before judging; a lead is a lead, not a verdict.
+
 ## Make Goal and improvement loop
 
 Create one native Codex Goal for the current Make attempt. Its objective is to

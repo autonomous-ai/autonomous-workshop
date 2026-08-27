@@ -63,6 +63,14 @@ MAX_VAULT_NODES = 4_096
 # under the run's 4 MiB input budget.
 MAX_PACKED_BYTES = 3 * 1024 * 1024
 DEFAULT_RESOLVE_CUTOFF = 0.75
+LEAD_ID_HEX = 16
+MAX_NOVEL_MECHANISMS = 16
+NOVEL_DEFINITION_MIN = 20
+NOVEL_DEFINITION_MAX = 2_000
+# Where a product run finds its immutable vault snapshot and query tool.
+RUN_VAULT_SKILL = "design-vault"
+RUN_VAULT_PATH = ".agents/skills/design-vault/vault.json"
+RUN_VAULT_TOOL_PATH = ".agents/skills/design-vault/vault_tools.py"
 
 FIELD_RE = re.compile(r"^\s*-?\s*(\w[\w-]*)::\s*(.*)$")
 WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
@@ -580,6 +588,37 @@ class Vault:
             )
         return briefing
 
+    # ---- concept binding ---------------------------------------------
+
+    def constraints(self) -> tuple[str, ...]:
+        return self.paths("constraints")
+
+    def resolve_concept_mechanisms(
+        self, concept: Mapping[str, Any]
+    ) -> dict[str, Optional[str]]:
+        """Map each declared mechanism slug to a vault node or ``None``."""
+
+        declared = concept.get("mechanisms")
+        if not isinstance(declared, (list, tuple)):
+            raise VaultError("concept mechanisms must be a list")
+        return {str(item): self.resolve(str(item)) for item in declared}
+
+    def leads_for_concept(self, concept: Mapping[str, Any]) -> list[dict[str, Any]]:
+        """Compatibility findings for a concept's mechanisms plus every constraint.
+
+        Each finding carries a stable ``id`` so evidence can answer it by name.
+        Unresolved mechanisms contribute nothing; the Invent gate is where
+        they are refused.
+        """
+
+        resolved = self.resolve_concept_mechanisms(concept)
+        members = [node for node in resolved.values() if node is not None]
+        members += [path for path in self.constraints() if path not in members]
+        leads = []
+        for finding in self.check_compatibility(members):
+            leads.append({"id": lead_id(finding["kind"], finding["nodes"]), **finding})
+        return leads
+
     # ---- lint ---------------------------------------------------------
 
     def lint(self) -> tuple[list[str], list[str]]:
@@ -661,6 +700,79 @@ class Vault:
         return errors, warnings
 
 
+def lead_id(kind: str, nodes: Sequence[str]) -> str:
+    return hashlib.sha256(_canonical_json([kind, list(nodes)])).hexdigest()[:LEAD_ID_HEX]
+
+
+def assert_concept_compatible(vault: "Vault", concept: Mapping[str, Any]) -> dict[str, Any]:
+    """Refuse a concept whose mechanisms the vault cannot place or forbids.
+
+    Every declared mechanism must resolve to a vault node or be declared under
+    ``novel_mechanisms`` with a definition; a declared combination that the
+    vault marks ``conflicts-with`` or leaves a ``requires`` unmet is refused.
+    Risks are leads for Playtest, never refusals.  Returns the resolution and
+    the leads so callers can bind them into evidence.
+    """
+
+    resolved = vault.resolve_concept_mechanisms(concept)
+    novel_raw = concept.get("novel_mechanisms", [])
+    if not isinstance(novel_raw, (list, tuple)) or len(novel_raw) > MAX_NOVEL_MECHANISMS:
+        raise VaultError(
+            "concept novel_mechanisms must be a list of at most %d entries" % MAX_NOVEL_MECHANISMS
+        )
+    novel: dict[str, str] = {}
+    for item in novel_raw:
+        if not isinstance(item, Mapping) or set(item) != {"id", "definition"}:
+            raise VaultError("concept novel_mechanisms entries need exactly id and definition")
+        identifier, definition = item["id"], item["definition"]
+        if not isinstance(identifier, str) or identifier not in resolved or identifier in novel:
+            raise VaultError(
+                "concept novel_mechanisms id %r must name one declared mechanism once" % (identifier,)
+            )
+        if (
+            not isinstance(definition, str)
+            or not NOVEL_DEFINITION_MIN <= len(definition.strip()) <= NOVEL_DEFINITION_MAX
+        ):
+            raise VaultError(
+                "concept novel mechanism %r needs a definition of %d to %d characters"
+                % (identifier, NOVEL_DEFINITION_MIN, NOVEL_DEFINITION_MAX)
+            )
+        if resolved[identifier] is not None:
+            raise VaultError(
+                "concept mechanism %r resolves to vault node %s and is not novel "
+                "(mechanism-not-novel)" % (identifier, resolved[identifier])
+            )
+        novel[identifier] = definition.strip()
+    for slug, node in resolved.items():
+        if node is None and slug not in novel:
+            raise VaultError(
+                "concept mechanism %r is not a design-vault node; resolve it with "
+                "vault_tools.py or declare it under novel_mechanisms (mechanism-unknown)"
+                % slug
+            )
+    leads = vault.leads_for_concept(concept)
+    for finding in leads:
+        if finding["kind"] == "conflict":
+            raise VaultError(
+                "concept mechanisms %s and %s are declared conflicts-with in the design "
+                "vault (vault-conflict)" % tuple(finding["nodes"])
+            )
+        if finding["kind"] == "unmet-requirement":
+            raise VaultError(
+                "concept mechanism %s requires %s, which the concept lacks "
+                "(vault-requirement)" % tuple(finding["nodes"])
+            )
+    return {"mechanisms": resolved, "novel": novel, "leads": leads}
+
+
+def workshop_vault_source(home: Path) -> Path:
+    """The vault a new run snapshots: the host-owned copy, else the seed."""
+
+    candidate = Path(home) / "vault"
+    return candidate if candidate.is_dir() and not candidate.is_symlink() else bundled_vault_root()
+
+
+
 def bundled_vault_root() -> Path:
     """The seed vault shipped with the Workshop distribution."""
 
@@ -706,11 +818,18 @@ __all__ = [
     "Vault",
     "VaultError",
     "VaultNodeNotFound",
+    "LEAD_ID_HEX",
+    "RUN_VAULT_PATH",
+    "RUN_VAULT_SKILL",
+    "RUN_VAULT_TOOL_PATH",
+    "assert_concept_compatible",
     "bundled_vault_root",
+    "lead_id",
     "evidence_rows",
     "normalize_path",
     "parse_frontmatter",
     "parse_node",
     "seed_vault",
     "slugify",
+    "workshop_vault_source",
 ]

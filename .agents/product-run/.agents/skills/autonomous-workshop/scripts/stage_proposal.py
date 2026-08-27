@@ -1027,6 +1027,50 @@ def _hedged(text: str) -> Optional[str]:
     return match.group(0) if match else None
 
 
+RUN_VAULT_PATH = ".agents/skills/design-vault/vault.json"
+RUN_VAULT_TOOL_PATH = ".agents/skills/design-vault/vault_tools.py"
+
+
+def _design_vault(run_root: Path):
+    """Load the run's immutable vault snapshot through its sibling tool, or None.
+
+    Runs created before the design vault existed have neither file and keep
+    finalizing exactly as before.  A run that has one but cannot load it is a
+    broken input tree, not a legacy run.
+    """
+
+    vault_path = run_root / RUN_VAULT_PATH
+    tool_path = run_root / RUN_VAULT_TOOL_PATH
+    if not vault_path.is_file() and not tool_path.is_file():
+        return None
+    if vault_path.is_symlink() or tool_path.is_symlink() or not (
+        vault_path.is_file() and tool_path.is_file()
+    ):
+        raise ProposalError("design vault snapshot or tool is missing from the run")
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("workshop_run_vault_tools", tool_path)
+    if spec is None or spec.loader is None:  # pragma: no cover - a .py path always loads
+        raise ProposalError("design vault tool cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        return module, module.PackedVault.load(vault_path)
+    except module.VaultToolError as exc:
+        raise ProposalError("design vault snapshot is invalid: %s" % exc) from exc
+
+
+def _assert_concept_vault_compatible(run_root: Path, concept: Mapping[str, Any]) -> None:
+    loaded = _design_vault(run_root)
+    if loaded is None:
+        return
+    module, vault = loaded
+    try:
+        module.assert_concept_compatible(vault, concept)
+    except module.VaultToolError as exc:
+        raise ProposalError("Invent concept is refused by the design vault: %s" % exc) from exc
+
+
 def _validate_concept_contract(concept: Mapping[str, Any]) -> None:
     """Deterministic buildability checks on an Invent concept (schema 4).
 
@@ -1303,7 +1347,9 @@ def _match_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dict
     return {**identity, "assignment_sha256": json_sha256(identity)}
 
 
-def _invent_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dict[str, Any]:
+def _invent_contract(
+    run_root: Path, stage: Mapping[str, Any], source: Mapping[str, Any]
+) -> dict[str, Any]:
     inputs = _required_fields(
         stage["inputs"], {"assignment"}, "Invent STAGE inputs"
     )
@@ -1312,6 +1358,7 @@ def _invent_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dic
     concept = _mapping(authored["concept"], "Invent concept", nonempty=True)
     research = _mapping(authored["research"], "Invent research", nonempty=True)
     _validate_concept_contract(concept)
+    _assert_concept_vault_compatible(run_root, concept)
     identity = {
         "schema_version": 4,
         "kind": INVENTED_KIND,
@@ -2040,7 +2087,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         transition = stage["next_transition"]
     elif args.command == "invent":
         source, _, _ = _read_json(run_root, args.source, "Invent authored source")
-        contract = _invent_contract(stage, source)
+        contract = _invent_contract(run_root, stage, source)
         transition = stage["next_transition"]
     elif args.command == "make":
         contract = _make_contract(

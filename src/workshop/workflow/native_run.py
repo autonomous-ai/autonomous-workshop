@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import re
 import stat
 import tempfile
@@ -42,6 +43,14 @@ from workshop.integrations.factory import (
     factory_credentials_from_environment,
 )
 from workshop.invent.native import NativeInvented
+from workshop.invent.vault import (
+    RUN_VAULT_PATH,
+    RUN_VAULT_SKILL,
+    RUN_VAULT_TOOL_PATH,
+    Vault,
+    VaultError,
+    workshop_vault_source,
+)
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
     NATIVE_CAD_GATE_KIND,
@@ -817,6 +826,60 @@ def _materialized_release_contract(
     }
 
 
+def _stage_design_vault_skill(staging: Path, skill_root: Path) -> Path:
+    """Copy the static design-vault skill and add the run's packed vault.
+
+    The snapshot comes from the host-owned ``$WORKSHOP_HOME/vault`` when it
+    exists, else from the seed shipped with Workshop.  The result is one more
+    immutable, hashed input tree; the run never sees the host copy.
+    """
+
+    source = workshop_vault_source(_workshop_home())
+    packed = Vault.from_directory(source).packed_bytes()
+    root = Path(staging).resolve() / RUN_VAULT_SKILL
+    root.mkdir(mode=0o700)
+    for entry in sorted(Path(skill_root).iterdir()):
+        if entry.is_symlink() or not entry.is_file() or entry.name.endswith((".pyc", ".pyo")):
+            continue
+        shutil.copyfile(entry, root / entry.name)
+    (root / "vault.json").write_bytes(packed)
+    return root
+
+
+def _run_design_vault(run: AgentRun, checkpoint: AgentRunCheckpoint) -> Optional[Vault]:
+    """The run's own vault snapshot, verified against its bound input hash.
+
+    Runs created before the design vault existed have no snapshot and return
+    ``None``; every vault-aware gate then behaves exactly as it did before.
+    """
+
+    expected = checkpoint.input_sha256s.get(RUN_VAULT_PATH)
+    if expected is None:
+        return None
+    path = run.run_root / RUN_VAULT_PATH
+    try:
+        content = path.read_bytes()
+    except OSError as exc:
+        raise StateConflict("native run lacks its bound design vault snapshot") from exc
+    if hashlib.sha256(content).hexdigest() != expected:
+        raise StateConflict("native run design vault snapshot differs from its binding")
+    try:
+        return Vault.from_packed_bytes(content)
+    except VaultError as exc:
+        raise StateConflict("native run design vault snapshot is malformed") from exc
+
+
+def _design_vault_binding(checkpoint: AgentRunCheckpoint, vault: Optional[Vault]) -> Optional[dict[str, Any]]:
+    if vault is None:
+        return None
+    return {
+        "path": RUN_VAULT_PATH,
+        "tool": RUN_VAULT_TOOL_PATH,
+        "sha256": checkpoint.input_sha256s[RUN_VAULT_PATH],
+        "nodes": len(vault.nodes),
+    }
+
+
 def native_stage_prompt(stage: str) -> str:
     """Give the native session a compact pointer, never Wish or host secrets."""
 
@@ -1458,6 +1521,9 @@ def _prepare_stage_input(
             "blueprint": blueprint.to_dict(),
             "blueprint_sha256": blueprint.sha256,
         }
+        vault = _run_design_vault(run, checkpoint)
+        common["design_vault"] = _design_vault_binding(checkpoint, vault)
+        context["design_vault"] = vault
         if stage == "invent":
             subject = invent_gate_subject_sha256(assignment)
             inputs = {
@@ -1475,6 +1541,9 @@ def _prepare_stage_input(
             invented.assert_context(assignment)
             context["invented"] = invented
             common["invented"] = invented.to_dict()
+            common["vault_leads"] = (
+                vault.leads_for_concept(invented.concept) if vault is not None else []
+            )
             common["invented_artifact"] = {
                 **_artifact_binding(invented_artifact),
                 "invented_sha256": invented.invented_sha256,
@@ -2744,6 +2813,7 @@ def _process_agent_outcome(
             run_root=run.run_root,
             expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
             assignment=context["assignment"],
+            vault=context.get("design_vault"),
         )
     elif checkpoint.stage == "make":
         try:
@@ -3213,21 +3283,25 @@ def start_native_run(
     activity_observer = _validated_activity_observer(activity_observer)
     assets = product_run_agent_assets()
     wish_bytes = canonical_wish_bytes(wish)
-    domain_skill_roots = product_run_domain_skill_roots()
+    domain_skill_roots = dict(product_run_domain_skill_roots())
     inventor_source_root = _product_run_inventor_source_root(assets)
     paths = native_run_paths(wish.product_id, create=True)
     try:
-        run = AgentRun.create(
-            paths.workspace,
-            paths.host_state,
-            product_id=wish.product_id,
-            wish_bytes=wish_bytes,
-            product_run_constitution_source=assets.constitution,
-            skill_root=assets.skill_root,
-            domain_skill_roots=domain_skill_roots,
-            inventor_source_root=inventor_source_root,
-            max_rounds=4,
-        )
+        with tempfile.TemporaryDirectory(prefix="workshop-design-vault-") as staging:
+            domain_skill_roots[RUN_VAULT_SKILL] = _stage_design_vault_skill(
+                Path(staging), domain_skill_roots[RUN_VAULT_SKILL]
+            )
+            run = AgentRun.create(
+                paths.workspace,
+                paths.host_state,
+                product_id=wish.product_id,
+                wish_bytes=wish_bytes,
+                product_run_constitution_source=assets.constitution,
+                skill_root=assets.skill_root,
+                domain_skill_roots=domain_skill_roots,
+                inventor_source_root=inventor_source_root,
+                max_rounds=4,
+            )
     except Exception:
         # Asset validation normally happens before reserving the run container.
         # AgentRun also validates all materialized inputs before creating its

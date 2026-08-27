@@ -17,12 +17,17 @@ from workshop.match.native import (
     NativeMatchAssignment,
 )
 from workshop.product import ToyBlueprint
+from workshop.invent.vault import RUN_VAULT_PATH, Vault, bundled_vault_root
+from tests.invent.test_vault import write_vault
+from types import SimpleNamespace
 from workshop.workflow.native_run import (
     _MAX_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
     _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
+    _design_vault_binding,
+    _run_design_vault,
     _native_run_mutation_lock,
     _recoverable_native_turn_backoff_seconds,
     canonical_wish_bytes,
@@ -621,6 +626,7 @@ class NativeHostTest(unittest.TestCase):
             for skill_name in (
                 "cad",
                 "design-reference",
+                "design-vault",
                 "image-to-cad",
                 "manual-design",
                 "step-parts",
@@ -648,6 +654,14 @@ class NativeHostTest(unittest.TestCase):
                     ).is_file()
                 )
             self.assertFalse((workspace / "catalog").exists())
+            vault_path = workspace / RUN_VAULT_PATH
+            self.assertTrue(vault_path.is_file())
+            self.assertFalse(stat.S_IMODE(vault_path.stat().st_mode) & 0o222)
+            snapshot = Vault.from_packed_bytes(vault_path.read_bytes())
+            self.assertEqual(snapshot.sha256, Vault.from_directory(bundled_vault_root()).sha256)
+            self.assertTrue((workspace / ".agents/skills/design-vault/vault_tools.py").is_file())
+            self.assertTrue((workspace / ".agents/skills/design-vault/SKILL.md").is_file())
+            self.assertFalse((workspace / ".agents/skills/design-vault/__pycache__").exists())
             prompt = arguments["prompt"]
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
@@ -664,6 +678,63 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
             self.assertIn("before Match", stderr.getvalue())
+    def test_wish_snapshots_the_host_vault_when_one_exists(self):
+        launcher = _FakeLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            home.mkdir()
+            expected = Vault.from_directory(write_vault(home / "vault")).sha256
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                result = main(("wish", "a", "quiet", "orrery", "--json"))
+            self.assertEqual(result, 0)
+            workspace = home / "runs" / launcher.starts[0]["product_id"] / "workspace"
+            snapshot = Vault.from_packed_bytes((workspace / RUN_VAULT_PATH).read_bytes())
+            self.assertEqual(snapshot.sha256, expected)
+            self.assertNotEqual(snapshot.sha256, Vault.from_directory(bundled_vault_root()).sha256)
+
+    def test_run_design_vault_is_bound_by_hash_or_absent(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            run = SimpleNamespace(run_root=root)
+            legacy = SimpleNamespace(input_sha256s={})
+            self.assertIsNone(_run_design_vault(run, legacy))
+            self.assertIsNone(_design_vault_binding(legacy, None))
+            packed = Vault.from_directory(write_vault(root / "source")).packed_bytes()
+            digest = hashlib.sha256(packed).hexdigest()
+            bound = SimpleNamespace(input_sha256s={RUN_VAULT_PATH: digest})
+            with self.assertRaisesRegex(StateConflict, "lacks its bound design vault"):
+                _run_design_vault(run, bound)
+            target = root / RUN_VAULT_PATH
+            target.parent.mkdir(parents=True)
+            target.write_bytes(packed + b" ")
+            with self.assertRaisesRegex(StateConflict, "differs from its binding"):
+                _run_design_vault(run, bound)
+            target.write_bytes(packed)
+            vault = _run_design_vault(run, bound)
+            self.assertEqual(vault.sha256, Vault.from_packed_bytes(packed).sha256)
+            self.assertEqual(
+                _design_vault_binding(bound, vault),
+                {
+                    "path": RUN_VAULT_PATH,
+                    "tool": ".agents/skills/design-vault/vault_tools.py",
+                    "sha256": digest,
+                    "nodes": len(vault.nodes),
+                },
+            )
+            broken = b'{"schema_version": 1, "kind": "autonomous-workshop.design-vault", "nodes": {}, "sha256": "0"}'
+            target.write_bytes(broken)
+            malformed = SimpleNamespace(input_sha256s={RUN_VAULT_PATH: hashlib.sha256(broken).hexdigest()})
+            with self.assertRaisesRegex(StateConflict, "snapshot is malformed"):
+                _run_design_vault(run, malformed)
+
     def test_resume_uses_exact_materialized_binding(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:

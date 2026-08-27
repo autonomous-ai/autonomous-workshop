@@ -17,6 +17,7 @@ from workshop._validation import (
 )
 from workshop.errors import ContractError, StateConflict
 from workshop.invent.native import NativeInvented
+from workshop.invent.vault import Vault, VaultError, assert_concept_compatible
 from workshop.match.native import NativeMatchAssignment, InventorRoster
 from workshop.workflow.agent_run import (
     AGENT_RUN_STAGES,
@@ -398,8 +399,15 @@ def evaluate_invent_stage(
     run_root: Any,
     expected_checkpoint_sha256: str,
     assignment: NativeMatchAssignment,
+    vault: Optional[Vault] = None,
 ) -> StageGateDecision:
-    """Validate Invented against the accepted Match assignment."""
+    """Validate Invented against the accepted Match assignment and the vault.
+
+    With a vault snapshot the host re-applies the run-local mechanism rules:
+    every mechanism resolves or is declared novel, and no declared conflict or
+    unmet requirement survives.  Without one (a run that predates the vault)
+    the gate is unchanged.
+    """
 
     if not isinstance(assignment, NativeMatchAssignment):
         raise ContractError("Invent gate requires a native Match assignment")
@@ -419,6 +427,16 @@ def evaluate_invent_stage(
         _artifact_document(run_root, artifact, label="Invented artifact")
     )
     invented.assert_context(assignment)
+    vault_checks: dict[str, Any] = {"design_vault_sha256": None, "vault_leads": 0}
+    if vault is not None:
+        try:
+            binding = assert_concept_compatible(vault, invented.concept)
+        except VaultError as exc:
+            raise ContractError("Invent concept is refused by the design vault: %s" % exc) from exc
+        vault_checks = {
+            "design_vault_sha256": vault.sha256,
+            "vault_leads": len(binding["leads"]),
+        }
     evidence = StageGateEvidence(
         stage="invent",
         gate_id=INVENT_GATE_ID,
@@ -436,6 +454,7 @@ def evaluate_invent_stage(
             "research_sha256": invented.research_sha256,
             "taste_sha256": invented.taste_sha256,
             "wish_bound": True,
+            **vault_checks,
         },
     )
     return StageGateDecision(evidence=evidence, transition="make")

@@ -9,6 +9,7 @@ import unittest
 from pathlib import Path
 
 from workshop.invent.vault import (
+    LEAD_ID_HEX,
     MAX_NODE_BYTES,
     MAX_PACKED_BYTES,
     MAX_VAULT_NODES,
@@ -22,6 +23,9 @@ from workshop.invent.vault import (
     parse_node,
     seed_vault,
     slugify,
+    assert_concept_compatible,
+    lead_id,
+    workshop_vault_source,
 )
 from workshop.invent.vault import _read_node_file
 
@@ -378,6 +382,80 @@ class VaultGraphTest(unittest.TestCase):
         big = Vault({"mechanisms/n%03d" % i: dict(record) for i in range(60)})
         with self.assertRaisesRegex(VaultError, "packed vault exceeds %d bytes" % MAX_PACKED_BYTES):
             big.packed_bytes()
+
+
+class ConceptBindingTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.vault = Vault.from_directory(write_vault(self.temporary.name))
+
+    def test_leads_include_constraints_and_carry_stable_ids(self):
+        leads = self.vault.leads_for_concept({"mechanisms": ["hand off", "single-token", "ghost-mechanism"]})
+        self.assertEqual(
+            [(item["kind"], item["nodes"]) for item in leads],
+            [("risk", ["mechanisms/hand-off", "anti-patterns/idle-player"])],
+        )
+        self.assertEqual(len(leads[0]["id"]), LEAD_ID_HEX)
+        self.assertEqual(leads[0]["id"], lead_id("risk", ["mechanisms/hand-off", "anti-patterns/idle-player"]))
+        self.assertEqual(self.vault.leads_for_concept({"mechanisms": []}), [])
+        with_conflict = self.vault.leads_for_concept({"mechanisms": ["card-hand"]})
+        self.assertEqual(with_conflict[0]["kind"], "conflict")
+        self.assertEqual(with_conflict[0]["nodes"], ["mechanisms/card-hand", "constraints/fdm-only"])
+        with self.assertRaisesRegex(VaultError, "must be a list"):
+            self.vault.resolve_concept_mechanisms({"mechanisms": "hand-off"})
+
+    def test_compatible_concepts_are_accepted_with_resolution_and_leads(self):
+        binding = assert_concept_compatible(
+            self.vault, {"mechanisms": ["hand off", "single-token"]}
+        )
+        self.assertEqual(
+            binding["mechanisms"],
+            {"hand off": "mechanisms/hand-off", "single-token": "mechanisms/single-token"},
+        )
+        self.assertEqual(binding["novel"], {})
+        self.assertEqual([item["kind"] for item in binding["leads"]], ["risk"])
+        novel = assert_concept_compatible(
+            self.vault,
+            {
+                "mechanisms": ["single-token", "rotating-drum"],
+                "novel_mechanisms": [
+                    {"id": "rotating-drum", "definition": "A barrel presents exactly one face at a time."}
+                ],
+            },
+        )
+        self.assertEqual(novel["novel"], {"rotating-drum": "A barrel presents exactly one face at a time."})
+        self.assertIsNone(novel["mechanisms"]["rotating-drum"])
+
+    def test_refusals_name_their_rule(self):
+        cases = (
+            ({"mechanisms": ["rotating-drum"]}, "mechanism-unknown"),
+            ({"mechanisms": ["hand-off"], "novel_mechanisms": "no"}, "must be a list"),
+            ({"mechanisms": ["hand-off"], "novel_mechanisms": [{"id": "x"}]}, "exactly id and definition"),
+            ({"mechanisms": ["hand-off"], "novel_mechanisms": [{"id": "other", "definition": "x" * 30}]}, "one declared mechanism once"),
+            (
+                {"mechanisms": ["a", "single-token"], "novel_mechanisms": [{"id": "a", "definition": "x" * 30}, {"id": "a", "definition": "y" * 30}]},
+                "one declared mechanism once",
+            ),
+            ({"mechanisms": ["a", "single-token"], "novel_mechanisms": [{"id": "a", "definition": "short"}]}, "20 to 2000 characters"),
+            ({"mechanisms": ["hand-off"], "novel_mechanisms": [{"id": "hand-off", "definition": "x" * 30}]}, "mechanism-not-novel"),
+            ({"mechanisms": ["card-hand"]}, "vault-conflict"),
+            ({"mechanisms": ["hand-off"]}, "vault-requirement"),
+            ({"mechanisms": ["hand-off"], "novel_mechanisms": [{"id": "n%d" % i, "definition": "x" * 30} for i in range(17)]}, "at most 16"),
+        )
+        for concept, pattern in cases:
+            with self.subTest(pattern=pattern):
+                with self.assertRaisesRegex(VaultError, pattern):
+                    assert_concept_compatible(self.vault, concept)
+
+    def test_vault_source_prefers_the_host_copy(self):
+        with tempfile.TemporaryDirectory() as home:
+            self.assertEqual(workshop_vault_source(Path(home)), bundled_vault_root())
+            (Path(home) / "vault").mkdir()
+            self.assertEqual(workshop_vault_source(Path(home)), Path(home) / "vault")
+            (Path(home) / "vault").rmdir()
+            (Path(home) / "vault").symlink_to(bundled_vault_root())
+            self.assertEqual(workshop_vault_source(Path(home)), bundled_vault_root())
 
 
 class SeedTest(unittest.TestCase):

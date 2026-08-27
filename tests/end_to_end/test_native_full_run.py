@@ -19,6 +19,7 @@ from workshop.workflow.native_run import (
     start_native_run,
 )
 from workshop.errors import ArtifactError, StateConflict
+from workshop.invent.vault import Vault
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
@@ -326,7 +327,7 @@ class _OneSessionProductAgent:
                         "width_mm": 200.0,
                         "height_mm": 20.0,
                     },
-                    "mechanisms": ["orbital-waypoints", "stacked-crowning"],
+                    "mechanisms": ["stacking-and-balancing", "square-grid"],
                     "components": [
                         {"key": key, **fields}
                         for key, fields in _fixture_components().items()
@@ -1815,6 +1816,24 @@ class NativeFullRunTest(unittest.TestCase):
             make_gate = _read_json(paths.host_state / "gates/0003-make.json")
             playtest_gate = _read_json(paths.host_state / "gates/0004-playtest.json")
             release_gate = _read_json(paths.host_state / "gates/0005-release.json")
+            invent_gate = _read_json(paths.host_state / "gates/0002-invent.json")
+            by_stage = {packet["stage"]: packet for packet in launcher.stage_packets}
+            design_vault = by_stage["invent"]["inputs"]["design_vault"]
+            self.assertEqual(design_vault["path"], ".agents/skills/design-vault/vault.json")
+            self.assertGreater(design_vault["nodes"], 100)
+            self.assertEqual(
+                invent_gate["evidence"]["checks"]["design_vault_sha256"],
+                Vault.from_packed_bytes(
+                    (paths.workspace / design_vault["path"]).read_bytes()
+                ).sha256,
+            )
+            leads = by_stage["make"]["inputs"]["vault_leads"]
+            self.assertTrue(leads)
+            self.assertTrue(all(lead["kind"] == "risk" for lead in leads))
+            self.assertEqual(
+                invent_gate["evidence"]["checks"]["vault_leads"], len(leads)
+            )
+            self.assertEqual(by_stage["playtest"]["inputs"]["vault_leads"], leads)
             self.assertTrue(make_gate["evidence"]["checks"]["cad_verification_passed"])
             self.assertTrue(
                 playtest_gate["evidence"]["checks"]["cad_verification_passed"]

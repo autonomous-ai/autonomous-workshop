@@ -6,12 +6,15 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zlib
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.invent.native import NativeInvented
 from tests.invent.test_native_contract import CONCEPT_VIOLATIONS, v4_concept
+from tests.invent.test_vault import write_vault
+from workshop.invent.vault import Vault
 from workshop.make.native import NativeMade
 from workshop.match.native import (
     InventorRoster,
@@ -26,6 +29,15 @@ from workshop.workflow.proposals import AgentOutcomeProposal
 
 
 REPOSITORY = Path(__file__).resolve().parents[2]
+VAULT_TOOL = (
+    Path(__file__).resolve().parents[2]
+    / "src"
+    / "workshop"
+    / "invent"
+    / "skills"
+    / "design-vault"
+    / "vault_tools.py"
+)
 TOOL = (
     REPOSITORY
     / ".agents"
@@ -446,6 +458,89 @@ class StageProposalToolTest(unittest.TestCase):
             "make",
         )
 
+    def materialize_vault(self, *, tool=True, vault=True, corrupt=False):
+        skill = self.run_root / ".agents" / "skills" / "design-vault"
+        skill.mkdir(parents=True, exist_ok=True)
+        packed = Vault.from_directory(write_vault(self.run_root / "vault-source")).packed_bytes()
+        if vault:
+            (skill / "vault.json").write_bytes(b"{not json" if corrupt else packed)
+        if tool:
+            (skill / "vault_tools.py").write_bytes(VAULT_TOOL.read_bytes())
+        return skill
+
+    def invent_source(self, mechanisms, **extra):
+        concept = v4_concept()
+        concept["mechanisms"] = mechanisms
+        concept.update(extra)
+        return {"concept": concept, "research": self.invented.to_dict()["research"]}
+
+    def test_invent_applies_the_run_local_design_vault(self):
+        self.materialize_vault()
+        self.write_stage("invent", {"assignment": self.assignment.to_dict()})
+        self.write_json("drafts/invent.json", self.invent_source(["hand-off", "single-token"]))
+        self.run_tool("invent", "--source", "drafts/invent.json")
+        document, _ = self.assert_canonical_file("artifacts/invent/invented.json")
+        self.assertEqual(document["schema_version"], 4)
+        self.assertEqual(document["concept"]["mechanisms"], ["hand-off", "single-token"])
+        for mechanisms, extra, pattern in (
+            (["rotating-dome"], {}, "mechanism-unknown"),
+            (["card-hand"], {}, "vault-conflict"),
+            (["hand-off"], {}, "vault-requirement"),
+            (
+                ["hand-off", "single-token"],
+                {"novel_mechanisms": [{"id": "hand-off", "definition": "x" * 30}]},
+                "mechanism-not-novel",
+            ),
+        ):
+            (self.run_root / "artifacts/invent/invented.json").unlink(missing_ok=True)
+            self.write_json("drafts/invent.json", self.invent_source(mechanisms, **extra))
+            with self.subTest(pattern=pattern):
+                completed = self.run_tool("invent", "--source", "drafts/invent.json", expected=2)
+                self.assertIn("refused by the design vault", completed.stderr)
+                self.assertIn(pattern, completed.stderr)
+        (self.run_root / "artifacts/invent/invented.json").unlink(missing_ok=True)
+        self.write_json(
+            "drafts/invent.json",
+            self.invent_source(
+                ["single-token", "rotating-dome"],
+                novel_mechanisms=[{"id": "rotating-dome", "definition": "A dome that turns by hand."}],
+            ),
+        )
+        self.run_tool("invent", "--source", "drafts/invent.json")
+
+    def test_invent_vault_snapshot_must_be_whole_or_absent(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_vault_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        self.assertIsNone(tool._design_vault(self.run_root))
+        tool._assert_concept_vault_compatible(self.run_root, v4_concept())
+        skill = self.materialize_vault(tool=True, vault=False)
+        with self.assertRaisesRegex(tool.ProposalError, "missing from the run"):
+            tool._design_vault(self.run_root)
+        (skill / "vault_tools.py").unlink()
+        self.materialize_vault(tool=False, vault=True)
+        with self.assertRaisesRegex(tool.ProposalError, "missing from the run"):
+            tool._design_vault(self.run_root)
+        self.materialize_vault(corrupt=True)
+        with self.assertRaisesRegex(tool.ProposalError, "snapshot is invalid"):
+            tool._design_vault(self.run_root)
+        self.materialize_vault()
+        module, vault = tool._design_vault(self.run_root)
+        self.assertEqual(vault.resolve("pass the baton"), "mechanisms/hand-off")
+        with self.assertRaisesRegex(tool.ProposalError, "vault-conflict"):
+            tool._assert_concept_vault_compatible(self.run_root, {**v4_concept(), "mechanisms": ["card-hand"]})
+        self.write_stage("invent", {"assignment": self.assignment.to_dict()})
+        self.write_json("drafts/invent.json", self.invent_source(["hand-off", "single-token"]))
+        import argparse
+
+        with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(Path(sys.executable).absolute())}):
+            result = tool.run(
+                argparse.Namespace(run_root=str(self.run_root), command="invent", source="drafts/invent.json")
+            )
+        self.assertEqual(result["outcome_path"], "agent-outcome.json")
+        document, _ = self.assert_canonical_file("artifacts/invent/invented.json")
+        self.assertEqual(document["schema_version"], 4)
+
     def test_invent_rejects_contract_violations_with_a_named_rule(self):
         self.write_stage("invent", {"assignment": self.assignment.to_dict()})
         for name, mutate, pattern in CONCEPT_VIOLATIONS[:3] + CONCEPT_VIOLATIONS[-3:]:
@@ -484,6 +579,7 @@ class StageProposalToolTest(unittest.TestCase):
         with self.assertRaisesRegex(tool.ProposalError, "unique slugs"):
             tool._validate_invented(hand_written, assignment)
         sealed = tool._invent_contract(
+            self.run_root,
             {"inputs": {"assignment": assignment}},
             {"concept": current["concept"], "research": current["research"]},
         )
