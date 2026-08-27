@@ -5,6 +5,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from workshop.errors import ArtifactError, ContractError, StateConflict
 from workshop.invent.native import NativeInvented
@@ -15,6 +16,7 @@ from workshop.match.native import (
     NativeMatchAssignment,
 )
 from workshop.product.blueprints import ToyBlueprint
+from workshop.wish import Wish
 from workshop.workflow.agent_run import AgentArtifact, AgentOutcome
 from workshop.workflow.proposals import (
     AgentOutcomeProposal,
@@ -27,6 +29,8 @@ from workshop.workflow.stage_gates import (
     MATCH_ASSIGNMENT_PATH,
     MATCH_GATE_ID,
     StageGateEvidence,
+    concept_gate_subject_sha256,
+    evaluate_concept_stage,
     evaluate_invent_stage,
     evaluate_match_stage,
     invent_gate_subject_sha256,
@@ -347,6 +351,56 @@ class NativeStageGateTest(unittest.TestCase):
                 wish_sha256=self.wish_sha256,
                 roster=self.roster,
             )
+
+    def test_concept_gate_rejects_contract_from_an_earlier_round(self):
+        invented = NativeInvented(
+            wish_sha256=self.assignment.wish_sha256,
+            assignment_sha256=self.assignment.assignment_sha256,
+            taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.assignment.blueprint_sha256,
+            concept={
+                "title": "Moonstep Orrery",
+                "summary": "A wound crank turns the Wish into a visible lunar gait.",
+            },
+            research={"sources": []},
+        )
+        subject = concept_gate_subject_sha256(
+            self.assignment,
+            invented,
+            round=2,
+            standing_concept_sha256=digest("3"),
+            feedback_sha256=digest("4"),
+        )
+        artifact = self.artifact(
+            "artifacts/concept/r0002/concept.json",
+            {"copied_from": "round-one"},
+        )
+        proposal = self.ready_proposal(
+            "concept", "make", artifact, subject
+        )
+        stale_concept = mock.Mock(round=1, images_rendered=False)
+        stale_concept.assert_context = mock.Mock()
+        image_effect = mock.Mock()
+
+        with mock.patch(
+            "workshop.workflow.stage_gates.NativeConcept.from_mapping",
+            return_value=stale_concept,
+        ), self.assertRaisesRegex(ContractError, "different Workshop round"):
+            evaluate_concept_stage(
+                proposal,
+                run_root=self.run_root,
+                expected_checkpoint_sha256=self.checkpoint_sha256,
+                assignment=self.assignment,
+                invented=invented,
+                wish=Wish.create("moonstep", "Build a mechanical lunar toy"),
+                round=2,
+                standing_concept_sha256=digest("3"),
+                feedback_sha256=digest("4"),
+                execute_image_effect=image_effect,
+            )
+
+        stale_concept.assert_context.assert_not_called()
+        image_effect.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -522,6 +522,8 @@ def evaluate_concept_stage(
     concept = NativeConcept.from_mapping(
         _artifact_document(run_root, artifact, label="native Concept contract")
     )
+    if concept.round != round:
+        raise ContractError("native Concept belongs to a different Workshop round")
     if concept.images_rendered:
         raise ContractError(
             "Concept finalizer must propose source JSON and image output paths before rendering"
