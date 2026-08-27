@@ -23,6 +23,7 @@ from workshop.runtime.codex import (
     MAX_CODEX_MESSAGE_BYTES,
     MAX_CODEX_STDERR_BYTES,
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
+    CodexFinalizedWithoutTerminalError,
     CodexInvocationError,
     CodexRecoverableInvocationError,
     CodexNativeSessionLauncher,
@@ -151,11 +152,17 @@ class ScriptedStream:
         callbacks=None,
         stop_event=None,
         start_event=None,
+        block_before_values=False,
+        block_after_values=False,
+        block_timeout=2.0,
     ):
         self.values = list(values)
         self.callbacks = dict(callbacks or {})
         self.stop_event = stop_event
         self.start_event = start_event
+        self.block_before_values = block_before_values
+        self.block_after_values = block_after_values
+        self.block_timeout = block_timeout
         self._index = 0
         self._remainder = None
         self._started = False
@@ -172,11 +179,13 @@ class ScriptedStream:
             self._started = True
             if self.start_event is not None:
                 self.start_event.wait(timeout=2)
-            if self.stop_event is not None:
-                self.stop_event.wait(timeout=2)
+            if self.block_before_values and self.stop_event is not None:
+                self.stop_event.wait(timeout=self.block_timeout)
                 return ""
         if self._remainder is None:
             if self._index >= len(self.values):
+                if self.block_after_values and self.stop_event is not None:
+                    self.stop_event.wait(timeout=self.block_timeout)
                 return ""
             callback = self.callbacks.get(self._index)
             if callback is not None:
@@ -199,8 +208,16 @@ class FakeProcess:
         self.stdout = ScriptedStream(
             self.script.get("stdout", ()),
             callbacks=self.script.get("stdout_callbacks"),
-            stop_event=self._stopped if self.script.get("block_stdout") else None,
+            stop_event=(
+                self._stopped
+                if self.script.get("block_stdout")
+                or self.script.get("block_stdout_after_values")
+                else None
+            ),
             start_event=self.script.get("stdout_start_event"),
+            block_before_values=self.script.get("block_stdout", False),
+            block_after_values=self.script.get("block_stdout_after_values", False),
+            block_timeout=self.script.get("stdout_block_timeout", 2.0),
         )
         self.stderr = ScriptedStream(self.script.get("stderr", ()))
         self.returncode = None
@@ -326,6 +343,7 @@ class CodexNativeSessionTest(unittest.TestCase):
         host_state_root=None,
         prompt="run this exact Wish",
         activity_observer=None,
+        finalization_marker=None,
     ):
         return launcher.start(
             product_id="wish-001",
@@ -335,6 +353,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             host_state_root=host_state_root or self.host_state(root),
             prompt=prompt,
             activity_observer=activity_observer,
+            finalization_marker=finalization_marker,
         )
 
     def resume(self, launcher, root, **overrides):
@@ -1496,6 +1515,7 @@ class CodexNativeSessionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
+            marker = root / "agent-outcome.json"
             launcher, factory = self.launcher(
                 [
                     {
@@ -1508,9 +1528,255 @@ class CodexNativeSessionTest(unittest.TestCase):
             with self.assertRaisesRegex(
                 CodexRecoverableInvocationError, "timed out"
             ):
-                self.start(launcher, root)
+                self.start(
+                    launcher,
+                    root,
+                    finalization_marker=marker,
+                )
 
             self.assertTrue(factory.processes[0].terminated)
+
+    def test_new_finalization_marker_reaps_missing_terminal_without_success(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            marker = root / "agent-outcome.json"
+
+            def finalize():
+                marker.write_text("{}\n", encoding="utf-8")
+
+            launcher, factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "stdout_callbacks": {2: finalize},
+                        "block_stdout_after_values": True,
+                        "hang_until_terminated": True,
+                    }
+                ]
+            )
+
+            with mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
+                0.05,
+            ), mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
+                0.005,
+            ), self.assertRaisesRegex(
+                CodexFinalizedWithoutTerminalError,
+                "finalized without a terminal event",
+            ) as caught:
+                self.start(
+                    launcher,
+                    root,
+                    finalization_marker=marker,
+                )
+
+            self.assertNotIsInstance(
+                caught.exception,
+                CodexRecoverableInvocationError,
+            )
+            self.assertTrue(factory.processes[0].terminated)
+
+    def test_public_terminal_during_marker_grace_preserves_normal_success(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            marker = root / "agent-outcome.json"
+
+            def finalize_before_terminal():
+                marker.write_text("{}\n", encoding="utf-8")
+                time.sleep(0.03)
+
+            launcher, factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(),
+                        "stdout_callbacks": {3: finalize_before_terminal},
+                    }
+                ]
+            )
+
+            with mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
+                0.2,
+            ), mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
+                0.005,
+            ):
+                outcome = self.start(
+                    launcher,
+                    root,
+                    finalization_marker=marker,
+                )
+
+            self.assertEqual(outcome.status, "completed")
+            self.assertFalse(factory.processes[0].terminated)
+
+    def test_terminal_winning_expiry_arbitration_prevents_marker_reap(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            marker = root / "agent-outcome.json"
+            guard = mock.Mock()
+            guard.reap.return_value = True
+            watch = codex_runtime._FinalizationMarkerWatch(marker, guard)
+            identity_checked = threading.Event()
+            release_identity = threading.Event()
+            original_identity = watch._regular_identity
+
+            def hold_after_identity_check():
+                identity = original_identity()
+                identity_checked.set()
+                release_identity.wait(timeout=1)
+                return identity
+
+            with mock.patch.object(
+                watch,
+                "_regular_identity",
+                side_effect=hold_after_identity_check,
+            ), mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
+                0.02,
+            ), mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
+                0.002,
+            ):
+                watch.start()
+                marker.write_text("{}\n", encoding="utf-8")
+                self.assertTrue(identity_checked.wait(timeout=1))
+                watch.observe_turn_completed()
+                release_identity.set()
+                self.assertTrue(watch._resolved.wait(timeout=1))
+                watch.close()
+
+            guard.reap.assert_not_called()
+            self.assertFalse(watch.triggered)
+
+    def test_finalization_marker_cannot_claim_failed_process_quiescence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            marker = root / "agent-outcome.json"
+
+            def finalize():
+                marker.write_text("{}\n", encoding="utf-8")
+
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "stdout_callbacks": {2: finalize},
+                        "ignore_termination": True,
+                    }
+                ]
+            )
+
+            with mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
+                0.02,
+            ), mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
+                0.002,
+            ), self.assertRaisesRegex(
+                CodexInvocationError,
+                "could not be terminated safely",
+            ) as caught:
+                self.start(
+                    launcher,
+                    root,
+                    finalization_marker=marker,
+                )
+
+            self.assertNotIsInstance(
+                caught.exception,
+                CodexFinalizedWithoutTerminalError,
+            )
+
+    def test_only_new_exact_regular_in_run_marker_can_trigger_reap(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            marker = root / "agent-outcome.json"
+            marker.write_text("stale\n", encoding="utf-8")
+            launcher, unused_factory = self.launcher(
+                [{"stdout": self.start_events(terminal=False)}]
+            )
+
+            with self.assertRaisesRegex(
+                CodexInvocationError,
+                "did not complete",
+            ) as caught:
+                self.start(
+                    launcher,
+                    root,
+                    finalization_marker=marker,
+                )
+            self.assertNotIsInstance(
+                caught.exception,
+                CodexFinalizedWithoutTerminalError,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            marker = root / "agent-outcome.json"
+            outside = root.parent / "outside-agent-outcome.json"
+            outside.write_text("outside\n", encoding="utf-8")
+
+            def link_outside():
+                marker.symlink_to(outside)
+
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "stdout_callbacks": {2: link_outside},
+                        "block_stdout_after_values": True,
+                        "stdout_block_timeout": 0.1,
+                        "hang_until_terminated": True,
+                    }
+                ]
+            )
+            with mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
+                0.02,
+            ), mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
+                0.002,
+            ), self.assertRaises(CodexInvocationError) as caught:
+                self.start(launcher, root, finalization_marker=marker)
+            self.assertNotIsInstance(
+                caught.exception,
+                CodexFinalizedWithoutTerminalError,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [{"stdout": self.start_events()}]
+            )
+            with self.assertRaisesRegex(
+                ContractError,
+                "exact in-run agent-outcome.json",
+            ):
+                self.start(
+                    launcher,
+                    root,
+                    finalization_marker=root.parent / "agent-outcome.json",
+                )
+            self.assertEqual(factory.calls, [])
 
     def test_clean_process_exit_without_turn_completed_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:

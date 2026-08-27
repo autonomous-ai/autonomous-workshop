@@ -33,6 +33,7 @@ from workshop.workflow.native_run import (
     start_native_run,
 )
 from workshop.runtime import (
+    CodexFinalizedWithoutTerminalError,
     CodexInvocationError,
     CodexRecoverableInvocationError,
 )
@@ -211,7 +212,19 @@ class _FinalizedMatchThenFailLauncher(_FakeLauncher):
         self.starts.append(dict(arguments))
         self._checkpoint(arguments)
         self._write_ready_match(arguments)
-        raise CodexInvocationError("fixture failed after finalization")
+        raise CodexFinalizedWithoutTerminalError(
+            "fixture finalized without a terminal event"
+        )
+
+
+class _FinalizedMatchThenInterruptLauncher(_FinalizedMatchThenFailLauncher):
+    """Simulate host interruption after finalization and process cleanup."""
+
+    def start(self, **arguments):
+        self.starts.append(dict(arguments))
+        self._checkpoint(arguments)
+        self._write_ready_match(arguments)
+        raise KeyboardInterrupt()
 
 
 class _RecoverableMatchContinuationLauncher(_FinalizedMatchThenFailLauncher):
@@ -776,14 +789,74 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(receipt["native_turns"], 2)
             self.assertEqual(len(launcher.starts), 1)
             self.assertEqual(len(launcher.resumes), 1)
+            self.assertIn("current invent stage", launcher.resumes[0]["prompt"])
             workspace = home / "runs" / product_id / "workspace"
             host_state = home / "state" / product_id
+            self.assertEqual(
+                launcher.starts[0]["finalization_marker"],
+                workspace / "agent-outcome.json",
+            )
             self.assertFalse((workspace / "agent-outcome.json").exists())
             self.assertTrue(
                 any(
                     path.name.endswith("-match.json")
                     for path in (host_state / "gates").iterdir()
                 )
+            )
+
+    def test_resume_consumes_interrupted_finalized_stage_before_new_turn(self):
+        interrupted = _FinalizedMatchThenInterruptLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "interrupted-after-exact-finalization"
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=interrupted,
+            ), self.assertRaises(KeyboardInterrupt):
+                start_native_run(
+                    Wish.create(
+                        product_id,
+                        "a toy finalized immediately before host interruption",
+                    )
+                )
+
+            workspace = home / "runs" / product_id / "workspace"
+            self.assertTrue((workspace / "agent-outcome.json").is_file())
+
+            resumed = _FakeLauncher()
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=resumed,
+            ):
+                receipt = resume_native_run(product_id)
+
+            self.assertEqual(receipt["stage"], "invent")
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(resumed.starts, [])
+            self.assertEqual(len(resumed.resumes), 1)
+            self.assertIn("current invent stage", resumed.resumes[0]["prompt"])
+            self.assertFalse((workspace / "agent-outcome.json").exists())
+            gates = home / "state" / product_id / "gates"
+            self.assertEqual(
+                len(
+                    [
+                        path
+                        for path in gates.iterdir()
+                        if path.name.endswith("-match.json")
+                    ]
+                ),
+                1,
             )
 
     def test_recoverable_timeout_continues_same_session_inside_one_command(self):

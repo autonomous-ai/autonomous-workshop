@@ -48,6 +48,8 @@ MAX_CODEX_SESSION_CHECKPOINT_BYTES = 32 * 1024
 CODEX_SESSION_CHECKPOINT_KIND = "autonomous-workshop-native-codex-session"
 _MAX_TRANSIENT_DIAGNOSTIC_CHARS = 64 * 1024
 _CODEX_TERMINAL_EXIT_GRACE_SECONDS = 0.25
+_CODEX_FINALIZATION_MARKER_GRACE_SECONDS = 5.0
+_CODEX_FINALIZATION_MARKER_POLL_SECONDS = 0.05
 _CODEX_ACTIVITY_HEARTBEAT_SECONDS = 5.0
 _CODEX_ACTIVITY_DELIVERY_TIMEOUT_SECONDS = 0.25
 _MAX_PENDING_ACTIVITY_CLASSES = 64
@@ -106,6 +108,15 @@ class CodexRecoverableInvocationError(CodexInvocationError):
     trusted host can continue an already checkpointed native session without
     classifying failures by their public, redacted message text.  Callers must
     still prove that the exact session checkpoint exists before retrying.
+    """
+
+
+class CodexFinalizedWithoutTerminalError(CodexInvocationError):
+    """The run finalizer wrote its marker but Codex emitted no terminal event.
+
+    The marker is only a bounded-liveness signal.  Callers must still read and
+    gate the exact proposal through the normal checkpoint-bound workflow; this
+    exception never represents a successful native turn.
     """
 
 
@@ -919,6 +930,30 @@ def _validated_activity_observer(
     return value
 
 
+def _validated_finalization_marker(
+    value: Optional[Path],
+    run_root: Path,
+) -> Optional[Path]:
+    """Bind liveness monitoring to the one exact run-local proposal path."""
+
+    if value is None:
+        return None
+    try:
+        marker = Path(value)
+    except TypeError as exc:
+        raise ContractError(
+            "Codex finalization marker must be the exact in-run "
+            "agent-outcome.json path"
+        ) from exc
+    expected = run_root / "agent-outcome.json"
+    if not marker.is_absolute() or marker != expected:
+        raise ContractError(
+            "Codex finalization marker must be the exact in-run "
+            "agent-outcome.json path"
+        )
+    return marker
+
+
 def _observe_safe_activity(
     observer: Optional[Callable[[str], None]], activity: str
 ) -> None:
@@ -1137,6 +1172,147 @@ class _NativeProcessGuard:
             return reaped
 
 
+class _FinalizationMarkerWatch:
+    """Bound a newly created proposal marker to bounded process cleanup.
+
+    The marker never proves a successful turn.  It only prevents a Codex
+    process whose public JSONL stream remains open after finalization from
+    occupying the launcher until the one-hour turn timeout.
+    """
+
+    def __init__(
+        self,
+        path: Optional[Path],
+        process_guard: _NativeProcessGuard,
+    ) -> None:
+        self.path = path
+        self.process_guard = process_guard
+        self._state_lock = threading.Lock()
+        self._stop = threading.Event()
+        self._turn_completed = threading.Event()
+        self._resolved = threading.Event()
+        self._triggered = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+        self._armed = False
+        if path is None:
+            return
+        try:
+            path.lstat()
+        except FileNotFoundError:
+            self._armed = True
+        except OSError as exc:
+            raise CodexInvocationError(
+                "Codex finalization marker could not be monitored safely"
+            ) from exc
+        # Any path that already exists is stale for this launch.  It is never
+        # used as a liveness signal, regardless of its filesystem type.
+
+    @property
+    def triggered(self) -> bool:
+        return self._triggered.is_set()
+
+    def start(self) -> None:
+        if not self._armed:
+            return
+        thread = threading.Thread(
+            target=self._watch,
+            name="workshop-codex-finalization-marker",
+            daemon=True,
+        )
+        try:
+            thread.start()
+        except (OSError, RuntimeError):
+            # Monitoring is a bounded-liveness aid, never a lifecycle gate.
+            return
+        self._thread = thread
+
+    def observe_turn_completed(self) -> None:
+        with self._state_lock:
+            self._turn_completed.set()
+
+    def wait_after_stream_end(self) -> None:
+        """Let a newly observed regular marker finish its grace period."""
+
+        if self._thread is None or self._turn_completed.is_set():
+            return
+        identity = self._regular_identity()
+        if identity is None:
+            return
+        self._resolved.wait(
+            timeout=(
+                _CODEX_FINALIZATION_MARKER_GRACE_SECONDS
+                + _CODEX_FINALIZATION_MARKER_POLL_SECONDS
+                + 0.1
+            )
+        )
+
+    def close(self) -> None:
+        self._stop.set()
+        self.observe_turn_completed()
+        thread = self._thread
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(timeout=0.25)
+
+    def _regular_identity(self) -> Optional[tuple[int, int]]:
+        if self.path is None:
+            return None
+        try:
+            identity = self.path.lstat()
+        except OSError:
+            return None
+        if not stat.S_ISREG(identity.st_mode):
+            return None
+        return identity.st_dev, identity.st_ino
+
+    def _watch(self) -> None:
+        identity: Optional[tuple[int, int]] = None
+        while not self._stop.is_set() and not self._turn_completed.is_set():
+            if self.path is None:
+                return
+            try:
+                current = self.path.lstat()
+            except FileNotFoundError:
+                self._stop.wait(_CODEX_FINALIZATION_MARKER_POLL_SECONDS)
+                continue
+            except OSError:
+                return
+            if not stat.S_ISREG(current.st_mode):
+                # A directory, device, FIFO, or symlink is not the finalizer's
+                # regular run-local marker and can never select this path.
+                return
+            identity = current.st_dev, current.st_ino
+            break
+        if identity is None:
+            return
+
+        deadline = (
+            time.monotonic() + _CODEX_FINALIZATION_MARKER_GRACE_SECONDS
+        )
+        while not self._stop.is_set():
+            if self._turn_completed.is_set():
+                return
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            self._stop.wait(
+                min(_CODEX_FINALIZATION_MARKER_POLL_SECONDS, remaining)
+            )
+        if self._stop.is_set() or self._turn_completed.is_set():
+            return
+        if self._regular_identity() != identity:
+            self._resolved.set()
+            return
+        with self._state_lock:
+            if self._stop.is_set() or self._turn_completed.is_set():
+                self._resolved.set()
+                return
+            try:
+                if self.process_guard.reap():
+                    self._triggered.set()
+            finally:
+                self._resolved.set()
+
+
 def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
     """Classify a decoded event without forwarding any event-owned bytes."""
 
@@ -1236,6 +1412,7 @@ class CodexNativeSessionLauncher:
         host_state_root: Path,
         prompt: str,
         activity_observer: Optional[Callable[[str], None]] = None,
+        finalization_marker: Optional[Path] = None,
     ) -> CodexNativeSessionOutcome:
         root, state_root, path = self._binding_paths(
             product_id=product_id,
@@ -1250,6 +1427,10 @@ class CodexNativeSessionLauncher:
             )
         prompt = _validated_prompt(prompt)
         activity_observer = _validated_activity_observer(activity_observer)
+        finalization_marker = _validated_finalization_marker(
+            finalization_marker,
+            root,
+        )
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
         run_policy = _codex_run_policy(root, self.binary)
@@ -1290,6 +1471,7 @@ class CodexNativeSessionLauncher:
             expected_thread_id=None,
             bind_thread=bind_thread,
             activity_observer=activity_observer,
+            finalization_marker=finalization_marker,
         )
         if observed_thread_id is None or persisted_sha256 is None:
             raise CodexInvocationError(
@@ -1318,6 +1500,7 @@ class CodexNativeSessionLauncher:
         host_state_root: Path,
         prompt: str,
         activity_observer: Optional[Callable[[str], None]] = None,
+        finalization_marker: Optional[Path] = None,
     ) -> CodexNativeSessionOutcome:
         root, state_root, path = self._binding_paths(
             product_id=product_id,
@@ -1328,6 +1511,10 @@ class CodexNativeSessionLauncher:
         )
         prompt = _validated_prompt(prompt)
         activity_observer = _validated_activity_observer(activity_observer)
+        finalization_marker = _validated_finalization_marker(
+            finalization_marker,
+            root,
+        )
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
         run_policy = _codex_run_policy(root, self.binary)
@@ -1387,6 +1574,7 @@ class CodexNativeSessionLauncher:
             expected_thread_id=thread_id,
             bind_thread=None,
             activity_observer=activity_observer,
+            finalization_marker=finalization_marker,
         )
         return CodexNativeSessionOutcome(
             self._public_binding(
@@ -1616,7 +1804,9 @@ class CodexNativeSessionLauncher:
         expected_thread_id: Optional[str],
         bind_thread: Any,
         activity_observer: Optional[Callable[[str], None]],
+        finalization_marker: Optional[Path] = None,
         _process_guard: Optional[_NativeProcessGuard] = None,
+        _finalization_watch: Optional[_FinalizationMarkerWatch] = None,
         _deadline: Optional[float] = None,
     ) -> tuple[bool, Optional[str]]:
         if not self.binary:
@@ -1671,7 +1861,13 @@ class CodexNativeSessionLauncher:
                 process_group_id,
                 process_session_identity,
             )
+            finalization_watch: Optional[_FinalizationMarkerWatch] = None
             try:
+                finalization_watch = _FinalizationMarkerWatch(
+                    finalization_marker,
+                    process_guard,
+                )
+                finalization_watch.start()
                 return self._stream(
                     command=command,
                     prompt=prompt,
@@ -1680,7 +1876,9 @@ class CodexNativeSessionLauncher:
                     expected_thread_id=expected_thread_id,
                     bind_thread=bind_thread,
                     activity_observer=activity_observer,
+                    finalization_marker=finalization_marker,
                     _process_guard=process_guard,
+                    _finalization_watch=finalization_watch,
                     _deadline=deadline,
                 )
             finally:
@@ -1688,9 +1886,12 @@ class CodexNativeSessionLauncher:
                 # Graceful host exits must never strand the dedicated Codex
                 # process session, while a successfully completed turn still
                 # follows the normal terminal-event and checkpoint path below.
+                if finalization_watch is not None:
+                    finalization_watch.close()
                 process_guard.reap()
 
         process_guard = _process_guard
+        finalization_watch = _finalization_watch
         process = process_guard.process
         if process.stdin is None or process.stdout is None or process.stderr is None:
             process_guard.reap()
@@ -1803,6 +2004,8 @@ class CodexNativeSessionLauncher:
                     _validate_agent_message(item.get("text"))
                 if event_type == "turn.completed":
                     turn_completed = True
+                    if finalization_watch is not None:
+                        finalization_watch.observe_turn_completed()
                     break
         except Exception as exc:
             stream_failure = exc
@@ -1810,6 +2013,14 @@ class CodexNativeSessionLauncher:
             process_guard.reap()
         finally:
             timer.cancel()
+
+        if (
+            not turn_completed
+            and stream_failure is None
+            and not timed_out.is_set()
+            and finalization_watch is not None
+        ):
+            finalization_watch.wait_after_stream_end()
 
         remaining = deadline - time.monotonic()
         intentionally_terminated = False
@@ -1886,6 +2097,12 @@ class CodexNativeSessionLauncher:
             raise CodexInvocationError(
                 "Codex native session event stream was invalid"
             ) from None
+        if finalization_watch is not None and finalization_watch.triggered:
+            activity_reporter.observe("failed")
+            activity_reporter.close()
+            raise CodexFinalizedWithoutTerminalError(
+                "Codex native session finalized without a terminal event"
+            )
         if intentionally_terminated and returncode is None:
             activity_reporter.observe("failed")
             activity_reporter.close()
@@ -2338,6 +2555,7 @@ __all__ = [
     "MAX_CODEX_SESSION_CHECKPOINT_BYTES",
     "MAX_CODEX_STDERR_BYTES",
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
+    "CodexFinalizedWithoutTerminalError",
     "CodexInvocationError",
     "CodexRecoverableInvocationError",
     "CodexNativeSessionBinding",

@@ -5,6 +5,7 @@ from workshop.runtime.contracts import Receipt
 from workshop.runtime.codex import (
     CODEX_PERMISSION_PROFILE,
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
+    CodexFinalizedWithoutTerminalError,
     CodexInvocationError,
     CodexRecoverableInvocationError,
     CodexNativeSessionBinding,
@@ -20,6 +21,7 @@ from workshop.runtime.credentials import (
 )
 
 __all__ = [
+    "CodexFinalizedWithoutTerminalError",
     "CodexInvocationError",
     "CodexRecoverableInvocationError",
     "CODEX_PERMISSION_PROFILE",

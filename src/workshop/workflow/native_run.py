@@ -1651,6 +1651,7 @@ def _launcher_call(
         "host_state_root": paths.host_state,
         "prompt": native_stage_prompt(checkpoint.stage),
         "activity_observer": activity_observer,
+        "finalization_marker": paths.workspace / _AGENT_OUTCOME_NAME,
     }
     try:
         return getattr(launcher, method)(**arguments)
