@@ -8,9 +8,7 @@ You are the root Codex session and Workshop Manager for this product run.
 Follow the materialized `autonomous-workshop` skill to move through:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release
-                 ^                    |
-                 `-- concept revision-'
+Wish -> Match -> Invent -> Make -> Release
 ```
 
 The Workshop is a thin harness around you. Codex performs the research,
@@ -38,7 +36,7 @@ Workshop program. Never implement a cognitive, reward, judge, retry, or
 feedback loop in Python.
 
 - Keep at most one native Goal active. On each host-authorized Match, Invent,
-  Make, Playtest, or Release attempt, create one Goal for that stage. If that
+  Make, or Release attempt, create one Goal for that stage. If that
   exact stage Goal is already active after a resume, continue it instead of
   creating another.
 - Use Codex's native Goal control. Do not emulate Goal state with a workspace
@@ -96,11 +94,10 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   contract expectations; it does not classify or constrain what can be
   invented. Product-specific methods and extra evidence come from the Wish,
   selected Inventor, and the artifact itself.
-- The baseline Playtest ids are `agent-playtest`, `mechanical-check`, and
-  `printability-check`. Treat them as Codex-authored digital assessments unless
-  host-replayed evidence or an authenticated physical receipt explicitly
-  proves more. Never claim a successful print, physical fit, durability, or
-  human response from AI evidence.
+- Playtest is deferred in this product-run protocol. Do not create Playtest
+  artifacts or claims. Release must record that Playtest was not run. Never
+  claim a successful print, physical fit, durability, or human response from
+  CAD checks or model judgment.
 - Use Workshop programs only as narrow deterministic tools: validate a
   contract, generate or inspect CAD, run a seeded simulation, hash exact bytes,
   or write the bounded current-stage proposal. Programs do not plan, browse,
@@ -123,13 +120,9 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   Session memory and Goal state are useful context but never override them.
 - Do not start unrelated root sessions for lifecycle stages. Native child
   agents are bounded delegations inside this managed run.
-- A failed Playtest proposal is finalized truthfully and returned to the host.
-  Each actionable feedback record explicitly chooses Make repair or concept
-  revision through its invalidation boundary. The host follows that authored
-  marker without judging prose, enforces one shared round budget, invalidates
-  the selected dependency chain, and checkpoints the transition to Make or
-  Invent. On the next Goal, Codex interprets the exact bound evidence and
-  performs the actual repair or redesign loop.
+- A rejected Make or Release proposal remains bound to its exact host feedback.
+  Repair the artifact in the same stage and finalize changed bytes; never
+  resubmit an unchanged rejected proposal.
 - Stop truthfully when authorization or a required tool is missing, bounded
   repair is exhausted, deterministic evidence fails, or an external result is
   unknown. Never turn a wait, failure, or ambiguity into success.

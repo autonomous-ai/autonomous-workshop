@@ -41,6 +41,7 @@ from workshop.errors import (
 )
 from workshop.make.cad.mesh import inspect_stl_path
 from workshop.release.native import (
+    DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
     FACTORY_CONTENT_BODY_MAX,
     FACTORY_CONTENT_BODY_MIN,
     FACTORY_CONTENT_LABEL_MAX,
@@ -155,7 +156,10 @@ def _manual_path_for_release_product(product: Mapping[str, Any]) -> str:
     schema_version = product.get("schema_version")
     if schema_version == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
         return FACTORY_RELEASE_LEGACY_MANUAL_PATH
-    if schema_version == RELEASE_PRODUCT_SCHEMA_VERSION:
+    if schema_version in (
+        RELEASE_PRODUCT_SCHEMA_VERSION,
+        DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+    ):
         return FACTORY_RELEASE_PDF_MANUAL_PATH
     raise ContractError("Factory Release product schema has no manual binding")
 
@@ -2485,7 +2489,10 @@ class FactoryReleaseWriter:
                 product_page_sha256=product_page_sha256,
                 manual_sha256=manual_sha256,
             )
-        if page.get("schema_version") != RELEASE_PRODUCT_SCHEMA_VERSION:
+        if page.get("schema_version") not in (
+            RELEASE_PRODUCT_SCHEMA_VERSION,
+            DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+        ):
             raise ContractError("Factory Release product schema is unsupported")
         return imported
 

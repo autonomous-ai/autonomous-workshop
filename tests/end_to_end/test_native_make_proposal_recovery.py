@@ -28,6 +28,7 @@ from tests.end_to_end.test_native_full_run import (
     _FactoryEffects,
     _OneSessionProductAgent,
     _canonical_json,
+    _product_run_assets_without_direct_release,
     _read_json,
     _sha256,
     _write_json,
@@ -168,8 +169,13 @@ def _verified_cad(made, **arguments):
 
 class NativeMakeProposalRecoveryTest(unittest.TestCase):
     def _base_patches(self, home, launcher, effects):
+        assets = _product_run_assets_without_direct_release(Path(home).parent)
         return (
             mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True),
+            mock.patch(
+                "workshop.workflow.native_run.product_run_agent_assets",
+                return_value=assets,
+            ),
             mock.patch(
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
@@ -219,6 +225,7 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
                 patches[5],
                 patches[6],
                 patches[7],
+                patches[8],
             ):
                 with mock.patch(
                     "workshop.workflow.native_run._remove_rejected_agent_outcome",
@@ -392,6 +399,7 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
                 patches[5],
                 patches[6],
                 patches[7],
+                patches[8],
             ):
                 receipt = start_native_run(wish)
                 paths = native_run_paths(wish.product_id)
@@ -444,6 +452,7 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
                 patches[5],
                 patches[6],
                 patches[7],
+                patches[8],
                 mock.patch(
                     "workshop.workflow.native_run._MAX_MAKE_PROPOSAL_REJECTIONS",
                     2,
@@ -487,6 +496,7 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
                 patches[5],
                 patches[6],
                 patches[7],
+                patches[8],
                 mock.patch(
                     "workshop.workflow.native_run._evaluate_make_stage",
                     side_effect=StateConflict("trusted Make state changed"),
@@ -513,16 +523,17 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
                 patches[0],
                 patches[1],
                 patches[2],
+                patches[3],
                 mock.patch(
                     "workshop.workflow.native_run.verify_native_made_cad",
                     side_effect=ArtifactError(
                         "native CAD verifier differs from its trusted input hash"
                     ),
                 ),
-                patches[4],
                 patches[5],
                 patches[6],
                 patches[7],
+                patches[8],
             ):
                 with self.assertRaisesRegex(ArtifactError, "trusted input hash"):
                     start_native_run(wish)

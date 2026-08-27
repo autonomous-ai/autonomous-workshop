@@ -53,7 +53,7 @@ PLAYTEST_FEEDBACK_INVALIDATES = frozenset(PLAYTEST_INVENT_INVALIDATES)
 FORWARD = {
     "match": "invent",
     "invent": "make",
-    "make": "playtest",
+    "make": "release",
     "playtest": "release",
     "release": "complete",
 }
@@ -197,7 +197,7 @@ FORBIDDEN_RELEASE_MEDIA_SUFFIXES = frozenset(
         ".webp",
     )
 )
-RELEASE_PRODUCT_FIELDS = frozenset(
+MANUAL_RELEASE_PRODUCT_FIELDS = frozenset(
     (
         "schema_version",
         "kind",
@@ -211,6 +211,12 @@ RELEASE_PRODUCT_FIELDS = frozenset(
         "claims",
     )
 )
+DIRECT_RELEASE_PRODUCT_FIELDS = frozenset(
+    (*MANUAL_RELEASE_PRODUCT_FIELDS, "playtest_status")
+)
+PLAYTEST_OMISSION_PATH = "PLAYTEST-NOT-RUN.json"
+PLAYTEST_OMISSION_KIND = "autonomous-workshop.playtest-omission"
+PLAYTEST_OMISSION_STATUS = "not-run"
 class ProposalError(Exception):
     """One deterministic proposal input is invalid or unsafe."""
 
@@ -847,7 +853,12 @@ def _load_stage(run_root: Path, expected_stage: str) -> dict[str, Any]:
         raise ProposalError("STAGE.json describes another stage")
     _sha256(stage["checkpoint_sha256"], "STAGE checkpoint_sha256")
     _sha256(stage["subject_sha256"], "STAGE subject_sha256")
-    if stage["next_transition"] != FORWARD[expected_stage]:
+    allowed_transitions = (
+        ("playtest", "release")
+        if expected_stage == "make"
+        else (FORWARD[expected_stage],)
+    )
+    if stage["next_transition"] not in allowed_transitions:
         raise ProposalError("STAGE.json next_transition is invalid")
     maximum = _positive_int(stage["max_rounds"], "STAGE max_rounds")
     if expected_stage in ("match", "invent"):
@@ -1486,6 +1497,30 @@ def _expected_release_claims(playtested: Mapping[str, Any]) -> dict[str, Any]:
     return claims
 
 
+def _playtest_omission_record() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "kind": PLAYTEST_OMISSION_KIND,
+        "status": PLAYTEST_OMISSION_STATUS,
+        "reason": "Playtest is deferred for this Release.",
+    }
+
+
+def _playtest_omission_sha256() -> str:
+    return hashlib.sha256(canonical_json(_playtest_omission_record())).hexdigest()
+
+
+def _direct_release_claims() -> dict[str, Any]:
+    return {
+        "playtest": {
+            "status": PLAYTEST_OMISSION_STATUS,
+            "claims": [],
+            "evidence_ref": PLAYTEST_OMISSION_PATH,
+            "evidence_sha256": _playtest_omission_sha256(),
+        }
+    }
+
+
 def _release_page_text(value: Any, label: str, maximum: int) -> str:
     if (
         not isinstance(value, str)
@@ -1523,11 +1558,59 @@ def _release_page_text_list(
 
 
 def _validate_release_product(value: Any) -> dict[str, Any]:
-    product = _fields(value, RELEASE_PRODUCT_FIELDS, "Release product.json")
+    if isinstance(value, Mapping) and value.get("schema_version") == 4:
+        product = _fields(
+            value, MANUAL_RELEASE_PRODUCT_FIELDS, "Release product.json"
+        )
+        if (
+            product["kind"] != "workshop.release-package"
+            or product["status"] != "manual-ready"
+        ):
+            raise ProposalError("Release product.json is not a manual-ready package")
+        _sha256(
+            product["product_artifact_sha256"],
+            "Release product artifact sha256",
+        )
+        _sha256(
+            product["playtest_evidence_artifact_sha256"],
+            "Release Playtest evidence sha256",
+        )
+        claims = _mapping(product["claims"], "Release claims", nonempty=True)
+        return {
+            "schema_version": 4,
+            "kind": "workshop.release-package",
+            "status": "manual-ready",
+            "title": _release_page_text(product["title"], "Release title", 300),
+            "summary": _release_page_text(
+                product["summary"], "Release summary", 2_000
+            ),
+            "what_arrives": _release_page_text_list(
+                product["what_arrives"],
+                "Release what_arrives",
+                maximum_items=100,
+                maximum_item_length=1_000,
+            ),
+            "limitations": _release_page_text_list(
+                product["limitations"],
+                "Release limitations",
+                maximum_items=100,
+                maximum_item_length=2_000,
+                allow_empty=True,
+            ),
+            "product_artifact_sha256": product["product_artifact_sha256"],
+            "playtest_evidence_artifact_sha256": product[
+                "playtest_evidence_artifact_sha256"
+            ],
+            "claims": dict(claims),
+        }
+    product = _fields(
+        value, DIRECT_RELEASE_PRODUCT_FIELDS, "Release product.json"
+    )
     if (
-        product["schema_version"] != 4
+        product["schema_version"] != 5
         or product["kind"] != "workshop.release-package"
         or product["status"] != "manual-ready"
+        or product["playtest_status"] != PLAYTEST_OMISSION_STATUS
     ):
         raise ProposalError("Release product.json is not a manual-ready package")
     _sha256(
@@ -1538,9 +1621,14 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
         product["playtest_evidence_artifact_sha256"],
         "Release Playtest evidence sha256",
     )
+    omission_sha256 = _playtest_omission_sha256()
+    if product["playtest_evidence_artifact_sha256"] != omission_sha256:
+        raise ProposalError("Release product.json identifies another Playtest omission")
     claims = _mapping(product["claims"], "Release claims", nonempty=True)
+    if dict(claims) != _direct_release_claims():
+        raise ProposalError("Release claims must state that Playtest was not run")
     validated = {
-        "schema_version": 4,
+        "schema_version": 5,
         "kind": "workshop.release-package",
         "status": "manual-ready",
         "title": _release_page_text(product["title"], "Release title", 300),
@@ -1559,6 +1647,7 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
             allow_empty=True,
         ),
         "product_artifact_sha256": product["product_artifact_sha256"],
+        "playtest_status": PLAYTEST_OMISSION_STATUS,
         "playtest_evidence_artifact_sha256": product[
             "playtest_evidence_artifact_sha256"
         ],
@@ -1678,7 +1767,7 @@ def _playtest_contract(
     return {**identity, "playtested_sha256": json_sha256(identity)}
 
 
-def _release_contract(
+def _playtested_release_contract(
     run_root: Path,
     stage: Mapping[str, Any],
     *,
@@ -1763,9 +1852,7 @@ def _release_contract(
     if product.get("title") != made["product"].get("title"):
         raise ProposalError("Release title differs from the exact Made product")
 
-    unchanged = _tree_manifest(
-        run_root, package_root_value, "Release package tree"
-    )
+    unchanged = _tree_manifest(run_root, package_root_value, "Release package tree")
     if unchanged != manifest:
         raise ProposalError("Release package changed during validation")
     product_json_sha256 = hashlib.sha256(product_bytes).hexdigest()
@@ -1788,6 +1875,145 @@ def _release_contract(
     if len(canonical_json(result)) > MAX_RELEASE_CONTRACT_BYTES:
         raise ProposalError("native Release exceeds its byte limit")
     return result
+
+
+def _direct_release_contract(
+    run_root: Path,
+    stage: Mapping[str, Any],
+    *,
+    package_root_value: str,
+) -> dict[str, Any]:
+    inputs = _required_fields(stage["inputs"], {"made"}, "Release STAGE inputs")
+    made = _validate_made(inputs["made"])
+    round_index = stage["round"]
+    if made["round"] != round_index:
+        raise ProposalError("Release round differs from Made")
+
+    expected_root = "artifacts/release/package"
+    if package_root_value != expected_root:
+        raise ProposalError("Release package root must be %s" % expected_root)
+    manifest = _tree_manifest(run_root, package_root_value, "Release package tree")
+    inventory = {entry["path"]: entry for entry in manifest["entries"]}
+    for required in ("MANUAL.pdf", "product.json", PLAYTEST_OMISSION_PATH):
+        if required not in inventory:
+            raise ProposalError("Release package manifest lacks %s" % required)
+    forbidden_media = sorted(
+        path
+        for path in inventory
+        if PurePosixPath(path).suffix.casefold()
+        in FORBIDDEN_RELEASE_MEDIA_SUFFIXES
+    )
+    if forbidden_media:
+        raise ProposalError(
+            "Release package cannot contain media files: %s" % forbidden_media
+        )
+
+    manual, _ = _read_regular(
+        run_root,
+        "%s/MANUAL.pdf" % package_root_value,
+        "Release MANUAL.pdf",
+        maximum=MAX_RELEASE_MANUAL_BYTES,
+    )
+    if hashlib.sha256(manual).hexdigest() != inventory["MANUAL.pdf"]["sha256"]:
+        raise ProposalError("Release MANUAL.pdf changed after package hashing")
+    _validate_pdf_manual(manual)
+
+    omission, _ = _read_regular(
+        run_root,
+        "%s/%s" % (package_root_value, PLAYTEST_OMISSION_PATH),
+        "Release Playtest omission",
+        maximum=MAX_RELEASE_CONTRACT_BYTES,
+    )
+    if omission != canonical_json(_playtest_omission_record()):
+        raise ProposalError("Release Playtest omission is not canonical")
+    omission_sha256 = _playtest_omission_sha256()
+    if inventory[PLAYTEST_OMISSION_PATH]["sha256"] != omission_sha256:
+        raise ProposalError("Release Playtest omission changed after package hashing")
+
+    product: dict[str, Any] | None = None
+    product_bytes: bytes | None = None
+    for path, entry in inventory.items():
+        if PurePosixPath(path).suffix.casefold() != ".json":
+            continue
+        document, content, _ = _read_json(
+            run_root,
+            "%s/%s" % (package_root_value, path),
+            "Release %s" % path,
+            maximum=MAX_RELEASE_CONTRACT_BYTES,
+        )
+        if content != canonical_json(document):
+            raise ProposalError("Release %s must use canonical JSON encoding" % path)
+        if hashlib.sha256(content).hexdigest() != entry["sha256"]:
+            raise ProposalError("Release %s changed after package hashing" % path)
+        if path == "product.json":
+            product = document
+            product_bytes = content
+    if product is None or product_bytes is None:
+        raise ProposalError("Release product.json is unavailable")
+    validated_product = _validate_release_product(product)
+    if validated_product != product:
+        raise ProposalError("Release product.json is not canonical page content")
+
+    product_artifact_sha256 = made["product_manifest"]["artifact_sha256"]
+    evidence_artifact_sha256 = omission_sha256
+    if product.get("product_artifact_sha256") != product_artifact_sha256:
+        raise ProposalError("Release product.json identifies another product")
+    if (
+        product.get("playtest_evidence_artifact_sha256")
+        != evidence_artifact_sha256
+    ):
+        raise ProposalError("Release product.json identifies other Playtest evidence")
+    claims = _mapping(product["claims"], "Release claims", nonempty=True)
+    if claims != _direct_release_claims():
+        raise ProposalError("Release claims must state that Playtest was not run")
+    if product.get("title") != made["product"].get("title"):
+        raise ProposalError("Release title differs from the exact Made product")
+
+    unchanged = _tree_manifest(
+        run_root, package_root_value, "Release package tree"
+    )
+    if unchanged != manifest:
+        raise ProposalError("Release package changed during validation")
+    product_json_sha256 = hashlib.sha256(product_bytes).hexdigest()
+    identity = {
+        "schema_version": 3,
+        "kind": RELEASE_KIND,
+        "round": round_index,
+        "made_sha256": made["made_sha256"],
+        "playtested_sha256": omission_sha256,
+        "product_artifact_sha256": product_artifact_sha256,
+        "playtest_evidence_artifact_sha256": evidence_artifact_sha256,
+        "package_root": package_root_value,
+        "package_manifest": manifest,
+        "manual_path": "MANUAL.pdf",
+        "product_json_path": "product.json",
+        "product_json_sha256": product_json_sha256,
+        "product": product,
+    }
+    result = {**identity, "release_sha256": json_sha256(identity)}
+    if len(canonical_json(result)) > MAX_RELEASE_CONTRACT_BYTES:
+        raise ProposalError("native Release exceeds its byte limit")
+    return result
+
+
+def _release_contract(
+    run_root: Path,
+    stage: Mapping[str, Any],
+    *,
+    package_root_value: str,
+) -> dict[str, Any]:
+    inputs = _mapping(stage["inputs"], "Release STAGE inputs", nonempty=True)
+    if "playtested" in inputs:
+        return _playtested_release_contract(
+            run_root,
+            stage,
+            package_root_value=package_root_value,
+        )
+    return _direct_release_contract(
+        run_root,
+        stage,
+        package_root_value=package_root_value,
+    )
 
 
 def _contract_path(stage: str, round_index: Any) -> str:

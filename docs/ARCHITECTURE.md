@@ -9,14 +9,10 @@ and Grok Build are future adapters to the same boundary.
 
 The first version makes open-ended playthings for grown-ups (14+). Users state
 what they want in their own words; they do not choose a product class before
-the Workshop can begin. A universal toy blueprint supplies the shared contract
-and baseline Playtest checks: `agent-playtest`, `mechanical-check`, and
-`printability-check`. The host derives that exact tuple from
-`ToyBlueprint.required_playtest_checks()`. These checks are Codex-authored
-digital assessments unless host-replayed evidence or a physical receipt
-explicitly proves more; they never establish a successful print or physical
-fit by themselves. The Wish, selected Inventor, and evolving artifact determine
-any additional specialist method or evidence.
+the Workshop can begin. A universal toy blueprint supplies the shared product
+contract. Playtest is deferred in the current fast path; new releases record
+that it was not run and make no Playtest claim. The Wish, selected Inventor,
+and evolving artifact determine any additional specialist method or evidence.
 
 Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
@@ -24,9 +20,7 @@ decorated, and be represented no more strongly than its evidence permits.
 ## Lifecycle
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release
-                 ^                    |
-                 `-- concept revision-'
+Wish -> Match -> Invent -> Make -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
@@ -37,9 +31,6 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
   concept, including the physical facts and provenance Make needs.
 - **Make** consumes that exact sealed Invent result and creates the actual
   product tree, CAD project, assemblies, and deterministic CAD verification.
-- **Playtest** inspects and simulates that exact Made revision. Structured
-  feedback explicitly returns implementation defects to Make or fundamental
-  design defects to Invent within one shared bounded round budget.
 - **Release** creates and seals a self-contained printable `MANUAL.pdf`,
   revalidates the exact Made revision as full-tier print-ready CAD, and
   publishes both through Factory with authenticated public hash readback.
@@ -63,7 +54,7 @@ They do not mutate a completed run.
 `$WORKSHOP_HOME/runs/<wish-id>/workspace`, then starts one coding-agent session
 with that directory as its working directory before Match. The same session
 handles discovery, research, concept
-work, CAD, inspection, repair, Playtest judgment, manual design, and bounded
+work, CAD, inspection, repair, manual design, and bounded
 product facts. `workshop resume` continues the exact recorded session id.
 
 Within either command, a timed-out native turn or explicitly recognized
@@ -122,7 +113,7 @@ files, manifests, gate receipts, or effect receipts.
 
 ## One native Goal per active stage attempt
 
-For each host-authorized Match, Invent, Make, Playtest, or Release
+For each host-authorized Match, Invent, Make, or Release
 attempt, the root Codex session creates one native Goal. Only one Goal is
 active at a time. It names one objective, the exact inputs to inspect, proof
 artifacts and checks, and a verifiable stopping condition: the current stage
@@ -136,11 +127,9 @@ separate loop primitive or Python program. The Goal completes only after the
 finalizer succeeds; Codex then returns to the host instead of starting the next
 stage.
 
-Wish is sealed by the host before Match, so it is not an agent Goal. A failed
-Playtest Goal still completes after it finalizes truthful evidence. The host
-applies the shared round budget, invalidates the authored dependency boundary,
-and checkpoints the return to Make or Invent. Codex interprets the feedback
-and repairs or revises the product inside the next Goal.
+Wish is sealed by the host before Match, so it is not an agent Goal. Host gate
+rejections remain bound to the exact proposal and return to the same stage for
+repair; unchanged rejected bytes cannot be resubmitted as success.
 
 ## Trust boundary
 
@@ -155,8 +144,7 @@ and repairs or revises the product inside the next Goal.
 - use of CAD, image-to-CAD, design-reference, STEP-parts,
   electromechanical-integration, rendering, and other materialized skills;
 - creation and repair of product files;
-- AI Playtest perspectives and evidence-linked feedback;
-- the printable `MANUAL.pdf`, evidence-bound claims, and bounded Release facts;
+- the printable `MANUAL.pdf`, truthful omission record, and bounded Release facts;
 - a compact proposal for the next host transition.
 
 ### The Python host owns
@@ -204,12 +192,10 @@ not call a model or pass a gate. The host verifies the proposal binding, rereads
 the whole artifact tree, reruns trusted checks, seals accepted bytes, and alone
 advances the durable checkpoint.
 
-If a Playtest verdict is `improve` or `block`, its explicit structured
-invalidation boundary returns to Make or Invent and preserves exact feedback
-evidence. The host makes no semantic routing judgment. Both routes consume the
-same round budget; a concept revision receives hash-bound prior Invented and
-failing Playtested/feedback bytes. Changed Invent or Make revisions invalidate
-their downstream evidence.
+For new direct-Release runs, a changed Make revision invalidates Release and
+must pass the full CAD gate again. Frozen pre-ADR-0015 runs retain their
+materialized Playtest routing and evidence contracts; the host does not
+reinterpret those historical checkpoints.
 
 ## Evidence boundaries
 
@@ -235,14 +221,15 @@ at least:
 
 - self-contained `MANUAL.pdf`, bound to the package manifest and suitable for
   printing into the physical box;
-- canonical `product.json` with exact Made/Playtest identities, concise product
-  facts, what arrives, limitations, and claims copied from exact Playtest
-  evidence;
+- canonical schema-v5 `product.json` with the exact Made identity, concise
+  product facts, what arrives, limitations, and `playtest_status: not-run`;
+- canonical `PLAYTEST-NOT-RUN.json`, with no Playtest claims;
 - optional editable manual source or accessible text companions that do not
   contradict the PDF.
 
-The current contract pair is NativeRelease schema v2 with `MANUAL.pdf` and
-product schema v4/`manual-ready`. Legacy NativeRelease schema v1 remains
+The current contract pair is NativeRelease schema v3 with `MANUAL.pdf` and
+product schema v5/`manual-ready`. NativeRelease schema v2/product schema v4
+remains valid for frozen Playtest runs. Legacy NativeRelease schema v1 remains
 readable only with `MANUAL.md` and product schema v3/`page-ready`; the host
 validates it under those original rules but cannot report it as a successful
 current Release without an explicit migration through today's gates.
@@ -307,13 +294,13 @@ inventors/<id>/
 src/
   cli/                     parsing, presentation, and exit codes only
   workshop/
-    product/               universal blueprint and baseline checks
+    product/               universal blueprint and compatibility check ids
     wish/                  exact customer-intent contract
     match/                 Inventor roster and assignment contract/gate
     invent/                researched concept contract/gate
     make/                  Made/CAD contracts and deterministic gates
       skills/              canonical reusable Make domain skills
-    playtest/              evidence, feedback, and Playtested contract/gate
+    playtest/              frozen-run/future evidence contracts and gates
     release/               terminal package and Release contract/gate
       skills/manual-design/ canonical printable-manual design skill
     workflow/              lifecycle/checkpoint protocol and trusted run host

@@ -97,6 +97,9 @@ _DOWNSTREAM_OF_MAKE = ("playtest", "release")
 _TERMINAL_RELEASE_MARKER = (
     ".agents/skills/autonomous-workshop/references/release-terminal-v1.md"
 )
+_DIRECT_RELEASE_MARKER = (
+    ".agents/skills/autonomous-workshop/references/direct-release-v1.md"
+)
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
@@ -109,6 +112,24 @@ _EFFECT_RECEIPT_PATH = re.compile(
     r"[^/]{0,32}receipt|receipt[^/]{0,32}"
     r"(?:factory|carrier|shipment|manufactur|publication|payment|effect)"
 )
+
+
+def _uses_direct_release(payload: Mapping[str, Any]) -> bool:
+    return _DIRECT_RELEASE_MARKER in {
+        item["path"] for item in payload["inputs"]
+    }
+
+
+def _forward_transition(payload: Mapping[str, Any], stage: str) -> str:
+    if stage == "make" and _uses_direct_release(payload):
+        return "release"
+    return _FORWARD_TRANSITIONS[stage]
+
+
+def _upstream_stage(payload: Mapping[str, Any], stage: str) -> str:
+    if stage == "release" and _uses_direct_release(payload):
+        return "make"
+    return _UPSTREAM_STAGE[stage]
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -1357,7 +1378,7 @@ class AgentRun:
         stage = payload["stage"]
         if stage == "wish":
             return self._wish_sha256(payload)
-        upstream = _UPSTREAM_STAGE[stage]
+        upstream = _upstream_stage(payload, stage)
         paths = payload["stage_artifacts"].get(upstream)
         if not paths:
             raise TransitionError("agent run lacks the sealed upstream stage artifact")
@@ -1385,10 +1406,11 @@ class AgentRun:
             gate_checkpoint_sha256, "predecessor gate checkpoint sha256"
         )
         payload = self._load()
+        forward = _forward_transition(payload, receipt.stage)
         expected_stages = (
             ("release", "deliver")
             if receipt.stage == "release"
-            else (_FORWARD_TRANSITIONS.get(receipt.stage),)
+            else (forward,)
         )
         history = payload["history"]
         if payload["stage"] not in expected_stages or not history:
@@ -1399,7 +1421,7 @@ class AgentRun:
             else (
                 "deliver"
                 if receipt.stage == "release"
-                else _FORWARD_TRANSITIONS.get(receipt.stage)
+                else forward
             )
         )
         record = history[-1]
@@ -1448,7 +1470,7 @@ class AgentRun:
         if outcome.stage != payload["stage"]:
             raise TransitionError("agent outcome is for a different stage")
         if outcome.status == "ready":
-            allowed = _FORWARD_TRANSITIONS[outcome.stage]
+            allowed = _forward_transition(payload, outcome.stage)
             if outcome.stage == "playtest":
                 if outcome.proposed_transition not in (allowed, "make", "invent"):
                     raise TransitionError(

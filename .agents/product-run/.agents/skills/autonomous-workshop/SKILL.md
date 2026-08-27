@@ -1,6 +1,6 @@
 ---
 name: autonomous-workshop
-description: Run, resume, or diagnose one Autonomous Workshop Wish through Match, Invent, Make, Playtest, and terminal Release using native Codex Goals, tools, and subagents while preserving deterministic host gates and host-controlled effects.
+description: Run, resume, or diagnose one Autonomous Workshop Wish through Match, Invent, Make, and terminal Release using native Codex Goals, tools, and subagents while preserving deterministic host gates and host-controlled effects.
 ---
 
 # Autonomous Workshop
@@ -27,7 +27,7 @@ skill is your workflow playbook, not a separate agent process.
 4. Read only the reference for the current stage:
    - Match: [references/wish-match.md](references/wish-match.md)
    - Invent: [references/invent.md](references/invent.md)
-   - Make or Playtest: [references/make-playtest.md](references/make-playtest.md)
+   - Make: [references/make-playtest.md](references/make-playtest.md)
    - Release:
      [references/release-deliver.md](references/release-deliver.md)
 5. Read [references/effects-and-recovery.md](references/effects-and-recovery.md)
@@ -38,7 +38,7 @@ stages; do not create stage-specific sessions or impersonate Python workers.
 
 ## Run one native Goal for the current stage
 
-For each host-authorized Match, Invent, Make, Playtest, or Release attempt,
+For each host-authorized Match, Invent, Make, or Release attempt,
 create one native Codex Goal. Keep only one Goal active at a time. If the Goal
 for this exact checkpoint is already active after a resume, continue it.
 If a host rejection changed the current subject after a prior Goal completed,
@@ -105,14 +105,13 @@ bind its exact source manifest, full Taste, and skill artifacts under
   and materialized domain skills for research, creation, evaluation, and
   repair.
 - Every Wish is open-ended. The universal toy blueprint provides one common
-  contract and the baseline Playtest checks `agent-playtest`,
-  `mechanical-check`, and `printability-check`; it is not a user-facing
-  category. These are Codex-authored digital assessments unless host-replayed
-  evidence or an authenticated physical receipt explicitly proves more. Never
-  claim a successful print, physical fit, durability, or human response from AI
-  evidence. Add product-specific inspection when the artifact requires it.
+  product contract; it is not a user-facing category. Playtest is deferred in
+  this protocol. Do not create Playtest artifacts or claims. Never claim a
+  successful print, physical fit, durability, or human response from CAD checks
+  or AI judgment. Add product-specific deterministic inspection when the
+  artifact requires it.
 - Codex owns Match reasoning, research, concept exploration, design, CAD
-  iteration, Playtest judgment, and the finished in-box manual. Website
+  iteration, and the finished in-box manual. Website
   metadata is a secondary transport artifact, not the creative center of
   Release.
 - Use Workshop programs only as deterministic tools. Do not build a Python
@@ -133,8 +132,8 @@ run the materialized finalizer:
   --run-root . <current-stage> <stage-specific-arguments>
 ```
 
-Use `--help` for exact arguments. The commands are `match`, `invent`, `make`,
-`playtest`, and `release`; the stage references describe their inputs. The
+Use `--help` for exact arguments. The active commands are `match`, `invent`,
+`make`, and `release`; the stage references describe their inputs. The
 finalizer validates and hashes exact bytes, writes the canonical contract under
 `artifacts/`, and atomically writes `agent-outcome.json` bound to the current
 checkpoint and gate subject. It does no reasoning, runs no improvement loop,
@@ -154,23 +153,17 @@ large pasted JSON object for run-local evidence.
 The host alone sequences:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release
-                 ^                    |
-                 `-- concept revision-'
+Wish -> Match -> Invent -> Make -> Release
 ```
 
-A finalized `improve` or `block` Playtest returns to the host. Each actionable
-feedback item explicitly marks either a Make repair or a fundamental Invent
-revision. The host follows that structured marker without judging its prose,
-applies the shared round budget, and invalidates the selected dependency chain
-before checkpointing the next Make or Invent attempt. For re-Invent, the next
-packet binds the exact prior Invented and failing Playtested/feedback bytes.
-Reviews after delivery may inform a future Wish but never rewrite a completed
-run.
+Host rejection feedback remains bound to the exact current-stage proposal.
+Repair Make or Release in place and finalize changed bytes. Reviews after
+delivery may inform a future Wish but never rewrite a completed run.
 
 Release prepares a self-contained, printable `MANUAL.pdf` that can teach the
 new owner without a website, video, QR code, or phone. It also prepares bounded
-evidence-linked `product.json` facts for optional website transport. Read and
+`product.json` facts with `playtest_status: not-run` and no Playtest claims for
+website transport. Read and
 use the materialized `manual-design` skill during Release. Codex authors and
 visually reviews the exact PDF, but it does not publish, print, pack, or ship
 it. Codex never receives Factory, payment, manufacturing, postage, or carrier

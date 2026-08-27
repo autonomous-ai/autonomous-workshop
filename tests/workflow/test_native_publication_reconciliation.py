@@ -79,6 +79,8 @@ class NativePublicationReconciliationTest(unittest.TestCase):
                         "release_sha256": manifest.artifact_sha256,
                         "playtest_evidence_sha256": (
                             context.playtested.evidence.evidence_artifact_sha256
+                            if context.playtested is not None
+                            else entries["PLAYTEST-NOT-RUN.json"].sha256
                         ),
                         "handoff_artifact_sha256": _sha256(
                             b"exact-factory-handoff"

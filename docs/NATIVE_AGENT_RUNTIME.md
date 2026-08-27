@@ -4,10 +4,11 @@ This is the operating map for people and coding agents building Autonomous
 Workshop. It is authoritative together with
 [ADR 0012](adr/0012-codex-orchestrated-runtime.md),
 [ADR 0013](adr/0013-manual-first-release.md),
-[ADR 0014](adr/0014-terminal-published-release.md), and the repository
+[ADR 0014](adr/0014-terminal-published-release.md),
+[ADR 0015](adr/0015-defer-playtest.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
-executable-Deliver details.
+executable-Deliver details; ADR 0015 defers Playtest from new runs.
 
 ## Two different agent contexts
 
@@ -28,23 +29,21 @@ then launches one native Codex session in that directory before Match. That
 same session performs all cognitive and tool-using work through Release:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release
-                 ^                    |
-                 `-- concept revision-'
+Wish -> Match -> Invent -> Make -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
 Codex owns understanding, native search, concept exploration, design, CAD and
-artifact creation, render inspection, repair, AI Playtest judgment, printable
-manual design, and bounded evidence-linked Release facts. Stages are durable
+artifact creation, render inspection, repair, printable manual design, and
+bounded Release facts. Stages are durable
 checkpoints, not separate model roles or one-shot API calls.
 
 The root Codex session is the Workshop Manager. Native subagents are bounded
 children it can use for parallel or specialist work; they do not create a
 second product-run session or weaken the one-session continuity rule.
 
-For each active Match, Invent, Make, Playtest, or Release attempt,
+For each active Match, Invent, Make, or Release attempt,
 the Manager creates one native Codex Goal. Only one Goal is active. It binds one objective,
 the current `STAGE.json`, proof artifacts and checks, and the verifiable
 stopping condition that the stage finalizer succeeds. Codex observes, acts,
@@ -61,7 +60,7 @@ iteration](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
 Python is the trusted host substrate only. It owns:
 
 - Wish/run identity and exact input bytes;
-- lifecycle order, Make–Playtest round budgets, invalidation, and one exclusive
+- lifecycle order, retry budgets, invalidation, and one exclusive
   host mutation lock per run;
 - native-session launch/resume, a scrubbed process environment, and an enforced
   exact-toy-root Codex permission profile that denies the surrounding checkout;
@@ -120,7 +119,7 @@ retaining the same exclusive run lock, the host counts the
 failed attempt, preserves the unchanged stage packet, waits a bounded
 exponential delay with deterministic per-run jitter, and resumes that exact
 session for another turn. This continuation consumes the existing
-32-turn command budget and the normal Make-Playtest round budget; it does not
+32-turn command budget; it does not
 create a separate retry budget. The delay is capped at 30 seconds and prevents
 a persistent provider outage from becoming a reconnect storm.
 
@@ -215,7 +214,7 @@ root Codex session: Workshop Manager
     |       +-- required primary + optional additional Codex skills
     |       `-- hash-bound scripts/references/assets/deterministic tools
     |
-    `-- optional independent inspection or Playtest subagents
+    `-- optional independent inspection subagents
 ```
 
 The host projects every eligible Inventor into Codex's official
@@ -269,16 +268,8 @@ paths needed by the current stage. Codex must read it and must not edit it. A
 stale proposal cannot be replayed because the host verifies both
 `checkpoint_sha256` and `subject_sha256`.
 
-The universal baseline comes from
-`ToyBlueprint.required_playtest_checks()` and currently contains
-`agent-playtest`, `mechanical-check`, and `printability-check`. Those are
-Codex-authored digital assessments unless host-replayed evidence or an
-authenticated physical receipt explicitly proves more. They cannot establish
-successful printing, physical fit, durability, or human response by
-themselves.
-
 The Wish gate is host-validated before the first native Match turn. Native
-stage packets cover Match, Invent, Make, Playtest, and Release; the host alone
+stage packets for new runs cover Match, Invent, Make, and Release; the host alone
 performs Release's authenticated publication effect.
 
 ## Run-local proposal finalizer
@@ -306,11 +297,6 @@ runs that deterministic tool for exactly one stage:
   --cad-verification-path <path-inside-product-root>
 
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
-  --run-root . playtest \
-  --source <playtest-source.json> \
-  --evidence-root <evidence-root>
-
-"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . release \
   --package-root artifacts/release/package
 ```
@@ -323,7 +309,8 @@ Codex completes the active Goal and returns control. The host rereads the
 proposal and artifact tree independently, reruns its trusted gates, seals all
 accepted bytes, and alone decides the transition.
 
-Playtest owns the backward transitions. A verdict of `improve` or `block`
+For frozen pre-ADR-0015 runs only, Playtest owns the backward transitions. A
+verdict of `improve` or `block`
 preserves exact evidence and uses each feedback record's explicit invalidation
 boundary to propose Make or Invent. `["playtest", "release"]` is an
 implementation repair; `["invent", "make", "playtest", "release"]` is a
@@ -358,7 +345,8 @@ product bytes and reruns deterministic CAD checks before advancing. No image
 provider, separate drawing effect, or second model credential sits between
 Invent and Make.
 
-The host CAD gate has two claim-bound tiers. Its default/full tier reruns the
+The host CAD gate retains two claim-bound tiers for historical protocols. Its
+default/full tier reruns the
 materialized verifier with fresh generation, exports, strict fit, mesh, and
 wall-thickness checks. A Made revision may use the lower
 `digitally-verified-not-print-ready` tier only when two independently sealed
@@ -371,11 +359,12 @@ kernel validation, interference, exports, and mesh checks remain gates. The
 host receipt and stage-gate evidence record the lower tier, the distinct
 verifier mode, and that it is not print-ready eligible. Historical or
 unstructured receipts continue through the full tier when their product
-metadata does not separately request the lower tier.
+metadata does not separately request the lower tier. New direct-Release runs
+require full-tier, print-ready-eligible CAD at Make and cannot advance on the
+lower tier.
 
-Make and Playtest replay evidence are persisted under separate host-owned
-stage paths, so a Playtest timeout or rejection cannot overwrite the accepted
-Make receipt needed by a later resume. A Made revision accepted before the
+For frozen older runs, Make and Playtest replay evidence remain persisted under
+separate host-owned stage paths. A Made revision accepted before the
 two-declaration policy may resolve only the exact historical
 `digitally-verified-pending-physical-playtest` status plus literal false CAD
 claim mismatch, and only when its immediate Make predecessor, checkpoint
@@ -390,14 +379,16 @@ product's explicit uncertainty about slicing, physical printing, or fit.
 Codex prepares `artifacts/release/package` with at least:
 
 - a self-contained printable `MANUAL.pdf` designed for the physical box;
-- canonical `product.json` bound to the exact product, passing Playtest
-  evidence, claims, contents, and limitations; and
+- canonical product schema v5 bound to the exact Made product, contents,
+  limitations, and `playtest_status: not-run`;
+- canonical `PLAYTEST-NOT-RUN.json`, with no Playtest claims; and
 - optional editable source or accessible text companions.
 
-The current contract pair is NativeRelease schema v2 with `MANUAL.pdf` and
-product schema v4/`manual-ready`. Legacy NativeRelease schema v1 remains
-readable only with `MANUAL.md` and product schema v3/`page-ready`; legacy bytes
-retain their original validation and hashes.
+The current contract pair is NativeRelease schema v3 with `MANUAL.pdf` and
+product schema v5/`manual-ready`. NativeRelease schema v2/product schema v4
+remains readable for frozen Playtest runs. Legacy NativeRelease schema v1
+remains readable only with `MANUAL.md` and product schema v3/`page-ready`;
+historical bytes retain their original validation and hashes.
 
 The materialized `manual-design` skill guides print-format choice, customer
 copy, product-derived visuals, guided first use, complete reference, care and
@@ -512,13 +503,12 @@ private Wish demonstrate that:
 1. one session id spans every native stage;
 2. stale checkpoint or subject hashes are rejected;
 3. changed artifact bytes fail their next gate;
-4. failed Playtest evidence returns to Make or Invent exactly as its structured
-   feedback declares, consumes the shared round budget, and invalidates the
-   selected dependency chain;
+4. new runs transition directly from a full-tier, print-ready Make gate to
+   Release, while frozen older runs preserve their original Playtest routing;
 5. every sealed Made result remains bound to the exact accepted Invent result
    it was built from;
-6. Release claims exactly match passing evidence and its exact `MANUAL.pdf`
-   passes bounded structural validation;
+6. Release records Playtest as `not-run`, carries no test claims, and its exact
+   `MANUAL.pdf` passes bounded structural validation;
 7. no credential reaches the native subprocess or its readable filesystem;
 8. terminal Release requires exact full-tier print-ready CAD, validated
    `MANUAL.pdf`, and authenticated public readback bound to those hashes; and

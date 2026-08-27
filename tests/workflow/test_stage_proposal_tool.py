@@ -954,7 +954,7 @@ class StageProposalToolTest(unittest.TestCase):
             ),
             (
                 {"schema_version": 3, "status": "page-ready"},
-                "not a manual-ready package",
+                "fields are invalid",
             ),
             (
                 {"what_arrives": []},

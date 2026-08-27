@@ -59,7 +59,7 @@ host-only and outside the product workspace. If session memory conflicts with
 sealed files or host-provided receipts, follow the durable evidence and note
 the discrepancy.
 
-If a Match, Invent, Make, Playtest, or Release Goal is active for that exact
+If a Match, Invent, Make, or Release Goal is active for that exact
 checkpoint, continue it instead of creating a duplicate. Reestablish its
 objective, proof artifacts, and stopping condition from `STAGE.json`, then
 resume the observe -> act -> evaluate -> improve work. Goal state is not
@@ -81,11 +81,10 @@ artifact; inspect any partial workspace writes and rerun their gates.
   attempt directory rather than mutating evidence already cited by a receipt.
 - Recompute manifests after every material change. A stale hash or receipt is a
   failure, not a warning.
-- A new Make revision invalidates Playtest and Release evidence for the prior
-  bytes. Run those gates again in order.
-- Respect the host's exclusive mutation lock and bounded Make–Playtest round
-  budget. Concurrent work must stop at a typed need instead of racing the
-  checkpoint.
+- A new Make revision invalidates Release for the prior bytes. Rerun Release
+  against the new sealed Made revision.
+- Respect the host's exclusive mutation lock and bounded retry budgets.
+  Concurrent work must stop at a typed need instead of racing the checkpoint.
 - Keep research, judging, repair, and feedback iteration inside the active
   native Codex Goal. Do not create a Python retry, reward, judge, or loop
   controller during recovery.

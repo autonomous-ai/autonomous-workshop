@@ -5,6 +5,9 @@
 - Target: `main`
 - Source: `feat/concept-phase`
 
+> Lifecycle note: ADR 0015 now defers Playtest for new runs. Playtest sequences
+> below describe the older integration baseline, not the current fast path.
+
 ## Goal
 
 Integrate the useful work from `feat/concept-phase` into a continuously moving

@@ -4,6 +4,7 @@
 - Date: 2026-08-27
 - Supersedes: ADR 0013's optional-publication lifecycle decision and ADR
   0012's executable Deliver boundary
+- Superseded in part by: ADR 0015, which defers Playtest for new runs
 
 ## Context
 

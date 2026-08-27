@@ -87,7 +87,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertNotEqual(assets.constitution, (REPOSITORY / "AGENTS.md").resolve())
         self.assertRegex(assets.sha256, r"^[0-9a-f]{64}$")
 
-    def test_playtest_guidance_keeps_sealed_made_tree_read_only(self):
+    def test_direct_release_guidance_requires_print_ready_make(self):
         guidance = (
             REPOSITORY
             / ".agents"
@@ -101,15 +101,16 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         normalized = " ".join(guidance.split())
 
         for required in (
-            "sealed Made tree as strictly read-only",
-            "work/playtest/rNNNN/",
-            "PYTHONDONTWRITEBYTECODE=1",
-            "XDG_CACHE_HOME",
-            "__cadgen__",
+            "full verifier",
+            "wall thickness",
+            "print-ready eligibility",
+            "Playtest is intentionally deferred",
+            "must not be simulated or claimed",
+            "Release records that it was not run",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, normalized)
-        self.assertNotIn("Prefer replaying the already sealed", normalized)
+        self.assertNotIn("--run-root . playtest", normalized)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

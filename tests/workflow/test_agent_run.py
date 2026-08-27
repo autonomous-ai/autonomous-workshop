@@ -542,6 +542,28 @@ class AgentRunTest(unittest.TestCase):
                 )
             )
 
+    def test_direct_release_marker_skips_playtest_without_fabricating_a_gate(self):
+        marker = self.skill / "references" / "direct-release-v1.md"
+        marker.write_bytes(b"direct Release capability\n")
+        run = self.create()
+
+        for stage, transition in (
+            ("wish", "match"),
+            ("match", "invent"),
+            ("invent", "make"),
+            ("make", "release"),
+            ("release", "complete"),
+        ):
+            checkpoint = self.advance(run, stage, transition)
+
+        self.assertTrue(checkpoint.complete)
+        self.assertEqual(checkpoint.stage, "release")
+        self.assertNotIn("playtest", checkpoint.stage_artifacts)
+        self.assertEqual(
+            set(checkpoint.stage_artifacts),
+            {"wish", "match", "invent", "make", "release"},
+        )
+
     def test_new_run_cannot_propose_the_obsolete_deliver_transition(self):
         run = self.create()
         for stage, transition in (

@@ -1,5 +1,9 @@
 # Product verification
 
+> Current status: ADR 0015 defers Playtest for new runs, so the direct-Release
+> path does not emit `VERIFICATION.json`. This document describes the retained
+> verification contract for frozen Playtest runs and future reintroduction.
+
 Autonomous Workshop has exactly two product-verification levels:
 
 1. **Digitally Verified**
@@ -9,8 +13,9 @@ These are verification levels for a one-off Wish. They are not prototype and
 mass-production tiers. Manufacture, shipment, and delivery are separate
 fulfillment statuses and never raise a verification level by themselves.
 
-Verification is an optional public projection, not a lifecycle gate. Existing
-Make, Playtest, and terminal Release gates remain authoritative. A missing,
+Verification is an optional public projection, not a lifecycle gate. Where the
+retained protocol applies, Make, Playtest, and terminal Release gates remain
+authoritative. A missing,
 malformed, or unwritable public verification record must not block Release's
 required Factory publication; it means only that no public badge was recorded.
 

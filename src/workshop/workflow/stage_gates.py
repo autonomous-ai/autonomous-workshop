@@ -245,6 +245,11 @@ class StageGateDecision:
                     "failed Playtest gate must return explicit feedback to Make or Invent"
                 )
         elif self.evidence.passed:
+            if self.evidence.stage == "make" and self.transition in (
+                "playtest",
+                "release",
+            ):
+                return
             if self.evidence.stage == "release" and self.transition in (
                 "complete",
                 "deliver",

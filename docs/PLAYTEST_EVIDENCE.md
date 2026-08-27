@@ -1,5 +1,9 @@
 # Playtest evidence
 
+> Current status: Playtest is deferred from new runs by ADR 0015. This document
+> describes the frozen-run contract and the evidence design retained for its
+> future return; direct Release records `playtest_status: not-run` instead.
+
 Playtest is a native-agent review of one exact Made revision plus deterministic
 evidence. It is not a Python role process, a model score, a human test, or proof
 that a physical product exists.

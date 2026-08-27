@@ -34,7 +34,13 @@ from workshop.make.native_gate import (
 )
 from workshop.match.native import NativeMatchAssignment
 from workshop.playtest.native import NativePlaytested
-from workshop.release.native import NativeRelease
+from workshop.release.native import (
+    NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+    NativeRelease,
+    direct_release_claims,
+    playtest_omission_record,
+    playtest_omission_sha256,
+)
 from workshop.release.verification import (
     PRODUCT_VERIFICATION_PATH,
     read_product_verification,
@@ -113,6 +119,36 @@ def _manual_pdf():
         % (len(objects) + 1, xref)
     )
     return bytes(document)
+
+
+def _product_run_assets_without_direct_release(
+    root: Path,
+    *,
+    markdown_release: bool = False,
+) -> ProductRunAgentAssets:
+    """Copy a frozen pre-direct-Release product-run protocol for compatibility tests."""
+
+    repository = Path(__file__).resolve().parents[2]
+    legacy_root = root / "legacy-assets"
+    constitution = legacy_root / ".agents/product-run/AGENTS.md"
+    constitution.parent.mkdir(parents=True)
+    shutil.copy2(repository / ".agents/product-run/AGENTS.md", constitution)
+    skill_root = legacy_root / ".agents/product-run/.agents/skills/autonomous-workshop"
+    shutil.copytree(
+        repository / ".agents/product-run/.agents/skills/autonomous-workshop",
+        skill_root,
+    )
+    shutil.copytree(repository / "inventors", legacy_root / "inventors")
+    (skill_root / "references/direct-release-v1.md").unlink()
+    if markdown_release:
+        (skill_root / "scripts/pdf_validator.py").unlink()
+        (skill_root / "references/release-terminal-v1.md").unlink()
+    return ProductRunAgentAssets(
+        constitution=constitution,
+        skill_root=skill_root,
+        sha256="0" * 64,
+        source="repository",
+    )
 
 
 def _failed_cad_gate(
@@ -533,6 +569,43 @@ class _OneSessionProductAgent:
     def _author_release(self, run_root, stage):
         inputs = stage["inputs"]
         made = inputs["made"]
+        package_root_value = inputs["package_root"]
+        package_root = run_root / package_root_value
+        package_root.mkdir(parents=True, exist_ok=True)
+        (package_root / "MANUAL.pdf").write_bytes(_manual_pdf())
+        if inputs["release_contract"]["native_release_schema_version"] == 3:
+            _write_json(
+                package_root / NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+                playtest_omission_record(),
+            )
+            _write_json(
+                package_root / "product.json",
+                {
+                    "schema_version": 5,
+                    "kind": "workshop.release-package",
+                    "status": "manual-ready",
+                    "title": made["product"]["title"],
+                    "summary": made["product"]["summary"],
+                    "what_arrives": list(made["product"]["components"]),
+                    "limitations": list(made["product"]["limitations"]),
+                    "product_artifact_sha256": made["product_manifest"][
+                        "artifact_sha256"
+                    ],
+                    "playtest_status": "not-run",
+                    "playtest_evidence_artifact_sha256": (
+                        playtest_omission_sha256()
+                    ),
+                    "claims": direct_release_claims(),
+                },
+            )
+            self._run_finalizer(
+                run_root,
+                "release",
+                "--package-root",
+                package_root_value,
+            )
+            return
+
         playtested = inputs["playtested"]
         if playtested.get("kind") != "autonomous-workshop.playtested":
             raise AssertionError("Release did not receive the full Playtest contract")
@@ -551,10 +624,6 @@ class _OneSessionProductAgent:
                 "evaluator": check["evaluator"],
                 "evaluator_version": check["evaluator_version"],
             }
-        package_root_value = inputs["package_root"]
-        package_root = run_root / package_root_value
-        package_root.mkdir(parents=True, exist_ok=True)
-        (package_root / "MANUAL.pdf").write_bytes(_manual_pdf())
         _write_json(
             package_root / "product.json",
             {
@@ -959,7 +1028,8 @@ class NativeFullRunTest(unittest.TestCase):
             return reject
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
             wish = Wish.create(
                 "orbit-dog-permanent-factory-error",
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -1014,7 +1084,8 @@ class NativeFullRunTest(unittest.TestCase):
             )
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
             wish = Wish.create(
                 "orbit-dog-local-release",
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -1060,7 +1131,7 @@ class NativeFullRunTest(unittest.TestCase):
 
             self.assertEqual(receipt["status"], "waiting")
             self.assertEqual(receipt["stage"], "release")
-            self.assertEqual(receipt["native_turns"], 5)
+            self.assertEqual(receipt["native_turns"], 4)
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
             self.assertIn("Factory credentials", receipt["publication"]["reason"])
@@ -1068,30 +1139,32 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(checkpoint.status, "waiting")
             self.assertEqual(checkpoint.stage, "release")
             self.assertEqual(len(launcher.starts), 1)
-            self.assertEqual(len(launcher.resumes), 4)
+            self.assertEqual(len(launcher.resumes), 3)
             self.assertEqual(
                 [packet["stage"] for packet in launcher.stage_packets],
-                ["match", "invent", "make", "playtest", "release"],
+                ["match", "invent", "make", "release"],
             )
             release_packet = launcher.stage_packets[-1]
             self.assertEqual(
                 release_packet["inputs"]["release_contract"],
                 {
-                    "native_release_schema_version": 2,
+                    "native_release_schema_version": 3,
                     "manual_path": "MANUAL.pdf",
-                    "product_schema_version": 4,
+                    "product_schema_version": 5,
                     "product_status": "manual-ready",
+                    "playtest_status": "not-run",
+                    "playtest_omission_path": "PLAYTEST-NOT-RUN.json",
                 },
             )
             self.assertEqual(
                 release_packet["inputs"]["required_package_files"],
-                ["MANUAL.pdf", "product.json"],
+                ["MANUAL.pdf", "product.json", "PLAYTEST-NOT-RUN.json"],
             )
             self.assertEqual(release_packet["next_transition"], "complete")
             self.assertEqual(
                 list((paths.host_state / "gates").glob("*-release.json")), []
             )
-            self.assertEqual(len(launcher.finalizer_commands), 5)
+            self.assertEqual(len(launcher.finalizer_commands), 4)
             self.assertEqual(effects.writer_calls, [])
             self.assertEqual(effects.publish_calls, [])
             factory_events = [
@@ -1133,29 +1206,9 @@ class NativeFullRunTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             repository = Path(__file__).resolve().parents[2]
-            legacy_root = root / "legacy-assets"
-            constitution = legacy_root / ".agents/product-run/AGENTS.md"
-            constitution.parent.mkdir(parents=True)
-            shutil.copy2(
-                repository / ".agents/product-run/AGENTS.md",
-                constitution,
-            )
-            skill_root = (
-                legacy_root
-                / ".agents/product-run/.agents/skills/autonomous-workshop"
-            )
-            shutil.copytree(
-                repository
-                / ".agents/product-run/.agents/skills/autonomous-workshop",
-                skill_root,
-            )
-            (skill_root / "scripts/pdf_validator.py").unlink()
-            (skill_root / "references/release-terminal-v1.md").unlink()
-            assets = ProductRunAgentAssets(
-                constitution=constitution,
-                skill_root=skill_root,
-                sha256="0" * 64,
-                source="package",
+            assets = _product_run_assets_without_direct_release(
+                root,
+                markdown_release=True,
             )
             home = root / "workshop-home"
             wish = Wish.create(
@@ -1240,7 +1293,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            assets = _product_run_assets_without_direct_release(root)
             wish = Wish.create(
                 "manual-first-no-downgrade",
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -1249,6 +1304,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.product_run_agent_assets",
+                return_value=assets,
             ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
@@ -1298,7 +1356,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            assets = _product_run_assets_without_direct_release(root)
             wish = Wish.create(
                 wish_name,
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -1307,6 +1367,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.product_run_agent_assets",
+                return_value=assets,
             ), mock.patch(
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
@@ -1598,7 +1661,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            assets = _product_run_assets_without_direct_release(root)
             wish = Wish.create(
                 "orbit-dog-cad-retry",
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -1607,6 +1672,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.product_run_agent_assets",
+                return_value=assets,
             ), mock.patch(
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
@@ -1834,13 +1902,18 @@ class NativeFullRunTest(unittest.TestCase):
             return verified(made, arguments, lower=call in (1, 3))
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            assets = _product_run_assets_without_direct_release(root)
             wish = Wish.create(
                 "orbit-dog-lower-tier-repair",
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
             )
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.product_run_agent_assets",
+                return_value=assets,
             ), mock.patch(
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
@@ -1967,7 +2040,7 @@ class NativeFullRunTest(unittest.TestCase):
 
             self.assertEqual(receipt["status"], "complete")
             self.assertEqual(receipt["stage"], "release")
-            self.assertEqual(receipt["native_turns"], 5)
+            self.assertEqual(receipt["native_turns"], 4)
             self.assertEqual(receipt["action"], "started")
             self.assertEqual(receipt["publication"]["status"], "public")
             self.assertTrue(receipt["publication"]["verified"])
@@ -1987,15 +2060,15 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(checkpoint.status, "complete")
 
             self.assertEqual(len(launcher.starts), 1)
-            self.assertEqual(len(launcher.resumes), 4)
+            self.assertEqual(len(launcher.resumes), 3)
             self.assertEqual(
                 [packet["stage"] for packet in launcher.stage_packets],
-                ["match", "invent", "make", "playtest", "release"],
+                ["match", "invent", "make", "release"],
             )
-            self.assertEqual(len(launcher.finalizer_commands), 5)
+            self.assertEqual(len(launcher.finalizer_commands), 4)
             self.assertEqual(
                 len({packet["checkpoint_sha256"] for packet in launcher.stage_packets}),
-                5,
+                4,
             )
             session_calls = launcher.starts + launcher.resumes
             for field in (
@@ -2015,17 +2088,23 @@ class NativeFullRunTest(unittest.TestCase):
 
             release_packet = launcher.stage_packets[-1]
             self.assertEqual(
-                release_packet["inputs"]["playtested"]["kind"],
-                "autonomous-workshop.playtested",
+                release_packet["inputs"]["release_contract"],
+                {
+                    "native_release_schema_version": 3,
+                    "manual_path": "MANUAL.pdf",
+                    "product_schema_version": 5,
+                    "product_status": "manual-ready",
+                    "playtest_status": "not-run",
+                    "playtest_omission_path": "PLAYTEST-NOT-RUN.json",
+                },
             )
             self.assertEqual(
-                release_packet["inputs"]["playtested_artifact"][
-                    "playtested_sha256"
-                ],
-                release_packet["inputs"]["playtested"]["playtested_sha256"],
+                release_packet["inputs"]["required_package_files"],
+                ["MANUAL.pdf", "product.json", "PLAYTEST-NOT-RUN.json"],
             )
+            self.assertNotIn("playtested", release_packet["inputs"])
 
-            self.assertEqual(len(cad_calls), 3)
+            self.assertEqual(len(cad_calls), 2)
             self.assertEqual(
                 {call[0].made_sha256 for call in cad_calls},
                 {cad_calls[0][0].made_sha256},
@@ -2035,6 +2114,7 @@ class NativeFullRunTest(unittest.TestCase):
             for made, arguments in cad_calls:
                 self.assertEqual(arguments["run_root"], paths.workspace)
                 self.assertEqual(arguments["host_state_root"], paths.host_state)
+                self.assertTrue(arguments["require_print_ready"])
                 self.assertEqual(
                     arguments["expected_verifier_sha256"], verifier_sha256
                 )
@@ -2084,15 +2164,10 @@ class NativeFullRunTest(unittest.TestCase):
                     "artifacts/make/r0001/product/cad/project/build.py",
                     "artifacts/make/r0001/product/validation/cad-verification.json",
                 },
-                "playtest": {
-                    "artifacts/playtest/r0001/playtested.json",
-                    "artifacts/playtest/r0001/evidence/results/agent-playtest.json",
-                    "artifacts/playtest/r0001/evidence/results/mechanical-check.json",
-                    "artifacts/playtest/r0001/evidence/results/printability-check.json",
-                },
                 "release": {
                     "artifacts/release/release.json",
                     "artifacts/release/package/MANUAL.pdf",
+                    "artifacts/release/package/PLAYTEST-NOT-RUN.json",
                     "artifacts/release/package/product.json",
                 },
             }
@@ -2114,19 +2189,15 @@ class NativeFullRunTest(unittest.TestCase):
             made = NativeMade.from_mapping(
                 _read_json(paths.workspace / checkpoint.stage_artifacts["make"][0].path)
             )
-            playtested = NativePlaytested.from_mapping(
-                _read_json(paths.workspace / checkpoint.stage_artifacts["playtest"][0].path)
-            )
             release = NativeRelease.from_mapping(
                 _read_json(paths.workspace / checkpoint.stage_artifacts["release"][0].path)
             )
             invented.assert_context(assignment)
             made.assert_context(assignment, invented, expected_round=1)
-            release.validate_package_tree(paths.workspace, made, playtested)
-            verification = read_product_verification(
-                paths.workspace / PRODUCT_VERIFICATION_PATH
+            release.validate_package_tree(paths.workspace, made, None)
+            self.assertFalse(
+                (paths.workspace / PRODUCT_VERIFICATION_PATH).exists()
             )
-            verification.assert_context(release, made, playtested)
 
             tamper_targets = (
                 (
@@ -2134,15 +2205,15 @@ class NativeFullRunTest(unittest.TestCase):
                     lambda: made.validate_product_tree(paths.workspace),
                 ),
                 (
-                    paths.workspace
-                    / "artifacts/playtest/r0001/evidence/results/agent-playtest.json",
-                    lambda: playtested.validate_evidence_tree(paths.workspace, made),
-                ),
-                (
                     paths.workspace / "artifacts/release/package/MANUAL.pdf",
                     lambda: release.validate_package_tree(
-                        paths.workspace, made, playtested
+                        paths.workspace, made, None
                     ),
+                ),
+                (
+                    paths.workspace
+                    / "artifacts/release/package/PLAYTEST-NOT-RUN.json",
+                    lambda: release.validate_package_tree(paths.workspace, made, None),
                 ),
             )
             for target, validator in tamper_targets:
@@ -2166,17 +2237,12 @@ class NativeFullRunTest(unittest.TestCase):
                     "0001-match.json",
                     "0002-invent.json",
                     "0003-make.json",
-                    "0004-playtest.json",
-                    "0005-release.json",
+                    "0004-release.json",
                 ],
             )
             make_gate = _read_json(paths.host_state / "gates/0003-make.json")
-            playtest_gate = _read_json(paths.host_state / "gates/0004-playtest.json")
-            release_gate = _read_json(paths.host_state / "gates/0005-release.json")
+            release_gate = _read_json(paths.host_state / "gates/0004-release.json")
             self.assertTrue(make_gate["evidence"]["checks"]["cad_verification_passed"])
-            self.assertTrue(
-                playtest_gate["evidence"]["checks"]["cad_verification_passed"]
-            )
             self.assertTrue(
                 release_gate["evidence"]["checks"]["cad_print_ready_eligible"]
             )
@@ -2188,12 +2254,15 @@ class NativeFullRunTest(unittest.TestCase):
                 release_gate["evidence"]["checks"]["factory_readback_verified"]
             )
             self.assertEqual(
-                release_gate["evidence"]["checks"]["product_verification_status"],
-                "recorded",
+                release_gate["evidence"]["checks"]["playtest_status"],
+                "not-run",
             )
             self.assertEqual(
-                release_gate["evidence"]["checks"]["product_verification_sha256"],
-                verification.sha256,
+                release_gate["evidence"]["checks"]["product_verification_status"],
+                "not-recorded",
+            )
+            self.assertNotIn(
+                "product_verification_sha256", release_gate["evidence"]["checks"]
             )
 
 

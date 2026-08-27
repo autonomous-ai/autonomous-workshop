@@ -6,7 +6,7 @@ Not from a shelf. From your imagination.
 
 Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, and Release before handing the toy to Operations for Printing, Delivery, and Review](docs/images/workshop-floorplan.svg?version=terminal-release-operations-v6)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, and Release before handing the toy to Operations for Printing, Delivery, and Review](docs/images/workshop-floorplan.svg?version=direct-release-operations-v7)](docs/images/workshop-floorplan.svg)
 
 Workshop's executable workflow ends at a public Release: exact ready-to-print
 CAD plus the in-box `MANUAL.pdf`. From there, Operations prints, packs,
@@ -31,10 +31,10 @@ so the set is about you. It is judged as an object, not as a game.
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
 sit at a table. Leo is especially drawn to rules that reward discovery and
-counterplay. Before Release, AI players must finish the required seeded games
-and expose broken rules, loops, exploits, and weak strategies. Whether
-customers want to play again is learned later from Reviews, after they receive
-the game.
+counterplay. The deferred Playtest phase will eventually exercise those rules
+with seeded games; the current fast path truthfully releases without claiming
+that testing occurred. Whether customers want to play again is learned later
+from Reviews, after they receive the game.
 
 https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
 
@@ -122,14 +122,11 @@ Every Wish first creates one private persistent project under
 skills, and Inventor roster, and then starts one native Codex session with that
 project as its working directory. The same
 session Matches an Inventor subagent, researches, explores, and selects the
-exact product concept during Invent, builds and repairs the CAD from that
-sealed Invent result, Playtests the exact product, then writes the Release
-package:
+exact product concept during Invent, builds and repairs ready-to-print CAD from
+that sealed Invent result, then writes the Release package:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release
-                 ^                    |
-                 `-- concept revision-'
+Wish -> Match -> Invent -> Make -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
@@ -144,7 +141,7 @@ Release delivers three facts about the same exact bytes:
 - a self-contained printable `MANUAL.pdf` for the box; and
 - authenticated public Factory readback proving those CAD and manual hashes.
 
-For each active Match, Invent, Make, Playtest, or Release attempt,
+For each active Match, Invent, Make, or Release attempt,
 Codex creates one native Goal with one objective, proof artifacts, and a
 verifiable stopping condition: the current stage finalizer succeeds. Only one
 Goal is active at a time. While pursuing it, Codex observes the current artifact, acts with its
@@ -155,15 +152,16 @@ the official Codex patterns for [following a durable
 Goal](https://learn.chatgpt.com/use-cases/follow-goals) and [iterating with
 evals](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
 
-The universal digital Playtest baseline is `agent-playtest`,
-`mechanical-check`, and `printability-check`. These are Codex-authored
-assessments unless the host replays deterministic evidence or a physical
-receipt explicitly proves more. AI evidence never proves a successful print,
-physical fit, durability, or human response.
+Playtest is intentionally deferred in the current fast path. Release records
+`playtest_status: not-run` and carries no Playtest claims. The host still
+replays the deterministic full-tier CAD verifier during Make and again during
+Release, but that digital verification never proves a successful physical
+print, fit, durability, or human response.
 
 Release centers the moment the owner opens the box. Codex designs a
 self-contained printable `MANUAL.pdf`, renders and inspects every page, and
-seals it with exact product facts and passing evidence. The manual must teach
+seals it with exact product facts and an explicit record that Playtest was not
+run. The manual must teach
 the product without a website, video, QR code, or phone. The host then
 revalidates full-tier, thickness-checked, print-ready CAD and publishes the
 exact CAD package and manual through Factory. Public hash readback is part of
@@ -211,7 +209,7 @@ treats model prose as proof.
 
 The selected coding-agent runtime does nearly all product work: discovery,
 Match judgment, research, concept exploration, design, CAD iteration, artifact
-inspection, AI Playtest, repair, printable-manual design, and bounded
+inspection, repair, printable-manual design, and bounded
 evidence-linked Release facts. Manager runtime support is deliberately pluggable:
 
 | Workshop Manager runtime | Status |
@@ -373,7 +371,7 @@ Read next:
 - [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md)
 - [Workshop architecture](docs/ARCHITECTURE.md)
 - [Build an inventor](docs/BUILD_AN_INVENTOR.md)
-- [Playtest evidence](docs/PLAYTEST_EVIDENCE.md)
+- [Deferred Playtest evidence design](docs/PLAYTEST_EVIDENCE.md)
 - [Publication boundary](docs/PUBLISH_SEALED_PRODUCT.md)
 - [Contributing](CONTRIBUTING.md)
 

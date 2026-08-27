@@ -500,7 +500,7 @@ class NativeReleaseTest(unittest.TestCase):
         release_v1 = self._release(schema_version=1)
         with self.assertRaisesRegex(ContractError, "schema_version 1.*MANUAL.md"):
             self._rebuild_release(release_v1, manual_path=NATIVE_RELEASE_MANUAL_PATH)
-        with self.assertRaisesRegex(ContractError, "schema_version must be 1 or 2"):
+        with self.assertRaisesRegex(ContractError, "schema_version 3.*MANUAL.pdf"):
             self._rebuild_release(release_v1, schema_version=3)
         with self.assertRaisesRegex(ContractError, "requires product.json schema_version 4"):
             self._release(product_overrides={"schema_version": 3})
@@ -513,9 +513,9 @@ class NativeReleaseTest(unittest.TestCase):
     def test_release_product_validator_rejects_unknown_release_schema_versions(self):
         release = self._release()
 
-        for schema_version in (0, 3, 999, True):
+        for schema_version in (0, 4, 999, True):
             with self.subTest(schema_version=schema_version), self.assertRaisesRegex(
-                ContractError, "schema_version must be 1 or 2"
+                ContractError, "schema_version must be 1, 2, or 3"
             ):
                 validate_release_product(
                     release.product,

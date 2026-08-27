@@ -1,9 +1,9 @@
-# Make and Playtest contracts
+# Make contract
 
 Read `STAGE.json`. It binds the exact sealed upstream artifacts, universal
-blueprint, canonical output paths, current round, round limit, and any prior
-Playtest feedback. Verify those bytes before acting. Host rounds and
-checkpoints bound the work; Codex performs the reasoning and repair.
+blueprint, canonical output paths, current round, and any host rejection
+feedback. Verify those bytes before acting. Host checkpoints bound the work;
+Codex performs the reasoning and repair.
 
 If `STAGE.json` contains `host_make_proposal_rejection` or
 `host_cad_gate_rejection`, the previous Make finalizer did not pass the host
@@ -17,10 +17,9 @@ contract.
 ## Make Goal and improvement loop
 
 Create one native Codex Goal for the current Make attempt. Its objective is to
-produce the exact buildable, inspectable product artifact required by the
-sealed Invent output and, on a later round, repair the failures cited by the
-prior Playtest. Its stopping condition is a successful `make` finalizer for
-the current checkpoint.
+produce the exact ready-to-print, inspectable product artifact required by the
+sealed Invent output. Its stopping condition is a successful `make` finalizer
+for the current checkpoint.
 
 The sealed Invent result is the primary reference for form, proportion,
 construction, component breakdown, and intended interaction. Read both its
@@ -32,8 +31,7 @@ While pursuing the Goal:
 
 1. **Observe:** Inspect the sealed Invent concept and research, the selected
    Inventor instructions, universal blueprint, current revision workspace,
-   deterministic tool policy, and every evidence-linked feedback item from a
-   prior Playtest.
+   deterministic tool policy, and every current host rejection.
 2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
    `design-reference`, `electromechanical-integration`, and `step-parts`
    skills under `.agents/skills/` to
@@ -88,115 +86,8 @@ the host. The host copies the exact tree into an isolated verifier, reruns the
 trusted CAD gate, compares bytes, and seals the accepted revision. Narrative
 or model confidence never overrides a failed or absent measurement.
 
-When the deliverable is intentionally digital/mesh-only and is not eligible
-for a print-ready claim, declare that limitation in both sealed inputs: set
-root `product.json.status` to exactly
-`digitally-verified-not-print-ready` and set the declared CAD verification
-JSON's `final_pipeline.print_ready_claim` to the literal boolean `false`.
-Only that agreeing pair authorizes the host's lower tier, which skips wall
-thickness while retaining fresh generation, fit, local spec, mount, motion,
-kernel, interference, export, and mesh gates. Never use the status alone,
-spell `false` as a string, or describe a lower-tier result as print-ready in
-Playtest evidence, Release facts, the manual, or product copy. Omit the lower
-tier declarations for a print-ready-eligible artifact; the host then requires
-the wall-thickness gate.
-
-## Playtest Goal and independent evidence loop
-
-Create one native Codex Goal for the current Playtest attempt. Its objective is
-to independently evaluate the one sealed Made revision and produce complete,
-reproducible evidence with a truthful `pass`, `improve`, or `block` verdict.
-Its stopping condition is a successful `playtest` finalizer for the current
-checkpoint. Finalizing an evidence-backed failure satisfies the Playtest Goal;
-passing the product is not required when the evidence says it fails.
-
-The universal baseline requires exactly these check ids unless the current
-`STAGE.json` states otherwise:
-
-- `agent-playtest`
-- `mechanical-check`
-- `printability-check`
-
-Product-specific risks may justify additional inspections and evidence, but
-never omit or rename the host-required checks.
-
-All three baseline results are Codex-authored digital assessments unless the
-host supplies replayed deterministic evidence or an authenticated physical
-receipt that explicitly proves more. A digital mechanical or printability
-assessment never proves successful printing, physical fit, durability, or
-human play.
-
-While pursuing the Goal:
-
-1. **Observe:** Inspect the exact sealed Made tree, its manifest, required
-   check ids, test configurations, rendered outputs, and the product's stated
-   rules and claims. Establish a baseline before judging it.
-2. **Act:** Use independent native subagents for first-time, optimizing,
-   exploratory, and adversarial player perspectives. Run required seeded
-   simulations and artifact inspections through the narrow deterministic
-   tools. Preserve each configuration and output as exact evidence.
-3. **Evaluate:** Compare each observation with its rubric and artifact bytes.
-   Keep native-agent judgment separate from deterministic measurements. Check
-   evidence coverage, reproducibility, and whether feedback names a concrete
-   failure and repair direction.
-4. **Improve:** Repair missing or weak test evidence, rerun invalid tests, and
-   sharpen feedback. Do not modify the sealed Made product during Playtest or
-   reason a failed check into a pass.
-
-Keep replay work separate from evidence and treat the sealed Made tree as
-strictly read-only. Run temporary wrappers, copied inputs, caches, and transient
-renders under `work/playtest/rNNNN/`, where `NNNN` is the current zero-padded
-round. Default to copying only the exact inputs needed into that work area
-before executing or importing them. A tool may read sealed bytes in place only
-when it is known not to write beside its input. For Python or CAD tooling, set
-`PYTHONDONTWRITEBYTECODE=1` and redirect `XDG_CACHE_HOME`, `TMPDIR`, `TMP`, and
-`TEMP` into the work area; never leave `__pycache__`, `__cadgen__`, lock,
-progress, or scene-cache files in the Made tree. Record the sealed Made path and
-hash, copied-input hash, exact command, seed, and tool version in a canonical
-config file. Put only those configs and the final static outputs cited by
-checks under the exact `evidence_root`; do not duplicate Made source, working
-trees, cache directories, transcripts, or JSONL streams there. Keep the
-three-field authored proposal under `drafts/`.
-
-Leave the exact evidence tree requested by `STAGE.json` and one authored JSON
-source with exactly `checks`, `feedback`, and `verdict`. Every required check
-id must appear once and cite its config and evidence file. Never invent
-physical trials, human players, measurements, or results. Every failing check
-must name the concrete product or design area and the repair direction.
-
-Choose the repair boundary explicitly in each actionable feedback item's
-`invalidates` array. This is the Manager's authored judgment; the host follows
-the marker mechanically and never interprets the finding prose:
-
-- For an implementation defect that can be repaired while preserving the
-  sealed concept, use exactly `["playtest", "release"]`. The host returns to
-  Make with the prior Invent result still authoritative.
-- For a fundamental concept defect that Make cannot repair without violating
-  the sealed design authority, use exactly
-  `["invent", "make", "playtest", "release"]`. The host returns to Invent and
-  provides the exact prior Invented contract, failing Playtested contract, and
-  canonical feedback bytes with independent hashes.
-
-If actionable findings choose both scopes, concept revision wins because it
-invalidates the broader dependency chain. Do not request re-Invent merely to
-gain another repair attempt; either route consumes the same bounded round
-budget. Then run:
-
-```bash
-"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
-  --run-root . playtest \
-  --source <playtest-source.json> \
-  --evidence-root <STAGE evidence_root>
-```
-
-The deterministic finalizer validates evidence coverage and writes the
-canonical Playtested contract. Complete the Playtest Goal after it succeeds
-and return to the host, regardless of the truthful verdict.
-
-For `improve` or `block`, the host alone consumes one shared bounded round,
-invalidates the explicitly selected dependency chain, and checkpoints the
-transition to Make or Invent. The host does not classify, interpret, or repair
-the product or design. A re-Invent packet binds the exact failed design and
-evidence so the new concept remains a traceable revision rather than a fresh
-Wish. Only a host-verified pass for the current Made bytes can advance to
-Release.
+The direct-Release protocol does not accept the lower digital-only tier. The
+host requires the full verifier, including wall thickness and print-ready
+eligibility, before Make can advance. Playtest is intentionally deferred and
+must not be simulated or claimed during Make; Release records that it was not
+run.

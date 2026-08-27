@@ -45,7 +45,7 @@ artifacts but do not decide what to invent.
 
 Do not claim geometry, safety, movement, fit, printability, or player response
 that has not been checked. Make assumptions and unresolved risks explicit so
-Make and Playtest can verify them.
+Make and Release can verify them.
 
 ## Artifact and gate
 

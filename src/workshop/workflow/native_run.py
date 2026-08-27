@@ -63,8 +63,11 @@ from workshop.playtest.native import NativePlaytested
 from workshop.product import ToyBlueprint
 from workshop.release.contracts import ProductRelease, ReleaseContext
 from workshop.release.native import (
+    DIRECT_RELEASE_PLAYTEST_STATUS,
+    DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
     NATIVE_RELEASE_LEGACY_MANUAL_PATH,
     NATIVE_RELEASE_MANUAL_PATH,
+    NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
     NativeRelease,
     NativeReleasePackage,
 )
@@ -177,6 +180,9 @@ _PRODUCT_RUN_PDF_VALIDATOR_INPUT = (
 )
 _PRODUCT_RUN_TERMINAL_RELEASE_INPUT = (
     ".agents/skills/autonomous-workshop/references/release-terminal-v1.md"
+)
+_PRODUCT_RUN_DIRECT_RELEASE_INPUT = (
+    ".agents/skills/autonomous-workshop/references/direct-release-v1.md"
 )
 _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
     "make-product-metadata-invalid": (
@@ -1334,6 +1340,16 @@ def _materialized_release_contract(
     inputs = checkpoint.input_sha256s
     if _PRODUCT_RUN_FINALIZER_INPUT not in inputs:
         raise StateConflict("native run lacks its materialized stage finalizer")
+    direct_release = _PRODUCT_RUN_DIRECT_RELEASE_INPUT in inputs
+    if direct_release:
+        return {
+            "native_release_schema_version": 3,
+            "manual_path": NATIVE_RELEASE_MANUAL_PATH,
+            "product_schema_version": DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+            "product_status": "manual-ready",
+            "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
+            "playtest_omission_path": NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+        }
     manual_first = _PRODUCT_RUN_PDF_VALIDATOR_INPUT in inputs
     if manual_first:
         return {
@@ -1962,6 +1978,7 @@ def _prepare_stage_input(
         raise TransitionError("%s does not use a native stage packet" % stage)
     roster = _inventor_roster(checkpoint)
     context: dict[str, Any] = {"roster": roster}
+    direct_release = _PRODUCT_RUN_DIRECT_RELEASE_INPUT in checkpoint.input_sha256s
     cad_gate_rejection = _read_cad_gate_rejection(run, checkpoint)
     make_proposal_rejection = _read_make_proposal_rejection(run, checkpoint)
     make_proposal_rejection = _current_make_proposal_rejection(
@@ -1971,7 +1988,7 @@ def _prepare_stage_input(
     normal_transition = {
         "match": "invent",
         "invent": "make",
-        "make": "playtest",
+        "make": "release" if direct_release else "playtest",
         "playtest": "release",
         "release": "complete",
     }[stage]
@@ -2154,6 +2171,7 @@ def _prepare_stage_input(
             }
             if stage in ("make", "playtest", "release"):
                 if stage == "make":
+                    context["make_transition"] = normal_transition
                     feedback_artifact: Optional[AgentArtifact] = None
                     prior = checkpoint.stage_artifacts.get("playtest")
                     if prior and "playtest" in checkpoint.invalidated_stages:
@@ -2250,17 +2268,6 @@ def _prepare_stage_input(
                             % checkpoint.round_index,
                         }
                     else:
-                        playtested_artifact = _stage_primary(checkpoint, "playtest")
-                        playtested = _read_contract(
-                            run.run_root,
-                            playtested_artifact,
-                            NativePlaytested,
-                            label="native Playtested contract",
-                        )
-                        playtested.assert_context(made, blueprint)
-                        if playtested.verdict != "pass":
-                            raise TransitionError("Release requires a passing Playtest")
-                        context["playtested"] = playtested
                         release_contract = _materialized_release_contract(checkpoint)
                         context["release_contract"] = release_contract
                         terminal_transition = _materialized_release_terminal_transition(
@@ -2268,16 +2275,12 @@ def _prepare_stage_input(
                         )
                         context["terminal_transition"] = terminal_transition
                         normal_transition = terminal_transition
-                        subject_inputs = {
+                        subject_inputs: dict[str, Any] = {
                             "wish_sha256": checkpoint.wish_sha256,
                             "taste_sha256": assignment.selected_taste_sha256,
                             "blueprint_sha256": blueprint.sha256,
                             "made_sha256": made.made_sha256,
                             "product_artifact_sha256": made.product_manifest.artifact_sha256,
-                            "playtested_sha256": playtested.playtested_sha256,
-                            "evidence_artifact_sha256": (
-                                playtested.evidence_manifest.artifact_sha256
-                            ),
                             "round": checkpoint.round_index,
                             "release_contract": release_contract,
                             "host_cad_gate_rejection_sha256": (
@@ -2286,19 +2289,10 @@ def _prepare_stage_input(
                                 else None
                             ),
                         }
-                        subject = _stage_subject("release", subject_inputs)
                         inputs = {
                             **common,
                             "round": checkpoint.round_index,
                             "host_cad_gate_rejection": cad_gate_rejection,
-                            "playtested": playtested.to_dict(),
-                            "playtested_artifact": {
-                                **_artifact_binding(playtested_artifact),
-                                "playtested_sha256": playtested.playtested_sha256,
-                                "evidence_artifact_sha256": (
-                                    playtested.evidence_manifest.artifact_sha256
-                                ),
-                            },
                             "package_root": "artifacts/release/package",
                             "contract_path": "artifacts/release/release.json",
                             "release_contract": release_contract,
@@ -2307,6 +2301,51 @@ def _prepare_stage_input(
                                 "product.json",
                             ],
                         }
+                        if direct_release:
+                            context["playtested"] = None
+                            subject_inputs["playtest_status"] = (
+                                DIRECT_RELEASE_PLAYTEST_STATUS
+                            )
+                            inputs["required_package_files"].append(
+                                NATIVE_RELEASE_PLAYTEST_OMISSION_PATH
+                            )
+                        else:
+                            playtested_artifact = _stage_primary(
+                                checkpoint, "playtest"
+                            )
+                            playtested = _read_contract(
+                                run.run_root,
+                                playtested_artifact,
+                                NativePlaytested,
+                                label="native Playtested contract",
+                            )
+                            playtested.assert_context(made, blueprint)
+                            if playtested.verdict != "pass":
+                                raise TransitionError(
+                                    "Release requires a passing Playtest"
+                                )
+                            context["playtested"] = playtested
+                            subject_inputs.update(
+                                {
+                                    "playtested_sha256": playtested.playtested_sha256,
+                                    "evidence_artifact_sha256": (
+                                        playtested.evidence_manifest.artifact_sha256
+                                    ),
+                                }
+                            )
+                            inputs.update(
+                                {
+                                    "playtested": playtested.to_dict(),
+                                    "playtested_artifact": {
+                                        **_artifact_binding(playtested_artifact),
+                                        "playtested_sha256": playtested.playtested_sha256,
+                                        "evidence_artifact_sha256": (
+                                            playtested.evidence_manifest.artifact_sha256
+                                        ),
+                                    },
+                                }
+                            )
+                        subject = _stage_subject("release", subject_inputs)
 
     packet = {
         "schema_version": 1,
@@ -2543,11 +2582,14 @@ def _evaluate_make_stage(
     context: Mapping[str, Any],
 ) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
     contract_path = "artifacts/make/r%04d/made.json" % checkpoint.round_index
+    transition = context.get("make_transition")
+    if transition not in ("playtest", "release"):
+        raise StateConflict("Make transition is not bound to the run protocol")
     try:
         artifact = _ready_contract_artifact(
             proposal,
             stage="make",
-            transitions=("playtest",),
+            transitions=(transition,),
             path=contract_path,
         )
         made = _read_contract(
@@ -2575,6 +2617,7 @@ def _evaluate_make_stage(
         run_root=run.run_root,
         host_state_root=run.host_state_root,
         expected_verifier_sha256=verifier_sha256,
+        require_print_ready=transition == "release",
     )
     evidence = StageGateEvidence(
         stage="make",
@@ -2600,7 +2643,7 @@ def _evaluate_make_stage(
             "cad_verification_passed": cad_evidence.passed,
         },
     )
-    return StageGateDecision(evidence=evidence, transition="playtest"), additional
+    return StageGateDecision(evidence=evidence, transition=transition), additional
 
 
 def _read_stable_private_json(
@@ -3145,7 +3188,7 @@ def _assert_required_public_readback(
 
     if not receipt.is_verified_public:
         raise StateConflict("Release lacks authenticated public Factory readback")
-    if release.schema_version != 2:
+    if release.schema_version not in (2, 3):
         return
     manual_entry = next(
         (
@@ -3174,7 +3217,7 @@ def _verified_release(
     release: NativeRelease,
     *,
     made: NativeMade,
-    playtested: NativePlaytested,
+    playtested: Optional[NativePlaytested],
     assignment: NativeMatchAssignment,
     blueprint: ToyBlueprint,
     inventor_binding: Any,
@@ -3236,10 +3279,13 @@ def _existing_release_for_promotion(
         "complete",
     ):
         raise TransitionError("public publication requires a verified Release")
-    if any(
-        stage in checkpoint.invalidated_stages
-        for stage in ("match", "invent", "make", "playtest", "release")
-    ):
+    direct_release = _PRODUCT_RUN_DIRECT_RELEASE_INPUT in checkpoint.input_sha256s
+    required_stages = (
+        ("match", "invent", "make", "release")
+        if direct_release
+        else ("match", "invent", "make", "playtest", "release")
+    )
+    if any(stage in checkpoint.invalidated_stages for stage in required_stages):
         raise StateConflict("public promotion cannot use invalidated stage evidence")
     roster = _inventor_roster(checkpoint)
     assignment = _read_contract(
@@ -3269,15 +3315,19 @@ def _existing_release_for_promotion(
     )
     made.assert_context(assignment, invented, expected_round=checkpoint.round_index)
     blueprint = ToyBlueprint()
-    playtested = _read_contract(
-        run.run_root,
-        _stage_primary(checkpoint, "playtest"),
-        NativePlaytested,
-        label="native Playtested contract",
-    )
-    playtested.assert_context(made, blueprint)
-    if playtested.verdict != "pass":
-        raise StateConflict("public promotion requires a passing Playtest")
+    playtested: Optional[NativePlaytested]
+    if direct_release:
+        playtested = None
+    else:
+        playtested = _read_contract(
+            run.run_root,
+            _stage_primary(checkpoint, "playtest"),
+            NativePlaytested,
+            label="native Playtested contract",
+        )
+        playtested.assert_context(made, blueprint)
+        if playtested.verdict != "pass":
+            raise StateConflict("public promotion requires a passing Playtest")
     release = _read_contract(
         run.run_root,
         _stage_primary(checkpoint, "release"),
@@ -3449,7 +3499,7 @@ def _evaluate_release_stage(
     release.assert_context(context["made"], context["playtested"])
     verified = _accept_local_release(run, release, context=context)
     if (
-        release.schema_version != 2
+        release.schema_version not in (2, 3)
         or release.manual_path != NATIVE_RELEASE_MANUAL_PATH
     ):
         raise _LegacyReleaseUpgradeRequired(_LEGACY_RELEASE_UPGRADE_NEED)
@@ -3467,11 +3517,15 @@ def _evaluate_release_stage(
     if not publication.is_verified_public:
         raise StateConflict("Release requires authenticated public readback")
     try:
-        verification = try_materialize_digital_verification(
-            run.run_root,
-            release,
-            context["made"],
-            context["playtested"],
+        verification = (
+            None
+            if context["playtested"] is None
+            else try_materialize_digital_verification(
+                run.run_root,
+                release,
+                context["made"],
+                context["playtested"],
+            )
         )
     except Exception:
         # Public verification is optional enrichment. It must never become a
@@ -3511,6 +3565,11 @@ def _evaluate_release_stage(
             "product_artifact_sha256": release.product_artifact_sha256,
             "manual_path": release.manual_path,
             "native_release_schema_version": release.schema_version,
+            "playtest_status": (
+                DIRECT_RELEASE_PLAYTEST_STATUS
+                if context["playtested"] is None
+                else "passed"
+            ),
             "package_tree_rehashed": True,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verifier_sha256": cad_evidence.verifier_sha256,
@@ -4315,7 +4374,7 @@ def _resume_native_run_locked(
     ):
         verified = _existing_release_for_promotion(run, checkpoint)
         if (
-            verified.release.schema_version != 2
+            verified.release.schema_version not in (2, 3)
             or verified.release.manual_path != NATIVE_RELEASE_MANUAL_PATH
         ):
             return _native_receipt(
