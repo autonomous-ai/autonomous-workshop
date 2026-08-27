@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "9a974b75e9c0f4b4b977eb712c0e22d96f610539647ad40384b07240ddb82570",
+      "kind": "codex-skill",
+      "name": "tess-loop-inventor",
+      "path": "skills/tess-loop-inventor"
+    }
+  ],
+  "id": "tess-loop",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}
