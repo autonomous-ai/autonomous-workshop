@@ -267,9 +267,13 @@ def _bound_files(
             else hashlib.sha256(target.read_bytes()).hexdigest()
         )
         if digest is None:
-            raise MockSessionEvidenceError("%s[%d] has no turn-time hash" % (label, index))
+            raise MockSessionEvidenceError(
+                "%s[%d] %s has no turn-time hash" % (label, index, relative)
+            )
         if item["sha256"] != digest:
-            raise MockSessionEvidenceError("%s[%d] sha256 is stale" % (label, index))
+            raise MockSessionEvidenceError(
+                "%s[%d] %s sha256 is stale" % (label, index, relative)
+            )
         if forbid_host_outputs and any(part in _FORBIDDEN_OUTPUT_PARTS for part in PurePosixPath(relative).parts):
             raise MockSessionEvidenceError("%s[%d] crosses a host-owned boundary" % (label, index))
         paths.append(relative)

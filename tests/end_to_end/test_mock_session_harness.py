@@ -306,6 +306,8 @@ class MockSessionArchitectureTest(unittest.TestCase):
         lowered = DIRECTIVE.casefold()
         self.assertIn("does not permit placeholder", lowered)
         self.assertIn("every unchanged production gate", lowered)
+        self.assertIn("once those exact bytes will no longer change", lowered)
+        self.assertIn("recheck every listed output", lowered)
         for forbidden in (
             "--source",
             "--concept-root",

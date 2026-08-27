@@ -20,10 +20,10 @@ import sys
 import time
 
 
-DIRECTIVE_VERSION = 2
+DIRECTIVE_VERSION = 3
 DIRECTIVE = """
 
-<workshop_mock_session_acceptance version="2">
+<workshop_mock_session_acceptance version="3">
 This is an opt-in context-and-integration acceptance run. Follow the normal
 materialized product-run instructions and the current read-only STAGE.json;
 they remain the only source of stage-specific schemas, commands, ownership
@@ -37,8 +37,9 @@ or a merely structural finalizer success. Every unchanged production gate must
 genuinely accept the output. Deferred work may name only optional or expensive
 work beyond the minimum required for those gates.
 
-Before normal stage finalization, write one JSON context record at the exact
-path shown below. It must contain exactly: schema_version=1,
+Finish every source file first. Once those exact bytes will no longer change,
+write one JSON context record at the exact path shown below immediately before
+normal stage finalization. It must contain exactly: schema_version=1,
 kind="autonomous-workshop.mock-session-context", stage, checkpoint_sha256,
 subject_sha256, instructions (a non-empty array of {path,sha256} for production
 instruction files actually consulted), used_inputs (a non-empty array of
@@ -48,6 +49,11 @@ source files supplied to the normal finalizer), and deferred_work (a non-empty
 array of expensive activities intentionally omitted). Paths are relative to
 the run root. Exclude this context record, STAGE.json, generated contracts,
 agent-outcome.json, and host-owned files from outputs.
+
+Do not modify a listed output after hashing it. If finalization reports a source
+problem, repair the source and refresh its recorded hash before retrying. After
+finalization succeeds, recheck every listed output against the record and fix
+the record before returning if any byte changed.
 
 Context record path: {context_record_path}
 
