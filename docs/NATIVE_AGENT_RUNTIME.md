@@ -26,7 +26,11 @@ then launches one native Codex session in that directory before Match. That
 same session performs all cognitive and tool-using work through Release:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Make <-> Playtest -> Release
+                 ^                    |
+                 `-- concept revision-'
+
+Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
 Codex owns understanding, native search, concept exploration, design, CAD and
@@ -316,12 +320,18 @@ Codex completes the active Goal and returns control. The host rereads the
 proposal and artifact tree independently, reruns its trusted gates, seals all
 accepted bytes, and alone decides the transition.
 
-Playtest is the only backward transition: a verdict of `improve` or `block`
-proposes Make and preserves exact evidence as feedback. The host applies the
-round budget and invalidation; Codex interprets the feedback and performs the
-repair in the next Make Goal. A new Make revision invalidates old Playtest and
-Release evidence. The sealed Invent result remains the design authority across
-those rounds.
+Playtest owns the backward transitions. A verdict of `improve` or `block`
+preserves exact evidence and uses each feedback record's explicit invalidation
+boundary to propose Make or Invent. `["playtest", "release"]` is an
+implementation repair; `["invent", "make", "playtest", "release"]` is a
+fundamental concept revision. If actionable findings use both, the broader
+Invent revision wins. The host follows these authored markers without judging
+their prose and applies one shared bounded round budget to both routes.
+
+A Make repair keeps the sealed Invent result authoritative. A concept revision
+receives the exact prior Invented and failing Playtested/feedback bytes with
+independent hashes, then invalidates every downstream product revision. New
+Make or Invent bytes invalidate their old downstream evidence.
 
 ## Invent-to-Make design handoff
 
@@ -494,8 +504,9 @@ private Wish demonstrate that:
 1. one session id spans every native stage;
 2. stale checkpoint or subject hashes are rejected;
 3. changed artifact bytes fail their next gate;
-4. failed Playtest evidence returns directly to a new Make round and
-   invalidates downstream work;
+4. failed Playtest evidence returns to Make or Invent exactly as its structured
+   feedback declares, consumes the shared round budget, and invalidates the
+   selected dependency chain;
 5. every sealed Made result remains bound to the exact accepted Invent result
    it was built from;
 6. Release claims exactly match passing evidence and its exact `MANUAL.pdf`

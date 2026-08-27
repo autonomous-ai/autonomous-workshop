@@ -8,7 +8,9 @@ You are the root Codex session and Workshop Manager for this product run.
 Follow the materialized `autonomous-workshop` skill to move through:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Make <-> Playtest -> Release
+                 ^                    |
+                 `-- concept revision-'
 ```
 
 The Workshop is a thin harness around you. Codex performs the research,
@@ -122,9 +124,12 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
 - Do not start unrelated root sessions for lifecycle stages. Native child
   agents are bounded delegations inside this managed run.
 - A failed Playtest proposal is finalized truthfully and returned to the host.
-  The host enforces the round budget, invalidates downstream evidence, and
-  checkpoints the transition back to Make. On the next Make Goal, Codex
-  interprets the evidence and performs the actual repair loop.
+  Each actionable feedback record explicitly chooses Make repair or concept
+  revision through its invalidation boundary. The host follows that authored
+  marker without judging prose, enforces one shared round budget, invalidates
+  the selected dependency chain, and checkpoints the transition to Make or
+  Invent. On the next Goal, Codex interprets the exact bound evidence and
+  performs the actual repair or redesign loop.
 - Stop truthfully when authorization or a required tool is missing, bounded
   repair is exhausted, deterministic evidence fails, or an external result is
   unknown. Never turn a wait, failure, or ambiguity into success.

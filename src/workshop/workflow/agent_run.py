@@ -88,7 +88,8 @@ _UPSTREAM_STAGE = {
     "release": "playtest",
     "deliver": "release",
 }
-_DOWNSTREAM_OF_MAKE = ("playtest", "release", "deliver")
+_DOWNSTREAM_OF_INVENT = ("make", "playtest", "release")
+_DOWNSTREAM_OF_MAKE = ("playtest", "release")
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
@@ -1421,8 +1422,10 @@ class AgentRun:
         if outcome.status == "ready":
             allowed = _FORWARD_TRANSITIONS[outcome.stage]
             if outcome.stage == "playtest":
-                if outcome.proposed_transition not in (allowed, "make"):
-                    raise TransitionError("Playtest may advance or return feedback to Make")
+                if outcome.proposed_transition not in (allowed, "make", "invent"):
+                    raise TransitionError(
+                        "Playtest may advance or return explicit feedback to Make or Invent"
+                    )
             elif outcome.proposed_transition != allowed:
                 raise TransitionError("agent proposed an illegal lifecycle transition")
 
@@ -1519,11 +1522,14 @@ class AgentRun:
             or gate.subject_sha256 != subject
         ):
             raise TransitionError("deterministic gate is not bound to this exact outcome")
-        if outcome.stage == "playtest" and outcome.proposed_transition == "make":
+        if (
+            outcome.stage == "playtest"
+            and outcome.proposed_transition in ("make", "invent")
+        ):
             if gate.passed:
                 raise TransitionError("passing Playtest must advance to Release")
             if payload["round_index"] >= payload["max_rounds"]:
-                raise TransitionError("Make-Playtest round budget is exhausted")
+                raise TransitionError("Invent-Make-Playtest round budget is exhausted")
         elif not gate.passed:
             raise TransitionError("a failed deterministic gate cannot advance")
 
@@ -1533,8 +1539,8 @@ class AgentRun:
             stage: list(paths) for stage, paths in payload["stage_artifacts"].items()
         }
         invalidated = set(payload["invalidated_stages"])
-        if outcome.stage == "make":
-            old_paths = stage_artifacts.get("make")
+        if outcome.stage in ("invent", "make"):
+            old_paths = stage_artifacts.get(outcome.stage)
             old_binding: tuple[tuple[str, str], ...] = ()
             if old_paths:
                 by_path = {item["path"]: item for item in payload["sealed_artifacts"]}
@@ -1545,7 +1551,12 @@ class AgentRun:
                 (artifact.path, artifact.sha256) for artifact in all_artifacts
             )
             if old_binding and old_binding != new_binding:
-                for stage in _DOWNSTREAM_OF_MAKE:
+                downstream = (
+                    _DOWNSTREAM_OF_INVENT
+                    if outcome.stage == "invent"
+                    else _DOWNSTREAM_OF_MAKE
+                )
+                for stage in downstream:
                     stage_artifacts.pop(stage, None)
                     invalidated.add(stage)
         stage_artifacts[outcome.stage] = [item.path for item in all_artifacts]
@@ -1555,13 +1566,18 @@ class AgentRun:
         round_index = payload["round_index"]
         status = "active"
         next_stage = transition
-        if outcome.stage == "invent" and transition == "make":
+        if outcome.stage == "invent" and transition == "make" and round_index == 0:
             round_index = 1
-        elif outcome.stage == "playtest" and transition == "make":
+        elif outcome.stage == "playtest" and transition in ("make", "invent"):
             round_index += 1
-            for stage in _DOWNSTREAM_OF_MAKE:
+            invalidation = (
+                ("invent", *_DOWNSTREAM_OF_INVENT)
+                if transition == "invent"
+                else _DOWNSTREAM_OF_MAKE
+            )
+            for stage in invalidation:
                 invalidated.add(stage)
-            next_stage = "make"
+            next_stage = transition
         elif transition == "complete":
             next_stage = "deliver"
             status = "complete"

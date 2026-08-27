@@ -24,7 +24,11 @@ decorated, and be represented no more strongly than its evidence permits.
 ## Lifecycle
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Make <-> Playtest -> Release
+                 ^                    |
+                 `-- concept revision-'
+
+Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
 - **Wish** preserves the person's exact words and explicit constraints.
@@ -33,15 +37,15 @@ Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
   concept, including the physical facts and provenance Make needs.
 - **Make** consumes that exact sealed Invent result and creates the actual
   product tree, CAD project, assemblies, and deterministic CAD verification.
-- **Playtest** inspects and simulates that exact Made revision. Evidence-linked
-  failures return to Make within a bounded round budget.
+- **Playtest** inspects and simulates that exact Made revision. Structured
+  feedback explicitly returns implementation defects to Make or fundamental
+  design defects to Invent within one shared bounded round budget.
 - **Release** creates and seals a self-contained printable `MANUAL.pdf` plus
   bounded evidence-linked product facts. The manual is the canonical customer
   artifact; website publication is optional.
-- **Deliver** is currently a truthful wait boundary. The host does not perform
-  or claim manufacture, hands-on QA, packing, carrier handoff, or delivery.
-  Those future effects require separate authorization and reconciled physical
-  receipts bound to the exact approved bytes.
+- **Printing**, **Deliver**, and **Review** show the rest of the product story
+  after Release. They belong to the Operations team and are not executable
+  Workshop stages.
 
 Release is the final digital product-design stage because the in-box experience
 is part of the product. Codex owns manual structure, copy, visuals, rendering,
@@ -131,11 +135,11 @@ separate loop primitive or Python program. The Goal completes only after the
 finalizer succeeds; Codex then returns to the host instead of starting the next
 stage.
 
-Wish is sealed by the host before Match, and Deliver is a host effect boundary,
-so neither is an agent Goal. A failed Playtest Goal still completes after it
-finalizes truthful evidence. The host applies the round budget, invalidates
-downstream evidence, and checkpoints the return to Make. Codex interprets the
-feedback and repairs the product inside the next Make Goal.
+Wish is sealed by the host before Match, so it is not an agent Goal. A failed
+Playtest Goal still completes after it finalizes truthful evidence. The host
+applies the shared round budget, invalidates the authored dependency boundary,
+and checkpoints the return to Make or Invent. Codex interprets the feedback
+and repairs or revises the product inside the next Goal.
 
 ## Trust boundary
 
@@ -199,9 +203,12 @@ not call a model or pass a gate. The host verifies the proposal binding, rereads
 the whole artifact tree, reruns trusted checks, seals accepted bytes, and alone
 advances the durable checkpoint.
 
-If a Playtest verdict is `improve` or `block`, the proposal returns to Make and
-preserves feedback evidence. A changed Make revision invalidates old Playtest,
-Release, and Deliver evidence.
+If a Playtest verdict is `improve` or `block`, its explicit structured
+invalidation boundary returns to Make or Invent and preserves exact feedback
+evidence. The host makes no semantic routing judgment. Both routes consume the
+same round budget; a concept revision receives hash-bound prior Invented and
+failing Playtested/feedback bytes. Changed Invent or Make revisions invalidate
+their downstream evidence.
 
 ## Evidence boundaries
 

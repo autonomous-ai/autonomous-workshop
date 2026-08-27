@@ -194,8 +194,9 @@ tools remain at their owning component boundaries.
   credentials.
 - Resume uses the exact workspace and rejects changed materialized instructions.
 - Stale checkpoint/subject bindings and changed artifact bytes fail closed.
-- Failed Playtest evidence returns directly to Make and invalidates downstream
-  stages while preserving the exact sealed Invent result.
+- Failed Playtest evidence returns to Make or Invent according to its explicit
+  structured invalidation boundary, consumes one shared round budget, and
+  preserves the exact prior design and evidence lineage.
 - Make and Playtest rerun host-owned CAD verification on exact bytes.
 - Release claims exactly match the passing Playtest evidence.
 - The native subprocess never receives effect credentials.

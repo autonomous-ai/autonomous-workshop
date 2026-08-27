@@ -1459,11 +1459,107 @@ def _prepare_stage_input(
             "blueprint_sha256": blueprint.sha256,
         }
         if stage == "invent":
-            subject = invent_gate_subject_sha256(assignment)
-            inputs = {
-                **common,
-                "contract_path": "artifacts/invent/invented.json",
-            }
+            prior_invented_paths = checkpoint.stage_artifacts.get("invent")
+            if prior_invented_paths:
+                if "invent" not in checkpoint.invalidated_stages:
+                    raise StateConflict(
+                        "an Invent retry requires explicit Playtest invalidation"
+                    )
+                prior_invented_artifact = prior_invented_paths[0]
+                prior_invented = _read_contract(
+                    run.run_root,
+                    prior_invented_artifact,
+                    NativeInvented,
+                    label="prior native Invented contract",
+                )
+                prior_invented.assert_context(assignment)
+                prior_made_artifact = _stage_primary(checkpoint, "make")
+                prior_made = _read_contract(
+                    run.run_root,
+                    prior_made_artifact,
+                    NativeMade,
+                    label="prior native Made contract",
+                )
+                prior_made.assert_context(
+                    assignment,
+                    prior_invented,
+                    expected_round=prior_made.round,
+                )
+                failing_playtested_artifact = _stage_primary(checkpoint, "playtest")
+                failing_playtested = _read_contract(
+                    run.run_root,
+                    failing_playtested_artifact,
+                    NativePlaytested,
+                    label="failing native Playtested contract",
+                )
+                failing_playtested.assert_context(prior_made, blueprint)
+                if failing_playtested.proposed_transition != "invent":
+                    raise StateConflict(
+                        "re-Invent requires explicit concept-revision feedback"
+                    )
+                feedback = [
+                    item.to_dict() for item in failing_playtested.feedback
+                ]
+                subject_inputs = {
+                    "wish_sha256": checkpoint.wish_sha256,
+                    "assignment_sha256": assignment.assignment_sha256,
+                    "taste_sha256": assignment.selected_taste_sha256,
+                    "blueprint_sha256": blueprint.sha256,
+                    "prior_invented_artifact_sha256": (
+                        prior_invented_artifact.sha256
+                    ),
+                    "prior_invented_sha256": prior_invented.invented_sha256,
+                    "failing_playtested_artifact_sha256": (
+                        failing_playtested_artifact.sha256
+                    ),
+                    "failing_playtested_sha256": (
+                        failing_playtested.playtested_sha256
+                    ),
+                    "feedback_sha256": failing_playtested.feedback_sha256,
+                    "repair_round": checkpoint.round_index,
+                }
+                subject = _stage_subject("invent", subject_inputs)
+                inputs = {
+                    **common,
+                    "repair_round": checkpoint.round_index,
+                    "prior_invented": prior_invented.to_dict(),
+                    "prior_invented_artifact": {
+                        **_artifact_binding(prior_invented_artifact),
+                        "invented_sha256": prior_invented.invented_sha256,
+                    },
+                    "failing_playtested": failing_playtested.to_dict(),
+                    "failing_playtested_artifact": {
+                        **_artifact_binding(failing_playtested_artifact),
+                        "playtested_sha256": (
+                            failing_playtested.playtested_sha256
+                        ),
+                    },
+                    "feedback": feedback,
+                    "feedback_sha256": failing_playtested.feedback_sha256,
+                    "contract_path": (
+                        "artifacts/invent/r%04d/invented.json"
+                        % checkpoint.round_index
+                    ),
+                }
+                context.update(
+                    {
+                        "prior_invented": prior_invented,
+                        "prior_made": prior_made,
+                        "failing_playtested": failing_playtested,
+                        "invent_contract_path": inputs["contract_path"],
+                    }
+                )
+            else:
+                if "invent" in checkpoint.invalidated_stages:
+                    raise StateConflict(
+                        "re-Invent lacks its exact prior Invented contract"
+                    )
+                subject = invent_gate_subject_sha256(assignment)
+                inputs = {
+                    **common,
+                    "contract_path": "artifacts/invent/invented.json",
+                }
+                context["invent_contract_path"] = inputs["contract_path"]
         else:
             invented_artifact = _stage_primary(checkpoint, "invent")
             invented = _read_contract(
@@ -2068,7 +2164,7 @@ def _evaluate_playtest_stage(
     artifact = _ready_contract_artifact(
         proposal,
         stage="playtest",
-        transitions=("release", "make"),
+        transitions=("release", "make", "invent"),
         path=contract_path,
     )
     playtested = _read_contract(
@@ -2099,7 +2195,7 @@ def _evaluate_playtest_stage(
         evidence_stage="playtest",
     )
     passed = playtested.verdict == "pass"
-    transition = "release" if passed else "make"
+    transition = playtested.proposed_transition
     if proposal.outcome.proposed_transition != transition:
         raise ContractError("Playtest transition differs from its evidence verdict")
     additional = _manifest_agent_artifacts(
@@ -2743,6 +2839,8 @@ def _process_agent_outcome(
             proposal,
             run_root=run.run_root,
             expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+            expected_subject_sha256=subject_sha256,
+            expected_artifact_path=context["invent_contract_path"],
             assignment=context["assignment"],
         )
     elif checkpoint.stage == "make":

@@ -298,16 +298,26 @@ class _OneSessionProductAgent:
         assignment = stage["inputs"]["assignment"]
         if assignment["selected_inventor_id"] != "alice":
             raise AssertionError("Invent did not receive the accepted Match assignment")
+        revised = "failing_playtested" in stage["inputs"]
         source = "authored/invent.json"
         _write_json(
             run_root / source,
             {
                 "concept": {
-                    "title": "Orbit Dog Draughts",
+                    "title": (
+                        "Orbit Dog Draughts — Aligned Orbits"
+                        if revised
+                        else "Orbit Dog Draughts"
+                    ),
                     "summary": (
                         "A pocket draughts set whose concentric board, opposing orbit "
                         "packs, and king pieces turn the requested dog into the geometry "
                         "of a familiar public-domain game."
+                        + (
+                            " Every orbit now maps one-to-one to legal squares."
+                            if revised
+                            else ""
+                        )
                     ),
                     "signature_decision": (
                         "Every playable square is an orbital waypoint and each side uses "
@@ -346,7 +356,7 @@ class _OneSessionProductAgent:
         (product_root / "validation").mkdir(exist_ok=True)
         wish = _read_json(run_root / "WISH.json")
         invented = inputs["invented"]
-        if invented["concept"]["title"] != "Orbit Dog Draughts":
+        if not invented["concept"]["title"].startswith("Orbit Dog Draughts"):
             raise AssertionError("Make did not receive the accepted Invent result")
         product = {
             "schema_version": 1,
@@ -716,6 +726,45 @@ class _TimeoutOnceProductAgent(_OneSessionProductAgent):
         raise CodexRecoverableInvocationError("fixture native turn timed out")
 
 
+class _ConceptRevisionProductAgent(_OneSessionProductAgent):
+    """Verify re-Invent lineage and author a changed versioned contract."""
+
+    def __init__(self, *, playtest_plan=None):
+        super().__init__(playtest_plan=playtest_plan)
+        self.invent_outputs = []
+
+    def _author_invent(self, run_root, stage):
+        inputs = stage["inputs"]
+        if "failing_playtested" in inputs:
+            prior_invented = inputs["prior_invented"]
+            failing_playtested = inputs["failing_playtested"]
+            feedback = inputs["feedback"]
+            if inputs["repair_round"] != 2:
+                raise AssertionError("re-Invent did not retain the shared repair round")
+            if inputs["prior_invented_artifact"]["invented_sha256"] != (
+                prior_invented["invented_sha256"]
+            ):
+                raise AssertionError("re-Invent prior Invented identity is unbound")
+            if inputs["failing_playtested_artifact"]["playtested_sha256"] != (
+                failing_playtested["playtested_sha256"]
+            ):
+                raise AssertionError("re-Invent failing Playtested identity is unbound")
+            if feedback != failing_playtested["feedback"]:
+                raise AssertionError("re-Invent feedback differs from Playtested bytes")
+            if inputs["feedback_sha256"] != _sha256(_canonical_json(feedback)):
+                raise AssertionError("re-Invent feedback hash is not canonical")
+
+        super()._author_invent(run_root, stage)
+        contract_path = inputs["contract_path"]
+        self.invent_outputs.append(
+            (contract_path, (run_root / contract_path).read_bytes())
+        )
+        if len(self.invent_outputs) == 2:
+            first_path, first_bytes = self.invent_outputs[0]
+            if (run_root / first_path).read_bytes() != first_bytes:
+                raise AssertionError("re-Invent overwrote the sealed prior contract")
+
+
 class _FactoryEffects:
     def __init__(self):
         self.secret = "fixture-host-secret"
@@ -1076,6 +1125,7 @@ class NativeFullRunTest(unittest.TestCase):
         wish_name,
         context_source,
         launcher=None,
+        expected_stage="deliver",
     ):
         if launcher is None:
             launcher = _OneSessionProductAgent(playtest_plan=playtest_plan)
@@ -1134,7 +1184,7 @@ class NativeFullRunTest(unittest.TestCase):
                 checkpoint = run.snapshot()
 
         self.assertEqual(receipt["status"], "waiting")
-        self.assertEqual(receipt["stage"], "deliver")
+        self.assertEqual(receipt["stage"], expected_stage)
         return launcher, checkpoint
 
     def test_timeout_continues_same_session_through_the_full_run(self):
@@ -1156,7 +1206,8 @@ class NativeFullRunTest(unittest.TestCase):
             ["match", "invent", "make", "playtest", "release"],
         )
 
-    def test_design_invalidating_playtest_verdict_routes_back_to_make(self):
+    def test_concept_invalidating_playtest_routes_to_bound_reinvent_checkpoint(self):
+        launcher = _ConceptRevisionProductAgent()
         launcher, checkpoint = self._run_playtest_routing_case(
             playtest_plan=[
                 (
@@ -1171,20 +1222,27 @@ class NativeFullRunTest(unittest.TestCase):
                                 "draughts grid, so legal jumps are ambiguous."
                             ),
                             "change": (
-                                "Revise the design and geometry in Make so every "
-                                "waypoint is centered on a playable square."
+                                "Revise the concept so its orbital interaction maps "
+                                "unambiguously to every legal playable square."
                             ),
                             "evidence_refs": ["results/mechanical-check.json"],
-                            "invalidates": ["playtest", "release", "deliver"],
+                            "invalidates": [
+                                "invent",
+                                "make",
+                                "playtest",
+                                "release",
+                            ],
                         }
                     ],
                 )
             ],
             wish_name="orbit-dog-design-revision",
             context_source="native-playtest-design-revision-test",
+            launcher=launcher,
         )
 
         self.assertEqual(checkpoint.round_index, 2)
+        self.assertEqual((checkpoint.stage, checkpoint.status), ("deliver", "waiting"))
         self.assertEqual(
             [packet["stage"] for packet in launcher.stage_packets],
             [
@@ -1192,25 +1250,46 @@ class NativeFullRunTest(unittest.TestCase):
                 "invent",
                 "make",
                 "playtest",
+                "invent",
                 "make",
                 "playtest",
                 "release",
             ],
         )
-        first_make_packet = launcher.stage_packets[2]
-        second_make_packet = launcher.stage_packets[4]
-        self.assertEqual(first_make_packet["round"], 1)
-        self.assertEqual(second_make_packet["round"], 2)
+        first_invent_packet = launcher.stage_packets[1]
+        reinvent_packet = launcher.stage_packets[4]
+        self.assertIsNone(first_invent_packet["round"])
+        self.assertIsNone(reinvent_packet["round"])
         self.assertNotEqual(
-            first_make_packet["checkpoint_sha256"],
-            second_make_packet["checkpoint_sha256"],
+            first_invent_packet["checkpoint_sha256"],
+            reinvent_packet["checkpoint_sha256"],
         )
         self.assertEqual(
-            second_make_packet["inputs"]["previous_playtest"]["path"],
+            reinvent_packet["inputs"]["failing_playtested_artifact"]["path"],
             "artifacts/playtest/r0001/playtested.json",
         )
-        make_artifacts = checkpoint.stage_artifacts["make"]
-        self.assertTrue(any("r0002" in artifact.path for artifact in make_artifacts))
+        self.assertEqual(
+            reinvent_packet["inputs"]["prior_invented_artifact"]["path"],
+            "artifacts/invent/invented.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["contract_path"],
+            "artifacts/invent/r0002/invented.json",
+        )
+        self.assertEqual(
+            [path for path, unused_bytes in launcher.invent_outputs],
+            [
+                "artifacts/invent/invented.json",
+                "artifacts/invent/r0002/invented.json",
+            ],
+        )
+        self.assertNotEqual(
+            launcher.invent_outputs[0][1], launcher.invent_outputs[1][1]
+        )
+        self.assertEqual(
+            checkpoint.stage_artifacts["invent"][0].path,
+            "artifacts/invent/r0002/invented.json",
+        )
 
     def test_build_only_playtest_verdict_routes_back_to_make(self):
         launcher, checkpoint = self._run_playtest_routing_case(
@@ -1231,7 +1310,7 @@ class NativeFullRunTest(unittest.TestCase):
                                 "next Make revision."
                             ),
                             "evidence_refs": ["results/printability-check.json"],
-                            "invalidates": ["playtest", "release", "deliver"],
+                            "invalidates": ["playtest", "release"],
                         }
                     ],
                 )
@@ -1273,7 +1352,7 @@ class NativeFullRunTest(unittest.TestCase):
                     "is centered on a playable square."
                 ),
                 "evidence_refs": ["results/mechanical-check.json"],
-                "invalidates": ["playtest", "release", "deliver"],
+                "invalidates": ["playtest", "release"],
             }
         ]
         launcher, checkpoint = self._run_playtest_routing_case(

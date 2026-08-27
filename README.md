@@ -6,7 +6,7 @@ Not from a shelf. From your imagination.
 
 Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, Release, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=manual-first-release-v4)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, and Release before handing the toy to Operations for Printing, Delivery, and Review](docs/images/workshop-floorplan.svg?version=release-operations-handoff-v5)](docs/images/workshop-floorplan.svg)
 
 ## Meet some of the inventors
 
@@ -95,8 +95,16 @@ sealed Invent result, Playtests the exact product, then writes the Release
 package:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Make <-> Playtest -> Release
+                 ^                    |
+                 `-- concept revision-'
+
+Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
+
+Workshop code ends after it verifies and publishes Release. Printing, physical
+delivery, and customer Review remain part of the complete toy journey, handled
+by the Operations team.
 
 For each active Match, Invent, Make, Playtest, or Release attempt,
 Codex creates one native Goal with one objective, proof artifacts, and a

@@ -1,6 +1,6 @@
 ---
 name: autonomous-workshop
-description: Run, resume, or diagnose one Autonomous Workshop Wish through Match, Invent, Make, Playtest, Release, and Deliver using native Codex Goals, tools, and subagents while preserving deterministic host gates and human-controlled effects.
+description: Run, resume, or diagnose one Autonomous Workshop Wish through Match, Invent, Make, Playtest, and Release using native Codex Goals, tools, and subagents while preserving deterministic host gates and human-controlled effects.
 ---
 
 # Autonomous Workshop
@@ -147,15 +147,19 @@ large pasted JSON object for run-local evidence.
 The host alone sequences:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Make <-> Playtest -> Release
+                 ^                    |
+                 `-- concept revision-'
 ```
 
-A finalized `improve` or `block` Playtest returns to the host. The host applies
-the round budget and invalidates downstream evidence before checkpointing a
-new Make attempt. The sealed Invent result remains the design authority;
-Codex creates the new Make Goal, interprets the exact feedback, and performs
-the repair. Reviews after delivery may inform a future Wish but never rewrite
-a completed run.
+A finalized `improve` or `block` Playtest returns to the host. Each actionable
+feedback item explicitly marks either a Make repair or a fundamental Invent
+revision. The host follows that structured marker without judging its prose,
+applies the shared round budget, and invalidates the selected dependency chain
+before checkpointing the next Make or Invent attempt. For re-Invent, the next
+packet binds the exact prior Invented and failing Playtested/feedback bytes.
+Reviews after delivery may inform a future Wish but never rewrite a completed
+run.
 
 Release prepares a self-contained, printable `MANUAL.pdf` that can teach the
 new owner without a website, video, QR code, or phone. It also prepares bounded

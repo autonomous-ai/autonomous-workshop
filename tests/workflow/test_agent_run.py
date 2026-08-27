@@ -607,7 +607,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual((checkpoint.stage, checkpoint.round_index), ("make", 2))
         self.assertEqual(
             checkpoint.invalidated_stages,
-            ("playtest", "release", "deliver"),
+            ("playtest", "release"),
         )
         self.assertEqual(
             checkpoint.stage_artifacts["playtest"][0], failed_playtest.artifacts[0]
@@ -630,7 +630,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(len(checkpoint.stage_artifacts["make"]), 2)
         self.assertEqual(
             checkpoint.invalidated_stages,
-            ("playtest", "release", "deliver"),
+            ("playtest", "release"),
         )
         second_failure = self.outcome(
             run,
@@ -642,6 +642,73 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaisesRegex(TransitionError, "budget"):
             run.apply_outcome(
                 second_failure, gate=self.gate(run, second_failure, passed=False)
+            )
+        self.assertEqual(run.snapshot().stage, "playtest")
+
+    def test_concept_feedback_returns_to_invent_and_consumes_shared_round(self):
+        run = self.create(max_rounds=3)
+        self.reach_playtest(run)
+        before = run.snapshot()
+        prior_invent = before.stage_artifacts["invent"]
+        prior_make = before.stage_artifacts["make"]
+
+        failed_playtest = self.outcome(
+            run,
+            "playtest",
+            "invent",
+            name="concept-failure.json",
+            content=b'{"result":"revise-concept"}\n',
+        )
+        checkpoint = run.apply_outcome(
+            failed_playtest,
+            gate=self.gate(run, failed_playtest, passed=False),
+        )
+
+        self.assertEqual((checkpoint.stage, checkpoint.round_index), ("invent", 2))
+        self.assertEqual(
+            checkpoint.invalidated_stages,
+            ("invent", "make", "playtest", "release"),
+        )
+        self.assertEqual(checkpoint.stage_artifacts["invent"], prior_invent)
+        self.assertEqual(checkpoint.stage_artifacts["make"], prior_make)
+        self.assertEqual(
+            checkpoint.stage_artifacts["playtest"][0],
+            failed_playtest.artifacts[0],
+        )
+
+        revised_invent = self.outcome(
+            run,
+            "invent",
+            "make",
+            name="revision-02.json",
+            content=b'{"concept":"revised"}\n',
+        )
+        checkpoint = run.apply_outcome(
+            revised_invent,
+            gate=self.gate(run, revised_invent),
+        )
+
+        self.assertEqual((checkpoint.stage, checkpoint.round_index), ("make", 2))
+        self.assertEqual(
+            checkpoint.stage_artifacts["invent"],
+            revised_invent.artifacts,
+        )
+        self.assertNotIn("make", checkpoint.stage_artifacts)
+        self.assertNotIn("playtest", checkpoint.stage_artifacts)
+        self.assertEqual(
+            checkpoint.invalidated_stages,
+            ("make", "playtest", "release"),
+        )
+
+    def test_concept_revision_cannot_exceed_shared_round_budget(self):
+        run = self.create(max_rounds=1)
+        self.reach_playtest(run)
+        failed_playtest = self.outcome(run, "playtest", "invent")
+
+        with self.assertRaisesRegex(TransitionError, "budget"):
+            run.apply_outcome(
+                failed_playtest,
+                gate=self.gate(run, failed_playtest, passed=False),
             )
         self.assertEqual(run.snapshot().stage, "playtest")
 
