@@ -301,6 +301,17 @@ python tools/scan_secrets.py
 git diff --check
 ```
 
+The authenticated real-Codex context-and-integration acceptance is opt-in and
+remains separate from the default offline suite:
+
+```bash
+.venv/bin/python tools/run_mock_session_e2e.py
+```
+
+See [end-to-end acceptance](tests/end_to_end/README.md) for prerequisites,
+budgets, diagnostics, and the evidence limits of the deterministic,
+mock-session, and full-product-run tiers.
+
 Read next:
 
 - [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md)

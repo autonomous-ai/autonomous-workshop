@@ -163,6 +163,27 @@ class NativeRunPaths:
     host_state: Path
 
 
+@dataclass(frozen=True)
+class NativeRunExternalTransports:
+    """Optional external-protocol transports for isolated acceptance runs.
+
+    This seam cannot replace Codex, a stage evaluator, a gate, persistence, or
+    an effect coordinator.  Normal CLI runs never provide it; production
+    adapters use their default network transports when every field is ``None``.
+    """
+
+    concept_image_opener: Any = None
+    factory_transport: Any = None
+
+    def __post_init__(self) -> None:
+        for value, label in (
+            (self.concept_image_opener, "Concept image opener"),
+            (self.factory_transport, "Factory transport"),
+        ):
+            if value is not None and not callable(value):
+                raise ContractError("native run %s must be callable" % label)
+
+
 @contextmanager
 def _native_run_mutation_lock(paths: NativeRunPaths):
     """Fail closed when another host process is mutating this Wish.
@@ -1702,7 +1723,10 @@ def _concept_images_credentials() -> ConceptImagesConfig:
 
 
 def _execute_concept_image_effect(
-    tree: ConceptTree, concept: NativeConcept
+    tree: ConceptTree,
+    concept: NativeConcept,
+    *,
+    external_transports: Optional[NativeRunExternalTransports] = None,
 ) -> Mapping[str, Any]:
     """Draw the concept's whole image set between turns, or park on no credential.
 
@@ -1715,7 +1739,16 @@ def _execute_concept_image_effect(
         config = _concept_images_credentials()
     except ContractError:
         raise _ConceptImagesCredentialsUnavailable() from None
-    adapter = ConceptImagesAdapter(config)
+    opener = (
+        external_transports.concept_image_opener
+        if external_transports is not None
+        else None
+    )
+    adapter = (
+        ConceptImagesAdapter(config, opener=opener)
+        if opener is not None
+        else ConceptImagesAdapter(config)
+    )
     drawn = adapter.draw_concept(tree, concept)
     return {"images_drawn": sorted(drawn)}
 
@@ -2037,7 +2070,10 @@ def _existing_release_for_promotion(
 
 
 def _promote_existing_release(
-    run: AgentRun, checkpoint: AgentRunCheckpoint
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    external_transports: Optional[NativeRunExternalTransports] = None,
 ) -> bool:
     """Promote an exact verified draft without another native-agent turn."""
 
@@ -2052,9 +2088,12 @@ def _promote_existing_release(
     except ContractError:
         raise _FactoryCredentialsUnavailable(inventor_id) from None
     ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
+    session_arguments = {}
+    if external_transports is not None and external_transports.factory_transport:
+        session_arguments["transport"] = external_transports.factory_transport
     promoted = FactoryPublicTransition(
         ledger,
-        FactoryAgentSession(credentials),
+        FactoryAgentSession(credentials, **session_arguments),
     ).publish(receipt)
     _write_release_effect(run, release, promoted)
     return True
@@ -2066,6 +2105,7 @@ def _execute_release_effect(
     *,
     context: Mapping[str, Any],
     publish_requested: bool,
+    external_transports: Optional[NativeRunExternalTransports] = None,
 ) -> tuple[ProductRelease, Receipt]:
     made = context["made"]
     playtested = context["playtested"]
@@ -2103,18 +2143,25 @@ def _execute_release_effect(
             ) from None
     if receipt is None:
         ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
+        writer_arguments = {}
+        if external_transports is not None and external_transports.factory_transport:
+            writer_arguments["transport"] = external_transports.factory_transport
         writer = FactoryReleaseWriter(
             ledger,
             assignment.selected_inventor_id,
             credentials,
+            **writer_arguments,
         )
         receipt = writer(release_context, package.root, package.manifest)
         _write_release_effect(run, release, receipt)
     if publish_requested and receipt.is_verified_draft:
         ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
+        session_arguments = {}
+        if external_transports is not None and external_transports.factory_transport:
+            session_arguments["transport"] = external_transports.factory_transport
         receipt = FactoryPublicTransition(
             ledger,
-            FactoryAgentSession(credentials),
+            FactoryAgentSession(credentials, **session_arguments),
         ).publish(receipt)
         _write_release_effect(run, release, receipt)
     product_release = ProductRelease.from_root(
@@ -2135,6 +2182,7 @@ def _evaluate_release_stage(
     subject_sha256: str,
     context: Mapping[str, Any],
     publish_requested: bool,
+    external_transports: Optional[NativeRunExternalTransports] = None,
 ) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
     artifact = _ready_contract_artifact(
         proposal,
@@ -2151,6 +2199,7 @@ def _evaluate_release_stage(
         release,
         context=context,
         publish_requested=publish_requested,
+        external_transports=external_transports,
     )
     additional = _manifest_agent_artifacts(
         release.package_root, release.package_manifest
@@ -2209,6 +2258,7 @@ def _process_agent_outcome(
     subject_sha256: str,
     context: Mapping[str, Any],
     publish_requested: bool,
+    external_transports: Optional[NativeRunExternalTransports] = None,
 ) -> AgentRunCheckpoint:
     proposal = read_agent_outcome_proposal(
         run.run_root,
@@ -2249,7 +2299,13 @@ def _process_agent_outcome(
                 round=checkpoint.round_index,
                 standing_concept_sha256=context["concept_standing_sha256"],
                 feedback_sha256=context["concept_feedback_sha256"],
-                execute_image_effect=_execute_concept_image_effect,
+                execute_image_effect=(
+                    lambda tree, concept: _execute_concept_image_effect(
+                        tree,
+                        concept,
+                        external_transports=external_transports,
+                    )
+                ),
             )
             sealed_relative = "artifacts/concept/r%04d/sealed-concept.json" % (
                 checkpoint.round_index,
@@ -2306,6 +2362,7 @@ def _process_agent_outcome(
                 subject_sha256=subject_sha256,
                 context=context,
                 publish_requested=publish_requested,
+                external_transports=external_transports,
             )
         except _FactoryCredentialsUnavailable as unavailable:
             waiting = AgentOutcome(
@@ -2359,6 +2416,7 @@ def _run_native_session(
     *,
     launcher: CodexNativeSessionLauncher,
     publish_requested: bool,
+    external_transports: Optional[NativeRunExternalTransports] = None,
 ) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
     """Advance through native stages until complete, wait, or failure."""
 
@@ -2383,6 +2441,7 @@ def _run_native_session(
                     subject_sha256=subject,
                     context=context,
                     publish_requested=publish_requested,
+                    external_transports=external_transports,
                 )
             except StateConflict:
                 _remove_agent_outcome(run.run_root)
@@ -2411,6 +2470,7 @@ def _run_native_session(
             subject_sha256=subject,
             context=context,
             publish_requested=publish_requested,
+            external_transports=external_transports,
         )
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action
@@ -2524,6 +2584,10 @@ def start_native_run(
     wish: Wish,
     *,
     publish_requested: bool = False,
+    external_transports: Optional[NativeRunExternalTransports] = None,
+    native_turn_timeout_seconds: Optional[int] = None,
+    native_model: Optional[str] = None,
+    native_reasoning_effort: Optional[str] = None,
 ) -> Mapping[str, Any]:
     """Persist one Wish and immediately start its whole-run native session."""
 
@@ -2548,12 +2612,20 @@ def start_native_run(
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
-        launcher = CodexNativeSessionLauncher()
+        launcher_options: dict[str, Any] = {}
+        if native_turn_timeout_seconds is not None:
+            launcher_options["timeout_seconds"] = native_turn_timeout_seconds
+        if native_model is not None:
+            launcher_options["model"] = native_model
+        if native_reasoning_effort is not None:
+            launcher_options["reasoning_effort"] = native_reasoning_effort
+        launcher = CodexNativeSessionLauncher(**launcher_options)
         checkpoint, session, turns, action = _run_native_session(
             run,
             paths,
             launcher=launcher,
             publish_requested=publish_requested,
+            external_transports=external_transports,
         )
         return {
             **_native_receipt(
@@ -2575,6 +2647,10 @@ def _resume_native_run_locked(
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
     publish_requested: bool = False,
+    external_transports: Optional[NativeRunExternalTransports] = None,
+    native_turn_timeout_seconds: Optional[int] = None,
+    native_model: Optional[str] = None,
+    native_reasoning_effort: Optional[str] = None,
 ) -> Mapping[str, Any]:
     """Mutate one native run while its process lock is held."""
 
@@ -2591,7 +2667,11 @@ def _resume_native_run_locked(
         and checkpoint.status in ("active", "waiting", "complete")
     ):
         try:
-            promoted = _promote_existing_release(run, checkpoint)
+            promoted = _promote_existing_release(
+                run,
+                checkpoint,
+                external_transports=external_transports,
+            )
         except _FactoryCredentialsUnavailable:
             return _native_receipt(
                 checkpoint,
@@ -2645,12 +2725,20 @@ def _resume_native_run_locked(
             action="inspected-terminal",
             publish_requested=authorization["publish_requested"],
         )
-    launcher = CodexNativeSessionLauncher()
+    launcher_options: dict[str, Any] = {}
+    if native_turn_timeout_seconds is not None:
+        launcher_options["timeout_seconds"] = native_turn_timeout_seconds
+    if native_model is not None:
+        launcher_options["model"] = native_model
+    if native_reasoning_effort is not None:
+        launcher_options["reasoning_effort"] = native_reasoning_effort
+    launcher = CodexNativeSessionLauncher(**launcher_options)
     checkpoint, session, turns, action = _run_native_session(
         run,
         paths,
         launcher=launcher,
         publish_requested=authorization["publish_requested"],
+        external_transports=external_transports,
     )
     if action == "started":
         action = "started-after-interruption"
@@ -2670,6 +2758,10 @@ def resume_native_run(
     product_id: str,
     *,
     publish_requested: bool = False,
+    external_transports: Optional[NativeRunExternalTransports] = None,
+    native_turn_timeout_seconds: Optional[int] = None,
+    native_model: Optional[str] = None,
+    native_reasoning_effort: Optional[str] = None,
 ) -> Mapping[str, Any]:
     """Resume one exact native session under an exclusive host mutation lock."""
 
@@ -2683,6 +2775,10 @@ def resume_native_run(
             checkpoint=checkpoint,
             paths=paths,
             publish_requested=publish_requested,
+            external_transports=external_transports,
+            native_turn_timeout_seconds=native_turn_timeout_seconds,
+            native_model=native_model,
+            native_reasoning_effort=native_reasoning_effort,
         )
 
 
@@ -2710,6 +2806,7 @@ def native_run_status(product_id: str) -> Mapping[str, Any]:
 
 
 __all__ = [
+    "NativeRunExternalTransports",
     "NativeRunPaths",
     "canonical_wish_bytes",
     "materialized_agent_instructions_sha256",
