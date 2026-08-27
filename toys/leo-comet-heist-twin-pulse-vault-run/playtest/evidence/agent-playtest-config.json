@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "evaluator": "comet-heist-seeded-event-engine",
+  "evaluator_version": "1.1.0",
+  "observed_at": "2026-08-27T18:47:27Z",
+  "binding": {
+    "stage_checkpoint_sha256": "57c63245d7b8b9578aa7fd0d54380205af91b83c9fe78a2808aaad8f4aa26882",
+    "stage_subject_sha256": "7bc45efb752b155dcb3990ac14383ad3c9f12d9c9e3d792c613f231a68975c90",
+    "made_path": "artifacts/make/r0002/made.json",
+    "made_file_sha256": "eee328cd5a9177ce1b241b2f3d6f89f73ea285e9f5c5cad8da6883bb9391431d",
+    "made_sha256": "2ba7764da19c3e4c392f3c56c877eefc24aa5b401797e73e524ca09640dc8dbb",
+    "product_artifact_sha256": "93944b68688d51e857380601c06871e8705e8e90d85da16d88b62d436fa834fe",
+    "rules_path": "artifacts/make/r0002/product/RULES.md",
+    "rules_sha256": "279623eecbc0d52fb09df34f0ff797b779b20f2159ead2f0fc659643994acfa8"
+  },
+  "seed": 20260827,
+  "policies": ["optimizing", "social", "exploratory", "adversarial"],
+  "patterns": [
+    {"id": 1, "cue": "LL", "success_delta": {"bank-wide": 0.08, "direct-medium": 0.04}},
+    {"id": 2, "cue": "RR", "success_delta": {"bank-medium": 0.05, "direct-narrow": 0.06}},
+    {"id": 3, "cue": "LR", "success_delta": {"bank-narrow": 0.04, "direct-wide": 0.06}},
+    {"id": 4, "cue": "RL", "success_delta": {"bank-medium": 0.08, "direct-narrow": 0.03}},
+    {"id": 5, "cue": "LL", "adaptation_delta": 0.03, "success_delta": {"bank-wide": 0.08, "direct-medium": 0.04}},
+    {"id": 6, "cue": "RR", "adaptation_delta": 0.03, "success_delta": {"bank-medium": 0.05, "direct-narrow": 0.06}}
+  ],
+  "actions": [
+    {"id": "direct-wide", "vault": "wide", "base_score": 2, "bank": false, "base_success": 0.72},
+    {"id": "direct-medium", "vault": "medium", "base_score": 4, "bank": false, "base_success": 0.57},
+    {"id": "direct-narrow", "vault": "narrow", "base_score": 6, "bank": false, "base_success": 0.39},
+    {"id": "bank-wide", "vault": "wide", "base_score": 2, "bank": true, "base_success": 0.52, "bonus_given_success": 0.70},
+    {"id": "bank-medium", "vault": "medium", "base_score": 4, "bank": true, "base_success": 0.42, "bonus_given_success": 0.70},
+    {"id": "bank-narrow", "vault": "narrow", "base_score": 6, "bank": true, "base_success": 0.30, "bonus_given_success": 0.70}
+  ],
+  "sensitivity_scenarios": [
+    {"id": "low-control", "success_multiplier": 0.78, "bonus_delta": -0.08},
+    {"id": "baseline", "success_multiplier": 1.00, "bonus_delta": 0.00},
+    {"id": "high-control", "success_multiplier": 1.18, "bonus_delta": 0.06}
+  ],
+  "games": {
+    "competitive_per_ordered_policy_pair_per_scenario": 300,
+    "solo_per_policy_per_scenario": 600,
+    "regulation_waves": 6,
+    "maximum_sudden_death_pairs": 3
+  },
+  "acceptance": {
+    "minimum_total_seeded_games": 1000,
+    "required_policy_count": 4,
+    "required_legal_shot_values": [0, 2, 4, 6, 8],
+    "maximum_regulation_shots_per_player": 6,
+    "maximum_sudden_death_pairs": 3,
+    "maximum_absolute_first_seat_decisive_win_rate_delta": 0.05,
+    "require_zero_illegal_scores": true,
+    "require_zero_nonterminations": true,
+    "require_all_actions_exercised": true,
+    "require_no_action_best_in_every_pattern_and_scenario": true,
+    "require_exact_rotational_symmetry": true
+  },
+  "model_boundary": {
+    "purpose": "Exercise the sealed rule state machine, policy incentives, score economy, termination, tie procedure, and sensitivity to assumed control.",
+    "not_evidence_of": [
+      "physical friction or bounce",
+      "printed fit or durability",
+      "trajectories, pulse timing, launch position or force, gate-order violations, or facet-contact adjudication",
+      "human timing, skill, enjoyment, or teachability",
+      "actual outcome probabilities",
+      "calibrated solo difficulty tiers"
+    ]
+  }
+}

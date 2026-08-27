@@ -1,0 +1,95 @@
+{
+  "assembly": "comet_heist.step.py",
+  "conditions": [
+    {
+      "id": "near-blade-left-sweep",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Near pendulum can swing 45 degrees left without striking tray, bridge, or keeper.",
+      "inputs": {
+        "moving_part": "gravity_blade:1",
+        "obstacle_parts": ["tray_a", "tray_b", "gate_bridge:1", "gate_keeper:1"],
+        "axis_point": [-50.0, 0.0, 38.0],
+        "axis_direction": [1.0, 0.0, 0.0],
+        "start_deg": 0.0,
+        "end_deg": 45.0,
+        "steps": 10,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 1.0}
+    },
+    {
+      "id": "near-blade-right-sweep",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Near pendulum can swing 45 degrees right without striking tray, bridge, or keeper.",
+      "inputs": {
+        "moving_part": "gravity_blade:1",
+        "obstacle_parts": ["tray_a", "tray_b", "gate_bridge:1", "gate_keeper:1"],
+        "axis_point": [-50.0, 0.0, 38.0],
+        "axis_direction": [1.0, 0.0, 0.0],
+        "start_deg": 0.0,
+        "end_deg": -45.0,
+        "steps": 10,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 1.0}
+    },
+    {
+      "id": "seam-key-removal",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "The outer seam key lifts clear for deliberate disassembly.",
+      "inputs": {
+        "moving_part": "seam_storage_key:1",
+        "obstacle_parts": ["tray_a", "tray_b"],
+        "translation": [0.0, 0.0, 18.0],
+        "steps": 8,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 1.0}
+    },
+    {
+      "id": "seam-key-downward-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "The tray rim blocks the seated seam key from passing down into the play field.",
+      "inputs": {
+        "moving_part": "seam_storage_key:1",
+        "obstacle_parts": ["tray_a", "tray_b"],
+        "translation": [0.0, 0.0, -18.0],
+        "steps": 8,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 1.0}
+    },
+    {
+      "id": "bridge-unlock-slide",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "With blade and keeper removed, the near bridge slides 6 mm in -X back to its open keyhole position.",
+      "inputs": {
+        "moving_part": "gate_bridge:1",
+        "obstacle_parts": ["tray_a", "tray_b"],
+        "translation": [-6.0, 0.0, 0.0],
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 1.0}
+    },
+    {
+      "id": "bridge-seated-lift-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "In the seated position the integral 2.5 mm shoulders block a direct upward bridge lift.",
+      "inputs": {
+        "moving_part": "gate_bridge:1",
+        "obstacle_parts": ["tray_a", "tray_b"],
+        "translation": [0.0, 0.0, 8.0],
+        "steps": 8,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 1.0}
+    }
+  ]
+}

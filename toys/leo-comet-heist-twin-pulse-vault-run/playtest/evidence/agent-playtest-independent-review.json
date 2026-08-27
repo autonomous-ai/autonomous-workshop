@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "reviewer": "leo-playtest-r2-native-agent",
+  "observed_at": "2026-08-27T18:50:00Z",
+  "binding": {
+    "made_file_sha256": "eee328cd5a9177ce1b241b2f3d6f89f73ea285e9f5c5cad8da6883bb9391431d",
+    "made_sha256": "2ba7764da19c3e4c392f3c56c877eefc24aa5b401797e73e524ca09640dc8dbb",
+    "product_artifact_sha256": "93944b68688d51e857380601c06871e8705e8e90d85da16d88b62d436fa834fe",
+    "rules_sha256": "279623eecbc0d52fb09df34f0ff797b779b20f2159ead2f0fc659643994acfa8"
+  },
+  "verdict": "pass",
+  "blocking_findings": [],
+  "findings": [
+    "A separately rebound in-memory rerun completed the same 21,600 seeded games with all eight configured tests passing and all aggregates matching the root evaluator's round-2 report.",
+    "The sealed rules and deployed gameplay geometry are byte-identical to round 1; the Make repair changes the independent blade manufacturing pose and support evidence without changing the simulated state machine.",
+    "Competitive and solo endings are bounded and executable under the simulator's stated three-pair sudden-death convention."
+  ],
+  "limits": [
+    "The engine models intent labels and assumed event probabilities, not trajectories, pulse timing, launch position or force, gate-order violations, facet-contact adjudication, friction, bounce, or actual dexterity.",
+    "Zero out-of-domain generated score values is not exhaustive physical-action legality.",
+    "The first-seat and strategy findings apply only to the symmetric assumed event model; mirror pairing partly enforces the tested symmetry.",
+    "No human balance, meaningful physical choice, enjoyment, teachability, setup, or calibrated solo tier was observed."
+  ],
+  "release_manual_note": "Consolidate seam overlap, fully seated keys, bridge drop-and-6-mm-slide, keeper closure, motion preflight, and blades-at-rest reset."
+}

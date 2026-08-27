@@ -1,0 +1,32 @@
+{
+  "title": "Lunar Relay",
+  "summary": "A palm-sized all-printed desk mechanism: press either cratered moon and the opposite moon rises through its guarded lunar well.",
+  "interaction": "A central rocker transfers one downward press into an equal and opposite rise. Release or press the raised moon to reset.",
+  "parts": [
+    "lunar_base",
+    "moon_rocker",
+    "quarter_turn_axle"
+  ],
+  "materials": {
+    "intended_process": "FDM printing",
+    "suggested_material": "PLA or PETG",
+    "purchased_hardware": "none"
+  },
+  "envelope_mm": [92.0, 54.0, 25.0],
+  "print_assumptions": {
+    "nozzle_mm": 0.4,
+    "layer_height_mm": 0.2,
+    "supports": "none",
+    "bed_mm": [120, 120, 120]
+  },
+  "assembly": "Align the axle tab with the horizontal keyways, pass it through base-rocker-base, then rotate it one quarter-turn so the far tab is captive.",
+  "use": "Set the base on a level desk and press only the top face of either moon. Keep fingertips out of the side gaps while it moves.",
+  "limitations": [
+    "Digital geometry checks do not prove a successful print, physical fit, wear life, or cycle count.",
+    "The specified free-fit clearances are an FDM starting point and may need calibration for a particular printer and material.",
+    "This is a desk object for ages 14 and up, not a product for small children."
+  ],
+  "status": "print-ready",
+  "print_ready_claim": true,
+  "verification_status": "digitally-verified-print-ready-candidate"
+}

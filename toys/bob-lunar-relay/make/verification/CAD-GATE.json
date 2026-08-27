@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "primary_artifact": {
+    "path": "assembled.step",
+    "sha256": "fb738df2e44e549d143adab29504d1626b76192a8354cdd857cc2e2ad48c86ae",
+    "format": "STEP",
+    "role": "primary assembled CAD"
+  },
+  "mesh_artifact": {
+    "path": "assembled.stl",
+    "sha256": "2a1381d19a83878f90a96842b16c710dad0520547eb16d5d609e3e3d6cedb4da",
+    "format": "STL",
+    "role": "secondary assembled mesh"
+  },
+  "cad_project_path": "cad/moon_relay",
+  "assembly_facts": {
+    "kind": "assembly",
+    "occurrences": 3,
+    "solids": 3,
+    "bounds_mm": {
+      "min": [-46.0, -27.0, 0.0],
+      "max": [46.0, 27.0, 25.0],
+      "size": [92.0, 54.0, 25.0]
+    }
+  },
+  "final_pipeline": {
+    "status": "pass",
+    "print_ready_claim": true,
+    "report_path": "cad/moon_relay/measure/verification-pipeline.md",
+    "report_sha256": "281999a309485217f6a0886501e0e7ed8d2f10b8ade0403c6852d98825aa73ec"
+  },
+  "checks": [
+    {"id": "layout", "status": "pass", "finding": "Tier-2 combined and three printable entries conform."},
+    {"id": "fit", "status": "pass", "finding": "Three one-solid print targets sit on Z=0 and fit a 120 × 120 mm bed."},
+    {"id": "local-fit", "status": "pass", "finding": "Bores, keyways, side clearance, connector names, and assembly order derive from one parameter source."},
+    {"id": "isolated-project", "status": "pass", "finding": "A relocated copy containing only the CAD project passed the complete fresh export and strict-fit pipeline; both local audits run without workspace-relative imports.", "evidence_path": "cad/moon_relay/measure/isolated-host-gate.md", "evidence_sha256": "a76492e169310b2cfce30b4bdfa2e2cd6a0cb1a2e7fff37e16039bc506b43cc3"},
+    {"id": "declared-output-stability", "status": "pass", "finding": "Three independent fresh processes produced the same combined STEP bytes; a host-equivalent copied-project pipeline left every generated CAD output byte-identical.", "evidence_path": "cad/moon_relay/measure/deterministic-output-gate.md", "evidence_sha256": "832fd8aefe23bc56016b93f495f5f2e90c5d15a03dac0ab2ccb196b4bef88602"},
+    {"id": "local-spec", "status": "pass", "finding": "8.350 mm exchange difference, 0.862 mm full-solid floor clearance, and 1.692 mm locked-tab engagement."},
+    {"id": "motion", "status": "pass", "finding": "Both ±8° rocker sweeps and the 90° axle lock rotation are clear; locked axial withdrawal is blocked as intended."},
+    {"id": "step-validity", "status": "pass", "finding": "Assembly and all three part STEP entries have valid closed positive-volume solids with no reported self-intersection."},
+    {"id": "interference", "status": "pass", "finding": "Three assembly pairs tested; zero clashes above the 1.0 mm³ contact tolerance."},
+    {"id": "mesh", "status": "pass", "finding": "Every print-target STL and the three-shell assembled STL are watertight, manifold, consistently wound, positive-volume, and bed-fitting."},
+    {"id": "thickness", "status": "pass", "finding": "All three print-target meshes have zero sampled surface below the 0.80 mm two-line wall threshold at a 0.4 mm nozzle."},
+    {"id": "visual-review", "status": "pass", "finding": "Four orthographic views from the exact assembled STL show all parts present, centered, supported, and consistent with the brief.", "evidence_path": "cad/moon_relay/measure/render-review.png", "evidence_sha256": "0d1c89c6669913021dceb0b5410c5bdcf5780229fc39f8211825f7bd269de6e6"}
+  ],
+  "print_targets": [
+    {"path": "cad/moon_relay/part_lunar_base.stl", "sha256": "5966aa95353ff76935f906b66e9270c4c11757926d80b823bfabca760180f2e9", "size_mm": [92.0, 54.0, 25.0], "shells": 1, "thickness_status": "pass"},
+    {"path": "cad/moon_relay/part_moon_rocker.stl", "sha256": "5e5bd2035e682e61252a3267db30b7e329c02d0e3f88ca12829194faa3e3568a", "size_mm": [82.0, 22.0, 14.0], "shells": 1, "thickness_status": "pass"},
+    {"path": "cad/moon_relay/part_quarter_turn_axle.stl", "sha256": "22d4f8e0ba700d2190e8ab4e7c3b1dfdbb13fe0ade7089ed37a5788404d6017d", "size_mm": [13.0, 13.0, 35.7], "shells": 1, "thickness_status": "pass"}
+  ],
+  "limitations": [
+    "No successful print or physical fit is claimed.",
+    "Rigid digital motion does not prove friction, retention force, strength, wear, durability, or cycle life.",
+    "Visual review does not replace topology, interference, mesh, or thickness checks."
+  ]
+}

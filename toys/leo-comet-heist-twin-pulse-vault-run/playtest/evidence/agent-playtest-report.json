@@ -1,0 +1,803 @@
+{
+  "action_counts": {
+    "bank-medium": 43392,
+    "bank-narrow": 51857,
+    "bank-wide": 28267,
+    "direct-medium": 38265,
+    "direct-narrow": 40762,
+    "direct-wide": 14261
+  },
+  "best_expected_action_by_scenario_and_pattern": {
+    "baseline": {
+      "1": "direct-medium",
+      "2": "direct-narrow",
+      "3": "bank-narrow",
+      "4": "bank-medium",
+      "5": "direct-medium",
+      "6": "direct-narrow"
+    },
+    "high-control": {
+      "1": "direct-medium",
+      "2": "direct-narrow",
+      "3": "bank-narrow",
+      "4": "bank-medium",
+      "5": "direct-medium",
+      "6": "direct-narrow"
+    },
+    "low-control": {
+      "1": "direct-medium",
+      "2": "direct-narrow",
+      "3": "bank-narrow",
+      "4": "bank-medium",
+      "5": "direct-medium",
+      "6": "direct-narrow"
+    }
+  },
+  "binding": {
+    "made_file_sha256": "eee328cd5a9177ce1b241b2f3d6f89f73ea285e9f5c5cad8da6883bb9391431d",
+    "made_path": "artifacts/make/r0002/made.json",
+    "made_sha256": "2ba7764da19c3e4c392f3c56c877eefc24aa5b401797e73e524ca09640dc8dbb",
+    "product_artifact_sha256": "93944b68688d51e857380601c06871e8705e8e90d85da16d88b62d436fa834fe",
+    "rules_path": "artifacts/make/r0002/product/RULES.md",
+    "rules_sha256": "279623eecbc0d52fb09df34f0ff797b779b20f2159ead2f0fc659643994acfa8",
+    "stage_checkpoint_sha256": "57c63245d7b8b9578aa7fd0d54380205af91b83c9fe78a2808aaad8f4aa26882",
+    "stage_subject_sha256": "7bc45efb752b155dcb3990ac14383ad3c9f12d9c9e3d792c613f231a68975c90"
+  },
+  "competitive_summaries": [
+    {
+      "draws": 2,
+      "games": 300,
+      "mean_regulation_score_A": 12.4133,
+      "mean_regulation_score_B": 12.4133,
+      "policy_A": "optimizing",
+      "policy_B": "optimizing",
+      "scenario": "low-control",
+      "wins_A": 149,
+      "wins_B": 149
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 11.1933,
+      "mean_regulation_score_B": 11.1933,
+      "policy_A": "optimizing",
+      "policy_B": "social",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 11.7933,
+      "mean_regulation_score_B": 11.7933,
+      "policy_A": "optimizing",
+      "policy_B": "exploratory",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 11.9467,
+      "mean_regulation_score_B": 11.9467,
+      "policy_A": "optimizing",
+      "policy_B": "adversarial",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 10.9933,
+      "mean_regulation_score_B": 10.9933,
+      "policy_A": "social",
+      "policy_B": "optimizing",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 9.7867,
+      "mean_regulation_score_B": 9.7867,
+      "policy_A": "social",
+      "policy_B": "social",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 9.6,
+      "mean_regulation_score_B": 9.6,
+      "policy_A": "social",
+      "policy_B": "exploratory",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 10.7,
+      "mean_regulation_score_B": 10.7,
+      "policy_A": "social",
+      "policy_B": "adversarial",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 11.44,
+      "mean_regulation_score_B": 11.44,
+      "policy_A": "exploratory",
+      "policy_B": "optimizing",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 10.2467,
+      "mean_regulation_score_B": 10.2467,
+      "policy_A": "exploratory",
+      "policy_B": "social",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 9.9533,
+      "mean_regulation_score_B": 9.9533,
+      "policy_A": "exploratory",
+      "policy_B": "exploratory",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 10.9,
+      "mean_regulation_score_B": 10.9,
+      "policy_A": "exploratory",
+      "policy_B": "adversarial",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 4,
+      "games": 300,
+      "mean_regulation_score_A": 12.0467,
+      "mean_regulation_score_B": 12.0467,
+      "policy_A": "adversarial",
+      "policy_B": "optimizing",
+      "scenario": "low-control",
+      "wins_A": 148,
+      "wins_B": 148
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 10.4733,
+      "mean_regulation_score_B": 10.4733,
+      "policy_A": "adversarial",
+      "policy_B": "social",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 10.9067,
+      "mean_regulation_score_B": 10.9067,
+      "policy_A": "adversarial",
+      "policy_B": "exploratory",
+      "scenario": "low-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 2,
+      "games": 300,
+      "mean_regulation_score_A": 11.5267,
+      "mean_regulation_score_B": 11.5267,
+      "policy_A": "adversarial",
+      "policy_B": "adversarial",
+      "scenario": "low-control",
+      "wins_A": 149,
+      "wins_B": 149
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 15.9733,
+      "mean_regulation_score_B": 15.9733,
+      "policy_A": "optimizing",
+      "policy_B": "optimizing",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 14.7333,
+      "mean_regulation_score_B": 14.7333,
+      "policy_A": "optimizing",
+      "policy_B": "social",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 13.92,
+      "mean_regulation_score_B": 13.92,
+      "policy_A": "optimizing",
+      "policy_B": "exploratory",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 15.0533,
+      "mean_regulation_score_B": 15.0533,
+      "policy_A": "optimizing",
+      "policy_B": "adversarial",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 14.34,
+      "mean_regulation_score_B": 14.34,
+      "policy_A": "social",
+      "policy_B": "optimizing",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 13.2733,
+      "mean_regulation_score_B": 13.2733,
+      "policy_A": "social",
+      "policy_B": "social",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 12.5867,
+      "mean_regulation_score_B": 12.5867,
+      "policy_A": "social",
+      "policy_B": "exploratory",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 14.34,
+      "mean_regulation_score_B": 14.34,
+      "policy_A": "social",
+      "policy_B": "adversarial",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 13.96,
+      "mean_regulation_score_B": 13.96,
+      "policy_A": "exploratory",
+      "policy_B": "optimizing",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 12.1,
+      "mean_regulation_score_B": 12.1,
+      "policy_A": "exploratory",
+      "policy_B": "social",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 13.0733,
+      "mean_regulation_score_B": 13.0733,
+      "policy_A": "exploratory",
+      "policy_B": "exploratory",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 2,
+      "games": 300,
+      "mean_regulation_score_A": 14.3,
+      "mean_regulation_score_B": 14.3,
+      "policy_A": "exploratory",
+      "policy_B": "adversarial",
+      "scenario": "baseline",
+      "wins_A": 149,
+      "wins_B": 149
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 14.9133,
+      "mean_regulation_score_B": 14.9133,
+      "policy_A": "adversarial",
+      "policy_B": "optimizing",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 13.9667,
+      "mean_regulation_score_B": 13.9667,
+      "policy_A": "adversarial",
+      "policy_B": "social",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 14.6333,
+      "mean_regulation_score_B": 14.6333,
+      "policy_A": "adversarial",
+      "policy_B": "exploratory",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 14.08,
+      "mean_regulation_score_B": 14.08,
+      "policy_A": "adversarial",
+      "policy_B": "adversarial",
+      "scenario": "baseline",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 18.8933,
+      "mean_regulation_score_B": 18.8933,
+      "policy_A": "optimizing",
+      "policy_B": "optimizing",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 17.74,
+      "mean_regulation_score_B": 17.74,
+      "policy_A": "optimizing",
+      "policy_B": "social",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 16.82,
+      "mean_regulation_score_B": 16.82,
+      "policy_A": "optimizing",
+      "policy_B": "exploratory",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 2,
+      "games": 300,
+      "mean_regulation_score_A": 17.6933,
+      "mean_regulation_score_B": 17.6933,
+      "policy_A": "optimizing",
+      "policy_B": "adversarial",
+      "scenario": "high-control",
+      "wins_A": 149,
+      "wins_B": 149
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 17.7,
+      "mean_regulation_score_B": 17.7,
+      "policy_A": "social",
+      "policy_B": "optimizing",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 15.1667,
+      "mean_regulation_score_B": 15.1667,
+      "policy_A": "social",
+      "policy_B": "social",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 15.4667,
+      "mean_regulation_score_B": 15.4667,
+      "policy_A": "social",
+      "policy_B": "exploratory",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 16.8667,
+      "mean_regulation_score_B": 16.8667,
+      "policy_A": "social",
+      "policy_B": "adversarial",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 17.4733,
+      "mean_regulation_score_B": 17.4733,
+      "policy_A": "exploratory",
+      "policy_B": "optimizing",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 16.3133,
+      "mean_regulation_score_B": 16.3133,
+      "policy_A": "exploratory",
+      "policy_B": "social",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 15.4667,
+      "mean_regulation_score_B": 15.4667,
+      "policy_A": "exploratory",
+      "policy_B": "exploratory",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 16.8267,
+      "mean_regulation_score_B": 16.8267,
+      "policy_A": "exploratory",
+      "policy_B": "adversarial",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 18.5067,
+      "mean_regulation_score_B": 18.5067,
+      "policy_A": "adversarial",
+      "policy_B": "optimizing",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 16.5067,
+      "mean_regulation_score_B": 16.5067,
+      "policy_A": "adversarial",
+      "policy_B": "social",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 17.3333,
+      "mean_regulation_score_B": 17.3333,
+      "policy_A": "adversarial",
+      "policy_B": "exploratory",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    },
+    {
+      "draws": 0,
+      "games": 300,
+      "mean_regulation_score_A": 17.8533,
+      "mean_regulation_score_B": 17.8533,
+      "policy_A": "adversarial",
+      "policy_B": "adversarial",
+      "scenario": "high-control",
+      "wins_A": 150,
+      "wins_B": 150
+    }
+  ],
+  "evaluator": "comet-heist-seeded-event-engine",
+  "evaluator_version": "1.1.0",
+  "interpretation": {
+    "finding": "The sealed rules terminate, keep generated scores in the declared domain, exercise all modeled intent families, and show no first-seat or universal-action defect in the stated symmetric event-model sensitivity sweep.",
+    "model_boundary": {
+      "not_evidence_of": [
+        "physical friction or bounce",
+        "printed fit or durability",
+        "trajectories, pulse timing, launch position or force, gate-order violations, or facet-contact adjudication",
+        "human timing, skill, enjoyment, or teachability",
+        "actual outcome probabilities",
+        "calibrated solo difficulty tiers"
+      ],
+      "purpose": "Exercise the sealed rule state machine, policy incentives, score economy, termination, tie procedure, and sensitivity to assumed control."
+    },
+    "solo_tiers": "Reported rates are model outputs only. Cadet/Raider/Master thresholds remain provisional and are not calibrated for humans."
+  },
+  "observed_at": "2026-08-27T18:47:27Z",
+  "passed": true,
+  "rules_audit": {
+    "ambiguities_found": [],
+    "first_shooter_alternates_and_leads_three_waves_each": true,
+    "legality_boundary": "Zero out-of-domain generated score values checks the event engine's score domain; it is not exhaustive physical-action legality.",
+    "regulation_shots_per_player": 6,
+    "same_six_pattern_schedule_for_both_players": true,
+    "scoring_boundary": "A comet scores only when the whole comet lies beyond the vault mouth's inner wall plane; touching the plane does not score.",
+    "setup_consolidation_note": "The Release manual should consolidate seam overlap, fully seated keys, bridge drop-and-6-mm-slide, keeper closure, motion preflight, and blades-at-rest reset from the Made package.",
+    "state_readability_from_rules": [
+      "READY-to-SPENT comet transfer counts attempts",
+      "pipped vaults encode scores",
+      "fixed pattern table identifies every wave"
+    ],
+    "teachability_boundary": "The written state machine is executable; no human teachability, setup, or handling observation was performed.",
+    "tiebreak_order": [
+      "score",
+      "valid-slingshots",
+      "narrow-vault-successes",
+      "three-paired-sudden-death-waves",
+      "draw"
+    ]
+  },
+  "run": {
+    "absolute_first_seat_decisive_win_rate_delta": 0.002363,
+    "competitive_games": 14400,
+    "draws": 12,
+    "first_seat_decisive_win_rate": 0.497637,
+    "first_seat_wins": 7160,
+    "illegal_scores": 0,
+    "maximum_sudden_death_pairs_observed": 3,
+    "mirrored_seed_mismatches": 0,
+    "mirrored_seed_pairs": 7200,
+    "nonterminations": 0,
+    "second_seat_wins": 7228,
+    "seed": 20260827,
+    "solo_games": 7200,
+    "total_seeded_games": 21600
+  },
+  "schema_version": 1,
+  "solo_summaries": [
+    {
+      "games": 600,
+      "maximum": 30,
+      "mean_score": 12.4067,
+      "minimum": 0,
+      "policy": "optimizing",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.725,
+        "master": 0.02,
+        "raider": 0.23
+      },
+      "scenario": "low-control"
+    },
+    {
+      "games": 600,
+      "maximum": 26,
+      "mean_score": 9.56,
+      "minimum": 0,
+      "policy": "social",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.555,
+        "master": 0.0017,
+        "raider": 0.0633
+      },
+      "scenario": "low-control"
+    },
+    {
+      "games": 600,
+      "maximum": 30,
+      "mean_score": 10.3767,
+      "minimum": 0,
+      "policy": "exploratory",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.5483,
+        "master": 0.0133,
+        "raider": 0.14
+      },
+      "scenario": "low-control"
+    },
+    {
+      "games": 600,
+      "maximum": 34,
+      "mean_score": 11.81,
+      "minimum": 0,
+      "policy": "adversarial",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.6767,
+        "master": 0.025,
+        "raider": 0.21
+      },
+      "scenario": "low-control"
+    },
+    {
+      "games": 600,
+      "maximum": 34,
+      "mean_score": 16.2,
+      "minimum": 0,
+      "policy": "optimizing",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.86,
+        "master": 0.1133,
+        "raider": 0.43
+      },
+      "scenario": "baseline"
+    },
+    {
+      "games": 600,
+      "maximum": 26,
+      "mean_score": 12.1433,
+      "minimum": 0,
+      "policy": "social",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.7783,
+        "master": 0.0017,
+        "raider": 0.1417
+      },
+      "scenario": "baseline"
+    },
+    {
+      "games": 600,
+      "maximum": 34,
+      "mean_score": 13.5733,
+      "minimum": 0,
+      "policy": "exploratory",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.7533,
+        "master": 0.0383,
+        "raider": 0.3
+      },
+      "scenario": "baseline"
+    },
+    {
+      "games": 600,
+      "maximum": 34,
+      "mean_score": 15.2967,
+      "minimum": 0,
+      "policy": "adversarial",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.8383,
+        "master": 0.085,
+        "raider": 0.4083
+      },
+      "scenario": "baseline"
+    },
+    {
+      "games": 600,
+      "maximum": 34,
+      "mean_score": 18.9033,
+      "minimum": 0,
+      "policy": "optimizing",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.9317,
+        "master": 0.2033,
+        "raider": 0.5783
+      },
+      "scenario": "high-control"
+    },
+    {
+      "games": 600,
+      "maximum": 26,
+      "mean_score": 14.5333,
+      "minimum": 0,
+      "policy": "social",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.9033,
+        "master": 0.0033,
+        "raider": 0.29
+      },
+      "scenario": "high-control"
+    },
+    {
+      "games": 600,
+      "maximum": 36,
+      "mean_score": 15.65,
+      "minimum": 2,
+      "policy": "exploratory",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.8467,
+        "master": 0.0783,
+        "raider": 0.405
+      },
+      "scenario": "high-control"
+    },
+    {
+      "games": 600,
+      "maximum": 34,
+      "mean_score": 18.17,
+      "minimum": 0,
+      "policy": "adversarial",
+      "provisional_tier_rates_model_only": {
+        "cadet": 0.8917,
+        "master": 0.1817,
+        "raider": 0.5633
+      },
+      "scenario": "high-control"
+    }
+  ],
+  "tests": {
+    "all_actions_exercised": true,
+    "bounded_termination": true,
+    "exact_rotational_symmetry": true,
+    "first_seat_effect_within_threshold": true,
+    "four_policy_perspectives": true,
+    "legal_score_values_only": true,
+    "minimum_game_count": true,
+    "no_universal_best_action": true
+  },
+  "universal_best_actions": []
+}

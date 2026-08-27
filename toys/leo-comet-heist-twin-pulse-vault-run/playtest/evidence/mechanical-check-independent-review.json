@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "reviewer": "mechanical-playtest-r2-native-agent",
+  "observed_at": "2026-08-27T18:50:00Z",
+  "binding": {
+    "made_file_sha256": "eee328cd5a9177ce1b241b2f3d6f89f73ea285e9f5c5cad8da6883bb9391431d",
+    "product_artifact_sha256": "93944b68688d51e857380601c06871e8705e8e90d85da16d88b62d436fa834fe",
+    "assembled_step_sha256": "1189402a296c3889b8b178732273bb3b29618cea83cbdb36b33a99637c08b9df",
+    "verification_sha256": "03e4b6fb42dff1ce33968489bf260abe43b888f98307a6cb10719a7fd6185f86"
+  },
+  "verdict": "pass",
+  "blocking_findings": [],
+  "findings": [
+    "All 65 sealed product files match their manifest sizes, hashes, and executable flags with no missing or extra files.",
+    "Direct STEP inspection found 24 labeled occurrences in a 486 by 190 by 68 mm deployed envelope and zero interference clashes across all 276 occurrence pairs at the declared 1.0 mm3 tolerance.",
+    "All six motion conditions passed, including both 45-degree near-blade sweeps, key removal/capture, the clear 6 mm bridge unlock slide, and blocked direct seated lift.",
+    "The connector ledger passed 4.0 mm trunnions in 4.6 mm seats, 0.30 mm radial clearance, 0.35 mm axial clearance per side, and 0.25 mm bridge-foot vertical clearance."
+  ],
+  "limits": [
+    "This is digital rigid-geometry evidence only; motion samples plus/minus 45 degrees while the intended stop is plus/minus 50 degrees.",
+    "The near gate is swept directly; far-gate equivalence relies on byte-identical mirrored geometry.",
+    "No physical print, fit, friction, gravity return, oscillation duration, impact retention, seam flatness, rattle, manual fit, or 100-cycle durability was tested."
+  ]
+}

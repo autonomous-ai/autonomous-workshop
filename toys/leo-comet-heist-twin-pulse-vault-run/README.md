@@ -6,9 +6,14 @@ A portable, all-printed tabletop dexterity game for one or two players: pulse tw
 
 ## Snapshot contents
 
-- `product.json` — the exact sealed Release facts.
-- `MANUAL.pdf` — the exact sealed printable in-box manual.
-- `PUBLICATION.json` — sanitized public readback and byte identities.
-- `model/` — the exact public primary STL.
+- `wish/` — sanitized Wish binding (exact text only with explicit consent).
+- `match/` — accepted Match assignment.
+- `invent/` — accepted Invent contract.
+- `make/` — the exact sealed Release facts, exact CAD source, models, and verification.
+- `release/MANUAL.pdf` — the exact sealed printable in-box manual.
+- `release/` — accepted Release contract and exact package bytes.
+- `publication/PUBLICATION.json` — sanitized public readback identities.
+- `MANIFEST.json` — hashes every workflow file except itself and this README.
+- `playtest/` — accepted Playtest contract and exact evidence.
 
-This snapshot contains no private Wish, agent session, host state, credentials, raw receipt, or internal evidence tree. Publication is not proof of physical manufacture, fit, durability, or delivery.
+This archive contains no agent session, prompt, transcript, chain of thought, host state, credentials, or raw effect receipt. Publication is not proof of physical manufacture, fit, durability, or delivery.

@@ -1,9 +1,11 @@
 """Materialize one sanitized, public Git example from sealed Release bytes.
 
 The private product-run workspace remains the lifecycle authority.  This
-module writes only an allowlisted public projection after authenticated
-Factory readback proves that the exact Release is public.  It never copies a
-Wish, checkpoint, receipt, agent configuration, transcript, or evidence tree.
+module writes only an allowlisted, content-addressed workflow projection after
+authenticated Factory readback proves that the exact Release is public.  It
+may publish an explicitly disclosed Wish and sealed product evidence, but
+never copies agent configuration, prompts, transcripts, host state,
+credentials, or a raw effect receipt.
 """
 
 from __future__ import annotations
@@ -32,6 +34,7 @@ from workshop.release.native import (
     NATIVE_RELEASE_MANUAL_PATH,
     NativeRelease,
 )
+from workshop.release.public_archive import write_public_workflow_archive
 from workshop.runtime import Receipt
 
 
@@ -324,6 +327,7 @@ def materialize_public_example(
     made: NativeMade,
     inventor_id: str,
     receipt: Receipt,
+    disclose_exact_wish: bool = False,
 ) -> Path:
     """Create ``toys/<inventor>-<slug>`` from exact public Release bytes.
 
@@ -334,6 +338,8 @@ def materialize_public_example(
 
     if not isinstance(release, NativeRelease) or not isinstance(made, NativeMade):
         raise ContractError("public example requires typed Made and Release inputs")
+    if type(disclose_exact_wish) is not bool:
+        raise ContractError("public example Wish disclosure must be boolean")
     if not isinstance(receipt, Receipt) or not receipt.is_verified_public:
         raise StateConflict("public example requires verified public Factory readback")
     if (
@@ -425,9 +431,6 @@ def materialize_public_example(
         tempfile.mkdtemp(prefix=".public-example-", dir=str(toys))
     ).resolve(strict=True)
     try:
-        _write_public_file(staging, release.manual_path, manual)
-        _write_public_file(staging, "product.json", product_json)
-
         print_files = []
         primary_model = None
         primary_path = details.get("primary_model_path")
@@ -453,7 +456,7 @@ def materialize_public_example(
                 raise StateConflict(
                     "public Factory primary model differs from sealed Made bytes"
                 )
-            destination = "model/assembled.stl"
+            destination = "make/models/assembled.stl"
             primary_model = _copy_model(
                 product_root=product_root,
                 product_entries=product_entries,
@@ -498,7 +501,7 @@ def materialize_public_example(
                 raise StateConflict(
                     "Made product print inventory differs from sealed model bytes"
                 )
-            destination = "print/component-%03d.stl" % index
+            destination = "make/models/print/component-%03d.stl" % index
             copied = _copy_model(
                 product_root=product_root,
                 product_entries=product_entries,
@@ -548,7 +551,7 @@ def materialize_public_example(
         if cover_url is not None:
             publication_details["cover_url"] = cover_url
         publication = {
-            "schema_version": 1,
+            "schema_version": 2,
             "kind": "autonomous-workshop.public-toy-snapshot",
             "title": title,
             "inventor": {"id": inventor_id},
@@ -557,8 +560,20 @@ def materialize_public_example(
             "primary_model": primary_model,
             "print_files": print_files,
         }
-        _write_public_file(
-            staging, "PUBLICATION.json", _canonical_json(publication)
+        write_public_workflow_archive(
+            staging,
+            run,
+            made=made,
+            release=release,
+            title=title,
+            summary=summary,
+            publication=publication,
+            writer=lambda relative, content: _write_public_file(
+                staging,
+                relative,
+                content.encode("utf-8") if isinstance(content, str) else content,
+            ),
+            disclose_exact_wish=disclose_exact_wish,
         )
         heading = " ".join(title.split())
         product_description = (
@@ -575,29 +590,34 @@ def materialize_public_example(
             "# %s\n\n%s\n\n"
             "[View the verified public product page](%s)\n\n"
             "## Snapshot contents\n\n"
-            "- `product.json` — %s.\n"
-            "- `%s` — %s.\n"
-            "- `PUBLICATION.json` — sanitized public readback and byte identities.\n"
-            "%s%s\n"
-            "This snapshot contains no private Wish, agent session, host state, "
-            "credentials, raw receipt, or internal evidence tree. Publication is "
+            "- `wish/` — sanitized Wish binding (exact text only with explicit consent).\n"
+            "- `match/` — accepted Match assignment.\n"
+            "%s"
+            "- `make/` — %s, exact CAD source, models, and verification.\n"
+            "- `release/%s` — %s.\n"
+            "- `release/` — accepted Release contract and exact package bytes.\n"
+            "- `publication/PUBLICATION.json` — sanitized public readback identities.\n"
+            "- `MANIFEST.json` — hashes every workflow file except itself and this README.\n"
+            "%s\n"
+            "This archive contains no agent session, prompt, transcript, chain of "
+            "thought, host state, credentials, or raw effect receipt. Publication is "
             "not proof of physical manufacture, fit, durability, or delivery.\n"
         ) % (
             heading,
             summary,
             page_url,
+            (
+                "- `invent/` — accepted Invent contract.\n"
+                if (staging / "invent").is_dir()
+                else "- Invent was skipped by this effort route; its sealed compact concept is under `make/`.\n"
+            ),
             product_description,
             release.manual_path,
             manual_description,
             (
-                "- `model/` — the exact public primary STL.\n"
-                if primary_model is not None
-                else ""
-            ),
-            (
-                "- `print/` — exact sealed printable component STLs.\n"
-                if print_files
-                else ""
+                "- `playtest/` — accepted Playtest contract and exact evidence.\n"
+                if release.schema_version != 3
+                else "- Playtest was not run; Release records that omission explicitly.\n"
             ),
         )
         _write_public_file(staging, "README.md", readme.encode("utf-8"))
@@ -657,6 +677,7 @@ def materialize_public_example_if_source_checkout(
     made: NativeMade,
     inventor_id: str,
     receipt: Receipt,
+    disclose_exact_wish: bool = False,
 ) -> Optional[Path]:
     """Materialize a public example when the host is running from a checkout."""
 
@@ -669,6 +690,7 @@ def materialize_public_example_if_source_checkout(
         made=made,
         inventor_id=inventor_id,
         receipt=receipt,
+        disclose_exact_wish=disclose_exact_wish,
     )
 
 
