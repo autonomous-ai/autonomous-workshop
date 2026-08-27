@@ -44,6 +44,12 @@ the already sealed Release. `--publish` grants prospective authority for that
 effect; missing credentials, unavailable remote fields, or no publication
 request does not invalidate Release.
 
+When Factory exposes the imported version's immutable CDN `project_url`, the
+host derives its exact `MANUAL.pdf` URL, reads it without credentials, and
+requires its SHA-256 to equal the sealed manual before accepting Factory draft
+or public evidence. This remote byte check belongs to the optional publication
+effect and cannot retroactively fail local Release.
+
 Historical NativeRelease schema v1 uses `MANUAL.md` with product schema v3 and
 `status=page-ready`. Those contracts and their effect receipts remain readable
 under their original rules and hashes; they are not silently reinterpreted as

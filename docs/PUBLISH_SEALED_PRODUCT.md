@@ -75,6 +75,30 @@ unavailable adapter leaves publication pending/not-created without invalidating
 Release. The publication receipt stays in host-only state and binds exact
 artifact hashes.
 
+The Factory model ZIP is a narrow production transport, not a mirror of the
+Made engineering tree. For a mesh product it contains one root viewer STL and,
+when a validated occurrence family exists, only the required assembly STEP and
+sidecar plus the exact declared production STLs. Alternate STEP/3MF exports,
+play poses, slicer-project 3MFs, and other representations stay local. Factory's
+fallback price estimator counts geometry basenames as printable parts, so
+shipping those duplicates would turn file-format redundancy into a fictitious
+fulfilment cost.
+
+Workshop does not currently submit a price or claim that Factory's returned
+listing price is unit cost. An explicit price must wait for a hash-bound cost
+basis or authoritative Factory fulfilment quote; agent-authored prose, archive
+size, and the number of CAD representations are not cost evidence.
+
+For a PDF-first Release, authenticated Factory readback supplies the immutable
+CDN `project_url` for that exact design history. The host derives only
+`<project_url>MANUAL.pdf` on Factory's pinned public CDN, downloads it without a
+bearer token, and requires its SHA-256 to equal the sealed Release manual before
+accepting the private draft and again before and after public promotion. A
+missing, redirected, oversized, or changed file leaves the optional publication
+unverified; it never invalidates the local Release. Successful CLI/status output
+includes the hash-verified manual URL so a browser can open the same bytes the
+host checked.
+
 ## Credentials
 
 Supply Factory credentials through the private

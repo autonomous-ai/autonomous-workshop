@@ -46,6 +46,7 @@ from workshop.release.native import (
     FACTORY_CONTENT_LABEL_MAX,
     FACTORY_CONTENT_STORY_BLOCKS_MAX,
     LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION,
+    MAX_NATIVE_RELEASE_MANUAL_BYTES,
     RELEASE_PRODUCT_SCHEMA_VERSION,
     validate_release_product,
 )
@@ -54,6 +55,7 @@ from workshop.runtime import EffectIntent, EffectLedger, Receipt
 
 DEFAULT_FACTORY_API = "https://panda-social-api.autonomous.ai/api/v1"
 DEFAULT_FACTORY_PAGE_BASE = "https://www.autonomous.ai/factory/product"
+DEFAULT_FACTORY_PROJECT_CDN_HOST = "cdn.autonomous.ai"
 FACTORY_USER_AGENT = "Mozilla/5.0 (compatible; AutonomousWorkshop/1.0)"
 HTTP_TIMEOUT_SECONDS = 120
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
@@ -176,6 +178,39 @@ def _factory_product_page_url(slug: Any) -> str:
     return _https_url(
         DEFAULT_FACTORY_PAGE_BASE + "/" + urllib.parse.quote(slug, safe=""),
         "Factory product page URL",
+    )
+
+
+def _factory_project_file_url(project_url: Any, path: str) -> str:
+    """Derive one immutable public file URL from authenticated Factory readback."""
+
+    if path != FACTORY_RELEASE_PDF_MANUAL_PATH:
+        raise ContractError("Factory project readback supports only MANUAL.pdf")
+    value = _https_url(project_url, "Factory project URL")
+    try:
+        parsed = urllib.parse.urlsplit(value)
+        port = parsed.port
+    except ValueError as exc:
+        raise ContractError("Factory project URL is malformed") from exc
+    decoded_path = urllib.parse.unquote(parsed.path)
+    if (
+        parsed.hostname.casefold() != DEFAULT_FACTORY_PROJECT_CDN_HOST
+        or port is not None
+        or parsed.query
+        or parsed.fragment
+        or not parsed.path.endswith("/")
+        or "\\" in decoded_path
+        or any(part in (".", "..") for part in decoded_path.split("/"))
+    ):
+        raise ReceiptError("Factory project URL is outside the pinned immutable CDN")
+    return urllib.parse.urlunsplit(
+        (
+            "https",
+            DEFAULT_FACTORY_PROJECT_CDN_HOST,
+            parsed.path + FACTORY_RELEASE_PDF_MANUAL_PATH,
+            "",
+            "",
+        )
     )
 
 
@@ -600,7 +635,17 @@ def _assert_archive_inventory(content: bytes, project_id: str) -> None:
             if len(names) != len(set(names)):
                 raise ContractError("Factory handoff contains duplicate archive paths")
             files = {name for name in names if not name.endswith("/")}
-            stls = {name for name in files if PurePosixPath(name).suffix.casefold() == ".stl"}
+            geometry = {
+                name
+                for name in files
+                if PurePosixPath(name).suffix.casefold()
+                in FACTORY_MODEL_GEOMETRY_SUFFIXES
+            }
+            stls = {
+                name
+                for name in geometry
+                if PurePosixPath(name).suffix.casefold() == ".stl"
+            }
             root_visuals = {"assembled.stl", project_id + ".stl"} & stls
             if len(root_visuals) != 1:
                 raise ContractError("Factory handoff requires one root primary STL")
@@ -619,8 +664,10 @@ def _assert_archive_inventory(content: bytes, project_id: str) -> None:
             parts_directory = primary_stem + "_parts"
             production = {name for name in stls if name.startswith(parts_directory + "/")}
             if len(stls) == 1:
-                if production:
-                    raise ContractError("single-part Factory handoff cannot have a parts tree")
+                if production or geometry != root_visuals:
+                    raise ContractError(
+                        "single-part Factory handoff geometry is not exact"
+                    )
                 return
             step_name = primary_stem + ".step"
             sidecar_name = step_name + ".json"
@@ -656,8 +703,13 @@ def _assert_archive_inventory(content: bytes, project_id: str) -> None:
                     raise ContractError("Factory handoff occurrence is malformed")
                 occurrence_names.add(name)
                 expected.add(canonical)
-            if production != expected or stls != root_visuals | expected:
-                raise ContractError("Factory handoff STL inventory is not exact")
+            expected_geometry = root_visuals | expected | {step_name}
+            if (
+                production != expected
+                or stls != root_visuals | expected
+                or geometry != expected_geometry
+            ):
+                raise ContractError("Factory handoff geometry inventory is not exact")
     except ContractError:
         raise
     except (OSError, ValueError, zipfile.BadZipFile) as exc:
@@ -893,11 +945,16 @@ def _build_model_handoff(
         )
     if sealed_primary["kind"] == "mesh":
         # Valid occurrence parts are rewritten below under their validated
-        # names. Without one, this deliberately leaves only the root assembly.
+        # names. Keep no alternate CAD, mesh, or slicer-project representation:
+        # Factory's fallback estimator counts every such basename as another
+        # printable part. Without an occurrence family this deliberately leaves
+        # only the root primary STL; with one, the required assembly STEP and
+        # declared production STLs are written explicitly below.
         skip_paths.update(
             entry.path
             for entry in manifest.entries
-            if PurePosixPath(entry.path).suffix.casefold() == ".stl"
+            if PurePosixPath(entry.path).suffix.casefold()
+            in FACTORY_MODEL_GEOMETRY_SUFFIXES
             and entry.path != primary_source
         )
     with tempfile.TemporaryDirectory(prefix="workshop-factory-handoff-") as temporary:
@@ -1000,6 +1057,30 @@ Transport = Callable[
 ]
 
 
+@dataclass(frozen=True)
+class FactoryProjectFileResponse:
+    """Bounded response for one immutable public Factory project file."""
+
+    status: int
+    headers: Mapping[str, str]
+    body: bytes
+
+    def __post_init__(self) -> None:
+        if type(self.status) is not int or not 100 <= self.status <= 599:
+            raise ContractError(
+                "Factory project response status must be from 100 to 599"
+            )
+        if not isinstance(self.headers, Mapping) or not isinstance(self.body, bytes):
+            raise ContractError("Factory project response headers/body are malformed")
+        if len(self.body) > MAX_NATIVE_RELEASE_MANUAL_BYTES:
+            raise EffectError("Factory project file exceeds the Release manual limit")
+
+
+ProjectFileTransport = Callable[
+    [str, str, Mapping[str, str], Optional[bytes], int], FactoryProjectFileResponse
+]
+
+
 class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
         return None
@@ -1027,6 +1108,38 @@ def urllib_transport(
         if len(content) > MAX_RESPONSE_BYTES:
             raise EffectError("Factory error response exceeds the limit")
         return HttpResponse(exc.code, dict(exc.headers or {}), content)
+
+
+def urllib_project_file_transport(
+    method: str,
+    url: str,
+    headers: Mapping[str, str],
+    body: Optional[bytes],
+    timeout: int,
+) -> FactoryProjectFileResponse:
+    """Read one public immutable project file without following redirects."""
+
+    if method != "GET" or body is not None:
+        raise ContractError("Factory project-file transport is read-only")
+    request = urllib.request.Request(url, method=method)
+    for name, value in headers.items():
+        request.add_header(name, value)
+    try:
+        opener = urllib.request.build_opener(_NoRedirectHandler())
+        with opener.open(request, timeout=timeout) as response:
+            content = response.read(MAX_NATIVE_RELEASE_MANUAL_BYTES + 1)
+            if len(content) > MAX_NATIVE_RELEASE_MANUAL_BYTES:
+                raise EffectError("Factory project file exceeds the Release manual limit")
+            return FactoryProjectFileResponse(
+                response.status, dict(response.headers), content
+            )
+    except urllib.error.HTTPError as exc:
+        content = exc.read(MAX_NATIVE_RELEASE_MANUAL_BYTES + 1)
+        if len(content) > MAX_NATIVE_RELEASE_MANUAL_BYTES:
+            raise EffectError("Factory project error response exceeds the limit")
+        return FactoryProjectFileResponse(
+            exc.code, dict(exc.headers or {}), content
+        )
 
 
 def _json_body(response: HttpResponse, label: str = "Factory response") -> Mapping[str, Any]:
@@ -1373,6 +1486,7 @@ class FactoryAgentSession:
         *,
         api_base: str = DEFAULT_FACTORY_API,
         transport: Transport = urllib_transport,
+        project_file_transport: Optional[ProjectFileTransport] = None,
         timeout_seconds: int = HTTP_TIMEOUT_SECONDS,
         sleeper: Sleeper = time.sleep,
         max_login_rate_retries: int = 2,
@@ -1383,7 +1497,14 @@ class FactoryAgentSession:
             raise ContractError("Factory agent API origin is not pinned")
         if urllib.parse.urlsplit(api_base).path.rstrip("/") != urllib.parse.urlsplit(DEFAULT_FACTORY_API).path.rstrip("/"):
             raise ContractError("Factory agent API path is not pinned")
-        if not callable(transport) or not callable(sleeper):
+        if (
+            not callable(transport)
+            or not callable(sleeper)
+            or (
+                project_file_transport is not None
+                and not callable(project_file_transport)
+            )
+        ):
             raise ContractError("Factory session transport/sleeper must be callable")
         if (
             type(timeout_seconds) is not int
@@ -1396,6 +1517,27 @@ class FactoryAgentSession:
         self._api_base = api_base.rstrip("/")
         self._api_origin = _api_origin(api_base)
         self._transport = transport
+        if project_file_transport is not None:
+            self._project_file_transport = project_file_transport
+        elif transport is urllib_transport:
+            self._project_file_transport = urllib_project_file_transport
+        else:
+            # Deterministic fakes and caller-owned transports keep one injected
+            # network seam. The response is independently widened only up to
+            # the already accepted Release-manual byte limit.
+            def adapted_project_transport(
+                method: str,
+                url: str,
+                headers: Mapping[str, str],
+                body: Optional[bytes],
+                timeout: int,
+            ) -> FactoryProjectFileResponse:
+                response = transport(method, url, headers, body, timeout)
+                return FactoryProjectFileResponse(
+                    response.status, response.headers, response.body
+                )
+
+            self._project_file_transport = adapted_project_transport
         self._timeout_seconds = timeout_seconds
         self._sleeper = sleeper
         self._max_login_rate_retries = max_login_rate_retries
@@ -1510,6 +1652,48 @@ class FactoryAgentSession:
         self._identity = None
         self.login(force=True)
         return send()
+
+    def verify_pdf_manual(
+        self, project_url: Any, expected_sha256: Any
+    ) -> Mapping[str, str]:
+        """Hash-verify the exact public CDN manual without sending a bearer."""
+
+        expected = require_sha256(
+            expected_sha256, "Factory expected manual sha256"
+        )
+        manual_url = _factory_project_file_url(
+            project_url, FACTORY_RELEASE_PDF_MANUAL_PATH
+        )
+        try:
+            response = self._project_file_transport(
+                "GET",
+                manual_url,
+                {"Accept": "application/pdf", "User-Agent": FACTORY_USER_AGENT},
+                None,
+                self._timeout_seconds,
+            )
+        except (ContractError, EffectError):
+            raise
+        except Exception as exc:
+            raise AmbiguousEffectError(
+                "Factory MANUAL.pdf readback is unavailable"
+            ) from exc
+        response = FactoryProjectFileResponse(
+            response.status, response.headers, response.body
+        )
+        if response.status != 200:
+            raise AmbiguousEffectError(
+                "Factory MANUAL.pdf readback returned HTTP %s" % response.status
+            )
+        observed = hashlib.sha256(response.body).hexdigest()
+        if not response.body or observed != expected:
+            raise ReceiptError(
+                "Factory MANUAL.pdf readback differs from the sealed Release"
+            )
+        return {
+            "manual_url": manual_url,
+            "manual_readback_sha256": observed,
+        }
 
 
 def _assert_sealed_release(root: Path, manifest: ArtifactManifest) -> Path:
@@ -1730,6 +1914,7 @@ class FactoryReleaseWriter:
         credentials: FactoryAgentCredentials,
         *,
         transport: Transport = urllib_transport,
+        project_file_transport: Optional[ProjectFileTransport] = None,
         sleeper: Sleeper = time.sleep,
     ) -> None:
         if not isinstance(ledger, EffectLedger):
@@ -1743,7 +1928,10 @@ class FactoryReleaseWriter:
         self.inventor_id = inventor_id
         self.ledger = ledger
         self.session = FactoryAgentSession(
-            credentials, transport=transport, sleeper=sleeper
+            credentials,
+            transport=transport,
+            project_file_transport=project_file_transport,
+            sleeper=sleeper,
         )
 
     def __repr__(self) -> str:
@@ -1790,6 +1978,19 @@ class FactoryReleaseWriter:
             or details.get("manual_path") != requested_manual_path
         ):
             raise ReceiptError("Factory Receipt belongs to a different manual path")
+        manual_url = details.get("manual_url")
+        manual_readback_sha256 = details.get("manual_readback_sha256")
+        if manual_url is not None or manual_readback_sha256 is not None:
+            if (
+                manual_url
+                != _factory_project_file_url(
+                    receipt.project_url, FACTORY_RELEASE_PDF_MANUAL_PATH
+                )
+                or manual_readback_sha256 != details.get("manual_sha256")
+            ):
+                raise ReceiptError(
+                    "Factory Receipt does not preserve exact MANUAL.pdf readback"
+                )
         _https_url(details.get("page_url"), "Factory page URL")
         if requested_manual_path is None:
             _https_url(details.get("cover_url"), "Factory cover URL")
@@ -1852,7 +2053,13 @@ class FactoryReleaseWriter:
             raise ReceiptError("Factory readback does not preserve the exact import")
         details = dict(observed.details)
         details["page_url"] = _factory_product_page_url(observed.slug)
-        if not pdf_first:
+        if pdf_first:
+            details.update(
+                self.session.verify_pdf_manual(
+                    observed.project_url, intent.request.get("manual_sha256")
+                )
+            )
+        else:
             details["cover_url"] = _https_url(
                 imported_covers[0], "Factory cover URL"
             )
@@ -2467,15 +2674,22 @@ class FactoryPublicTransition:
         self.ledger = ledger
         self.session = session
 
-    @staticmethod
     def _public_receipt(
+        self,
         design: Mapping[str, Any],
         draft: Receipt,
         intent: EffectIntent,
         owner_id: str,
     ) -> Receipt:
         FactoryPublicTransition._assert_exact_content(design, draft)
-        receipt = _factory_receipt(design, intent, draft.details)
+        details = dict(draft.details)
+        if FactoryPublicTransition._is_pdf_first(draft):
+            details.update(
+                self.session.verify_pdf_manual(
+                    design.get("project_url"), draft.details.get("manual_sha256")
+                )
+            )
+        receipt = _factory_receipt(design, intent, details)
         receipt.assert_owner(owner_id)
         if not _same_factory_identity(draft, receipt):
             raise ReceiptError("Factory public readback changed the draft identity")
@@ -2617,6 +2831,10 @@ class FactoryPublicTransition:
             if not _same_factory_identity(draft, before):
                 raise ReceiptError("Factory preflight changed the draft identity")
             self._assert_exact_content(before_design, draft)
+            if pdf_first:
+                self.session.verify_pdf_manual(
+                    before.project_url, manual_sha256
+                )
         except (ContractError, EffectError, ReceiptError) as exc:
             raise AmbiguousEffectError("Factory publication preflight is unavailable") from exc
         if before.is_verified_public:

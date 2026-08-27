@@ -13,6 +13,7 @@ from workshop.errors import (
     AmbiguousEffectError,
     ContractError,
     EffectError,
+    ReceiptError,
     StateConflict,
 )
 from workshop.integrations.factory import (
@@ -33,6 +34,7 @@ from workshop.wish import Wish
 
 
 OBSERVED = "2026-08-26T00:00:00+00:00"
+PDF_MANUAL = b"%PDF-1.7\n%\xff\xfe exact binary manual\n%%EOF\n"
 TETRA_STL = b"""solid workshop
   facet normal 0 0 0
     outer loop
@@ -177,6 +179,20 @@ class FactorySessionTest(unittest.TestCase):
         self.assertNotIn("test-secret", str(raised.exception))
         self.assertNotIn("provider-secret", str(raised.exception))
 
+    def test_manual_readback_is_pinned_and_never_sends_a_bearer(self):
+        transport = FactoryTransport()
+        session = FactoryAgentSession(
+            FactoryAgentCredentials("alice", "test-secret"), transport=transport
+        )
+
+        with self.assertRaisesRegex(ReceiptError, "pinned immutable CDN"):
+            session.verify_pdf_manual(
+                "https://example.com/projects/history-1/",
+                hashlib.sha256(PDF_MANUAL).hexdigest(),
+            )
+
+        self.assertEqual(transport.calls, [])
+
 
 class ReleaseContext:
     def __init__(self, made, product_id="verified-toy"):
@@ -196,11 +212,13 @@ class FactoryTransport:
         fail_get=False,
         import_status=201,
         include_thumbnails=True,
+        manual_bytes=PDF_MANUAL,
     ):
         self.product_id = product_id
         self.fail_get = fail_get
         self.import_status = import_status
         self.include_thumbnails = include_thumbnails
+        self.manual_bytes = manual_bytes
         self.public = False
         self.calls = []
         self.imports = 0
@@ -208,6 +226,7 @@ class FactoryTransport:
         self.story_blocks = []
         self.use_case_writes = 0
         self.story_block_writes = 0
+        self.project_file_reads = 0
 
     def design(self):
         design = {
@@ -253,6 +272,11 @@ class FactoryTransport:
                     self.import_status, {}, b'{"error":"request rejected"}'
                 )
             return HttpResponse(201, {}, json.dumps(self.design()).encode())
+        if method == "GET" and url.endswith("/MANUAL.pdf"):
+            self.project_file_reads += 1
+            return HttpResponse(
+                200, {"Content-Type": "application/pdf"}, self.manual_bytes
+            )
         if method == "GET" and "/designs/" in url:
             if self.fail_get:
                 raise RuntimeError("readback unavailable")
@@ -402,7 +426,7 @@ class FactoryReleaseTest(unittest.TestCase):
         )
 
     def use_pdf_first_release(self):
-        manual = b"%PDF-1.7\n%\xff\xfe exact binary manual\n%%EOF\n"
+        manual = PDF_MANUAL
         (self.release / "MANUAL.md").unlink()
         (self.release / "MANUAL.pdf").write_bytes(manual)
         self.page = {
@@ -533,6 +557,14 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(
             receipt.details["manual_sha256"], hashlib.sha256(manual).hexdigest()
         )
+        self.assertEqual(
+            receipt.details["manual_url"],
+            "https://cdn.autonomous.ai/projects/history-1/MANUAL.pdf",
+        )
+        self.assertEqual(
+            receipt.details["manual_readback_sha256"],
+            hashlib.sha256(manual).hexdigest(),
+        )
         self.assertNotIn("factory_content", receipt.details)
         self.assertNotIn("factory_content_sha256", receipt.details)
         self.assertEqual(transport.use_case_writes, 0)
@@ -561,6 +593,24 @@ class FactoryReleaseTest(unittest.TestCase):
         replay = self.writer(transport)(self.context, self.release, self.manifest)
         self.assertEqual(replay, receipt)
         self.assertEqual(transport.imports, 1)
+        self.assertEqual(transport.project_file_reads, 1)
+        manual_call = next(
+            call for call in transport.calls if call[1].endswith("/MANUAL.pdf")
+        )
+        self.assertNotIn("Authorization", manual_call[2])
+
+    def test_pdf_first_import_rejects_changed_cdn_manual_bytes(self):
+        self.use_pdf_first_release()
+        transport = FactoryTransport(manual_bytes=b"different remote PDF bytes")
+
+        with self.assertRaisesRegex(
+            AmbiguousEffectError, "exact readback is not proven"
+        ):
+            self.writer(transport)(self.context, self.release, self.manifest)
+
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.state, "unknown")
+        self.assertEqual(transport.project_file_reads, 1)
 
     def test_pdf_first_import_and_public_readback_need_no_factory_thumbnails(self):
         self.use_pdf_first_release()
@@ -611,6 +661,9 @@ class FactoryReleaseTest(unittest.TestCase):
             canonical_json(self.made.product) + b"\n"
         )
         (product / "assembled.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step").write_bytes(b"alternate STEP representation")
+        (product / "assembled.3mf").write_bytes(b"alternate 3MF representation")
+        (product / "assembled.gcode.3mf").write_bytes(b"slicer project representation")
         self.assertFalse((product / "project.json").exists())
 
         self.made = Made.from_root(product, self.made.product)
@@ -636,6 +689,13 @@ class FactoryReleaseTest(unittest.TestCase):
             names = set(archive.namelist())
             self.assertIn("product.json", names)
             self.assertIn("assembled.stl", names)
+            counted_geometry = sorted(
+                name
+                for name in names
+                if PurePosixPath(name).suffix.casefold()
+                in {".stl", ".step", ".stp", ".3mf", ".obj", ".glb", ".gltf"}
+            )
+            self.assertEqual(counted_geometry, ["assembled.stl"])
             self.assertFalse((product / "project.json").exists())
             self.assertEqual(
                 json.loads(archive.read("project.json")),
@@ -890,6 +950,17 @@ class FactoryReleaseTest(unittest.TestCase):
         (product / "cad").mkdir()
         part = product / "cad" / "part_lantern.stl"
         part.write_bytes(TETRA_STL)
+        (product / "assembled.3mf").write_bytes(b"alternate assembly 3MF")
+        (product / "play_scene.step").write_bytes(b"non-production play pose")
+        (product / "cad" / "part_lantern.step").write_bytes(
+            b"alternate part STEP"
+        )
+        (product / "cad" / "part_lantern.3mf").write_bytes(
+            b"alternate part 3MF"
+        )
+        (product / "cad" / "part_lantern.gcode.3mf").write_bytes(
+            b"slicer project 3MF"
+        )
         step_content = (product / "assembled.step").read_bytes()
         step_ref = {
             "path": "assembled.step",
@@ -959,6 +1030,16 @@ class FactoryReleaseTest(unittest.TestCase):
             occurrence_path = "assembled_parts/lantern.stl"
             self.assertIn(occurrence_path, names)
             self.assertNotIn("cad/part_lantern.stl", names)
+            counted_geometry = sorted(
+                name
+                for name in names
+                if PurePosixPath(name).suffix.casefold()
+                in {".stl", ".step", ".stp", ".3mf", ".obj", ".glb", ".gltf"}
+            )
+            self.assertEqual(
+                counted_geometry,
+                ["assembled.step", "assembled.stl", occurrence_path],
+            )
             sidecar = json.loads(archive.read("assembled.step.json"))
             self.assertEqual(
                 sidecar,
@@ -1205,7 +1286,7 @@ def pdf_draft_receipt():
             "handoff_artifact_sha256": "d" * 64,
             "product_page_sha256": "e" * 64,
             "manual_path": "MANUAL.pdf",
-            "manual_sha256": "1" * 64,
+            "manual_sha256": hashlib.sha256(PDF_MANUAL).hexdigest(),
             "page_url": "https://www.autonomous.ai/factory/product/verified-toy",
         },
         design_id="design-1",
@@ -1254,6 +1335,35 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         self.assertNotIn("factory_content_sha256", intent.request)
         self.assertEqual(transport.use_case_writes, 0)
         self.assertEqual(transport.story_block_writes, 0)
+        self.assertEqual(transport.project_file_reads, 2)
+        self.assertEqual(
+            receipt.details["manual_url"],
+            "https://cdn.autonomous.ai/projects/history-1/MANUAL.pdf",
+        )
+        self.assertEqual(
+            receipt.details["manual_readback_sha256"],
+            receipt.details["manual_sha256"],
+        )
+
+    def test_pdf_first_transition_checks_manual_before_publish(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
+            transport = FactoryTransport(manual_bytes=b"changed remote manual")
+            session = FactoryAgentSession(
+                FactoryAgentCredentials("alice", "test-secret"), transport=transport
+            )
+
+            with self.assertRaisesRegex(
+                AmbiguousEffectError, "preflight is unavailable"
+            ):
+                FactoryPublicTransition(ledger, session).publish(
+                    pdf_draft_receipt()
+                )
+
+        self.assertEqual(transport.project_file_reads, 1)
+        self.assertFalse(
+            any(call[1].endswith("/publish") for call in transport.calls)
+        )
 
     def test_unknown_publication_never_blindly_retries(self):
         class UnknownPublish(FactoryTransport):

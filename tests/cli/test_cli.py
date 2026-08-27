@@ -196,6 +196,31 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(output.count(reason), 1)
         self.assertIn("Need: Manufacturing remains separately authorized.", output)
 
+    def test_status_text_surfaces_hash_verified_manual_url(self):
+        stdout = StringIO()
+        receipt = native_receipt(status="complete", stage="deliver")
+        receipt["publication"] = {
+            "status": "public",
+            "requested": True,
+            "verified": True,
+            "page_url": "https://www.autonomous.ai/factory/product/moon-toy",
+            "manual_url": (
+                "https://cdn.autonomous.ai/projects/history-1/MANUAL.pdf"
+            ),
+        }
+
+        with mock.patch(
+            "cli.main.native_run_status", return_value=receipt
+        ), redirect_stdout(stdout):
+            result = main(("status", "wish-one"))
+
+        self.assertEqual(result, 0)
+        self.assertIn(
+            "Manual PDF: https://cdn.autonomous.ai/projects/history-1/"
+            "MANUAL.pdf (hash-verified)",
+            stdout.getvalue(),
+        )
+
     def test_resume_calls_only_native_resume_and_has_strict_wait_policy(self):
         stdout = StringIO()
         stderr = StringIO()

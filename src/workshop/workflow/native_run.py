@@ -2876,6 +2876,7 @@ def _native_receipt(
                     ),
                     "requested": bool(publish_requested),
                     "page_url": receipt.details.get("page_url"),
+                    "manual_url": receipt.details.get("manual_url"),
                     "cover_url": receipt.details.get("cover_url"),
                     "verified": True,
                 }

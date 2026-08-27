@@ -185,6 +185,9 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
             print("Product page: %s (%s)" % (page_url, publication.get("status")))
         else:
             print("Product page: %s" % publication.get("status", "not-created"))
+        manual_url = publication.get("manual_url")
+        if isinstance(manual_url, str) and manual_url:
+            print("Manual PDF: %s (hash-verified)" % manual_url)
         candidate_reason = publication.get("reason")
         if (
             isinstance(candidate_reason, str)

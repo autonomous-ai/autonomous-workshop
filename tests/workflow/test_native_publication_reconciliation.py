@@ -65,6 +65,7 @@ class NativePublicationReconciliationTest(unittest.TestCase):
             self.assertIs(observed_credentials, credentials)
 
             def write(context, unused_root, manifest):
+                transport.manual_bytes = (unused_root / "MANUAL.pdf").read_bytes()
                 entries = {entry.path: entry for entry in manifest.entries}
                 return Receipt(
                     payload_sha256=_sha256(b"exact-factory-handoff"),

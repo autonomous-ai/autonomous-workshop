@@ -376,6 +376,11 @@ toys stay denied. The immutable project-root marker also prevents builder
 `AGENTS.md` inheritance, and dotenv files remain denied. Credentials
 never enter the Codex subprocess, prompt, run artifacts, or status output.
 Public publication is not evidence of physical manufacture or delivery.
+For PDF-first publication, the host also downloads the exact immutable
+`<project_url>MANUAL.pdf` from Factory's pinned public CDN without credentials
+and hash-compares it with the sealed Release before accepting remote draft or
+public evidence. The verified URL is exposed in status; this proves remote
+manual bytes, not printing or box insertion.
 
 ## Materialized instructions and skills
 
