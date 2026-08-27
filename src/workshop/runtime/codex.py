@@ -111,7 +111,7 @@ class CodexRecoverableInvocationError(CodexInvocationError):
 
 @dataclass(frozen=True)
 class _TrustedRuntimePathIdentity:
-    """Stable filesystem identity for one read-only Python trust grant."""
+    """Stable filesystem identity for one read-only runtime trust grant."""
 
     path: str
     resolved_path: str
@@ -141,6 +141,7 @@ class _CodexRunPolicy:
 
     permission_config_arguments: tuple[str, ...]
     trusted_python_runtime_paths: tuple[_TrustedRuntimePathIdentity, ...]
+    trusted_codex_runtime_paths: tuple[_TrustedRuntimePathIdentity, ...]
     environment_allowlist: tuple[str, ...]
     environment_overrides: tuple[tuple[str, str], ...]
 
@@ -354,40 +355,46 @@ def _runtime_config_sha256(
     model: str,
     reasoning_effort: str,
     run_policy: _CodexRunPolicy,
+    *,
+    include_codex_runtime_paths: bool = True,
 ) -> str:
     """Bind a checkpoint to the exact non-secret policy used to launch it."""
 
-    return _sha256_json(
-        {
-            "adapter": "codex-cli-native-session",
-            "cli_version": cli_version,
-            "event_protocol": "jsonl-turn-terminal-v2",
-            "model": model,
-            "reasoning_effort": reasoning_effort,
-            "ignore_rules": False,
-            "ignore_user_config": True,
-            "native_web_search": True,
-            "approval_policy": "never",
-            "permission_profile": CODEX_PERMISSION_PROFILE,
-            "permission_config_arguments": list(
-                run_policy.permission_config_arguments
-            ),
-            "trusted_python_runtime_paths": [
-                identity.to_dict()
-                for identity in run_policy.trusted_python_runtime_paths
+    payload = {
+        "adapter": "codex-cli-native-session",
+        "cli_version": cli_version,
+        "event_protocol": "jsonl-turn-terminal-v2",
+        "model": model,
+        "reasoning_effort": reasoning_effort,
+        "ignore_rules": False,
+        "ignore_user_config": True,
+        "native_web_search": True,
+        "approval_policy": "never",
+        "permission_profile": CODEX_PERMISSION_PROFILE,
+        "permission_config_arguments": list(
+            run_policy.permission_config_arguments
+        ),
+        "trusted_python_runtime_paths": [
+            identity.to_dict()
+            for identity in run_policy.trusted_python_runtime_paths
+        ],
+        "subprocess_environment": {
+            # Inherited values can contain API credentials.  Bind their exact
+            # admitted names, never their current secret values.
+            "allowlist": list(run_policy.environment_allowlist),
+            "overrides": [
+                {"name": name, "value": value}
+                for name, value in run_policy.environment_overrides
             ],
-            "subprocess_environment": {
-                # Inherited values can contain API credentials.  Bind their
-                # exact admitted names, never their current secret values.
-                "allowlist": list(run_policy.environment_allowlist),
-                "overrides": [
-                    {"name": name, "value": value}
-                    for name, value in run_policy.environment_overrides
-                ],
-            },
-            "native_features": list(_CODEX_NATIVE_FEATURES),
-        }
-    )
+        },
+        "native_features": list(_CODEX_NATIVE_FEATURES),
+    }
+    if include_codex_runtime_paths:
+        payload["trusted_codex_runtime_paths"] = [
+            identity.to_dict()
+            for identity in run_policy.trusted_codex_runtime_paths
+        ]
+    return _sha256_json(payload)
 
 
 def _run_policy_before_workshop_python(
@@ -414,12 +421,42 @@ def _run_policy_before_workshop_python(
     return _CodexRunPolicy(
         permission_config_arguments=run_policy.permission_config_arguments,
         trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
+        trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
         environment_allowlist=run_policy.environment_allowlist,
         environment_overrides=tuple(
             entry
             for entry in run_policy.environment_overrides
             if entry != workshop_python
         ),
+    )
+
+
+def _run_policy_before_codex_fs_helper(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Return the exact policy used before Codex's helper was trusted.
+
+    Codex 0.145 serves native file tools through a sandboxed filesystem helper
+    that re-executes the same Codex binary.  Older Workshop checkpoints did not
+    bind or grant that executable.  Reconstruct only that exact predecessor so
+    an existing session can resume under the hardened current policy.
+    """
+
+    if not run_policy.trusted_codex_runtime_paths:
+        raise CodexInvocationError(
+            "Codex runtime policy has no trusted filesystem helper"
+        )
+    return _CodexRunPolicy(
+        permission_config_arguments=_permission_config_arguments(
+            run_root,
+            run_policy.trusted_python_runtime_paths,
+            (),
+        ),
+        trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
+        trusted_codex_runtime_paths=(),
+        environment_allowlist=run_policy.environment_allowlist,
+        environment_overrides=run_policy.environment_overrides,
     )
 
 
@@ -436,20 +473,55 @@ def codex_supports_native_workshop(version: str) -> bool:
     )
 
 
+def _resolved_codex_binary(binary: Optional[str]) -> Optional[str]:
+    """Return the real executable path used by Codex and its helper.
+
+    On macOS a managed Seatbelt profile can execute an explicitly readable
+    regular file but still reject re-execution through a symlink.  Codex's
+    sandboxed filesystem helper uses the launch-time executable path, so launch
+    the root process through the canonical target and grant only that file.
+    """
+
+    if binary is None:
+        return None
+    candidate = Path(binary)
+    if not candidate.is_absolute():
+        located = shutil.which(binary)
+        if located is None:
+            raise CodexInvocationError("Codex CLI is not installed or on PATH")
+        candidate = Path(located)
+    try:
+        resolved = candidate.resolve(strict=True)
+        target = resolved.stat()
+    except OSError as exc:
+        raise CodexInvocationError(
+            "Codex CLI is not installed or on PATH"
+        ) from exc
+    if not stat.S_ISREG(target.st_mode) or (target.st_mode & 0o111) == 0:
+        raise CodexInvocationError(
+            "Codex runtime executable is not a regular executable file"
+        )
+    return str(resolved)
+
+
 def _toml_string(value: str) -> str:
     """Encode one path/key as a TOML basic string."""
 
     return json.dumps(value, ensure_ascii=False)
 
 
-def _trusted_runtime_path_identity(path: Path) -> _TrustedRuntimePathIdentity:
+def _trusted_runtime_path_identity(
+    path: Path,
+    *,
+    label: str = "Workshop Python runtime",
+) -> _TrustedRuntimePathIdentity:
     try:
         source = path.lstat()
         resolved = path.resolve(strict=True)
         target = resolved.stat()
     except OSError as exc:
         raise CodexInvocationError(
-            "Workshop Python runtime changed while its sandbox was prepared"
+            "%s changed while its sandbox was prepared" % label
         ) from exc
     if not (
         stat.S_ISREG(source.st_mode)
@@ -457,7 +529,7 @@ def _trusted_runtime_path_identity(path: Path) -> _TrustedRuntimePathIdentity:
         or stat.S_ISLNK(source.st_mode)
     ) or not (stat.S_ISREG(target.st_mode) or stat.S_ISDIR(target.st_mode)):
         raise CodexInvocationError(
-            "Workshop Python runtime contains an unsafe filesystem object"
+            "%s contains an unsafe filesystem object" % label
         )
     return _TrustedRuntimePathIdentity(
         path=str(path),
@@ -551,6 +623,37 @@ def _python_runtime_permission_identities(
     )
 
 
+def _codex_runtime_permission_identities(
+    binary: str,
+) -> tuple[_TrustedRuntimePathIdentity, ...]:
+    """Bind the exact executable used by Codex's filesystem helper.
+
+    Native file tools such as freeform ``apply_patch`` and ``view_image`` use
+    a sandboxed filesystem service that re-executes the running Codex binary
+    in a hidden helper mode.  The helper needs read/execute access to that
+    already-trusted executable, never to the surrounding Codex home or package
+    directory.
+    """
+
+    try:
+        resolved = Path(binary).resolve(strict=True)
+    except OSError as exc:
+        raise CodexInvocationError(
+            "Codex runtime executable is unavailable to its sandbox"
+        ) from exc
+    identity = _trusted_runtime_path_identity(
+        resolved,
+        label="Codex runtime executable",
+    )
+    if not stat.S_ISREG(identity.resolved_mode) or (
+        identity.resolved_mode & 0o111
+    ) == 0:
+        raise CodexInvocationError(
+            "Codex runtime executable is not a regular executable file"
+        )
+    return (identity,)
+
+
 def _source_checkout_boundary(run_root: Path) -> Optional[Path]:
     """Find a containing checkout that must stay denied to the product run."""
 
@@ -564,6 +667,7 @@ def _source_checkout_boundary(run_root: Path) -> Optional[Path]:
 def _permission_config_arguments(
     run_root: Path,
     trusted_python_runtime_paths: tuple[_TrustedRuntimePathIdentity, ...],
+    trusted_codex_runtime_paths: tuple[_TrustedRuntimePathIdentity, ...],
 ) -> tuple[str, ...]:
     """Build one non-composable, exact-root Codex permission profile.
 
@@ -593,9 +697,18 @@ def _permission_config_arguments(
     checkout = _source_checkout_boundary(run_root)
     if checkout is not None:
         entries.append("%s=\"deny\"" % _toml_string(str(checkout)))
+    trusted_runtime_paths = sorted(
+        {
+            identity.path
+            for identity in (
+                *trusted_python_runtime_paths,
+                *trusted_codex_runtime_paths,
+            )
+        }
+    )
     entries.extend(
-        "%s=\"read\"" % _toml_string(identity.path)
-        for identity in trusted_python_runtime_paths
+        "%s=\"read\"" % _toml_string(path)
+        for path in trusted_runtime_paths
     )
     entries.extend(
         "%s=\"read\"" % _toml_string(str(run_root / relative))
@@ -621,10 +734,11 @@ def _permission_config_arguments(
     return tuple(arguments)
 
 
-def _codex_run_policy(run_root: Path) -> _CodexRunPolicy:
+def _codex_run_policy(run_root: Path, binary: str) -> _CodexRunPolicy:
     """Generate once the exact sandbox/environment policy used by a turn."""
 
-    trusted_paths = _python_runtime_permission_identities()
+    trusted_python_paths = _python_runtime_permission_identities()
+    trusted_codex_paths = _codex_runtime_permission_identities(binary)
     private_temp = str(run_root / ".tmp")
     overrides = (
         ("TMPDIR", private_temp),
@@ -636,9 +750,11 @@ def _codex_run_policy(run_root: Path) -> _CodexRunPolicy:
     return _CodexRunPolicy(
         permission_config_arguments=_permission_config_arguments(
             run_root,
-            trusted_paths,
+            trusted_python_paths,
+            trusted_codex_paths,
         ),
-        trusted_python_runtime_paths=trusted_paths,
+        trusted_python_runtime_paths=trusted_python_paths,
+        trusted_codex_runtime_paths=trusted_codex_paths,
         environment_allowlist=tuple(CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST),
         environment_overrides=overrides,
     )
@@ -1075,7 +1191,7 @@ class CodexNativeSessionLauncher:
             raise ValueError("unsupported Codex reasoning effort")
         if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600:
             raise ValueError("Codex timeout_seconds must be from 1 to 3,600")
-        self.binary = (
+        self.binary = _resolved_codex_binary(
             binary or os.environ.get("WORKSHOP_CODEX_BIN") or shutil.which("codex")
         )
         self.model = model
@@ -1134,7 +1250,9 @@ class CodexNativeSessionLauncher:
             )
         prompt = _validated_prompt(prompt)
         activity_observer = _validated_activity_observer(activity_observer)
-        run_policy = _codex_run_policy(root)
+        if not self.binary:
+            raise CodexInvocationError("Codex CLI is not installed or on PATH")
+        run_policy = _codex_run_policy(root, self.binary)
         runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version,
             self.model,
@@ -1210,18 +1328,46 @@ class CodexNativeSessionLauncher:
         )
         prompt = _validated_prompt(prompt)
         activity_observer = _validated_activity_observer(activity_observer)
-        run_policy = _codex_run_policy(root)
+        if not self.binary:
+            raise CodexInvocationError("Codex CLI is not installed or on PATH")
+        run_policy = _codex_run_policy(root, self.binary)
         runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version,
             self.model,
             self.reasoning_effort,
             run_policy,
         )
-        predecessor_runtime_config_sha256 = _runtime_config_sha256(
-            self.cli_version,
-            self.model,
-            self.reasoning_effort,
-            _run_policy_before_workshop_python(run_policy),
+        policy_before_codex_helper = _run_policy_before_codex_fs_helper(
+            root,
+            run_policy,
+        )
+        predecessor_runtime_config_sha256s = tuple(
+            dict.fromkeys(
+                (
+                    _runtime_config_sha256(
+                        self.cli_version,
+                        self.model,
+                        self.reasoning_effort,
+                        _run_policy_before_workshop_python(run_policy),
+                    ),
+                    _runtime_config_sha256(
+                        self.cli_version,
+                        self.model,
+                        self.reasoning_effort,
+                        policy_before_codex_helper,
+                        include_codex_runtime_paths=False,
+                    ),
+                    _runtime_config_sha256(
+                        self.cli_version,
+                        self.model,
+                        self.reasoning_effort,
+                        _run_policy_before_workshop_python(
+                            policy_before_codex_helper
+                        ),
+                        include_codex_runtime_paths=False,
+                    ),
+                )
+            )
         )
         thread_id, checkpoint_sha256 = self._load_checkpoint(
             path=path,
@@ -1231,9 +1377,7 @@ class CodexNativeSessionLauncher:
             run_root=root,
             host_state_root=state_root,
             runtime_config_sha256=runtime_config_sha256,
-            predecessor_runtime_config_sha256=(
-                predecessor_runtime_config_sha256
-            ),
+            predecessor_runtime_config_sha256s=predecessor_runtime_config_sha256s,
         )
         used_web_search, unused_observed_thread_id = self._stream(
             command=self._resume_command(thread_id, root, run_policy),
@@ -1314,7 +1458,7 @@ class CodexNativeSessionLauncher:
         run_root: Path,
         host_state_root: Path,
         runtime_config_sha256: str,
-        predecessor_runtime_config_sha256: str,
+        predecessor_runtime_config_sha256s: tuple[str, ...],
     ) -> tuple[str, str]:
         payload = _read_private_checkpoint(path)
         expected_fields = {
@@ -1360,14 +1504,19 @@ class CodexNativeSessionLauncher:
             thread_id=thread_id,
             runtime_config_sha256=runtime_config_sha256,
         )
-        predecessor = {
-            **expected,
-            "runtime_config_sha256": _require_sha256(
-                predecessor_runtime_config_sha256,
-                "Codex predecessor runtime-config sha256",
-            ),
-        }
-        if identity != expected and identity != predecessor:
+        predecessors = tuple(
+            {
+                **expected,
+                "runtime_config_sha256": _require_sha256(
+                    predecessor_runtime_config_sha256,
+                    "Codex predecessor runtime-config sha256",
+                ),
+            }
+            for predecessor_runtime_config_sha256 in (
+                predecessor_runtime_config_sha256s
+            )
+        )
+        if identity != expected and identity not in predecessors:
             raise ContractError(
                 "Codex native session checkpoint binding is invalid"
             )

@@ -35,9 +35,10 @@ OTHER_THREAD_ID = "87654321-4321-6789-8234-567812345678"
 WISH_SHA256 = "a" * 64
 CONSTITUTION_SHA256 = "b" * 64
 ROOT_MARKER = ".workshop-product-run-root"
+TEST_CODEX_BINARY = str(Path("/bin/sh").resolve(strict=True))
 
 
-def permission_arguments(root):
+def permission_arguments(root, binary=TEST_CODEX_BINARY):
     immutable = (
         ".agents",
         ".codex",
@@ -86,6 +87,7 @@ def permission_arguments(root):
             resolved_library = None
         if resolved_library is not None and resolved_library.is_file():
             runtime_paths.add(resolved_library)
+    runtime_paths.add(Path(binary).resolve(strict=True))
     entries = [
         '":root"="deny"',
         '":minimal"="read"',
@@ -264,13 +266,20 @@ class ImmediateTimer:
 
 
 class CodexNativeSessionTest(unittest.TestCase):
-    def launcher(self, scripts, *, model="gpt-5.6-sol", effort="high"):
+    def launcher(
+        self,
+        scripts,
+        *,
+        model="gpt-5.6-sol",
+        effort="high",
+        binary=TEST_CODEX_BINARY,
+    ):
         factory = FakePopenFactory(scripts)
         return (
             CodexNativeSessionLauncher(
                 model=model,
                 reasoning_effort=effort,
-                binary="/fixture/codex",
+                binary=binary,
                 timeout_seconds=30,
                 popen_factory=factory,
                 cli_version="0.145.0",
@@ -383,7 +392,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(
                 command,
                 (
-                    "/fixture/codex",
+                    TEST_CODEX_BINARY,
                     "--search",
                     "--enable",
                     "goals",
@@ -476,6 +485,8 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(
                 filesystem[str(Path(sys.executable).resolve(strict=True))], "read"
             )
+            self.assertEqual(filesystem[TEST_CODEX_BINARY], "read")
+            self.assertNotIn("/fixture/codex-home", filesystem)
             self.assertTrue(outcome.used_web_search)
             public = json.dumps(outcome.to_dict(), sort_keys=True)
             self.assertNotIn(THREAD_ID, public)
@@ -489,6 +500,72 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(
                 private["constitution_sha256"], CONSTITUTION_SHA256
             )
+
+    def test_permission_profile_trusts_only_the_exact_codex_helper_executable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            container = Path(temporary).resolve()
+            root = container / "run"
+            binary_dir = container / "codex-bin"
+            root.mkdir()
+            binary_dir.mkdir()
+            target = binary_dir / "codex-real"
+            target.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            target.chmod(0o700)
+            binary = binary_dir / "codex"
+            binary.symlink_to(target)
+            launcher, factory = self.launcher(
+                [{"stdout": self.start_events()}],
+                binary=str(binary),
+            )
+
+            self.start(launcher, root)
+
+            command = factory.calls[0][0]
+            self.assertEqual(launcher.binary, str(target))
+            self.assertEqual(command[0], str(target))
+            filesystem_override = next(
+                value
+                for value in command
+                if value.startswith(
+                    "permissions.workshop-product-run.filesystem="
+                )
+            )
+            filesystem = tomllib.loads(filesystem_override)["permissions"][
+                "workshop-product-run"
+            ]["filesystem"]
+            self.assertEqual(filesystem[str(target)], "read")
+            self.assertNotIn(str(binary), filesystem)
+            self.assertNotIn(str(binary_dir), filesystem)
+            self.assertEqual(filesystem[str(container)], "deny")
+            self.assertEqual(filesystem[str(root)], "write")
+            self.assertFalse(
+                any(
+                    key.startswith(str(binary_dir)) and value == "write"
+                    for key, value in filesystem.items()
+                    if isinstance(key, str)
+                )
+            )
+            policy = codex_runtime._codex_run_policy(root, str(binary))
+            self.assertEqual(
+                {item.path for item in policy.trusted_codex_runtime_paths},
+                {str(target)},
+            )
+
+    def test_launcher_rejects_an_unsafe_codex_helper_executable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            cases = (root / "missing-codex", root / "non-executable-codex")
+            cases[1].write_text("not executable\n", encoding="utf-8")
+            cases[1].chmod(0o600)
+
+            for binary in cases:
+                with self.subTest(binary=binary), self.assertRaises(
+                    CodexInvocationError
+                ):
+                    CodexNativeSessionLauncher(
+                        binary=str(binary),
+                        cli_version="0.145.0",
+                    )
 
     def test_activity_observer_receives_only_coarse_host_classes(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -821,7 +898,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(
                 command,
                 (
-                    "/fixture/codex",
+                    TEST_CODEX_BINARY,
                     "--search",
                     "--enable",
                     "goals",
@@ -885,7 +962,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             started = self.start(launcher, root)
             checkpoint = self.host_state(root) / "codex-session.json"
             payload = json.loads(checkpoint.read_text(encoding="utf-8"))
-            current_policy = codex_runtime._codex_run_policy(root)
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
             predecessor_policy = (
                 codex_runtime._run_policy_before_workshop_python(current_policy)
             )
@@ -925,6 +1005,70 @@ class CodexNativeSessionTest(unittest.TestCase):
                 payload["checkpoint_sha256"],
             )
 
+    def test_resume_accepts_exact_pre_codex_helper_policy_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
+            predecessor_policy = (
+                codex_runtime._run_policy_before_codex_fs_helper(
+                    root,
+                    current_policy,
+                )
+            )
+            payload["runtime_config_sha256"] = (
+                codex_runtime._runtime_config_sha256(
+                    launcher.cli_version,
+                    launcher.model,
+                    launcher.reasoning_effort,
+                    predecessor_policy,
+                    include_codex_runtime_paths=False,
+                )
+            )
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":"))
+                + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            resumed = self.resume(launcher, root)
+
+            filesystem_override = next(
+                value
+                for value in factory.calls[1][0]
+                if value.startswith(
+                    "permissions.workshop-product-run.filesystem="
+                )
+            )
+            filesystem = tomllib.loads(filesystem_override)["permissions"][
+                "workshop-product-run"
+            ]["filesystem"]
+            self.assertEqual(filesystem[TEST_CODEX_BINARY], "read")
+            self.assertEqual(len(factory.calls), 2)
+            self.assertEqual(
+                resumed.binding.checkpoint_sha256,
+                payload["checkpoint_sha256"],
+            )
+
     def test_resume_rejects_a_broader_predecessor_policy_downgrade(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -935,7 +1079,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.start(launcher, root)
             checkpoint = self.host_state(root) / "codex-session.json"
             payload = json.loads(checkpoint.read_text(encoding="utf-8"))
-            current_policy = codex_runtime._codex_run_policy(root)
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
             predecessor_policy = (
                 codex_runtime._run_policy_before_workshop_python(current_policy)
             )
@@ -1138,9 +1285,17 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             original_permissions = codex_runtime._permission_config_arguments
 
-            def changed_permissions(run_root, trusted_paths):
+            def changed_permissions(
+                run_root,
+                trusted_python_paths,
+                trusted_codex_paths,
+            ):
                 return (
-                    *original_permissions(run_root, trusted_paths),
+                    *original_permissions(
+                        run_root,
+                        trusted_python_paths,
+                        trusted_codex_paths,
+                    ),
                     "--config",
                     'permissions.workshop-product-run.network.enabled=true',
                 )
@@ -1149,6 +1304,15 @@ class CodexNativeSessionTest(unittest.TestCase):
             changed_identity = replace(
                 identities[0],
                 inode=identities[0].inode + 1,
+            )
+            codex_identities = (
+                codex_runtime._codex_runtime_permission_identities(
+                    launcher.binary
+                )
+            )
+            changed_codex_identity = replace(
+                codex_identities[0],
+                inode=codex_identities[0].inode + 1,
             )
             policy_changes = (
                 mock.patch.object(
@@ -1174,6 +1338,14 @@ class CodexNativeSessionTest(unittest.TestCase):
                     codex_runtime,
                     "_python_runtime_permission_identities",
                     return_value=(changed_identity, *identities[1:]),
+                ),
+                mock.patch.object(
+                    codex_runtime,
+                    "_codex_runtime_permission_identities",
+                    return_value=(
+                        changed_codex_identity,
+                        *codex_identities[1:],
+                    ),
                 ),
             )
             for index, policy_change in enumerate(policy_changes):
@@ -1238,13 +1410,13 @@ class CodexNativeSessionTest(unittest.TestCase):
     def test_native_turn_defaults_to_the_maximum_supported_hour(self):
         self.assertEqual(DEFAULT_CODEX_TIMEOUT_SECONDS, 3_600)
         launcher = CodexNativeSessionLauncher(
-            binary="/fixture/codex",
+            binary=TEST_CODEX_BINARY,
             cli_version="0.145.0",
         )
         self.assertEqual(launcher.timeout_seconds, 3_600)
         with self.assertRaisesRegex(ValueError, "1 to 3,600"):
             CodexNativeSessionLauncher(
-                binary="/fixture/codex",
+                binary=TEST_CODEX_BINARY,
                 cli_version="0.145.0",
                 timeout_seconds=3_601,
             )
@@ -1795,7 +1967,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             CodexInvocationError, "0.145.0 or newer"
         ):
             CodexNativeSessionLauncher(
-                binary="/fixture/codex",
+                binary=TEST_CODEX_BINARY,
                 cli_version="0.144.9",
             )
 

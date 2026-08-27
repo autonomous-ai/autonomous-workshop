@@ -406,10 +406,15 @@ does not invalidate Release. Local credentials belong in the private
 the native turn exits. Codex 0.145.0 or newer runs with Workshop's strict
 permission profile: all filesystem reads are denied by default, the exact
 absolute toy project is writable, immutable instructions remain read-only,
-only minimal tool paths are readable, and the surrounding checkout and sibling
-toys stay denied. The immutable project-root marker also prevents builder
-`AGENTS.md` inheritance, and dotenv files remain denied. Credentials
-never enter the Codex subprocess, prompt, run artifacts, or status output.
+only minimal tool paths plus the identity-bound Workshop Python runtime and
+launched Codex executable are readable, and the surrounding checkout and
+sibling toys stay denied. The Codex grant is file-only and lets its built-in
+sandboxed filesystem helper re-execute the already trusted binary for native
+file tools such as `apply_patch` and `view_image`; it does not expose
+`$CODEX_HOME` or the Codex package directory. The immutable project-root
+marker also prevents builder `AGENTS.md` inheritance, and dotenv files remain
+denied. Credentials never enter the Codex subprocess, prompt, run artifacts, or
+status output.
 Public publication is not evidence of physical manufacture or delivery.
 For PDF-first publication, the host also downloads the exact immutable
 `<project_url>MANUAL.pdf` from Factory's pinned public CDN without credentials
