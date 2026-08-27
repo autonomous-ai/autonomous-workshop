@@ -22,6 +22,13 @@ SKILL_ROOT = SCRIPTS_DIR.parent
 
 SPAWN_WAIT_SECONDS = 30.0  # first daemon start pays the full OCP import
 
+# ``sockaddr_un.sun_path`` is only 104 bytes on Darwin and several BSDs, with
+# one byte needed for the terminating NUL.  Linux permits a few more bytes, but
+# using the portable pathname limit keeps one materialized skill tree behaving
+# identically across supported hosts.  Always measure encoded filesystem bytes:
+# a visually short non-ASCII temp path can still overflow ``sun_path``.
+_PORTABLE_UNIX_SOCKET_PATH_BYTES = 103
+
 # The daemon handles requests STRICTLY SEQUENTIALLY. A client that connects while
 # the daemon is still finishing someone else's build — including an orphaned one
 # whose client was killed — is accepted by the listen backlog and then simply
@@ -43,7 +50,17 @@ def socket_path() -> Path:
     if override:
         return Path(override)
     digest = hashlib.sha256(str(SKILL_ROOT).encode("utf-8")).hexdigest()[:12]
-    return Path(os.environ.get("TMPDIR") or "/tmp") / f"cadgen-daemon-{digest}.sock"
+    return Path(os.environ.get("TMPDIR") or "/tmp") / f"cg-{digest}.sock"
+
+
+def socket_path_is_usable(sock_path: Path) -> bool:
+    """Return whether *sock_path* fits the portable pathname-socket limit."""
+
+    try:
+        encoded = os.fsencode(sock_path)
+    except (TypeError, UnicodeEncodeError):
+        return False
+    return b"\0" not in encoded and len(encoded) <= _PORTABLE_UNIX_SOCKET_PATH_BYTES
 
 
 def log_path(sock_path: Path) -> Path:
@@ -107,6 +124,11 @@ def run_via_daemon(tool: str, argv: list[str], cwd: str | None = None) -> int | 
         "token": compute_version_token(),
     }
     sock_path = socket_path()
+    if not socket_path_is_usable(sock_path):
+        # The warm daemon is an optimization, never a correctness dependency.
+        # In particular, do not spawn a server that will import OCP and then
+        # inevitably fail AF_UNIX bind on a long product-workspace path.
+        return None
     for attempt in range(2):
         conn = _connect_or_spawn(sock_path)
         if conn is None:

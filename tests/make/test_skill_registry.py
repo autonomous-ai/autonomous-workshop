@@ -154,6 +154,78 @@ class SkillFingerprintTest(unittest.TestCase):
             self.assertIsNotNone(module._spawn_daemon(sock_path))
         self.assertNotIn("start_new_session", popen.call_args.kwargs)
 
+    def test_warm_daemon_uses_a_compact_tree_specific_socket_name(self):
+        module = self._load_warm_daemon_client()
+        with mock.patch.dict(module.os.environ, {"TMPDIR": "/private/tmp"}, clear=True):
+            first = module.socket_path()
+            with mock.patch.object(module, "SKILL_ROOT", Path("/different/cad-skill")):
+                second = module.socket_path()
+
+        self.assertRegex(first.name, r"^cg-[0-9a-f]{12}\.sock$")
+        self.assertNotEqual(first, second)
+        self.assertLessEqual(
+            len(module.os.fsencode(first)),
+            module._PORTABLE_UNIX_SOCKET_PATH_BYTES,
+        )
+
+    def test_warm_daemon_skips_overlong_socket_before_connect_or_spawn(self):
+        module = self._load_warm_daemon_client()
+        overlong_environments = (
+            {
+                "CADGEN_WARM": "1",
+                "TMPDIR": "/" + ("x" * module._PORTABLE_UNIX_SOCKET_PATH_BYTES),
+            },
+            {
+                "CADGEN_WARM": "1",
+                "CADGEN_DAEMON_SOCKET": "/" + ("é" * 52),
+            },
+        )
+        for environment in overlong_environments:
+            with self.subTest(environment=environment), mock.patch.dict(
+                module.os.environ,
+                environment,
+                clear=True,
+            ), mock.patch.object(
+                module, "compute_version_token", return_value=1
+            ), mock.patch.object(module, "_connect_or_spawn") as connect_or_spawn:
+                self.assertIsNone(module.run_via_daemon("gen", ["part.step.py"]))
+                connect_or_spawn.assert_not_called()
+
+    def test_warm_daemon_keeps_the_normal_connector_for_a_usable_path(self):
+        module = self._load_warm_daemon_client()
+        with mock.patch.dict(
+            module.os.environ,
+            {
+                "CADGEN_WARM": "1",
+                "CADGEN_DAEMON_SOCKET": "/private/tmp/cg-test.sock",
+            },
+            clear=True,
+        ), mock.patch.object(
+            module, "compute_version_token", return_value=1
+        ), mock.patch.object(
+            module, "_connect_or_spawn", return_value=None
+        ) as connect_or_spawn:
+            self.assertIsNone(module.run_via_daemon("gen", ["part.step.py"]))
+        connect_or_spawn.assert_called_once_with(Path("/private/tmp/cg-test.sock"))
+
+    @staticmethod
+    def _load_warm_daemon_client():
+        client_path = (
+            resolve_skills_root()
+            / "cad"
+            / "scripts"
+            / "cadgen_daemon"
+            / "client.py"
+        )
+        spec = importlib.util.spec_from_file_location(
+            "workshop_test_cadgen_daemon_path_client", client_path
+        )
+        if spec is None or spec.loader is None:
+            raise AssertionError("CAD warm-daemon client cannot be imported")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
 
 if __name__ == "__main__":
     unittest.main()

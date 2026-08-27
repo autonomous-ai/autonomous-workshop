@@ -46,9 +46,9 @@ if __package__ in {None, ""}:
     daemon_dir = Path(__file__).resolve().parent
     if str(daemon_dir) not in sys.path:
         sys.path.insert(0, str(daemon_dir))
-    from client import compute_version_token, socket_path
+    from client import compute_version_token, socket_path, socket_path_is_usable
 else:
-    from .client import compute_version_token, socket_path
+    from .client import compute_version_token, socket_path, socket_path_is_usable
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 PACKAGES_DIR = SCRIPTS_DIR / "packages"
@@ -317,6 +317,9 @@ def _handle_request(
 def serve() -> int:
     os.environ["CADGEN_DAEMON_CHILD"] = "1"
     sock_path = socket_path()
+    if not socket_path_is_usable(sock_path):
+        _log(f"socket path exceeds the portable AF_UNIX limit: {sock_path}")
+        return 1
     token = compute_version_token()
     stdout_proxy = _StreamProxy(sys.stdout)
     stderr_proxy = _StreamProxy(sys.stderr)

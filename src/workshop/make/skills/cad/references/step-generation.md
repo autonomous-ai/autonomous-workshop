@@ -249,10 +249,13 @@ CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/gen" path/to/part.step.py
   exit code back unchanged. Arguments, cwd resolution, and outputs match the
   cold CLIs; requests are handled sequentially.
 - The daemon is **per materialized CAD skill tree**: the socket is
-  `$TMPDIR/cadgen-daemon-<sha256(skill-root)[:12]>.sock` (falling back to
+  `$TMPDIR/cg-<sha256(skill-root)[:12]>.sock` (falling back to
   `/tmp`), with a `.log` file beside it for daemon lifecycle and C-level OCP
   noise. Product runs using the same materialized skill share that sequential
-  daemon. `CADGEN_DAEMON_SOCKET` overrides the socket path.
+  daemon. `CADGEN_DAEMON_SOCKET` overrides the socket path. Pathname sockets are
+  conservatively limited to 103 filesystem bytes for Darwin/BSD portability;
+  if the compact default or an override is still longer, the command skips the
+  daemon and immediately uses the normal cold path.
 - **Staleness:** the daemon records a version token (max mtime over the CAD
   skill's `scripts/**/*.py`, including its bundled `cadgen` package) at
   startup. When a client's token differs — i.e. cadgen or the skill CLIs

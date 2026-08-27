@@ -15,8 +15,9 @@
   materialized likeness-checker path; the design-reference cache is rooted in
   the writable invocation workspace rather than the immutable skill tree; its
   HTTP user agent uses the renamed repository identity; CAD warm-daemon
-  identity and staleness are rooted in the materialized CAD skill tree; and the
-  CAD skill documents the now-present sibling image workflow and no longer
+  identity and staleness are rooted in the materialized CAD skill tree, with a
+  compact portable byte-bounded socket path inside the private temp root; and
+  the CAD skill documents the now-present sibling image workflow and no longer
   points at the removed repository-authored `product-to-cad` skill.
   One trailing blank line in `generation_runner.py` and one in
   `catalog-schema.md` are normalized for repository whitespace checks.
