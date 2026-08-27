@@ -44,6 +44,8 @@ workshop = [
   "make/skills/**/*",
   "release/skills/*",
   "release/skills/**/*",
+  "invent/vault/*",
+  "invent/vault/**/*",
 ]
 
 [tool.setuptools.exclude-package-data]

@@ -34,6 +34,7 @@ from workshop.contributors import (
     validate_inventor_collection,
 )
 from workshop.errors import WorkshopError
+from workshop.invent.vault import Vault, VaultError, bundled_vault_root, seed_vault
 from workshop.make.skill_registry import (
     discover_skills,
     fingerprint_skill_tree,
@@ -50,6 +51,7 @@ from workshop.runtime.codex import (
     codex_supports_native_workshop,
 )
 from workshop.runtime.package_data import (
+    default_workshop_home,
     packaged_inventors_root,
     product_run_domain_skill_roots,
 )
@@ -700,6 +702,62 @@ def _schemas(args: argparse.Namespace) -> int:
     return 0
 
 
+def _vault_root(args: argparse.Namespace) -> Path:
+    if getattr(args, "bundled", False):
+        return bundled_vault_root()
+    if args.root is not None:
+        return Path(args.root).expanduser()
+    return default_workshop_home() / "vault"
+
+
+def _vault(args: argparse.Namespace) -> int:
+    if args.action == "seed":
+        destination = (
+            Path(args.root).expanduser() if args.root else default_workshop_home() / "vault"
+        )
+        report = seed_vault(destination)
+        if args.json:
+            _print_json({"root": str(destination), **report})
+        else:
+            print(
+                "vault: %d node(s) written, %d kept at %s"
+                % (report["written"], report["kept"], destination)
+            )
+        return 0
+    root = _vault_root(args)
+    if not root.is_dir():
+        raise VaultError(
+            "no design vault at %s; run `workshop vault seed` or pass --root" % root
+        )
+    vault = Vault.from_directory(root)
+    if args.action == "lint":
+        errors, warnings = vault.lint()
+        if args.json:
+            _print_json(
+                {"nodes": len(vault.nodes), "errors": errors, "warnings": warnings}
+            )
+        else:
+            for line in errors:
+                print("ERROR %s" % line)
+            for line in warnings:
+                print("WARN  %s" % line)
+            print(
+                "%d nodes, %d error(s), %d warning(s)"
+                % (len(vault.nodes), len(errors), len(warnings))
+            )
+        return 2 if errors else 1 if warnings else 0
+    findings = vault.check_compatibility(args.paths)
+    if args.json:
+        _print_json(findings)
+    else:
+        for finding in findings:
+            print("%-17s %s" % (finding["kind"].upper(), " -> ".join(finding["nodes"])))
+            for fix in finding["suggested_fixes"]:
+                print("    fix: %s" % fix)
+        print("%d finding(s) for %s" % (len(findings), ", ".join(args.paths)))
+    return 0
+
+
 def _add_publication_options(command: argparse.ArgumentParser) -> None:
     command.add_argument(
         "--publish",
@@ -823,6 +881,20 @@ def parser() -> argparse.ArgumentParser:
     schemas.add_argument("--root", type=Path)
     schemas.add_argument("--json", action="store_true")
     schemas.set_defaults(handler=_schemas)
+
+    vault = subcommands.add_parser(
+        "vault", help="seed, lint, or query the host-owned design vault"
+    )
+    vault.add_argument("action", choices=("seed", "lint", "check"))
+    vault.add_argument("paths", nargs="*", help="node paths for `check`")
+    vault.add_argument(
+        "--root", type=Path, help="vault directory (default: $WORKSHOP_HOME/vault)"
+    )
+    vault.add_argument(
+        "--bundled", action="store_true", help="use the seed shipped with Workshop"
+    )
+    vault.add_argument("--json", action="store_true")
+    vault.set_defaults(handler=_vault)
     return command
 
 

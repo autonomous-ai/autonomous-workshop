@@ -55,6 +55,7 @@ class NativeCommandTest(unittest.TestCase):
                 "plan-pack",
                 "skills",
                 "schemas",
+                "vault",
             },
         )
         for removed in (
@@ -582,6 +583,69 @@ class ArtifactCommandTest(unittest.TestCase):
             packed = json.loads(output.getvalue())
             self.assertEqual(len(packed["pack_sha256"]), 64)
             self.assertTrue(pack_path.is_file())
+
+class VaultCommandTest(unittest.TestCase):
+    def run_cli(self, *argv):
+        stdout, stderr = StringIO(), StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            code = main(argv)
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    def test_vault_seed_lint_and_check_round_trip(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "vault"
+            code, out, _ = self.run_cli("vault", "seed", "--root", str(root))
+            self.assertEqual(code, 0)
+            self.assertIn("node(s) written", out)
+            self.assertTrue((root / "mechanisms").is_dir())
+            code, out, _ = self.run_cli("vault", "seed", "--root", str(root), "--json")
+            self.assertEqual(code, 0)
+            self.assertEqual(json.loads(out)["written"], 0)
+
+            code, out, _ = self.run_cli("vault", "lint", "--root", str(root))
+            self.assertIn(code, (0, 1))
+            self.assertIn("error(s)", out)
+            code, out, _ = self.run_cli("vault", "lint", "--root", str(root), "--json")
+            self.assertEqual(json.loads(out)["errors"], [])
+
+            fdm = "constraints/fdm-printed-components-only"
+            code, out, _ = self.run_cli(
+                "vault", "check", "mechanisms/hand-management", fdm, "--root", str(root)
+            )
+            self.assertEqual(code, 0)
+            self.assertIn("CONFLICT", out)
+            self.assertIn("fix:", out)
+            code, out, _ = self.run_cli(
+                "vault", "check", "mechanisms/hand-management", fdm, "--root", str(root), "--json"
+            )
+            self.assertEqual(json.loads(out)[0]["kind"], "conflict")
+
+    def test_vault_lint_reports_errors_with_exit_two_and_bundled_flag(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "vault"
+            (root / "mechanisms").mkdir(parents=True)
+            (root / "mechanisms" / "bad.md").write_text(
+                "---\ntype: widget\nname: Bad\n---\n## Relations\n- risks:: [[anti-patterns/none]]\n",
+                encoding="utf-8",
+            )
+            code, out, _ = self.run_cli("vault", "lint", "--root", str(root))
+            self.assertEqual(code, 2)
+            self.assertIn("ERROR mechanisms/bad", out)
+            code, out, _ = self.run_cli("vault", "lint", "--bundled", "--json")
+            self.assertIn(code, (0, 1))
+            self.assertGreater(json.loads(out)["nodes"], 100)
+
+    def test_vault_defaults_to_the_workshop_home_and_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": temporary}):
+                code, _, err = self.run_cli("vault", "lint")
+                self.assertEqual(code, 2)
+                self.assertIn("workshop vault seed", err)
+                code, out, _ = self.run_cli("vault", "seed", "--json")
+                self.assertEqual(code, 0)
+                self.assertEqual(json.loads(out)["root"], str(Path(temporary) / "vault"))
+                code, _, _ = self.run_cli("vault", "lint")
+                self.assertIn(code, (0, 1))
 
 
 if __name__ == "__main__":
