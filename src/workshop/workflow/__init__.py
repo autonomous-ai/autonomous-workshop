@@ -11,6 +11,12 @@ from workshop.workflow.agent_run import (
     AgentRunCheckpoint,
     DeterministicGateReceipt,
 )
+from workshop.workflow.effort import (
+    DEFAULT_WORKSHOP_EFFORT,
+    WORKSHOP_EFFORTS,
+    WorkshopEffort,
+    workshop_effort,
+)
 
 
 _NATIVE_HOST_EXPORTS = (
@@ -43,5 +49,9 @@ __all__ = [
     "AgentRun",
     "AgentRunCheckpoint",
     "DeterministicGateReceipt",
+    "DEFAULT_WORKSHOP_EFFORT",
+    "WORKSHOP_EFFORTS",
+    "WorkshopEffort",
+    "workshop_effort",
     *_NATIVE_HOST_EXPORTS,
 ]

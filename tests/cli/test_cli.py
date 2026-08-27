@@ -123,8 +123,9 @@ class NativeCommandTest(unittest.TestCase):
     def test_wish_calls_only_native_start_and_keeps_json_stdout_clean(self):
         observed = {}
 
-        def start(wish, *, activity_observer, timing_observer):
+        def start(wish, *, effort, activity_observer, timing_observer):
             observed["wish"] = wish
+            observed["effort"] = effort
             timing_observer(timing_event())
             for activity in (
                 "starting",
@@ -169,6 +170,8 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(stderr.getvalue().count("using a tool"), 1)
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
+        self.assertEqual(observed["effort"], "forge")
+        self.assertIn("Effort: Forge", stderr.getvalue())
         native_start.assert_called_once()
 
     def test_wish_strict_wait_exits_one_without_a_publication_flag(self):
@@ -181,7 +184,8 @@ class NativeCommandTest(unittest.TestCase):
         start.assert_called_once()
 
     def test_human_wish_timing_uses_stdout_and_flushes(self):
-        def start(wish, *, activity_observer, timing_observer):
+        def start(wish, *, effort, activity_observer, timing_observer):
+            self.assertEqual(effort, "forge")
             del wish, activity_observer
             timing_observer(timing_event(operation="stage.prepare"))
             timing_observer(
@@ -210,6 +214,19 @@ class NativeCommandTest(unittest.TestCase):
         self.assertIn("state=completed elapsed_ms=42", stdout.getvalue())
         self.assertNotIn("private human objective", stdout.getvalue())
         self.assertGreaterEqual(flush.call_count, 2)
+
+    def test_wish_passes_each_named_effort_to_the_native_host(self):
+        for effort in ("spark", "forge", "quest"):
+            with self.subTest(effort=effort), mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-" + effort
+            ), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                result = main(
+                    ("wish", "a moon", "--effort", effort, "--json")
+                )
+            self.assertEqual(result, 0)
+            self.assertEqual(start.call_args.kwargs["effort"], effort)
 
     def test_live_native_activity_repeats_only_throttled_running_updates(self):
         output = StringIO()

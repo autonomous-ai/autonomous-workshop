@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-08-27
 - Supersedes: ADR 0014's requirement that Playtest pass before Release
+- Superseded for new runs by: ADR 0016 selectable effort routes
 
 ## Context
 

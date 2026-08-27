@@ -1159,6 +1159,13 @@ def _invent_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dic
         stage["inputs"], {"assignment"}, "Invent STAGE inputs"
     )
     assignment = _validate_assignment(inputs["assignment"])
+    return _invent_contract_for_assignment(assignment, source)
+
+
+def _invent_contract_for_assignment(
+    assignment: Mapping[str, Any], source: Mapping[str, Any]
+) -> dict[str, Any]:
+    assignment = _validate_assignment(assignment)
     authored = _fields(source, {"concept", "research"}, "Invent authored source")
     concept = _mapping(authored["concept"], "Invent concept", nonempty=True)
     research = _mapping(authored["research"], "Invent research", nonempty=True)
@@ -1189,12 +1196,18 @@ def _make_contract(
     product_root_value: str,
     cad_project_path: str,
     cad_verification_path: str,
+    assignment_value: Mapping[str, Any] | None = None,
+    invented_value: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    inputs = _required_fields(
-        stage["inputs"], {"assignment", "invented"}, "Make STAGE inputs"
-    )
-    assignment = _validate_assignment(inputs["assignment"])
-    invented = _validate_invented(inputs["invented"], assignment)
+    inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+    if assignment_value is None or invented_value is None:
+        required = _required_fields(
+            inputs, {"assignment", "invented"}, "Make STAGE inputs"
+        )
+        assignment_value = required["assignment"]
+        invented_value = required["invented"]
+    assignment = _validate_assignment(assignment_value)
+    invented = _validate_invented(invented_value, assignment)
     round_index = stage["round"]
     expected_root = "artifacts/make/r%04d/product" % round_index
     if product_root_value != expected_root:
@@ -2053,6 +2066,7 @@ def _seal(
     contract: Mapping[str, Any],
     *,
     transition: str,
+    additional_contracts: Sequence[tuple[str, Mapping[str, Any]]] = (),
 ) -> dict[str, Any]:
     contract_path = _stage_contract_path(stage)
     contract_bytes = canonical_json(contract)
@@ -2060,11 +2074,25 @@ def _seal(
         raise ProposalError("stage contract exceeds the native artifact limit")
     _atomic_write(run_root, contract_path, contract_bytes)
     artifact_sha256 = hashlib.sha256(contract_bytes).hexdigest()
+    artifacts = [{"path": contract_path, "sha256": artifact_sha256}]
+    for additional_path, additional_contract in additional_contracts:
+        relative = _safe_relative(additional_path, "additional contract path").as_posix()
+        if relative == contract_path or any(item["path"] == relative for item in artifacts):
+            raise ProposalError("stage contract paths must be unique")
+        if not relative.startswith("artifacts/%s/" % stage["stage"]):
+            raise ProposalError("additional contract must stay under the current stage")
+        content = canonical_json(additional_contract)
+        if len(content) > MAX_CONTRACT_BYTES:
+            raise ProposalError("additional stage contract exceeds the artifact limit")
+        _atomic_write(run_root, relative, content)
+        artifacts.append(
+            {"path": relative, "sha256": hashlib.sha256(content).hexdigest()}
+        )
     outcome = {
         "schema_version": 1,
         "stage": stage["stage"],
         "status": "ready",
-        "artifacts": [{"path": contract_path, "sha256": artifact_sha256}],
+        "artifacts": artifacts,
         "needs": [],
         "proposed_transition": transition,
     }
@@ -2114,6 +2142,13 @@ def _parser() -> argparse.ArgumentParser:
     make = subparsers.add_parser("make", help="Seal one exact product tree.")
     make.add_argument("--product-root", required=True, help="Run-local product tree.")
     make.add_argument(
+        "--source",
+        help=(
+            "Run-local selection, concept, and research JSON; required only "
+            "for Spark effort."
+        ),
+    )
+    make.add_argument(
         "--cad-project-path",
         required=True,
         help="CAD project directory relative to the product tree.",
@@ -2150,21 +2185,85 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     _workshop_python()
     run_root = _canonical_root(args.run_root)
     stage = _load_stage(run_root, args.command)
+    additional_contracts: list[tuple[str, Mapping[str, Any]]] = []
     if args.command == "match":
         source, _, _ = _read_json(run_root, args.source, "Match authored source")
         contract = _match_contract(stage, source)
         transition = stage["next_transition"]
     elif args.command == "invent":
         source, _, _ = _read_json(run_root, args.source, "Invent authored source")
-        contract = _invent_contract(stage, source)
+        inputs = _mapping(stage["inputs"], "Invent STAGE inputs", nonempty=True)
+        if "assignment" in inputs:
+            contract = _invent_contract(stage, source)
+        else:
+            authored = _fields(
+                source,
+                {"selected_inventor_id", "ranking", "concept", "research"},
+                "routed Invent authored source",
+            )
+            assignment = _match_contract(
+                stage,
+                {
+                    "selected_inventor_id": authored["selected_inventor_id"],
+                    "ranking": authored["ranking"],
+                },
+            )
+            contract = _invent_contract_for_assignment(
+                assignment,
+                {"concept": authored["concept"], "research": authored["research"]},
+            )
+            assignment_path = _safe_relative(
+                inputs.get("assignment_contract_path"),
+                "routed Invent assignment_contract_path",
+            ).as_posix()
+            additional_contracts.append((assignment_path, assignment))
         transition = stage["next_transition"]
     elif args.command == "make":
+        inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+        assignment = invented = None
+        if inputs.get("creative_source_required") is True:
+            if not args.source:
+                raise ProposalError("Spark Make requires --source creative JSON")
+            source, _, _ = _read_json(
+                run_root, args.source, "Spark Make authored source"
+            )
+            authored = _fields(
+                source,
+                {"selected_inventor_id", "ranking", "concept", "research"},
+                "Spark Make authored source",
+            )
+            assignment = _match_contract(
+                stage,
+                {
+                    "selected_inventor_id": authored["selected_inventor_id"],
+                    "ranking": authored["ranking"],
+                },
+            )
+            invented = _invent_contract_for_assignment(
+                assignment,
+                {"concept": authored["concept"], "research": authored["research"]},
+            )
+            assignment_path = _safe_relative(
+                inputs.get("assignment_contract_path"),
+                "Spark Make assignment_contract_path",
+            ).as_posix()
+            invented_path = _safe_relative(
+                inputs.get("invented_contract_path"),
+                "Spark Make invented_contract_path",
+            ).as_posix()
+            additional_contracts.extend(
+                ((assignment_path, assignment), (invented_path, invented))
+            )
+        elif args.source is not None:
+            raise ProposalError("this Make stage does not accept --source")
         contract = _make_contract(
             run_root,
             stage,
             product_root_value=args.product_root,
             cad_project_path=args.cad_project_path,
             cad_verification_path=args.cad_verification_path,
+            assignment_value=assignment,
+            invented_value=invented,
         )
         transition = stage["next_transition"]
     elif args.command == "playtest":
@@ -2185,7 +2284,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         transition = stage["next_transition"]
     else:  # pragma: no cover - argparse rejects unknown commands
         raise ProposalError("unsupported stage command")
-    return _seal(run_root, stage, contract, transition=transition)
+    return _seal(
+        run_root,
+        stage,
+        contract,
+        transition=transition,
+        additional_contracts=additional_contracts,
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:

@@ -5,8 +5,13 @@
 - Target: `main`
 - Source: `feat/concept-phase`
 
-> Lifecycle note: ADR 0015 now defers Playtest for new runs. Playtest sequences
-> below describe the older integration baseline, not the current fast path.
+> Lifecycle note: ADR 0016 defines three selectable routes for new runs. Spark
+> is `Wish -> Make -> Release`, Forge is
+> `Wish -> Invent -> Make -> Release` (the default), and Quest is
+> `Wish -> Invent -> Make -> Playtest -> Release`. New runs have no separate
+> Match turn; Inventor selection is part of the first active creative stage.
+> Concept sequences below are future integration sketches and must be adapted
+> to these effort routes before activation.
 
 ## Goal
 
@@ -48,10 +53,12 @@ rebased. Do not grow another long-lived integration branch.
 
 Port the `enforce-deterministic-e2e-fidelity` work onto current `main` and make
 it a required offline CI gate. Before Concept is restored, it must describe and
-verify the lifecycle that actually exists on `main`:
+verify every lifecycle that actually exists on `main`:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> terminal Release
+Spark: Wish -> Make -> terminal Release
+Forge: Wish -> Invent -> Make -> terminal Release
+Quest: Wish -> Invent -> Make <-> Playtest -> terminal Release
 ```
 
 The deterministic suite must exercise:
@@ -133,7 +140,8 @@ focused tests without changing the production lifecycle. Include:
 - exact routed-Wish identity, objective, and context preservation from
   `948a34d`;
 - repair-round freshness from `ea34822`;
-- current Match, Invent, blueprint, Taste, and artifact hash bindings.
+- current Inventor-selection, Invent, blueprint, Taste, and artifact hash
+  bindings, including Spark's combined selection-and-Make source.
 
 Keeping this layer dormant makes the data boundary independently reviewable
 before it can affect a live product run.
@@ -172,11 +180,17 @@ boundary. Its obsolete CAD timestamp and `--no-report` workarounds do not.
 ### Activate Concept in the current lifecycle
 
 Only after the contracts, pre-render protocol, image-effect boundary, and both
-QA tiers are ready, activate:
+QA tiers are ready, define Concept's position in each selectable effort route
+in a new architecture decision. The historical feature-branch sketch was:
 
 ```text
 Wish -> Match -> Invent -> Concept -> Make <-> Playtest -> terminal Release
 ```
+
+Do not activate that fixed topology unchanged: new runs have no Match turn,
+Spark and Forge pass Playtest through, and passed-through stages may not create
+a turn, artifact, gate, or evidence. Any Concept activation must preserve
+those effort semantics or explicitly supersede ADR 0016.
 
 Route Playtest feedback by invalidation scope:
 

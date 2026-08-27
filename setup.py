@@ -111,7 +111,17 @@ class build_py(_build_py):
         if destination.exists():
             shutil.rmtree(destination)
         destination.mkdir(parents=True)
-        for inventor_id in ("abo", "alice", "bob", "eve", "ivy", "leo"):
+        for inventor_id in (
+            "abo",
+            "alice",
+            "bob",
+            "eve",
+            "ivy",
+            "leo",
+            "mira-fold",
+            "pico-press",
+            "tess-loop",
+        ):
             source = project / "inventors" / inventor_id
             target = destination / inventor_id
             target.mkdir()

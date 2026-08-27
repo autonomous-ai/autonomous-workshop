@@ -436,6 +436,149 @@ class StageProposalToolTest(unittest.TestCase):
             "make",
         )
 
+    def test_routed_invent_seals_assignment_and_invented_contracts_together(self):
+        assignment_path = "artifacts/invent/assignment.json"
+        invented_path = "artifacts/invent/invented.json"
+        invented_source = self.invented.to_dict()
+        self.write_stage(
+            "invent",
+            {
+                **self.match_inputs(),
+                "assignment_contract_path": assignment_path,
+                "contract_path": invented_path,
+            },
+        )
+        self.write_json(
+            "drafts/routed-invent.json",
+            {
+                "selected_inventor_id": "eve",
+                "ranking": [item.to_dict() for item in self.assignment.ranking],
+                "concept": invented_source["concept"],
+                "research": invented_source["research"],
+            },
+        )
+
+        self.run_tool("invent", "--source", "drafts/routed-invent.json")
+
+        assignment_document, assignment_bytes = self.assert_canonical_file(
+            assignment_path
+        )
+        invented_document, invented_bytes = self.assert_canonical_file(invented_path)
+        self.assertEqual(
+            NativeMatchAssignment.from_mapping(assignment_document), self.assignment
+        )
+        self.assertEqual(NativeInvented.from_mapping(invented_document), self.invented)
+        proposal_document, _ = self.assert_canonical_file("agent-outcome.json")
+        proposal = AgentOutcomeProposal.from_mapping(proposal_document)
+        self.assertEqual(
+            tuple((item.path, item.sha256) for item in proposal.outcome.artifacts),
+            (
+                (invented_path, sha256(invented_bytes)),
+                (assignment_path, sha256(assignment_bytes)),
+            ),
+        )
+        self.assertEqual(proposal.outcome.proposed_transition, "make")
+
+    def test_spark_make_seals_all_compound_creative_contracts(self):
+        product_root, _, _, _ = self.create_product()
+        assignment_path = "artifacts/make/r0001/assignment.json"
+        invented_path = "artifacts/make/r0001/invented.json"
+        made_path = "artifacts/make/r0001/made.json"
+        invented_source = self.invented.to_dict()
+        self.write_stage(
+            "make",
+            {
+                **self.match_inputs(),
+                "creative_source_required": True,
+                "assignment_contract_path": assignment_path,
+                "invented_contract_path": invented_path,
+            },
+            round_index=1,
+        )
+        self.write_json(
+            "drafts/spark-make.json",
+            {
+                "selected_inventor_id": "eve",
+                "ranking": [item.to_dict() for item in self.assignment.ranking],
+                "concept": invented_source["concept"],
+                "research": invented_source["research"],
+            },
+        )
+
+        self.run_tool(
+            "make",
+            "--source",
+            "drafts/spark-make.json",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+        )
+
+        made_document, made_bytes = self.assert_canonical_file(made_path)
+        assignment_document, assignment_bytes = self.assert_canonical_file(
+            assignment_path
+        )
+        invented_document, invented_bytes = self.assert_canonical_file(invented_path)
+        assignment = NativeMatchAssignment.from_mapping(assignment_document)
+        invented = NativeInvented.from_mapping(invented_document)
+        made = NativeMade.from_mapping(made_document)
+        self.assertEqual(assignment, self.assignment)
+        self.assertEqual(invented, self.invented)
+        made.assert_context(assignment, invented, expected_round=1)
+        made.validate_product_tree(self.run_root)
+        self.assertEqual(
+            made.product_manifest.to_dict(),
+            build_artifact_manifest(
+                product_root, created_at="content-addressed"
+            ).to_dict(),
+        )
+        proposal_document, _ = self.assert_canonical_file("agent-outcome.json")
+        proposal = AgentOutcomeProposal.from_mapping(proposal_document)
+        self.assertEqual(
+            tuple((item.path, item.sha256) for item in proposal.outcome.artifacts),
+            (
+                (made_path, sha256(made_bytes)),
+                (assignment_path, sha256(assignment_bytes)),
+                (invented_path, sha256(invented_bytes)),
+            ),
+        )
+        self.assertEqual(proposal.outcome.proposed_transition, "playtest")
+
+    def test_spark_make_requires_creative_source_before_sealing(self):
+        self.create_product()
+        self.write_stage(
+            "make",
+            {
+                **self.match_inputs(),
+                "creative_source_required": True,
+                "assignment_contract_path": (
+                    "artifacts/make/r0001/assignment.json"
+                ),
+                "invented_contract_path": "artifacts/make/r0001/invented.json",
+            },
+            round_index=1,
+        )
+
+        result = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("Spark Make requires --source creative JSON", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+        self.assertFalse(
+            (self.run_root / "artifacts/make/r0001/made.json").exists()
+        )
+
     def test_make_hashes_exact_product_tree_and_matches_native_made(self):
         product_root, _, _, _ = self.create_product()
         self.write_stage(

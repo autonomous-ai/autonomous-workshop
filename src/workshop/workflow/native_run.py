@@ -16,7 +16,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 try:
@@ -113,6 +113,10 @@ from workshop.workflow.agent_run import (
     AgentRunCheckpoint,
     DeterministicGateReceipt,
 )
+from workshop.workflow.effort import (
+    EFFORT_ROUTE_CAPABILITY_PATH,
+    workshop_effort,
+)
 from workshop.workflow.proposals import (
     AgentOutcomeProposal,
     read_agent_outcome_proposal,
@@ -123,6 +127,7 @@ from workshop.workflow.stage_gates import (
     StageGateEvidence,
     evaluate_invent_stage,
     evaluate_match_stage,
+    evaluate_routed_invent_stage,
     invent_gate_subject_sha256,
     match_gate_subject_sha256,
 )
@@ -184,6 +189,7 @@ _PRODUCT_RUN_TERMINAL_RELEASE_INPUT = (
 _PRODUCT_RUN_DIRECT_RELEASE_INPUT = (
     ".agents/skills/autonomous-workshop/references/direct-release-v1.md"
 )
+_PRODUCT_RUN_EFFORT_ROUTES_INPUT = EFFORT_ROUTE_CAPABILITY_PATH
 _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
     "make-product-metadata-invalid": (
         "The host rejected product.json metadata. Add both title and summary "
@@ -1340,7 +1346,7 @@ def _materialized_release_contract(
     inputs = checkpoint.input_sha256s
     if _PRODUCT_RUN_FINALIZER_INPUT not in inputs:
         raise StateConflict("native run lacks its materialized stage finalizer")
-    direct_release = _PRODUCT_RUN_DIRECT_RELEASE_INPUT in inputs
+    direct_release = _checkpoint_uses_direct_release(checkpoint)
     if direct_release:
         return {
             "native_release_schema_version": 3,
@@ -1364,6 +1370,43 @@ def _materialized_release_contract(
         "product_schema_version": 3,
         "product_status": "page-ready",
     }
+
+
+def _checkpoint_effort(checkpoint: AgentRunCheckpoint):
+    """Return the exact frozen effort, or ``None`` for historical runs."""
+
+    if checkpoint.effort is None:
+        return None
+    capable = _PRODUCT_RUN_EFFORT_ROUTES_INPUT in checkpoint.input_sha256s
+    if not capable:
+        raise StateConflict("native run frozen effort lacks its immutable capability")
+    try:
+        return workshop_effort(checkpoint.effort)
+    except ContractError as exc:
+        raise StateConflict("native run frozen effort is invalid") from exc
+
+
+def _checkpoint_uses_direct_release(checkpoint: AgentRunCheckpoint) -> bool:
+    effort = _checkpoint_effort(checkpoint)
+    if effort is not None:
+        return not effort.includes("playtest")
+    return _PRODUCT_RUN_DIRECT_RELEASE_INPUT in checkpoint.input_sha256s
+
+
+def _checkpoint_next_stage(checkpoint: AgentRunCheckpoint, stage: str) -> str:
+    effort = _checkpoint_effort(checkpoint)
+    if effort is not None:
+        return effort.next_stage(stage)
+    if stage == "make" and _checkpoint_uses_direct_release(checkpoint):
+        return "release"
+    return {
+        "wish": "match",
+        "match": "invent",
+        "invent": "make",
+        "make": "playtest",
+        "playtest": "release",
+        "release": "complete",
+    }[stage]
 
 
 def _materialized_release_terminal_transition(
@@ -1822,6 +1865,111 @@ def _stage_subject(stage: str, inputs: Mapping[str, Any]) -> str:
     )
 
 
+def _stage_artifact_named(
+    checkpoint: AgentRunCheckpoint, stage: str, name: str
+) -> AgentArtifact:
+    artifacts = checkpoint.stage_artifacts.get(stage, ())
+    matches = tuple(item for item in artifacts if PurePosixPath(item.path).name == name)
+    if len(matches) != 1:
+        raise TransitionError(
+            "native run requires exactly one %s artifact from %s" % (name, stage)
+        )
+    return matches[0]
+
+
+def _stage_artifact_at(
+    checkpoint: AgentRunCheckpoint, stage: str, path: str
+) -> AgentArtifact:
+    artifacts = checkpoint.stage_artifacts.get(stage, ())
+    matches = tuple(item for item in artifacts if item.path == path)
+    if len(matches) != 1:
+        raise TransitionError(
+            "native run requires exactly one %s artifact from %s" % (path, stage)
+        )
+    return matches[0]
+
+
+def _routed_invent_contract_paths(
+    checkpoint: AgentRunCheckpoint,
+) -> tuple[str, str]:
+    repairing = bool(
+        checkpoint.stage_artifacts.get("invent")
+        and "invent" in checkpoint.invalidated_stages
+    )
+    prefix = (
+        "artifacts/invent/r%04d" % checkpoint.round_index
+        if repairing
+        else "artifacts/invent"
+    )
+    return "%s/assignment.json" % prefix, "%s/invented.json" % prefix
+
+
+def _routed_make_creative_paths(round_index: int) -> tuple[str, str]:
+    prefix = "artifacts/make/r%04d" % round_index
+    return "%s/assignment.json" % prefix, "%s/invented.json" % prefix
+
+
+def _routed_creative_context(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    roster: InventorRoster,
+) -> tuple[
+    NativeMatchAssignment,
+    NativeInvented,
+    AgentArtifact,
+    AgentArtifact,
+    Any,
+]:
+    effort = _checkpoint_effort(checkpoint)
+    if effort is None:
+        raise StateConflict("routed creative context requires a frozen effort")
+    creative_stage = "make" if effort.name == "spark" else "invent"
+    if effort.name == "spark":
+        assignment_path, invented_path = _routed_make_creative_paths(
+            checkpoint.round_index
+        )
+        assignment_artifact = _stage_artifact_at(
+            checkpoint, creative_stage, assignment_path
+        )
+        invented_artifact = _stage_artifact_at(
+            checkpoint, creative_stage, invented_path
+        )
+    else:
+        assignment_artifact = _stage_artifact_named(
+            checkpoint, creative_stage, "assignment.json"
+        )
+        invented_artifact = _stage_artifact_named(
+            checkpoint, creative_stage, "invented.json"
+        )
+    assignment = _read_contract(
+        run.run_root,
+        assignment_artifact,
+        NativeMatchAssignment,
+        label="routed native Match assignment",
+    )
+    assignment.assert_context(
+        wish_sha256=checkpoint.wish_sha256,
+        roster=roster,
+    )
+    invented = _read_contract(
+        run.run_root,
+        invented_artifact,
+        NativeInvented,
+        label="routed native Invented contract",
+    )
+    invented.assert_context(assignment)
+    inventor_binding = _selected_inventor_binding(
+        run.run_root, checkpoint, assignment
+    )
+    return (
+        assignment,
+        invented,
+        assignment_artifact,
+        invented_artifact,
+        inventor_binding,
+    )
+
+
 def native_run_paths(
     product_id: str,
     *,
@@ -1963,6 +2111,415 @@ def _artifact_binding(artifact: AgentArtifact) -> dict[str, str]:
     return {"path": artifact.path, "sha256": artifact.sha256}
 
 
+def _prepare_effort_stage_input(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    roster: InventorRoster,
+    cad_gate_rejection: Optional[Mapping[str, Any]],
+    make_proposal_rejection: Optional[Mapping[str, Any]],
+) -> tuple[str, Mapping[str, Any], Mapping[str, Any]]:
+    """Prepare a selectable-effort stage without fabricating skipped stages."""
+
+    effort = _checkpoint_effort(checkpoint)
+    if effort is None or checkpoint.stage not in effort.enabled_stages:
+        raise TransitionError("native run stage is disabled by its frozen effort")
+    stage = checkpoint.stage
+    blueprint = ToyBlueprint()
+    normal_transition = effort.next_stage(stage)
+    context: dict[str, Any] = {
+        "roster": roster,
+        "blueprint": blueprint,
+        "effort": effort,
+    }
+    base: dict[str, Any] = {
+        "effort": effort.name,
+        "wish": {"path": "WISH.json", "sha256": checkpoint.wish_sha256},
+        "wish_sha256": checkpoint.wish_sha256,
+        "inventor_roster": roster.to_dict(),
+        "blueprint": blueprint.to_dict(),
+        "blueprint_sha256": blueprint.sha256,
+    }
+
+    if stage == "invent":
+        assignment_path, invented_path = _routed_invent_contract_paths(checkpoint)
+        subject_inputs: dict[str, Any] = {
+            "effort": effort.name,
+            "wish_sha256": checkpoint.wish_sha256,
+            "inventor_roster_sha256": roster.roster_sha256,
+            "blueprint_sha256": blueprint.sha256,
+            "repair_round": None,
+        }
+        inputs: dict[str, Any] = {
+            **base,
+            "assignment_contract_path": assignment_path,
+            "contract_path": invented_path,
+        }
+        prior_paths = checkpoint.stage_artifacts.get("invent")
+        if prior_paths:
+            if "invent" not in checkpoint.invalidated_stages:
+                raise StateConflict("an effort Invent retry requires invalidation")
+            (
+                prior_assignment,
+                prior_invented,
+                prior_assignment_artifact,
+                prior_invented_artifact,
+                unused_binding,
+            ) = _routed_creative_context(run, checkpoint, roster)
+            del unused_binding
+            prior_made = _read_contract(
+                run.run_root,
+                _stage_primary(checkpoint, "make"),
+                NativeMade,
+                label="prior routed native Made contract",
+            )
+            prior_made.assert_context(
+                prior_assignment,
+                prior_invented,
+                expected_round=prior_made.round,
+            )
+            failing_playtested_artifact = _stage_primary(checkpoint, "playtest")
+            failing_playtested = _read_contract(
+                run.run_root,
+                failing_playtested_artifact,
+                NativePlaytested,
+                label="failing routed native Playtested contract",
+            )
+            failing_playtested.assert_context(prior_made, blueprint)
+            if failing_playtested.proposed_transition != "invent":
+                raise StateConflict(
+                    "routed re-Invent requires concept-revision feedback"
+                )
+            feedback = [item.to_dict() for item in failing_playtested.feedback]
+            subject_inputs.update(
+                {
+                    "repair_round": checkpoint.round_index,
+                    "prior_assignment_sha256": prior_assignment.assignment_sha256,
+                    "prior_invented_sha256": prior_invented.invented_sha256,
+                    "prior_invented_artifact_sha256": prior_invented_artifact.sha256,
+                    "failing_playtested_sha256": failing_playtested.playtested_sha256,
+                    "feedback_sha256": failing_playtested.feedback_sha256,
+                }
+            )
+            inputs.update(
+                {
+                    "repair_round": checkpoint.round_index,
+                    "prior_assignment": prior_assignment.to_dict(),
+                    "prior_assignment_artifact": _artifact_binding(
+                        prior_assignment_artifact
+                    ),
+                    "prior_invented": prior_invented.to_dict(),
+                    "prior_invented_artifact": _artifact_binding(
+                        prior_invented_artifact
+                    ),
+                    "failing_playtested": failing_playtested.to_dict(),
+                    "failing_playtested_artifact": _artifact_binding(
+                        failing_playtested_artifact
+                    ),
+                    "feedback": feedback,
+                    "feedback_sha256": failing_playtested.feedback_sha256,
+                }
+            )
+        subject = _stage_subject("invent", subject_inputs)
+        context.update(
+            {
+                "routed_invent": True,
+                "assignment_contract_path": assignment_path,
+                "invent_contract_path": invented_path,
+            }
+        )
+
+    elif stage == "make":
+        context["make_transition"] = normal_transition
+        if effort.name == "spark":
+            assignment_path, invented_path = _routed_make_creative_paths(
+                checkpoint.round_index
+            )
+            common = dict(base)
+            common.update(
+                {
+                    "creative_source_required": True,
+                    "assignment_contract_path": assignment_path,
+                    "invented_contract_path": invented_path,
+                }
+            )
+            assignment = invented = None
+            context.update(
+                {
+                    "routed_make_creative": True,
+                    "assignment_contract_path": assignment_path,
+                    "invented_contract_path": invented_path,
+                }
+            )
+        else:
+            (
+                assignment,
+                invented,
+                assignment_artifact,
+                invented_artifact,
+                inventor_binding,
+            ) = _routed_creative_context(run, checkpoint, roster)
+            context.update(
+                {
+                    "assignment": assignment,
+                    "invented": invented,
+                    "inventor_binding": inventor_binding,
+                }
+            )
+            common = {
+                **base,
+                "assignment": assignment.to_dict(),
+                "assignment_artifact": {
+                    **_artifact_binding(assignment_artifact),
+                    "assignment_sha256": assignment.assignment_sha256,
+                },
+                "invented": invented.to_dict(),
+                "invented_artifact": {
+                    **_artifact_binding(invented_artifact),
+                    "invented_sha256": invented.invented_sha256,
+                },
+                "selected_inventor_agent": {
+                    "path": assignment.selected_agent_path,
+                    "sha256": assignment.selected_agent_sha256,
+                    "source_manifest_sha256": (
+                        assignment.selected_source_manifest_sha256
+                    ),
+                    "taste_sha256": assignment.selected_taste_sha256,
+                },
+            }
+        feedback_artifact: Optional[AgentArtifact] = None
+        prior = checkpoint.stage_artifacts.get("playtest")
+        if prior and "playtest" in checkpoint.invalidated_stages:
+            feedback_artifact = prior[0]
+        subject_inputs = {
+            "effort": effort.name,
+            "wish_sha256": checkpoint.wish_sha256,
+            "inventor_roster_sha256": roster.roster_sha256,
+            "assignment_sha256": (
+                assignment.assignment_sha256 if assignment is not None else None
+            ),
+            "invented_sha256": (
+                invented.invented_sha256 if invented is not None else None
+            ),
+            "blueprint_sha256": blueprint.sha256,
+            "round": checkpoint.round_index,
+            "feedback_sha256": (
+                feedback_artifact.sha256 if feedback_artifact else None
+            ),
+            "host_cad_gate_rejection_sha256": (
+                cad_gate_rejection["rejection_sha256"]
+                if cad_gate_rejection is not None
+                else None
+            ),
+        }
+        if make_proposal_rejection is not None:
+            subject_inputs["host_make_proposal_rejection_sha256"] = (
+                make_proposal_rejection["rejection_sha256"]
+            )
+        subject = _stage_subject("make", subject_inputs)
+        inputs = {
+            **common,
+            "round": checkpoint.round_index,
+            "previous_playtest": (
+                _artifact_binding(feedback_artifact)
+                if feedback_artifact is not None
+                else None
+            ),
+            "host_cad_gate_rejection": cad_gate_rejection,
+            "product_root": "artifacts/make/r%04d/product"
+            % checkpoint.round_index,
+            "contract_path": "artifacts/make/r%04d/made.json"
+            % checkpoint.round_index,
+            "required_root_files": [
+                "product.json",
+                "assembled.step",
+                "assembled.step.json",
+                "assembled.stl",
+            ],
+        }
+        if make_proposal_rejection is not None:
+            inputs["host_make_proposal_rejection"] = make_proposal_rejection
+
+    else:
+        (
+            assignment,
+            invented,
+            assignment_artifact,
+            invented_artifact,
+            inventor_binding,
+        ) = _routed_creative_context(run, checkpoint, roster)
+        made_artifact = _stage_primary(checkpoint, "make")
+        made = _read_contract(
+            run.run_root,
+            made_artifact,
+            NativeMade,
+            label="routed native Made contract",
+        )
+        made.assert_context(
+            assignment, invented, expected_round=checkpoint.round_index
+        )
+        context.update(
+            {
+                "assignment": assignment,
+                "invented": invented,
+                "made": made,
+                "inventor_binding": inventor_binding,
+            }
+        )
+        common = {
+            **base,
+            "assignment": assignment.to_dict(),
+            "assignment_artifact": {
+                **_artifact_binding(assignment_artifact),
+                "assignment_sha256": assignment.assignment_sha256,
+            },
+            "invented": invented.to_dict(),
+            "invented_artifact": {
+                **_artifact_binding(invented_artifact),
+                "invented_sha256": invented.invented_sha256,
+            },
+            "made": made.to_dict(),
+            "made_artifact": {
+                **_artifact_binding(made_artifact),
+                "made_sha256": made.made_sha256,
+                "product_artifact_sha256": made.product_manifest.artifact_sha256,
+                "product_root": made.product_root,
+            },
+            "selected_inventor_agent": {
+                "path": assignment.selected_agent_path,
+                "sha256": assignment.selected_agent_sha256,
+                "source_manifest_sha256": assignment.selected_source_manifest_sha256,
+                "taste_sha256": assignment.selected_taste_sha256,
+            },
+        }
+        if stage == "playtest":
+            subject = _stage_subject(
+                "playtest",
+                {
+                    "effort": effort.name,
+                    "made_sha256": made.made_sha256,
+                    "product_artifact_sha256": made.product_manifest.artifact_sha256,
+                    "blueprint_sha256": blueprint.sha256,
+                    "round": checkpoint.round_index,
+                    "host_cad_gate_rejection_sha256": (
+                        cad_gate_rejection["rejection_sha256"]
+                        if cad_gate_rejection is not None
+                        else None
+                    ),
+                },
+            )
+            inputs = {
+                **common,
+                "round": checkpoint.round_index,
+                "host_cad_gate_rejection": cad_gate_rejection,
+                "required_check_ids": list(blueprint.required_playtest_checks()),
+                "evidence_root": "artifacts/playtest/r%04d/evidence"
+                % checkpoint.round_index,
+                "contract_path": "artifacts/playtest/r%04d/playtested.json"
+                % checkpoint.round_index,
+            }
+        elif stage == "release":
+            release_contract = _materialized_release_contract(checkpoint)
+            terminal_transition = _materialized_release_terminal_transition(checkpoint)
+            normal_transition = terminal_transition
+            context.update(
+                {
+                    "release_contract": release_contract,
+                    "terminal_transition": terminal_transition,
+                }
+            )
+            subject_inputs = {
+                "effort": effort.name,
+                "wish_sha256": checkpoint.wish_sha256,
+                "taste_sha256": assignment.selected_taste_sha256,
+                "blueprint_sha256": blueprint.sha256,
+                "made_sha256": made.made_sha256,
+                "product_artifact_sha256": made.product_manifest.artifact_sha256,
+                "round": checkpoint.round_index,
+                "release_contract": release_contract,
+                "host_cad_gate_rejection_sha256": (
+                    cad_gate_rejection["rejection_sha256"]
+                    if cad_gate_rejection is not None
+                    else None
+                ),
+            }
+            inputs = {
+                **common,
+                "round": checkpoint.round_index,
+                "host_cad_gate_rejection": cad_gate_rejection,
+                "package_root": "artifacts/release/package",
+                "contract_path": "artifacts/release/release.json",
+                "release_contract": release_contract,
+                "required_package_files": [
+                    release_contract["manual_path"],
+                    "product.json",
+                ],
+            }
+            if effort.includes("playtest"):
+                playtested_artifact = _stage_primary(checkpoint, "playtest")
+                playtested = _read_contract(
+                    run.run_root,
+                    playtested_artifact,
+                    NativePlaytested,
+                    label="routed native Playtested contract",
+                )
+                playtested.assert_context(made, blueprint)
+                if playtested.verdict != "pass":
+                    raise TransitionError("Release requires a passing Playtest")
+                context["playtested"] = playtested
+                subject_inputs.update(
+                    {
+                        "playtested_sha256": playtested.playtested_sha256,
+                        "evidence_artifact_sha256": (
+                            playtested.evidence_manifest.artifact_sha256
+                        ),
+                    }
+                )
+                inputs.update(
+                    {
+                        "playtested": playtested.to_dict(),
+                        "playtested_artifact": {
+                            **_artifact_binding(playtested_artifact),
+                            "playtested_sha256": playtested.playtested_sha256,
+                            "evidence_artifact_sha256": (
+                                playtested.evidence_manifest.artifact_sha256
+                            ),
+                        },
+                    }
+                )
+            else:
+                context["playtested"] = None
+                subject_inputs["playtest_status"] = DIRECT_RELEASE_PLAYTEST_STATUS
+                inputs["required_package_files"].append(
+                    NATIVE_RELEASE_PLAYTEST_OMISSION_PATH
+                )
+            subject = _stage_subject("release", subject_inputs)
+        else:  # pragma: no cover - effort membership is checked above
+            raise TransitionError("effort route cannot prepare this stage")
+
+    packet = {
+        "schema_version": 1,
+        "kind": _STAGE_INPUT_KIND,
+        "product_id": checkpoint.product_id,
+        "stage": stage,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "subject_sha256": subject,
+        "next_transition": normal_transition,
+        "round": (
+            checkpoint.round_index
+            if stage in ("make", "playtest", "release")
+            else None
+        ),
+        "max_rounds": checkpoint.max_rounds,
+        "inputs": inputs,
+    }
+    encoded = _canonical_json_bytes(packet) + b"\n"
+    if len(encoded) > _MAX_STAGE_INPUT_BYTES:
+        raise ArtifactError("native effort stage input exceeded its byte limit")
+    _atomic_private_write(run.run_root / _STAGE_INPUT_NAME, encoded, mode=0o400)
+    return subject, packet, context
+
+
 def _prepare_stage_input(
     run: AgentRun, checkpoint: AgentRunCheckpoint
 ) -> tuple[str, Mapping[str, Any], Mapping[str, Any]]:
@@ -1978,13 +2535,21 @@ def _prepare_stage_input(
         raise TransitionError("%s does not use a native stage packet" % stage)
     roster = _inventor_roster(checkpoint)
     context: dict[str, Any] = {"roster": roster}
-    direct_release = _PRODUCT_RUN_DIRECT_RELEASE_INPUT in checkpoint.input_sha256s
+    direct_release = _checkpoint_uses_direct_release(checkpoint)
     cad_gate_rejection = _read_cad_gate_rejection(run, checkpoint)
     make_proposal_rejection = _read_make_proposal_rejection(run, checkpoint)
     make_proposal_rejection = _current_make_proposal_rejection(
         cad_gate_rejection,
         make_proposal_rejection,
     )
+    if _checkpoint_effort(checkpoint) is not None:
+        return _prepare_effort_stage_input(
+            run,
+            checkpoint,
+            roster=roster,
+            cad_gate_rejection=cad_gate_rejection,
+            make_proposal_rejection=make_proposal_rejection,
+        )
     normal_transition = {
         "match": "invent",
         "invent": "make",
@@ -2471,7 +3036,7 @@ def _advance_validated_wish(run: AgentRun) -> AgentRunCheckpoint:
         stage="wish",
         status="ready",
         artifacts=(artifact,),
-        proposed_transition="match",
+        proposed_transition=_checkpoint_next_stage(checkpoint, "wish"),
     )
     evidence = {
         "schema_version": 1,
@@ -2586,17 +3151,51 @@ def _evaluate_make_stage(
     if transition not in ("playtest", "release"):
         raise StateConflict("Make transition is not bound to the run protocol")
     try:
-        artifact = _ready_contract_artifact(
-            proposal,
-            stage="make",
-            transitions=(transition,),
-            path=contract_path,
-        )
+        if context.get("routed_make_creative") is True:
+            outcome = proposal.outcome
+            assignment_path = context["assignment_contract_path"]
+            invented_path = context["invented_contract_path"]
+            if (
+                outcome.stage != "make"
+                or outcome.status != "ready"
+                or outcome.proposed_transition != transition
+                or outcome.needs
+                or tuple(item.path for item in outcome.artifacts)
+                != (contract_path, assignment_path, invented_path)
+            ):
+                raise ContractError(
+                    "Spark Make outcome must contain exact Made, assignment, and Invented contracts"
+                )
+            artifact, assignment_artifact, invented_artifact = outcome.artifacts
+            assignment = _read_contract(
+                run.run_root,
+                assignment_artifact,
+                NativeMatchAssignment,
+                label="Spark native Match assignment",
+            )
+            assignment.assert_context(
+                wish_sha256=checkpoint.wish_sha256,
+                roster=context["roster"],
+            )
+            invented = _read_contract(
+                run.run_root,
+                invented_artifact,
+                NativeInvented,
+                label="Spark native Invented contract",
+            )
+            invented.assert_context(assignment)
+        else:
+            artifact = _ready_contract_artifact(
+                proposal,
+                stage="make",
+                transitions=(transition,),
+                path=contract_path,
+            )
+            assignment = context["assignment"]
+            invented = context["invented"]
         made = _read_contract(
             run.run_root, artifact, NativeMade, label="native Made contract"
         )
-        assignment = context["assignment"]
-        invented = context["invented"]
         made.assert_context(
             assignment, invented, expected_round=checkpoint.round_index
         )
@@ -3279,34 +3878,49 @@ def _existing_release_for_promotion(
         "complete",
     ):
         raise TransitionError("public publication requires a verified Release")
-    direct_release = _PRODUCT_RUN_DIRECT_RELEASE_INPUT in checkpoint.input_sha256s
+    effort = _checkpoint_effort(checkpoint)
+    direct_release = _checkpoint_uses_direct_release(checkpoint)
     required_stages = (
-        ("match", "invent", "make", "release")
-        if direct_release
-        else ("match", "invent", "make", "playtest", "release")
+        effort.enabled_stages
+        if effort is not None
+        else (
+            ("match", "invent", "make", "release")
+            if direct_release
+            else ("match", "invent", "make", "playtest", "release")
+        )
     )
     if any(stage in checkpoint.invalidated_stages for stage in required_stages):
         raise StateConflict("public promotion cannot use invalidated stage evidence")
     roster = _inventor_roster(checkpoint)
-    assignment = _read_contract(
-        run.run_root,
-        _stage_primary(checkpoint, "match"),
-        NativeMatchAssignment,
-        label="native Match assignment",
-    )
-    assignment.assert_context(
-        wish_sha256=checkpoint.wish_sha256, roster=roster
-    )
-    inventor_binding = _selected_inventor_binding(
-        run.run_root, checkpoint, assignment
-    )
-    invented = _read_contract(
-        run.run_root,
-        _stage_primary(checkpoint, "invent"),
-        NativeInvented,
-        label="native Invented contract",
-    )
-    invented.assert_context(assignment)
+    if effort is not None:
+        (
+            assignment,
+            invented,
+            unused_assignment_artifact,
+            unused_invented_artifact,
+            inventor_binding,
+        ) = _routed_creative_context(run, checkpoint, roster)
+        del unused_assignment_artifact, unused_invented_artifact
+    else:
+        assignment = _read_contract(
+            run.run_root,
+            _stage_primary(checkpoint, "match"),
+            NativeMatchAssignment,
+            label="native Match assignment",
+        )
+        assignment.assert_context(
+            wish_sha256=checkpoint.wish_sha256, roster=roster
+        )
+        inventor_binding = _selected_inventor_binding(
+            run.run_root, checkpoint, assignment
+        )
+        invented = _read_contract(
+            run.run_root,
+            _stage_primary(checkpoint, "invent"),
+            NativeInvented,
+            label="native Invented contract",
+        )
+        invented.assert_context(assignment)
     made = _read_contract(
         run.run_root,
         _stage_primary(checkpoint, "make"),
@@ -3690,14 +4304,28 @@ def _process_agent_outcome_inner(
             stage=checkpoint.stage,
             operation="gate.evaluate",
         ):
-            decision = evaluate_invent_stage(
-                proposal,
-                run_root=run.run_root,
-                expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
-                expected_subject_sha256=subject_sha256,
-                expected_artifact_path=context["invent_contract_path"],
-                assignment=context["assignment"],
-            )
+            if context.get("routed_invent") is True:
+                decision = evaluate_routed_invent_stage(
+                    proposal,
+                    run_root=run.run_root,
+                    expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+                    expected_subject_sha256=subject_sha256,
+                    wish_sha256=checkpoint.wish_sha256,
+                    roster=context["roster"],
+                    assignment_artifact_path=context[
+                        "assignment_contract_path"
+                    ],
+                    invented_artifact_path=context["invent_contract_path"],
+                )
+            else:
+                decision = evaluate_invent_stage(
+                    proposal,
+                    run_root=run.run_root,
+                    expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+                    expected_subject_sha256=subject_sha256,
+                    expected_artifact_path=context["invent_contract_path"],
+                    assignment=context["assignment"],
+                )
     elif checkpoint.stage == "make":
         try:
             with wish_run_timing_span(
@@ -4261,6 +4889,8 @@ def _native_receipt(
         "progress": progress,
         "publication": publication,
     }
+    if checkpoint.effort is not None:
+        receipt["effort"] = checkpoint.effort
     if needs:
         receipt["needs"] = list(needs)
     if session is not None:
@@ -4271,11 +4901,16 @@ def _native_receipt(
 def start_native_run(
     wish: Wish,
     *,
+    effort: Optional[str] = None,
     publish_requested: Optional[bool] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Persist one Wish and immediately start its whole-run native session.
+
+    ``effort`` freezes one selectable route for a new run. ``None`` retains the
+    schema-v3 lifecycle only for source-compatible programmatic callers; the
+    public CLI always passes its named default.
 
     ``publish_requested`` is a source-compatibility shim for callers of the
     former optional-publication API. Release publication is now mandatory, so
@@ -4286,6 +4921,7 @@ def start_native_run(
     optional presentation telemetry and cannot change the run result.
     """
 
+    selected_effort = workshop_effort(effort) if effort is not None else None
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
 
@@ -4313,6 +4949,7 @@ def start_native_run(
                 domain_skill_roots=domain_skill_roots,
                 inventor_source_root=inventor_source_root,
                 max_rounds=4,
+                effort=(selected_effort.name if selected_effort is not None else None),
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.

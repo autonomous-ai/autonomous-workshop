@@ -18,14 +18,18 @@ contract.
 
 Create one native Codex Goal for the current Make attempt. Its objective is to
 produce the exact ready-to-print, inspectable product artifact required by the
-sealed Invent output. Its stopping condition is a successful `make` finalizer
-for the current checkpoint.
+current effort. Its stopping condition is a successful `make` finalizer for
+the current checkpoint.
 
-The sealed Invent result is the primary reference for form, proportion,
-construction, component breakdown, and intended interaction. Read both its
-selected `concept` and its `research`; preserve its explicit dimensions and
-constraints, and do not reinterpret the Wish from scratch. Realize every
-component and interface the selected concept names in the actual product tree.
+For Forge and Quest, the sealed Invent result is the primary reference for
+form, proportion, construction, component breakdown, and intended interaction.
+Read both its selected `concept` and `research`; preserve its explicit
+dimensions and constraints. For Spark, `STAGE.json` sets
+`creative_source_required: true`: compare the complete roster, select the
+best-fit Inventor, use that custom agent, and write one compact authored source
+with exactly `selected_inventor_id`, roster-covering `ranking`, `concept`, and
+`research`. The Make finalizer seals those bindings together with the Made
+contract, so Spark still has exact creative provenance without another turn.
 
 While pursuing the Goal:
 
@@ -80,14 +84,68 @@ Then run:
   --cad-verification-path <path inside product root>
 ```
 
+For Spark only, also pass `--source <spark-creative-source.json>` using the
+four-field source described above. Do not pass `--source` when `STAGE.json`
+already contains sealed `assignment` and `invented` inputs.
+
 The deterministic finalizer hashes the complete tree and writes the canonical
 Made contract. Complete the Make Goal only after it succeeds, then return to
 the host. The host copies the exact tree into an isolated verifier, reruns the
 trusted CAD gate, compares bytes, and seals the accepted revision. Narrative
 or model confidence never overrides a failed or absent measurement.
 
-The direct-Release protocol does not accept the lower digital-only tier. The
-host requires the full verifier, including wall thickness and print-ready
-eligibility, before Make can advance. Playtest is intentionally deferred and
-must not be simulated or claimed during Make; Release records that it was not
-run.
+Spark and Forge advance directly to Release and therefore require the full
+verifier, including wall thickness and print-ready eligibility, at Make. They
+must not simulate Playtest; Release records that it was not run. Quest advances
+to the host-authored Playtest stage below.
+
+## Playtest Goal and independent evidence loop
+
+This section applies only when `STAGE.json.stage` is `playtest`, which occurs
+only for Quest. Create one native Codex Goal whose objective is to independently
+evaluate the exact sealed Made revision and produce complete, reproducible
+evidence with a truthful `pass`, `improve`, or `block` verdict. Its stopping
+condition is a successful `playtest` finalizer. An evidence-backed failure
+satisfies the Goal; never reason a failed check into a pass.
+
+The host packet lists every required check id. Each must appear exactly once,
+cite a canonical configuration and static evidence file, and stay bound to the
+sealed Made artifact. Digital assessment never proves successful printing,
+physical fit, durability, or human play.
+
+While pursuing the Goal:
+
+1. **Observe:** Inspect the exact Made tree, manifest, required checks, rules,
+   rendered outputs, and claims without modifying sealed bytes.
+2. **Act:** Use independent native subagents and narrow deterministic tools for
+   player perspectives, seeded simulations, and artifact inspection. Preserve
+   exact configurations and outputs.
+3. **Evaluate:** Separate native-agent judgment from deterministic measurement;
+   verify evidence coverage, reproducibility, and concrete repair direction.
+4. **Improve:** Repair weak evidence and rerun invalid tests, but never edit the
+   sealed Made product during Playtest.
+
+Keep transient work under `work/playtest/rNNNN/` and only canonical configs and
+final cited outputs under the exact `evidence_root`. Write one authored JSON
+source with exactly `checks`, `feedback`, and `verdict`. Every failing check
+must name a concrete area and repair.
+
+Choose each actionable feedback boundary explicitly:
+
+- implementation repair: `["playtest", "release"]`, returning to Make;
+- concept revision: `["invent", "make", "playtest", "release"]`,
+  returning to Invent with the exact prior design and evidence.
+
+Then run:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . playtest \
+  --source <playtest-source.json> \
+  --evidence-root <STAGE evidence_root>
+```
+
+The host follows the structured invalidation marker mechanically, consumes the
+shared round budget, and seals the exact evidence. Complete the Playtest Goal
+after finalization and return control regardless of the truthful verdict. Only
+a host-verified pass for the current Made bytes advances to Release.

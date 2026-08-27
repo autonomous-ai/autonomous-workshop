@@ -10,8 +10,8 @@ and Grok Build are future adapters to the same boundary.
 The first version makes open-ended playthings for grown-ups (14+). Users state
 what they want in their own words; they do not choose a product class before
 the Workshop can begin. A universal toy blueprint supplies the shared product
-contract. Playtest is deferred in the current fast path; new releases record
-that it was not run and make no Playtest claim. The Wish, selected Inventor,
+contract. Spark and Forge omit Playtest truthfully; Quest activates the bounded
+Playtest evidence loop. The Wish, selected Inventor,
 and evolving artifact determine any additional specialist method or evidence.
 
 Every result must be materially shaped by its Wish, feel designed rather than
@@ -20,17 +20,23 @@ decorated, and be represented no more strongly than its evidence permits.
 ## Lifecycle
 
 ```text
-Wish -> Match -> Invent -> Make -> Release
+Spark: Wish -> Make -> Release
+Forge: Wish -> Invent -> Make -> Release
+Quest: Wish -> Invent -> Make -> Playtest -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
 - **Wish** preserves the person's exact words and explicit constraints.
-- **Match** selects and binds one Inventor for that Wish.
+- The first active creative stage selects and binds one Inventor. Optional
+  stages pass through without turns, artifacts, gates, or fabricated evidence.
 - **Invent** researches, explores, selects, and seals one bounded product
   concept, including the physical facts and provenance Make needs.
 - **Make** consumes that exact sealed Invent result and creates the actual
   product tree, CAD project, assemblies, and deterministic CAD verification.
+  In Spark, selection and compact invention are sealed inside this same turn.
+- **Playtest** independently evaluates the sealed Made revision only in Quest,
+  preserving exact evidence and bounded Make/Invent feedback routes.
 - **Release** creates and seals a self-contained printable `MANUAL.pdf`,
   revalidates the exact Made revision as full-tier print-ready CAD, and
   publishes both through Factory with authenticated public hash readback.
@@ -51,8 +57,9 @@ They do not mutate a completed run.
 ## One Manager session per Wish
 
 `workshop wish` first creates and populates one private persistent project at
-`$WORKSHOP_HOME/runs/<wish-id>/workspace`, then starts one coding-agent session
-with that directory as its working directory before Match. The same session
+`$WORKSHOP_HOME/runs/<wish-id>/workspace`, freezes the selected effort, then
+starts one coding-agent session with that directory as its working directory
+for the first enabled creative stage. The same session
 handles discovery, research, concept
 work, CAD, inspection, repair, manual design, and bounded
 product facts. `workshop resume` continues the exact recorded session id.
@@ -72,16 +79,16 @@ daemonizing or detaching. It never starts a replacement session when identity
 is ambiguous.
 
 That root session plays the Workshop Manager role. In the current adapter it is
-Codex, and it may dynamically delegate bounded matching, specialist creation,
+Codex, and it may dynamically delegate bounded selection, specialist creation,
 or independent inspection through standard Codex-native subagents. Those
 children are part of the Manager's native agent tree; they are not separately
 launched OS-level Codex processes, Python workers, or lifecycle sessions. The
 root Manager receives each host stage packet, synthesizes child work, and
 submits the one proposal the host verifies.
 
-Stage names are host checkpoints, not Python workers or model roles. During
-Match, the Manager may ask native children for bounded candidate-fit analysis,
-then makes one evidence-based selection. The host materializes every eligible
+Stage names are host checkpoints, not Python workers or model roles. During the
+first enabled creative stage, the Manager may ask native children for bounded
+candidate-fit analysis, then makes one evidence-based selection. The host materializes every eligible
 Inventor through Codex's documented project-scoped custom-agent convention;
 Codex owns native spawning, routing, waiting, and synthesis.
 
@@ -113,7 +120,7 @@ files, manifests, gate receipts, or effect receipts.
 
 ## One native Goal per active stage attempt
 
-For each host-authorized Match, Invent, Make, or Release
+For each host-authorized Invent, Make, Playtest, or Release
 attempt, the root Codex session creates one native Goal. Only one Goal is
 active at a time. It names one objective, the exact inputs to inspect, proof
 artifacts and checks, and a verifiable stopping condition: the current stage
@@ -127,7 +134,7 @@ separate loop primitive or Python program. The Goal completes only after the
 finalizer succeeds; Codex then returns to the host instead of starting the next
 stage.
 
-Wish is sealed by the host before Match, so it is not an agent Goal. Host gate
+Wish is sealed by the host before the first enabled stage, so it is not an agent Goal. Host gate
 rejections remain bound to the exact proposal and return to the same stage for
 repair; unchanged rejected bytes cannot be resubmitted as success.
 
@@ -138,7 +145,7 @@ repair; unchanged rejected bytes cannot be resubmitted as success.
 - root-session Workshop management, native subagent delegation, and synthesis;
 - one active native Goal per cognitive stage attempt and the
   observe -> act -> evaluate -> improve work inside it;
-- understanding the Wish and Match reasoning;
+- understanding the Wish and selecting an Inventor inside the first active stage;
 - native search and source provenance;
 - concept exploration and design decisions;
 - use of CAD, image-to-CAD, design-reference, STEP-parts,

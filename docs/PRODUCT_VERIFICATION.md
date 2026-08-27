@@ -1,8 +1,8 @@
 # Product verification
 
-> Current status: ADR 0015 defers Playtest for new runs, so the direct-Release
-> path does not emit `VERIFICATION.json`. This document describes the retained
-> verification contract for frozen Playtest runs and future reintroduction.
+> Current status: Spark and Forge do not emit `VERIFICATION.json`. Quest may
+> derive this optional projection from its passing Playtest, and frozen
+> historical Playtest runs retain their original contract.
 
 Autonomous Workshop has exactly two product-verification levels:
 

@@ -30,6 +30,7 @@ from workshop.workflow.stage_gates import (
     StageGateDecision,
     evaluate_invent_stage,
     evaluate_match_stage,
+    evaluate_routed_invent_stage,
     invent_gate_subject_sha256,
     match_gate_subject_sha256,
 )
@@ -277,6 +278,77 @@ class NativeStageGateTest(unittest.TestCase):
             invent_decision.evidence.checks["concept_sha256"],
             invented.concept_sha256,
         )
+
+    def test_routed_invent_gate_rejects_substituted_artifact_vectors(self):
+        invented = NativeInvented(
+            wish_sha256=self.assignment.wish_sha256,
+            assignment_sha256=self.assignment.assignment_sha256,
+            taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.assignment.blueprint_sha256,
+            concept={
+                "title": "Moonstep Orrery",
+                "summary": "A wound crank turns the Wish into a visible lunar gait.",
+            },
+            research={"basis": "Bound research for the selected concept."},
+        )
+        invented_path = "artifacts/invent/invented.json"
+        assignment_path = "artifacts/invent/assignment.json"
+        invented_artifact = self.artifact(invented_path, invented.to_dict())
+        assignment_artifact = self.artifact(
+            assignment_path, self.assignment.to_dict()
+        )
+        wrong_path_artifact = self.artifact(
+            "artifacts/invent/substitute.json", invented.to_dict()
+        )
+        subject = digest("7")
+
+        def proposal(artifacts):
+            return AgentOutcomeProposal(
+                checkpoint_sha256=self.checkpoint_sha256,
+                subject_sha256=subject,
+                outcome=AgentOutcome(
+                    stage="invent",
+                    status="ready",
+                    artifacts=tuple(artifacts),
+                    proposed_transition="make",
+                ),
+            )
+
+        accepted = evaluate_routed_invent_stage(
+            proposal((invented_artifact, assignment_artifact)),
+            run_root=self.run_root,
+            expected_checkpoint_sha256=self.checkpoint_sha256,
+            expected_subject_sha256=subject,
+            wish_sha256=self.wish_sha256,
+            roster=self.roster,
+            assignment_artifact_path=assignment_path,
+            invented_artifact_path=invented_path,
+        )
+        self.assertTrue(accepted.passed)
+
+        substitutions = {
+            "swapped": (assignment_artifact, invented_artifact),
+            "extra": (
+                invented_artifact,
+                assignment_artifact,
+                wrong_path_artifact,
+            ),
+            "wrong path": (wrong_path_artifact, assignment_artifact),
+        }
+        for label, artifacts in substitutions.items():
+            with self.subTest(label=label), self.assertRaisesRegex(
+                ContractError, "exact Invented and assignment contracts"
+            ):
+                evaluate_routed_invent_stage(
+                    proposal(artifacts),
+                    run_root=self.run_root,
+                    expected_checkpoint_sha256=self.checkpoint_sha256,
+                    expected_subject_sha256=subject,
+                    wish_sha256=self.wish_sha256,
+                    roster=self.roster,
+                    assignment_artifact_path=assignment_path,
+                    invented_artifact_path=invented_path,
+                )
 
     def test_subjects_are_domain_separated_complete_input_vectors(self):
         match_subject = match_gate_subject_sha256(

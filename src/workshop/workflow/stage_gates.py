@@ -464,6 +464,77 @@ def evaluate_invent_stage(
     return StageGateDecision(evidence=evidence, transition="make")
 
 
+def evaluate_routed_invent_stage(
+    proposal: AgentOutcomeProposal,
+    *,
+    run_root: Any,
+    expected_checkpoint_sha256: str,
+    expected_subject_sha256: str,
+    wish_sha256: str,
+    roster: InventorRoster,
+    assignment_artifact_path: str,
+    invented_artifact_path: str,
+) -> StageGateDecision:
+    """Validate combined selection + invention from one routed Invent turn."""
+
+    require_sha256(expected_checkpoint_sha256, "expected Invent checkpoint sha256")
+    require_sha256(expected_subject_sha256, "expected Invent subject sha256")
+    require_sha256(wish_sha256, "expected Invent Wish sha256")
+    if not isinstance(roster, InventorRoster):
+        raise ContractError("routed Invent gate requires an InventorRoster")
+    if (
+        proposal.checkpoint_sha256 != expected_checkpoint_sha256
+        or proposal.subject_sha256 != expected_subject_sha256
+    ):
+        raise StateConflict("routed Invent proposal belongs to another stage subject")
+    outcome = proposal.outcome
+    if (
+        outcome.stage != "invent"
+        or outcome.status != "ready"
+        or outcome.proposed_transition != "make"
+        or outcome.needs
+        or tuple(item.path for item in outcome.artifacts)
+        != (invented_artifact_path, assignment_artifact_path)
+    ):
+        raise ContractError(
+            "routed Invent outcome must contain its exact Invented and assignment contracts"
+        )
+    invented_artifact, assignment_artifact = outcome.artifacts
+    assignment = NativeMatchAssignment.from_mapping(
+        _artifact_document(
+            run_root, assignment_artifact, label="routed native Match assignment"
+        )
+    )
+    assignment.assert_context(wish_sha256=wish_sha256, roster=roster)
+    invented = NativeInvented.from_mapping(
+        _artifact_document(run_root, invented_artifact, label="routed Invented artifact")
+    )
+    invented.assert_context(assignment)
+    evidence = StageGateEvidence(
+        stage="invent",
+        gate_id="invent.routed-concept-v1",
+        validator_version=VALIDATOR_VERSION,
+        passed=True,
+        checkpoint_sha256=proposal.checkpoint_sha256,
+        subject_sha256=proposal.subject_sha256,
+        outcome_sha256=outcome.sha256,
+        artifact_path=invented_artifact.path,
+        artifact_sha256=invented_artifact.sha256,
+        checks={
+            "assignment_artifact_sha256": assignment_artifact.sha256,
+            "assignment_sha256": assignment.assignment_sha256,
+            "blueprint_sha256": invented.blueprint_sha256,
+            "concept_sha256": invented.concept_sha256,
+            "research_sha256": invented.research_sha256,
+            "roster_sha256": roster.roster_sha256,
+            "selected_custom_agent_bound": True,
+            "selected_taste_sha256": assignment.selected_taste_sha256,
+            "wish_bound": True,
+        },
+    )
+    return StageGateDecision(evidence=evidence, transition="make")
+
+
 __all__ = [
     "INVENTED_PATH",
     "INVENT_GATE_ID",
@@ -476,6 +547,7 @@ __all__ = [
     "StageGateEvidence",
     "VALIDATOR_VERSION",
     "evaluate_invent_stage",
+    "evaluate_routed_invent_stage",
     "evaluate_match_stage",
     "invent_gate_subject_sha256",
     "match_gate_subject_sha256",

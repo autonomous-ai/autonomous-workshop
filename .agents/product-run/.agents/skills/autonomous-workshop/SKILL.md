@@ -1,6 +1,6 @@
 ---
 name: autonomous-workshop
-description: Run, resume, or diagnose one Autonomous Workshop Wish through Match, Invent, Make, and terminal Release using native Codex Goals, tools, and subagents while preserving deterministic host gates and host-controlled effects.
+description: Run, resume, or diagnose one Autonomous Workshop Wish through its frozen Spark, Forge, or Quest effort route using native Codex Goals, tools, and subagents while preserving deterministic host gates and host-controlled effects.
 ---
 
 # Autonomous Workshop
@@ -25,9 +25,9 @@ skill is your workflow playbook, not a separate agent process.
    its exact feedback and change the rejected artifact or evidence before
    finalizing. Never resubmit unchanged rejected bytes.
 4. Read only the reference for the current stage:
-   - Match: [references/wish-match.md](references/wish-match.md)
    - Invent: [references/invent.md](references/invent.md)
    - Make: [references/make-playtest.md](references/make-playtest.md)
+   - Playtest: [references/make-playtest.md](references/make-playtest.md)
    - Release:
      [references/release-deliver.md](references/release-deliver.md)
 5. Read [references/effects-and-recovery.md](references/effects-and-recovery.md)
@@ -38,7 +38,7 @@ stages; do not create stage-specific sessions or impersonate Python workers.
 
 ## Run one native Goal for the current stage
 
-For each host-authorized Match, Invent, Make, or Release attempt,
+For each host-authorized Invent, Make, Playtest, or Release attempt,
 create one native Codex Goal. Keep only one Goal active at a time. If the Goal
 for this exact checkpoint is already active after a resume, continue it.
 If a host rejection changed the current subject after a prior Goal completed,
@@ -77,8 +77,9 @@ host-owned effect portion of Release. This design follows Codex's official patte
 ## Use the native Inventor roster
 
 `.codex/agents/*.toml` is the sole Inventor identity, Taste, and skill roster
-for this run. During Match, compare every eligible custom agent in the
-host-provided roster. After Match, use the exact selected
+for this run. During the first enabled creative stage, compare every eligible
+custom agent in the host-provided roster and select the best fit. Forge and
+Quest select during Invent; Spark selects during Make. Use the exact selected
 `.codex/agents/<inventor-id>.toml` agent. Its host-materialized instructions
 bind its exact source manifest, full Taste, and skill artifacts under
 `.agents/skills/`.
@@ -105,12 +106,12 @@ bind its exact source manifest, full Taste, and skill artifacts under
   and materialized domain skills for research, creation, evaluation, and
   repair.
 - Every Wish is open-ended. The universal toy blueprint provides one common
-  product contract; it is not a user-facing category. Playtest is deferred in
-  this protocol. Do not create Playtest artifacts or claims. Never claim a
-  successful print, physical fit, durability, or human response from CAD checks
-  or AI judgment. Add product-specific deterministic inspection when the
-  artifact requires it.
-- Codex owns Match reasoning, research, concept exploration, design, CAD
+  product contract; it is not a user-facing category. Run Playtest only for a
+  Quest packet. Spark and Forge do not create Playtest artifacts or claims.
+  Never claim a successful print, physical fit, durability, or human response
+  from CAD checks or AI judgment. Add product-specific deterministic inspection
+  when the artifact requires it.
+- Codex owns Inventor selection, research, concept exploration, design, CAD
   iteration, and the finished in-box manual. Website
   metadata is a secondary transport artifact, not the creative center of
   Release.
@@ -132,8 +133,9 @@ run the materialized finalizer:
   --run-root . <current-stage> <stage-specific-arguments>
 ```
 
-Use `--help` for exact arguments. The active commands are `match`, `invent`,
-`make`, and `release`; the stage references describe their inputs. The
+Use `--help` for exact arguments. The active commands are `invent`, `make`,
+`playtest`, and `release`; the stage references describe their inputs. Frozen
+historical runs may still receive Match. The
 finalizer validates and hashes exact bytes, writes the canonical contract under
 `artifacts/`, and atomically writes `agent-outcome.json` bound to the current
 checkpoint and gate subject. It does no reasoning, runs no improvement loop,
@@ -150,10 +152,12 @@ large pasted JSON object for run-local evidence.
 
 ## Preserve lifecycle and effects
 
-The host alone sequences:
+The host alone sequences the effort frozen when the Wish was created:
 
 ```text
-Wish -> Match -> Invent -> Make -> Release
+Spark: Wish -> Make -> Release
+Forge: Wish -> Invent -> Make -> Release
+Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
 
 Host rejection feedback remains bound to the exact current-stage proposal.
@@ -161,9 +165,9 @@ Repair Make or Release in place and finalize changed bytes. Reviews after
 delivery may inform a future Wish but never rewrite a completed run.
 
 Release prepares a self-contained, printable `MANUAL.pdf` that can teach the
-new owner without a website, video, QR code, or phone. It also prepares bounded
-`product.json` facts with `playtest_status: not-run` and no Playtest claims for
-website transport. Read and
+new owner without a website, video, QR code, or phone. Spark and Forge prepare
+bounded `product.json` facts with `playtest_status: not-run`; Quest binds its
+claims to the exact passing Playtest evidence. Read and
 use the materialized `manual-design` skill during Release. Codex authors and
 visually reviews the exact PDF, but it does not publish, print, pack, or ship
 it. Codex never receives Factory, payment, manufacturing, postage, or carrier

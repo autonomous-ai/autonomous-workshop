@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1830" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 2050" role="img" aria-labelledby="title description">
   <title id="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</title>
-  <desc id="description">A vertical journey from Wish into a pluggable agentic runtime, where one root coding-agent session acts as Workshop Manager. Codex is implemented now; Claude Code and Grok Build can implement the same boundary later. Workshop runs Wish, Match, Invent, Make, and public Release. That Release hands off to the Operations team for Printing, Deliver, and customer Review.</desc>
+  <desc id="description">A journey from Wish into a pluggable agentic runtime, where one root coding-agent session acts as Workshop Manager. Each new run freezes one effort route: Spark goes through Make and Release, Forge goes through Invent, Make, and Release, and Quest adds Playtest before Release. Inventor selection happens inside the first creative stage rather than in a separate Match turn. Release hands off to the Operations team for Printing, Deliver, and customer Review.</desc>
 
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
@@ -52,7 +52,7 @@
     </style>
   </defs>
 
-  <rect width="1000" height="1830" rx="28" fill="#f5f2ec"/>
+  <rect width="1000" height="2050" rx="28" fill="#f5f2ec"/>
   <text x="50" y="65" class="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</text>
 
   <g transform="translate(55 112)">
@@ -73,15 +73,23 @@
   <!-- Main vertical journey -->
   <path class="flow" d="M 500 280 V 320"/>
   <path class="flow" d="M 500 470 V 520"/>
-  <path class="flow" d="M 500 630 V 680"/>
-  <path class="flow" d="M 500 820 V 880"/>
-  <path class="flow" d="M 500 1020 V 1080"/>
-  <path class="flow" d="M 500 1220 V 1290"/>
-  <path class="flow" d="M 500 1400 V 1460"/>
-  <path class="flow" d="M 500 1570 V 1630"/>
+  <path class="flow" d="M 500 660 V 700"/>
+  <path class="flow" d="M 500 840 V 900"/>
+  <path class="flow" d="M 500 1040 V 1100"/>
+  <path class="flow" d="M 500 1240 V 1300"/>
+  <path class="flow" d="M 500 1440 V 1510"/>
+  <path class="flow" d="M 500 1620 V 1680"/>
+  <path class="flow" d="M 500 1790 V 1850"/>
+
+  <!-- Passed-through stages are real bypasses, not empty stage turns. -->
+  <path class="flow" d="M 780 590 H 840 V 970 H 780"/>
+  <path class="flow" d="M 220 970 H 150 V 1370 H 220"/>
+  <text x="846" y="790" class="edge-label-ai">SPARK</text>
+  <text x="36" y="1156" class="edge-label-ai">SPARK + FORGE</text>
+  <text x="512" y="685" class="edge-label-ai">FORGE + QUEST</text>
 
   <!-- External feedback lanes -->
-  <path class="feedback-human" d="M 780 1685 H 884 C 912 1685, 925 1667, 925 1644 V 252 C 925 232, 910 230, 884 230 H 782"/>
+  <path class="feedback-human" d="M 780 1905 H 884 C 912 1905, 925 1887, 925 1864 V 252 C 925 232, 910 230, 884 230 H 782"/>
 
   <!-- Side-loop labels -->
   <g>
@@ -106,7 +114,7 @@
   </g>
   <text x="210" y="348" class="eyebrow eyebrow-manager">PLUGGABLE AGENTIC RUNTIME</text>
   <text x="210" y="380" class="heading">WORKSHOP MANAGER</text>
-  <text x="210" y="405" class="body">One root coding-agent session orchestrates Match through Release</text>
+  <text x="210" y="405" class="body">One root coding-agent session runs each enabled stage through Release</text>
   <text x="210" y="426" class="body">inside this toy's persistent project; the host owns gates and publishing.</text>
   <rect x="230" y="440" width="138" height="22" rx="11" class="pill-future"/>
   <text x="299" y="455" text-anchor="middle" class="pill-future-text">CLAUDE CODE</text>
@@ -116,100 +124,121 @@
   <text x="603" y="455" text-anchor="middle" class="pill-future-text">GROK BUILD</text>
   <text x="692" y="455" class="pill-future-text">+ MORE</text>
 
-  <!-- Match -->
+  <!-- Effort route -->
   <g filter="url(#shadow)">
-    <rect class="node" x="220" y="520" width="560" height="110" rx="20"/>
+    <rect class="node" x="220" y="520" width="560" height="140" rx="20"/>
   </g>
-  <text x="250" y="548" class="eyebrow">THE MANAGER ROUTES A SUBAGENT</text>
-  <text x="250" y="580" class="heading">MATCH</text>
-  <text x="250" y="606" class="body">Choose the Inventor subagent whose Taste fits this Wish.</text>
+  <text x="250" y="548" class="eyebrow">FREEZE ONE ROUTE FOR THIS RUN</text>
+  <text x="250" y="580" class="heading">EFFORT</text>
+  <text x="250" y="606" class="body">Spark · Make → Release</text>
+  <text x="250" y="628" class="body">Forge · Invent → Make → Release (default)</text>
+  <text x="250" y="650" class="body">Quest · Invent → Make → Playtest → Release</text>
 
   <!-- Invent -->
   <g filter="url(#shadow)">
-    <rect class="node-internal" x="220" y="680" width="560" height="140" rx="20"/>
+    <rect class="node-internal" x="220" y="700" width="560" height="140" rx="20"/>
   </g>
-  <line x1="600" y1="700" x2="600" y2="800" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="707" class="eyebrow eyebrow-internal">INVENTOR SUBAGENT · MANAGER REVIEW</text>
-  <text x="250" y="741" class="heading">INVENT</text>
-  <text x="250" y="766" class="body">Research the Wish; explore and choose a design.</text>
-  <text x="250" y="788" class="body">Fix its play, character, and physical facts.</text>
-  <text x="250" y="810" class="body">Brief every part before geometry begins.</text>
-  <path class="micro" d="M 665 708 C 735 682, 764 735, 730 782 C 700 822, 633 793, 646 746"/>
-  <text x="697" y="717" text-anchor="middle" class="micro-copy">OBSERVE</text>
-  <text x="697" y="739" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="761" text-anchor="middle" class="micro-copy">VERIFY</text>
-  <text x="697" y="783" text-anchor="middle" class="micro-copy">IMPROVE</text>
+  <line x1="600" y1="720" x2="600" y2="820" stroke="#edc58a" stroke-width="1.5"/>
+  <text x="250" y="727" class="eyebrow eyebrow-internal">FORGE + QUEST · SELECTION INCLUDED</text>
+  <text x="250" y="761" class="heading">INVENT</text>
+  <text x="250" y="786" class="body">Choose the Inventor whose Taste fits the Wish.</text>
+  <text x="250" y="808" class="body">Research, explore, and fix the selected design.</text>
+  <text x="250" y="830" class="body">Brief every part before geometry begins.</text>
+  <path class="micro" d="M 665 728 C 735 702, 764 755, 730 802 C 700 842, 633 813, 646 766"/>
+  <text x="697" y="737" text-anchor="middle" class="micro-copy">OBSERVE</text>
+  <text x="697" y="759" text-anchor="middle" class="micro-copy">ACT</text>
+  <text x="697" y="781" text-anchor="middle" class="micro-copy">VERIFY</text>
+  <text x="697" y="803" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Invent gate -->
-  <rect x="516" y="836" width="144" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="854" text-anchor="middle" class="gate">INVENT VERIFIED</text>
+  <rect x="516" y="856" width="144" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="874" text-anchor="middle" class="gate">INVENT VERIFIED</text>
 
   <!-- Make -->
   <g filter="url(#shadow)">
-    <rect class="node-internal" x="220" y="880" width="560" height="140" rx="20"/>
+    <rect class="node-internal" x="220" y="900" width="560" height="140" rx="20"/>
   </g>
-  <line x1="600" y1="900" x2="600" y2="1000" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="907" class="eyebrow eyebrow-internal">MANAGER + SPECIALIST SKILLS · ITERATE</text>
-  <text x="250" y="941" class="heading">MAKE</text>
-  <text x="250" y="966" class="body">Turn the selected design into mechanical CAD.</text>
-  <text x="250" y="988" class="body">Build printable parts that fit, move,</text>
-  <text x="250" y="1010" class="body">and feel right.</text>
-  <path class="micro" d="M 665 908 C 735 882, 764 935, 730 982 C 700 1022, 633 993, 646 946"/>
-  <text x="697" y="917" text-anchor="middle" class="micro-copy">OBSERVE</text>
-  <text x="697" y="939" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="961" text-anchor="middle" class="micro-copy">VERIFY</text>
-  <text x="697" y="983" text-anchor="middle" class="micro-copy">IMPROVE</text>
+  <line x1="600" y1="920" x2="600" y2="1020" stroke="#edc58a" stroke-width="1.5"/>
+  <text x="250" y="927" class="eyebrow eyebrow-internal">ALL ROUTES · SPARK SELECTS HERE</text>
+  <text x="250" y="961" class="heading">MAKE</text>
+  <text x="250" y="986" class="body">Turn the selected design into mechanical CAD.</text>
+  <text x="250" y="1008" class="body">Build printable parts that fit, move,</text>
+  <text x="250" y="1030" class="body">and feel right.</text>
+  <path class="micro" d="M 665 928 C 735 902, 764 955, 730 1002 C 700 1042, 633 1013, 646 966"/>
+  <text x="697" y="937" text-anchor="middle" class="micro-copy">OBSERVE</text>
+  <text x="697" y="959" text-anchor="middle" class="micro-copy">ACT</text>
+  <text x="697" y="981" text-anchor="middle" class="micro-copy">VERIFY</text>
+  <text x="697" y="1003" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Make gate -->
-  <rect x="516" y="1036" width="144" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="1054" text-anchor="middle" class="gate">MAKE VERIFIED</text>
+  <rect x="516" y="1056" width="144" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="1074" text-anchor="middle" class="gate">MAKE VERIFIED</text>
 
-  <!-- Release -->
+  <!-- Playtest -->
   <g filter="url(#shadow)">
     <rect class="node-internal" x="220" y="1080" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="1100" x2="600" y2="1200" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="1107" class="eyebrow eyebrow-internal">MANAGER · ITERATE + VERIFY</text>
-  <text x="250" y="1141" class="heading">RELEASE</text>
-  <text x="250" y="1168" class="body">Seal ready-to-print CAD and the in-box manual PDF.</text>
-  <text x="250" y="1190" class="body">Publish their exact verified bytes on the server.</text>
+  <text x="250" y="1107" class="eyebrow eyebrow-internal">QUEST ONLY · REPAIR IF NEEDED</text>
+  <text x="250" y="1141" class="heading">PLAYTEST</text>
+  <text x="250" y="1168" class="body">Inspect the exact build; record deterministic proof.</text>
+  <text x="250" y="1190" class="body">Failures return to Make or Invent for repair.</text>
   <path class="micro" d="M 665 1108 C 735 1082, 764 1135, 730 1182 C 700 1222, 633 1193, 646 1146"/>
   <text x="697" y="1117" text-anchor="middle" class="micro-copy">OBSERVE</text>
   <text x="697" y="1139" text-anchor="middle" class="micro-copy">ACT</text>
   <text x="697" y="1161" text-anchor="middle" class="micro-copy">VERIFY</text>
   <text x="697" y="1183" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
-  <!-- Release gate -->
-  <rect x="310" y="1236" width="168" height="26" rx="13" fill="#fff8ec"/>
-  <text x="394" y="1254" text-anchor="middle" class="gate">RELEASE VERIFIED</text>
+  <!-- Playtest gate -->
+  <rect x="516" y="1236" width="164" height="26" rx="13" fill="#fff8ec"/>
+  <text x="598" y="1254" text-anchor="middle" class="gate">PLAYTEST VERIFIED</text>
 
-  <rect x="520" y="1244" width="222" height="26" rx="13" fill="#f4f0ff"/>
-  <text x="631" y="1262" text-anchor="middle" class="edge-label-human">HANDOFF TO OPERATIONS</text>
+  <!-- Release -->
+  <g filter="url(#shadow)">
+    <rect class="node-internal" x="220" y="1300" width="560" height="140" rx="20"/>
+  </g>
+  <line x1="600" y1="1320" x2="600" y2="1420" stroke="#edc58a" stroke-width="1.5"/>
+  <text x="250" y="1327" class="eyebrow eyebrow-internal">ALL ROUTES · MANAGER VERIFIES</text>
+  <text x="250" y="1361" class="heading">RELEASE</text>
+  <text x="250" y="1388" class="body">Seal ready-to-print CAD and the in-box manual PDF.</text>
+  <text x="250" y="1410" class="body">Quest binds Playtest proof; Spark and Forge record not-run.</text>
+  <path class="micro" d="M 665 1328 C 735 1302, 764 1355, 730 1402 C 700 1442, 633 1413, 646 1366"/>
+  <text x="697" y="1337" text-anchor="middle" class="micro-copy">OBSERVE</text>
+  <text x="697" y="1359" text-anchor="middle" class="micro-copy">ACT</text>
+  <text x="697" y="1381" text-anchor="middle" class="micro-copy">VERIFY</text>
+  <text x="697" y="1403" text-anchor="middle" class="micro-copy">IMPROVE</text>
+
+  <!-- Release gate -->
+  <rect x="310" y="1456" width="168" height="26" rx="13" fill="#fff8ec"/>
+  <text x="394" y="1474" text-anchor="middle" class="gate">RELEASE VERIFIED</text>
+
+  <rect x="520" y="1464" width="222" height="26" rx="13" fill="#f4f0ff"/>
+  <text x="631" y="1482" text-anchor="middle" class="edge-label-human">HANDOFF TO OPERATIONS</text>
 
   <!-- Printing -->
   <g filter="url(#shadow)">
-    <rect class="node-ops" x="220" y="1290" width="560" height="110" rx="20"/>
+    <rect class="node-ops" x="220" y="1510" width="560" height="110" rx="20"/>
   </g>
-  <text x="250" y="1318" class="eyebrow eyebrow-ops">OPERATIONS TEAM · PHYSICAL WORK</text>
-  <text x="250" y="1350" class="heading">PRINTING</text>
-  <text x="250" y="1376" class="body">Print the released CAD and inspect the physical result.</text>
+  <text x="250" y="1538" class="eyebrow eyebrow-ops">OPERATIONS TEAM · PHYSICAL WORK</text>
+  <text x="250" y="1570" class="heading">PRINTING</text>
+  <text x="250" y="1596" class="body">Print the released CAD and inspect the physical result.</text>
 
   <!-- Deliver -->
   <g filter="url(#shadow)">
-    <rect class="node-ops" x="220" y="1460" width="560" height="110" rx="20"/>
+    <rect class="node-ops" x="220" y="1680" width="560" height="110" rx="20"/>
   </g>
-  <text x="250" y="1488" class="eyebrow eyebrow-ops">OPERATIONS TEAM · FULFILLMENT</text>
-  <text x="250" y="1520" class="heading">DELIVER</text>
-  <text x="250" y="1546" class="body">Check it by hand, tuck it into a box, and send it to your door.</text>
+  <text x="250" y="1708" class="eyebrow eyebrow-ops">OPERATIONS TEAM · FULFILLMENT</text>
+  <text x="250" y="1740" class="heading">DELIVER</text>
+  <text x="250" y="1766" class="body">Check it by hand, tuck it into a box, and send it to your door.</text>
 
   <!-- Reviews -->
   <g filter="url(#shadow)">
-    <rect class="node-human" x="220" y="1630" width="560" height="110" rx="20"/>
+    <rect class="node-human" x="220" y="1850" width="560" height="110" rx="20"/>
   </g>
-  <text x="250" y="1658" class="eyebrow eyebrow-human">YOU PLAY · OPERATIONS LISTENS</text>
-  <text x="250" y="1690" class="heading">REVIEW</text>
-  <text x="250" y="1716" class="body">What you say helps this toy grow—and starts the next adventure.</text>
+  <text x="250" y="1878" class="eyebrow eyebrow-human">YOU PLAY · OPERATIONS LISTENS</text>
+  <text x="250" y="1910" class="heading">REVIEW</text>
+  <text x="250" y="1936" class="body">What you say helps this toy grow—and starts the next adventure.</text>
 
-  <text x="500" y="1790" text-anchor="middle" class="subtitle">One Wish in. One never-before-seen toy out.</text>
+  <text x="500" y="2010" text-anchor="middle" class="subtitle">One Wish in. One never-before-seen toy out.</text>
 
 </svg>

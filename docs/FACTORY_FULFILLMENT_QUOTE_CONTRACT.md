@@ -191,7 +191,7 @@ the smallest fail-closed Workshop flow is:
    and integer-money invariant above.
 3. Canonically serialize and hash the exact quote. Store its bytes/hash and
    `quote_id` in the private effect ledger, bound to the existing import,
-   artifact, Release, and Playtest hashes.
+   artifact, Release, and applicable Playtest-evidence or omission hashes.
 4. Prepare the publication intent with the exact quoted `price_cents`, currency,
    quote id/hash, design id, and history id before network I/O.
 5. Submit those exact values once. On timeout or disconnect, reconcile by

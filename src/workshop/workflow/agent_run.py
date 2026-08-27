@@ -43,6 +43,10 @@ from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER_BYTES,
 )
 from workshop.wish import Wish
+from workshop.workflow.effort import (
+    EFFORT_ROUTE_CAPABILITY_PATH,
+    workshop_effort,
+)
 
 
 AGENT_RUN_STAGES = (
@@ -120,13 +124,33 @@ def _uses_direct_release(payload: Mapping[str, Any]) -> bool:
     }
 
 
+def _uses_effort_routes(payload: Mapping[str, Any]) -> bool:
+    return (
+        payload.get("schema_version") == 4
+        and EFFORT_ROUTE_CAPABILITY_PATH
+        in {item["path"] for item in payload["inputs"]}
+    )
+
+
+def _run_effort(payload: Mapping[str, Any]):
+    if not _uses_effort_routes(payload):
+        return None
+    return workshop_effort(payload.get("effort"))
+
+
 def _forward_transition(payload: Mapping[str, Any], stage: str) -> str:
+    effort = _run_effort(payload)
+    if effort is not None:
+        return effort.next_stage(stage)
     if stage == "make" and _uses_direct_release(payload):
         return "release"
     return _FORWARD_TRANSITIONS[stage]
 
 
 def _upstream_stage(payload: Mapping[str, Any], stage: str) -> str:
+    effort = _run_effort(payload)
+    if effort is not None:
+        return effort.previous_stage(stage)
     if stage == "release" and _uses_direct_release(payload):
         return "make"
     return _UPSTREAM_STAGE[stage]
@@ -598,6 +622,7 @@ class AgentRunCheckpoint:
     inventor_roster: tuple[Mapping[str, Any], ...]
     stage_artifacts: Mapping[str, tuple[AgentArtifact, ...]]
     invalidated_stages: tuple[str, ...]
+    effort: Optional[str] = None
 
     @property
     def complete(self) -> bool:
@@ -631,9 +656,11 @@ class AgentRun:
         domain_skill_roots: Optional[Mapping[str, Path]] = None,
         inventor_source_root: Optional[Path] = None,
         max_rounds: int = 4,
+        effort: Optional[str] = None,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
+        selected_effort = workshop_effort(effort) if effort is not None else None
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
         try:
             requested = Path(run_root)
@@ -704,6 +731,17 @@ class AgentRun:
             _reject_private_agent_bytes(
                 ".agents/skills/autonomous-workshop/%s" % relative.as_posix(),
                 content,
+            )
+        effort_capable = any(
+            (
+                PurePosixPath(".agents/skills/autonomous-workshop") / relative
+            ).as_posix()
+            == EFFORT_ROUTE_CAPABILITY_PATH
+            for relative, _, _ in skill_files
+        )
+        if not effort_capable and selected_effort is not None:
+            raise ContractError(
+                "selected Workshop effort requires the materialized effort-route capability"
             )
 
         domain_files: list[tuple[PurePosixPath, bytes, int]] = []
@@ -948,7 +986,7 @@ class AgentRun:
                 os.chmod(directory, 0o500)
             os.chmod(codex_input_root, 0o500)
         core: dict[str, Any] = {
-            "schema_version": 3,
+            "schema_version": 4 if selected_effort is not None else 3,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
             "product_id": product_id,
             "run_root_sha256": _sha256(str(selected).encode("utf-8")),
@@ -971,6 +1009,8 @@ class AgentRun:
             "last_outcome_sha256": None,
             "previous_checkpoint_sha256": None,
         }
+        if selected_effort is not None:
+            core["effort"] = selected_effort.name
         checkpoint_sha256 = cls._write_checkpoint_file(
             selected_host / "agent-run.json", core
         )
@@ -1107,11 +1147,14 @@ class AgentRun:
             "previous_checkpoint_sha256",
             "checkpoint_sha256",
         }
+        schema_version = payload.get("schema_version")
+        if schema_version == 4:
+            expected_fields.add("effort")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
-            type(payload["schema_version"]) is not int
-            or payload["schema_version"] != 3
+            type(schema_version) is not int
+            or schema_version not in (3, 4)
             or payload["kind"] != AGENT_RUN_CHECKPOINT_KIND
             or payload["stage"] not in _READABLE_AGENT_RUN_STAGES
             or payload["status"] not in ("active", "waiting", "failed", "complete")
@@ -1125,6 +1168,18 @@ class AgentRun:
             or len(payload["history"]) > payload["max_rounds"] * 3 + 16
         ):
             raise StateConflict("agent run checkpoint values are invalid")
+        if schema_version == 4:
+            try:
+                selected_effort = workshop_effort(payload["effort"])
+            except ContractError as exc:
+                raise StateConflict("agent run effort is invalid") from exc
+            if payload["stage"] not in selected_effort.lifecycle:
+                raise StateConflict("agent run stage is disabled by its frozen effort")
+            if EFFORT_ROUTE_CAPABILITY_PATH not in {
+                item.get("path") for item in payload.get("inputs", ())
+                if isinstance(item, Mapping)
+            }:
+                raise StateConflict("agent run effort capability is missing")
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -1371,6 +1426,7 @@ class AgentRun:
             ),
             stage_artifacts=MappingProxyType(self._stage_artifacts(payload, by_path)),
             invalidated_stages=tuple(payload["invalidated_stages"]),
+            effort=payload.get("effort"),
         )
 
     def expected_gate_subject_sha256(self) -> str:
@@ -1625,7 +1681,11 @@ class AgentRun:
         round_index = payload["round_index"]
         status = "active"
         next_stage = transition
-        if outcome.stage == "invent" and transition == "make" and round_index == 0:
+        if (
+            outcome.stage in ("wish", "invent")
+            and transition == "make"
+            and round_index == 0
+        ):
             round_index = 1
         elif outcome.stage == "playtest" and transition in ("make", "invent"):
             round_index += 1

@@ -56,6 +56,11 @@ from workshop.runtime.package_data import (
 from workshop.runtime.progress import WishRunTimingEvent
 from workshop.wish import Wish, generate_wish_id
 from workshop.workflow import native_run_status, resume_native_run, start_native_run
+from workshop.workflow.effort import (
+    DEFAULT_WORKSHOP_EFFORT,
+    WORKSHOP_EFFORTS,
+    workshop_effort,
+)
 
 
 _INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
@@ -287,6 +292,7 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
 
 
 def _wish(args: argparse.Namespace) -> int:
+    effort = workshop_effort(args.effort)
     wish = Wish.create(
         generate_wish_id(),
         " ".join(args.objective),
@@ -295,9 +301,19 @@ def _wish(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
-    print("Starting one native Codex session before Match...", file=progress, flush=True)
+    print(
+        "Effort: %s — %s" % (effort.title, effort.description),
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Starting one native Codex session for %s..." % effort.enabled_stages[0].title(),
+        file=progress,
+        flush=True,
+    )
     receipt = start_native_run(
         wish,
+        effort=effort.name,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -761,6 +777,17 @@ def parser() -> argparse.ArgumentParser:
         "wish", help="persist one Wish and start its native Codex session"
     )
     wish.add_argument("objective", nargs="+", metavar="WISH")
+    wish.add_argument(
+        "--effort",
+        choices=tuple(WORKSHOP_EFFORTS),
+        default=DEFAULT_WORKSHOP_EFFORT,
+        metavar="MODE",
+        help=(
+            "creative depth: spark (Wish->Make->Release), "
+            "forge (Wish->Invent->Make->Release; default), or "
+            "quest (Wish->Invent->Make->Playtest->Release)"
+        ),
+    )
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)

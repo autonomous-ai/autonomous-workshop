@@ -1,0 +1,129 @@
+"""Frozen selectable effort routes for new Workshop product runs.
+
+Effort is deterministic lifecycle policy, not an agent persona or a Python
+reasoning loop.  Optional stages pass through by selecting the next enabled
+stage in the canonical sequence; skipped stages do not receive native turns,
+artifacts, gates, or fabricated evidence.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Any, Mapping
+
+from workshop.errors import ContractError
+
+
+EFFORT_ROUTE_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/effort-routes-v1.md"
+)
+DEFAULT_WORKSHOP_EFFORT = "forge"
+_CANONICAL_OPTIONAL_SEQUENCE = ("invent", "make", "playtest", "release")
+
+
+@dataclass(frozen=True)
+class WorkshopEffort:
+    """One public effort name and its exact enabled cognitive stages."""
+
+    name: str
+    title: str
+    description: str
+    enabled_stages: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.name, str) or not self.name:
+            raise ContractError("Workshop effort name must be non-empty text")
+        if not isinstance(self.title, str) or not self.title:
+            raise ContractError("Workshop effort title must be non-empty text")
+        if not isinstance(self.description, str) or not self.description:
+            raise ContractError("Workshop effort description must be non-empty text")
+        enabled = tuple(self.enabled_stages)
+        if (
+            not enabled
+            or enabled[-1] != "release"
+            or "make" not in enabled
+            or any(stage not in _CANONICAL_OPTIONAL_SEQUENCE for stage in enabled)
+            or tuple(
+                stage for stage in _CANONICAL_OPTIONAL_SEQUENCE if stage in enabled
+            )
+            != enabled
+        ):
+            raise ContractError("Workshop effort stages must be canonical and releasable")
+        object.__setattr__(self, "enabled_stages", enabled)
+
+    @property
+    def lifecycle(self) -> tuple[str, ...]:
+        return ("wish", *self.enabled_stages)
+
+    def includes(self, stage: str) -> bool:
+        return stage in self.enabled_stages
+
+    def next_stage(self, stage: str) -> str:
+        """Pass through disabled stages and return the next enabled boundary."""
+
+        if stage == "release":
+            return "complete"
+        if stage == "wish":
+            start = 0
+        else:
+            if stage not in _CANONICAL_OPTIONAL_SEQUENCE:
+                raise ContractError("Workshop effort cannot route unknown stage")
+            start = _CANONICAL_OPTIONAL_SEQUENCE.index(stage) + 1
+        for candidate in _CANONICAL_OPTIONAL_SEQUENCE[start:]:
+            if candidate in self.enabled_stages:
+                return candidate
+        raise ContractError("Workshop effort has no downstream stage")
+
+    def previous_stage(self, stage: str) -> str:
+        """Return the nearest enabled predecessor across optional stages."""
+
+        if stage not in self.enabled_stages:
+            raise ContractError("Workshop effort cannot route disabled stage")
+        position = self.enabled_stages.index(stage)
+        return "wish" if position == 0 else self.enabled_stages[position - 1]
+
+
+WORKSHOP_EFFORTS: Mapping[str, WorkshopEffort] = MappingProxyType({
+    effort.name: effort
+    for effort in (
+        WorkshopEffort(
+            name="spark",
+            title="Spark",
+            description="Fastest path: Wish -> Make -> Release.",
+            enabled_stages=("make", "release"),
+        ),
+        WorkshopEffort(
+            name="forge",
+            title="Forge",
+            description="Balanced path: Wish -> Invent -> Make -> Release.",
+            enabled_stages=("invent", "make", "release"),
+        ),
+        WorkshopEffort(
+            name="quest",
+            title="Quest",
+            description=(
+                "Deepest path: Wish -> Invent -> Make -> Playtest -> Release."
+            ),
+            enabled_stages=("invent", "make", "playtest", "release"),
+        ),
+    )
+})
+
+
+def workshop_effort(value: Any) -> WorkshopEffort:
+    if not isinstance(value, str) or value not in WORKSHOP_EFFORTS:
+        raise ContractError(
+            "Workshop effort must be one of: %s"
+            % ", ".join(WORKSHOP_EFFORTS)
+        )
+    return WORKSHOP_EFFORTS[value]
+
+
+__all__ = [
+    "DEFAULT_WORKSHOP_EFFORT",
+    "EFFORT_ROUTE_CAPABILITY_PATH",
+    "WORKSHOP_EFFORTS",
+    "WorkshopEffort",
+    "workshop_effort",
+]

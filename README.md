@@ -6,7 +6,7 @@ Not from a shelf. From your imagination.
 
 Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, and Release before handing the toy to Operations for Printing, Delivery, and Review](docs/images/workshop-floorplan.svg?version=direct-release-operations-v7)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=effort-routes-v1)](docs/images/workshop-floorplan.svg)
 
 Workshop's executable workflow ends at a public Release: exact ready-to-print
 CAD plus the in-box `MANUAL.pdf`. From there, Operations prints, packs,
@@ -31,9 +31,9 @@ so the set is about you. It is judged as an object, not as a game.
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
 sit at a table. Leo is especially drawn to rules that reward discovery and
-counterplay. The deferred Playtest phase will eventually exercise those rules
-with seeded games; the current fast path truthfully releases without claiming
-that testing occurred. Whether customers want to play again is learned later
+counterplay. Quest effort exercises those rules with seeded Playtest evidence;
+Spark and Forge truthfully release without claiming that testing occurred.
+Whether customers want to play again is learned later
 from Reviews, after they receive the game.
 
 https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
@@ -101,6 +101,7 @@ cd autonomous-workshop
 
 uv run workshop doctor
 uv run workshop wish \
+  --effort forge \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
@@ -108,7 +109,7 @@ uv run workshop wish \
 packaged agent assets, and host-only Factory credential configuration without
 printing secrets. Fix any reported need before expecting a run to complete.
 Factory credentials belong to one Workshop-owned service account, not to the
-person making a Wish or the Inventor selected during Match. They are required
+person making a Wish or the Inventor selected during the first creative stage. They are required
 only by the host when Release publishes the final CAD and manual; see the
 [credential setup](docs/PUBLISH_SEALED_PRODUCT.md#credentials).
 
@@ -120,16 +121,20 @@ missing or publication cannot be reconciled, Release waits safely for
 Every Wish first creates one private persistent project under
 `$WORKSHOP_HOME/runs/<wish-id>/workspace`, populates its product-run `AGENTS.md`,
 skills, and Inventor roster, and then starts one native Codex session with that
-project as its working directory. The same
-session Matches an Inventor subagent, researches, explores, and selects the
-exact product concept during Invent, builds and repairs ready-to-print CAD from
-that sealed Invent result, then writes the Release package:
+project as its working directory. Choose how much creative depth the run gets:
 
 ```text
-Wish -> Match -> Invent -> Make -> Release
+Spark: Wish -> Make -> Release
+Forge: Wish -> Invent -> Make -> Release       (default)
+Quest: Wish -> Invent -> Make -> Playtest -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
+
+Pass `--effort spark`, `--effort forge`, or `--effort quest`. Inventor
+selection is folded into the first active creative stage, so there is no
+separate Match turn. Disabled stages pass through without a native turn,
+artifact, gate, or fabricated evidence.
 
 Workshop code ends after it verifies and publishes Release. Printing, physical
 delivery, and customer Review remain part of the complete toy journey, handled
@@ -141,7 +146,7 @@ Release delivers three facts about the same exact bytes:
 - a self-contained printable `MANUAL.pdf` for the box; and
 - authenticated public Factory readback proving those CAD and manual hashes.
 
-For each active Match, Invent, Make, or Release attempt,
+For each active Invent, Make, Playtest, or Release attempt,
 Codex creates one native Goal with one objective, proof artifacts, and a
 verifiable stopping condition: the current stage finalizer succeeds. Only one
 Goal is active at a time. While pursuing it, Codex observes the current artifact, acts with its
@@ -152,16 +157,17 @@ the official Codex patterns for [following a durable
 Goal](https://learn.chatgpt.com/use-cases/follow-goals) and [iterating with
 evals](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
 
-Playtest is intentionally deferred in the current fast path. Release records
-`playtest_status: not-run` and carries no Playtest claims. The host still
+Spark and Forge omit Playtest truthfully: Release records
+`playtest_status: not-run` and carries no Playtest claims. Quest requires a
+passing Playtest bound to the current Made revision. The host still
 replays the deterministic full-tier CAD verifier during Make and again during
 Release, but that digital verification never proves a successful physical
 print, fit, durability, or human response.
 
 Release centers the moment the owner opens the box. Codex designs a
 self-contained printable `MANUAL.pdf`, renders and inspects every page, and
-seals it with exact product facts and an explicit record that Playtest was not
-run. The manual must teach
+seals it with exact product facts and either the explicit Playtest omission or
+Quest's bounded passing evidence. The manual must teach
 the product without a website, video, QR code, or phone. The host then
 revalidates full-tier, thickness-checked, print-ready CAD and publishes the
 exact CAD package and manual through Factory. Public hash readback is part of

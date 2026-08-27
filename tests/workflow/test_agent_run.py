@@ -564,6 +564,54 @@ class AgentRunTest(unittest.TestCase):
             {"wish", "match", "invent", "make", "release"},
         )
 
+    def test_effort_routes_pass_through_optional_stages_without_artifacts(self):
+        marker = self.skill / "references" / "effort-routes-v1.md"
+        marker.write_bytes(b"selectable effort routes\n")
+        routes = {
+            "spark": (("wish", "make"), ("make", "release"), ("release", "complete")),
+            "forge": (
+                ("wish", "invent"),
+                ("invent", "make"),
+                ("make", "release"),
+                ("release", "complete"),
+            ),
+            "quest": (
+                ("wish", "invent"),
+                ("invent", "make"),
+                ("make", "playtest"),
+                ("playtest", "release"),
+                ("release", "complete"),
+            ),
+        }
+        for effort, transitions in routes.items():
+            with self.subTest(effort=effort):
+                run_root = self.root / effort
+                host_root = self.root / (effort + "-host")
+                run = AgentRun.create(
+                    run_root,
+                    host_state_root=host_root,
+                    product_id=self.product_id + "-" + effort,
+                    wish_bytes=canonical_wish(
+                        self.product_id + "-" + effort,
+                        "Make a clockwork moon.",
+                    ),
+                    product_run_constitution_source=self.product_run_constitution,
+                    skill_root=self.skill,
+                    effort=effort,
+                )
+                checkpoint = run.snapshot()
+                self.assertEqual(checkpoint.effort, effort)
+                for stage, transition in transitions:
+                    outcome = self.outcome(run, stage, transition)
+                    checkpoint = run.apply_outcome(
+                        outcome, gate=self.gate(run, outcome)
+                    )
+                self.assertTrue(checkpoint.complete)
+                self.assertEqual(
+                    set(checkpoint.stage_artifacts),
+                    {stage for stage, unused in transitions},
+                )
+
     def test_new_run_cannot_propose_the_obsolete_deliver_transition(self):
         run = self.create()
         for stage, transition in (
@@ -579,6 +627,27 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaisesRegex(TransitionError, "complete the Workshop"):
             run.apply_outcome(outcome, gate=self.gate(run, outcome))
         self.assertEqual(run.snapshot().stage, "release")
+
+    def test_effort_checkpoint_rejects_a_disabled_active_stage(self):
+        marker = self.skill / "references" / "effort-routes-v1.md"
+        marker.write_bytes(b"selectable effort routes\n")
+        run = AgentRun.create(
+            self.run_root,
+            host_state_root=self.host_state_root,
+            product_id=self.product_id,
+            wish_bytes=self.wish_bytes,
+            product_run_constitution_source=self.product_run_constitution,
+            skill_root=self.skill,
+            effort="spark",
+        )
+        checkpoint_path = run.host_state_root / "agent-run.json"
+        value = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+        value.pop("checkpoint_sha256")
+        value["stage"] = "invent"
+        agent_run_module.AgentRun._write_checkpoint_file(checkpoint_path, value)
+
+        with self.assertRaisesRegex(StateConflict, "disabled by its frozen effort"):
+            AgentRun.open(run.run_root, host_state_root=run.host_state_root)
 
     def test_wait_is_resumable_but_failure_is_terminal_and_neither_advances(self):
         waiting_run = self.create()

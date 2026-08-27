@@ -262,12 +262,13 @@ def _fixture_components():
 class _OneSessionProductAgent:
     """A deterministic stand-in for one resumed native Codex session."""
 
-    def __init__(self, *, playtest_plan=None):
+    def __init__(self, *, playtest_plan=None, product_contract_name_collisions=False):
         self.starts = []
         self.resumes = []
         self.stage_packets = []
         self.finalizer_commands = []
         self.playtest_plan = list(playtest_plan) if playtest_plan else []
+        self.product_contract_name_collisions = product_contract_name_collisions
 
     @staticmethod
     def _checkpoint(arguments):
@@ -323,11 +324,21 @@ class _OneSessionProductAgent:
             raise AssertionError("finalizer did not author the compact proposal")
 
     def _author_match(self, run_root, stage):
+        ranking = self._ranking(stage)
+        source = "authored/match.json"
+        _write_json(
+            run_root / source,
+            {"selected_inventor_id": "alice", "ranking": ranking},
+        )
+        self._run_finalizer(run_root, "match", "--source", source)
+
+    @staticmethod
+    def _ranking(stage):
         inventors = stage["inputs"]["inventor_roster"]["inventors"]
         ids = [entry["inventor_id"] for entry in inventors]
         if ids != sorted(ids) or "alice" not in ids:
             raise AssertionError("fixture received a non-canonical inventor roster")
-        ranking = [
+        return [
             {
                 "inventor_id": inventor_id,
                 "rationale": (
@@ -340,22 +351,13 @@ class _OneSessionProductAgent:
             }
             for inventor_id in (["alice"] + [item for item in ids if item != "alice"])
         ]
-        source = "authored/match.json"
-        _write_json(
-            run_root / source,
-            {"selected_inventor_id": "alice", "ranking": ranking},
-        )
-        self._run_finalizer(run_root, "match", "--source", source)
-
     def _author_invent(self, run_root, stage):
-        assignment = stage["inputs"]["assignment"]
-        if assignment["selected_inventor_id"] != "alice":
+        assignment = stage["inputs"].get("assignment")
+        if assignment is not None and assignment["selected_inventor_id"] != "alice":
             raise AssertionError("Invent did not receive the accepted Match assignment")
         revised = "failing_playtested" in stage["inputs"]
         source = "authored/invent.json"
-        _write_json(
-            run_root / source,
-            {
+        authored = {
                 "concept": {
                     "title": (
                         "Orbit Dog Draughts — Aligned Orbits"
@@ -397,8 +399,15 @@ class _OneSessionProductAgent:
                     ],
                     "safety_boundary": "Ages 14+; small parts are explicitly identified.",
                 },
-            },
-        )
+            }
+        if assignment is None:
+            authored.update(
+                {
+                    "selected_inventor_id": "alice",
+                    "ranking": self._ranking(stage),
+                }
+            )
+        _write_json(run_root / source, authored)
         self._run_finalizer(run_root, "invent", "--source", source)
 
     def _author_make(self, run_root, stage):
@@ -408,7 +417,31 @@ class _OneSessionProductAgent:
         (product_root / "cad" / "project").mkdir(parents=True, exist_ok=True)
         (product_root / "validation").mkdir(exist_ok=True)
         wish = _read_json(run_root / "WISH.json")
-        invented = inputs["invented"]
+        invented = inputs.get("invented")
+        spark_source = None
+        if invented is None:
+            spark_source = "authored/spark-make.json"
+            spark_authored = {
+                "selected_inventor_id": "alice",
+                "ranking": self._ranking(stage),
+                "concept": {
+                    "title": "Orbit Dog Draughts",
+                    "summary": (
+                        "A compact orbital draughts set designed and built in one "
+                        "Spark Make turn."
+                    ),
+                    "components": [
+                        {"key": key, **fields}
+                        for key, fields in _fixture_components().items()
+                    ],
+                },
+                "research": {
+                    "rules_basis": "English draughts movement remains unchanged.",
+                    "scope": "Compact evidence sufficient for the Spark build.",
+                },
+            }
+            _write_json(run_root / spark_source, spark_authored)
+            invented = {"concept": spark_authored["concept"]}
         if not invented["concept"]["title"].startswith("Orbit Dog Draughts"):
             raise AssertionError("Make did not receive the accepted Invent result")
         product = {
@@ -435,6 +468,9 @@ class _OneSessionProductAgent:
             ],
         }
         _write_json(product_root / "product.json", product)
+        if self.product_contract_name_collisions:
+            _write_json(product_root / "assignment.json", {"product_asset": True})
+            _write_json(product_root / "invented.json", {"product_asset": True})
         (product_root / "wish.json").write_bytes((run_root / "WISH.json").read_bytes())
         (product_root / "assembled.step").write_bytes(
             b"ISO-10303-21;\nHEADER;ENDSEC;\nDATA;ENDSEC;\nEND-ISO-10303-21;\n"
@@ -467,16 +503,20 @@ class _OneSessionProductAgent:
         for required in inputs["required_root_files"]:
             if not (product_root / required).is_file():
                 raise AssertionError("Make omitted a host-required root file")
-        self._run_finalizer(
-            run_root,
-            "make",
-            "--product-root",
-            product_root_value,
-            "--cad-project-path",
-            "cad/project",
-            "--cad-verification-path",
-            "validation/cad-verification.json",
+        arguments = ["make"]
+        if spark_source is not None:
+            arguments.extend(("--source", spark_source))
+        arguments.extend(
+            (
+                "--product-root",
+                product_root_value,
+                "--cad-project-path",
+                "cad/project",
+                "--cad-verification-path",
+                "validation/cad-verification.json",
+            )
         )
+        self._run_finalizer(run_root, *arguments)
 
     def _author_playtest(self, run_root, stage):
         inputs = stage["inputs"]
@@ -853,14 +893,32 @@ class _ConceptRevisionProductAgent(_OneSessionProductAgent):
             feedback = inputs["feedback"]
             if inputs["repair_round"] != 2:
                 raise AssertionError("re-Invent did not retain the shared repair round")
-            if inputs["prior_invented_artifact"]["invented_sha256"] != (
-                prior_invented["invented_sha256"]
+            prior_binding = inputs["prior_invented_artifact"]
+            if "invented_sha256" in prior_binding:
+                if prior_binding["invented_sha256"] != prior_invented[
+                    "invented_sha256"
+                ]:
+                    raise AssertionError(
+                        "re-Invent prior Invented identity is unbound"
+                    )
+            elif prior_binding["sha256"] != _sha256(
+                (run_root / prior_binding["path"]).read_bytes()
             ):
-                raise AssertionError("re-Invent prior Invented identity is unbound")
-            if inputs["failing_playtested_artifact"]["playtested_sha256"] != (
-                failing_playtested["playtested_sha256"]
+                raise AssertionError("re-Invent prior Invented artifact is unbound")
+            playtested_binding = inputs["failing_playtested_artifact"]
+            if "playtested_sha256" in playtested_binding:
+                if playtested_binding["playtested_sha256"] != failing_playtested[
+                    "playtested_sha256"
+                ]:
+                    raise AssertionError(
+                        "re-Invent failing Playtested identity is unbound"
+                    )
+            elif playtested_binding["sha256"] != _sha256(
+                (run_root / playtested_binding["path"]).read_bytes()
             ):
-                raise AssertionError("re-Invent failing Playtested identity is unbound")
+                raise AssertionError(
+                    "re-Invent failing Playtested artifact is unbound"
+                )
             if feedback != failing_playtested["feedback"]:
                 raise AssertionError("re-Invent feedback differs from Playtested bytes")
             if inputs["feedback_sha256"] != _sha256(_canonical_json(feedback)):
@@ -1337,6 +1395,7 @@ class NativeFullRunTest(unittest.TestCase):
         wish_name,
         context_source,
         launcher=None,
+        effort=None,
     ):
         if launcher is None:
             launcher = _OneSessionProductAgent(playtest_plan=playtest_plan)
@@ -1358,7 +1417,11 @@ class NativeFullRunTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             home = root / "workshop-home"
-            assets = _product_run_assets_without_direct_release(root)
+            assets = (
+                _product_run_assets_without_direct_release(root)
+                if effort is None
+                else None
+            )
             wish = Wish.create(
                 wish_name,
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -1367,9 +1430,6 @@ class NativeFullRunTest(unittest.TestCase):
             )
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
-            ), mock.patch(
-                "workshop.workflow.native_run.product_run_agent_assets",
-                return_value=assets,
             ), mock.patch(
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
@@ -1392,7 +1452,19 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.FactoryPublicTransition",
                 side_effect=effects.transition,
             ):
-                receipt = start_native_run(wish)
+                asset_patch = (
+                    mock.patch(
+                        "workshop.workflow.native_run.product_run_agent_assets",
+                        return_value=assets,
+                    )
+                    if assets is not None
+                    else mock.patch(
+                        "workshop.workflow.native_run._source_checkout_root",
+                        return_value=None,
+                    )
+                )
+                with asset_patch:
+                    receipt = start_native_run(wish, effort=effort)
                 paths = native_run_paths(wish.product_id)
                 run = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state
@@ -1402,6 +1474,147 @@ class NativeFullRunTest(unittest.TestCase):
         self.assertEqual(receipt["status"], "complete")
         self.assertEqual(receipt["stage"], "release")
         return launcher, checkpoint
+
+    def test_quest_playtest_repair_returns_to_make_without_match(self):
+        launcher, checkpoint = self._run_playtest_routing_case(
+            effort="quest",
+            playtest_plan=[
+                (
+                    "improve",
+                    [
+                        {
+                            "code": "piece-clearance",
+                            "area": "make",
+                            "severity": "block",
+                            "finding": "The piece clearance needs a build-only repair.",
+                            "change": "Increase the printable clearance and rebuild.",
+                            "evidence_refs": ["results/mechanical-check.json"],
+                            "invalidates": ["playtest", "release"],
+                        }
+                    ],
+                )
+            ],
+            wish_name="quest-build-repair",
+            context_source="quest-build-repair-test",
+        )
+
+        self.assertEqual(checkpoint.effort, "quest")
+        self.assertEqual(checkpoint.round_index, 2)
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            ["invent", "make", "playtest", "make", "playtest", "release"],
+        )
+        self.assertNotIn("match", checkpoint.stage_artifacts)
+
+    def test_spark_release_uses_exact_creative_contract_paths(self):
+        launcher = _OneSessionProductAgent(product_contract_name_collisions=True)
+        launcher, checkpoint = self._run_playtest_routing_case(
+            effort="spark",
+            launcher=launcher,
+            playtest_plan=[],
+            wish_name="spark-contract-name-collisions",
+            context_source="spark-contract-name-collisions-test",
+        )
+
+        self.assertTrue(checkpoint.complete)
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            ["make", "release"],
+        )
+        make_paths = {artifact.path for artifact in checkpoint.stage_artifacts["make"]}
+        self.assertIn("artifacts/make/r0001/assignment.json", make_paths)
+        self.assertIn("artifacts/make/r0001/invented.json", make_paths)
+        self.assertIn(
+            "artifacts/make/r0001/product/assignment.json", make_paths
+        )
+        self.assertIn("artifacts/make/r0001/product/invented.json", make_paths)
+
+    def test_quest_concept_revision_reinvents_without_match(self):
+        launcher = _ConceptRevisionProductAgent()
+        launcher, checkpoint = self._run_playtest_routing_case(
+            effort="quest",
+            playtest_plan=[
+                (
+                    "block",
+                    [
+                        {
+                            "code": "waypoint-misalignment",
+                            "area": "make",
+                            "severity": "block",
+                            "finding": (
+                                "The orbital waypoints do not align with the "
+                                "draughts grid, so legal jumps are ambiguous."
+                            ),
+                            "change": (
+                                "Revise the concept so its orbital interaction maps "
+                                "unambiguously to every legal playable square."
+                            ),
+                            "evidence_refs": ["results/mechanical-check.json"],
+                            "invalidates": [
+                                "invent",
+                                "make",
+                                "playtest",
+                                "release",
+                            ],
+                        }
+                    ],
+                )
+            ],
+            wish_name="quest-orbit-dog-design-revision",
+            context_source="quest-playtest-design-revision-test",
+            launcher=launcher,
+        )
+
+        self.assertEqual(checkpoint.effort, "quest")
+        self.assertEqual(checkpoint.round_index, 2)
+        self.assertEqual(
+            (checkpoint.stage, checkpoint.status), ("release", "complete")
+        )
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            [
+                "invent",
+                "make",
+                "playtest",
+                "invent",
+                "make",
+                "playtest",
+                "release",
+            ],
+        )
+        self.assertNotIn("match", checkpoint.stage_artifacts)
+        first_invent_packet = launcher.stage_packets[0]
+        reinvent_packet = launcher.stage_packets[3]
+        self.assertEqual(
+            first_invent_packet["inputs"]["assignment_contract_path"],
+            "artifacts/invent/assignment.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["assignment_contract_path"],
+            "artifacts/invent/r0002/assignment.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["contract_path"],
+            "artifacts/invent/r0002/invented.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["prior_invented_artifact"]["path"],
+            "artifacts/invent/invented.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["failing_playtested_artifact"]["path"],
+            "artifacts/playtest/r0001/playtested.json",
+        )
+        self.assertEqual(
+            [path for path, unused_bytes in launcher.invent_outputs],
+            [
+                "artifacts/invent/invented.json",
+                "artifacts/invent/r0002/invented.json",
+            ],
+        )
+        self.assertNotEqual(
+            launcher.invent_outputs[0][1], launcher.invent_outputs[1][1]
+        )
 
     def test_timeout_continues_same_session_through_the_full_run(self):
         with mock.patch("workshop.workflow.native_run.time.sleep") as backoff:
@@ -2264,6 +2477,93 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertNotIn(
                 "product_verification_sha256", release_gate["evidence"]["checks"]
             )
+
+    def test_each_selectable_effort_runs_its_exact_passthrough_route(self):
+        routes = {
+            "spark": ["make", "release"],
+            "forge": ["invent", "make", "release"],
+            "quest": ["invent", "make", "playtest", "release"],
+        }
+
+        for effort, expected_stages in routes.items():
+            with self.subTest(effort=effort), tempfile.TemporaryDirectory() as temporary:
+                launcher = _OneSessionProductAgent()
+                effects = _FactoryEffects()
+                home = Path(temporary).resolve() / "workshop-home"
+                wish = Wish.create(
+                    "effort-%s" % effort,
+                    "Build a pocket draughts set inspired by my orbit-loving dog.",
+                )
+
+                def verify_cad(made, **arguments):
+                    return SimpleNamespace(
+                        passed=True,
+                        receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                        verifier_sha256=arguments["expected_verifier_sha256"],
+                        verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                        verification_tier=NATIVE_CAD_FULL_TIER,
+                        thickness_gate_required=True,
+                        print_ready_eligible=True,
+                    )
+
+                with mock.patch.dict(
+                    os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+                ), mock.patch(
+                    "workshop.workflow.native_run._source_checkout_root",
+                    return_value=None,
+                ), mock.patch(
+                    "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                    return_value=launcher,
+                ), mock.patch(
+                    "workshop.workflow.native_run.verify_native_made_cad",
+                    side_effect=verify_cad,
+                ), mock.patch(
+                    "workshop.workflow.native_run._factory_credentials",
+                    side_effect=effects.credentials,
+                ), mock.patch(
+                    "workshop.workflow.native_run.FactoryReleaseWriter",
+                    side_effect=effects.writer,
+                ), mock.patch(
+                    "workshop.workflow.native_run.FactoryAgentSession",
+                    side_effect=effects.session,
+                ), mock.patch(
+                    "workshop.workflow.native_run.FactoryPublicTransition",
+                    side_effect=effects.transition,
+                ):
+                    receipt = start_native_run(wish, effort=effort)
+                    paths = native_run_paths(wish.product_id)
+                    checkpoint = AgentRun.open(
+                        paths.workspace, host_state_root=paths.host_state
+                    ).snapshot()
+
+                self.assertEqual(receipt["status"], "complete")
+                self.assertEqual(receipt["effort"], effort)
+                self.assertEqual(checkpoint.effort, effort)
+                self.assertEqual(
+                    [packet["stage"] for packet in launcher.stage_packets],
+                    expected_stages,
+                )
+                self.assertEqual(receipt["native_turns"], len(expected_stages))
+                self.assertNotIn("match", checkpoint.stage_artifacts)
+                self.assertEqual(
+                    "playtest" in checkpoint.stage_artifacts,
+                    effort == "quest",
+                )
+                creative_stage = "make" if effort == "spark" else "invent"
+                creative_paths = {
+                    Path(item.path).name
+                    for item in checkpoint.stage_artifacts[creative_stage]
+                }
+                self.assertTrue(
+                    {"assignment.json", "invented.json"} <= creative_paths
+                )
+                release = NativeRelease.from_mapping(
+                    _read_json(
+                        paths.workspace
+                        / checkpoint.stage_artifacts["release"][0].path
+                    )
+                )
+                self.assertEqual(release.schema_version, 2 if effort == "quest" else 3)
 
 
 if __name__ == "__main__":

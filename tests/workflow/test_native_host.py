@@ -668,7 +668,17 @@ class NativeHostTest(unittest.TestCase):
                         / "SKILL.md"
                     ).is_file()
                 )
-            for inventor_id in ("abo", "alice", "bob", "eve", "ivy", "leo"):
+            for inventor_id in (
+                "abo",
+                "alice",
+                "bob",
+                "eve",
+                "ivy",
+                "leo",
+                "mira-fold",
+                "pico-press",
+                "tess-loop",
+            ):
                 self.assertTrue(
                     (workspace / ".codex" / "agents" / (inventor_id + ".toml")).is_file()
                 )
@@ -685,7 +695,7 @@ class NativeHostTest(unittest.TestCase):
             prompt = arguments["prompt"]
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
-            self.assertIn("current match stage", prompt)
+            self.assertIn("current invent stage", prompt)
             self.assertIn("Create one native Codex goal", prompt)
             self.assertIn("successful finalization as its stopping condition", prompt)
             self.assertIn("inspecting, acting, evaluating, and improving", prompt)
@@ -701,7 +711,13 @@ class NativeHostTest(unittest.TestCase):
             self.assertNotIn("FACTORY", prompt)
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
-            self.assertIn("before Match", stderr.getvalue())
+            self.assertEqual(receipt["effort"], "forge")
+            self.assertIn("Effort: Forge", stderr.getvalue())
+            self.assertIn(
+                "Starting one native Codex session for Invent",
+                stderr.getvalue(),
+            )
+
     def test_resume_uses_exact_materialized_binding(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:

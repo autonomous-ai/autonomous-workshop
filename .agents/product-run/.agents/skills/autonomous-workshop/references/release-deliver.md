@@ -8,9 +8,9 @@ checkpoint. Verify those bytes before acting.
 
 Read `.agents/skills/manual-design/SKILL.md`, then create one native Codex Goal
 for this Release attempt. Its objective is to produce the exact printable
-in-box manual and bounded product facts traceable to the sealed product, while
-truthfully recording that Playtest was not run. Its stopping condition is a
-successful `release` finalizer for the current checkpoint.
+in-box manual and bounded product facts traceable to the sealed product and,
+when present, the exact passing Playtest. Its stopping condition is a successful
+`release` finalizer for the current checkpoint.
 
 While pursuing the Goal:
 
@@ -19,8 +19,8 @@ While pursuing the Goal:
    customer fact. Separate supported product guidance from claims about future
    publication, manufacture, delivery, or physical performance.
 2. **Act:** Assemble `artifacts/release/package` with canonical `MANUAL.pdf`,
-   `product.json`, canonical `PLAYTEST-NOT-RUN.json`, and optional editable
-   manual source. The PDF
+   `product.json`, the effort-required Playtest omission file when listed by
+   `required_package_files`, and optional editable manual source. The PDF
    is the customer artifact: cover inventory, setup, guided first use, complete
    operation or rules, scoring where relevant, troubleshooting, pack-away,
    care, and safety. Keep slicer settings, calibration, provenance, internal
@@ -40,9 +40,8 @@ Codex owns the fact-check, design, render, review, and revise loop. Python may
 validate PDF structure, schemas, hashes, and claim bindings; it does not write
 the manual, score beauty, or control the improvement loop.
 
-The package must include a non-empty, self-contained `MANUAL.pdf`, canonical
-`PLAYTEST-NOT-RUN.json`, and canonical schema-v5 `product.json`. That JSON
-object has exactly these eleven fields and no others:
+For Spark and Forge, the package includes canonical `PLAYTEST-NOT-RUN.json`
+and schema-v5 `product.json`. That JSON has exactly these eleven fields:
 
 - `schema_version`: integer `5`;
 - `kind`: string `workshop.release-package`;
@@ -62,6 +61,15 @@ Generate the omission file with exactly the schema documented by the current
 `release_contract` in `STAGE.json`; do not improvise its wording or treat it as
 evidence that a test occurred.
 
+For Quest, `STAGE.json` instead contains exact `playtested` and
+`playtested_artifact` inputs and uses schema-v4 `product.json`. Omit
+`playtest_status` and the omission file. Bind
+`playtest_evidence_artifact_sha256` to the sealed evidence manifest and build
+`claims` from every exact Playtest check: pass status, evidence class, bounded
+claims, evidence reference and hash, evaluator, and evaluator version. Do not
+broaden those claims or imply physical evidence when the cited class is
+digital.
+
 Do not invent claims of manufacture, physical fit, human response,
 publication, delivery, or certification. The PDF may contain embedded fonts,
 vector art, and product-derived raster images; it must not depend on external
@@ -69,10 +77,9 @@ resources, scripts, launch actions, attachments, credentials, or receipts.
 `MANUAL.pdf` is authoritative customer guidance. Optional source or accessible
 text companions must not contradict it.
 
-Do not create or edit `artifacts/release/VERIFICATION.json`. The direct path
-does not emit one because Playtest was not run. A future verified Playtest or
-physical receipt may introduce separate evidence without rewriting this
-truthful Release.
+Do not create or edit `artifacts/release/VERIFICATION.json`. The host may derive
+that optional projection after a passing Quest Release; it is never agent gate
+evidence and does not rewrite the sealed package.
 
 Website copy limits are not manual design constraints. Keep `product.json`
 concise and factual so the host can transport its exact supported subset,

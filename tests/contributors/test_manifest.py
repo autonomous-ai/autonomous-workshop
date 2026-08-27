@@ -43,7 +43,17 @@ class RegistryTest(unittest.TestCase):
         manifests = discover_inventors(root)
         self.assertEqual(
             [item.inventor_id for item in manifests],
-            ["abo", "alice", "bob", "eve", "ivy", "leo"],
+            [
+                "abo",
+                "alice",
+                "bob",
+                "eve",
+                "ivy",
+                "leo",
+                "mira-fold",
+                "pico-press",
+                "tess-loop",
+            ],
         )
         for manifest in manifests:
             with self.subTest(inventor_id=manifest.inventor_id):

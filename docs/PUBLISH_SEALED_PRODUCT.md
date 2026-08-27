@@ -13,16 +13,18 @@ digital handoff and belong to Operations.
 The native Manager writes `artifacts/release/package` with at least:
 
 - canonical `MANUAL.pdf`, self-contained and ready to print for the box;
-- canonical `product.json`, bound to the exact Made artifact and passing
-  Playtest evidence; and
+- canonical `product.json`, bound to the exact Made artifact and either Quest's
+  passing Playtest evidence or Spark/Forge's explicit Playtest `not-run`
+  omission; and
 - evidence-derived claims, contents, limitations, and optional editable manual
   source or accessible text companions.
 
-Release is one native Goal. The Manager reads the exact Made product and
-passing evidence, uses the materialized `manual-design` skill, authors the
-guide, renders every page, inspects it at print size and in grayscale, checks
-the copy against evidence, and improves it. This design/review loop belongs to
-the native coding agent, not to a Python aesthetic score.
+Release is one native Goal. The Manager reads the exact Made product and the
+route's passing evidence or explicit omission, uses the materialized
+`manual-design` skill, authors the guide, renders every page, inspects it at
+print size and in grayscale, checks the copy against evidence, and improves
+it. This design/review loop belongs to the native coding agent, not to a
+Python aesthetic score.
 
 The run-local finalizer hashes the package and writes the canonical Release
 proposal. The trusted host rereads, structurally validates, rehashes, and seals
@@ -82,8 +84,8 @@ The private file uses strict `NAME=raw-value` lines; it is not evaluated by a
 shell, so literal surrounding single or double quotes are invalid. Configure
 exactly one Workshop service account with `FACTORY_USERNAME` and
 `FACTORY_PASSWORD`. This account publishes every Release regardless of which
-Inventor Match selected; a person running `workshop wish` never supplies a
-Factory username or password.
+Inventor the first active creative stage selected; a person running
+`workshop wish` never supplies a Factory username or password.
 
 For migration, exactly one legacy scoped username such as
 `FACTORY_ALICE_USERNAME=alice` is temporarily accepted with

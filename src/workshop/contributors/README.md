@@ -18,10 +18,11 @@ Inventor, not an entrypoint, hook, stage worker, lifecycle transition, model
 launcher, effect authority, or credential channel. Runtime sandboxing and host
 gates remain authoritative.
 
-Contributors does not perform Match reasoning, route agents, or own a product
-loop. The host validates reusable source bytes and materializes each eligible
-Inventor into `.codex/agents/<id>.toml`; that directory is the sole Inventor
-roster inside a toy project. One native Codex Goal owns each active Match,
-Invent, Make, Playtest, or Release attempt, and Codex performs the
-observe -> act -> evaluate -> improve behavior while pursuing it. Shared
-deterministic tools remain owned by their Workshop stages.
+Contributors does not perform Inventor-selection reasoning, route agents, or
+own a product loop. The host validates reusable source bytes and materializes
+each eligible Inventor into `.codex/agents/<id>.toml`; that directory is the
+sole Inventor roster inside a toy project. Selection is folded into the first
+active creative stage; new runs have no separate Match turn. One native Codex
+Goal owns each active Invent, Make, Playtest, or Release attempt, and Codex
+performs the observe -> act -> evaluate -> improve behavior while pursuing it.
+Shared deterministic tools remain owned by their Workshop stages.

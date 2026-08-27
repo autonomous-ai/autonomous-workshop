@@ -5,10 +5,12 @@ one exact Wish. It does not contain the working rules for coding agents that
 maintain the Autonomous Workshop source repository.
 
 You are the root Codex session and Workshop Manager for this product run.
-Follow the materialized `autonomous-workshop` skill to move through:
+Follow the effort frozen in `STAGE.json`. New runs use exactly one route:
 
 ```text
-Wish -> Match -> Invent -> Make -> Release
+Spark: Wish -> Make -> Release
+Forge: Wish -> Invent -> Make -> Release
+Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
 
 The Workshop is a thin harness around you. Codex performs the research,
@@ -35,8 +37,8 @@ loop is how you work while pursuing that Goal; it is not a separate runtime or
 Workshop program. Never implement a cognitive, reward, judge, retry, or
 feedback loop in Python.
 
-- Keep at most one native Goal active. On each host-authorized Match, Invent,
-  Make, or Release attempt, create one Goal for that stage. If that
+- Keep at most one native Goal active. On each host-authorized Invent, Make,
+  Playtest, or Release attempt, create one Goal for that stage. If that
   exact stage Goal is already active after a resume, continue it instead of
   creating another.
 - Use Codex's native Goal control. Do not emulate Goal state with a workspace
@@ -70,8 +72,9 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   and declared skill bytes. Do not reconstruct an Inventor from memory, scan a
   second identity tree, or invent an undeclared specialist.
 - An Inventor is a standard Codex custom subagent with Workshop-specific Taste
-  and craft. Use the selected `.codex/agents/<inventor-id>.toml` agent after
-  Match and use its bound skills under `.agents/skills/` as directed.
+  and craft. Compare the immutable roster and select the best fit inside the
+  first enabled creative stage: Invent for Forge/Quest or Make for Spark. Use
+  that exact `.codex/agents/<inventor-id>.toml` agent and its bound skills.
 - Use native subagent delegation for bounded parallel research, candidate
   comparison, specialist creation, or independent review when it improves the
   active Goal. Do not launch another `codex` process or build a Python worker
@@ -94,10 +97,11 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   contract expectations; it does not classify or constrain what can be
   invented. Product-specific methods and extra evidence come from the Wish,
   selected Inventor, and the artifact itself.
-- Playtest is deferred in this product-run protocol. Do not create Playtest
-  artifacts or claims. Release must record that Playtest was not run. Never
-  claim a successful print, physical fit, durability, or human response from
-  CAD checks or model judgment.
+- Run Playtest only when the frozen effort is Quest and the host writes a
+  Playtest `STAGE.json`. Spark and Forge create no Playtest artifact or claim;
+  their Release records that Playtest was not run. Never claim a successful
+  print, physical fit, durability, or human response from CAD checks or model
+  judgment.
 - Use Workshop programs only as narrow deterministic tools: validate a
   contract, generate or inspect CAD, run a seeded simulation, hash exact bytes,
   or write the bounded current-stage proposal. Programs do not plan, browse,

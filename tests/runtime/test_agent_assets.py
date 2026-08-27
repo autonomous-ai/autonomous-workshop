@@ -87,7 +87,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertNotEqual(assets.constitution, (REPOSITORY / "AGENTS.md").resolve())
         self.assertRegex(assets.sha256, r"^[0-9a-f]{64}$")
 
-    def test_direct_release_guidance_requires_print_ready_make(self):
+    def test_effort_guidance_distinguishes_direct_release_and_quest_playtest(self):
         guidance = (
             REPOSITORY
             / ".agents"
@@ -104,13 +104,15 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "full verifier",
             "wall thickness",
             "print-ready eligibility",
-            "Playtest is intentionally deferred",
-            "must not be simulated or claimed",
+            "Spark and Forge advance directly to Release",
+            "must not simulate Playtest",
             "Release records that it was not run",
+            "Quest advances to the host-authored Playtest stage",
+            "only for Quest",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, normalized)
-        self.assertNotIn("--run-root . playtest", normalized)
+        self.assertIn("--run-root . playtest", normalized)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

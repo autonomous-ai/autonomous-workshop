@@ -27,20 +27,25 @@ processes.
 
 All implementation and product-run work must preserve these boundaries:
 
-- `workshop wish` persists the exact Wish, creates a private run workspace, and
-  launches one native coding-agent session before Match.
+- `workshop wish` persists the exact Wish and frozen effort, creates a private
+  run workspace, and launches one native coding-agent session for the first
+  enabled creative stage.
 - `workshop resume` resumes that exact session id. Stages are durable lifecycle
   checkpoints, not separate one-shot model sessions or personas.
-- Native Codex performs Match reasoning, research, concept exploration,
+- Native Codex performs Inventor selection, research, concept exploration,
   creation, inspection, and repair with its own tools and applicable skills.
-- The current executable lifecycle is `Wish -> Match -> Invent -> Make ->
-  Release`. Playtest is deferred. Release must explicitly record `not-run` and
-  must not claim Playtest evidence. Frozen older runs retain their materialized
-  Make–Playtest protocol when resumed.
-- Every active Match, Invent, Make, or Release attempt uses
+- New runs freeze one selectable lifecycle: Spark is `Wish -> Make -> Release`,
+  Forge is `Wish -> Invent -> Make -> Release`, and Quest is
+  `Wish -> Invent -> Make -> Playtest -> Release`. Passed-through stages create
+  no turn, artifact, gate, or evidence. Spark/Forge Release explicitly records
+  Playtest `not-run`; Quest requires passing Playtest evidence. Frozen older
+  runs retain their materialized protocol when resumed.
+- Every active Invent, Make, Playtest, or Release attempt uses
   one native Codex Goal with one objective, proof artifacts, and a verifiable
-  stopping condition: the current stage finalizer succeeds. Only one Goal is
-  active at a time. Codex works toward it by observing, acting, evaluating exact output,
+  stopping condition: the current stage finalizer succeeds. Inventor selection
+  is folded into the first active creative stage instead of a separate Match
+  turn. Only one Goal is active at a time. Codex works toward it by observing,
+  acting, evaluating exact output,
   and improving. That loop is native-agent behavior, not a Python program.
   Wish is a host boundary rather than an agent Goal. Authenticated publication
   is the host-owned effect portion of Release; physical Operations begin only
@@ -81,12 +86,15 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0012-codex-orchestrated-runtime.md`, and
 `docs/adr/0013-manual-first-release.md`, and
 `docs/adr/0014-terminal-published-release.md`, and
-`docs/adr/0015-defer-playtest.md` before changing the CLI, runtime,
+`docs/adr/0015-defer-playtest.md`, and
+`docs/adr/0016-selectable-effort-routes.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
 active Playtest stage while preserving truthful omission and frozen-run
-compatibility. The native-session path is the production architecture.
+compatibility. ADR 0016 supersedes ADR 0015's fixed topology for new runs while
+preserving its truthful omission contract for Spark and Forge. The
+native-session path is the production architecture.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

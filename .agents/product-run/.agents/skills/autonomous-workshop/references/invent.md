@@ -1,26 +1,26 @@
 # Invent contract
 
-Read `STAGE.json`. It binds the exact Wish, Match assignment, selected
-`.codex/agents/<inventor-id>.toml` file and hashes, universal blueprint,
-canonical output path, and current checkpoint. Verify those bytes before
-acting. The blueprint is an open-ended shared contract, not a product
-classification.
+Read `STAGE.json`. It binds the exact Wish, immutable Inventor roster,
+universal blueprint, canonical assignment and Invented output paths, frozen
+effort, and current checkpoint. Verify those bytes before acting. The blueprint
+is an open-ended shared contract, not a product classification.
 
 ## Invent Goal and improvement loop
 
 Create one native Codex Goal for this Invent attempt. Its objective is to
-research, explore, judge, select, and fully specify the strongest feasible
-concept for the Wish through the selected Inventor's exact Taste and method.
+select the best-fit immutable Inventor, research, explore, judge, and fully
+specify the strongest feasible concept for the Wish through that Inventor's
+exact Taste and method.
 Its stopping condition is a successful `invent` finalizer for the current
 checkpoint.
 
-Use the selected project-scoped custom agent for specialist work. The root
-Workshop Manager reviews and synthesizes its output and remains responsible
-for the one stage proposal.
+Compare every roster entry before selecting. Use the selected project-scoped
+custom agent for specialist work. The root Workshop Manager reviews and
+synthesizes its output and remains responsible for the one stage proposal.
 
 While pursuing the Goal:
 
-1. **Observe:** Read the Wish, assignment, selected custom-agent instructions,
+1. **Observe:** Read the Wish, complete roster and custom-agent instructions,
    relevant skill resources, and any exact upstream evidence. Identify what
    needs factual research and what needs creative exploration.
 2. **Act:** Use Codex-native search, browsing, file tools, and specialist
@@ -49,8 +49,10 @@ Make and Release can verify them.
 
 ## Artifact and gate
 
-Write one authored JSON source with exactly `concept` and `research`. The
-selected `concept` is Make's sealed design authority, so it must contain the
+Write one authored JSON source with exactly `selected_inventor_id`, `ranking`,
+`concept`, and `research`. `ranking` must cover every immutable roster Inventor
+exactly once, place the selected Inventor first, and give a bounded rationale
+for each position. The selected `concept` is Make's sealed design authority, so it must contain the
 physical decisions needed to build without a separate design stage: object and
 category, envelope and wall thickness, print stance, distinctive features,
 each component's form, dimensions, placement, and interfaces, intended
@@ -63,8 +65,9 @@ Then run:
   --run-root . invent --source <invent-source.json>
 ```
 
-The deterministic finalizer binds the chosen concept and research to the exact
-assignment and writes `artifacts/invent/invented.json` plus
+The deterministic finalizer derives the exact roster-bound assignment, binds
+the chosen concept and research to it, and writes both canonical assignment
+and Invented contracts plus
 `agent-outcome.json`. It does not research, judge, assign a quality score, or
 run the improvement loop. Complete the Invent Goal only after the command
 succeeds, then return to the host. The host validates and seals the exact
