@@ -2,7 +2,7 @@ import copy
 import unittest
 
 from workshop.errors import ContractError
-from workshop.invent.native import NativeInvented
+from workshop.invent.native import NativeInvented, validate_build_plan
 from workshop.match.native import (
     MatchRankingEntry,
     NativeMatchAssignment,
@@ -64,6 +64,37 @@ def v4_concept():
             },
         ],
     }
+
+
+def v5_concept():
+    """A schema-5 concept: the schema-4 contract plus a complete build plan."""
+
+    concept = v4_concept()
+    concept["build_plan"] = [
+        {"group": "body", "parts": ["base", "dome"], "exit_criteria": "Dome turns freely on the base ring."},
+        {"group": "cap", "parts": ["lens_cap"], "exit_criteria": "Cap press-fits the pocket."},
+    ]
+    return concept
+
+
+def _plan(concept, value):
+    concept["build_plan"] = value
+
+
+BUILD_PLAN_VIOLATIONS = (
+    ("plan-missing", lambda c: c.pop("build_plan"), "build_plan"),
+    ("plan-not-list", lambda c: _plan(c, "body"), "build_plan"),
+    ("plan-empty", lambda c: _plan(c, []), "build_plan"),
+    ("plan-too-many", lambda c: _plan(c, [{"group": "g%d" % i, "parts": ["base"], "exit_criteria": "x"} for i in range(17)]), "exceeds 16 groups"),
+    ("group-shape", lambda c: _plan(c, [{"group": "body"}]), "Invented build group"),
+    ("group-bad-slug", lambda c: _plan(c, [{"group": "Body!", "parts": ["base", "dome", "lens_cap"], "exit_criteria": "x"}]), "unique slug"),
+    ("group-duplicate", lambda c: _plan(c, [{"group": "a", "parts": ["base", "dome"], "exit_criteria": "x"}, {"group": "a", "parts": ["lens_cap"], "exit_criteria": "x"}]), "unique slug"),
+    ("group-blank-criteria", lambda c: _plan(c, [{"group": "a", "parts": ["base", "dome", "lens_cap"], "exit_criteria": "  "}]), "exit_criteria"),
+    ("group-empty-parts", lambda c: _plan(c, [{"group": "a", "parts": [], "exit_criteria": "x"}]), "parts"),
+    ("unknown-part", lambda c: _plan(c, [{"group": "a", "parts": ["base", "dome", "lens_cap", "ghost"], "exit_criteria": "x"}]), "unknown component 'ghost' \\(build-plan\\)"),
+    ("part-twice", lambda c: _plan(c, [{"group": "a", "parts": ["base", "dome"], "exit_criteria": "x"}, {"group": "b", "parts": ["dome", "lens_cap"], "exit_criteria": "x"}]), "more than one build group"),
+    ("part-unplaced", lambda c: _plan(c, [{"group": "a", "parts": ["base", "dome"], "exit_criteria": "x"}]), "unplaced: lens_cap"),
+)
 
 
 def _component(concept, key):
@@ -221,12 +252,30 @@ class InventedContractTest(unittest.TestCase):
                 with self.assertRaisesRegex(ContractError, pattern):
                     self.invented(schema_version=4, concept=concept)
 
+    def test_schema_5_requires_a_complete_build_plan(self):
+        invented = self.invented(schema_version=5, concept=v5_concept())
+        self.assertEqual(NativeInvented.from_mapping(invented.to_dict()), invented)
+        self.assertEqual(
+            [group["group"] for group in validate_build_plan(v5_concept())], ["body", "cap"]
+        )
+        for name, mutate, pattern in BUILD_PLAN_VIOLATIONS:
+            concept = v5_concept()
+            mutate(concept)
+            with self.subTest(violation=name):
+                with self.assertRaisesRegex(ContractError, pattern):
+                    self.invented(schema_version=5, concept=concept)
+        # schema 4 tolerates a missing plan and ignores a present one
+        self.invented(schema_version=4, concept=v4_concept())
+        broken = v5_concept()
+        broken["build_plan"] = "not checked at schema 4"
+        self.invented(schema_version=4, concept=broken)
+
     def test_schema_3_stays_readable_for_sealed_runs(self):
         legacy = self.invented(schema_version=3)
         self.assertEqual(legacy.to_dict()["schema_version"], 3)
         self.assertEqual(NativeInvented.from_mapping(legacy.to_dict()), legacy)
-        with self.assertRaisesRegex(ContractError, "schema_version must be 3 or 4"):
-            self.invented(schema_version=5)
+        with self.assertRaisesRegex(ContractError, "schema_version must be 3, 4, or 5"):
+            self.invented(schema_version=6)
 
     def test_round_trip_binds_every_input_and_content_hash(self):
         invented = self.invented()

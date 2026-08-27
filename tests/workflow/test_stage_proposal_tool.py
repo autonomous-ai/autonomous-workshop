@@ -2,17 +2,21 @@ import hashlib
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from unittest import mock
 import zlib
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.invent.native import NativeInvented
-from tests.invent.test_native_contract import CONCEPT_VIOLATIONS, v4_concept
+from tests.invent.test_native_contract import BUILD_PLAN_VIOLATIONS, CONCEPT_VIOLATIONS, v4_concept, v5_concept
+from tests.make.test_build_groups import seal_group, write_parts
 from tests.invent.test_vault import write_vault
 from tests.playtest.test_native_playtested import DIMS, LEAD_ANSWER_CASES, SCORE_CASES
 from workshop.invent.vault import Vault
@@ -210,8 +214,8 @@ class StageProposalToolTest(unittest.TestCase):
             assignment_sha256=self.assignment.assignment_sha256,
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
-            schema_version=4,
-            concept=v4_concept(),
+            schema_version=5,
+            concept=v5_concept(),
             research={
                 "sources": [
                     {
@@ -385,6 +389,9 @@ class StageProposalToolTest(unittest.TestCase):
         (product_root / "assembled.stl").write_bytes(assembled_stl)
         (product_root / "exports/stl/assembled.stl").write_bytes(assembled_stl)
         (product_root / "validation/cad-build.json").write_bytes(verification)
+        write_parts(product_root, self.invented.to_dict()["concept"])
+        for group in self.invented.to_dict()["concept"]["build_plan"]:
+            seal_group(product_root, self.invented.to_dict()["concept"], group["group"])
         return product_root, product, product_bytes, verification
 
     def create_made(self):
@@ -470,7 +477,7 @@ class StageProposalToolTest(unittest.TestCase):
         return skill
 
     def invent_source(self, mechanisms, **extra):
-        concept = v4_concept()
+        concept = v5_concept()
         concept["mechanisms"] = mechanisms
         concept.update(extra)
         return {"concept": concept, "research": self.invented.to_dict()["research"]}
@@ -481,7 +488,7 @@ class StageProposalToolTest(unittest.TestCase):
         self.write_json("drafts/invent.json", self.invent_source(["hand-off", "single-token"]))
         self.run_tool("invent", "--source", "drafts/invent.json")
         document, _ = self.assert_canonical_file("artifacts/invent/invented.json")
-        self.assertEqual(document["schema_version"], 4)
+        self.assertEqual(document["schema_version"], 5)
         self.assertEqual(document["concept"]["mechanisms"], ["hand-off", "single-token"])
         for mechanisms, extra, pattern in (
             (["rotating-dome"], {}, "mechanism-unknown"),
@@ -540,12 +547,12 @@ class StageProposalToolTest(unittest.TestCase):
             )
         self.assertEqual(result["outcome_path"], "agent-outcome.json")
         document, _ = self.assert_canonical_file("artifacts/invent/invented.json")
-        self.assertEqual(document["schema_version"], 4)
+        self.assertEqual(document["schema_version"], 5)
 
     def test_invent_rejects_contract_violations_with_a_named_rule(self):
         self.write_stage("invent", {"assignment": self.assignment.to_dict()})
         for name, mutate, pattern in CONCEPT_VIOLATIONS[:3] + CONCEPT_VIOLATIONS[-3:]:
-            concept = v4_concept()
+            concept = v5_concept()
             mutate(concept)
             self.write_json(
                 "drafts/invent.json",
@@ -574,7 +581,7 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertEqual(tool._validate_invented(legacy, assignment), legacy)
         current = self.invented.to_dict()
         self.assertEqual(tool._validate_invented(current, assignment), current)
-        with self.assertRaisesRegex(tool.ProposalError, "schema_version must be 3 or 4"):
+        with self.assertRaisesRegex(tool.ProposalError, "schema_version must be 3, 4, or 5"):
             tool._validate_invented({**legacy, "schema_version": 2}, assignment)
         hand_written = {**current, "concept": {**current["concept"], "mechanisms": ["Bad Slug"]}}
         with self.assertRaisesRegex(tool.ProposalError, "unique slugs"):
@@ -584,8 +591,142 @@ class StageProposalToolTest(unittest.TestCase):
             {"inputs": {"assignment": assignment}},
             {"concept": current["concept"], "research": current["research"]},
         )
-        self.assertEqual(sealed["schema_version"], 4)
+        self.assertEqual(sealed["schema_version"], 5)
         self.assertEqual(sealed, current)
+        for name, mutate, pattern in BUILD_PLAN_VIOLATIONS:
+            concept = v5_concept()
+            mutate(concept)
+            with self.subTest(violation=name):
+                with self.assertRaisesRegex(tool.ProposalError, pattern):
+                    tool._validate_build_plan(concept)
+        self.assertEqual([g["group"] for g in tool._validate_build_plan(v5_concept())], ["body", "cap"])
+        with self.assertRaisesRegex(tool.ProposalError, "schema_version must be 3, 4, or 5"):
+            tool._validate_invented({**legacy, "schema_version": 6}, assignment)
+
+    def test_make_group_seals_parts_and_make_refuses_unsealed_or_stale_groups(self):
+        product_root, _, _, _ = self.create_product()
+        concept = self.invented.to_dict()["concept"]
+        self.write_stage(
+            "make",
+            {"assignment": self.assignment.to_dict(), "invented": self.invented.to_dict(), "feedback": []},
+            round_index=1,
+        )
+        shutil.rmtree(product_root / "groups")
+        completed = self.run_tool(
+            "make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("build group body has no sealed outcome", completed.stderr)
+        sealed = json.loads(self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "body").stdout)
+        self.assertEqual(sealed["group"], "body")
+        self.assertEqual(set(sealed["files"]), {"base", "dome"})
+        self.assertEqual(sealed["outcome_path"], "artifacts/make/r0001/product/groups/body.json")
+        self.assertEqual(sealed["exit_criteria"], "Dome turns freely on the base ring.")
+        self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap")
+        (product_root / "parts" / "dome.stl").write_bytes(b"solid dome v2\nendsolid\n")
+        completed = self.run_tool(
+            "make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("body was sealed against different part bytes: dome", completed.stderr)
+        self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "body")
+        self.run_tool(
+            "make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "validation/cad-build.json",
+        )
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "ghost", expected=2)
+        self.assertIn("not in the sealed build_plan", completed.stderr)
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0002/product", "--group", "cap", expected=2)
+        self.assertIn("Make product root must be", completed.stderr)
+        (product_root / "parts" / "lens_cap.stl").unlink()
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap", expected=2)
+        self.assertIn("part lens_cap is missing", completed.stderr)
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"")
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap", expected=2)
+        self.assertIn("part lens_cap is empty", completed.stderr)
+        # in-process mirror of the group validator's remaining branches
+        spec = importlib.util.spec_from_file_location("stage_proposal_groups_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"solid cap\nendsolid\n")
+        with self.assertRaisesRegex(tool.ProposalError, "Make part lens_cap is empty|part lens_cap"):
+            (product_root / "parts" / "lens_cap.stl").write_bytes(b"")
+            tool._validate_build_groups(concept, product_root)
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"solid cap\nendsolid\n")
+        import argparse
+
+        with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(Path(sys.executable).absolute())}):
+            sealed_cap = tool.run(
+                argparse.Namespace(
+                    run_root=str(self.run_root), command="make-group",
+                    product_root="artifacts/make/r0001/product", group="cap",
+                )
+            )
+        self.assertEqual(sealed_cap["group"], "cap")
+        self.assertEqual(tool._validate_build_groups(concept, product_root), {"groups": 2, "parts": 3})
+        # the same branches the CLI exercised above, in-process for the parser and the sealers
+        stage = tool._load_stage(self.run_root, "make")
+        with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(Path(sys.executable).absolute())}):
+            with redirect_stdout(StringIO()):
+                self.assertEqual(
+                    tool.main(["--run-root", str(self.run_root), "make-group",
+                               "--product-root", "artifacts/make/r0001/product", "--group", "body"]),
+                    0,
+                )
+            with redirect_stdout(StringIO()):
+                self.assertEqual(
+                    tool.main(["--run-root", str(self.run_root), "make", "--product-root",
+                               "artifacts/make/r0001/product", "--cad-project-path", "cad/project",
+                               "--cad-verification-path", "validation/cad-build.json"]),
+                    0,
+                )
+        for kwargs, pattern in (
+            ({"product_root_value": "artifacts/make/r0002/product", "group_name": "cap"}, "Make product root must be"),
+            ({"product_root_value": "artifacts/make/r0001/product", "group_name": "ghost"}, "not in the sealed build_plan"),
+        ):
+            with self.assertRaisesRegex(tool.ProposalError, pattern):
+                tool._make_group(self.run_root, stage, **kwargs)
+        (product_root / "parts" / "lens_cap.stl").unlink()
+        with self.assertRaisesRegex(tool.ProposalError, "part lens_cap is missing"):
+            tool._make_group(self.run_root, stage, product_root_value="artifacts/make/r0001/product", group_name="cap")
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"")
+        with self.assertRaisesRegex(tool.ProposalError, "part lens_cap is empty"):
+            tool._make_group(self.run_root, stage, product_root_value="artifacts/make/r0001/product", group_name="cap")
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"solid cap\nendsolid\n")
+        shutil.rmtree(product_root / "groups")
+        with self.assertRaisesRegex(tool.ProposalError, "build group body has no sealed outcome"):
+            tool._validate_build_groups(concept, product_root)
+        legacy_stage = dict(stage, inputs={**stage["inputs"], "invented": self.legacy_invented.to_dict()})
+        with self.assertRaisesRegex(tool.ProposalError, "declares no build_plan"):
+            tool._make_group(self.run_root, legacy_stage, product_root_value="artifacts/make/r0001/product", group_name="cap")
+        for group in concept["build_plan"]:
+            seal_group(product_root, concept, group["group"])
+        self.assertEqual(tool._validate_build_groups(v4_concept(), product_root), {"groups": 0, "parts": 0})
+        cap = product_root / "groups" / "cap.json"
+        good = json.loads(cap.read_text())
+        for broken, pattern in (
+            ("{broken", "not strict JSON"),
+            (json.dumps({**good, "extra": 1}), "fields are invalid"),
+            (json.dumps({**good, "parts": ["dome"]}), "does not match the sealed plan"),
+            (json.dumps({**good, "files": {"dome": "0" * 64}}), "hash exactly its parts"),
+            (json.dumps({**good, "files": {"lens_cap": "0" * 64}}), "different part bytes: lens_cap"),
+        ):
+            cap.write_text(broken, encoding="utf-8")
+            with self.subTest(pattern=pattern):
+                with self.assertRaisesRegex(tool.ProposalError, pattern):
+                    tool._validate_build_groups(concept, product_root)
+        (product_root / "parts" / "base.stl").unlink()
+        with self.assertRaisesRegex(tool.ProposalError, "lacks part base"):
+            tool._validate_build_groups(concept, product_root)
+        self.write_stage(
+            "make",
+            {"assignment": self.assignment.to_dict(), "invented": self.legacy_invented.to_dict(), "feedback": []},
+            round_index=1,
+        )
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap", expected=2)
+        self.assertIn("declares no build_plan", completed.stderr)
 
     def test_make_accepts_a_sealed_legacy_schema_3_invent(self):
         self.create_product()
@@ -1511,7 +1652,7 @@ class StageProposalToolTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertIn("match,invent,make,playtest,release", completed.stdout)
+        self.assertIn("match,invent,make,make-group,playtest,release", completed.stdout)
 
 
 if __name__ == "__main__":

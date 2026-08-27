@@ -66,6 +66,10 @@ def _write_json(path, value):
     path.write_bytes(_canonical_json(value))
 
 
+def stage_round(run_root):
+    return _read_json(Path(run_root) / "STAGE.json")["round"]
+
+
 def _read_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -272,8 +276,12 @@ class _OneSessionProductAgent:
                 % (completed.returncode, completed.stderr)
             )
         result = json.loads(completed.stdout)
-        if result["outcome_path"] != "agent-outcome.json":
-            raise AssertionError("finalizer did not author the compact proposal")
+        expected_outcome = (
+            "artifacts/make/r%04d/product/groups/%s.json" % (stage_round(run_root), arguments[-1])
+            if arguments[0] == "make-group"
+            else "agent-outcome.json"
+        )
+        assert result["outcome_path"] == expected_outcome, "finalizer authored an unexpected outcome"
 
     def _author_match(self, run_root, stage):
         inventors = stage["inputs"]["inventor_roster"]["inventors"]
@@ -329,6 +337,10 @@ class _OneSessionProductAgent:
                         "height_mm": 20.0,
                     },
                     "mechanisms": ["stacking-and-balancing", "square-grid"],
+                    "build_plan": [
+                        {"group": "board", "parts": ["board"], "exit_criteria": "Recesses are 1 mm deep."},
+                        {"group": "pieces", "parts": ["pieces"], "exit_criteria": "Pieces seat and stack."},
+                    ],
                     "components": [
                         {"key": key, **fields}
                         for key, fields in _fixture_components().items()
@@ -415,6 +427,15 @@ class _OneSessionProductAgent:
         for required in inputs["required_root_files"]:
             if not (product_root / required).is_file():
                 raise AssertionError("Make omitted a host-required root file")
+        (product_root / "parts").mkdir(exist_ok=True)
+        for group in invented["concept"]["build_plan"]:
+            for key in group["parts"]:
+                (product_root / "parts" / ("%s.stl" % key)).write_bytes(
+                    b"solid %s\nendsolid %s\n" % (key.encode(), key.encode())
+                )
+            self._run_finalizer(
+                run_root, "make-group", "--product-root", product_root_value, "--group", group["group"]
+            )
         self._run_finalizer(
             run_root,
             "make",
@@ -956,7 +977,13 @@ class NativeFullRunTest(unittest.TestCase):
                 checks["product_verification_status"],
                 "not-recorded",
             )
-            self.assertEqual(len(launcher.finalizer_commands), 5)
+            stage_finalizers = [
+                command for command in launcher.finalizer_commands if command[4] != "make-group"
+            ]
+            self.assertEqual(len(stage_finalizers), 5)
+            self.assertEqual(
+                sum(1 for command in launcher.finalizer_commands if command[4] == "make-group"), 2
+            )
             self.assertEqual(effects.writer_calls, [])
             self.assertEqual(effects.publish_calls, [])
             self.assertFalse((paths.host_state / "release-effect-wait.json").exists())
@@ -1805,7 +1832,13 @@ class NativeFullRunTest(unittest.TestCase):
                 [packet["stage"] for packet in launcher.stage_packets],
                 ["match", "invent", "make", "playtest", "release"],
             )
-            self.assertEqual(len(launcher.finalizer_commands), 5)
+            stage_finalizers = [
+                command for command in launcher.finalizer_commands if command[4] != "make-group"
+            ]
+            self.assertEqual(len(stage_finalizers), 5)
+            self.assertEqual(
+                sum(1 for command in launcher.finalizer_commands if command[4] == "make-group"), 2
+            )
             self.assertEqual(
                 len({packet["checkpoint_sha256"] for packet in launcher.stage_packets}),
                 5,
@@ -2018,6 +2051,11 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(by_stage["make"]["inputs"]["regression"], {})
             self.assertEqual(by_stage["make"]["inputs"]["ambiguous"], [])
             self.assertTrue(make_gate["evidence"]["checks"]["cad_verification_passed"])
+            self.assertEqual(make_gate["evidence"]["checks"]["build_groups"], 2)
+            self.assertEqual(make_gate["evidence"]["checks"]["build_parts"], 2)
+            self.assertTrue(
+                (paths.workspace / "artifacts/make/r0001/product/groups/pieces.json").is_file()
+            )
             self.assertTrue(
                 playtest_gate["evidence"]["checks"]["cad_verification_passed"]
             )

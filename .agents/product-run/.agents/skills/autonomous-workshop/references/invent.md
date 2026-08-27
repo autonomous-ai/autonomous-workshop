@@ -60,7 +60,7 @@ each component's form, dimensions, placement, and interfaces, intended
 interaction, assumptions, and unresolved risks. Bind researched claims to the
 supporting entries in `research`; label deliberate design decisions as such.
 
-The finalizer seals the concept as Invented schema 4 and enforces this
+The finalizer seals the concept as Invented schema 5 and enforces this
 contract deterministically. Required `concept` fields (extra fields such as
 `signature_decision`, `print_stance`, `assumptions`, or `risks` are allowed):
 
@@ -76,6 +76,11 @@ contract deterministically. Required `concept` fields (extra fields such as
   `{"id": <slug>, "definition": <20 to 2000 characters>}`.
 - `components`: 1 to 64 entries with exactly `key`, `name`, `form`, `duty`,
   `dimensions_mm`, `placement`, `interfaces`, `mates_with`, `signature`.
+- `build_plan`: 1 to 16 groups, each exactly `{"group": <slug>, "parts":
+  [component keys], "exit_criteria": <text>}`, in build order. Every
+  component appears in exactly one group; put parts that must be measured
+  against each other in the same group. Make seals one group at a time and
+  stops at the first group it cannot seal.
 
 The finalizer rejects, naming the rule in parentheses:
 
@@ -92,6 +97,8 @@ The finalizer rejects, naming the rule in parentheses:
 - **mechanism-unknown** — a mechanism that is neither a vault node nor a
   declared novel mechanism; **mechanism-not-novel** — a `novel_mechanisms`
   entry that resolves to an existing node.
+- **build-plan** — a group names an unknown component, a component sits in
+  two groups or in none, a group is empty, or a group name repeats.
 - **vault-conflict** / **vault-requirement** — the resolved mechanisms plus
   every `constraints/*` node declare `conflicts-with`, or leave a `requires`
   unmet. Run `vault_tools.py check <nodes> --with-constraints` before

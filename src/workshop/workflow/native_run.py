@@ -51,7 +51,7 @@ from workshop.invent.vault import (
     VaultError,
     workshop_vault_source,
 )
-from workshop.make.native import NativeMade
+from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.native_gate import (
     NATIVE_CAD_GATE_KIND,
     NATIVE_CAD_VERIFIER_MODE,
@@ -2164,6 +2164,9 @@ def _evaluate_make_stage(
     invented = context["invented"]
     made.assert_context(assignment, invented, expected_round=checkpoint.round_index)
     canonical = made.validate_product_tree(run.run_root)
+    build_groups = validate_build_groups(
+        invented.concept, run.run_root / Path(*made.product_root.split("/"))
+    )
     verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
     if not isinstance(verifier_sha256, str):
         raise StateConflict("native run lacks its trusted CAD verifier binding")
@@ -2191,6 +2194,8 @@ def _evaluate_make_stage(
             "made_sha256": made.made_sha256,
             "product_artifact_sha256": canonical.artifact_sha256,
             "product_tree_rehashed": True,
+            "build_groups": build_groups["groups"],
+            "build_parts": build_groups["parts"],
             "upstream_bindings_valid": True,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verifier_sha256": cad_evidence.verifier_sha256,

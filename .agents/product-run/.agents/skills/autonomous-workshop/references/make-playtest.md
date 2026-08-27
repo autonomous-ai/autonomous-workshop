@@ -63,6 +63,27 @@ Codex owns the build/check/inspect/repair loop. Python tools may generate CAD,
 measure exact geometry, or validate a contract; they do not plan repairs,
 score Taste, route agents, or control the loop.
 
+### Build one group at a time
+
+The sealed concept's `build_plan` orders its components into groups. Inside
+the Make Goal, work group by group rather than building the whole tree in one
+pass: build only that group's parts, export each one to
+`<product_root>/parts/<component key>.stl` in print orientation, run the
+deterministic checks, inspect the result, then seal the group:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . make-group --product-root <STAGE product_root> --group <group>
+```
+
+The finalizer records the exact part bytes under `groups/<group>.json`. If a
+group cannot be sealed after focused repair, stop the Goal with a truthful
+need instead of building later groups on it — later groups mate with this
+one. The `make` finalizer refuses a tree whose groups are unsealed or whose
+parts changed after their group was sealed; re-run `make-group` for that
+group after any change to its parts. Concepts sealed before build plans
+existed (Invented schema 3 or 4) need no groups.
+
 Leave the product tree at the exact `product_root` in `STAGE.json`. It must
 include the required root product metadata, CAD project, assembled STEP/STL
 outputs, and deterministic CAD verification file. Map mechanisms, rules,

@@ -25,7 +25,9 @@ MAX_INVENTED_BYTES = 2 * 1024 * 1024
 # Schema 3 bound only `title` and `summary`; schema 4 adds the concept
 # contract below.  Both stay readable so sealed runs keep resuming; the
 # run-local finalizer emits schema 4 only.
-INVENTED_SCHEMA_VERSIONS = (3, 4)
+INVENTED_SCHEMA_VERSIONS = (3, 4, 5)
+BUILD_GROUP_FIELDS = frozenset(("group", "parts", "exit_criteria"))
+MAX_BUILD_GROUPS = 16
 CONCEPT_CONTRACT_FIELDS = frozenset(
     ("title", "summary", "interaction", "envelope_mm", "mechanisms", "components")
 )
@@ -231,6 +233,53 @@ def _thaw(value: Any) -> Any:
     return value
 
 
+def validate_build_plan(concept: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Host mirror of the schema-5 build plan: a complete partition of components.
+
+    Every component sits in exactly one group, in the author's build order, so
+    Make can seal one bounded group at a time and stop when one fails instead
+    of building on it.
+    """
+
+    plan = _list(concept.get("build_plan"), "Invented concept build_plan", nonempty=True)
+    if len(plan) > MAX_BUILD_GROUPS:
+        raise ContractError("Invented concept build_plan exceeds %d groups" % MAX_BUILD_GROUPS)
+    components = {item["key"]: item for item in concept["components"]}
+    placed: dict[str, int] = {}
+    groups: list[dict[str, Any]] = []
+    for index, raw in enumerate(plan):
+        group = _exact_fields(raw, BUILD_GROUP_FIELDS, "Invented build group")
+        name = group["group"]
+        if (
+            not isinstance(name, str)
+            or CONCEPT_SLUG_RE.fullmatch(name) is None
+            or any(item["group"] == name for item in groups)
+        ):
+            raise ContractError("Invented build group name must be a unique slug")
+        bounded_text(group["exit_criteria"], "Invented build group %s exit_criteria" % name, 2_000)
+        parts = _list(group["parts"], "Invented build group %s parts" % name, nonempty=True)
+        for part in parts:
+            if not isinstance(part, str) or part not in components:
+                raise ContractError(
+                    "Invented build group %s names an unknown component %r (build-plan)"
+                    % (name, part)
+                )
+            if part in placed:
+                raise ContractError(
+                    "Invented component %s is placed in more than one build group (build-plan)"
+                    % part
+                )
+            placed[part] = index
+        groups.append({"group": name, "parts": list(parts), "exit_criteria": group["exit_criteria"]})
+    missing = sorted(set(components) - set(placed))
+    if missing:
+        raise ContractError(
+            "Invented build_plan leaves components unplaced: %s (build-plan)" % ", ".join(missing)
+        )
+    return groups
+
+
+
 @dataclass(frozen=True)
 class NativeInvented:
     """One concept proposal with content-addressed research and no self-score."""
@@ -252,7 +301,7 @@ class NativeInvented:
             type(self.schema_version) is not int
             or self.schema_version not in INVENTED_SCHEMA_VERSIONS
         ):
-            raise ContractError("Invented contract schema_version must be 3 or 4")
+            raise ContractError("Invented contract schema_version must be 3, 4, or 5")
         if self.kind != INVENTED_KIND:
             raise ContractError("Invented kind is invalid")
         require_sha256(self.wish_sha256, "Invented Wish sha256")
@@ -263,8 +312,10 @@ class NativeInvented:
         research = copy_json_mapping(
             self.research, "Invented research", nonempty=True
         )
-        if self.schema_version == 4:
+        if self.schema_version >= 4:
             validate_concept_contract(concept)
+            if self.schema_version >= 5:
+                validate_build_plan(concept)
         else:
             for key in ("title", "summary"):
                 bounded_text(concept.get(key), "Invented concept %s" % key, 2_000)
@@ -349,5 +400,6 @@ __all__ = [
     "INVENTED_SCHEMA_VERSIONS",
     "MAX_INVENTED_BYTES",
     "NativeInvented",
+    "validate_build_plan",
     "validate_concept_contract",
 ]

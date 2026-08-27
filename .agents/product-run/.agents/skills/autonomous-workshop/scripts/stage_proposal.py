@@ -159,7 +159,12 @@ CHECK_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 # Invent concept contract (Invented schema 4).  Schema 3 is the legacy shape
 # that only bound `title` and `summary`; sealed runs that predate the contract
 # keep resuming on it.  New Invent finalizations always emit schema 4.
-INVENTED_SCHEMA_VERSIONS = (3, 4)
+INVENTED_SCHEMA_VERSIONS = (3, 4, 5)
+BUILD_GROUP_FIELDS = frozenset(("group", "parts", "exit_criteria"))
+MAX_BUILD_GROUPS = 16
+MAKE_GROUP_KIND = "autonomous-workshop.make-group"
+PARTS_DIRECTORY = "parts"
+GROUPS_DIRECTORY = "groups"
 CONCEPT_CONTRACT_FIELDS = frozenset(
     ("title", "summary", "interaction", "envelope_mm", "mechanisms", "components")
 )
@@ -1170,6 +1175,47 @@ def _validate_concept_contract(concept: Mapping[str, Any]) -> None:
             )
 
 
+def _validate_build_plan(concept: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """A complete partition of components into build groups (schema 5)."""
+
+    plan = _array(concept.get("build_plan"), "Invented concept build_plan", nonempty=True)
+    if len(plan) > MAX_BUILD_GROUPS:
+        raise ProposalError("Invented concept build_plan exceeds %d groups" % MAX_BUILD_GROUPS)
+    components = {item["key"]: item for item in concept["components"]}
+    placed: dict[str, int] = {}
+    groups: list[dict[str, Any]] = []
+    for index, raw in enumerate(plan):
+        group = _fields(raw, BUILD_GROUP_FIELDS, "Invented build group")
+        name = group["group"]
+        if (
+            not isinstance(name, str)
+            or CONCEPT_SLUG_RE.fullmatch(name) is None
+            or any(item["group"] == name for item in groups)
+        ):
+            raise ProposalError("Invented build group name must be a unique slug")
+        _bounded_text(group["exit_criteria"], "Invented build group %s exit_criteria" % name, 2_000)
+        parts = _array(group["parts"], "Invented build group %s parts" % name, nonempty=True)
+        for part in parts:
+            if not isinstance(part, str) or part not in components:
+                raise ProposalError(
+                    "Invented build group %s names an unknown component %r (build-plan)"
+                    % (name, part)
+                )
+            if part in placed:
+                raise ProposalError(
+                    "Invented component %s is placed in more than one build group (build-plan)"
+                    % part
+                )
+            placed[part] = index
+        groups.append({"group": name, "parts": list(parts), "exit_criteria": group["exit_criteria"]})
+    missing = sorted(set(components) - set(placed))
+    if missing:
+        raise ProposalError(
+            "Invented build_plan leaves components unplaced: %s (build-plan)" % ", ".join(missing)
+        )
+    return groups
+
+
 def _validate_invented(value: Any, assignment: Mapping[str, Any]) -> dict[str, Any]:
     expected = {
         "schema_version",
@@ -1189,13 +1235,15 @@ def _validate_invented(value: Any, assignment: Mapping[str, Any]) -> dict[str, A
         type(invented["schema_version"]) is not int
         or invented["schema_version"] not in INVENTED_SCHEMA_VERSIONS
     ):
-        raise ProposalError("Invented schema_version must be 3 or 4")
+        raise ProposalError("Invented schema_version must be 3, 4, or 5")
     if invented["kind"] != INVENTED_KIND:
         raise ProposalError("Invented kind is invalid")
     concept = _mapping(invented["concept"], "Invented concept", nonempty=True)
     research = _mapping(invented["research"], "Invented research", nonempty=True)
-    if invented["schema_version"] == 4:
+    if invented["schema_version"] >= 4:
         _validate_concept_contract(concept)
+        if invented["schema_version"] >= 5:
+            _validate_build_plan(concept)
     else:
         _bounded_text(concept.get("title"), "Invented concept title", 2_000)
         _bounded_text(concept.get("summary"), "Invented concept summary", 2_000)
@@ -1358,9 +1406,10 @@ def _invent_contract(
     concept = _mapping(authored["concept"], "Invent concept", nonempty=True)
     research = _mapping(authored["research"], "Invent research", nonempty=True)
     _validate_concept_contract(concept)
+    _validate_build_plan(concept)
     _assert_concept_vault_compatible(run_root, concept)
     identity = {
-        "schema_version": 4,
+        "schema_version": 5,
         "kind": INVENTED_KIND,
         "wish_sha256": assignment["wish_sha256"],
         "assignment_sha256": assignment["assignment_sha256"],
@@ -1375,6 +1424,110 @@ def _invent_contract(
     if len(canonical_json(result)) > MAX_JSON_BYTES:
         raise ProposalError("Invented exceeds its byte limit")
     return result
+
+
+def _part_hashes(product_root: Path, concept: Mapping[str, Any]) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for item in concept.get("components", ()):
+        key = item["key"]
+        path = product_root / PARTS_DIRECTORY / ("%s.stl" % key)
+        if path.is_symlink() or not path.is_file():
+            raise ProposalError("Make product tree lacks part %s at %s/%s.stl" % (key, PARTS_DIRECTORY, key))
+        content = path.read_bytes()
+        if not content:
+            raise ProposalError("Make part %s is empty" % key)
+        hashes[key] = hashlib.sha256(content).hexdigest()
+    return hashes
+
+
+def _validate_build_groups(concept: Mapping[str, Any], product_root: Path) -> dict[str, int]:
+    """Every planned group must be sealed against the exact part files (host mirror)."""
+
+    plan = concept.get("build_plan")
+    if not isinstance(plan, (list, tuple)) or not plan:
+        return {"groups": 0, "parts": 0}
+    hashes = _part_hashes(product_root, concept)
+    for group in plan:
+        name = group["group"]
+        path = product_root / GROUPS_DIRECTORY / ("%s.json" % name)
+        if path.is_symlink() or not path.is_file():
+            raise ProposalError(
+                "Make build group %s has no sealed outcome; run make-group --group %s first"
+                % (name, name)
+            )
+        try:
+            document = json.loads(path.read_bytes().decode("utf-8"), object_pairs_hook=_strict_object)
+        except (UnicodeError, ValueError) as exc:
+            raise ProposalError("Make build group %s outcome is not strict JSON" % name) from exc
+        if not isinstance(document, dict) or set(document) != {
+            "schema_version", "kind", "group", "parts", "files"
+        }:
+            raise ProposalError("Make build group %s outcome fields are invalid" % name)
+        if (
+            document["schema_version"] != 1
+            or document["kind"] != MAKE_GROUP_KIND
+            or document["group"] != name
+            or document["parts"] != list(group["parts"])
+        ):
+            raise ProposalError("Make build group %s outcome does not match the sealed plan" % name)
+        files = document["files"]
+        if not isinstance(files, dict) or set(files) != set(group["parts"]):
+            raise ProposalError("Make build group %s outcome must hash exactly its parts" % name)
+        stale = sorted(key for key in group["parts"] if files[key] != hashes[key])
+        if stale:
+            raise ProposalError(
+                "Make build group %s was sealed against different part bytes: %s; "
+                "re-run make-group --group %s" % (name, ", ".join(stale), name)
+            )
+    return {"groups": len(plan), "parts": len(hashes)}
+
+
+def _make_group(
+    run_root: Path, stage: Mapping[str, Any], *, product_root_value: str, group_name: str
+) -> dict[str, Any]:
+    """Seal one build group: its parts exist and their exact bytes are recorded."""
+
+    inputs = _required_fields(stage["inputs"], {"assignment", "invented"}, "Make STAGE inputs")
+    assignment = _validate_assignment(inputs["assignment"])
+    invented = _validate_invented(inputs["invented"], assignment)
+    concept = invented["concept"]
+    plan = concept.get("build_plan") if invented["schema_version"] >= 5 else None
+    if not plan:
+        raise ProposalError("this Invent contract declares no build_plan; seal Make directly")
+    expected_root = "artifacts/make/r%04d/product" % stage["round"]
+    if product_root_value != expected_root:
+        raise ProposalError("Make product root must be %s" % expected_root)
+    _, product_root = _existing_directory(run_root, product_root_value, "Make product root")
+    group = next((item for item in plan if item["group"] == group_name), None)
+    if group is None:
+        raise ProposalError("build group %r is not in the sealed build_plan" % group_name)
+    files: dict[str, str] = {}
+    for key in group["parts"]:
+        path = product_root / PARTS_DIRECTORY / ("%s.stl" % key)
+        if path.is_symlink() or not path.is_file():
+            raise ProposalError(
+                "build group %s part %s is missing at %s/%s.stl" % (group_name, key, PARTS_DIRECTORY, key)
+            )
+        content = path.read_bytes()
+        if not content:
+            raise ProposalError("build group %s part %s is empty" % (group_name, key))
+        files[key] = hashlib.sha256(content).hexdigest()
+    document = {
+        "schema_version": 1,
+        "kind": MAKE_GROUP_KIND,
+        "group": group_name,
+        "parts": list(group["parts"]),
+        "files": files,
+    }
+    target = product_root / GROUPS_DIRECTORY / ("%s.json" % group_name)
+    target.parent.mkdir(exist_ok=True)
+    target.write_bytes(canonical_json(document))
+    return {
+        "group": group_name,
+        "outcome_path": "%s/%s/%s.json" % (product_root_value, GROUPS_DIRECTORY, group_name),
+        "files": files,
+        "exit_criteria": group["exit_criteria"],
+    }
 
 
 def _make_contract(
@@ -1434,6 +1587,7 @@ def _make_contract(
         raise ProposalError("Make product manifest lacks a STEP artifact")
     if not any(path.endswith(".stl") for path in paths):
         raise ProposalError("Make product manifest lacks a printable STL")
+    _validate_build_groups(invented["concept"], product_root)
     identity = {
         "schema_version": 1,
         "kind": MADE_KIND,
@@ -2212,6 +2366,12 @@ def _parser() -> argparse.ArgumentParser:
         help="CAD verification file relative to the product tree.",
     )
 
+    make_group = subparsers.add_parser(
+        "make-group", help="Seal one build group of the current Make attempt."
+    )
+    make_group.add_argument("--product-root", required=True, help="Run-local product tree.")
+    make_group.add_argument("--group", required=True, help="Group name from the sealed build_plan.")
+
     playtest = subparsers.add_parser(
         "playtest", help="Seal authored checks and exact evidence tree."
     )
@@ -2237,6 +2397,11 @@ def _parser() -> argparse.ArgumentParser:
 def run(args: argparse.Namespace) -> dict[str, Any]:
     _workshop_python()
     run_root = _canonical_root(args.run_root)
+    if args.command == "make-group":
+        stage = _load_stage(run_root, "make")
+        return _make_group(
+            run_root, stage, product_root_value=args.product_root, group_name=args.group
+        )
     stage = _load_stage(run_root, args.command)
     if args.command == "match":
         source, _, _ = _read_json(run_root, args.source, "Match authored source")
