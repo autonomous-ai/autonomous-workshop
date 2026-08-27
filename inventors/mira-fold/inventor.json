@@ -1,7 +1,7 @@
 {
   "extensions": [
     {
-      "artifact_sha256": "a2b4fa36536bee232be22c39804fab3fb4c80749cd667579b9fb949377bfc86c",
+      "artifact_sha256": "838603668047c0be15604d367a291d3c6586cca1733a15719f5e8d4c17601fd7",
       "kind": "codex-skill",
       "name": "mira-fold-inventor",
       "path": "skills/mira-fold-inventor"
