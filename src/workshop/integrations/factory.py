@@ -71,6 +71,12 @@ FACTORY_RELEASE_MANUAL_PATHS = frozenset(
     (FACTORY_RELEASE_LEGACY_MANUAL_PATH, FACTORY_RELEASE_PDF_MANUAL_PATH)
 )
 FACTORY_CONTENT_MAPPING = "workshop-release-v3-to-factory-content-v1"
+# Factory assigns an omitted import category to its first active category.  The
+# current authoritative taxonomy exposes ``toys`` for Toys & Games, so every
+# Workshop product declares that stable slug explicitly. If Factory ever
+# removes or deactivates it, import rejects before a draft is accepted instead
+# of silently classifying a toy under a different first category.
+FACTORY_TOY_CATEGORY_SLUG = "toys"
 # Only these exact metadata files and CAD/project source types may cross the
 # Factory boundary.  This is deliberately an allowlist: a creator-facing file
 # must not become uploadable merely because its directory or suffix was not in
@@ -1972,6 +1978,17 @@ class FactoryReleaseWriter:
             raise ReceiptError("Factory Receipt belongs to different product-page bytes")
         if details.get("manual_sha256") != intent.request.get("manual_sha256"):
             raise ReceiptError("Factory Receipt belongs to different manual bytes")
+        metadata = intent.request.get("metadata")
+        requested_category = (
+            metadata.get("category") if isinstance(metadata, Mapping) else None
+        )
+        # Historical receipts from before Workshop declared a category remain
+        # readable under their original request. New imports are exact: their
+        # authenticated readback must be carried into the durable receipt.
+        if requested_category is not None and details.get(
+            "factory_category_slug"
+        ) != requested_category:
+            raise ReceiptError("Factory Receipt belongs to a different category")
         requested_manual_path = intent.request.get("manual_path")
         if requested_manual_path is not None and (
             requested_manual_path != FACTORY_RELEASE_PDF_MANUAL_PATH
@@ -2053,6 +2070,9 @@ class FactoryReleaseWriter:
             raise ReceiptError("Factory readback does not preserve the exact import")
         details = dict(observed.details)
         details["page_url"] = _factory_product_page_url(observed.slug)
+        requested_category = metadata.get("category")
+        if requested_category is not None:
+            details["factory_category_slug"] = requested_category
         if pdf_first:
             details.update(
                 self.session.verify_pdf_manual(
@@ -2524,15 +2544,19 @@ class FactoryReleaseWriter:
                 manual_content,
             )
         primary = handoff["primary_model"]
-        # Category is omitted so Factory selects an active category rather than
-        # trusting a stale client-side slug. Prompt is also deliberately omitted:
-        # Workshop will not fabricate or collapse the exact Wish into Factory's
-        # optional prompt field; the sealed facts/page retain that provenance.
+        # Factory defaults an omitted category to its first active category,
+        # which is not a safe classification rule for Workshop products. Send
+        # the canonical Toys & Games slug explicitly; an inactive/unknown slug
+        # is a proven-no-effect rejection rather than a silent fallback. Prompt
+        # remains deliberately omitted: Workshop will not fabricate or collapse
+        # the exact Wish into Factory's optional prompt field; the sealed
+        # facts/page retain that provenance.
         metadata = _normalize_import(
             {
                 "status": "draft",
                 "title": page.get("title"),
                 "description": page.get("summary"),
+                "category": FACTORY_TOY_CATEGORY_SLUG,
                 "tags": ["toy"],
             }
         )
@@ -2682,6 +2706,7 @@ class FactoryPublicTransition:
         owner_id: str,
     ) -> Receipt:
         FactoryPublicTransition._assert_exact_content(design, draft)
+        FactoryPublicTransition._assert_exact_category(design, draft)
         details = dict(draft.details)
         if FactoryPublicTransition._is_pdf_first(draft):
             details.update(
@@ -2727,6 +2752,35 @@ class FactoryPublicTransition:
         if _factory_content_state(design) != target:
             raise StateConflict(
                 "Factory page content changed after the exact Workshop handoff"
+            )
+
+    @staticmethod
+    def _expected_category(draft: Receipt) -> Optional[str]:
+        value = draft.details.get("factory_category_slug")
+        if value is None:
+            # Historical draft receipts did not bind a category. Preserve their
+            # original semantics rather than retroactively inventing evidence.
+            return None
+        if (
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            or len(value) > 100
+        ):
+            raise ReceiptError("Factory draft category is malformed")
+        return value
+
+    @staticmethod
+    def _assert_exact_category(
+        design: Mapping[str, Any], draft: Receipt
+    ) -> None:
+        expected = FactoryPublicTransition._expected_category(draft)
+        if expected is None:
+            return
+        category = design.get("category")
+        if not isinstance(category, Mapping) or category.get("slug") != expected:
+            raise StateConflict(
+                "Factory category changed after the exact Workshop import"
             )
 
     @staticmethod
@@ -2798,6 +2852,9 @@ class FactoryPublicTransition:
             "product_page_sha256": product_page_sha256,
             "manual_sha256": manual_sha256,
         }
+        category_slug = self._expected_category(draft)
+        if category_slug is not None:
+            request["category_slug"] = category_slug
         if pdf_first:
             request["manual_path"] = FACTORY_RELEASE_PDF_MANUAL_PATH
         else:
@@ -2815,6 +2872,12 @@ class FactoryPublicTransition:
         if intent.state == "succeeded":
             if intent.receipt is None or not intent.receipt.is_verified_public:
                 raise StateConflict("completed Factory publication has no public Receipt")
+            if category_slug is not None and intent.receipt.details.get(
+                "factory_category_slug"
+            ) != category_slug:
+                raise StateConflict(
+                    "completed Factory publication lacks exact category evidence"
+                )
             return intent.receipt
         if intent.state == "rejected":
             raise EffectError("Factory previously rejected this exact publication")
@@ -2831,6 +2894,7 @@ class FactoryPublicTransition:
             if not _same_factory_identity(draft, before):
                 raise ReceiptError("Factory preflight changed the draft identity")
             self._assert_exact_content(before_design, draft)
+            self._assert_exact_category(before_design, draft)
             if pdf_first:
                 self.session.verify_pdf_manual(
                     before.project_url, manual_sha256
@@ -2903,6 +2967,7 @@ class FactoryPublicTransition:
 __all__ = [
     "DEFAULT_FACTORY_API",
     "FACTORY_CONTENT_MAPPING",
+    "FACTORY_TOY_CATEGORY_SLUG",
     "FactoryAgentCredentials",
     "FactoryAgentIdentity",
     "FactoryAgentSession",

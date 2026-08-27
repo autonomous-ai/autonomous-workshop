@@ -394,6 +394,14 @@ and hash-compares it with the sealed Release before accepting remote draft or
 public evidence. The verified URL is exposed in status; this proves remote
 manual bytes, not printing or box insertion.
 
+Factory assigns an import with no category to its first active category.
+Workshop therefore sends Factory's canonical `toys` slug explicitly instead
+of accepting that order-dependent default. The authenticated private readback,
+durable receipt, publication preflight, and public readback must all preserve
+the same slug. If `toys` is no longer active, the import fails closed; Workshop
+does not fall back to an unrelated category. Historical receipts that never
+claimed a category remain readable under their original request semantics.
+
 ## Materialized instructions and skills
 
 Canonical product-run sources live at:

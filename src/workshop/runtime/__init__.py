@@ -16,6 +16,7 @@ from workshop.runtime.effects import EffectIntent, EffectLedger
 from workshop.runtime.credentials import (
     factory_credential_environment,
     factory_credential_file,
+    validate_factory_credential_configuration,
 )
 
 __all__ = [
@@ -33,4 +34,5 @@ __all__ = [
     "factory_credential_environment",
     "factory_credential_file",
     "inventor_custom_agent_bytes",
+    "validate_factory_credential_configuration",
 ]

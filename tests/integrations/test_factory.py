@@ -18,6 +18,7 @@ from workshop.errors import (
 )
 from workshop.integrations.factory import (
     DEFAULT_FACTORY_API,
+    FACTORY_TOY_CATEGORY_SLUG,
     FACTORY_USER_AGENT,
     FactoryAgentCredentials,
     FactoryAgentSession,
@@ -213,12 +214,14 @@ class FactoryTransport:
         import_status=201,
         include_thumbnails=True,
         manual_bytes=PDF_MANUAL,
+        category_slug=FACTORY_TOY_CATEGORY_SLUG,
     ):
         self.product_id = product_id
         self.fail_get = fail_get
         self.import_status = import_status
         self.include_thumbnails = include_thumbnails
         self.manual_bytes = manual_bytes
+        self.category_slug = category_slug
         self.public = False
         self.calls = []
         self.imports = 0
@@ -242,7 +245,11 @@ class FactoryTransport:
             "title": "Verified Toy",
             "description": "An exact toy page authored before Factory import.",
             "tags": ["toy"],
-            "category": {"slug": "toys"},
+            "category": (
+                {"slug": self.category_slug}
+                if self.category_slug is not None
+                else None
+            ),
             "author": {"id": "owner-alice"},
             "use_case": self.use_case,
             "story_blocks": self.story_blocks,
@@ -473,6 +480,10 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(receipt.details["playtest_evidence_sha256"], self.playtest_sha256)
         self.assertEqual(receipt.details["page_url"], "https://www.autonomous.ai/factory/product/verified-toy")
         self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
+        self.assertEqual(
+            receipt.details["factory_category_slug"],
+            FACTORY_TOY_CATEGORY_SLUG,
+        )
         self.assertRegex(receipt.details["effect_request_sha256"], r"^[0-9a-f]{64}$")
         self.assertRegex(receipt.details["factory_content_sha256"], r"^[0-9a-f]{64}$")
         self.assertEqual(
@@ -484,7 +495,7 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertRegex(import_call[2]["Idempotency-Key"], r"^autonomous-workshop-[0-9a-f]{64}$")
         parts = multipart_parts(import_call[2], import_call[3])
         self.assertNotIn("prompt", parts)
-        self.assertNotIn("category", parts)
+        self.assertEqual(parts["category"], [b"toys"])
         self.assertEqual(parts["title"], [b"Verified Toy"])
         self.assertEqual(
             parts["description"],
@@ -1171,6 +1182,27 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(recovery.imports, 0)
         self.assertEqual(self.ledger.get(intent.intent_id).state, "succeeded")
 
+    def test_import_category_must_survive_authenticated_readback(self):
+        class CategoryChangesAfterImport(FactoryTransport):
+            def __call__(self, method, url, headers, body, timeout):
+                response = super().__call__(method, url, headers, body, timeout)
+                if method == "POST" and url.endswith("/designs/import"):
+                    self.category_slug = "vases"
+                return response
+
+        transport = CategoryChangesAfterImport()
+
+        with self.assertRaisesRegex(
+            AmbiguousEffectError,
+            "exact readback is not proven",
+        ):
+            self.writer(transport)(self.context, self.release, self.manifest)
+
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertIsNotNone(intent)
+        self.assertEqual(intent.request["metadata"]["category"], "toys")
+        self.assertEqual(intent.state, "unknown")
+
     def test_proven_no_effect_rejection_can_retry_after_host_correction(self):
         rejected = FactoryTransport(import_status=422)
         with self.assertRaises(EffectError):
@@ -1255,6 +1287,7 @@ def draft_receipt():
             "handoff_artifact_sha256": "d" * 64,
             "product_page_sha256": "e" * 64,
             "manual_sha256": "1" * 64,
+            "factory_category_slug": FACTORY_TOY_CATEGORY_SLUG,
             "factory_content_sha256": hashlib.sha256(
                 canonical_json(content)
             ).hexdigest(),
@@ -1287,6 +1320,7 @@ def pdf_draft_receipt():
             "product_page_sha256": "e" * 64,
             "manual_path": "MANUAL.pdf",
             "manual_sha256": hashlib.sha256(PDF_MANUAL).hexdigest(),
+            "factory_category_slug": FACTORY_TOY_CATEGORY_SLUG,
             "page_url": "https://www.autonomous.ai/factory/product/verified-toy",
         },
         design_id="design-1",
@@ -1311,6 +1345,10 @@ class FactoryPublicTransitionTest(unittest.TestCase):
             )
             receipt = FactoryPublicTransition(ledger, session).publish(draft_receipt())
         self.assertTrue(receipt.is_verified_public)
+        self.assertEqual(
+            receipt.details["factory_category_slug"],
+            FACTORY_TOY_CATEGORY_SLUG,
+        )
         publish = [call for call in transport.calls if call[1].endswith("/publish")]
         self.assertEqual(len(publish), 1)
         self.assertIsNone(publish[0][3])
@@ -1332,6 +1370,7 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         self.assertTrue(receipt.is_verified_public)
         self.assertEqual(receipt.details["manual_path"], "MANUAL.pdf")
         self.assertEqual(intent.request["manual_path"], "MANUAL.pdf")
+        self.assertEqual(intent.request["category_slug"], "toys")
         self.assertNotIn("factory_content_sha256", intent.request)
         self.assertEqual(transport.use_case_writes, 0)
         self.assertEqual(transport.story_block_writes, 0)
@@ -1411,6 +1450,84 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         self.assertFalse(
             any(call[1].endswith("/publish") for call in transport.calls)
         )
+
+    def test_changed_category_is_not_published(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
+            transport = FactoryTransport(category_slug="vases")
+            content = draft_factory_content()
+            transport.use_case = content["use_case"]
+            transport.story_blocks = content["story_blocks"]
+            session = FactoryAgentSession(
+                FactoryAgentCredentials("alice", "test-secret"), transport=transport
+            )
+
+            with self.assertRaisesRegex(StateConflict, "category changed"):
+                FactoryPublicTransition(ledger, session).publish(draft_receipt())
+
+        self.assertFalse(
+            any(call[1].endswith("/publish") for call in transport.calls)
+        )
+
+    def test_changed_category_after_publish_keeps_outcome_unknown(self):
+        class CategoryChangesOnPublish(FactoryTransport):
+            def __call__(self, method, url, headers, body, timeout):
+                response = super().__call__(method, url, headers, body, timeout)
+                if method == "POST" and url.endswith("/publish"):
+                    self.category_slug = "vases"
+                return response
+
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
+            transport = CategoryChangesOnPublish()
+            content = draft_factory_content()
+            transport.use_case = content["use_case"]
+            transport.story_blocks = content["story_blocks"]
+            session = FactoryAgentSession(
+                FactoryAgentCredentials("alice", "test-secret"), transport=transport
+            )
+
+            with self.assertRaisesRegex(
+                AmbiguousEffectError,
+                "outcome is unknown",
+            ):
+                FactoryPublicTransition(ledger, session).publish(draft_receipt())
+            intent = ledger.latest("verified-toy", "factory-publish")
+
+        self.assertEqual(intent.state, "unknown")
+        self.assertEqual(
+            len([call for call in transport.calls if call[1].endswith("/publish")]),
+            1,
+        )
+
+    def test_historical_categoryless_draft_remains_publishable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
+            transport = FactoryTransport(category_slug="vases")
+            content = draft_factory_content()
+            transport.use_case = content["use_case"]
+            transport.story_blocks = content["story_blocks"]
+            session = FactoryAgentSession(
+                FactoryAgentCredentials("alice", "test-secret"), transport=transport
+            )
+            historical = draft_receipt()
+            historical = Receipt.from_dict(
+                {
+                    **historical.to_dict(),
+                    "details": {
+                        key: value
+                        for key, value in historical.details.items()
+                        if key != "factory_category_slug"
+                    },
+                }
+            )
+
+            receipt = FactoryPublicTransition(ledger, session).publish(historical)
+            intent = ledger.latest("verified-toy", "factory-publish")
+
+        self.assertTrue(receipt.is_verified_public)
+        self.assertNotIn("factory_category_slug", receipt.details)
+        self.assertNotIn("category_slug", intent.request)
 
 
 if __name__ == "__main__":

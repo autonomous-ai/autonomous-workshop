@@ -113,6 +113,15 @@ when no native agent turn is running. Never put credentials in a Wish, prompt,
 `TASTE.md`, product-run workspace, Release package, source file, or commit. The
 Codex subprocess gets a scrubbed environment.
 
+The private file uses strict `NAME=raw-value` lines; it is not evaluated by a
+shell, so literal surrounding single or double quotes are invalid. A generic
+account uses `FACTORY_USERNAME` together with `FACTORY_PASSWORD`. For a scoped
+account, the variable name encodes the canonical Inventor id and its value must
+match it case-insensitively—for example, `FACTORY_LEO_USERNAME=leo`, or
+`FACTORY_LEO_SMITH_USERNAME=leo-smith`. All scoped usernames share the one
+`FACTORY_PASSWORD`. Run `workshop doctor` to validate names, identity bindings,
+pair completeness, file permissions, and syntax without printing any value.
+
 ## Recovery
 
 After a timeout, disconnect, or malformed Factory response, do not blindly

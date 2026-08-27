@@ -39,7 +39,10 @@ from workshop.make.skill_registry import (
 )
 from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.execution import codex_subprocess_environment
-from workshop.runtime.credentials import factory_credential_environment
+from workshop.runtime.credentials import (
+    factory_credential_environment,
+    validate_factory_credential_configuration,
+)
 from workshop.runtime.codex import (
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     codex_supports_native_workshop,
@@ -389,6 +392,7 @@ def _doctor_agent_assets() -> dict[str, str]:
 def _doctor_factory() -> dict[str, str]:
     try:
         credential_environment = factory_credential_environment()
+        validate_factory_credential_configuration(credential_environment)
     except WorkshopError as exc:
         return _check_record(
             "factory-credentials",

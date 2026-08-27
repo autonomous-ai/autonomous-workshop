@@ -335,6 +335,31 @@ class DoctorTest(unittest.TestCase):
         self.assertNotIn(secret, stdout.getvalue())
         self.assertEqual(json.loads(stdout.getvalue())["status"], "needs-attention")
 
+    def test_mismatched_scoped_factory_username_fails_without_printing_value(self):
+        secret_username = "not-the-inventor"
+        with mock.patch(
+            "cli.main.factory_credential_environment",
+            return_value={
+                "FACTORY_ALICE_USERNAME": secret_username,
+                "FACTORY_PASSWORD": "secret",
+            },
+        ):
+            check = cli_main._doctor_factory()
+        self.assertEqual(check["status"], "needs-attention")
+        self.assertIn("exactly match", check["detail"])
+        self.assertNotIn(secret_username, json.dumps(check))
+
+    def test_generic_factory_pair_remains_ready(self):
+        with mock.patch(
+            "cli.main.factory_credential_environment",
+            return_value={
+                "FACTORY_USERNAME": "inventor-from-run",
+                "FACTORY_PASSWORD": "secret",
+            },
+        ):
+            check = cli_main._doctor_factory()
+        self.assertEqual(check["status"], "ready")
+
     def test_repository_agent_assets_include_executable_cad_verifier(self):
         self.assertEqual(cli_main._doctor_agent_assets()["status"], "ready")
 

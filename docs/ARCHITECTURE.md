@@ -252,6 +252,11 @@ configured, the host may separately transport the exact sealed model,
 and require authenticated readback. Remote field limits can fail that optional
 effect but cannot invalidate the local Release.
 
+The Factory import declares the canonical `toys` category. An omitted category
+would be assigned to Factory's first active category, so Workshop never relies
+on that mutable ordering. Draft and public evidence are accepted only when
+authenticated readback preserves the declared category slug.
+
 The CLI default creates no publication. `--publish` records explicit
 prospective authority for the host to import and promote the exact released
 bytes when the adapter and credentials are available. Factory credentials are

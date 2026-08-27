@@ -21,6 +21,10 @@ MAX_FACTORY_CREDENTIAL_FILE_BYTES = 32 * 1024
 _FACTORY_CREDENTIAL_NAME = re.compile(
     r"^FACTORY_(?:PASSWORD|USERNAME|[A-Z][A-Z0-9_]{0,63}_USERNAME)$"
 )
+_FACTORY_SCOPED_USERNAME_NAME = re.compile(
+    r"^FACTORY_([A-Z][A-Z0-9_]{0,63})_USERNAME$"
+)
+_FACTORY_INVENTOR_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def factory_credential_file(
@@ -31,15 +35,31 @@ def factory_credential_file(
     return default_workshop_home(environment) / "credentials" / "factory.env"
 
 
+def _is_quote_wrapped(value: str) -> bool:
+    return (
+        len(value) >= 2
+        and value[0] in ("'", '"')
+        and value[-1] == value[0]
+    )
+
+
 def _credential_environment_values(values: Mapping[str, str]) -> dict[str, str]:
-    return {
-        name: value
-        for name, value in values.items()
-        if isinstance(name, str)
-        and _FACTORY_CREDENTIAL_NAME.fullmatch(name) is not None
-        and isinstance(value, str)
-        and value
-    }
+    result: dict[str, str] = {}
+    for name, value in values.items():
+        if (
+            not isinstance(name, str)
+            or _FACTORY_CREDENTIAL_NAME.fullmatch(name) is None
+            or not isinstance(value, str)
+            or not value
+        ):
+            continue
+        if _is_quote_wrapped(value):
+            raise ContractError(
+                "Factory credential environment variable %s must not contain "
+                "literal surrounding quotes" % name
+            )
+        result[name] = value
+    return result
 
 
 def _read_private_credential_file(
@@ -126,6 +146,11 @@ def _parse_credential_file(
             raise ContractError(
                 "%s credential file contains a duplicate name" % label
             )
+        if _is_quote_wrapped(value):
+            raise ContractError(
+                "%s credential file line %d must not use surrounding quotes; "
+                "write the raw value after '='" % (label, line_number)
+            )
         if (
             not value
             or value != value.strip()
@@ -166,8 +191,76 @@ def factory_credential_environment(
     return loaded
 
 
+def validate_factory_credential_configuration(values: Mapping[str, str]) -> None:
+    """Validate one host credential set without returning or exposing secrets.
+
+    A scoped variable such as ``FACTORY_LEO_USERNAME`` is an identity binding,
+    not just a label: its value must be ``leo`` (case-insensitively). Hyphens in
+    canonical Inventor ids are represented by underscores in variable names.
+    Every supported username form shares the one ``FACTORY_PASSWORD`` value.
+    """
+
+    if not isinstance(values, Mapping):
+        raise ContractError("Factory credential configuration must be a mapping")
+
+    usernames_present = False
+    generic_username = values.get("FACTORY_USERNAME")
+    if generic_username is not None:
+        if not isinstance(generic_username, str) or not generic_username:
+            raise ContractError("Factory generic username is malformed")
+        if _is_quote_wrapped(generic_username):
+            raise ContractError(
+                "Factory generic username must not contain literal surrounding quotes"
+            )
+        if _FACTORY_INVENTOR_ID.fullmatch(generic_username.casefold()) is None:
+            raise ContractError(
+                "Factory generic username must be a canonical inventor_id"
+            )
+        usernames_present = True
+
+    for name, username in values.items():
+        if not isinstance(name, str):
+            continue
+        match = _FACTORY_SCOPED_USERNAME_NAME.fullmatch(name)
+        if match is None:
+            continue
+        if not isinstance(username, str) or not username:
+            raise ContractError("Factory scoped username is malformed")
+        if _is_quote_wrapped(username):
+            raise ContractError(
+                "Factory scoped username must not contain literal surrounding quotes"
+            )
+        inventor_id = match.group(1).lower().replace("_", "-")
+        if _FACTORY_INVENTOR_ID.fullmatch(inventor_id) is None:
+            raise ContractError(
+                "Factory scoped username name must encode a canonical inventor_id"
+            )
+        if username.casefold() != inventor_id.casefold():
+            raise ContractError(
+                "Factory scoped username must exactly match the inventor_id "
+                "encoded by its variable name"
+            )
+        usernames_present = True
+
+    password = values.get("FACTORY_PASSWORD")
+    password_present = password is not None
+    if password_present:
+        if not isinstance(password, str) or not password:
+            raise ContractError("Factory password is malformed")
+        if _is_quote_wrapped(password):
+            raise ContractError(
+                "Factory password must not contain literal surrounding quotes"
+            )
+
+    if usernames_present != password_present:
+        raise ContractError(
+            "Factory username and FACTORY_PASSWORD must be configured together"
+        )
+
+
 __all__ = [
     "MAX_FACTORY_CREDENTIAL_FILE_BYTES",
     "factory_credential_environment",
     "factory_credential_file",
+    "validate_factory_credential_configuration",
 ]
