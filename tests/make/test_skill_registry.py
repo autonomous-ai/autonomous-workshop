@@ -112,15 +112,19 @@ class SkillFingerprintTest(unittest.TestCase):
             skill_text,
         )
 
-    def test_design_reference_command_guidance_uses_the_installed_skill_root(self):
-        skill_text = (
-            resolve_skills_root() / "design-reference" / "SKILL.md"
-        ).read_text(encoding="utf-8")
-        self.assertNotIn("python skills/design-reference/", skill_text)
-        self.assertIn(
-            'DESIGN_REFERENCE_SKILL_ROOT="$(workshop skills path)/design-reference"',
-            skill_text,
+    def test_design_reference_is_research_guidance_without_a_local_client(self):
+        skill = resolve_skills_root() / "design-reference"
+        self.assertEqual(
+            sorted(
+                path.relative_to(skill).as_posix()
+                for path in skill.rglob("*")
+                if path.is_file()
+            ),
+            ["SKILL.md", "agents/openai.yaml"],
         )
+        skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
+        self.assertNotIn("python skills/design-reference/", skill_text)
+        self.assertNotIn("scripts/", skill_text)
 
     def test_image_to_cad_command_guidance_uses_the_installed_skill_root(self):
         skill = resolve_skills_root() / "image-to-cad"
