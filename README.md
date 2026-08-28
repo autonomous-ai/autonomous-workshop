@@ -1,12 +1,15 @@
 # Autonomous Workshop
 
-You wish for a toy that doesn't exist. A few days later, it arrives at your door. Not from a shelf. From your imagination. Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
+You wish for a toy that doesn't exist. Workshop turns that Wish into a public Release: exact print-ready CAD and the in-box `MANUAL.pdf`. Operations then prints, packs, and delivers.
+
+Codex is the default Manager. Spark (the default effort) and Forge omit Playtest; Quest runs it.
 
 - [Quickstart](#quickstart)
 - [Workshop Managers](#workshop-managers)
 - [Inventors](#inventors)
 - [Toys](#toys)
 - [Architecture](#architecture)
+- [Contributing](#contributing)
 
 ## Quickstart
 
@@ -23,7 +26,7 @@ uv run workshop doctor
 
 `workshop doctor` checks the Inventor catalog, Codex version and sign-in, packaged agent assets, and host-only Factory credentials without printing secrets. Factory credentials belong to one Workshop-owned service account and are required only when Release publishes; see [credential setup](docs/PUBLISH_SEALED_PRODUCT.md#credentials). Starting `workshop wish` authorizes that public Factory publication. If credentials are missing, Release waits for `workshop resume` instead of claiming completion.
 
-Default Codex and Spark (`Wish -> Make -> Release`):
+Copy a Wish. The first command is the default: Codex Manager, Spark effort (`Wish -> Make -> Release`). No extra flags.
 
 ```bash
 uv run workshop wish \
@@ -211,6 +214,17 @@ docs/               architecture, ADRs, and contributor guides
 
 The private project and host state stay outside the agent-visible checkout: `$WORKSHOP_HOME/runs/<wish-id>/workspace` and `$WORKSHOP_HOME/state/<wish-id>/`.
 
-See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md), [Workshop architecture](docs/ARCHITECTURE.md), [publication boundary](docs/PUBLISH_SEALED_PRODUCT.md), [Playtest evidence](docs/PLAYTEST_EVIDENCE.md), and [Contributing](CONTRIBUTING.md).
+See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md), [Workshop architecture](docs/ARCHITECTURE.md), [publication boundary](docs/PUBLISH_SEALED_PRODUCT.md), and [Playtest evidence](docs/PLAYTEST_EVIDENCE.md).
+
+## Contributing
+
+This repository is the Workshop host and Inventor sources. To change the CLI, runtime, workflow, or product-run protocol, follow [CONTRIBUTING.md](CONTRIBUTING.md). To add a specialist, start from [Build an Inventor](docs/BUILD_AN_INVENTOR.md).
+
+```bash
+uv run workshop doctor
+PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'
+```
 
 Never commit credentials, runtime databases, private keys, generated backups, or someone else's source without written permission and a record of where it came from.
+
+Licensed under [Apache-2.0](LICENSE).
