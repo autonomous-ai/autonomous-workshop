@@ -19,26 +19,38 @@ cd autonomous-workshop
 codex login
 codex login status
 uv run workshop doctor
+```
+
+`workshop doctor` checks the Inventor catalog, Codex version and sign-in, packaged agent assets, and host-only Factory credentials without printing secrets. Factory credentials belong to one Workshop-owned service account and are required only when Release publishes; see [credential setup](docs/PUBLISH_SEALED_PRODUCT.md#credentials). Starting `workshop wish` authorizes that public Factory publication. If credentials are missing, Release waits for `workshop resume` instead of claiming completion.
+
+Default Codex and Spark (`Wish -> Make -> Release`):
+
+```bash
+uv run workshop wish \
+  "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
+```
+
+Choose an effort (`spark`, `forge`, or `quest`). Forge adds Invent:
+
+```bash
 uv run workshop wish \
   --effort forge \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-`workshop doctor` checks the Inventor catalog, Codex version and sign-in, packaged agent assets, and host-only Factory credentials without printing secrets. Factory credentials belong to one Workshop-owned service account and are required only when Release publishes; see [credential setup](docs/PUBLISH_SEALED_PRODUCT.md#credentials). Starting `workshop wish` authorizes that public Factory publication. If credentials are missing, Release waits for `workshop resume` instead of claiming completion.
-
-```bash
-uv run workshop status <wish-id>
-uv run workshop resume <wish-id>
-```
-
-Omit `--manager` to keep Codex. Pass `--effort spark` (default), `--effort forge`, or `--effort quest`. Inventor selection is folded into the first creative stage.
-
-To reproduce the Grok Spark example [Horn Tip](toys/pico-press-horn-tip/):
+Choose both effort and Manager. This is the Grok Spark path that produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
 uv run workshop wish --manager grok --effort spark \
   "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
+```
+
+Omit `--manager` to keep Codex. Inventor selection is folded into the first creative stage.
+
+```bash
+uv run workshop status <wish-id>
+uv run workshop resume <wish-id>
 ```
 
 Verify a checkout:
