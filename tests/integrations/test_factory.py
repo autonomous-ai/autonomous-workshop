@@ -1233,6 +1233,32 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(recovery.imports, 0)
         self.assertEqual(self.ledger.get(intent.intent_id).state, "succeeded")
 
+    def test_lost_import_response_recovers_by_stable_slug_without_resending(self):
+        class LostImportResponse(FactoryTransport):
+            def __init__(self):
+                super().__init__()
+                self.lost = False
+
+            def __call__(self, method, url, headers, body, timeout):
+                response = super().__call__(method, url, headers, body, timeout)
+                if method == "POST" and url.endswith("/designs/import") and not self.lost:
+                    self.lost = True
+                    raise RuntimeError("response lost after exact import")
+                return response
+
+        transport = LostImportResponse()
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.state, "unknown")
+        self.assertIsNone(intent.response)
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.imports, 1)
+        self.assertEqual(self.ledger.get(intent.intent_id).state, "succeeded")
+
     def test_import_category_must_survive_authenticated_readback(self):
         class CategoryChangesAfterImport(FactoryTransport):
             def __call__(self, method, url, headers, body, timeout):

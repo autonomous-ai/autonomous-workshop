@@ -378,6 +378,9 @@ class _OneSessionProductAgent:
                         "Every playable square is an orbital waypoint and each side uses "
                         "a distinct dog-pack silhouette without changing draughts rules."
                     ),
+                    "intended_interaction": (
+                        "Two players move tactile pieces between orbital waypoints."
+                    ),
                     "envelope_mm": {
                         "length_mm": 200.0,
                         "width_mm": 200.0,
@@ -386,6 +389,10 @@ class _OneSessionProductAgent:
                     "components": [
                         {"key": key, **fields}
                         for key, fields in _fixture_components().items()
+                    ],
+                    "assumptions": ["Players know English draughts rules."],
+                    "unresolved_risks": [
+                        "Physical fit and handling have not been tested by a person."
                     ],
                 },
                 "research": {
@@ -430,9 +437,25 @@ class _OneSessionProductAgent:
                         "A compact orbital draughts set designed and built in one "
                         "Spark Make turn."
                     ),
+                    "signature_decision": (
+                        "Every playable square is an orbital waypoint without changing "
+                        "the familiar rules."
+                    ),
+                    "intended_interaction": (
+                        "Two players move tactile pieces between orbital waypoints."
+                    ),
+                    "envelope_mm": {
+                        "length_mm": 200.0,
+                        "width_mm": 200.0,
+                        "height_mm": 20.0,
+                    },
                     "components": [
                         {"key": key, **fields}
                         for key, fields in _fixture_components().items()
+                    ],
+                    "assumptions": ["Players know English draughts rules."],
+                    "unresolved_risks": [
+                        "Physical fit and handling have not been tested by a person."
                     ],
                 },
                 "research": {

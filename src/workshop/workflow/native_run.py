@@ -43,6 +43,8 @@ from workshop.integrations.factory import (
     FactoryCredentialRejected,
     FactoryPublicTransition,
     factory_credentials_from_environment,
+    urllib_project_file_transport,
+    urllib_transport,
 )
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
@@ -208,6 +210,24 @@ _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
         "are regenerated from one internally consistent artifact tree."
     ),
 }
+
+# These are the only deterministic-test seams in the required publication
+# path.  Tests may replace outbound HTTP while retaining the production
+# Factory session, handoff writer, effect ledger, reconciliation, publication,
+# public readback, and receipt validation code.
+_FACTORY_TRANSPORT = urllib_transport
+_FACTORY_PROJECT_FILE_TRANSPORT = urllib_project_file_transport
+
+
+def _factory_transport_overrides() -> dict[str, Any]:
+    """Return only explicitly replaced outbound Factory transports."""
+
+    overrides: dict[str, Any] = {}
+    if _FACTORY_TRANSPORT is not urllib_transport:
+        overrides["transport"] = _FACTORY_TRANSPORT
+    if _FACTORY_PROJECT_FILE_TRANSPORT is not urllib_project_file_transport:
+        overrides["project_file_transport"] = _FACTORY_PROJECT_FILE_TRANSPORT
+    return overrides
 
 
 class _FactoryCredentialsUnavailable(Exception):
@@ -3433,6 +3453,41 @@ def _evaluate_playtest_stage(
     blueprint = context["blueprint"]
     playtested.assert_context(made, blueprint)
     canonical = playtested.validate_evidence_tree(run.run_root, made)
+    if checkpoint.effort is not None:
+        inventory = {
+            entry.path: entry.sha256
+            for entry in playtested.evidence_manifest.entries
+        }
+        for check in playtested.checks:
+            relative = "%s/configs/%s.json" % (
+                playtested.evidence_root,
+                check.check_id,
+            )
+            config, content = read_bounded_json_artifact(
+                run.run_root,
+                relative,
+                label="routed Playtest %s config" % check.check_id,
+            )
+            expected_digest = inventory.get("configs/%s.json" % check.check_id)
+            if (
+                expected_digest != check.config_sha256
+                or _sha256(content) != expected_digest
+                or set(config) != {
+                    "schema_version",
+                    "check_id",
+                    "seed",
+                    "artifact_sha256",
+                }
+                or config["schema_version"] != 1
+                or config["check_id"] != check.check_id
+                or type(config["seed"]) is not int
+                or config["artifact_sha256"]
+                != made.product_manifest.artifact_sha256
+            ):
+                raise ContractError(
+                    "routed Playtest config is not bound to the current Made revision: %s"
+                    % check.check_id
+                )
     verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
     if not isinstance(verifier_sha256, str):
         raise StateConflict("native run lacks its trusted CAD verifier binding")
@@ -3473,6 +3528,7 @@ def _evaluate_playtest_stage(
             "product_artifact_sha256": made.product_manifest.artifact_sha256,
             "evidence_artifact_sha256": canonical.evidence.evidence_artifact_sha256,
             "required_playtest_checks_covered": True,
+            "routed_config_made_bindings": checkpoint.effort is not None,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verifier_mode": cad_evidence.verifier_mode,
             "cad_verification_tier": cad_evidence.verification_tier,
@@ -3990,10 +4046,12 @@ def _attempt_release_publication(
             raise _FactoryCredentialsUnavailable(verified.inventor_id) from None
         ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
         if receipt is None:
+            transport_overrides = _factory_transport_overrides()
             writer = FactoryReleaseWriter(
                 ledger,
                 verified.inventor_id,
                 credentials,
+                **transport_overrides,
             )
             receipt = writer(
                 _publication_release_context(run, verified),
@@ -4004,7 +4062,7 @@ def _attempt_release_publication(
         if receipt.is_verified_draft:
             receipt = FactoryPublicTransition(
                 ledger,
-                FactoryAgentSession(credentials),
+                FactoryAgentSession(credentials, **_factory_transport_overrides()),
             ).publish(receipt)
             _write_release_effect(run, verified.release, receipt)
         if not receipt.is_verified_public:

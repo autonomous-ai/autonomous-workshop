@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass, field
+from pathlib import PurePosixPath
 from types import MappingProxyType
 from typing import Any, Mapping, Optional
 
@@ -432,16 +433,35 @@ def evaluate_invent_stage(
         raise StateConflict("Invent proposal subject is not the full Invent input vector")
     if not isinstance(expected_artifact_path, str) or not expected_artifact_path:
         raise ContractError("expected Invent artifact path is invalid")
-    artifact = _ready_artifact(
-        proposal,
-        stage="invent",
-        transition="make",
-        canonical_path=expected_artifact_path,
-    )
+    outcome = proposal.outcome
+    source_path = (
+        PurePosixPath(expected_artifact_path).parent / "source.json"
+    ).as_posix()
+    paths = tuple(item.path for item in outcome.artifacts)
+    if (
+        outcome.stage != "invent"
+        or outcome.status != "ready"
+        or outcome.proposed_transition != "make"
+        or outcome.needs
+        or paths not in ((expected_artifact_path,), (expected_artifact_path, source_path))
+    ):
+        raise ContractError("invent outcome is not an exact ready forward proposal")
+    artifact = outcome.artifacts[0]
     invented = NativeInvented.from_mapping(
         _artifact_document(run_root, artifact, label="Invented artifact")
     )
     invented.assert_context(assignment)
+    source_artifact = outcome.artifacts[1] if len(outcome.artifacts) == 2 else None
+    if source_artifact is not None:
+        source = _artifact_document(
+            run_root, source_artifact, label="Invent authored source"
+        )
+        if (
+            set(source) != {"concept", "research"}
+            or source["concept"] != invented.to_dict()["concept"]
+            or source["research"] != invented.to_dict()["research"]
+        ):
+            raise ContractError("Invent source differs from its sealed contract")
     evidence = StageGateEvidence(
         stage="invent",
         gate_id=INVENT_GATE_ID,
@@ -457,6 +477,10 @@ def evaluate_invent_stage(
             "blueprint_sha256": invented.blueprint_sha256,
             "concept_sha256": invented.concept_sha256,
             "research_sha256": invented.research_sha256,
+            "source_artifact_sha256": (
+                source_artifact.sha256 if source_artifact is not None else None
+            ),
+            "source_bound": source_artifact is not None,
             "taste_sha256": invented.taste_sha256,
             "wish_bound": True,
         },
@@ -488,18 +512,21 @@ def evaluate_routed_invent_stage(
     ):
         raise StateConflict("routed Invent proposal belongs to another stage subject")
     outcome = proposal.outcome
+    source_artifact_path = (
+        PurePosixPath(invented_artifact_path).parent / "source.json"
+    ).as_posix()
     if (
         outcome.stage != "invent"
         or outcome.status != "ready"
         or outcome.proposed_transition != "make"
         or outcome.needs
         or tuple(item.path for item in outcome.artifacts)
-        != (invented_artifact_path, assignment_artifact_path)
+        != (invented_artifact_path, assignment_artifact_path, source_artifact_path)
     ):
         raise ContractError(
-            "routed Invent outcome must contain its exact Invented and assignment contracts"
+            "routed Invent outcome must contain its exact Invented, assignment, and source artifacts"
         )
-    invented_artifact, assignment_artifact = outcome.artifacts
+    invented_artifact, assignment_artifact, source_artifact = outcome.artifacts
     assignment = NativeMatchAssignment.from_mapping(
         _artifact_document(
             run_root, assignment_artifact, label="routed native Match assignment"
@@ -510,6 +537,23 @@ def evaluate_routed_invent_stage(
         _artifact_document(run_root, invented_artifact, label="routed Invented artifact")
     )
     invented.assert_context(assignment)
+    source = _artifact_document(
+        run_root, source_artifact, label="routed Invent authored source"
+    )
+    expected_source_fields = {
+        "selected_inventor_id",
+        "ranking",
+        "concept",
+        "research",
+    }
+    if (
+        set(source) != expected_source_fields
+        or source["selected_inventor_id"] != assignment.selected_inventor_id
+        or source["ranking"] != [item.to_dict() for item in assignment.ranking]
+        or source["concept"] != invented.to_dict()["concept"]
+        or source["research"] != invented.to_dict()["research"]
+    ):
+        raise ContractError("routed Invent source differs from its sealed contracts")
     evidence = StageGateEvidence(
         stage="invent",
         gate_id="invent.routed-concept-v1",
@@ -526,8 +570,10 @@ def evaluate_routed_invent_stage(
             "blueprint_sha256": invented.blueprint_sha256,
             "concept_sha256": invented.concept_sha256,
             "research_sha256": invented.research_sha256,
+            "source_artifact_sha256": source_artifact.sha256,
             "roster_sha256": roster.roster_sha256,
             "selected_custom_agent_bound": True,
+            "source_bound": True,
             "selected_taste_sha256": assignment.selected_taste_sha256,
             "wish_bound": True,
         },

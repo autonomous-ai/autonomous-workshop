@@ -66,8 +66,8 @@ Then run:
 ```
 
 The deterministic finalizer derives the exact roster-bound assignment, binds
-the chosen concept and research to it, and writes both canonical assignment
-and Invented contracts plus
+the chosen concept and research to it, preserves the exact authored bytes as
+the sibling `source.json`, and writes both canonical assignment and Invented contracts plus
 `agent-outcome.json`. It does not research, judge, assign a quality score, or
 run the improvement loop. Complete the Invent Goal only after the command
 succeeds, then return to the host. The host validates and seals the exact

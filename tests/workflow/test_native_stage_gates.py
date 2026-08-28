@@ -300,6 +300,15 @@ class NativeStageGateTest(unittest.TestCase):
         wrong_path_artifact = self.artifact(
             "artifacts/invent/substitute.json", invented.to_dict()
         )
+        source_artifact = self.artifact(
+            "artifacts/invent/source.json",
+            {
+                "selected_inventor_id": self.assignment.selected_inventor_id,
+                "ranking": [item.to_dict() for item in self.assignment.ranking],
+                "concept": invented.to_dict()["concept"],
+                "research": invented.to_dict()["research"],
+            },
+        )
         subject = digest("7")
 
         def proposal(artifacts):
@@ -315,7 +324,7 @@ class NativeStageGateTest(unittest.TestCase):
             )
 
         accepted = evaluate_routed_invent_stage(
-            proposal((invented_artifact, assignment_artifact)),
+            proposal((invented_artifact, assignment_artifact, source_artifact)),
             run_root=self.run_root,
             expected_checkpoint_sha256=self.checkpoint_sha256,
             expected_subject_sha256=subject,
@@ -327,17 +336,18 @@ class NativeStageGateTest(unittest.TestCase):
         self.assertTrue(accepted.passed)
 
         substitutions = {
-            "swapped": (assignment_artifact, invented_artifact),
+            "swapped": (assignment_artifact, invented_artifact, source_artifact),
             "extra": (
                 invented_artifact,
                 assignment_artifact,
+                source_artifact,
                 wrong_path_artifact,
             ),
-            "wrong path": (wrong_path_artifact, assignment_artifact),
+            "wrong path": (wrong_path_artifact, assignment_artifact, source_artifact),
         }
         for label, artifacts in substitutions.items():
             with self.subTest(label=label), self.assertRaisesRegex(
-                ContractError, "exact Invented and assignment contracts"
+                ContractError, "exact Invented, assignment, and source artifacts"
             ):
                 evaluate_routed_invent_stage(
                     proposal(artifacts),

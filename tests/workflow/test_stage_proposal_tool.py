@@ -200,6 +200,35 @@ class StageProposalToolTest(unittest.TestCase):
             concept={
                 "title": "Moon Nook",
                 "summary": "A tiny lunar observatory shaped by the Wish.",
+                "signature_decision": (
+                    "The viewing aperture and the moon-phase dial share one "
+                    "compact tactile enclosure."
+                ),
+                "intended_interaction": (
+                    "A person turns the dial and looks through the aperture."
+                ),
+                "envelope_mm": {
+                    "length_mm": 60.0,
+                    "width_mm": 40.0,
+                    "height_mm": 25.0,
+                },
+                "components": [
+                    {
+                        "key": "observatory",
+                        "name": "Observatory body",
+                        "purpose": "Holds the aperture and phase dial",
+                        "form": "Rounded printable enclosure",
+                        "placement": "Centered on a table",
+                        "interfaces": "The dial rotates within the body",
+                        "dimensions_mm": {
+                            "length_mm": 60.0,
+                            "width_mm": 40.0,
+                            "height_mm": 25.0,
+                        },
+                    }
+                ],
+                "assumptions": ["The object is used indoors."],
+                "unresolved_risks": ["Physical fit has not yet been tested."],
             },
             research={
                 "sources": [
@@ -319,15 +348,26 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertEqual(content, canonical_json(document))
         return document, content
 
-    def assert_outcome(self, stage, contract_path, contract_bytes, transition):
+    def assert_outcome(
+        self,
+        stage,
+        contract_path,
+        contract_bytes,
+        transition,
+        additional_artifacts=(),
+    ):
         document, _ = self.assert_canonical_file("agent-outcome.json")
         proposal = AgentOutcomeProposal.from_mapping(document)
         self.assertEqual(proposal.outcome.stage, stage)
         self.assertEqual(proposal.outcome.proposed_transition, transition)
-        self.assertEqual(len(proposal.outcome.artifacts), 1)
+        self.assertEqual(len(proposal.outcome.artifacts), 1 + len(additional_artifacts))
         artifact = proposal.outcome.artifacts[0]
         self.assertEqual(artifact.path, contract_path)
         self.assertEqual(artifact.sha256, sha256(contract_bytes))
+        self.assertEqual(
+            tuple((item.path, item.sha256) for item in proposal.outcome.artifacts[1:]),
+            tuple(additional_artifacts),
+        )
         self.assertEqual(proposal.checkpoint_sha256, "1" * 64)
         self.assertEqual(proposal.subject_sha256, "2" * 64)
 
@@ -412,7 +452,7 @@ class StageProposalToolTest(unittest.TestCase):
         self.write_json(
             "drafts/invent.json",
             {
-                "concept": dict(self.invented.concept),
+                "concept": self.invented.to_dict()["concept"],
                 "research": {
                     "sources": [
                         {
@@ -429,11 +469,13 @@ class StageProposalToolTest(unittest.TestCase):
         )
         observed_invented = NativeInvented.from_mapping(invented_document)
         self.assertEqual(observed_invented, self.invented)
+        source_bytes = (self.run_root / "artifacts/invent/source.json").read_bytes()
         self.assert_outcome(
             "invent",
             "artifacts/invent/invented.json",
             invented_bytes,
             "make",
+            (("artifacts/invent/source.json", sha256(source_bytes)),),
         )
 
     def test_routed_invent_seals_assignment_and_invented_contracts_together(self):
@@ -464,6 +506,7 @@ class StageProposalToolTest(unittest.TestCase):
             assignment_path
         )
         invented_document, invented_bytes = self.assert_canonical_file(invented_path)
+        source_bytes = (self.run_root / "artifacts/invent/source.json").read_bytes()
         self.assertEqual(
             NativeMatchAssignment.from_mapping(assignment_document), self.assignment
         )
@@ -475,6 +518,7 @@ class StageProposalToolTest(unittest.TestCase):
             (
                 (invented_path, sha256(invented_bytes)),
                 (assignment_path, sha256(assignment_bytes)),
+                ("artifacts/invent/source.json", sha256(source_bytes)),
             ),
         )
         self.assertEqual(proposal.outcome.proposed_transition, "make")

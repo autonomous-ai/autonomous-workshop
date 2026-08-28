@@ -73,6 +73,26 @@ jobs:
         if: matrix.python-version == '3.14'
         run: python tests/packaging/installed_wheel_cli_acceptance.py
 
+  deterministic-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: install the locked dependency tool
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: run production-boundary deterministic E2E
+        env:
+          WORKSHOP_RUN_DETERMINISTIC_E2E: "1"
+        run: |
+          started_at=$(date +%s)
+          uv run --frozen python -m unittest \
+            tests.end_to_end.test_deterministic_native_fidelity -v
+          elapsed_seconds=$(($(date +%s) - started_at))
+          echo "Deterministic E2E runtime: ${elapsed_seconds}s" >> "$GITHUB_STEP_SUMMARY"
+
   distribution-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15

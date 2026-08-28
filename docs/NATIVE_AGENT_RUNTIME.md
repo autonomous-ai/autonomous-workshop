@@ -319,6 +319,12 @@ Codex completes the active Goal and returns control. The host rereads the
 proposal and artifact tree independently, reruns its trusted gates, seals all
 accepted bytes, and alone decides the transition.
 
+For Invent, the finalizer also preserves the exact authored source bytes as
+`source.json` beside the assignment and Invented contracts. The host requires
+that artifact and independently proves that its selection, ranking, concept,
+and research derive the two sealed contracts, so a post-finalizer source edit
+cannot hide behind unchanged contract prose.
+
 For Quest and frozen pre-ADR-0015 runs, Playtest owns the backward transitions. A
 verdict of `improve` or `block`
 preserves exact evidence and uses each feedback record's explicit invalidation

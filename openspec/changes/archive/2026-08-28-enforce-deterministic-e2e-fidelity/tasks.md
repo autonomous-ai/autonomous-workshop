@@ -1,0 +1,72 @@
+## 1. Establish the external boundary and phase-proof framework
+
+- [x] 1.1 Inventory the current deterministic E2E helpers and move any fixture that directly returns an accepted stage result, CAD evidence, gate decision, checkpoint transition, or Factory receipt out of E2E coverage; verify the fidelity-policy test names every removed or forbidden internal seam.
+- [x] 1.2 Implement the deterministic native executable's version, start, resume, stable-session, stdin-prompt, and JSONL event behavior behind `WORKSHOP_CODEX_BIN`; verify production launcher tests prove real command construction, permission profile, environment scrubbing, event parsing, session checkpointing, and one start followed by resumes.
+- [x] 1.3 Add a per-turn native trace containing stage/checkpoint/subject/prompt hashes, read-only stage state, source reads, write inventory, finalizer invocation, and forbidden-environment probes; verify malformed, missing, or host-owned writes fail ownership assertions.
+- [x] 1.4 Define separate Wish, Invent, Make, Playtest, and Release proof-ledger records with required inputs, permitted native writes, production mechanisms, durable outputs, and negative mutations; verify unit tests reject a generic stage-name-only proof and report the owning phase for each missing item.
+- [x] 1.5 Add a before/after workspace and host-state ownership audit that distinguishes agent source, finalizer output, host gate/evidence/checkpoint output, and remote transport state; verify representative native and Factory attempts to write host-owned files fail even when the route reaches Release.
+- [x] 1.6 Add or retain only narrow outbound Factory HTTP and project-file transport injection, with no workflow-level test mode; verify focused Factory tests exercise production request validation, response parsing, credential handling, and failure behavior through those seams.
+
+## 2. Prove the Wish host boundary in detail
+
+- [x] 2.1 Start each canonical scenario through the production Wish entry point with exact Wish bytes and explicit Spark, Forge, or Quest effort; verify no test constructs a post-Wish `AgentRun` or first-stage checkpoint directly.
+- [x] 2.2 Implement Wish proof assertions for canonical `WISH.json`, reported Wish hash, frozen effort, effort-route capability binding, materialized instruction manifest, private workspace marker, Wish gate, and checkpoint history; verify all identities agree with the submitted Wish and selected effort.
+- [x] 2.3 Assert the Wish gate precedes native-session creation and that the first read-only stage packet is Make for Spark and Invent for Forge/Quest; verify the route matrix fails if a standalone Match, disabled stage, or premature native session appears.
+- [x] 2.4 Add Wish proof-mutation cases for changed Wish bytes, missing Wish gate, changed frozen effort, and changed materialized capability binding; verify each fails before a later Release can count as a complete deterministic run.
+
+## 3. Exercise Invent selection, research, contracts, and handoff
+
+- [x] 3.1 Decompose the deterministic Invent handler into stage-packet validation, complete roster ranking, roster-member selection, research provenance authorship, physical concept authorship, and one materialized finalizer invocation; verify the handler writes only declared Invent source and finalizer-owned outputs.
+- [x] 3.2 Verify the production Invent finalizer and host independently construct, parse, hash, gate, and seal both the assignment and Invented contracts; assert the gate and checkpoint history bind the exact Wish, roster, blueprint, selected Inventor, concept, and research identities.
+- [x] 3.3 Verify the next Make packet receives the exact sealed assignment and Invented hashes rather than test-side objects; mutate either upstream artifact and confirm Make fails before product or CAD acceptance.
+- [x] 3.4 Add input-driven Invent failures for unavailable selection, incomplete roster ranking, missing research, incomplete physical concept facts, stale checkpoint/subject bindings, and post-finalizer source tamper; verify each fails at production parsing or the Invent gate with no downstream Made artifact.
+- [x] 3.5 Add Invent proof-mutation tests that remove assignment, Invented contract, Invent gate, or checkpoint transition from a completed Forge/Quest run; verify the phase ledger names the missing proof despite an unchanged route trace.
+
+## 4. Exercise Make authorship, finalization, CAD verification, and sealing
+
+- [x] 4.1 Build the smallest deterministic print-ready product fixture with exact Wish/Inventor provenance, product metadata, parametric CAD source, project metadata, assembly STEP/STL exports, and agent-side verification declaration; verify the materialized CAD tools accept the source without network access or prebuilt host evidence.
+- [x] 4.2 Make the native handler validate its upstream assignment/Invented bindings, author each product/CAD source group separately, and invoke the materialized Make finalizer with product root, CAD project, verification declaration, and optional Spark creative source; verify its write inventory contains no host CAD evidence or sealed checkpoint output.
+- [x] 4.3 Assert production Make processing reparses the proposal, recomputes the full product manifest, validates Made against Invented, and runs fresh generation, exports, strict-fit, local audit, mesh, and wall-thickness checks; verify persisted full-tier evidence binds Made, product artifact, verifier hash, exact command, and Make evidence-stage identity.
+- [x] 4.4 Assert the sealed Made contract, every full-manifest file hash, source-tree immutability, file modes, Make gate, and checkpoint transition; remove or alter each proof class and verify the Make ledger fails at the precise missing or mismatched identity.
+- [x] 4.5 Implement Spark's folded creative source using the same ranking, assignment, research, and compact concept structures as Invent; verify one Make proposal separately seals assignment, Invented, and Made contracts and that Python never selects the Inventor.
+- [x] 4.6 Add an input-driven CAD rejection whose first authored source fails the real verifier at an unchanged checkpoint, persists the production rejection, changes the next subject, and repairs source on a later native turn; verify no passing evidence fixture, verifier patch, or cached receipt is used.
+- [x] 4.7 Add stale Make proposal and post-finalizer product/CAD tamper cases; verify production validation rejects them before CAD evidence can be trusted or Factory publication can start.
+
+## 5. Exercise Playtest replay, evidence, verdicts, and invalidation
+
+- [x] 5.1 Decompose the Quest Playtest handler into current-Made validation, agent observation/result authorship, structured feedback/invalidation authorship, and one materialized finalizer invocation; verify it writes no Playtest gate, host CAD evidence, sealed evidence tree, or checkpoint state.
+- [x] 5.2 Build the passing Playtest scenario through production evidence parsing, full CAD replay, Playtested/feedback contract validation, evidence sealing, gate persistence, and checkpoint advancement; verify every result, CAD receipt, gate, and Release input binds the same Made and verifier identities.
+- [x] 5.3 Build the implementation-repair scenario using valid feedback with the Make invalidation boundary; verify the failed Playtested/evidence lineage persists, Invent remains sealed, Make/Playtest/Release are invalidated, the shared round increments, a new Made revision is produced, and a later Playtest passes.
+- [x] 5.4 Build the fundamental-revision scenario using valid feedback with the Invent invalidation boundary; verify prior Invented and failing Playtested/feedback bytes are passed to the next Invent turn, all downstream revisions are invalidated, and the shared round budget remains authoritative.
+- [x] 5.5 Add stale Made binding, missing evidence item, mismatched verdict, over-budget repair, and post-finalizer evidence-tamper cases; verify each fails through production contracts or gates without a phase-wide Playtest stub.
+- [x] 5.6 Add Playtest proof-mutation tests that remove the Playtested contract, feedback, CAD evidence, other evidence, gate, seal, or checkpoint transition; verify each missing output is detected independently of the Quest stage trace.
+
+## 6. Exercise Release package validation and every Factory effect substep
+
+- [x] 6.1 Author a minimal valid `MANUAL.pdf`, product metadata, bounded claims, and route-specific Playtest binding in the deterministic Release handler, then invoke the materialized Release finalizer; verify the native write inventory contains no Factory intent, effect record, receipt, publication state, or terminal checkpoint.
+- [x] 6.2 For Spark and Forge, produce and validate the canonical `PLAYTEST-NOT-RUN.json` and `playtest_status: not-run` package with no test claims; verify Release schema/product metadata/claim hashes bind the omission and no Playtest proof is fabricated.
+- [x] 6.3 For Quest, bind the release package and allowed claims to the exact passing Playtested/evidence identity; verify no not-run placeholder exists and mismatched or stale Playtest evidence fails before any remote request.
+- [x] 6.4 Assert production Release proposal/manifest parsing, PDF page-box/text/active-content/dependency/size validation, product/claim validation, and full-tier CAD replay all execute before Factory import; verify corrupt PDF, unsupported active content, false claim, changed package byte, and failing CAD replay make zero import calls.
+- [x] 6.5 Implement a stateful deterministic Factory protocol service covering login, existing-design lookup, import, private readback, promotion, authenticated public readback, and public project/manual fetch; verify it asserts request bodies, owner/category/history identities, authentication, and exact CAD/manual hashes without writing run artifacts.
+- [x] 6.6 Assert durable Factory intent and stable idempotency identity exist before the first transport call and that the final effect/receipt binds request, Made, package, manual, Playtest/omission, category, owner, remote history, and public readback hashes; verify the terminal Release checkpoint occurs only after all bindings pass.
+- [x] 6.7 Add a missing-credential Release wait/resume scenario; verify the finalized proposal and pending effect remain exact, credentials are loaded only after the native process exits, resume launches no new native turn, and only the deferred host effect continues.
+- [x] 6.8 Add import-persisted/response-lost and promotion-persisted/response-lost scenarios; verify production reconciliation performs readback before retry, preserves one import and one promotion, and reuses the stable idempotency identity.
+- [x] 6.9 Add stale private readback, wrong public CAD/manual hash, wrong category/owner/history, tampered effect record, tampered pending proposal, and irreconcilable remote-state scenarios; verify each remains waiting, unknown, or failed according to the production error class and never becomes terminal Release.
+- [x] 6.10 Add Release proof-mutation tests for package contract, PDF validation proof, Release CAD evidence, effect intent, import/readback state, publication receipt, public hash proof, and terminal checkpoint; verify the Release ledger names every missing substep rather than accepting one final `public` flag.
+
+## 7. Prove routes, omissions, ownership, and repeatability
+
+- [x] 7.1 Build the canonical Spark, Forge, and Quest matrix directly from `WORKSHOP_EFFORTS`; verify exact enabled-stage order, one start plus resumes of one session id, terminal published Release, and the complete phase ledger for every enabled phase.
+- [x] 7.2 Add phase-specific absence assertions for passed-through stages; verify Spark has no Invent/Playtest turn, Goal, source, phase contract, gate, or evidence, Forge has no Playtest equivalents, Quest has no omission placeholder, and folded assignment/Invented provenance remains present where required.
+- [x] 7.3 Declare suite-wide forward, Make-repair, Invent-revision, and Release wait/resume coverage from production topology; verify mutation tests that add or redirect a route/edge fail with the exact uncovered item and require a new phase-deep ledger rather than only a stage-name update.
+- [x] 7.4 Add static policy tests for imports, patches, monkeypatch arguments, injected internal callables, fixture factories, and forbidden workflow keywords; verify approved process/transport/environment seams pass while launcher/finalizer/gate/verifier/checkpoint/effect substitutions fail.
+- [x] 7.5 Run every completed canonical route through proof-deletion and ownership-crossing mutation cases; verify topology, phase-proof, and ownership failures are reported as distinct diagnostics.
+- [x] 7.6 Run Spark, Forge, and Quest twice from clean isolated homes and compare decisions, transition history, native read/write inventories, sealed content hashes, verifier identities, Factory requests, and effect identities after normalizing only documented host metadata; verify unexplained phase-level nondeterminism fails.
+
+## 8. Document and enforce the fidelity gate
+
+- [x] 8.1 Document the fidelity rule, approved external seams, per-phase proof inventory, passed-through absence rule, focused opt-in command, and distinction from unit/live/physical acceptance in `tests/end_to_end/README.md`; verify the documented command matches CI exactly.
+- [x] 8.2 Measure clean and warm local runtime for the complete CAD/PDF/Factory-backed suite and record the environment and result; verify no production check is patched, cached, or skipped to meet a timing target.
+- [x] 8.3 Add a separately named required offline `deterministic-e2e` CI job after all Spark, Forge, Quest, both Quest repair widths, wait/resume, reconciliation, tamper, ownership, topology, proof, and repeatability scenarios pass; verify the job requires no live credential or network.
+- [x] 8.4 Run focused native-runtime, workflow, CAD, Playtest, Release, Factory, and deterministic E2E tests, then the full offline suite; verify all contract and failure-path tests pass without weakening production gates.
+- [x] 8.5 Run `openspec validate enforce-deterministic-e2e-fidelity --strict`, the repository skill-lock check, secret scan, and `git diff --check`; verify the change contains no credentials, run workspaces, transcripts, build outputs, private artifacts, or claims of physical manufacture/delivery.

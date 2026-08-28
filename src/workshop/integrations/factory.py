@@ -2107,18 +2107,34 @@ class FactoryReleaseWriter:
         intent: EffectIntent,
         proof: Mapping[str, Any],
     ) -> Receipt:
-        if intent.response is None:
-            raise AmbiguousEffectError(
-                "Factory import outcome is unknown and exposes no safe readback identity"
-            )
+        imported_design = intent.response
+        if imported_design is None:
+            # A transport can lose the import response after Factory persisted
+            # the request. The Workshop product id is the requested stable slug;
+            # use it only as a discovery key, then require the normal owner,
+            # category, history, package and manual bindings below. A missing or
+            # different design remains unknown and is never blindly retried.
+            response = client.get_design(intent.product_id)
+            if response.status != 200:
+                raise AmbiguousEffectError(
+                    "Factory import outcome is unknown and exact slug readback failed"
+                )
+            try:
+                imported_design = _json_body(
+                    response, "Factory unknown-import slug readback"
+                )
+            except (ContractError, EffectError) as exc:
+                raise AmbiguousEffectError(
+                    "Factory import outcome is unknown and slug readback is invalid"
+                ) from exc
         try:
             receipt, observed = self._readback_private(
-                client, intent, intent.response, proof
+                client, intent, imported_design, proof
             )
             resolved = self.ledger.resolve_succeeded(
                 intent.intent_id,
                 receipt,
-                {"import": dict(intent.response), "readback": dict(observed)},
+                {"import": dict(imported_design), "readback": dict(observed)},
             )
         except (ContractError, EffectError, ReceiptError, StateConflict) as exc:
             raise AmbiguousEffectError(

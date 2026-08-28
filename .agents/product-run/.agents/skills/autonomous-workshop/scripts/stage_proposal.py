@@ -1163,7 +1163,10 @@ def _invent_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dic
 
 
 def _invent_contract_for_assignment(
-    assignment: Mapping[str, Any], source: Mapping[str, Any]
+    assignment: Mapping[str, Any],
+    source: Mapping[str, Any],
+    *,
+    require_physical: bool = False,
 ) -> dict[str, Any]:
     assignment = _validate_assignment(assignment)
     authored = _fields(source, {"concept", "research"}, "Invent authored source")
@@ -1171,6 +1174,58 @@ def _invent_contract_for_assignment(
     research = _mapping(authored["research"], "Invent research", nonempty=True)
     _bounded_text(concept.get("title"), "Invent concept title", 2_000)
     _bounded_text(concept.get("summary"), "Invent concept summary", 2_000)
+    if require_physical:
+        for key in ("signature_decision", "intended_interaction"):
+            _bounded_text(
+                concept.get(key), "Invent concept %s" % key, 4_000
+            )
+        envelope = _mapping(
+            concept.get("envelope_mm"), "Invent concept envelope_mm", nonempty=True
+        )
+        for key in ("length_mm", "width_mm", "height_mm"):
+            value = envelope.get(key)
+            if type(value) not in (int, float) or not 0 < value <= 10_000:
+                raise ProposalError("Invent concept envelope_mm.%s is invalid" % key)
+        components = _array(
+            concept.get("components"), "Invent concept components", nonempty=True
+        )
+        for index, component_value in enumerate(components):
+            component = _mapping(
+                component_value,
+                "Invent concept component %d" % index,
+                nonempty=True,
+            )
+            for key in (
+                "key",
+                "name",
+                "purpose",
+                "form",
+                "placement",
+                "interfaces",
+            ):
+                _bounded_text(
+                    component.get(key),
+                    "Invent concept component %d %s" % (index, key),
+                    2_000,
+                )
+            dimensions = _mapping(
+                component.get("dimensions_mm"),
+                "Invent concept component %d dimensions_mm" % index,
+                nonempty=True,
+            )
+            for key in ("length_mm", "width_mm", "height_mm"):
+                value = dimensions.get(key)
+                if type(value) not in (int, float) or not 0 < value <= 10_000:
+                    raise ProposalError(
+                        "Invent concept component %d dimensions_mm.%s is invalid"
+                        % (index, key)
+                    )
+        for key in ("assumptions", "unresolved_risks"):
+            values = _array(concept.get(key), "Invent concept %s" % key)
+            for index, value in enumerate(values):
+                _bounded_text(
+                    value, "Invent concept %s %d" % (key, index), 2_000
+                )
     identity = {
         "schema_version": 3,
         "kind": INVENTED_KIND,
@@ -2067,6 +2122,7 @@ def _seal(
     *,
     transition: str,
     additional_contracts: Sequence[tuple[str, Mapping[str, Any]]] = (),
+    additional_files: Sequence[tuple[str, bytes]] = (),
 ) -> dict[str, Any]:
     contract_path = _stage_contract_path(stage)
     contract_bytes = canonical_json(contract)
@@ -2084,6 +2140,18 @@ def _seal(
         content = canonical_json(additional_contract)
         if len(content) > MAX_CONTRACT_BYTES:
             raise ProposalError("additional stage contract exceeds the artifact limit")
+        _atomic_write(run_root, relative, content)
+        artifacts.append(
+            {"path": relative, "sha256": hashlib.sha256(content).hexdigest()}
+        )
+    for additional_path, content in additional_files:
+        relative = _safe_relative(additional_path, "additional artifact path").as_posix()
+        if any(item["path"] == relative for item in artifacts):
+            raise ProposalError("stage artifact paths must be unique")
+        if not relative.startswith("artifacts/%s/" % stage["stage"]):
+            raise ProposalError("additional artifact must stay under the current stage")
+        if not isinstance(content, bytes) or not content or len(content) > MAX_JSON_BYTES:
+            raise ProposalError("additional stage artifact is invalid")
         _atomic_write(run_root, relative, content)
         artifacts.append(
             {"path": relative, "sha256": hashlib.sha256(content).hexdigest()}
@@ -2186,12 +2254,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     run_root = _canonical_root(args.run_root)
     stage = _load_stage(run_root, args.command)
     additional_contracts: list[tuple[str, Mapping[str, Any]]] = []
+    additional_files: list[tuple[str, bytes]] = []
     if args.command == "match":
         source, _, _ = _read_json(run_root, args.source, "Match authored source")
         contract = _match_contract(stage, source)
         transition = stage["next_transition"]
     elif args.command == "invent":
-        source, _, _ = _read_json(run_root, args.source, "Invent authored source")
+        source, source_content, _ = _read_json(
+            run_root, args.source, "Invent authored source"
+        )
         inputs = _mapping(stage["inputs"], "Invent STAGE inputs", nonempty=True)
         if "assignment" in inputs:
             contract = _invent_contract(stage, source)
@@ -2211,12 +2282,21 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             contract = _invent_contract_for_assignment(
                 assignment,
                 {"concept": authored["concept"], "research": authored["research"]},
+                require_physical=True,
             )
             assignment_path = _safe_relative(
                 inputs.get("assignment_contract_path"),
                 "routed Invent assignment_contract_path",
             ).as_posix()
             additional_contracts.append((assignment_path, assignment))
+        source_path = (
+            _safe_relative(
+                inputs.get("contract_path", INVENT_PATH),
+                "Invent contract_path",
+            ).parent
+            / "source.json"
+        ).as_posix()
+        additional_files.append((source_path, source_content))
         transition = stage["next_transition"]
     elif args.command == "make":
         inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
@@ -2242,6 +2322,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             invented = _invent_contract_for_assignment(
                 assignment,
                 {"concept": authored["concept"], "research": authored["research"]},
+                require_physical=True,
             )
             assignment_path = _safe_relative(
                 inputs.get("assignment_contract_path"),
@@ -2290,6 +2371,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         contract,
         transition=transition,
         additional_contracts=additional_contracts,
+        additional_files=additional_files,
     )
 
 
