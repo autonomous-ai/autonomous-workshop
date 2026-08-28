@@ -53,6 +53,12 @@ toys/<inventor>-<slug>/
     └── PUBLICATION.json
 ```
 
+The root README is generated as a public entry point. It includes a sealed
+product render, title and summary, Factory link, frozen Manager/effort/Inventor,
+workflow attempts, a reproduction command, archive map, and evidence
+limitations. When exact Wish disclosure was not granted, the command uses the
+public summary and labels that substitution instead of exposing private text.
+
 Skipped lifecycle stages are absent. Publication is separate because it is a
 host-owned authenticated effect, not agent-authored Release evidence.
 

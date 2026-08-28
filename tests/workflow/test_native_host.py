@@ -1454,11 +1454,16 @@ class NativeHostTest(unittest.TestCase):
                 self.assertEqual(recovered["native_turns"], 2)
                 self.assertEqual(recovered["progress"]["status"], "available")
 
-    def test_native_commands_have_no_optional_publication_mode(self):
+    def test_factory_is_mandatory_and_github_is_opt_in_on_wish(self):
         command = parser()
         self.assertFalse(hasattr(command.parse_args(("wish", "a moon")), "publish"))
+        self.assertFalse(command.parse_args(("wish", "a moon")).github)
+        self.assertTrue(command.parse_args(("wish", "--github", "a moon")).github)
         self.assertFalse(
             hasattr(command.parse_args(("resume", "wish-one")), "publish")
+        )
+        self.assertFalse(
+            hasattr(command.parse_args(("resume", "wish-one")), "github")
         )
         with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
             command.parse_args(("wish", "a moon", "--publish"))

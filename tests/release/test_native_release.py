@@ -259,6 +259,7 @@ class NativeReleaseTest(unittest.TestCase):
         root = self.run_root / "artifacts/make/r0001/product"
         (root / "cad/project").mkdir(parents=True)
         (root / "validation").mkdir()
+        (root / "validation/renders").mkdir()
         assembled = b"solid assembled\nendsolid assembled\n"
         printable = b"solid moon-body\nendsolid moon-body\n"
         product = {
@@ -300,6 +301,13 @@ class NativeReleaseTest(unittest.TestCase):
         (root / "assembled.stl").write_bytes(assembled)
         (root / "cad/project/moon-body.stl").write_bytes(printable)
         (root / "validation/cad-build.json").write_bytes(receipt)
+        (root / "validation/renders/iso.png").write_bytes(
+            bytes.fromhex(
+                "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+                "0000000d49444154789c6360f8cfc000000301010018dd8db10000000049454e44"
+                "ae426082"
+            )
+        )
         return NativeMade(
             round=1,
             wish_sha256=self.assignment.wish_sha256,
@@ -1449,7 +1457,27 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(publication["identities"]["manual_path"], "MANUAL.pdf")
         self.assertNotIn("factory_content_sha256", publication["identities"])
         self.assertNotIn("cover_url", publication["publication"])
-        self.assertIn("`release/MANUAL.pdf`", (target / "README.md").read_text())
+        readme = (target / "README.md").read_text()
+        self.assertIn("`release/MANUAL.pdf`", readme)
+        self.assertIn("## Reproduce", readme)
+        self.assertIn("--manager codex --effort quest", readme)
+        self.assertNotIn("--github", readme)
+
+        github_repository = self.run_root / "github-readme-repository"
+        (github_repository / "toys").mkdir(parents=True)
+        github_target = materialize_public_example(
+            github_repository,
+            self.run_root,
+            release=release,
+            made=self.made,
+            inventor_id="eve",
+            receipt=self._public_receipt(release, slug="moon-nook-github"),
+            github_requested=True,
+        )
+        self.assertIn(
+            "--manager codex --effort quest --github",
+            (github_target / "README.md").read_text(),
+        )
 
     def test_public_archive_requires_explicit_exact_wish_disclosure_and_strict_contracts(self):
         release = self._release(schema_version=1)
@@ -1517,6 +1545,10 @@ class NativeReleaseTest(unittest.TestCase):
         )
         self.assertIn(
             "Playtest was not run",
+            (target / "README.md").read_text(encoding="utf-8"),
+        )
+        self.assertIn(
+            "![Moon Nook](make/product/validation/renders/iso.png)",
             (target / "README.md").read_text(encoding="utf-8"),
         )
 

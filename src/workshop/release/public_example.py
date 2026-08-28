@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import stat
 import tempfile
@@ -36,6 +37,8 @@ from workshop.release.native import (
 )
 from workshop.release.public_archive import write_public_workflow_archive
 from workshop.runtime import Receipt
+from workshop.runtime.managers import DEFAULT_MANAGER_ID, manager_spec
+from workshop.workflow.effort import workshop_effort
 
 
 _PUBLIC_SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -432,6 +435,73 @@ def _workflow_overview_markdown(staging: Path) -> str:
     )
 
 
+def _snapshot_effort(staging: Path) -> str:
+    if (staging / "playtest").is_dir():
+        return "quest"
+    if (staging / "invent").is_dir():
+        return "forge"
+    return "spark"
+
+
+def _public_hero_path(staging: Path) -> Optional[str]:
+    candidates = (
+        "make/verification/renders/iso.png",
+        "make/verification/renders/front.png",
+        "make/verification/renders/top.png",
+        "make/verification/renders/right.png",
+    )
+    for relative in candidates:
+        if (staging / relative).is_file():
+            return relative
+    product = staging / "make" / "product"
+    if product.is_dir():
+        for image in sorted(product.rglob("*")):
+            if image.is_file() and image.suffix.casefold() in (".png", ".jpg", ".jpeg"):
+                return image.relative_to(staging).as_posix()
+    return None
+
+
+def _reproduce_markdown(
+    staging: Path,
+    *,
+    summary: str,
+    manager_id: str,
+    effort: str,
+    github_requested: bool,
+) -> str:
+    wish = _read_json_object(staging / "wish" / "wish.json") or {}
+    exact = wish.get("objective")
+    objective = exact if isinstance(exact, str) and exact.strip() else summary
+    disclosure = "exact original Wish" if exact else "public product summary"
+    arguments = [
+        "uv",
+        "run",
+        "workshop",
+        "wish",
+        "--manager",
+        manager_id,
+        "--effort",
+        effort,
+    ]
+    if github_requested:
+        arguments.append("--github")
+    arguments.append(objective)
+    command = " ".join(shlex.quote(part) for part in arguments)
+    return (
+        "## Reproduce\n\n"
+        "From a checkout of this repository, verify the host and run the same "
+        "Manager and effort route. This command uses the %s; a later run follows "
+        "the same route but does not replay these exact CAD bytes.\n\n"
+        "```bash\n"
+        "uv run workshop doctor\n"
+        "%s\n"
+        "```\n\n"
+        "If a native turn stops before Release, continue the same Wish with "
+        "`uv run workshop resume <wish-id>`.\n"
+        % (disclosure, command)
+    )
+
+
 def _copy_model(
     *,
     product_root: Path,
@@ -463,6 +533,9 @@ def materialize_public_example(
     inventor_id: str,
     receipt: Receipt,
     disclose_exact_wish: bool = False,
+    manager_id: str = DEFAULT_MANAGER_ID,
+    effort: Optional[str] = None,
+    github_requested: bool = False,
 ) -> Path:
     """Create ``toys/<inventor>-<slug>`` from exact public Release bytes.
 
@@ -475,6 +548,13 @@ def materialize_public_example(
         raise ContractError("public example requires typed Made and Release inputs")
     if type(disclose_exact_wish) is not bool:
         raise ContractError("public example Wish disclosure must be boolean")
+    manager = manager_spec(manager_id)
+    if effort is not None:
+        selected_effort = workshop_effort(effort)
+    else:
+        selected_effort = None
+    if type(github_requested) is not bool:
+        raise ContractError("public example GitHub request must be boolean")
     if not isinstance(receipt, Receipt) or not receipt.is_verified_public:
         raise StateConflict("public example requires verified public Factory readback")
     if (
@@ -710,6 +790,12 @@ def materialize_public_example(
             ),
             disclose_exact_wish=disclose_exact_wish,
         )
+        resolved_effort = (
+            selected_effort.name
+            if selected_effort is not None
+            else _snapshot_effort(staging)
+        )
+        hero_path = _public_hero_path(staging)
         heading = " ".join(title.split())
         product_description = (
             "the exact sealed Release facts"
@@ -722,8 +808,17 @@ def materialize_public_example(
             else "the exact sealed public manual"
         )
         readme = (
-            "# %s\n\n%s\n\n"
+            "# %s\n\n"
+            "%s"
+            "%s\n\n"
             "[View the verified public product page](%s)\n\n"
+            "| Frozen on this run | Value |\n"
+            "|---|---|\n"
+            "| Manager | %s (`--manager %s`) |\n"
+            "| Effort | %s (`--effort %s`) |\n"
+            "| Inventor | [%s](../../inventors/%s/) |\n"
+            "| Factory | %s |\n\n"
+            "%s\n"
             "%s\n"
             "## Snapshot contents\n\n"
             "- `wish/` — sanitized Wish binding (exact text only with explicit consent).\n"
@@ -741,9 +836,28 @@ def materialize_public_example(
             "not proof of physical manufacture, fit, durability, or delivery.\n"
         ) % (
             heading,
+            (
+                "![%s](%s)\n\n" % (heading, hero_path)
+                if hero_path is not None
+                else ""
+            ),
             summary,
             page_url,
+            manager.display_name,
+            manager.manager_id,
+            workshop_effort(resolved_effort).title,
+            resolved_effort,
+            _display_inventor_id(inventor_id) or inventor_id,
+            inventor_id,
+            page_url,
             _workflow_overview_markdown(staging),
+            _reproduce_markdown(
+                staging,
+                summary=summary,
+                manager_id=manager.manager_id,
+                effort=resolved_effort,
+                github_requested=github_requested,
+            ),
             (
                 "- `invent/` — accepted Invent contract/source and sealed superseded attempts.\n"
                 if (staging / "invent").is_dir()
@@ -821,6 +935,9 @@ def materialize_public_example_if_source_checkout(
     inventor_id: str,
     receipt: Receipt,
     disclose_exact_wish: bool = False,
+    manager_id: str = DEFAULT_MANAGER_ID,
+    effort: Optional[str] = None,
+    github_requested: bool = False,
 ) -> Optional[Path]:
     """Materialize a public example when the host is running from a checkout."""
 
@@ -834,6 +951,9 @@ def materialize_public_example_if_source_checkout(
         inventor_id=inventor_id,
         receipt=receipt,
         disclose_exact_wish=disclose_exact_wish,
+        manager_id=manager_id,
+        effort=effort,
+        github_requested=github_requested,
     )
 
 

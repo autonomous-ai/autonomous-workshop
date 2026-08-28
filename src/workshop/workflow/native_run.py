@@ -46,6 +46,10 @@ from workshop.integrations.factory import (
     urllib_project_file_transport,
     urllib_transport,
 )
+from workshop.integrations.git import (
+    GitPushError,
+    push_toy_directory,
+)
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.revision import (
@@ -1670,7 +1674,10 @@ def _record_public_example_projection(
     inventor_id: str,
     receipt: Receipt,
 ) -> Mapping[str, Any]:
-    """Attempt the optional Git projection without affecting Release success."""
+    """Project the public toy and optionally commit and push that directory."""
+
+    checkpoint = run.snapshot()
+    github_requested = _github_publication_requested(run)
 
     try:
         repository = _public_example_repository_for_run(run.run_root)
@@ -1696,6 +1703,9 @@ def _record_public_example_projection(
                 made=made,
                 inventor_id=inventor_id,
                 receipt=receipt,
+                manager_id=checkpoint.manager_id,
+                effort=checkpoint.effort,
+                github_requested=github_requested,
             )
             target_relative = (
                 target.relative_to(repository).as_posix()
@@ -1713,6 +1723,27 @@ def _record_public_example_projection(
         else:
             if target is None:  # pragma: no cover - repository is non-null above
                 public = {"status": "unavailable"}
+            elif github_requested:
+                try:
+                    pushed_path = push_toy_directory(
+                        repository,
+                        target,
+                        title=str(release.product["title"]),
+                    )
+                except (GitPushError, StateConflict, OSError):
+                    public = {
+                        "status": "error",
+                        "path": target_relative,
+                        "reason": (
+                            "The toy snapshot was generated, but git add, commit, "
+                            "or push failed."
+                        ),
+                    }
+                else:
+                    public = {
+                        "status": "pushed",
+                        "path": pushed_path,
+                    }
             else:
                 public = {
                     "status": "materialized",
@@ -1721,7 +1752,7 @@ def _record_public_example_projection(
     document = {
         "schema_version": 1,
         "kind": "autonomous-workshop.public-example-projection",
-        "product_id": run.snapshot().product_id,
+        "product_id": checkpoint.product_id,
         "native_release_sha256": release.release_sha256,
         "package_artifact_sha256": release.package_manifest.artifact_sha256,
         "publication_slug": receipt.slug,
@@ -1730,9 +1761,7 @@ def _record_public_example_projection(
     try:
         _write_private_json(_public_example_status_path(run), document)
     except Exception:
-        # This projection and its convenience status are not lifecycle or
-        # Factory evidence.  A host-state write problem here must not turn a
-        # verified remote publication into a failed Release gate.
+        # This convenience status is not lifecycle or Factory evidence.
         pass
     return public
 
@@ -1807,7 +1836,7 @@ def _read_public_example_projection(
         != release.package_manifest.artifact_sha256
         or not isinstance(projection, Mapping)
         or projection.get("status")
-        not in ("materialized", "error", "unavailable")
+        not in ("materialized", "pushed", "error", "unavailable")
     ):
         return {"status": "unavailable"}
     return dict(projection)
@@ -3247,9 +3276,11 @@ def _record_authorization(
     product_id: str,
     publish_requested: bool,
     create: bool,
+    github_publish_requested: bool = False,
 ) -> Mapping[str, Any]:
     path = _authorization_path(paths)
     current = False
+    current_github = False
     if path.exists() or path.is_symlink():
         try:
             identity = path.lstat()
@@ -3263,27 +3294,62 @@ def _record_authorization(
         ):
             raise StateConflict("run authorization must be a private regular file")
         value = _strict_json_bytes(content, label="run authorization")
-        expected = {"schema_version", "kind", "product_id", "publish_requested"}
+        legacy_expected = {
+            "schema_version",
+            "kind",
+            "product_id",
+            "publish_requested",
+        }
+        current_expected = legacy_expected | {"github_publish_requested"}
         if (
-            set(value) != expected
-            or value["schema_version"] != 1
+            set(value) not in (legacy_expected, current_expected)
+            or value["schema_version"] not in (1, 2)
+            or (value["schema_version"] == 1 and set(value) != legacy_expected)
+            or (value["schema_version"] == 2 and set(value) != current_expected)
             or value["kind"] != _AUTHORIZATION_KIND
             or value["product_id"] != product_id
             or type(value["publish_requested"]) is not bool
+            or (
+                value["schema_version"] == 2
+                and type(value["github_publish_requested"]) is not bool
+            )
         ):
             raise StateConflict("run authorization is invalid")
         current = value["publish_requested"]
+        current_github = (
+            value["github_publish_requested"]
+            if value["schema_version"] == 2
+            else False
+        )
     elif not create:
         raise StateConflict("run authorization is missing")
     value = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": _AUTHORIZATION_KIND,
         "product_id": product_id,
         "publish_requested": bool(current or publish_requested),
+        "github_publish_requested": bool(
+            current_github or github_publish_requested
+        ),
     }
-    if create or value["publish_requested"] != current:
+    if (
+        create
+        or value["publish_requested"] != current
+        or value["github_publish_requested"] != current_github
+    ):
         _write_private_json(path, value)
     return value
+
+
+def _github_publication_requested(run: AgentRun) -> bool:
+    authorization = _record_authorization(
+        NativeRunPaths(run.run_root, run.host_state_root),
+        product_id=run.snapshot().product_id,
+        publish_requested=False,
+        github_publish_requested=False,
+        create=False,
+    )
+    return authorization["github_publish_requested"] is True
 
 
 def _ready_contract_artifact(
@@ -5234,6 +5300,7 @@ def start_native_run(
     effort: Optional[str] = None,
     manager_id: Optional[str] = None,
     publish_requested: Optional[bool] = None,
+    github_publish_requested: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -5250,6 +5317,10 @@ def start_native_run(
     either legacy boolean has the same terminal behavior and the CLI no longer
     exposes the choice.
 
+    ``github_publish_requested`` grants prospective authority to commit and
+    push the sanitized public snapshot after verified Factory readback. It is
+    false by default and frozen for the run.
+
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
     """
@@ -5260,6 +5331,8 @@ def start_native_run(
     )
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
+    if type(github_publish_requested) is not bool:
+        raise ContractError("GitHub publication option must be boolean")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -5301,6 +5374,7 @@ def start_native_run(
             paths,
             product_id=wish.product_id,
             publish_requested=True,
+            github_publish_requested=github_publish_requested,
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
