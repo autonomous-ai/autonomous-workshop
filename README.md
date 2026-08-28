@@ -2,13 +2,13 @@
 
 You wish for a toy that doesn't exist. A few days later, it arrives at your door. Not from a shelf. From your imagination. Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
-- [Quick start](#quick-start)
+- [Quickstart](#quickstart)
 - [Workshop Managers](#workshop-managers)
 - [Inventors](#inventors)
 - [Toys](#toys)
 - [Architecture](#architecture)
 
-## Quick start
+## Quickstart
 
 Python 3.11+, `uv`, and a signed-in Manager CLI. [Codex CLI](https://learn.chatgpt.com/docs/codex/cli) 0.145.0+ is the default. Grok Build `grok` 1.0.5+ is the experimental `--manager grok` path.
 
