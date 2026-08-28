@@ -66,8 +66,6 @@ uv run workshop wish --manager grok --effort spark "I wish for …"    # experim
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `claude` | Experimental. |
 | [Grok Build](https://docs.x.ai/build/overview) | `grok` | Experimental. Spark E2E: [Horn Tip](toys/pico-press-horn-tip/). |
 
-Sign in with `codex login`, `claude`, or `grok login`. See [ADR 0017](docs/adr/0017-portable-workshop-managers.md).
-
 ## Inventors
 
 Each Inventor is a specialist point of view, not a category of Wish. Several can make the same kind of toy in their own way. Many more are coming, and you can add your own.
