@@ -790,10 +790,11 @@ class NativeHostTest(unittest.TestCase):
                 stderr.getvalue(),
             )
 
-    def test_wish_fails_closed_before_the_session_when_the_vault_is_unreachable(self):
+    def test_wish_runs_without_the_vault_when_it_is_unreachable(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
+            stdout = StringIO()
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
             ), mock.patch(
@@ -805,14 +806,19 @@ class NativeHostTest(unittest.TestCase):
             ), mock.patch(
                 "workshop.workflow.native_run._gamevault_client",
                 side_effect=GameVaultUnavailable("no game vault token: set WORKSHOP_GAMEVAULT_TOKEN"),
-            ), redirect_stdout(StringIO()), redirect_stderr(StringIO()) as stderr:
+            ), redirect_stdout(stdout), redirect_stderr(StringIO()):
                 result = main(("wish", "a", "quiet", "orrery", "--json"))
-            self.assertEqual(result, 2)
-            self.assertIn("no game vault token", stderr.getvalue())
-            self.assertEqual(launcher.starts, [])
-            runs = list((home / "runs").iterdir())
-            self.assertEqual(len(runs), 1)
-            self.assertFalse((runs[0] / "workspace" / RUN_VAULT_PATH).exists())
+            self.assertEqual(result, 0)
+            receipt = json.loads(stdout.getvalue())
+            self.assertEqual(len(launcher.starts), 1)
+            workspace = home / "runs" / receipt["product_id"] / "workspace"
+            self.assertFalse((workspace / RUN_VAULT_PATH).exists())
+            stage = json.loads((workspace / "STAGE.json").read_text(encoding="utf-8"))
+            self.assertEqual(stage["stage"], "make")
+            self.assertNotIn("design_vault", stage["inputs"])
+            self.assertNotIn("vault_leads", stage["inputs"])
+            markers = list((home / "state" / receipt["product_id"] / "vault").glob("*.unavailable"))
+            self.assertEqual(len(markers), 1)
 
     def test_phase_snapshot_is_fetched_once_per_checkpoint_and_bound(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -852,20 +858,31 @@ class NativeHostTest(unittest.TestCase):
                 again, again_binding = _phase_design_vault(run, make)
                 self.assertEqual((again.sha256, again_binding), (vault.sha256, binding))
                 self.assertEqual(len([c for c in transport.calls if c[1].endswith("/export")]), 1)
-                # a new checkpoint fetches live and fails closed on an outage
-                with self.assertRaisesRegex(GameVaultUnavailable, "unreachable"):
-                    _phase_design_vault(run, SimpleNamespace(stage="playtest", checkpoint_sha256="c" * 64))
+                # a new checkpoint that cannot reach the vault runs without one,
+                # drops the earlier phase's snapshot, and stays vault-less on resume
+                outage = SimpleNamespace(stage="playtest", checkpoint_sha256="c" * 64)
+                self.assertEqual(_phase_design_vault(run, outage), (None, None))
+                self.assertFalse(snapshot.exists())
+                marker = run.host_state_root / "vault" / ("c" * 64 + ".unavailable")
+                self.assertEqual(stat.S_IMODE(marker.stat().st_mode), 0o600)
                 transport.fail = False
-                # queued write-backs are sent before the next phase fetches
+                self.assertEqual(_phase_design_vault(run, outage), (None, None))
+                # one successful export plus the one failed attempt; the marker stops a retry
+                self.assertEqual(len([c for c in transport.calls if c[1].endswith("/export")]), 2)
+                # queued write-backs are sent before the next fetch; a refused one
+                # is set aside instead of blocking the run
                 pending = run.host_state_root / "vault" / "pending"
                 pending.mkdir()
                 payload = {"label": "workshop wish r1", "rows": [{"slug": "wish", "id": "r0001-x", "symptom": "anti-patterns/idle-player", "claim": "c", "fix_tried": "f", "severity": "high", "survived_rounds": 1, "source": "workshop-playtest", "round": 1}], "dismissals": []}
-                (pending / "queued.json").write_text(json.dumps(payload), encoding="utf-8")
-                (pending / "queued.json").chmod(0o600)
-                fresh, _ = _phase_design_vault(run, SimpleNamespace(stage="playtest", checkpoint_sha256="c" * 64))
+                for name, label in (("queued.json", "workshop wish r1"), ("bad.json", "reject-me")):
+                    (pending / name).write_text(json.dumps({**payload, "label": label}), encoding="utf-8")
+                    (pending / name).chmod(0o600)
+                fresh, _ = _phase_design_vault(run, SimpleNamespace(stage="playtest", checkpoint_sha256="e" * 64))
                 self.assertEqual(fresh.sha256, vault.sha256)
+                self.assertTrue(snapshot.exists())
                 self.assertEqual([item["label"] for item in transport.evidence], ["workshop wish r1"])
                 self.assertFalse((pending / "queued.json").exists())
+                self.assertTrue((pending / "bad.json.rejected").exists())
                 # a tampered cache is a broken host, not a legacy run
                 cache.write_bytes(b"{not json")
                 with self.assertRaisesRegex(StateConflict, "malformed"):

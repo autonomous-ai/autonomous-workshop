@@ -49,6 +49,7 @@ from workshop.integrations.factory import (
 from workshop.invent.native import NativeInvented
 from workshop.invent.gamevault import (
     GameVaultClient,
+    GameVaultError,
     GameVaultUnavailable,
     default_client as default_gamevault_client,
 )
@@ -1430,6 +1431,8 @@ def _materialized_release_contract(
 _VAULT_STAGES = ("invent", "make", "playtest")
 _VAULT_STATE_DIRECTORY = "vault"
 _VAULT_PENDING_DIRECTORY = "pending"
+_VAULT_UNAVAILABLE_SUFFIX = ".unavailable"
+_VAULT_REJECTED_SUFFIX = ".rejected"
 _MAX_PENDING_VAULT_WRITE_BYTES = 4 * 1024 * 1024
 
 
@@ -1477,16 +1480,27 @@ def _phase_design_vault(
     state, so a resumed checkpoint sees exactly the bytes its agent saw and
     the gate re-verifies against the same graph.  The snapshot is written to
     the run root as ``VAULT.json`` (read-only to the agent) and bound by hash
-    in STAGE.json.  An unreachable vault stops the phase before the session
-    starts; ``workshop resume`` retries.  Stages without design knowledge
-    (Match, Release) fetch nothing.
+    in STAGE.json.  Stages without design knowledge (Match, Release) fetch
+    nothing.
+
+    An unreachable vault, or a host without a token, is bypassed for that
+    checkpoint: the phase runs exactly like a run without a vault (no
+    snapshot, no leads, no vault rules) and a marker under host state keeps
+    the agent's and the gate's view identical if the checkpoint is resumed
+    after the vault returns.  The next checkpoint tries again.
     """
 
     if checkpoint.stage not in _VAULT_STAGES:
         return None, None
-    cache = _vault_state_directory(run, create=True) / (
-        checkpoint.checkpoint_sha256 + ".json"
-    )
+    directory = _vault_state_directory(run, create=True)
+    cache = directory / (checkpoint.checkpoint_sha256 + ".json")
+    marker = directory / (checkpoint.checkpoint_sha256 + _VAULT_UNAVAILABLE_SUFFIX)
+    snapshot = run.run_root / RUN_VAULT_PATH
+    if snapshot.is_symlink():
+        raise StateConflict("run vault snapshot must be a regular file")
+    if marker.exists() or marker.is_symlink():
+        _remove_run_vault_snapshot(snapshot)
+        return None, None
     if cache.exists() or cache.is_symlink():
         content = _read_stable_private_bytes(
             cache, label="cached vault snapshot", maximum_bytes=MAX_PACKED_BYTES
@@ -1496,14 +1510,16 @@ def _phase_design_vault(
         except VaultError as exc:
             raise StateConflict("cached vault snapshot is malformed") from exc
     else:
-        client = _gamevault_client()
-        _flush_pending_vault_writes(run, client)
-        vault = client.export()
+        try:
+            client = _gamevault_client()
+            _flush_pending_vault_writes(run, client)
+            vault = client.export()
+        except GameVaultUnavailable:
+            _atomic_private_write(marker, b"unavailable\n", mode=0o600)
+            _remove_run_vault_snapshot(snapshot)
+            return None, None
         content = vault.packed_bytes()
         _atomic_private_write(cache, content, mode=0o600)
-    snapshot = run.run_root / RUN_VAULT_PATH
-    if snapshot.is_symlink():
-        raise StateConflict("run vault snapshot must be a regular file")
     try:
         current: Optional[bytes] = snapshot.read_bytes() if snapshot.is_file() else None
     except OSError:
@@ -1517,6 +1533,17 @@ def _phase_design_vault(
         "nodes": len(vault.nodes),
     }
     return vault, binding
+
+
+def _remove_run_vault_snapshot(snapshot: Path) -> None:
+    """A snapshot from an earlier phase must not outlive its STAGE.json binding."""
+
+    try:
+        snapshot.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        raise StateConflict("run vault snapshot could not be removed") from exc
 
 
 def _pending_vault_writes_directory(run: AgentRun, *, create: bool) -> Path:
@@ -1537,9 +1564,9 @@ def _send_vault_writes(client: GameVaultClient, payload: Mapping[str, Any]) -> N
 def _flush_pending_vault_writes(run: AgentRun, client: GameVaultClient) -> int:
     """Send every queued write-back before a phase fetches fresh knowledge.
 
-    A payload the vault refuses outright stays queued and stops the phase:
-    the file names what to inspect, and the run resumes once it is fixed or
-    removed.
+    An unreachable vault leaves the queue as it is.  A payload the vault
+    refuses outright is set aside as ``*.rejected`` for a human and never
+    blocks a run.
     """
 
     directory = _pending_vault_writes_directory(run, create=False)
@@ -1547,7 +1574,11 @@ def _flush_pending_vault_writes(run: AgentRun, client: GameVaultClient) -> int:
         return 0
     sent = 0
     for path in sorted(directory.iterdir()):
-        if path.is_symlink() or not path.is_file():
+        if (
+            path.is_symlink()
+            or not path.is_file()
+            or path.name.endswith(_VAULT_REJECTED_SUFFIX)
+        ):
             continue
         payload = _read_stable_private_json(
             path,
@@ -1556,7 +1587,11 @@ def _flush_pending_vault_writes(run: AgentRun, client: GameVaultClient) -> int:
         )
         if set(payload) != {"label", "rows", "dismissals"}:
             raise StateConflict("pending vault write %s is malformed" % path.name)
-        _send_vault_writes(client, payload)
+        try:
+            _send_vault_writes(client, payload)
+        except GameVaultError:
+            path.rename(path.with_name(path.name + _VAULT_REJECTED_SUFFIX))
+            continue
         path.unlink()
         sent += 1
     return sent
@@ -1731,7 +1766,7 @@ def _record_playtest_evidence(
 
     The gate receipt and checkpoint are already durable.  A vault that cannot
     be reached right now must not undo them, so the payload is queued under
-    host state and sent before the next phase fetches its snapshot.
+    host state and sent before a later phase fetches its snapshot.
     """
 
     sealed = context.get("sealed_playtest")

@@ -81,6 +81,8 @@ class FakeGameVaultTransport:
             members = [node for node in resolved.values() if node is not None]
             members += [item for item in vault.constraints() if item not in members]
             return self._json(200, {"mechanisms": resolved, "members": members, "findings": vault.check_compatibility(members)})
+        if path in ("/api/gamevault/evidence", "/api/gamevault/review") and payload.get("label") == "reject-me":
+            return self._json(400, {"error": "rows[0].severity must be high, medium, or low"})
         if path == "/api/gamevault/evidence":
             self.evidence.append(payload)
             return self._json(200, {"tally": {"did": len(payload.get("rows", [])), "skip": 0, "new": 0}, "lint": "clean", "committed": True})

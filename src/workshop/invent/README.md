@@ -27,6 +27,7 @@ Before every Invent, Make, and Playtest phase the host exports the whole
 vault live, caches the packed snapshot per checkpoint under host state, and
 writes it into the run as the read-only `VAULT.json` bound by hash in
 `STAGE.json`; the run's `design-vault` skill queries that snapshot offline.
-An unreachable vault stops the phase before the session starts and
-`workshop resume` retries. `workshop vault lint|check` read the API (or a
-local checkout with `--root`).
+An unreachable vault (or a host without a token) is bypassed for that
+checkpoint: the phase runs exactly like a run without a vault, and the next
+checkpoint tries again. `workshop vault lint|check` read the API (or a local
+checkout with `--root`).

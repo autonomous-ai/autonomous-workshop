@@ -12,7 +12,9 @@ links (`requires`, `conflicts-with`, `risks`, `mitigated-by`, `variant-of`,
 `example-of`, `component`, `uses`, `member`, `exhibits`). Every answer below
 is computed from those links; nothing here is an opinion. The host refreshes
 the snapshot before each Invent, Make, and Playtest phase, so its banked
-evidence includes what earlier runs — yours and others' — sealed.
+evidence includes what earlier runs — yours and others' — sealed. When the
+vault could not be reached for this phase there is no `VAULT.json` and
+`STAGE.json` names no `design_vault`; design without vault leads then.
 
 Read the host-provided leads named in `STAGE.json` first — they are computed
 for this exact run. For anything beyond them, query the snapshot offline:

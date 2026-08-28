@@ -7,7 +7,9 @@
   it into the run as the read-only `VAULT.json` bound in `STAGE.json`. Sealed
   Playtest rounds post confirmed leads and dismissals back to the vault
   (queued under host state when the vault is unreachable). An unreachable
-  vault stops the phase before the session starts; `workshop resume` retries.
+  vault, or a host without a token, is bypassed for that checkpoint: the
+  phase runs exactly like a run without a vault and the next checkpoint
+  tries again.
   Combos, `member`, and `exhibits` links are understood. `workshop vault seed`,
   `workshop vault review`, `workshop evidence`, and the local evidence ledger
   are gone; `workshop vault lint|check` read the API or `--root`.

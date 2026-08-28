@@ -17,5 +17,6 @@ node with the vault's own cap and eviction) and the dismissed leads to
 `/api/gamevault/review` (recorded as `DISMISSED` rows so the same lead is not
 re-litigated). A vault that is unreachable at that moment never undoes the
 sealed checkpoint: the payload waits under `state/<product>/vault/pending/`
-and is sent before the next phase fetches its snapshot. Every later run —
-on any machine — reads the result through its phase snapshot.
+and is sent before a later phase fetches its snapshot (a payload the vault
+refuses is set aside as `*.rejected`, never blocking a run). Every later run
+— on any machine — reads the result through its phase snapshot.
