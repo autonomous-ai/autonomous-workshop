@@ -5,11 +5,14 @@ description: Look up a mechanism's definition, known failure modes, and recorded
 
 # Design vault
 
-`vault.json` beside this file is an immutable, content-addressed snapshot of
-the Workshop's design vault: mechanism, anti-pattern, rule-pattern,
-constraint, and component nodes joined by typed links (`requires`,
-`conflicts-with`, `risks`, `mitigated-by`, `variant-of`, `component`, `uses`).
-Every answer below is computed from those links; nothing here is an opinion.
+`VAULT.json` at the run root is a content-addressed snapshot of the game
+design vault the host fetched for this phase: mechanism, anti-pattern,
+rule-pattern, constraint, component, combo, and game nodes joined by typed
+links (`requires`, `conflicts-with`, `risks`, `mitigated-by`, `variant-of`,
+`example-of`, `component`, `uses`, `member`, `exhibits`). Every answer below
+is computed from those links; nothing here is an opinion. The host refreshes
+the snapshot before each Invent, Make, and Playtest phase, so its banked
+evidence includes what earlier runs — yours and others' — sealed.
 
 Read the host-provided leads named in `STAGE.json` first — they are computed
 for this exact run. For anything beyond them, query the snapshot offline:
@@ -25,8 +28,10 @@ for this exact run. For anything beyond them, query the snapshot offline:
 - `resolve` maps a name to a node by exact slug, declared alias, then a
   conservative fuzzy match; `null` means the vault has no such mechanism.
 - `check` reports `conflict` (declared `conflicts-with`), `unmet-requirement`
-  (a `requires` outside the set), and `risk` (a `risks` edge with the recorded
-  `mitigated-by` fixes and the newest banked evidence).
+  (a `requires` outside the set), `risk` (a `risks` edge with the recorded
+  `mitigated-by` fixes and the newest banked evidence), and `combo-risk` (a
+  recorded failure of a mechanism set whose every member is in the
+  combination).
 - `guidance` briefs a mechanism: definition, its top risks with fixes, and
   exemplar games.
 
@@ -38,6 +43,7 @@ Rules:
   finalizer and the host. Risks are never refusals — they become Playtest
   leads.
 - A lead is a lead, not a verdict. Confirm or dismiss each one against the
-  exact artifact and say why.
-- Never edit `vault.json` or this skill; they are hashed inputs. Propose vault
+  exact artifact and say why; the host banks what you confirmed and records
+  what you dismissed in the vault for every later run.
+- Never edit `VAULT.json` or this skill; the host owns them. Propose vault
   changes in your stage outcome instead.

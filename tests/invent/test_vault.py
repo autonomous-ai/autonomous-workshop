@@ -1,4 +1,4 @@
-"""The design vault: parsing, links, resolution, compatibility, lint, packing."""
+"""The design vault: parsing, links, resolution, compatibility, combos, lint, packing."""
 
 from __future__ import annotations
 
@@ -16,16 +16,13 @@ from workshop.invent.vault import (
     Vault,
     VaultError,
     VaultNodeNotFound,
-    bundled_vault_root,
     evidence_rows,
     normalize_path,
     parse_frontmatter,
     parse_node,
-    seed_vault,
     slugify,
     assert_concept_compatible,
     lead_id,
-    workshop_vault_source,
 )
 from workshop.invent.vault import _read_node_file
 
@@ -84,6 +81,25 @@ def write_vault(root, nodes=FIXTURE):
     (Path(root) / "_templates" / "mechanism.md").write_text("not a node", encoding="utf-8")
     (Path(root) / "README.md").write_text("top-level file, not a node", encoding="utf-8")
     return Path(root)
+
+
+# A combo names a failure of a mechanism SET; a game records what a run exhibited.
+COMBO_FIXTURE = {
+    **FIXTURE,
+    "combos/hand-off-with-single-token": node(
+        "combo", "Hand Off With Single Token",
+        relations=(("member", ("mechanisms/hand-off", "mechanisms/single-token")),
+                   ("risks", ("anti-patterns/idle-player",)),
+                   ("mitigated-by", ("rule-patterns/simultaneous-reveal",))),
+        notes="- [relay#run] 2026-08-27: exit rounds-exhausted",
+    ),
+    "games/relay": node(
+        "game", "Relay",
+        relations=(("uses", ("mechanisms/hand-off", "mechanisms/single-token")),
+                   ("exhibits", ("anti-patterns/idle-player",))),
+        extra="player_counts: [2, 3, 4]",
+    ),
+}
 
 
 class ParsingTest(unittest.TestCase):
@@ -379,7 +395,7 @@ class VaultGraphTest(unittest.TestCase):
     def test_packed_size_is_bounded(self):
         record = dict(self.vault.packed()["nodes"]["mechanisms/lonely"])
         record["notes"] = "x" * (MAX_NODE_BYTES - 1024)
-        big = Vault({"mechanisms/n%03d" % i: dict(record) for i in range(60)})
+        big = Vault({"mechanisms/n%03d" % i: dict(record) for i in range(140)})
         with self.assertRaisesRegex(VaultError, "packed vault exceeds %d bytes" % MAX_PACKED_BYTES):
             big.packed_bytes()
 
@@ -448,52 +464,35 @@ class ConceptBindingTest(unittest.TestCase):
                 with self.assertRaisesRegex(VaultError, pattern):
                     assert_concept_compatible(self.vault, concept)
 
-    def test_vault_source_prefers_the_host_copy(self):
-        with tempfile.TemporaryDirectory() as home:
-            self.assertEqual(workshop_vault_source(Path(home)), bundled_vault_root())
-            (Path(home) / "vault").mkdir()
-            self.assertEqual(workshop_vault_source(Path(home)), Path(home) / "vault")
-            (Path(home) / "vault").rmdir()
-            (Path(home) / "vault").symlink_to(bundled_vault_root())
-            self.assertEqual(workshop_vault_source(Path(home)), bundled_vault_root())
-
-
-class SeedTest(unittest.TestCase):
-    def test_bundled_seed_loads_lints_without_errors_and_packs(self):
-        root = bundled_vault_root()
-        self.assertTrue((root / "PROVENANCE.md").is_file())
-        vault = Vault.from_directory(root)
-        self.assertGreater(len(vault.paths("mechanisms")), 100)
-        self.assertTrue(vault.paths("anti-patterns"))
-        self.assertTrue(vault.paths("rule-patterns"))
-        self.assertEqual(vault.paths("games"), ())
-        errors, _warnings = vault.lint()
+    def test_combos_fire_only_when_every_member_is_present(self):
+        vault = Vault(
+            {path: parse_node(text) for path, text in COMBO_FIXTURE.items()}
+        )
+        errors, warnings = vault.lint()
         self.assertEqual(errors, [])
-        self.assertLess(len(vault.packed_bytes()), MAX_PACKED_BYTES)
-        fdm = "constraints/fdm-printed-components-only"
-        kinds = {item["kind"] for item in vault.check_compatibility(["mechanisms/hand-management", fdm])}
-        self.assertIn("conflict", kinds)
-        for path in root.rglob("*.md"):
-            text = path.read_text(encoding="utf-8")
-            self.assertNotRegex(text, r"^- \[[a-z0-9-]+#(ev-\d+|phys)\]", path.as_posix())
-
-    def test_seed_copies_without_overwriting(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            source = write_vault(Path(temporary) / "source")
-            destination = Path(temporary) / "home" / "vault"
-            first = seed_vault(destination, source)
-            self.assertEqual(first, {"written": len(FIXTURE), "kept": 0})
-            self.assertFalse((destination / "_templates").exists())
-            (destination / "mechanisms" / "hand-off.md").write_text("edited\n", encoding="utf-8")
-            second = seed_vault(destination, source)
-            self.assertEqual(second, {"written": 0, "kept": len(FIXTURE)})
-            self.assertEqual((destination / "mechanisms" / "hand-off.md").read_text(), "edited\n")
-            blocker = Path(temporary) / "file"
-            blocker.write_text("x")
-            with self.assertRaisesRegex(VaultError, "must be a directory"):
-                seed_vault(blocker, source)
-            with self.assertRaisesRegex(VaultError, "real directory"):
-                seed_vault(destination, Path(temporary) / "nowhere")
+        self.assertEqual(warnings, [])
+        alone = vault.check_compatibility(["mechanisms/single-token"])
+        self.assertEqual(alone, [])
+        both = vault.check_compatibility(["mechanisms/hand-off", "mechanisms/single-token"])
+        self.assertEqual(
+            [(item["kind"], item["nodes"]) for item in both],
+            [
+                ("combo-risk", ["combos/hand-off-with-single-token", "anti-patterns/idle-player"]),
+                ("risk", ["mechanisms/hand-off", "anti-patterns/idle-player"]),
+            ],
+        )
+        self.assertEqual(both[0]["members"], ["mechanisms/hand-off", "mechanisms/single-token"])
+        self.assertEqual(both[0]["suggested_fixes"], ["apply rule-patterns/simultaneous-reveal"])
+        self.assertEqual(both[0]["evidence"], ["[relay#run] 2026-08-27: exit rounds-exhausted"])
+        leads = vault.leads_for_concept({"mechanisms": ["hand-off", "single-token"]})
+        self.assertEqual([item["kind"] for item in leads], ["combo-risk", "risk"])
+        self.assertEqual(len(leads[0]["id"]), LEAD_ID_HEX)
+        binding = assert_concept_compatible(vault, {"mechanisms": ["hand-off", "single-token"]})
+        self.assertEqual([item["kind"] for item in binding["leads"]], ["combo-risk", "risk"])
+        self.assertEqual(
+            vault.follow_links("anti-patterns/idle-player", "exhibits", reverse=True),
+            {"games/relay": {"type": "game", "link_type": "exhibits", "children": {}}},
+        )
 
 
 if __name__ == "__main__":

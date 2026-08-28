@@ -17,7 +17,9 @@ from workshop.match.native import (
     NativeMatchAssignment,
 )
 from workshop.product import ToyBlueprint
-from workshop.invent.vault import RUN_VAULT_PATH, Vault, bundled_vault_root
+from workshop.invent.gamevault import GameVaultUnavailable
+from workshop.invent.vault import RUN_VAULT_PATH, Vault
+from tests.invent.fake_gamevault import FakeGameVaultTransport, fake_client, install_fake_gamevault
 from tests.invent.test_vault import write_vault
 from types import SimpleNamespace
 from workshop.workflow.native_run import (
@@ -27,12 +29,11 @@ from workshop.workflow.native_run import (
     _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
-    _design_vault_binding,
     _best_round,
+    _phase_design_vault,
     _playtest_score_history,
-    _prior_evidence,
+    _record_playtest_evidence,
     _repair_base,
-    _run_design_vault,
     _score_trend,
     _native_run_mutation_lock,
     _recoverable_native_turn_backoff_seconds,
@@ -292,6 +293,9 @@ class _UnboundRecoverableLauncher(_FakeLauncher):
 
 
 class NativeHostTest(unittest.TestCase):
+    def setUp(self):
+        self.gamevault = install_fake_gamevault(self)
+
     def test_newer_cad_rejection_supersedes_resolved_make_proposal_feedback(self):
         proposal_rejection = {"failure_code": "make-product-metadata-invalid"}
         cad_rejection = {"failure_code": "declared-cad-output-changed"}
@@ -750,7 +754,13 @@ class NativeHostTest(unittest.TestCase):
             self.assertTrue(vault_path.is_file())
             self.assertFalse(stat.S_IMODE(vault_path.stat().st_mode) & 0o222)
             snapshot = Vault.from_packed_bytes(vault_path.read_bytes())
-            self.assertEqual(snapshot.sha256, Vault.from_directory(bundled_vault_root()).sha256)
+            self.assertEqual(snapshot.sha256, self.gamevault.vault().sha256)
+            stage = json.loads((workspace / "STAGE.json").read_text(encoding="utf-8"))
+            self.assertEqual(stage["inputs"]["design_vault"]["path"], RUN_VAULT_PATH)
+            self.assertEqual(
+                stage["inputs"]["design_vault"]["sha256"],
+                hashlib.sha256(vault_path.read_bytes()).hexdigest(),
+            )
             self.assertTrue((workspace / ".agents/skills/design-vault/vault_tools.py").is_file())
             self.assertTrue((workspace / ".agents/skills/design-vault/SKILL.md").is_file())
             self.assertFalse((workspace / ".agents/skills/design-vault/__pycache__").exists())
@@ -780,12 +790,10 @@ class NativeHostTest(unittest.TestCase):
                 stderr.getvalue(),
             )
 
-    def test_wish_snapshots_the_host_vault_when_one_exists(self):
+    def test_wish_fails_closed_before_the_session_when_the_vault_is_unreachable(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
-            home.mkdir()
-            expected = Vault.from_directory(write_vault(home / "vault")).sha256
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
             ), mock.patch(
@@ -794,13 +802,113 @@ class NativeHostTest(unittest.TestCase):
             ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
-            ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            ), mock.patch(
+                "workshop.workflow.native_run._gamevault_client",
+                side_effect=GameVaultUnavailable("no game vault token: set WORKSHOP_GAMEVAULT_TOKEN"),
+            ), redirect_stdout(StringIO()), redirect_stderr(StringIO()) as stderr:
                 result = main(("wish", "a", "quiet", "orrery", "--json"))
-            self.assertEqual(result, 0)
-            workspace = home / "runs" / launcher.starts[0]["product_id"] / "workspace"
-            snapshot = Vault.from_packed_bytes((workspace / RUN_VAULT_PATH).read_bytes())
-            self.assertEqual(snapshot.sha256, expected)
-            self.assertNotEqual(snapshot.sha256, Vault.from_directory(bundled_vault_root()).sha256)
+            self.assertEqual(result, 2)
+            self.assertIn("no game vault token", stderr.getvalue())
+            self.assertEqual(launcher.starts, [])
+            runs = list((home / "runs").iterdir())
+            self.assertEqual(len(runs), 1)
+            self.assertFalse((runs[0] / "workspace" / RUN_VAULT_PATH).exists())
+
+    def test_phase_snapshot_is_fetched_once_per_checkpoint_and_bound(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            run = SimpleNamespace(run_root=root / "run", host_state_root=root / "host")
+            run.run_root.mkdir()
+            run.host_state_root.mkdir()
+            transport = FakeGameVaultTransport()
+            with mock.patch(
+                "workshop.workflow.native_run._gamevault_client",
+                return_value=fake_client(transport),
+            ):
+                self.assertEqual(
+                    _phase_design_vault(run, SimpleNamespace(stage="match", checkpoint_sha256="a" * 64)),
+                    (None, None),
+                )
+                self.assertEqual(transport.calls, [])
+                make = SimpleNamespace(stage="make", checkpoint_sha256="b" * 64)
+                vault, binding = _phase_design_vault(run, make)
+                self.assertEqual(vault.sha256, transport.vault().sha256)
+                snapshot = run.run_root / RUN_VAULT_PATH
+                self.assertEqual(stat.S_IMODE(snapshot.stat().st_mode), 0o400)
+                self.assertEqual(
+                    binding,
+                    {
+                        "path": RUN_VAULT_PATH,
+                        "tool": ".agents/skills/design-vault/vault_tools.py",
+                        "sha256": hashlib.sha256(snapshot.read_bytes()).hexdigest(),
+                        "nodes": len(vault.nodes),
+                    },
+                )
+                cache = run.host_state_root / "vault" / ("b" * 64 + ".json")
+                self.assertEqual(stat.S_IMODE(cache.stat().st_mode), 0o600)
+                self.assertEqual(len([c for c in transport.calls if c[1].endswith("/export")]), 1)
+                # the same checkpoint never refetches, even when the vault is down
+                transport.fail = True
+                again, again_binding = _phase_design_vault(run, make)
+                self.assertEqual((again.sha256, again_binding), (vault.sha256, binding))
+                self.assertEqual(len([c for c in transport.calls if c[1].endswith("/export")]), 1)
+                # a new checkpoint fetches live and fails closed on an outage
+                with self.assertRaisesRegex(GameVaultUnavailable, "unreachable"):
+                    _phase_design_vault(run, SimpleNamespace(stage="playtest", checkpoint_sha256="c" * 64))
+                transport.fail = False
+                # queued write-backs are sent before the next phase fetches
+                pending = run.host_state_root / "vault" / "pending"
+                pending.mkdir()
+                payload = {"label": "workshop wish r1", "rows": [{"slug": "wish", "id": "r0001-x", "symptom": "anti-patterns/idle-player", "claim": "c", "fix_tried": "f", "severity": "high", "survived_rounds": 1, "source": "workshop-playtest", "round": 1}], "dismissals": []}
+                (pending / "queued.json").write_text(json.dumps(payload), encoding="utf-8")
+                (pending / "queued.json").chmod(0o600)
+                fresh, _ = _phase_design_vault(run, SimpleNamespace(stage="playtest", checkpoint_sha256="c" * 64))
+                self.assertEqual(fresh.sha256, vault.sha256)
+                self.assertEqual([item["label"] for item in transport.evidence], ["workshop wish r1"])
+                self.assertFalse((pending / "queued.json").exists())
+                # a tampered cache is a broken host, not a legacy run
+                cache.write_bytes(b"{not json")
+                with self.assertRaisesRegex(StateConflict, "malformed"):
+                    _phase_design_vault(run, make)
+
+    def test_playtest_evidence_is_posted_or_queued_for_the_next_phase(self):
+        from tests.playtest.test_vault_evidence import LEAD, LEAD_B, playtested_document
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            run = SimpleNamespace(run_root=root / "run", host_state_root=root / "host")
+            run.host_state_root.mkdir()
+            checkpoint = SimpleNamespace(product_id="wish-a", round_index=1, checkpoint_sha256="d" * 64)
+            context = {
+                "sealed_playtest": {
+                    "playtested": SimpleNamespace(to_dict=playtested_document),
+                    "leads": [LEAD, LEAD_B],
+                    "mechanisms": ["mechanisms/hand-off"],
+                }
+            }
+            transport = FakeGameVaultTransport()
+            with mock.patch(
+                "workshop.workflow.native_run._gamevault_client",
+                return_value=fake_client(transport),
+            ):
+                self.assertEqual(
+                    _record_playtest_evidence(run, checkpoint, context),
+                    {"rows": 1, "dismissals": 1, "sent": True},
+                )
+                self.assertEqual(transport.evidence[0]["rows"][0]["id"], "r0001-idle-seat")
+                self.assertEqual(transport.review[0]["dismissals"][0]["symptom"], "anti-patterns/turtling")
+                transport.fail = True
+                self.assertEqual(
+                    _record_playtest_evidence(run, checkpoint, context),
+                    {"rows": 1, "dismissals": 1, "sent": False},
+                )
+                queued = run.host_state_root / "vault" / "pending" / ("d" * 64 + ".json")
+                self.assertEqual(stat.S_IMODE(queued.stat().st_mode), 0o600)
+                self.assertEqual(json.loads(queued.read_text())["label"], "workshop wish-a r1")
+                self.assertEqual(
+                    _record_playtest_evidence(run, checkpoint, {"sealed_playtest": {"playtested": SimpleNamespace(to_dict=lambda: {"checks": [], "feedback": []}), "leads": [], "mechanisms": []}}),
+                    {"rows": 0, "dismissals": 0, "sent": True},
+                )
 
     def test_score_history_reads_only_host_gate_receipts(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -911,44 +1019,6 @@ class NativeHostTest(unittest.TestCase):
             (gates / "0007-make.json").unlink()
             self.assertIsNone(_repair_base(run, history))       # no receipt for the best round
             self.assertIsNone(_repair_base(SimpleNamespace(run_root=root, host_state_root=root / "nowhere"), history))
-
-    def test_prior_evidence_is_empty_for_runs_without_a_vault_snapshot(self):
-        self.assertEqual(_prior_evidence(SimpleNamespace(product_id="wish-x"), None, None), [])
-
-    def test_run_design_vault_is_bound_by_hash_or_absent(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve()
-            run = SimpleNamespace(run_root=root)
-            legacy = SimpleNamespace(input_sha256s={})
-            self.assertIsNone(_run_design_vault(run, legacy))
-            self.assertIsNone(_design_vault_binding(legacy, None))
-            packed = Vault.from_directory(write_vault(root / "source")).packed_bytes()
-            digest = hashlib.sha256(packed).hexdigest()
-            bound = SimpleNamespace(input_sha256s={RUN_VAULT_PATH: digest})
-            with self.assertRaisesRegex(StateConflict, "lacks its bound design vault"):
-                _run_design_vault(run, bound)
-            target = root / RUN_VAULT_PATH
-            target.parent.mkdir(parents=True)
-            target.write_bytes(packed + b" ")
-            with self.assertRaisesRegex(StateConflict, "differs from its binding"):
-                _run_design_vault(run, bound)
-            target.write_bytes(packed)
-            vault = _run_design_vault(run, bound)
-            self.assertEqual(vault.sha256, Vault.from_packed_bytes(packed).sha256)
-            self.assertEqual(
-                _design_vault_binding(bound, vault),
-                {
-                    "path": RUN_VAULT_PATH,
-                    "tool": ".agents/skills/design-vault/vault_tools.py",
-                    "sha256": digest,
-                    "nodes": len(vault.nodes),
-                },
-            )
-            broken = b'{"schema_version": 1, "kind": "autonomous-workshop.design-vault", "nodes": {}, "sha256": "0"}'
-            target.write_bytes(broken)
-            malformed = SimpleNamespace(input_sha256s={RUN_VAULT_PATH: hashlib.sha256(broken).hexdigest()})
-            with self.assertRaisesRegex(StateConflict, "snapshot is malformed"):
-                _run_design_vault(run, malformed)
 
     def test_resume_uses_exact_materialized_binding(self):
         launcher = _FakeLauncher()

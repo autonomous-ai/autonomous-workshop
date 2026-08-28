@@ -17,15 +17,12 @@ contract.
 `inputs.vault_leads` lists what the design vault records against the sealed
 concept's mechanisms: `risk` entries with the anti-pattern, the recorded
 `suggested_fixes`, banked `evidence`, and a stable `id`. They are computed
-from the run's immutable vault snapshot, not authored by a model. Read them
-before building and before judging; a lead is a lead, not a verdict.
-
-`inputs.prior_evidence` lists what earlier runs sharing these mechanisms
-already broke on: each row is one sealed Playtest finding with its severity,
-the fix that was tried, its provenance weight (a measurement outranks a model
-assessment), and the vault symptom it confirmed, if any. This run's own rows
-are never included and the block is capped at ten. Treat rows as leads with
-history, not as verdicts about this revision.
+from the phase's vault snapshot (`VAULT.json`, fetched live by the host
+before this stage), not authored by a model. Each lead's `evidence` is what
+earlier runs — on any machine — confirmed against that anti-pattern at
+Playtest, with the fix that was tried; a `DISMISSED` row records a lead that
+was checked and did not apply. Read them before building and before
+judging; a lead is a lead, not a verdict.
 
 ## Make Goal and improvement loop
 

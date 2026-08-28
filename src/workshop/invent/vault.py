@@ -5,13 +5,14 @@ Nodes are Obsidian-compatible markdown: YAML-style frontmatter, a
 typed wikilinks (``- risks:: [[anti-patterns/runaway-leader]]``), and a
 ``## Notes`` section whose ``- [ref] text`` bullets are banked evidence rows.
 
-This module reads that shape with the standard library only, packs one vault
-directory into a single hash-stable JSON document that fits a product run's
-input budget, and answers three deterministic questions: what a node says,
-what links into or out of it, and whether a combination of mechanisms declares
-conflicts, unmet requirements, or known risks with recorded fixes.  There is
-no model call and no search index; agents traverse the links the vault
-actually declares.
+This module reads that shape with the standard library only — from a
+directory or from the game vault API's export (:mod:`workshop.invent.gamevault`)
+— packs it into a single hash-stable JSON document that the host writes into
+a product run for each phase, and answers three deterministic questions: what
+a node says, what links into or out of it, and whether a combination of
+mechanisms declares conflicts, unmet requirements, or known risks with
+recorded fixes.  There is no model call and no search index; agents traverse
+the links the vault actually declares.
 """
 
 from __future__ import annotations
@@ -40,6 +41,8 @@ LINK_TYPES = (
     "example-of",
     "component",
     "uses",
+    "member",
+    "exhibits",
 )
 NODE_TYPES = (
     "mechanism",
@@ -48,6 +51,7 @@ NODE_TYPES = (
     "anti-pattern",
     "constraint",
     "component",
+    "combo",
 )
 # Where a typed link must point; other link types are free of a target type.
 TARGET_TYPE = {
@@ -56,20 +60,21 @@ TARGET_TYPE = {
     "example-of": "game",
     "component": "component",
     "uses": "mechanism",
+    "member": "mechanism",
+    "exhibits": "anti-pattern",
 }
 MAX_NODE_BYTES = 64 * 1024
 MAX_VAULT_NODES = 4_096
-# The packed vault rides into a product run as one input file; keep it well
-# under the run's 4 MiB input budget.
-MAX_PACKED_BYTES = 3 * 1024 * 1024
+# The packed vault is written into a product run as one host-owned file.
+MAX_PACKED_BYTES = 8 * 1024 * 1024
 DEFAULT_RESOLVE_CUTOFF = 0.75
 LEAD_ID_HEX = 16
 MAX_NOVEL_MECHANISMS = 16
 NOVEL_DEFINITION_MIN = 20
 NOVEL_DEFINITION_MAX = 2_000
-# Where a product run finds its immutable vault snapshot and query tool.
+# Where a product run finds the host-written phase snapshot and the query tool.
 RUN_VAULT_SKILL = "design-vault"
-RUN_VAULT_PATH = ".agents/skills/design-vault/vault.json"
+RUN_VAULT_PATH = "VAULT.json"
 RUN_VAULT_TOOL_PATH = ".agents/skills/design-vault/vault_tools.py"
 
 FIELD_RE = re.compile(r"^\s*-?\s*(\w[\w-]*)::\s*(.*)$")
@@ -550,6 +555,33 @@ class Vault:
                         or ["no recorded mitigation - add one to the vault"],
                     }
                 )
+        # A combo records a failure of a mechanism SET that no pairwise edge can
+        # express; it fires only when every member is in the combination.
+        for combo in self.paths("combos"):
+            node = self.nodes[combo]
+            members = set(node["relations"].get("member", ()))
+            if not members or not members <= inside:
+                continue
+            fixes = [
+                "apply %s" % rule for rule in node["relations"].get("mitigated-by", ())
+            ]
+            rows = [
+                "[%s] %s" % (row["ref"], row["text"])
+                for row in evidence_rows(node["notes"])[-2:]
+            ]
+            for risk in node["relations"].get("risks", ()):
+                findings.append(
+                    {
+                        "kind": "combo-risk",
+                        "nodes": [combo, risk],
+                        "members": sorted(members),
+                        "explanation": "%s together tend to produce %s (%s)."
+                        % (" + ".join(sorted(members)), risk, combo),
+                        "evidence": rows,
+                        "suggested_fixes": fixes
+                        or ["no recorded mitigation - add one to the combo node"],
+                    }
+                )
         return sorted(findings, key=lambda item: (item["kind"], item["nodes"]))
 
     def guidance(
@@ -765,47 +797,6 @@ def assert_concept_compatible(vault: "Vault", concept: Mapping[str, Any]) -> dic
     return {"mechanisms": resolved, "novel": novel, "leads": leads}
 
 
-def workshop_vault_source(home: Path) -> Path:
-    """The vault a new run snapshots: the host-owned copy, else the seed."""
-
-    candidate = Path(home) / "vault"
-    return candidate if candidate.is_dir() and not candidate.is_symlink() else bundled_vault_root()
-
-
-
-def bundled_vault_root() -> Path:
-    """The seed vault shipped with the Workshop distribution."""
-
-    return Path(__file__).resolve().parent / "vault"
-
-
-def seed_vault(destination: Path, source: Optional[Path] = None) -> dict[str, int]:
-    """Copy seed nodes into ``destination`` without overwriting existing files.
-
-    Hand-written definitions and linter fixes in a working vault survive
-    re-seeding; the result reports how many nodes were written and kept.
-    """
-
-    source_root = Path(source) if source is not None else bundled_vault_root()
-    Vault.from_directory(source_root)  # fail closed before touching the target
-    destination = Path(destination)
-    if destination.exists() and (destination.is_symlink() or not destination.is_dir()):
-        raise VaultError("vault destination must be a directory: %s" % destination)
-    written = kept = 0
-    for path in sorted(source_root.rglob("*.md")):
-        relative = path.relative_to(source_root)
-        if len(relative.parts) != 2 or relative.parts[0].startswith("_"):
-            continue
-        target = destination / relative
-        if target.exists() or target.is_symlink():
-            kept += 1
-            continue
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(_read_node_file(path).encode("utf-8"))
-        written += 1
-    return {"written": written, "kept": kept}
-
-
 __all__ = [
     "LINK_TYPES",
     "MAX_NODE_BYTES",
@@ -823,13 +814,10 @@ __all__ = [
     "RUN_VAULT_SKILL",
     "RUN_VAULT_TOOL_PATH",
     "assert_concept_compatible",
-    "bundled_vault_root",
     "lead_id",
     "evidence_rows",
     "normalize_path",
     "parse_frontmatter",
     "parse_node",
-    "seed_vault",
     "slugify",
-    "workshop_vault_source",
 ]

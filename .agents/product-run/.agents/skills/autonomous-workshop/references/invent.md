@@ -23,9 +23,11 @@ While pursuing the Goal:
 1. **Observe:** Read the Wish, complete roster and custom-agent instructions,
    relevant skill resources, and any exact upstream evidence. Identify what
    needs factual research and what needs creative exploration. When
-   `STAGE.json` names a `design_vault`, brief yourself on candidate
+   `STAGE.json` names a `design_vault` (the host-written `VAULT.json` at the
+   run root, fetched live for this phase), brief yourself on candidate
    mechanisms with `vault_tools.py guidance` before committing to one: each
-   recorded risk carries the fix that worked.
+   recorded risk carries the fix that worked, including what earlier runs
+   confirmed at Playtest.
 2. **Act:** Use Codex-native search, browsing, file tools, and specialist
    subagents to research supported facts and explore materially different
    concepts. Save source provenance beside the claims it supports. Use the

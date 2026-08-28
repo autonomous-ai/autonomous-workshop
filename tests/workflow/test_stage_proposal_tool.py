@@ -630,8 +630,11 @@ class StageProposalToolTest(unittest.TestCase):
         skill = self.run_root / ".agents" / "skills" / "design-vault"
         skill.mkdir(parents=True, exist_ok=True)
         packed = Vault.from_directory(write_vault(self.run_root / "vault-source")).packed_bytes()
+        snapshot = self.run_root / "VAULT.json"
         if vault:
-            (skill / "vault.json").write_bytes(b"{not json" if corrupt else packed)
+            snapshot.write_bytes(b"{not json" if corrupt else packed)
+        elif snapshot.exists():
+            snapshot.unlink()
         if tool:
             (skill / "vault_tools.py").write_bytes(VAULT_TOOL.read_bytes())
         return skill
@@ -683,8 +686,8 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIsNone(tool._design_vault(self.run_root))
         tool._assert_concept_vault_compatible(self.run_root, v4_concept())
         skill = self.materialize_vault(tool=True, vault=False)
-        with self.assertRaisesRegex(tool.ProposalError, "missing from the run"):
-            tool._design_vault(self.run_root)
+        # the tool is a static skill; a stage the host gave no snapshot has no vault rules
+        self.assertIsNone(tool._design_vault(self.run_root))
         (skill / "vault_tools.py").unlink()
         self.materialize_vault(tool=False, vault=True)
         with self.assertRaisesRegex(tool.ProposalError, "missing from the run"):

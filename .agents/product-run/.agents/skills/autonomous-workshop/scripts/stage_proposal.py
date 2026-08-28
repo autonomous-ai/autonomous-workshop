@@ -1057,25 +1057,24 @@ def _hedged(text: str) -> Optional[str]:
     return match.group(0) if match else None
 
 
-RUN_VAULT_PATH = ".agents/skills/design-vault/vault.json"
+RUN_VAULT_PATH = "VAULT.json"
 RUN_VAULT_TOOL_PATH = ".agents/skills/design-vault/vault_tools.py"
 
 
 def _design_vault(run_root: Path):
-    """Load the run's immutable vault snapshot through its sibling tool, or None.
+    """Load the host-written phase snapshot through the design-vault tool, or None.
 
-    Runs created before the design vault existed have neither file and keep
-    finalizing exactly as before.  A run that has one but cannot load it is a
-    broken input tree, not a legacy run.
+    The host writes ``VAULT.json`` before every Invent, Make, and Playtest
+    phase; a stage without one finalizes without vault rules.  A snapshot
+    that is present but unreadable, or whose tool is missing, is a broken run
+    tree, not a legacy run.
     """
 
     vault_path = run_root / RUN_VAULT_PATH
     tool_path = run_root / RUN_VAULT_TOOL_PATH
-    if not vault_path.is_file() and not tool_path.is_file():
+    if not vault_path.is_file() and not vault_path.is_symlink():
         return None
-    if vault_path.is_symlink() or tool_path.is_symlink() or not (
-        vault_path.is_file() and tool_path.is_file()
-    ):
+    if vault_path.is_symlink() or tool_path.is_symlink() or not tool_path.is_file():
         raise ProposalError("design vault snapshot or tool is missing from the run")
     import importlib.util
 

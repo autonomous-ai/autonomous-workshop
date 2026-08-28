@@ -69,7 +69,6 @@ class NativeCommandTest(unittest.TestCase):
                 "skills",
                 "schemas",
                 "vault",
-                "evidence",
             },
         )
         for removed in (
@@ -738,39 +737,26 @@ class VaultCommandTest(unittest.TestCase):
             code = main(argv)
         return code, stdout.getvalue(), stderr.getvalue()
 
-    def test_vault_seed_lint_and_check_round_trip(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary) / "vault"
-            code, out, _ = self.run_cli("vault", "seed", "--root", str(root))
-            self.assertEqual(code, 0)
-            self.assertIn("node(s) written", out)
-            self.assertTrue((root / "mechanisms").is_dir())
-            code, out, _ = self.run_cli("vault", "seed", "--root", str(root), "--json")
-            self.assertEqual(code, 0)
-            self.assertEqual(json.loads(out)["written"], 0)
+    def test_vault_lint_and_check_read_a_local_checkout(self):
+        from tests.invent.test_vault import write_vault
 
+        with tempfile.TemporaryDirectory() as temporary:
+            root = write_vault(Path(temporary) / "vault")
             code, out, _ = self.run_cli("vault", "lint", "--root", str(root))
-            self.assertIn(code, (0, 1))
+            self.assertEqual(code, 0)
             self.assertIn("error(s)", out)
             code, out, _ = self.run_cli("vault", "lint", "--root", str(root), "--json")
             self.assertEqual(json.loads(out)["errors"], [])
-
-            fdm = "constraints/fdm-printed-components-only"
             code, out, _ = self.run_cli(
-                "vault", "check", "mechanisms/hand-management", fdm, "--root", str(root)
+                "vault", "check", "mechanisms/card-hand", "constraints/fdm-only", "--root", str(root)
             )
             self.assertEqual(code, 0)
             self.assertIn("CONFLICT", out)
             self.assertIn("fix:", out)
             code, out, _ = self.run_cli(
-                "vault", "check", "mechanisms/hand-management", fdm, "--root", str(root), "--json"
+                "vault", "check", "mechanisms/card-hand", "constraints/fdm-only", "--root", str(root), "--json"
             )
             self.assertEqual(json.loads(out)[0]["kind"], "conflict")
-
-    def test_vault_lint_reports_errors_with_exit_two_and_bundled_flag(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary) / "vault"
-            (root / "mechanisms").mkdir(parents=True)
             (root / "mechanisms" / "bad.md").write_text(
                 "---\ntype: widget\nname: Bad\n---\n## Relations\n- risks:: [[anti-patterns/none]]\n",
                 encoding="utf-8",
@@ -778,58 +764,30 @@ class VaultCommandTest(unittest.TestCase):
             code, out, _ = self.run_cli("vault", "lint", "--root", str(root))
             self.assertEqual(code, 2)
             self.assertIn("ERROR mechanisms/bad", out)
-            code, out, _ = self.run_cli("vault", "lint", "--bundled", "--json")
-            self.assertIn(code, (0, 1))
-            self.assertGreater(json.loads(out)["nodes"], 100)
+            code, _, err = self.run_cli("vault", "lint", "--root", str(Path(temporary) / "nowhere"))
+            self.assertEqual(code, 2)
+            self.assertIn("no design vault directory", err)
 
-    def test_evidence_and_review_commands_read_the_workshop_home(self):
-        from tests.playtest.test_evidence_ledger import LEAD, LEAD_B, playtested_document
-        from workshop.playtest.evidence_ledger import append_rows, build_rows, write_back
+    def test_vault_reads_the_vault_api_and_fails_closed_without_a_token(self):
+        from tests.invent.fake_gamevault import FakeGameVaultTransport, install_fake_gamevault
+        from workshop.invent.gamevault import default_client as real_default_client
 
-        with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary)
-            rows = build_rows("wish-a", 1, playtested_document(), [LEAD, LEAD_B], ["mechanisms/hand-off"])
-            append_rows(home, rows)
-            (home / "vault" / "anti-patterns").mkdir(parents=True)
-            (home / "vault" / "anti-patterns" / "idle-player.md").write_text(
-                "---\ntype: anti-pattern\nname: Idle Player\n---\n## Notes\n", encoding="utf-8")
-            write_back(home, rows, [{"lead": LEAD_B["id"], "nodes": LEAD_B["nodes"], "why": "No."}],
-                       product_id="wish-a", round_index=1)
-            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": temporary}):
-                code, out, _ = self.run_cli("evidence", "list")
-                self.assertEqual(code, 0)
-                self.assertIn("wish-a#r1:loose-fit", out)
-                self.assertIn("3 row(s)", out)
-                code, out, _ = self.run_cli("evidence", "recall", "mechanisms/hand-off", "--limit", "1", "--json")
-                self.assertEqual(json.loads(out)[0]["ref"], "wish-a#r1:loose-fit")
-                code, out, _ = self.run_cli("evidence", "recall", "mechanisms/none")
-                self.assertIn("0 row(s)", out)
-                code, out, _ = self.run_cli("vault", "review")
-                self.assertIn("wish-a-r1.md", out)
-                self.assertIn("1 review file(s)", out)
-                code, out, _ = self.run_cli("vault", "review", "--json")
-                self.assertEqual(json.loads(out)[0]["dismissals"], 1)
-                code, out, _ = self.run_cli("evidence", "harvest")
-                self.assertEqual(code, 0)
-                self.assertIn("0 row(s) from 0 product(s)", out)
-                code, out, _ = self.run_cli("evidence", "harvest", "--json")
-                self.assertEqual(json.loads(out)["rows"], 0)
-                (home / "state" / "wish-x" / "gates").mkdir(parents=True)
-                (home / "state" / "wish-x" / "gates" / "0004-playtest.json").write_text("{", encoding="utf-8")
-                code, out, _ = self.run_cli("evidence", "harvest")
-                self.assertIn("skipped (unreadable or unverifiable): wish-x/0004-playtest.json", out)
-
-    def test_vault_defaults_to_the_workshop_home_and_fails_closed(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": temporary}):
-                code, _, err = self.run_cli("vault", "lint")
-                self.assertEqual(code, 2)
-                self.assertIn("workshop vault seed", err)
-                code, out, _ = self.run_cli("vault", "seed", "--json")
-                self.assertEqual(code, 0)
-                self.assertEqual(json.loads(out)["root"], str(Path(temporary) / "vault"))
-                code, _, _ = self.run_cli("vault", "lint")
-                self.assertIn(code, (0, 1))
+        transport = install_fake_gamevault(
+            self, FakeGameVaultTransport(), targets=("cli.main.default_gamevault_client",)
+        )
+        code, out, _ = self.run_cli("vault", "lint", "--json")
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(out)["nodes"], len(transport.nodes))
+        self.assertTrue(transport.calls[-1][1].endswith("/api/gamevault/export"))
+        code, out, _ = self.run_cli("vault", "check", "mechanisms/hand-off", "--json")
+        self.assertEqual(json.loads(out)[0]["kind"], "risk")
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(
+            os.environ, {"WORKSHOP_HOME": temporary}, clear=True
+        ), mock.patch("cli.main.default_gamevault_client", side_effect=real_default_client):
+            code, _, err = self.run_cli("vault", "lint")
+            self.assertEqual(code, 2)
+            self.assertIn("no game vault token", err)
+            self.assertIn("gamevault.env", err)
 
 
 if __name__ == "__main__":

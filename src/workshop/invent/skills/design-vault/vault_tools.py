@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run-local design-vault queries over the packed ``vault.json`` beside this file.
+"""Run-local design-vault queries over the host-written ``VAULT.json`` snapshot.
 
 Standard library only, deterministic, offline.  The same questions — read a
 node, follow typed links, resolve a name, check a combination, brief a
@@ -242,6 +242,31 @@ class PackedVault:
                         or ["no recorded mitigation - add one to the vault"],
                     }
                 )
+        for combo in self.paths("combos"):
+            node = self.nodes[combo]
+            members = set(node["relations"].get("member", ()))
+            if not members or not members <= inside:
+                continue
+            fixes = [
+                "apply %s" % rule for rule in node["relations"].get("mitigated-by", ())
+            ]
+            rows = [
+                "[%s] %s" % (row["ref"], row["text"])
+                for row in evidence_rows(node["notes"])[-2:]
+            ]
+            for risk in node["relations"].get("risks", ()):
+                findings.append(
+                    {
+                        "kind": "combo-risk",
+                        "nodes": [combo, risk],
+                        "members": sorted(members),
+                        "explanation": "%s together tend to produce %s (%s)."
+                        % (" + ".join(sorted(members)), risk, combo),
+                        "evidence": rows,
+                        "suggested_fixes": fixes
+                        or ["no recorded mitigation - add one to the combo node"],
+                    }
+                )
         return sorted(findings, key=lambda item: (item["kind"], item["nodes"]))
 
     def guidance(
@@ -349,12 +374,14 @@ def assert_concept_compatible(vault: PackedVault, concept: Mapping[str, Any]) ->
 
 
 def default_vault_path() -> Path:
-    return Path(__file__).resolve().parent / "vault.json"
+    """The host-written phase snapshot at the product run's root."""
+
+    return Path(__file__).resolve().parents[2] / "VAULT.json"
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="query the run-local design vault")
-    parser.add_argument("--vault", type=Path, default=None, help="packed vault.json")
+    parser.add_argument("--vault", type=Path, default=None, help="packed VAULT.json")
     commands = parser.add_subparsers(dest="command", required=True)
     node = commands.add_parser("node")
     node.add_argument("path")

@@ -25,7 +25,8 @@ from workshop.workflow.native_run import (
     start_native_run,
 )
 from workshop.errors import ArtifactError, StateConflict
-from workshop.invent.vault import Vault, seed_vault
+from workshop.invent.vault import Vault
+from tests.invent.fake_gamevault import E2E_NODES, FakeGameVaultTransport, install_fake_gamevault
 from workshop.errors import ArtifactError, EffectError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.integrations.factory import FACTORY_CONTENT_MAPPING
@@ -1230,6 +1231,9 @@ class _FactoryEffects:
 
 
 class NativeFullRunTest(unittest.TestCase):
+    def setUp(self):
+        self.gamevault = install_fake_gamevault(self, FakeGameVaultTransport(E2E_NODES))
+
     def test_permanent_factory_error_is_visible_and_not_an_outage_wait(self):
         launcher = _OneSessionProductAgent()
 
@@ -2016,7 +2020,7 @@ class NativeFullRunTest(unittest.TestCase):
             ["block", "block", "block"],
         )
 
-    def test_confirmed_leads_reach_the_next_wish_and_the_host_vault(self):
+    def test_confirmed_leads_and_dismissals_reach_the_game_vault(self):
         finding = {
             "code": "idle-seat",
             "area": "play",
@@ -2024,7 +2028,7 @@ class NativeFullRunTest(unittest.TestCase):
             "finding": "One seat idles while the other resolves captures.",
             "change": "Resolve captures simultaneously.",
             "evidence_refs": ["results/agent-playtest.json"],
-            "invalidates": ["playtest", "release", "deliver"],
+            "invalidates": ["playtest", "release"],
         }
         effects = _FactoryEffects()
 
@@ -2042,7 +2046,6 @@ class NativeFullRunTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
             home.mkdir()
-            seed_vault(home / "vault")
             first = _OneSessionProductAgent(playtest_plan=[("block", [finding])], confirm_first_lead=True)
             second = _OneSessionProductAgent()
             launchers = iter((first, second))
@@ -2070,35 +2073,36 @@ class NativeFullRunTest(unittest.TestCase):
                     constraints={"audience": "14+"},
                     context={"source": "native-ledger-test"},
                 )
-                receipt_a = start_native_run(wish_a, publish_requested=False)
+                receipt_a = start_native_run(wish_a, effort="quest")
                 wish_b = Wish.create(
                     "orbit-dog-b",
                     "Build a pocket draughts set for my other dog.",
                     constraints={"audience": "14+"},
                     context={"source": "native-ledger-test"},
                 )
-                receipt_b = start_native_run(wish_b, publish_requested=False)
+                receipt_b = start_native_run(wish_b, effort="quest")
 
-                self.assertEqual((receipt_a["stage"], receipt_b["stage"]), ("deliver", "deliver"))
+                self.assertEqual((receipt_a["stage"], receipt_b["stage"]), ("release", "release"))
+                self.assertEqual((receipt_a["status"], receipt_b["status"]), ("complete", "complete"))
                 first_leads = [p for p in first.stage_packets if p["stage"] == "playtest"][0]["inputs"]["vault_leads"]
                 confirmed_symptom = first_leads[0]["nodes"][1]
-                ledger = (home / "evidence" / "evidence.jsonl").read_text(encoding="utf-8").splitlines()
-                rows = [json.loads(line) for line in ledger]
-                self.assertEqual([row["ref"] for row in rows], ["orbit-dog-a#r1:idle-seat"])
-                self.assertEqual(rows[0]["symptom"], confirmed_symptom)
-                self.assertEqual(rows[0]["weight"], 3)
-                self.assertIn("mechanisms/stacking-and-balancing", rows[0]["mechanisms"])
-                node = home / "vault" / (confirmed_symptom + ".md")
-                self.assertIn("- [orbit-dog-a#r1:idle-seat] block:", node.read_text(encoding="utf-8"))
-                review = home / "vault" / "_review" / "orbit-dog-a-r1.md"
-                self.assertTrue(review.is_file())
+                posted = [item for item in self.gamevault.evidence if item["label"] == "workshop orbit-dog-a r1"]
+                self.assertEqual(len(posted), 1)
+                self.assertEqual([row["id"] for row in posted[0]["rows"]], ["r0001-idle-seat"])
+                self.assertEqual(posted[0]["rows"][0]["symptom"], confirmed_symptom)
+                self.assertEqual(posted[0]["rows"][0]["severity"], "high")
+                reviewed = [item for item in self.gamevault.review if item["label"] == "workshop orbit-dog-a r1"]
+                self.assertEqual(len(reviewed), 1)
                 self.assertEqual(
-                    [p["inputs"]["prior_evidence"] for p in first.stage_packets if p["stage"] in ("make", "playtest")],
-                    [[], [], [], []],
+                    sorted(item["symptom"] for item in reviewed[0]["dismissals"]),
+                    sorted(lead["nodes"][1] for lead in first_leads[1:]),
                 )
-                for stage in ("make", "playtest"):
-                    packet = [p for p in second.stage_packets if p["stage"] == stage][0]
-                    self.assertEqual([row["ref"] for row in packet["inputs"]["prior_evidence"]], ["orbit-dog-a#r1:idle-seat"])
+                self.assertFalse((home / "state" / "orbit-dog-a" / "vault" / "pending").exists())
+                # every phase that needs design knowledge fetched it live
+                exports = [call for call in self.gamevault.calls if call[1].endswith("/api/gamevault/export")]
+                self.assertGreaterEqual(len(exports), 6)
+                second_make = [p for p in second.stage_packets if p["stage"] == "make"][0]
+                self.assertTrue(second_make["inputs"]["vault_leads"])
                 self.assertEqual(receipt_a["rounds"][0]["vault_leads_confirmed"], 1)
 
     def test_a_worse_round_redirects_the_next_make_to_the_best_sealed_round(self):
@@ -2109,7 +2113,7 @@ class NativeFullRunTest(unittest.TestCase):
             "finding": "Waypoints miss the grid.",
             "change": "Center every waypoint on a playable square.",
             "evidence_refs": ["results/mechanical-check.json"],
-            "invalidates": ["playtest", "release", "deliver"],
+            "invalidates": ["playtest", "release"],
         }
         two = {**one, "code": "piece-wobble", "finding": "Pieces wobble in the recess.",
                "change": "Deepen the recess by 0.5 mm."}
@@ -2782,8 +2786,8 @@ class NativeFullRunTest(unittest.TestCase):
             invent_gate = _read_json(paths.host_state / "gates/0002-invent.json")
             by_stage = {packet["stage"]: packet for packet in launcher.stage_packets}
             design_vault = by_stage["invent"]["inputs"]["design_vault"]
-            self.assertEqual(design_vault["path"], ".agents/skills/design-vault/vault.json")
-            self.assertGreater(design_vault["nodes"], 100)
+            self.assertEqual(design_vault["path"], "VAULT.json")
+            self.assertEqual(design_vault["nodes"], len(E2E_NODES))
             self.assertEqual(
                 invent_gate["evidence"]["checks"]["design_vault_sha256"],
                 Vault.from_packed_bytes(

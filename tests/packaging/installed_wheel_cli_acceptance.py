@@ -260,7 +260,6 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
             "workshop/contributors/_inventors/",
             "workshop/contributors/schemas/",
             "workshop/invent/skills/",
-            "workshop/invent/vault/",
             "workshop/make/schemas/",
             "workshop/make/skills/",
             "workshop/release/skills/",

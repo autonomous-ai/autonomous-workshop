@@ -44,8 +44,6 @@ workshop = [
   "make/skills/**/*",
   "release/skills/*",
   "release/skills/**/*",
-  "invent/vault/*",
-  "invent/vault/**/*",
   "invent/skills/*",
   "invent/skills/**/*",
 ]

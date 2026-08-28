@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import shutil
 import re
 import stat
 import tempfile
@@ -48,13 +47,17 @@ from workshop.integrations.factory import (
     urllib_transport,
 )
 from workshop.invent.native import NativeInvented
+from workshop.invent.gamevault import (
+    GameVaultClient,
+    GameVaultUnavailable,
+    default_client as default_gamevault_client,
+)
 from workshop.invent.vault import (
+    MAX_PACKED_BYTES,
     RUN_VAULT_PATH,
-    RUN_VAULT_SKILL,
     RUN_VAULT_TOOL_PATH,
     Vault,
     VaultError,
-    workshop_vault_source,
 )
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.native_gate import (
@@ -71,7 +74,7 @@ from workshop.match.native import (
     InventorRosterEntry,
 )
 from workshop.playtest.native import NativePlaytested
-from workshop.playtest.evidence_ledger import append_rows, build_rows, recall, write_back
+from workshop.playtest.vault_evidence import build_rows, gamevault_dismissals, gamevault_rows
 from workshop.product import ToyBlueprint
 from workshop.product.blueprints import SCORE_AMBIGUOUS_SPREAD
 from workshop.release.contracts import ProductRelease, ReleaseContext
@@ -1424,58 +1427,139 @@ def _materialized_release_contract(
     }
 
 
-def _stage_design_vault_skill(staging: Path, skill_root: Path) -> Path:
-    """Copy the static design-vault skill and add the run's packed vault.
-
-    The snapshot comes from the host-owned ``$WORKSHOP_HOME/vault`` when it
-    exists, else from the seed shipped with Workshop.  The result is one more
-    immutable, hashed input tree; the run never sees the host copy.
-    """
-
-    source = workshop_vault_source(_workshop_home())
-    packed = Vault.from_directory(source).packed_bytes()
-    root = Path(staging).resolve() / RUN_VAULT_SKILL
-    root.mkdir(mode=0o700)
-    for entry in sorted(Path(skill_root).iterdir()):
-        if entry.is_symlink() or not entry.is_file() or entry.name.endswith((".pyc", ".pyo")):
-            continue
-        shutil.copyfile(entry, root / entry.name)
-    (root / "vault.json").write_bytes(packed)
-    return root
+_VAULT_STAGES = ("invent", "make", "playtest")
+_VAULT_STATE_DIRECTORY = "vault"
+_VAULT_PENDING_DIRECTORY = "pending"
+_MAX_PENDING_VAULT_WRITE_BYTES = 4 * 1024 * 1024
 
 
-def _run_design_vault(run: AgentRun, checkpoint: AgentRunCheckpoint) -> Optional[Vault]:
-    """The run's own vault snapshot, verified against its bound input hash.
+def _gamevault_client() -> GameVaultClient:
+    """The host's vault client; a missing token fails closed before any phase."""
 
-    Runs created before the design vault existed have no snapshot and return
-    ``None``; every vault-aware gate then behaves exactly as it did before.
-    """
+    return default_gamevault_client()
 
-    expected = checkpoint.input_sha256s.get(RUN_VAULT_PATH)
-    if expected is None:
-        return None
-    path = run.run_root / RUN_VAULT_PATH
+
+def _vault_state_directory(run: AgentRun, *, create: bool) -> Path:
+    directory = run.host_state_root / _VAULT_STATE_DIRECTORY
+    if create:
+        directory.mkdir(mode=0o700, exist_ok=True)
+    if directory.is_symlink():
+        raise StateConflict("vault host state must not be a symlink")
+    return directory
+
+
+def _read_stable_private_bytes(path: Path, *, label: str, maximum_bytes: int) -> bytes:
     try:
+        before = path.lstat()
         content = path.read_bytes()
+        after = path.lstat()
     except OSError as exc:
-        raise StateConflict("native run lacks its bound design vault snapshot") from exc
-    if hashlib.sha256(content).hexdigest() != expected:
-        raise StateConflict("native run design vault snapshot differs from its binding")
+        raise StateConflict("%s is unavailable" % label) from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(before.st_mode)
+        or stat.S_IMODE(before.st_mode) != 0o600
+        or not 1 <= len(content) <= maximum_bytes
+        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+    ):
+        raise StateConflict("%s is not a stable private file" % label)
+    return content
+
+
+def _phase_design_vault(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> tuple[Optional[Vault], Optional[dict[str, Any]]]:
+    """Fetch, once per checkpoint, the vault snapshot this phase works from.
+
+    The host calls the game vault API live before every Invent, Make, and
+    Playtest phase and caches the packed snapshot per checkpoint under host
+    state, so a resumed checkpoint sees exactly the bytes its agent saw and
+    the gate re-verifies against the same graph.  The snapshot is written to
+    the run root as ``VAULT.json`` (read-only to the agent) and bound by hash
+    in STAGE.json.  An unreachable vault stops the phase before the session
+    starts; ``workshop resume`` retries.  Stages without design knowledge
+    (Match, Release) fetch nothing.
+    """
+
+    if checkpoint.stage not in _VAULT_STAGES:
+        return None, None
+    cache = _vault_state_directory(run, create=True) / (
+        checkpoint.checkpoint_sha256 + ".json"
+    )
+    if cache.exists() or cache.is_symlink():
+        content = _read_stable_private_bytes(
+            cache, label="cached vault snapshot", maximum_bytes=MAX_PACKED_BYTES
+        )
+        try:
+            vault = Vault.from_packed_bytes(content)
+        except VaultError as exc:
+            raise StateConflict("cached vault snapshot is malformed") from exc
+    else:
+        client = _gamevault_client()
+        _flush_pending_vault_writes(run, client)
+        vault = client.export()
+        content = vault.packed_bytes()
+        _atomic_private_write(cache, content, mode=0o600)
+    snapshot = run.run_root / RUN_VAULT_PATH
+    if snapshot.is_symlink():
+        raise StateConflict("run vault snapshot must be a regular file")
     try:
-        return Vault.from_packed_bytes(content)
-    except VaultError as exc:
-        raise StateConflict("native run design vault snapshot is malformed") from exc
-
-
-def _design_vault_binding(checkpoint: AgentRunCheckpoint, vault: Optional[Vault]) -> Optional[dict[str, Any]]:
-    if vault is None:
-        return None
-    return {
+        current: Optional[bytes] = snapshot.read_bytes() if snapshot.is_file() else None
+    except OSError:
+        current = None
+    if current != content:
+        _atomic_private_write(snapshot, content, mode=0o400)
+    binding = {
         "path": RUN_VAULT_PATH,
         "tool": RUN_VAULT_TOOL_PATH,
-        "sha256": checkpoint.input_sha256s[RUN_VAULT_PATH],
+        "sha256": hashlib.sha256(content).hexdigest(),
         "nodes": len(vault.nodes),
     }
+    return vault, binding
+
+
+def _pending_vault_writes_directory(run: AgentRun, *, create: bool) -> Path:
+    directory = _vault_state_directory(run, create=create) / _VAULT_PENDING_DIRECTORY
+    if create:
+        directory.mkdir(mode=0o700, exist_ok=True)
+    return directory
+
+
+def _send_vault_writes(client: GameVaultClient, payload: Mapping[str, Any]) -> None:
+    label = payload["label"]
+    if payload["rows"]:
+        client.post_evidence(payload["rows"], label=label)
+    if payload["dismissals"]:
+        client.post_review(payload["dismissals"], label=label)
+
+
+def _flush_pending_vault_writes(run: AgentRun, client: GameVaultClient) -> int:
+    """Send every queued write-back before a phase fetches fresh knowledge.
+
+    A payload the vault refuses outright stays queued and stops the phase:
+    the file names what to inspect, and the run resumes once it is fixed or
+    removed.
+    """
+
+    directory = _pending_vault_writes_directory(run, create=False)
+    if not directory.is_dir():
+        return 0
+    sent = 0
+    for path in sorted(directory.iterdir()):
+        if path.is_symlink() or not path.is_file():
+            continue
+        payload = _read_stable_private_json(
+            path,
+            label="pending vault write %s" % path.name,
+            maximum_bytes=_MAX_PENDING_VAULT_WRITE_BYTES,
+        )
+        if set(payload) != {"label", "rows", "dismissals"}:
+            raise StateConflict("pending vault write %s is malformed" % path.name)
+        _send_vault_writes(client, payload)
+        path.unlink()
+        sent += 1
+    return sent
 
 
 def _playtest_score_history(host_state_root: Path) -> list[dict[str, Any]]:
@@ -1641,29 +1725,29 @@ def _score_trend(history: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 def _record_playtest_evidence(
-    checkpoint: AgentRunCheckpoint, context: Mapping[str, Any]
-) -> dict[str, int]:
-    """Bank the sealed round's feedback for later runs; never before sealing.
+    run: AgentRun, checkpoint: AgentRunCheckpoint, context: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Bank the sealed round's feedback in the game vault; never before sealing.
 
-    The gate receipt and checkpoint are already durable, so a ledger failure
-    surfaces as a host error without touching the run; `workshop evidence
-    harvest` rebuilds the ledger from those receipts at any time.
+    The gate receipt and checkpoint are already durable.  A vault that cannot
+    be reached right now must not undo them, so the payload is queued under
+    host state and sent before the next phase fetches its snapshot.
     """
 
     sealed = context.get("sealed_playtest")
     if not sealed:  # pragma: no cover - playtest evaluation always stashes it
-        return {"written": 0, "kept": 0, "banked": 0, "queued": 0}
+        return {"rows": 0, "dismissals": 0, "sent": False}
     playtested: NativePlaytested = sealed["playtested"]
     document = playtested.to_dict()
-    rows = build_rows(
-        checkpoint.product_id,
-        checkpoint.round_index,
-        document,
-        sealed["leads"],
-        sealed["mechanisms"],
+    rows = gamevault_rows(
+        build_rows(
+            checkpoint.product_id,
+            checkpoint.round_index,
+            document,
+            sealed["leads"],
+            sealed["mechanisms"],
+        )
     )
-    home = _workshop_home()
-    report = dict(append_rows(home, rows))
     lead_by_id = {lead["id"]: lead for lead in sealed["leads"]}
     dismissals = []
     for check in document["checks"]:
@@ -1678,29 +1762,29 @@ def _record_playtest_evidence(
                         "why": answer.get("why", ""),
                     }
                 )
-    report.update(
-        write_back(
-            home,
-            rows,
+    payload = {
+        "label": "workshop %s r%d" % (checkpoint.product_id, checkpoint.round_index),
+        "rows": rows,
+        "dismissals": gamevault_dismissals(
             dismissals,
             product_id=checkpoint.product_id,
             round_index=checkpoint.round_index,
+        ),
+    }
+    report = {"rows": len(payload["rows"]), "dismissals": len(payload["dismissals"])}
+    if not payload["rows"] and not payload["dismissals"]:
+        return {**report, "sent": True}
+    try:
+        _send_vault_writes(_gamevault_client(), payload)
+    except GameVaultUnavailable:
+        pending = _pending_vault_writes_directory(run, create=True) / (
+            checkpoint.checkpoint_sha256 + ".json"
         )
-    )
-    return report
+        _atomic_private_write(pending, _canonical_json_bytes(payload) + b"\n", mode=0o600)
+        return {**report, "sent": False}
+    return {**report, "sent": True}
 
 
-def _prior_evidence(
-    checkpoint: AgentRunCheckpoint, vault: Optional[Vault], invented: NativeInvented
-) -> list[dict[str, Any]]:
-    if vault is None:
-        return []
-    mechanisms = [
-        node
-        for node in vault.resolve_concept_mechanisms(invented.concept).values()
-        if node is not None
-    ]
-    return recall(_workshop_home(), mechanisms, exclude_product=checkpoint.product_id)
 def _checkpoint_effort(checkpoint: AgentRunCheckpoint):
     """Return the exact frozen effort, or ``None`` for historical runs."""
 
@@ -2469,6 +2553,10 @@ def _prepare_effort_stage_input(
         "blueprint": blueprint.to_dict(),
         "blueprint_sha256": blueprint.sha256,
     }
+    vault, vault_binding = _phase_design_vault(run, checkpoint)
+    context["design_vault"] = vault
+    if vault_binding is not None:
+        base["design_vault"] = vault_binding
 
     if stage == "invent":
         assignment_path, invented_path = _routed_invent_contract_paths(checkpoint)
@@ -2616,6 +2704,9 @@ def _prepare_effort_stage_input(
                     "taste_sha256": assignment.selected_taste_sha256,
                 },
             }
+            common["vault_leads"] = (
+                vault.leads_for_concept(invented.concept) if vault is not None else []
+            )
         feedback_artifact: Optional[AgentArtifact] = None
         prior = checkpoint.stage_artifacts.get("playtest")
         if prior and "playtest" in checkpoint.invalidated_stages:
@@ -2646,6 +2737,7 @@ def _prepare_effort_stage_input(
                 make_proposal_rejection["rejection_sha256"]
             )
         subject = _stage_subject("make", subject_inputs)
+        score_history = _playtest_score_history(run.host_state_root)
         inputs = {
             **common,
             "round": checkpoint.round_index,
@@ -2654,6 +2746,9 @@ def _prepare_effort_stage_input(
                 if feedback_artifact is not None
                 else None
             ),
+            "score_history": score_history,
+            **_score_trend(score_history),
+            "repair_base": _repair_base(run, score_history),
             "host_cad_gate_rejection": cad_gate_rejection,
             "product_root": "artifacts/make/r%04d/product"
             % checkpoint.round_index,
@@ -2742,6 +2837,15 @@ def _prepare_effort_stage_input(
                 "round": checkpoint.round_index,
                 "host_cad_gate_rejection": cad_gate_rejection,
                 "required_check_ids": list(blueprint.required_playtest_checks()),
+                **(
+                    {
+                        "score_dimensions": list(blueprint.score_dimensions()),
+                        "score_floor": blueprint.score_floor(),
+                        "score_minimum_reads": blueprint.score_minimum_reads(),
+                    }
+                    if vault is not None
+                    else {}
+                ),
                 "evidence_root": "artifacts/playtest/r%04d/evidence"
                 % checkpoint.round_index,
                 "contract_path": "artifacts/playtest/r%04d/playtested.json"
@@ -2950,8 +3054,8 @@ def _prepare_stage_input(
             "blueprint": blueprint.to_dict(),
             "blueprint_sha256": blueprint.sha256,
         }
-        vault = _run_design_vault(run, checkpoint)
-        common["design_vault"] = _design_vault_binding(checkpoint, vault)
+        vault, vault_binding = _phase_design_vault(run, checkpoint)
+        common["design_vault"] = vault_binding
         context["design_vault"] = vault
         if stage == "invent":
             prior_invented_paths = checkpoint.stage_artifacts.get("invent")
@@ -3069,7 +3173,6 @@ def _prepare_stage_input(
             common["vault_leads"] = (
                 vault.leads_for_concept(invented.concept) if vault is not None else []
             )
-            common["prior_evidence"] = _prior_evidence(checkpoint, vault, invented)
             common["invented_artifact"] = {
                 **_artifact_binding(invented_artifact),
                 "invented_sha256": invented.invented_sha256,
@@ -4942,7 +5045,7 @@ def _process_agent_outcome_inner(
     )
     _remove_agent_outcome(run.run_root)
     if checkpoint.stage == "playtest":
-        _record_playtest_evidence(checkpoint, context)
+        _record_playtest_evidence(run, checkpoint, context)
     if checkpoint.stage == "release" and updated.stage == "deliver":
         # A frozen historical finalizer proposed ``deliver``. Publication has
         # already passed the new Release gate, so migrate without creating or
@@ -5436,27 +5539,23 @@ def start_native_run(
     ):
         assets = product_run_agent_assets()
         wish_bytes = canonical_wish_bytes(wish)
-        domain_skill_roots = dict(product_run_domain_skill_roots())
+        domain_skill_roots = product_run_domain_skill_roots()
         inventor_source_root = _product_run_inventor_source_root(assets)
         paths = native_run_paths(wish.product_id, create=True)
         try:
-            with tempfile.TemporaryDirectory(prefix="workshop-design-vault-") as staging:
-                domain_skill_roots[RUN_VAULT_SKILL] = _stage_design_vault_skill(
-                    Path(staging), domain_skill_roots[RUN_VAULT_SKILL]
-                )
-                run = AgentRun.create(
-                    paths.workspace,
-                    paths.host_state,
-                    product_id=wish.product_id,
-                    wish_bytes=wish_bytes,
-                    product_run_constitution_source=assets.constitution,
-                    skill_root=assets.skill_root,
-                    domain_skill_roots=domain_skill_roots,
-                    inventor_source_root=inventor_source_root,
-                    max_rounds=4,
-                    effort=(selected_effort.name if selected_effort is not None else None),
-                    manager_id=selected_manager.manager_id,
-                )
+            run = AgentRun.create(
+                paths.workspace,
+                paths.host_state,
+                product_id=wish.product_id,
+                wish_bytes=wish_bytes,
+                product_run_constitution_source=assets.constitution,
+                skill_root=assets.skill_root,
+                domain_skill_roots=domain_skill_roots,
+                inventor_source_root=inventor_source_root,
+                max_rounds=4,
+                effort=(selected_effort.name if selected_effort is not None else None),
+                manager_id=selected_manager.manager_id,
+            )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
             # A partial workspace or host state is deliberately preserved.

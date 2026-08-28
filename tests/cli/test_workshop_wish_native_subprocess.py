@@ -10,10 +10,12 @@ from unittest import mock
 import psutil
 
 from cli.main import main
+from tests.invent.fake_gamevault import install_fake_gamevault
 
 
 class WorkshopWishNativeSubprocessTest(unittest.TestCase):
     def test_wish_launches_native_codex_in_materialized_product_run(self):
+        install_fake_gamevault(self)
         def fixture_session_members(session_identity):
             session_id = session_identity.session_id
             try:

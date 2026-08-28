@@ -12,8 +12,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests.invent.test_vault import FIXTURE, write_vault
-from workshop.invent.vault import Vault, assert_concept_compatible, bundled_vault_root
+from tests.invent.test_vault import COMBO_FIXTURE, FIXTURE, write_vault
+from workshop.invent.vault import Vault, assert_concept_compatible
 from workshop.invent.vault import VaultError
 
 TOOL = (
@@ -42,8 +42,10 @@ class VaultToolParityTest(unittest.TestCase):
         cls.fixture_root = write_vault(cls.temporary.name)
         cls.fixture_packed = Path(cls.temporary.name) / "fixture.json"
         cls.fixture_packed.write_bytes(Vault.from_directory(cls.fixture_root).packed_bytes())
-        cls.seed_packed = Path(cls.temporary.name) / "seed.json"
-        cls.seed_packed.write_bytes(Vault.from_directory(bundled_vault_root()).packed_bytes())
+        cls.combo_packed = Path(cls.temporary.name) / "combos.json"
+        cls.combo_packed.write_bytes(
+            Vault.from_directory(write_vault(Path(cls.temporary.name) / "combos", COMBO_FIXTURE)).packed_bytes()
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -55,8 +57,8 @@ class VaultToolParityTest(unittest.TestCase):
         self.assertEqual(run.sha256, host.sha256)
         return host, run
 
-    def test_seed_queries_agree_for_every_mechanism(self):
-        host, run = self.pair(self.seed_packed)
+    def test_combo_fixture_queries_agree_for_every_mechanism(self):
+        host, run = self.pair(self.combo_packed)
         constraints = list(host.constraints())
         self.assertEqual(run.constraints(), host.constraints())
         for path in host.paths("mechanisms"):
@@ -74,7 +76,7 @@ class VaultToolParityTest(unittest.TestCase):
                 self.assertEqual(run.guidance([path]), host.guidance([path]))
                 concept = {"mechanisms": [path.split("/", 1)[1]]}
                 self.assertEqual(run.leads_for_concept(concept), host.leads_for_concept(concept))
-        node = "mechanisms/hand-management"
+        node = "mechanisms/hand-off"
         self.assertEqual(run.read_node(node), dict(host.read_node(node)) | {"frontmatter": dict(host.read_node(node)["frontmatter"]), "relations": {k: list(v) for k, v in host.read_node(node)["relations"].items()}})
 
     def test_fixture_refusals_agree(self):
@@ -148,7 +150,7 @@ class VaultToolParityTest(unittest.TestCase):
                 self.tool.PackedVault(broken)
         with self.assertRaisesRegex(self.tool.VaultToolError, "cannot read"):
             self.tool.PackedVault.load(Path(self.temporary.name) / "missing.json")
-        self.assertEqual(self.tool.default_vault_path(), TOOL.parent / "vault.json")
+        self.assertEqual(self.tool.default_vault_path(), TOOL.resolve().parents[2] / "VAULT.json")
 
     def run_cli(self, *argv, expected=0):
         completed = subprocess.run(

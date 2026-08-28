@@ -46,6 +46,7 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
         ROOT_MARKER,
         "AGENTS.md",
         "STAGE.json",
+        "VAULT.json",
         "WISH.json",
     )
     workspace_entries = [

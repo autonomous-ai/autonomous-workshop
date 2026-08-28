@@ -64,16 +64,6 @@ class PackageDataTest(unittest.TestCase):
         self.assertIn("two to four small pages", manual_skill)
         self.assertIn("not fixed page-count gates", manual_skill)
 
-    def test_bundled_design_vault_is_owned_by_invent_and_lints_clean(self):
-        from workshop.invent.vault import Vault, bundled_vault_root
-
-        root = bundled_vault_root()
-        self.assertEqual(root.name, "vault")
-        self.assertEqual(root.parent.name, "invent")
-        self.assertTrue((root / "PROVENANCE.md").is_file())
-        errors, _warnings = Vault.from_directory(root).lint()
-        self.assertEqual(errors, [])
-
     def test_every_schema_is_owned_by_its_architecture_component(self):
         expected = {
             name: (
