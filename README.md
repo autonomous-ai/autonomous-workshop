@@ -42,14 +42,6 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
-Verify a checkout:
-
-```bash
-uv run workshop doctor
-PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'
-uv run workshop check inventors
-```
-
 ## Workshop Managers
 
 One Wish is one native coding-agent session — the shop lead. Resume cannot switch Managers.
