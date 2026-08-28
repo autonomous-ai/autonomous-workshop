@@ -35,7 +35,7 @@ uv run workshop wish --manager grok --effort spark \
   "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
 ```
 
-Omit `--manager` to keep Codex. Inventor selection is folded into the first creative stage.
+The command prints a Wish ID. Check on it or continue the same session:
 
 ```bash
 uv run workshop status <wish-id>
