@@ -27,6 +27,17 @@ SCHEMA_OWNERS = {
 
 
 class PackageDataTest(unittest.TestCase):
+    def test_bundled_inventory_matches_every_source_inventor(self):
+        source_ids = tuple(
+            sorted(
+                path.name
+                for path in (REPOSITORY / "inventors").iterdir()
+                if path.is_dir()
+            )
+        )
+
+        self.assertEqual(BUNDLED_INVENTOR_IDS, source_ids)
+
     def test_product_run_domain_skills_resolve_from_owning_components(self):
         roots = product_run_domain_skill_roots()
 
