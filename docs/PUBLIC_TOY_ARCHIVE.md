@@ -53,6 +53,8 @@ host-owned authenticated effect, not agent-authored Release evidence.
 - Exact Made and Release bytes are rehashed before projection.
 - Historical Make and Playtest rounds contribute sanitized, content-addressed
   outcomes to `ATTEMPTS.json`; superseded working-directory caches do not.
+  The snapshot `README.md` summarizes those public attempt counts as a
+  workflow overview.
 - The exact Wish is withheld by default. Publishing its text requires the
   caller to opt in explicitly; either form retains the exact Wish hash.
 - Agent prompts, transcripts, reasoning, session data, host state,

@@ -4,6 +4,22 @@ A portable, all-printed tabletop dexterity game for one or two players: pulse tw
 
 [View the verified public product page](https://www.autonomous.ai/factory/product/comet-heist-twin-pulse-vault-run)
 
+## Workflow
+
+Quest: `Wish -> Invent -> Make -> Playtest -> Release`. Inventor selection is folded into Invent.
+
+| Stage | Attempts | Outcome |
+|---|---|---|
+| Wish | host | frozen |
+| Match | 1 | accepted (Leo) |
+| Invent | 1 | accepted |
+| Make | 2 | round 1 superseded; round 2 accepted |
+| Playtest | 2 | round 1 revision-requested (printability-check); round 2 accepted |
+| Release | 1 | round 2 accepted |
+| Publication | host | public |
+
+Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no turn, artifact, or gate. Private host rejections and native session resumes are not public.
+
 ## Snapshot contents
 
 - `wish/` — sanitized Wish binding (exact text only with explicit consent).

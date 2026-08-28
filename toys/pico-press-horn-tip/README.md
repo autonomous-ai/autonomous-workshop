@@ -17,6 +17,22 @@ was not run; Release records that omission explicitly.
 | Inventor | Pico Press |
 | Factory | https://www.autonomous.ai/factory/product/horn-tip |
 
+## Workflow
+
+Spark: `Wish -> Make -> Release`. Inventor selection is folded into Make.
+
+| Stage | Attempts | Outcome |
+|---|---|---|
+| Wish | host | frozen |
+| Match | 1 | accepted (Pico Press) |
+| Invent | skipped | Spark pass-through |
+| Make | 1 | accepted |
+| Playtest | not run | Spark omission |
+| Release | 1 | accepted |
+| Publication | host | public |
+
+Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no turn, artifact, or gate. Private host rejections and native session resumes are not public.
+
 ## Reproduce
 
 Install Grok Build TUI `grok` 1.0.5 or newer, sign in, and run the same

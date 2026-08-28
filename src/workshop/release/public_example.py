@@ -297,6 +297,141 @@ def _trees_are_identical(left: Path, right: Path) -> bool:
     return True
 
 
+def _read_json_object(path: Path) -> Optional[dict[str, Any]]:
+    if not path.is_file() or path.is_symlink():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _attempt_count_and_outcome(payload: Mapping[str, Any]) -> tuple[str, str]:
+    attempts = payload.get("attempts")
+    if not isinstance(attempts, list) or not attempts:
+        return "0", "missing"
+    summaries: list[str] = []
+    for item in attempts:
+        if not isinstance(item, Mapping):
+            continue
+        outcome = item.get("outcome")
+        if not isinstance(outcome, str) or not outcome:
+            continue
+        failed = item.get("failed_checks")
+        if isinstance(failed, list) and failed:
+            names = ", ".join(
+                str(check) for check in failed if isinstance(check, str) and check
+            )
+            if names:
+                outcome = "%s (%s)" % (outcome, names)
+        round_number = item.get("round")
+        if len(attempts) > 1 or (isinstance(round_number, int) and round_number != 1):
+            summaries.append("round %s %s" % (round_number, outcome))
+        else:
+            summaries.append(outcome)
+    if not summaries:
+        return "0", "missing"
+    return str(len(summaries)), "; ".join(summaries)
+
+
+def _display_inventor_id(value: Any) -> Optional[str]:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return " ".join(part.capitalize() for part in value.split("-") if part)
+
+
+def _workflow_overview_markdown(staging: Path) -> str:
+    """Summarize public ATTEMPTS.json counts for the snapshot README."""
+
+    explicit_invent = (staging / "invent").is_dir()
+    explicit_playtest = (staging / "playtest").is_dir()
+    if explicit_playtest:
+        effort = "Quest"
+        route = "Wish -> Invent -> Make -> Playtest -> Release"
+        first_creative = "Invent"
+        omitted = "Quest"
+    elif explicit_invent:
+        effort = "Forge"
+        route = "Wish -> Invent -> Make -> Release"
+        first_creative = "Invent"
+        omitted = "Forge"
+    else:
+        effort = "Spark"
+        route = "Wish -> Make -> Release"
+        first_creative = "Make"
+        omitted = "Spark"
+
+    match_payload = _read_json_object(staging / "match" / "ATTEMPTS.json")
+    invent_payload = _read_json_object(staging / "invent" / "ATTEMPTS.json")
+    make_payload = _read_json_object(staging / "make" / "ATTEMPTS.json")
+    playtest_payload = _read_json_object(staging / "playtest" / "ATTEMPTS.json")
+    release_payload = _read_json_object(staging / "release" / "ATTEMPTS.json")
+    assignment = _read_json_object(staging / "match" / "assignment.json")
+    publication = _read_json_object(staging / "publication" / "PUBLICATION.json")
+    inventor = _display_inventor_id(
+        None if assignment is None else assignment.get("selected_inventor_id")
+    )
+    match_count, match_outcome = (
+        ("1", "accepted") if match_payload is None else _attempt_count_and_outcome(match_payload)
+    )
+    if inventor is not None and "accepted" in match_outcome:
+        match_outcome = "%s (%s)" % (match_outcome, inventor)
+    make_count, make_outcome = (
+        ("1", "accepted") if make_payload is None else _attempt_count_and_outcome(make_payload)
+    )
+    release_count, release_outcome = (
+        ("1", "accepted")
+        if release_payload is None
+        else _attempt_count_and_outcome(release_payload)
+    )
+    if explicit_invent:
+        invent_count, invent_outcome = (
+            ("1", "accepted")
+            if invent_payload is None
+            else _attempt_count_and_outcome(invent_payload)
+        )
+    else:
+        invent_count, invent_outcome = "skipped", "%s pass-through" % omitted
+    if explicit_playtest:
+        playtest_count, playtest_outcome = (
+            ("1", "accepted")
+            if playtest_payload is None
+            else _attempt_count_and_outcome(playtest_payload)
+        )
+    else:
+        playtest_count, playtest_outcome = "not run", "%s omission" % omitted
+    publication_status = "public"
+    if publication is not None:
+        nested = publication.get("publication")
+        status = nested.get("status") if isinstance(nested, Mapping) else None
+        if isinstance(status, str) and status:
+            publication_status = status
+
+    rows = (
+        ("Wish", "host", "frozen"),
+        ("Match", match_count, match_outcome),
+        ("Invent", invent_count, invent_outcome),
+        ("Make", make_count, make_outcome),
+        ("Playtest", playtest_count, playtest_outcome),
+        ("Release", release_count, release_outcome),
+        ("Publication", "host", publication_status),
+    )
+    table = "\n".join(
+        ["| Stage | Attempts | Outcome |", "|---|---|---|"]
+        + ["| %s | %s | %s |" % row for row in rows]
+    )
+    return (
+        "## Workflow\n\n"
+        "%s: `%s`. Inventor selection is folded into %s.\n\n"
+        "%s\n\n"
+        "Counts come from each stage's public `ATTEMPTS.json`. Skipped stages "
+        "created no turn, artifact, or gate. Private host rejections and native "
+        "session resumes are not public.\n"
+        % (effort, route, first_creative, table)
+    )
+
+
 def _copy_model(
     *,
     product_root: Path,
@@ -589,6 +724,7 @@ def materialize_public_example(
         readme = (
             "# %s\n\n%s\n\n"
             "[View the verified public product page](%s)\n\n"
+            "%s\n"
             "## Snapshot contents\n\n"
             "- `wish/` — sanitized Wish binding (exact text only with explicit consent).\n"
             "- `match/` — accepted Match assignment.\n"
@@ -606,6 +742,7 @@ def materialize_public_example(
             heading,
             summary,
             page_url,
+            _workflow_overview_markdown(staging),
             (
                 "- `invent/` — accepted Invent contract.\n"
                 if (staging / "invent").is_dir()

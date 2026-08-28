@@ -15,6 +15,8 @@ deliberately small sanitized projection here under
 `<inventor>-<product-slug>/`.
 [`pico-press-horn-tip/`](pico-press-horn-tip/) is a Spark example produced by
 `--manager grok`; its README has the exact CLI used to create it.
+Workflow-shaped snapshots include a README table of public stage attempts
+from each `ATTEMPTS.json`.
 
 A public snapshot contains only:
 

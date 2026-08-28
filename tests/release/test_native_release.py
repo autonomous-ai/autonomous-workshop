@@ -1518,10 +1518,14 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertFalse((target / "invent").exists())
         self.assertTrue((target / "match/assignment.json").is_file())
         self.assertTrue((target / "make/invented.json").is_file())
-        self.assertIn(
-            "Invent was skipped",
-            (target / "README.md").read_text(encoding="utf-8"),
-        )
+        readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn("Invent was skipped", readme)
+        self.assertIn("Spark: `Wish -> Make -> Release`", readme)
+        self.assertIn("| Match | 1 | accepted (Eve) |", readme)
+        self.assertIn("| Invent | skipped | Spark pass-through |", readme)
+        self.assertIn("| Make | 1 | accepted |", readme)
+        self.assertIn("| Playtest | not run | Spark omission |", readme)
+        self.assertIn("| Release | 1 | accepted |", readme)
 
     def test_public_archive_summarizes_superseded_make_and_playtest_rounds(self):
         first_check = self.playtested.checks[0]
@@ -1637,6 +1641,18 @@ class NativeReleaseTest(unittest.TestCase):
             playtest_attempts[0]["failed_checks"],
             [first_check.check_id],
         )
+        readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "Quest: `Wish -> Invent -> Make -> Playtest -> Release`",
+            readme,
+        )
+        self.assertIn("| Make | 2 | round 1 superseded; round 2 accepted |", readme)
+        self.assertIn(
+            "| Playtest | 2 | round 1 revision-requested (%s); round 2 accepted |"
+            % first_check.check_id,
+            readme,
+        )
+        self.assertIn("| Release | 1 | round 2 accepted |", readme)
 
 
 if __name__ == "__main__":
