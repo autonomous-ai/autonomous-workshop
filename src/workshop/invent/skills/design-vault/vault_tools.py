@@ -114,7 +114,7 @@ class PackedVault:
             folder = path.split("/", 1)[0]
             for alias in node["frontmatter"].get("aliases") or []:
                 if isinstance(alias, str) and slugify(alias):
-                    self._aliases.setdefault((folder, slugify(alias)), path)
+                    self._aliases.setdefault((folder, slugify(alias).replace("-", "")), path)
         for key in self._reverse:
             self._reverse[key] = sorted(self._reverse[key])
 
@@ -194,7 +194,7 @@ class PackedVault:
         candidate = "%s/%s" % (folder, slug)
         if candidate in self.nodes:
             return candidate
-        alias = self._aliases.get((folder, slug))
+        alias = self._aliases.get((folder, slug.replace("-", "")))
         if alias is not None:
             return alias
         tails = [path.split("/", 1)[1] for path in self.paths(folder)]

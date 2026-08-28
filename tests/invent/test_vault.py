@@ -230,6 +230,7 @@ class VaultGraphTest(unittest.TestCase):
         self.assertEqual(self.vault.resolve("Hand Off"), "mechanisms/hand-off")
         self.assertEqual(self.vault.resolve("pass the baton"), "mechanisms/hand-off")
         self.assertEqual(self.vault.resolve("baton pass"), "mechanisms/hand-off")
+        self.assertEqual(self.vault.resolve("batonpass"), "mechanisms/hand-off")
         self.assertEqual(self.vault.resolve("single-tokens"), "mechanisms/single-token")
         self.assertIsNone(self.vault.resolve("rotating drum"))
         self.assertIsNone(self.vault.resolve("   "))

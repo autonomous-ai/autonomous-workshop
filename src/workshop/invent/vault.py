@@ -322,7 +322,8 @@ class Vault:
             if isinstance(declared, (list, tuple)):
                 for alias in declared:
                     if isinstance(alias, str) and slugify(alias):
-                        aliases.setdefault((folder, slugify(alias)), path)
+                        # Keyed modulo hyphens so "deckbuilding" finds "deck-building".
+                        aliases.setdefault((folder, slugify(alias).replace("-", "")), path)
         object.__setattr__(self, "nodes", MappingProxyType(nodes))
         object.__setattr__(
             self,
@@ -497,7 +498,7 @@ class Vault:
         candidate = "%s/%s" % (folder, slug)
         if candidate in self.nodes:
             return candidate
-        alias = self._aliases.get((folder, slug))
+        alias = self._aliases.get((folder, slug.replace("-", "")))
         if alias is not None:
             return alias
         tails = [path.split("/", 1)[1] for path in self.paths(folder)]
