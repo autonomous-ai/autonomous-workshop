@@ -12,7 +12,7 @@ codex login
 uv run workshop doctor
 ```
 
-A default Wish uses Codex as the Workshop Manager and ✨ Spark as the effort (`Wish -> Make -> Release`). No extra flags:
+A default Wish uses Codex as the Workshop Manager and ✨ Spark as the effort (`Wish -> Make -> Release`):
 
 ```bash
 uv run workshop wish \
