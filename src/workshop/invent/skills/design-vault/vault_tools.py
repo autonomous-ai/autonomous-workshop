@@ -373,10 +373,21 @@ def assert_concept_compatible(vault: PackedVault, concept: Mapping[str, Any]) ->
     return {"mechanisms": resolved, "novel": novel, "leads": leads}
 
 
-def default_vault_path() -> Path:
-    """The host-written phase snapshot at the product run's root."""
+RUN_ROOT_MARKER = ".workshop-product-run-root"
 
-    return Path(__file__).resolve().parents[2] / "VAULT.json"
+
+def default_vault_path() -> Path:
+    """The host-written phase snapshot at the product run's root.
+
+    The skill is materialized under ``<run>/.agents/skills/design-vault``; the
+    run root is the nearest ancestor carrying the host's marker file. Outside a
+    product run the current directory stands in for it.
+    """
+
+    for candidate in Path(__file__).resolve().parents:
+        if (candidate / RUN_ROOT_MARKER).is_file():
+            return candidate / "VAULT.json"
+    return Path.cwd() / "VAULT.json"
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

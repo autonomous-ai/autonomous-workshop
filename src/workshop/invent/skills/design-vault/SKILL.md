@@ -49,3 +49,7 @@ Rules:
   what you dismissed in the vault for every later run.
 - Never edit `VAULT.json` or this skill; the host owns them. Propose vault
   changes in your stage outcome instead.
+- Never print or search `VAULT.json` directly (`cat`, `sed`, `head`, `rg`):
+  it is one packed line of about a megabyte, so the output only floods your
+  context and is dropped from the host's event stream. Query it through
+  `vault_tools.py` only.

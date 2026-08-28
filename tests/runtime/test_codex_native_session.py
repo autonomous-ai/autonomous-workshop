@@ -2548,26 +2548,43 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             self.assertEqual(outcome.status, "completed")
 
+    def test_oversized_event_records_are_discarded_and_the_turn_continues(self):
+        oversized = event(
+            {
+                "type": "item.updated",
+                "item": {
+                    "id": "oversized-event",
+                    "type": "reasoning",
+                    "text": "x" * (3 * MAX_CODEX_EVENT_BYTES),
+                },
+            }
+        )
+        self.assertGreater(len(oversized.encode("utf-8")), MAX_CODEX_EVENT_BYTES)
+        for stdout in (
+            [
+                event({"type": "thread.started", "thread_id": THREAD_ID}),
+                oversized,
+                event({"type": "turn.completed", "usage": {}}),
+            ],
+            [
+                oversized,
+                event({"type": "thread.started", "thread_id": THREAD_ID}),
+                event({"type": "turn.completed", "usage": {}}),
+                oversized.rstrip("\n"),
+            ],
+        ):
+            with self.subTest(position=stdout.index(oversized)), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, unused_factory = self.launcher([{"stdout": stdout}])
+
+                outcome = self.start(launcher, root)
+
+                self.assertEqual(outcome.status, "completed")
+
     def test_bounds_timeout_and_failures_are_terminated_and_redacted(self):
         secret = "FACTORY_PASSWORD=never-show-this"
         cases = (
-            (
-                {
-                    "stdout": [
-                        event(
-                            {
-                                "type": "item.updated",
-                                "item": {
-                                    "id": "oversized-event",
-                                    "type": "reasoning",
-                                    "text": "x" * MAX_CODEX_EVENT_BYTES,
-                                },
-                            }
-                        )
-                    ]
-                },
-                "event stream",
-            ),
             (
                 {
                     "stdout": self.start_events(),

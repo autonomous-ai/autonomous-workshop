@@ -150,7 +150,40 @@ class VaultToolParityTest(unittest.TestCase):
                 self.tool.PackedVault(broken)
         with self.assertRaisesRegex(self.tool.VaultToolError, "cannot read"):
             self.tool.PackedVault.load(Path(self.temporary.name) / "missing.json")
-        self.assertEqual(self.tool.default_vault_path(), TOOL.resolve().parents[2] / "VAULT.json")
+        self.assertEqual(self.tool.default_vault_path(), Path.cwd() / "VAULT.json")
+
+    def test_default_vault_path_is_the_marked_run_root(self):
+        run = Path(self.temporary.name) / "run"
+        skill = run / ".agents" / "skills" / "design-vault"
+        skill.mkdir(parents=True)
+        (skill / "vault_tools.py").write_bytes(TOOL.read_bytes())
+        (run / self.tool.RUN_ROOT_MARKER).write_text("marker\n")
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                "-B",
+                str(skill / "vault_tools.py"),
+                "resolve",
+                "hand-off",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=self.temporary.name,
+        )
+        self.assertEqual(completed.returncode, 2, completed.stderr)
+        self.assertIn(str(run / "VAULT.json"), completed.stderr)
+        (run / "VAULT.json").write_bytes(self.fixture_packed.read_bytes())
+        completed = subprocess.run(
+            [sys.executable, "-I", "-B", str(skill / "vault_tools.py"), "resolve", "hand-off"],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=self.temporary.name,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(json.loads(completed.stdout)["node"], "mechanisms/hand-off")
 
     def run_cli(self, *argv, expected=0):
         completed = subprocess.run(
