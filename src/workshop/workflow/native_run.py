@@ -75,7 +75,12 @@ from workshop.match.native import (
     InventorRosterEntry,
 )
 from workshop.playtest.native import NativePlaytested
-from workshop.playtest.vault_evidence import build_rows, gamevault_dismissals, gamevault_rows
+from workshop.playtest.vault_evidence import (
+    build_rows,
+    gamevault_design,
+    gamevault_dismissals,
+    gamevault_rows,
+)
 from workshop.product import ToyBlueprint
 from workshop.product.blueprints import SCORE_AMBIGUOUS_SPREAD
 from workshop.release.contracts import ProductRelease, ReleaseContext
@@ -1555,8 +1560,9 @@ def _pending_vault_writes_directory(run: AgentRun, *, create: bool) -> Path:
 
 def _send_vault_writes(client: GameVaultClient, payload: Mapping[str, Any]) -> None:
     label = payload["label"]
-    if payload["rows"]:
-        client.post_evidence(payload["rows"], label=label)
+    design = payload.get("design")
+    if payload["rows"] or design is not None:
+        client.post_evidence(payload["rows"], label=label, design=design)
     if payload["dismissals"]:
         client.post_review(payload["dismissals"], label=label)
 
@@ -1797,7 +1803,7 @@ def _record_playtest_evidence(
                         "why": answer.get("why", ""),
                     }
                 )
-    payload = {
+    payload: dict[str, Any] = {
         "label": "workshop %s r%d" % (checkpoint.product_id, checkpoint.round_index),
         "rows": rows,
         "dismissals": gamevault_dismissals(
@@ -1806,8 +1812,23 @@ def _record_playtest_evidence(
             round_index=checkpoint.round_index,
         ),
     }
-    report = {"rows": len(payload["rows"]), "dismissals": len(payload["dismissals"])}
-    if not payload["rows"] and not payload["dismissals"]:
+    concept = sealed.get("concept")
+    if isinstance(concept, Mapping):
+        payload["design"] = gamevault_design(
+            checkpoint.product_id,
+            checkpoint.round_index,
+            concept=concept,
+            mechanisms=sealed["mechanisms"],
+            verdict=str(sealed.get("verdict", "")),
+            scores=sealed.get("scores"),
+            rows=rows,
+        )
+    report = {
+        "rows": len(payload["rows"]),
+        "dismissals": len(payload["dismissals"]),
+        "design": "design" in payload,
+    }
+    if not payload["rows"] and not payload["dismissals"] and "design" not in payload:
         return {**report, "sent": True}
     try:
         _send_vault_writes(_gamevault_client(), payload)
@@ -4026,6 +4047,9 @@ def _evaluate_playtest_stage(
         "playtested": playtested,
         "leads": leads,
         "mechanisms": mechanisms,
+        "concept": context["invented"].concept,
+        "verdict": playtested.verdict,
+        "scores": None,
     }
     scores: dict[str, Any] = {"score_reads": None, "score_median": None, "score_spread": None}
     if vault is not None:
@@ -4039,6 +4063,7 @@ def _evaluate_playtest_stage(
             "score_median": summary["median"],
             "score_spread": summary["spread"],
         }
+        context["sealed_playtest"]["scores"] = summary["median"]
     passed = playtested.verdict == "pass"
     transition = playtested.proposed_transition
     if proposal.outcome.proposed_transition != transition:

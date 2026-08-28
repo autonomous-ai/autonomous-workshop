@@ -23,6 +23,23 @@ from typing import Any, Mapping, Optional, Sequence
 VAULT_KIND = "autonomous-workshop.design-vault"
 VAULT_SCHEMA_VERSION = 1
 DEFAULT_RESOLVE_CUTOFF = 0.75
+
+_STOP_TOKENS = frozenset({"a", "an", "and", "of", "the", "game", "games"})
+
+
+def close_in_meaning(query: str, hit: str) -> bool:
+    """Whether a difflib hit is close enough in meaning to stand for ``query``.
+
+    A close string is not a close meaning: ``tile-laying`` scores 0.78 against
+    ``role-playing``.  Below 0.9 the hit must share a whole word with the query;
+    spelling variants (``deckbuilding`` / ``deck-building``, 0.96) pass on ratio.
+    """
+
+    if difflib.SequenceMatcher(None, query, hit).ratio() >= 0.9:
+        return True
+    words = set(query.split("-")) - _STOP_TOKENS
+    return bool(words & (set(hit.split("-")) - _STOP_TOKENS))
+
 LEAD_ID_HEX = 16
 MAX_NOVEL_MECHANISMS = 16
 NOVEL_DEFINITION_MIN = 20
@@ -182,7 +199,9 @@ class PackedVault:
             return alias
         tails = [path.split("/", 1)[1] for path in self.paths(folder)]
         match = difflib.get_close_matches(slug, tails, n=1, cutoff=cutoff)
-        return "%s/%s" % (folder, match[0]) if match else None
+        if not match or not close_in_meaning(slug, match[0]):
+            return None
+        return "%s/%s" % (folder, match[0])
 
     def check_compatibility(self, paths: Sequence[str]) -> list[dict[str, Any]]:
         members = [normalize_path(path) for path in paths]

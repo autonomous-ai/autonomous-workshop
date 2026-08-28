@@ -53,6 +53,37 @@ def playtested_document(*, confirm=True, extra_feedback=()):
 
 
 class BuildRowsTest(unittest.TestCase):
+    def test_design_page_request_from_the_sealed_round(self):
+        from workshop.playtest.vault_evidence import gamevault_design, gamevault_rows
+
+        rows = gamevault_rows(build_rows("wish-a", 2, playtested_document(), [LEAD, LEAD_B], ["mechanisms/hand-off"]))
+        design = gamevault_design(
+            "wish-a",
+            2,
+            concept={"title": "  River &  Grid ", "summary": "Chess on a keyed board.", "mechanisms": ["hand off"]},
+            mechanisms=["mechanisms/hand-off", "mechanisms/hand-off"],
+            verdict="pass",
+            scores={"play": 8.0, "wish_fit": 9, "bad": "x", "flag": True},
+            rows=rows,
+        )
+        self.assertEqual(
+            design,
+            {
+                "slug": "wish-a",
+                "name": "River & Grid",
+                "summary": "Chess on a keyed board.",
+                "mechanisms": ["mechanisms/hand-off"],
+                "exhibits": ["anti-patterns/idle-player"],
+                "round": 2,
+                "verdict": "pass",
+                "scores": {"play": 8.0, "wish_fit": 9},
+                "lessons": ["One seat idles."],
+            },
+        )
+        bare = gamevault_design("wish-b", 1, concept={}, mechanisms=[], verdict="block", scores=None, rows=[])
+        self.assertEqual(bare["name"], "wish-b")
+        self.assertEqual((bare["summary"], bare["exhibits"], bare["scores"], bare["lessons"]), ("", [], {}, []))
+
     def test_weights_symptoms_and_refs(self):
         rows = build_rows("wish-a", 2, playtested_document(), [LEAD, LEAD_B], ["mechanisms/hand-off", "", "mechanisms/hand-off"])
         self.assertEqual([row["ref"] for row in rows], ["wish-a#r2:idle-seat", "wish-a#r2:loose-fit", "wish-a#r2:no-refs"])

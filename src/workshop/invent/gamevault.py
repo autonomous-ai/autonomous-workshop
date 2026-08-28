@@ -247,12 +247,24 @@ class GameVaultClient:
 
     # ---- writes -------------------------------------------------------
 
-    def post_evidence(self, rows: Sequence[Mapping[str, Any]], *, label: str) -> Mapping[str, Any]:
+    def post_evidence(
+        self,
+        rows: Sequence[Mapping[str, Any]],
+        *,
+        label: str,
+        design: Optional[Mapping[str, Any]] = None,
+    ) -> Mapping[str, Any]:
+        """Bank confirmed rows and, when given, the product's own game page."""
+
+        body: dict[str, Any] = {"label": label}
+        if rows or design is None:
+            body["rows"] = _write_items(rows, "evidence rows")
+        if design is not None:
+            if not isinstance(design, Mapping) or not design.get("slug"):
+                raise ContractError("design must name the product slug")
+            body["design"] = dict(design)
         return self._request(
-            "POST",
-            _EVIDENCE_PATH,
-            body={"label": label, "rows": _write_items(rows, "evidence rows")},
-            timeout=WRITE_TIMEOUT_SECONDS,
+            "POST", _EVIDENCE_PATH, body=body, timeout=WRITE_TIMEOUT_SECONDS
         )
 
     def post_review(

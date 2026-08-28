@@ -235,6 +235,22 @@ class VaultGraphTest(unittest.TestCase):
         self.assertIsNone(self.vault.resolve("   "))
         self.assertEqual(self.vault.resolve("fdm only", folder="constraints"), "constraints/fdm-only")
 
+    def test_resolve_refuses_a_close_string_with_a_different_meaning(self):
+        nodes = {
+            "mechanisms/role-playing": node("mechanism", "Role Playing"),
+            "mechanisms/tile-placement": node("mechanism", "Tile Placement"),
+            "mechanisms/deck-building": node("mechanism", "Deck Building"),
+        }
+        vault = Vault.from_directory(write_vault(tempfile.mkdtemp(dir=self.temporary.name), nodes))
+        self.assertIsNone(vault.resolve("tile laying"))
+        self.assertEqual(vault.resolve("deckbuilding"), "mechanisms/deck-building")
+        self.assertEqual(vault.resolve("tile placements"), "mechanisms/tile-placement")
+        nodes["mechanisms/tile-placement"] = node(
+            "mechanism", "Tile Placement", extra="aliases: [tile-laying]"
+        )
+        vault = Vault.from_directory(write_vault(tempfile.mkdtemp(dir=self.temporary.name), nodes))
+        self.assertEqual(vault.resolve("tile laying"), "mechanisms/tile-placement")
+
     def test_check_compatibility_reports_every_kind_sorted(self):
         findings = self.vault.check_compatibility(
             ["mechanisms/hand-off", "mechanisms/card-hand", "constraints/fdm-only"]

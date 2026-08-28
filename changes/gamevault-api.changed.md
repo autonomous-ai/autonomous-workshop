@@ -13,3 +13,9 @@
   Combos, `member`, and `exhibits` links are understood. `workshop vault seed`,
   `workshop vault review`, `workshop evidence`, and the local evidence ledger
   are gone; `workshop vault lint|check` read the API or `--root`.
+- Every sealed Playtest also posts the product's own `games/<wish-id>` page
+  (`design` on `/api/gamevault/evidence`: `uses` mechanisms, `exhibits`
+  confirmed anti-patterns, verdict, median scores, lessons), so the vault
+  gains one game per wish. Fuzzy `resolve` now refuses a string-similar hit
+  that shares no word with the query (`tile laying` no longer resolves to
+  `role-playing`; the vault carries `tile-laying` as an alias instead).

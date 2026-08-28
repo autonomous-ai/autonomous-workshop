@@ -901,6 +901,9 @@ class NativeHostTest(unittest.TestCase):
                     "playtested": SimpleNamespace(to_dict=playtested_document),
                     "leads": [LEAD, LEAD_B],
                     "mechanisms": ["mechanisms/hand-off"],
+                    "concept": {"title": "River & Grid", "summary": "Chess on a keyed board."},
+                    "verdict": "block",
+                    "scores": {"play": 7.0},
                 }
             }
             transport = FakeGameVaultTransport()
@@ -910,21 +913,36 @@ class NativeHostTest(unittest.TestCase):
             ):
                 self.assertEqual(
                     _record_playtest_evidence(run, checkpoint, context),
-                    {"rows": 1, "dismissals": 1, "sent": True},
+                    {"rows": 1, "dismissals": 1, "design": True, "sent": True},
                 )
                 self.assertEqual(transport.evidence[0]["rows"][0]["id"], "r0001-idle-seat")
+                design = transport.evidence[0]["design"]
+                self.assertEqual(
+                    (design["slug"], design["name"], design["mechanisms"], design["exhibits"], design["verdict"], design["scores"]),
+                    ("wish-a", "River & Grid", ["mechanisms/hand-off"], ["anti-patterns/idle-player"], "block", {"play": 7.0}),
+                )
                 self.assertEqual(transport.review[0]["dismissals"][0]["symptom"], "anti-patterns/turtling")
                 transport.fail = True
                 self.assertEqual(
                     _record_playtest_evidence(run, checkpoint, context),
-                    {"rows": 1, "dismissals": 1, "sent": False},
+                    {"rows": 1, "dismissals": 1, "design": True, "sent": False},
                 )
                 queued = run.host_state_root / "vault" / "pending" / ("d" * 64 + ".json")
                 self.assertEqual(stat.S_IMODE(queued.stat().st_mode), 0o600)
                 self.assertEqual(json.loads(queued.read_text())["label"], "workshop wish-a r1")
+                self.assertEqual(json.loads(queued.read_text())["design"]["slug"], "wish-a")
+                transport.fail = False
+                # A page with nothing confirmed still lands: the vault gains the game itself.
+                quiet = {"sealed_playtest": {"playtested": SimpleNamespace(to_dict=lambda: {"checks": [], "feedback": []}), "leads": [], "mechanisms": [], "concept": {"title": "Quiet"}, "verdict": "pass", "scores": None}}
+                self.assertEqual(
+                    _record_playtest_evidence(run, checkpoint, quiet),
+                    {"rows": 0, "dismissals": 0, "design": True, "sent": True},
+                )
+                self.assertNotIn("rows", transport.evidence[-1])
+                self.assertEqual(transport.evidence[-1]["design"]["name"], "Quiet")
                 self.assertEqual(
                     _record_playtest_evidence(run, checkpoint, {"sealed_playtest": {"playtested": SimpleNamespace(to_dict=lambda: {"checks": [], "feedback": []}), "leads": [], "mechanisms": []}}),
-                    {"rows": 0, "dismissals": 0, "sent": True},
+                    {"rows": 0, "dismissals": 0, "design": False, "sent": True},
                 )
 
     def test_score_history_reads_only_host_gate_receipts(self):
