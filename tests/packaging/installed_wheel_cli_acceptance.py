@@ -144,7 +144,6 @@ def _build_wheel(repository: Path, root: Path) -> Path:
             "-m",
             "pip",
             "wheel",
-            "--no-build-isolation",
             "--no-deps",
             "--wheel-dir",
             wheelhouse,
