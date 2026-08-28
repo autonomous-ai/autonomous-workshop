@@ -2,6 +2,8 @@ import re
 import unittest
 from pathlib import Path
 
+from PIL import Image
+
 
 REPOSITORY = Path(__file__).resolve().parents[2]
 README = REPOSITORY / "README.md"
@@ -29,6 +31,13 @@ class ReadmeToyGridTest(unittest.TestCase):
             self.assertEqual(width, "100%")
             path = REPOSITORY / relative
             self.assertTrue(path.is_file(), "%s is missing" % relative)
+            with Image.open(path) as asset:
+                pixel_width, pixel_height = asset.size
+            self.assertEqual(
+                pixel_width * 127,
+                pixel_height * 220,
+                "%s does not match the 220:127 GIF aspect ratio" % relative,
+            )
             if path.suffix.lower() == ".gif":
                 gifs += 1
         self.assertGreaterEqual(gifs, 2)
