@@ -1,0 +1,61 @@
+# Verification pipeline record
+
+- Recorded: 2026-08-28T09:34:37+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 167.33 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' artifacts/make/r0001/product/cad` | rc=0 | 0.10 |
+| 2 | `delete cache <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/__cadgen__` | rc=0 | 0.03 |
+| 3 | `design_refs verify  # NOT RUN: no ref/external directory; no fetched design reference is declared` | skipped | 0.00 |
+| 4 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' artifacts/make/r0001/product/cad/saigon_chess.step.py artifacts/make/r0001/product/cad/part_board.step.py artifacts/make/r0001/product/cad/part_grid_bishop.step.py artifacts/make/r0001/product/cad/part_grid_king.step.py artifacts/make/r0001/product/cad/part_grid_knight.step.py artifacts/make/r0001/product/cad/part_grid_pawn.step.py artifacts/make/r0001/product/cad/part_grid_queen.step.py artifacts/make/r0001/product/cad/part_grid_rook.step.py artifacts/make/r0001/product/cad/part_river_bishop.step.py artifacts/make/r0001/product/cad/part_river_king.step.py artifacts/make/r0001/product/cad/part_river_knight.step.py artifacts/make/r0001/product/cad/part_river_pawn.step.py artifacts/make/r0001/product/cad/part_river_queen.step.py artifacts/make/r0001/product/cad/part_river_rook.step.py --write --json` | rc=0 | 16.95 |
+| 5 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' artifacts/make/r0001/product/cad --bed 220.0 220.0 --entry artifacts/make/r0001/product/cad/part_board.step.py --entry artifacts/make/r0001/product/cad/part_grid_bishop.step.py --entry artifacts/make/r0001/product/cad/part_grid_king.step.py --entry artifacts/make/r0001/product/cad/part_grid_knight.step.py --entry artifacts/make/r0001/product/cad/part_grid_pawn.step.py --entry artifacts/make/r0001/product/cad/part_grid_queen.step.py --entry artifacts/make/r0001/product/cad/part_grid_rook.step.py --entry artifacts/make/r0001/product/cad/part_river_bishop.step.py --entry artifacts/make/r0001/product/cad/part_river_king.step.py --entry artifacts/make/r0001/product/cad/part_river_knight.step.py --entry artifacts/make/r0001/product/cad/part_river_pawn.step.py --entry artifacts/make/r0001/product/cad/part_river_queen.step.py --entry artifacts/make/r0001/product/cad/part_river_rook.step.py --strict` | rc=0 | 9.90 |
+| 6 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 artifacts/make/r0001/product/cad/measure/check_fit.py` | rc=0 | 8.25 |
+| 7 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 artifacts/make/r0001/product/cad/measure/check_spec.py` | rc=0 | 12.41 |
+| 8 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 9 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 10 | `check_motion  # NOT RUN: no documented mating/assembly action and no moving joint is declared` | skipped | 0.00 |
+| 11 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (29 JSONL requests)` | rc=0 | 38.26 |
+| 12 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/saigon_chess.step --glb --json` | rc=0 | 2.71 |
+| 13 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_board.step --stl --json` | rc=0 | 1.86 |
+| 14 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_board.stl --bed 220x220x220` | rc=0 | 0.74 |
+| 15 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_board.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-board.md` | rc=0 | 5.73 |
+| 16 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_grid_bishop.step --stl --json` | rc=0 | 1.75 |
+| 17 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_grid_bishop.stl --bed 220x220x220` | rc=0 | 0.76 |
+| 18 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_grid_bishop.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-grid_bishop.md` | rc=0 | 3.35 |
+| 19 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_grid_king.step --stl --json` | rc=0 | 1.96 |
+| 20 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_grid_king.stl --bed 220x220x220` | rc=0 | 0.78 |
+| 21 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_grid_king.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-grid_king.md` | rc=0 | 4.20 |
+| 22 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_grid_knight.step --stl --json` | rc=0 | 1.76 |
+| 23 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_grid_knight.stl --bed 220x220x220` | rc=0 | 0.74 |
+| 24 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_grid_knight.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-grid_knight.md` | rc=0 | 3.49 |
+| 25 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_grid_pawn.step --stl --json` | rc=0 | 1.75 |
+| 26 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_grid_pawn.stl --bed 220x220x220` | rc=0 | 0.74 |
+| 27 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_grid_pawn.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-grid_pawn.md` | rc=0 | 2.54 |
+| 28 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_grid_queen.step --stl --json` | rc=0 | 1.74 |
+| 29 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_grid_queen.stl --bed 220x220x220` | rc=0 | 0.75 |
+| 30 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_grid_queen.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-grid_queen.md` | rc=0 | 3.92 |
+| 31 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_grid_rook.step --stl --json` | rc=0 | 1.74 |
+| 32 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_grid_rook.stl --bed 220x220x220` | rc=0 | 0.75 |
+| 33 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_grid_rook.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-grid_rook.md` | rc=0 | 2.92 |
+| 34 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_river_bishop.step --stl --json` | rc=0 | 1.74 |
+| 35 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_river_bishop.stl --bed 220x220x220` | rc=0 | 0.76 |
+| 36 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_river_bishop.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-river_bishop.md` | rc=0 | 3.14 |
+| 37 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_river_king.step --stl --json` | rc=0 | 1.76 |
+| 38 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_river_king.stl --bed 220x220x220` | rc=0 | 0.75 |
+| 39 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_river_king.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-river_king.md` | rc=0 | 4.33 |
+| 40 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_river_knight.step --stl --json` | rc=0 | 1.75 |
+| 41 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_river_knight.stl --bed 220x220x220` | rc=0 | 0.75 |
+| 42 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_river_knight.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-river_knight.md` | rc=0 | 3.32 |
+| 43 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_river_pawn.step --stl --json` | rc=0 | 1.73 |
+| 44 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_river_pawn.stl --bed 220x220x220` | rc=0 | 0.74 |
+| 45 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_river_pawn.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-river_pawn.md` | rc=0 | 2.38 |
+| 46 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_river_queen.step --stl --json` | rc=0 | 1.74 |
+| 47 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_river_queen.stl --bed 220x220x220` | rc=0 | 0.75 |
+| 48 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_river_queen.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-river_queen.md` | rc=0 | 3.72 |
+| 49 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_river_rook.step --stl --json` | rc=0 | 1.75 |
+| 50 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_river_rook.stl --bed 220x220x220` | rc=0 | 0.75 |
+| 51 | `<HOME>/code/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_river_rook.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-river_rook.md` | rc=0 | 2.83 |
