@@ -567,6 +567,31 @@ def author_playtest(root: Path, stage) -> None:
     if "playtest-mismatched-verdict" in stage["product_id"]:
         verdict = "improve"
         feedback = []
+    # Every host-issued vault lead is answered once (dismissed against the sealed
+    # revision) and, when the packet scores, enough blind reads sit at the floor.
+    answers = [
+        {
+            "lead": lead["id"],
+            "verdict": "dismissed",
+            "why": "The deterministic revision has no %s exposure." % lead["nodes"][-1],
+            "feedback_code": None,
+        }
+        for lead in inputs.get("vault_leads", [])
+    ]
+    score = min(10, max(8, int(inputs.get("score_floor", 8))))
+    reads = [
+        {
+            "reader": "reader-%d" % index,
+            "scores": {dimension: score for dimension in inputs.get("score_dimensions", [])},
+            "one_change": "Deepen the waypoint recesses by 0.5 mm.",
+        }
+        for index in range(int(inputs.get("score_minimum_reads", 3)))
+    ]
+    for check in checks:
+        if check["check_id"] == "agent-playtest":
+            check["observations"]["vault_leads"] = answers
+            if "score_dimensions" in inputs:
+                check["observations"]["reads"] = reads
     source = "authored/playtest.json"
     write_json(
         root / source,

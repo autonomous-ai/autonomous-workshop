@@ -2850,6 +2850,9 @@ def _prepare_effort_stage_input(
                 "source_manifest_sha256": assignment.selected_source_manifest_sha256,
                 "taste_sha256": assignment.selected_taste_sha256,
             },
+            "vault_leads": (
+                vault.leads_for_concept(invented.concept) if vault is not None else []
+            ),
         }
         if stage == "playtest":
             subject = _stage_subject(
