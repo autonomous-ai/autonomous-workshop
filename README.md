@@ -40,14 +40,6 @@ uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-GitHub publication is opt-in. Add `--github` to generate, commit, and push only
-the sanitized toy folder using the checkout's configured Git upstream:
-
-```bash
-uv run workshop wish --github \
-  "I wish for a geometry-readable Ho Chi Minh City skyline chess set"
-```
-
 `--manager` chooses the Workshop Manager. This ✨ Spark Wish on Grok produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
