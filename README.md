@@ -2,18 +2,18 @@
 
 You imagine it. We make it.
 
-You wish for a toy that doesn't exist. Inventors in this Workshop make it, and a public Release leaves the bench: exact print-ready CAD and the in-box `MANUAL.pdf`. A magical box can then turn up at the door.
+You wish for a toy that doesn't exist. Inventors in this Workshop make it. A magical box turns up at your door.
 
 [Make a Wish on autonomous.ai](https://www.autonomous.ai/wish) · this repo is the shop floor.
 
 Codex is the default Manager. ✨ Spark (the default effort) and 🔥 Forge omit Playtest; 🗺️ Quest runs it.
 
-- [✨ Quickstart](#quickstart)
-- [🧭 Workshop Managers](#workshop-managers)
-- [🎨 Inventors](#inventors)
-- [🎁 Toys](#toys)
-- [🏗️ Architecture](#architecture)
-- [🛠️ Contributing](#contributing)
+✨ [Quickstart](#quickstart)  
+🧭 [Workshop Managers](#workshop-managers)  
+🎨 [Inventors](#inventors)  
+🎁 [Toys](#toys)  
+🏗️ [Architecture](#architecture)  
+🛠️ [Contributing](#contributing)
 
 ## Quickstart
 
