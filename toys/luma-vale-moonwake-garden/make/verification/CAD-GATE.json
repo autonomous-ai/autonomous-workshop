@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "result": "pass",
+  "pipeline": {
+    "path": "cad/moonwake_garden/measure/verification-pipeline.md",
+    "sha256": "e691dcd7340c782586c486476bd19b7ccc95e9ce057fc0a7c8d118093c53dc8b",
+    "command": "cd <isolated-copy> && python <cad-skill>/scripts/verify_project project --fresh --exports --strict-fit",
+    "elapsed_seconds": 109.39,
+    "exit_code": 0
+  },
+  "root_exports": {
+    "assembled_step_sha256": "7d5f4f1f0f88c1bf236a80370b02ca7048e7917efbf5d231706c90d9f5e7682f",
+    "assembled_stl_sha256": "e0b6763645f5525050b045e1a972fa01c3e88bd3db5ecba83907cf1c2d5d8d46",
+    "sidecar_sha256": "7e24aa249b4615ef9345d5a3de3c974dec30f5f398deedaa804f874cecb0d7e3"
+  },
+  "host_gate_repairs": [
+    {
+      "rejection_sha256": "340f462037f38517cfd4a9f9cd0f9ad44a68aca0e6c113eb6be565f887b1fa7a",
+      "failure_code": "verifier-nonzero",
+      "repair": "Renamed the two non-printing diagnostic proxy generators from .step.py to .proxy.py and updated their motion manifests, leaving exactly one discoverable combined entry.",
+      "combined_entry": "cad/moonwake_garden/moonwake_garden.step.py",
+      "discoverable_combined_entry_count": 1,
+      "verified_without_assembly_override": true
+    },
+    {
+      "rejection_sha256": "0cdb1e25a2ac2a939c61649c7a8d46902cfe6e5a4aea26532e0e515a99af6dee",
+      "failure_code": "declared-cad-output-changed",
+      "repair": "Removed run-root discovery from both custom audits, added a project-local explicit-clearance fallback for isolated audit imports, and removed nondeterministically ordered review-only color metadata from the single-color combined STEP.",
+      "isolated_full_gate_exit_code": 0,
+      "declared_step_and_mesh_outputs_identical_across_two_fresh_processes": true,
+      "reproducibility_evidence_path": "cad/moonwake_garden/measure/fresh-output-reproducibility.json",
+      "reproducibility_evidence_sha256": "df437a1c3f0199c2975eebe4710b6344efe6ae9936f0c954ee804f81c9f72e12"
+    }
+  ],
+  "geometry_facts": {
+    "assembled_envelope_mm": [84.0, 76.0, 6.0],
+    "printable_part_count": 3,
+    "rotor_diameter_mm": 70.0,
+    "guide_id_mm": 70.8,
+    "guide_od_mm": 74.8,
+    "snap_head_plan_radius_max_mm": 1.894111,
+    "snap_relief_radius_mm": 1.950,
+    "snap_minimum_radial_clearance_mm": 0.055889
+  },
+  "checks": {
+    "layout": "pass",
+    "fresh_source_generation": "pass",
+    "strict_fit": "pass",
+    "optical_states_selected_counts": [5, 6, 7],
+    "optical_nonselected_intersections": 0,
+    "full_turn_multiple_complete_states": 0,
+    "portal_full_turn_leaks": 0,
+    "detent_base_bridge_area_mm2": 0.0,
+    "assembly_interference_count": 0,
+    "motion_conditions_passed": 4,
+    "snap_seating_proxy_conditions_passed": 1,
+    "front_thickness_failing_samples": 0,
+    "rear_thickness_failing_samples": 0,
+    "rotor_thickness_failing_samples": 0,
+    "all_part_meshes_watertight_manifold_positive_single_shell": true,
+    "assembled_mesh_watertight_manifold": true,
+    "assembled_mesh_connected_shells": 3
+  },
+  "inspection_views": {
+    "generator": "views/sources/render_inspection.py",
+    "generator_sha256": "e7fc832557f4cac23b865c68cd42ced63e56c8da1d8042d237fcf1c0fea901c0",
+    "directory": "views/inspection",
+    "product_derived": true,
+    "shaded_and_edge_separated": true,
+    "subjects": ["exploded stack", "rear optical path", "portal and grip trench", "detent and notch", "split snap", "rounded vines and petals"]
+  },
+  "evidence_limits": [
+    "Digital geometry and sampled checks do not prove a successful physical print or printer-process fit.",
+    "Rigid motion proxies do not prove elastic insertion force, retention force, fatigue, wear, or service removal.",
+    "Geometric optical isolation and inspection views do not prove brightness, recognition, discovery, comfort, delight, or any human response."
+  ]
+}

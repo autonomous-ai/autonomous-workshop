@@ -19,7 +19,8 @@ contract.
 Create one native Codex Goal for the current Make attempt. Its objective is to
 produce the exact ready-to-print, inspectable product artifact required by the
 current effort. Its stopping condition is a successful `make` finalizer for
-the current checkpoint.
+the current checkpoint, or—only for a build-blocking contradiction in a sealed
+Forge/Quest Invent contract—a successful `make-revision` finalizer.
 
 For Forge and Quest, the sealed Invent result is the primary reference for
 form, proportion, construction, component breakdown, and intended interaction.
@@ -53,6 +54,41 @@ While pursuing the Goal:
 Codex owns the build/check/inspect/repair loop. Python tools may generate CAD,
 measure exact geometry, or validate a contract; they do not plan repairs,
 score Taste, route agents, or control the loop.
+
+## Return an unbuildable sealed concept to Invent
+
+For Forge and Quest, `STAGE.json` may set `invent_revision_allowed: true` and
+provide canonical revision contract and evidence paths. Use that path only
+when exact inspection proves that the sealed Invent concept is internally
+contradictory, omits a decision required for every conforming implementation,
+or otherwise makes truthful Make completion impossible. A difficult build,
+ordinary CAD mistake, aesthetic preference, or repair that can preserve the
+concept stays inside the current Make Goal.
+
+Do not edit sealed Invent bytes or silently depart from them. Preserve exact
+deterministic or independently inspected findings under
+`invent_revision_evidence_root`. Write one source JSON with exactly `feedback`.
+Every feedback item must use severity `block`, cite at least one file from that
+evidence tree, state the contradiction and required design change, and use:
+
+```json
+{"invalidates":["invent","make","playtest","release"]}
+```
+
+Then run:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . make-revision \
+  --source <make-revision-source.json> \
+  --evidence-root <STAGE invent_revision_evidence_root>
+```
+
+The finalizer succeeds by sealing a truthful failed-Make proposal, not a Made
+artifact. Return control immediately. The host rehashes the evidence, verifies
+its exact assignment/Invented bindings and shared round budget, then alone may
+invalidate Invent and downstream stages and start a new Invent Goal. The
+revised Invent packet receives the prior concept and exact Make feedback.
 
 Leave the product tree at the exact `product_root` in `STAGE.json`. It must
 include the required root product metadata, CAD project, assembled STEP/STL
@@ -113,6 +149,14 @@ cite a canonical configuration and static evidence file, and stay bound to the
 sealed Made artifact. Digital assessment never proves successful printing,
 physical fit, durability, or human play.
 
+Each canonical config is a strict JSON object with `schema_version: 1`, the
+exact `check_id`, and the current Made product-manifest hash under
+`product_artifact_sha256` (preferred) or the legacy `artifact_sha256` key. If
+both binding keys are present, they must agree. A config may preserve any
+additional finite JSON needed to reproduce or audit that check; when `seed` is
+present it must be an integer. The finalizer seals every config byte, and the
+host independently rehashes it and verifies the current Made binding.
+
 While pursuing the Goal:
 
 1. **Observe:** Inspect the exact Made tree, manifest, required checks, rules,
@@ -135,6 +179,9 @@ Choose each actionable feedback boundary explicitly:
 - implementation repair: `["playtest", "release"]`, returning to Make;
 - concept revision: `["invent", "make", "playtest", "release"]`,
   returning to Invent with the exact prior design and evidence.
+
+Route concept-invalidating Playtest evidence directly to Invent. Do not spend
+an intermediate Make Goal merely forwarding evidence that Make cannot resolve.
 
 Then run:
 

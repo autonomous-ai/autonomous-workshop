@@ -729,11 +729,12 @@ def materialize_public_example(
             "- `wish/` — sanitized Wish binding (exact text only with explicit consent).\n"
             "- `match/` — accepted Match assignment.\n"
             "%s"
-            "- `make/` — %s, exact CAD source, models, and verification.\n"
+            "- `make/` — %s, exact CAD source, models, product renders, verification, and sealed prior attempts.\n"
             "- `release/%s` — %s.\n"
             "- `release/` — accepted Release contract and exact package bytes.\n"
             "- `publication/PUBLICATION.json` — sanitized public readback identities.\n"
             "- `MANIFEST.json` — hashes every workflow file except itself and this README.\n"
+            "%s"
             "%s\n"
             "This archive contains no agent session, prompt, transcript, chain of "
             "thought, host state, credentials, or raw effect receipt. Publication is "
@@ -744,7 +745,7 @@ def materialize_public_example(
             page_url,
             _workflow_overview_markdown(staging),
             (
-                "- `invent/` — accepted Invent contract.\n"
+                "- `invent/` — accepted Invent contract/source and sealed superseded attempts.\n"
                 if (staging / "invent").is_dir()
                 else "- Invent was skipped by this effort route; its sealed compact concept is under `make/`.\n"
             ),
@@ -752,7 +753,12 @@ def materialize_public_example(
             release.manual_path,
             manual_description,
             (
-                "- `playtest/` — accepted Playtest contract and exact evidence.\n"
+                "- `SANITIZATION.json` — source/public hashes for host-local path prefixes replaced by stable placeholders.\n"
+                if (staging / "SANITIZATION.json").is_file()
+                else ""
+            ),
+            (
+                "- `playtest/` — accepted Playtest contract/evidence and sealed superseded attempts.\n"
                 if release.schema_version != 3
                 else "- Playtest was not run; Release records that omission explicitly.\n"
             ),

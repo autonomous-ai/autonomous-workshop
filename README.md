@@ -144,6 +144,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 
 | Toy | Inventor | Effort | Snapshot | Factory |
 |---|---|---|---|---|
+| Moonwake Garden | [Luma Vale](inventors/luma-vale/) | 🗺️ Quest | [`toys/luma-vale-moonwake-garden/`](toys/luma-vale-moonwake-garden/) | [moonwake-garden](https://www.autonomous.ai/factory/product/moonwake-garden) |
 | Horn Tip | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/factory/product/horn-tip) |
 | Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/factory/product/lunar-relay) |
 | Orbit Gobbler | [Bob](inventors/bob/) | 🔥 Forge | [`toys/bob-orbit-gobbler/`](toys/bob-orbit-gobbler/) | [orbit-gobbler](https://www.autonomous.ai/factory/product/orbit-gobbler) |
@@ -159,17 +160,24 @@ Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. See 
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=effort-routes-v1)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=evidence-repair-v2)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
-🔥 Forge: Wish -> Invent -> Make -> Release
-🗺️ Quest: Wish -> Invent -> Make -> Playtest -> Release
+🔥 Forge: Wish -> Invent <-> Make -> Release
+🗺️ Quest: Wish -> Invent <-> Make <-> Playtest -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
 Passed-through stages create no turn, artifact, gate, or fabricated evidence. Spark and Forge record Playtest as `not-run`. Quest requires passing Playtest bound to the current Made revision.
+
+The reverse arrows are evidence-bound repair routes, not free-form retries.
+Make can return a Forge or Quest run to Invent only when exact saved evidence
+shows that the sealed concept cannot be built as specified. Quest Playtest
+returns directly to Make for a build defect or directly to Invent for a concept
+defect. Each return starts a new stage Goal, invalidates stale downstream
+artifacts, and consumes the run's shared revision budget.
 
 [![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
 

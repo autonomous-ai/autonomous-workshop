@@ -13,6 +13,7 @@ from workshop.errors import ContractError
 from workshop.invent.native import NativeInvented
 from workshop.make.contracts import Made
 from workshop.make.native import NativeMade
+from workshop.make.revision import NativeMakeInventRevision
 from workshop.match.native import (
     InventorRoster,
     InventorRosterEntry,
@@ -818,6 +819,83 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
+    def test_make_revision_seals_exact_contradiction_evidence_for_invent(self):
+        evidence_root = self.run_root / "artifacts/make/r0001/revision-evidence"
+        evidence_root.mkdir(parents=True)
+        evidence = b'{"clearance_mm":-0.3,"passed":false}\n'
+        (evidence_root / "geometry-check.json").write_bytes(evidence)
+        contract_path = "artifacts/make/r0001/invent-revision-request.json"
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "invent_revision_allowed": True,
+                "invent_revision_contract_path": contract_path,
+                "invent_revision_evidence_root": (
+                    "artifacts/make/r0001/revision-evidence"
+                ),
+            },
+            round_index=1,
+        )
+        source = {
+            "feedback": [
+                {
+                    "code": "forced-overlap",
+                    "area": "keel-index-interface",
+                    "severity": "block",
+                    "finding": "The sealed dimensions force a 0.3 mm overlap.",
+                    "change": "Move the index capsule or revise its dimensions.",
+                    "evidence_refs": ["missing.json"],
+                    "invalidates": ["invent", "make", "playtest", "release"],
+                }
+            ]
+        }
+        self.write_json("drafts/make-revision.json", source)
+
+        rejected = self.run_tool(
+            "make-revision",
+            "--source",
+            "drafts/make-revision.json",
+            "--evidence-root",
+            "artifacts/make/r0001/revision-evidence",
+            expected=2,
+        )
+        self.assertIn("references absent evidence", rejected.stderr)
+        self.assertFalse((self.run_root / contract_path).exists())
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        source["feedback"][0]["evidence_refs"] = ["geometry-check.json"]
+        source_path = self.write_json("drafts/make-revision.json", source)
+        source_bytes = source_path.read_bytes()
+        self.run_tool(
+            "make-revision",
+            "--source",
+            "drafts/make-revision.json",
+            "--evidence-root",
+            "artifacts/make/r0001/revision-evidence",
+        )
+
+        document, contract_bytes = self.assert_canonical_file(contract_path)
+        request = NativeMakeInventRevision.from_mapping(document)
+        request.assert_context(
+            self.assignment, self.invented, expected_round=1
+        )
+        request.validate_evidence_tree(self.run_root)
+        archived_source_path = (
+            "artifacts/make/r0001/invent-revision-source.json"
+        )
+        self.assertEqual(
+            (self.run_root / archived_source_path).read_bytes(), source_bytes
+        )
+        self.assert_outcome(
+            "make",
+            contract_path,
+            contract_bytes,
+            "invent",
+            ((archived_source_path, sha256(source_bytes)),),
+        )
+
     def test_playtest_derives_file_hashes_and_loop_transition(self):
         made = self.create_made()
         replay_work = self.run_root / "work/playtest/r0001/replay.py"
@@ -1501,7 +1579,10 @@ class StageProposalToolTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertIn("match,invent,make,playtest,release", completed.stdout)
+        self.assertIn(
+            "match,invent,make,playtest,make-revision,release",
+            completed.stdout,
+        )
 
 
 if __name__ == "__main__":

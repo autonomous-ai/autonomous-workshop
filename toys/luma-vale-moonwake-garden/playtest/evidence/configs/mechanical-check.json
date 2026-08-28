@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "check_id": "mechanical-check",
+  "subject_sha256": "315ed802ae675a75367c0b9be4dc6bfc6ff8859885366227a81a009b0fe003c7",
+  "made_file_sha256": "c19c13c6c9d71d2e38e95e4c56b380ba524b9466faf05ec223922c469b49d827",
+  "product_artifact_sha256": "d31e05cf5a70714e41d2f26cf2bc7e4ef25a2cbd63545cda651a527c3f76874a",
+  "evaluator": "Codex independent mechanical audit",
+  "evaluator_version": "1.0.0",
+  "method": [
+    "Copy the sealed CAD project to transient Playtest work without changing Make bytes.",
+    "Rerun measure/check_fit.py, measure/check_spec.py, the four-condition motion manifest, and the compressed-snap seating manifest.",
+    "Compare exact outputs with the sealed assembly sidecar, isolated full pipeline, and two-process output reproducibility record.",
+    "Treat rigid collision proxies as geometry evidence only; exclude elastic force, fatigue, wear, printer-process fit, and physical operation."
+  ],
+  "inputs": {
+    "assembled.step": "7d5f4f1f0f88c1bf236a80370b02ca7048e7917efbf5d231706c90d9f5e7682f",
+    "assembled.step.json": "7e24aa249b4615ef9345d5a3de3c974dec30f5f398deedaa804f874cecb0d7e3",
+    "cad-verification.json": "e75b8c456a40312a25ad224f831b43113239f0ecb044cfd7b5f0cb79e7d943dc",
+    "measure/check_fit.py": "3cfd298b368122f1f8882b2157a62d7fad1779541d84d3bde2e32157228cf327",
+    "measure/check_spec.py": "572031de84cbe298b9f9304c2aa224ea921cd6051a134d1b14d6b8768a25c706",
+    "measure/motion.json": "1621fa43a99db9e36d5f852f6ce6834b0fe413eaae80d1965dea6e0e6bac9dd6",
+    "measure/motion_snap_proxy.json": "32055aa1a6889927d6c02ceb3bb62b21c20689d09bc192bcafc069c80a0e61f4",
+    "measure/verification-pipeline.md": "e691dcd7340c782586c486476bd19b7ccc95e9ce057fc0a7c8d118093c53dc8b",
+    "measure/fresh-output-reproducibility.json": "df437a1c3f0199c2975eebe4710b6344efe6ae9936f0c954ee804f81c9f72e12"
+  }
+}

@@ -21,8 +21,8 @@ decorated, and be represented no more strongly than its evidence permits.
 
 ```text
 Spark: Wish -> Make -> Release
-Forge: Wish -> Invent -> Make -> Release
-Quest: Wish -> Invent -> Make -> Playtest -> Release
+Forge: Wish -> Invent <-> Make -> Release
+Quest: Wish -> Invent <-> Make <-> Playtest -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
@@ -35,8 +35,11 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
 - **Make** consumes that exact sealed Invent result and creates the actual
   product tree, CAD project, assemblies, and deterministic CAD verification.
   In Spark, selection and compact invention are sealed inside this same turn.
+  A capable Forge or Quest Make may return to Invent only with exact preserved
+  evidence that the sealed concept prevents any conforming build.
 - **Playtest** independently evaluates the sealed Made revision only in Quest,
-  preserving exact evidence and bounded Make/Invent feedback routes.
+  preserving exact evidence and returning directly to Make for implementation
+  defects or Invent for concept defects.
 - **Release** creates and seals a self-contained printable `MANUAL.pdf`,
   revalidates the exact Made revision as full-tier print-ready CAD, and
   publishes both through Factory with authenticated public hash readback.
@@ -203,6 +206,15 @@ For new direct-Release runs, a changed Make revision invalidates Release and
 must pass the full CAD gate again. Frozen pre-ADR-0015 runs retain their
 materialized Playtest routing and evidence contracts; the host does not
 reinterpret those historical checkpoints.
+
+All backward transitions are explicit failed host gates and use the same
+bounded lifecycle revision counter. Make-to-Invent is available only when its
+contract marker was frozen into a new Forge or Quest workspace. The request
+binds the exact Wish, assignment, Invented contract, authored source, and a
+rehashable evidence tree. It invalidates Invent and everything downstream.
+This keeps normal implementation repair inside Make, avoids an unnecessary
+Make Goal when Playtest already identified a concept defect, and prevents an
+old run from silently gaining a new lifecycle edge.
 
 ## Evidence boundaries
 

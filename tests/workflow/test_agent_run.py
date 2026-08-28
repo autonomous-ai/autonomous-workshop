@@ -633,6 +633,109 @@ class AgentRunTest(unittest.TestCase):
                     {stage for stage, unused in transitions},
                 )
 
+    def test_capable_forge_make_can_return_to_invent_with_failed_gate(self):
+        references = self.skill / "references"
+        (references / "effort-routes-v1.md").write_bytes(
+            b"selectable effort routes\n"
+        )
+        (references / "make-invent-revision-v1.md").write_bytes(
+            b"evidence-bound Make to Invent revision\n"
+        )
+        run = self.create(max_rounds=3, effort="forge")
+        self.advance(run, "wish", "invent")
+        self.advance(run, "invent", "make")
+        prior_invent = run.snapshot().stage_artifacts["invent"]
+
+        revision = self.outcome(
+            run,
+            "make",
+            "invent",
+            name="r0001/invent-revision-request.json",
+            content=b'{"result":"sealed-concept-unbuildable"}\n',
+        )
+        checkpoint = run.apply_outcome(
+            revision,
+            gate=self.gate(run, revision, passed=False),
+        )
+
+        self.assertEqual((checkpoint.stage, checkpoint.round_index), ("invent", 2))
+        self.assertEqual(checkpoint.stage_artifacts["invent"], prior_invent)
+        self.assertEqual(checkpoint.stage_artifacts["make"], revision.artifacts)
+        self.assertEqual(
+            checkpoint.invalidated_stages,
+            ("invent", "make", "playtest", "release"),
+        )
+
+        revised_invent = self.outcome(
+            run,
+            "invent",
+            "make",
+            name="r0002/invented.json",
+            content=b'{"concept":"revised"}\n',
+        )
+        checkpoint = run.apply_outcome(
+            revised_invent,
+            gate=self.gate(run, revised_invent),
+        )
+        self.assertEqual((checkpoint.stage, checkpoint.round_index), ("make", 2))
+        self.assertNotIn("make", checkpoint.stage_artifacts)
+        self.assertEqual(
+            checkpoint.invalidated_stages,
+            ("make", "playtest", "release"),
+        )
+
+    def test_make_to_invent_requires_frozen_capability_and_invent_stage(self):
+        references = self.skill / "references"
+        (references / "effort-routes-v1.md").write_bytes(
+            b"selectable effort routes\n"
+        )
+        old_forge = self.create(effort="forge")
+        self.advance(old_forge, "wish", "invent")
+        self.advance(old_forge, "invent", "make")
+        proposal = self.outcome(old_forge, "make", "invent")
+        with self.assertRaisesRegex(TransitionError, "frozen capable"):
+            old_forge.apply_outcome(
+                proposal, gate=self.gate(old_forge, proposal, passed=False)
+            )
+
+        (references / "make-invent-revision-v1.md").write_bytes(
+            b"evidence-bound Make to Invent revision\n"
+        )
+        spark = AgentRun.create(
+            self.root / "spark-run",
+            host_state_root=self.root / "spark-host",
+            product_id="spark-no-invent",
+            wish_bytes=canonical_wish("spark-no-invent", "Make a quick toy."),
+            product_run_constitution_source=self.product_run_constitution,
+            skill_root=self.skill,
+            effort="spark",
+        )
+        self.advance(spark, "wish", "make")
+        spark_proposal = self.outcome(spark, "make", "invent")
+        with self.assertRaisesRegex(TransitionError, "frozen capable"):
+            spark.apply_outcome(
+                spark_proposal,
+                gate=self.gate(spark, spark_proposal, passed=False),
+            )
+
+    def test_make_to_invent_cannot_exceed_shared_round_budget(self):
+        references = self.skill / "references"
+        (references / "effort-routes-v1.md").write_bytes(
+            b"selectable effort routes\n"
+        )
+        (references / "make-invent-revision-v1.md").write_bytes(
+            b"evidence-bound Make to Invent revision\n"
+        )
+        run = self.create(max_rounds=1, effort="forge")
+        self.advance(run, "wish", "invent")
+        self.advance(run, "invent", "make")
+        proposal = self.outcome(run, "make", "invent")
+        with self.assertRaisesRegex(TransitionError, "budget"):
+            run.apply_outcome(
+                proposal, gate=self.gate(run, proposal, passed=False)
+            )
+        self.assertEqual((run.snapshot().stage, run.snapshot().round_index), ("make", 1))
+
     def test_new_run_cannot_propose_the_obsolete_deliver_transition(self):
         run = self.create()
         for stage, transition in (

@@ -40,6 +40,13 @@ All implementation and product-run work must preserve these boundaries:
   no turn, artifact, gate, or evidence. Spark/Forge Release explicitly records
   Playtest `not-run`; Quest requires passing Playtest evidence. Frozen older
   runs retain their materialized protocol when resumed.
+- A capable Forge or Quest Make attempt may return directly to Invent only when
+  exact preserved evidence proves that the sealed concept prevents any
+  conforming build. Quest Playtest returns directly to Make for implementation
+  defects or to Invent for concept defects. Every backward edge records a
+  failed host gate, invalidates the named downstream artifacts, and consumes
+  the one shared lifecycle revision budget. Spark has no separate Invent stage
+  to return to, and frozen runs gain no capability they did not materialize.
 - Every active Invent, Make, Playtest, or Release attempt uses
   one native Codex Goal with one objective, proof artifacts, and a verifiable
   stopping condition: the current stage finalizer succeeds. Inventor selection

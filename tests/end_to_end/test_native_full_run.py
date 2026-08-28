@@ -411,7 +411,10 @@ class _OneSessionProductAgent:
         assignment = stage["inputs"].get("assignment")
         if assignment is not None and assignment["selected_inventor_id"] != "alice":
             raise AssertionError("Invent did not receive the accepted Match assignment")
-        revised = "failing_playtested" in stage["inputs"]
+        revised = (
+            "failing_playtested" in stage["inputs"]
+            or "make_revision_request" in stage["inputs"]
+        )
         source = "authored/invent.json"
         authored = {
                 "concept": {
@@ -1021,6 +1024,85 @@ class _ConceptRevisionProductAgent(_OneSessionProductAgent):
             first_path, first_bytes = self.invent_outputs[0]
             if (run_root / first_path).read_bytes() != first_bytes:
                 raise AssertionError("re-Invent overwrote the sealed prior contract")
+
+
+class _MakeInventRevisionProductAgent(_ConceptRevisionProductAgent):
+    """Return one impossible sealed concept from Make, then finish its revision."""
+
+    def __init__(self):
+        super().__init__()
+        self.requested_revision = False
+
+    def _author_make(self, run_root, stage):
+        inputs = stage["inputs"]
+        if not self.requested_revision:
+            if inputs.get("invent_revision_allowed") is not True:
+                raise AssertionError("Quest Make lacks its frozen revision capability")
+            evidence_root_value = inputs["invent_revision_evidence_root"]
+            evidence_root = run_root / evidence_root_value
+            _write_json(
+                evidence_root / "geometry-check.json",
+                {
+                    "schema_version": 1,
+                    "check": "sealed-concept-consistency",
+                    "passed": False,
+                    "clearance_mm": -0.3,
+                },
+            )
+            source = "authored/make-revision.json"
+            _write_json(
+                run_root / source,
+                {
+                    "feedback": [
+                        {
+                            "code": "forced-overlap",
+                            "area": "keel-index-interface",
+                            "severity": "block",
+                            "finding": (
+                                "The exact sealed dimensions force a 0.3 mm overlap."
+                            ),
+                            "change": (
+                                "Revise the index placement or its bound dimensions."
+                            ),
+                            "evidence_refs": ["geometry-check.json"],
+                            "invalidates": [
+                                "invent",
+                                "make",
+                                "playtest",
+                                "release",
+                            ],
+                        }
+                    ]
+                },
+            )
+            self._run_finalizer(
+                run_root,
+                "make-revision",
+                "--source",
+                source,
+                "--evidence-root",
+                evidence_root_value,
+            )
+            self.requested_revision = True
+            return
+        super()._author_make(run_root, stage)
+
+    def _author_invent(self, run_root, stage):
+        inputs = stage["inputs"]
+        if "make_revision_request" in inputs:
+            request = inputs["make_revision_request"]
+            request_binding = inputs["make_revision_request_artifact"]
+            if inputs["repair_round"] != 2:
+                raise AssertionError("Make-driven re-Invent lost its shared round")
+            if request_binding["sha256"] != _sha256(
+                (run_root / request_binding["path"]).read_bytes()
+            ):
+                raise AssertionError("Make revision request artifact is unbound")
+            if inputs["feedback"] != request["feedback"]:
+                raise AssertionError("re-Invent feedback differs from Make request")
+            if inputs["feedback_sha256"] != request["feedback_sha256"]:
+                raise AssertionError("Make revision feedback hash is unbound")
+        super()._author_invent(run_root, stage)
 
 
 class _FactoryEffects:
@@ -1699,6 +1781,52 @@ class NativeFullRunTest(unittest.TestCase):
         self.assertEqual(
             reinvent_packet["inputs"]["failing_playtested_artifact"]["path"],
             "artifacts/playtest/r0001/playtested.json",
+        )
+        self.assertEqual(
+            [path for path, unused_bytes in launcher.invent_outputs],
+            [
+                "artifacts/invent/invented.json",
+                "artifacts/invent/r0002/invented.json",
+            ],
+        )
+        self.assertNotEqual(
+            launcher.invent_outputs[0][1], launcher.invent_outputs[1][1]
+        )
+
+    def test_quest_make_can_return_unbuildable_concept_to_invent(self):
+        launcher = _MakeInventRevisionProductAgent()
+        launcher, checkpoint = self._run_playtest_routing_case(
+            effort="quest",
+            playtest_plan=[],
+            wish_name="quest-make-invent-revision",
+            context_source="quest-make-invent-revision-test",
+            launcher=launcher,
+        )
+
+        self.assertTrue(checkpoint.complete)
+        self.assertEqual(checkpoint.round_index, 2)
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            ["invent", "make", "invent", "make", "playtest", "release"],
+        )
+        first_make = launcher.stage_packets[1]
+        reinvent = launcher.stage_packets[2]
+        self.assertTrue(first_make["inputs"]["invent_revision_allowed"])
+        self.assertEqual(
+            first_make["inputs"]["invent_revision_contract_path"],
+            "artifacts/make/r0001/invent-revision-request.json",
+        )
+        self.assertEqual(
+            reinvent["inputs"]["make_revision_request_artifact"]["path"],
+            "artifacts/make/r0001/invent-revision-request.json",
+        )
+        self.assertEqual(
+            reinvent["inputs"]["contract_path"],
+            "artifacts/invent/r0002/invented.json",
+        )
+        self.assertEqual(
+            [command[4] for command in launcher.finalizer_commands],
+            ["invent", "make-revision", "invent", "make", "playtest", "release"],
         )
         self.assertEqual(
             [path for path, unused_bytes in launcher.invent_outputs],

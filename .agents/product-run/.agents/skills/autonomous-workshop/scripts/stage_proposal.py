@@ -38,6 +38,7 @@ INVENTOR_ROSTER_KIND = "autonomous-workshop.inventor-roster"
 MATCH_KIND = "autonomous-workshop.match-assignment"
 INVENTED_KIND = "autonomous-workshop.invented"
 MADE_KIND = "autonomous-workshop.made"
+MAKE_INVENT_REVISION_KIND = "autonomous-workshop.make-invent-revision"
 PLAYTESTED_KIND = "autonomous-workshop.playtested"
 RELEASE_KIND = "autonomous-workshop.release"
 
@@ -51,6 +52,7 @@ PLAYTEST_INVENT_INVALIDATES = (
     "release",
 )
 PLAYTEST_FEEDBACK_INVALIDATES = frozenset(PLAYTEST_INVENT_INVALIDATES)
+MAKE_INVENT_REVISION_INVALIDATES = PLAYTEST_INVENT_INVALIDATES
 FORWARD = {
     "match": "invent",
     "invent": "make",
@@ -1425,6 +1427,110 @@ def _playtest_transition(playtested: Mapping[str, Any]) -> str:
     return "make"
 
 
+def _make_invent_revision_feedback(value: Any) -> dict[str, Any]:
+    item = _feedback(value)
+    if item["severity"] != "block":
+        raise ProposalError(
+            "Make may return to Invent only for build-blocking feedback"
+        )
+    if tuple(item["invalidates"]) != MAKE_INVENT_REVISION_INVALIDATES:
+        raise ProposalError(
+            "Make Invent revision must invalidate Invent and every downstream stage"
+        )
+    if not item["evidence_refs"]:
+        raise ProposalError(
+            "Make Invent-revision feedback requires exact evidence_refs"
+        )
+    refs = [
+        _safe_relative(ref, "Make Invent-revision evidence_ref").as_posix()
+        for ref in item["evidence_refs"]
+    ]
+    if len(refs) != len(set(refs)):
+        raise ProposalError(
+            "Make Invent-revision feedback evidence_refs must be unique"
+        )
+    item["evidence_refs"] = refs
+    return item
+
+
+def _make_invent_revision_contract(
+    run_root: Path,
+    stage: Mapping[str, Any],
+    source: Mapping[str, Any],
+    *,
+    evidence_root_value: str,
+) -> dict[str, Any]:
+    inputs = _required_fields(
+        stage["inputs"],
+        {
+            "assignment",
+            "invented",
+            "invent_revision_allowed",
+            "invent_revision_contract_path",
+            "invent_revision_evidence_root",
+        },
+        "Make STAGE inputs",
+    )
+    if inputs["invent_revision_allowed"] is not True:
+        raise ProposalError("this Make stage cannot return to Invent")
+    assignment = _validate_assignment(inputs["assignment"])
+    invented = _validate_invented(inputs["invented"], assignment)
+    round_index = stage["round"]
+    expected_contract = (
+        "artifacts/make/r%04d/invent-revision-request.json" % round_index
+    )
+    if inputs["invent_revision_contract_path"] != expected_contract:
+        raise ProposalError("Make Invent-revision contract path is not canonical")
+    expected_root = "artifacts/make/r%04d/revision-evidence" % round_index
+    if (
+        inputs["invent_revision_evidence_root"] != expected_root
+        or evidence_root_value != expected_root
+    ):
+        raise ProposalError(
+            "Make Invent-revision evidence root must be %s" % expected_root
+        )
+    authored = _fields(source, {"feedback"}, "Make Invent-revision authored source")
+    feedback = [
+        _make_invent_revision_feedback(item)
+        for item in _array(
+            authored["feedback"],
+            "Make Invent-revision feedback",
+            nonempty=True,
+        )
+    ]
+    codes = [item["code"] for item in feedback]
+    if len(codes) != len(set(codes)):
+        raise ProposalError("Make Invent-revision feedback codes must be unique")
+    manifest = _tree_manifest(
+        run_root, evidence_root_value, "Make Invent-revision evidence tree"
+    )
+    inventory = {entry["path"]: entry["sha256"] for entry in manifest["entries"]}
+    for item in feedback:
+        for ref in item["evidence_refs"]:
+            if ref not in inventory:
+                raise ProposalError(
+                    "Make Invent-revision feedback references absent evidence: %s"
+                    % ref
+                )
+    feedback_sha256 = json_sha256(feedback)
+    identity = {
+        "schema_version": 1,
+        "kind": MAKE_INVENT_REVISION_KIND,
+        "round": round_index,
+        "wish_sha256": assignment["wish_sha256"],
+        "assignment_sha256": assignment["assignment_sha256"],
+        "invented_sha256": invented["invented_sha256"],
+        "evidence_root": evidence_root_value,
+        "evidence_manifest": manifest,
+        "feedback": feedback,
+        "feedback_sha256": feedback_sha256,
+    }
+    return {
+        **identity,
+        "revision_request_sha256": json_sha256(identity),
+    }
+
+
 def _validate_playtested(
     value: Any, made: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -2430,8 +2536,16 @@ def _seal(
     transition: str,
     additional_contracts: Sequence[tuple[str, Mapping[str, Any]]] = (),
     additional_files: Sequence[tuple[str, bytes]] = (),
+    contract_path_value: str | None = None,
+    identity_field_value: str | None = None,
 ) -> dict[str, Any]:
-    contract_path = _stage_contract_path(stage)
+    contract_path = (
+        _safe_relative(contract_path_value, "stage contract path").as_posix()
+        if contract_path_value is not None
+        else _stage_contract_path(stage)
+    )
+    if not contract_path.startswith("artifacts/%s/" % stage["stage"]):
+        raise ProposalError("stage contract must stay under the current stage")
     contract_bytes = canonical_json(contract)
     if len(contract_bytes) > MAX_CONTRACT_BYTES:
         raise ProposalError("stage contract exceeds the native artifact limit")
@@ -2482,13 +2596,15 @@ def _seal(
     if len(proposal_bytes) > MAX_OUTCOME_BYTES:
         raise ProposalError("agent outcome proposal exceeds its byte limit")
     _atomic_write(run_root, "agent-outcome.json", proposal_bytes)
-    identity_field = {
+    identity_field = identity_field_value or {
         "match": "assignment_sha256",
         "invent": "invented_sha256",
         "make": "made_sha256",
         "playtest": "playtested_sha256",
         "release": "release_sha256",
     }[stage["stage"]]
+    if identity_field not in contract:
+        raise ProposalError("stage contract identity field is absent")
     return {
         "artifact_path": contract_path,
         "artifact_sha256": artifact_sha256,
@@ -2537,6 +2653,19 @@ def _parser() -> argparse.ArgumentParser:
     playtest = subparsers.add_parser(
         "playtest", help="Seal authored checks and exact evidence tree."
     )
+
+    make_revision = subparsers.add_parser(
+        "make-revision",
+        help="Seal exact evidence that the upstream Invent concept is unbuildable.",
+    )
+    make_revision.add_argument(
+        "--source", required=True, help="Run-local Make revision feedback JSON."
+    )
+    make_revision.add_argument(
+        "--evidence-root",
+        required=True,
+        help="Canonical tree containing exact contradiction evidence.",
+    )
     playtest.add_argument(
         "--source", required=True, help="Run-local Playtest authored JSON."
     )
@@ -2559,9 +2688,12 @@ def _parser() -> argparse.ArgumentParser:
 def run(args: argparse.Namespace) -> dict[str, Any]:
     _workshop_python()
     run_root = _canonical_root(args.run_root)
-    stage = _load_stage(run_root, args.command)
+    expected_stage = "make" if args.command == "make-revision" else args.command
+    stage = _load_stage(run_root, expected_stage)
     additional_contracts: list[tuple[str, Mapping[str, Any]]] = []
     additional_files: list[tuple[str, bytes]] = []
+    contract_path_value = None
+    identity_field_value = None
     if args.command == "match":
         source, _, _ = _read_json(run_root, args.source, "Match authored source")
         contract = _match_contract(stage, source)
@@ -2654,6 +2786,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             invented_value=invented,
         )
         transition = stage["next_transition"]
+    elif args.command == "make-revision":
+        source, source_content, _ = _read_json(
+            run_root, args.source, "Make Invent-revision authored source"
+        )
+        contract = _make_invent_revision_contract(
+            run_root,
+            stage,
+            source,
+            evidence_root_value=args.evidence_root,
+        )
+        contract_path_value = stage["inputs"]["invent_revision_contract_path"]
+        source_path = (
+            "artifacts/make/r%04d/invent-revision-source.json" % stage["round"]
+        )
+        additional_files.append((source_path, source_content))
+        identity_field_value = "revision_request_sha256"
+        transition = "invent"
     elif args.command == "playtest":
         source, _, _ = _read_json(run_root, args.source, "Playtest authored source")
         contract = _playtest_contract(
@@ -2679,6 +2828,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         transition=transition,
         additional_contracts=additional_contracts,
         additional_files=additional_files,
+        contract_path_value=contract_path_value,
+        identity_field_value=identity_field_value,
     )
 
 

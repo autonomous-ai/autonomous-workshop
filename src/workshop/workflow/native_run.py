@@ -48,6 +48,10 @@ from workshop.integrations.factory import (
 )
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
+from workshop.make.revision import (
+    MAKE_INVENT_REVISION_CAPABILITY_PATH,
+    NativeMakeInventRevision,
+)
 from workshop.make.native_gate import (
     NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_GATE_KIND,
@@ -1434,6 +1438,17 @@ def _checkpoint_uses_direct_release(checkpoint: AgentRunCheckpoint) -> bool:
     return _PRODUCT_RUN_DIRECT_RELEASE_INPUT in checkpoint.input_sha256s
 
 
+def _checkpoint_allows_make_invent_revision(
+    checkpoint: AgentRunCheckpoint,
+) -> bool:
+    effort = _checkpoint_effort(checkpoint)
+    return bool(
+        effort is not None
+        and effort.includes("invent")
+        and MAKE_INVENT_REVISION_CAPABILITY_PATH in checkpoint.input_sha256s
+    )
+
+
 def _checkpoint_next_stage(checkpoint: AgentRunCheckpoint, stage: str) -> str:
     effort = _checkpoint_effort(checkpoint)
     if effort is not None:
@@ -2208,59 +2223,132 @@ def _prepare_effort_stage_input(
                 unused_binding,
             ) = _routed_creative_context(run, checkpoint, roster)
             del unused_binding
-            prior_made = _read_contract(
-                run.run_root,
-                _stage_primary(checkpoint, "make"),
-                NativeMade,
-                label="prior routed native Made contract",
+            make_revision_paths = tuple(
+                artifact
+                for artifact in checkpoint.stage_artifacts.get("make", ())
+                if PurePosixPath(artifact.path).name
+                == "invent-revision-request.json"
             )
-            prior_made.assert_context(
-                prior_assignment,
-                prior_invented,
-                expected_round=prior_made.round,
-            )
-            failing_playtested_artifact = _stage_primary(checkpoint, "playtest")
-            failing_playtested = _read_contract(
-                run.run_root,
-                failing_playtested_artifact,
-                NativePlaytested,
-                label="failing routed native Playtested contract",
-            )
-            failing_playtested.assert_context(prior_made, blueprint)
-            if failing_playtested.proposed_transition != "invent":
-                raise StateConflict(
-                    "routed re-Invent requires concept-revision feedback"
+            if make_revision_paths:
+                if (
+                    len(make_revision_paths) != 1
+                    or not _checkpoint_allows_make_invent_revision(checkpoint)
+                ):
+                    raise StateConflict(
+                        "routed re-Invent has an invalid Make revision capability"
+                    )
+                make_revision_artifact = make_revision_paths[0]
+                make_revision = _read_contract(
+                    run.run_root,
+                    make_revision_artifact,
+                    NativeMakeInventRevision,
+                    label="routed Make Invent-revision request",
                 )
-            feedback = [item.to_dict() for item in failing_playtested.feedback]
-            subject_inputs.update(
-                {
-                    "repair_round": checkpoint.round_index,
-                    "prior_assignment_sha256": prior_assignment.assignment_sha256,
-                    "prior_invented_sha256": prior_invented.invented_sha256,
-                    "prior_invented_artifact_sha256": prior_invented_artifact.sha256,
-                    "failing_playtested_sha256": failing_playtested.playtested_sha256,
-                    "feedback_sha256": failing_playtested.feedback_sha256,
-                }
-            )
-            inputs.update(
-                {
-                    "repair_round": checkpoint.round_index,
-                    "prior_assignment": prior_assignment.to_dict(),
-                    "prior_assignment_artifact": _artifact_binding(
-                        prior_assignment_artifact
-                    ),
-                    "prior_invented": prior_invented.to_dict(),
-                    "prior_invented_artifact": _artifact_binding(
-                        prior_invented_artifact
-                    ),
-                    "failing_playtested": failing_playtested.to_dict(),
-                    "failing_playtested_artifact": _artifact_binding(
-                        failing_playtested_artifact
-                    ),
-                    "feedback": feedback,
-                    "feedback_sha256": failing_playtested.feedback_sha256,
-                }
-            )
+                make_revision.assert_context(
+                    prior_assignment,
+                    prior_invented,
+                    expected_round=checkpoint.round_index - 1,
+                )
+                make_revision.validate_evidence_tree(run.run_root)
+                feedback = [item.to_dict() for item in make_revision.feedback]
+                subject_inputs.update(
+                    {
+                        "repair_round": checkpoint.round_index,
+                        "prior_assignment_sha256": (
+                            prior_assignment.assignment_sha256
+                        ),
+                        "prior_invented_sha256": prior_invented.invented_sha256,
+                        "prior_invented_artifact_sha256": (
+                            prior_invented_artifact.sha256
+                        ),
+                        "make_revision_request_sha256": (
+                            make_revision.revision_request_sha256
+                        ),
+                        "make_revision_artifact_sha256": (
+                            make_revision_artifact.sha256
+                        ),
+                        "feedback_sha256": make_revision.feedback_sha256,
+                    }
+                )
+                inputs.update(
+                    {
+                        "repair_round": checkpoint.round_index,
+                        "prior_assignment": prior_assignment.to_dict(),
+                        "prior_assignment_artifact": _artifact_binding(
+                            prior_assignment_artifact
+                        ),
+                        "prior_invented": prior_invented.to_dict(),
+                        "prior_invented_artifact": _artifact_binding(
+                            prior_invented_artifact
+                        ),
+                        "make_revision_request": make_revision.to_dict(),
+                        "make_revision_request_artifact": _artifact_binding(
+                            make_revision_artifact
+                        ),
+                        "feedback": feedback,
+                        "feedback_sha256": make_revision.feedback_sha256,
+                    }
+                )
+            else:
+                prior_made = _read_contract(
+                    run.run_root,
+                    _stage_primary(checkpoint, "make"),
+                    NativeMade,
+                    label="prior routed native Made contract",
+                )
+                prior_made.assert_context(
+                    prior_assignment,
+                    prior_invented,
+                    expected_round=prior_made.round,
+                )
+                failing_playtested_artifact = _stage_primary(checkpoint, "playtest")
+                failing_playtested = _read_contract(
+                    run.run_root,
+                    failing_playtested_artifact,
+                    NativePlaytested,
+                    label="failing routed native Playtested contract",
+                )
+                failing_playtested.assert_context(prior_made, blueprint)
+                if failing_playtested.proposed_transition != "invent":
+                    raise StateConflict(
+                        "routed re-Invent requires concept-revision feedback"
+                    )
+                feedback = [item.to_dict() for item in failing_playtested.feedback]
+                subject_inputs.update(
+                    {
+                        "repair_round": checkpoint.round_index,
+                        "prior_assignment_sha256": (
+                            prior_assignment.assignment_sha256
+                        ),
+                        "prior_invented_sha256": prior_invented.invented_sha256,
+                        "prior_invented_artifact_sha256": (
+                            prior_invented_artifact.sha256
+                        ),
+                        "failing_playtested_sha256": (
+                            failing_playtested.playtested_sha256
+                        ),
+                        "feedback_sha256": failing_playtested.feedback_sha256,
+                    }
+                )
+                inputs.update(
+                    {
+                        "repair_round": checkpoint.round_index,
+                        "prior_assignment": prior_assignment.to_dict(),
+                        "prior_assignment_artifact": _artifact_binding(
+                            prior_assignment_artifact
+                        ),
+                        "prior_invented": prior_invented.to_dict(),
+                        "prior_invented_artifact": _artifact_binding(
+                            prior_invented_artifact
+                        ),
+                        "failing_playtested": failing_playtested.to_dict(),
+                        "failing_playtested_artifact": _artifact_binding(
+                            failing_playtested_artifact
+                        ),
+                        "feedback": feedback,
+                        "feedback_sha256": failing_playtested.feedback_sha256,
+                    }
+                )
         subject = _stage_subject("invent", subject_inputs)
         context.update(
             {
@@ -2353,6 +2441,13 @@ def _prepare_effort_stage_input(
                 else None
             ),
         }
+        make_invent_revision_allowed = _checkpoint_allows_make_invent_revision(
+            checkpoint
+        )
+        if make_invent_revision_allowed:
+            subject_inputs["make_invent_revision_capability_sha256"] = (
+                checkpoint.input_sha256s[MAKE_INVENT_REVISION_CAPABILITY_PATH]
+            )
         if make_proposal_rejection is not None:
             subject_inputs["host_make_proposal_rejection_sha256"] = (
                 make_proposal_rejection["rejection_sha256"]
@@ -2378,6 +2473,21 @@ def _prepare_effort_stage_input(
                 "assembled.stl",
             ],
         }
+        if make_invent_revision_allowed:
+            inputs.update(
+                {
+                    "invent_revision_allowed": True,
+                    "invent_revision_contract_path": (
+                        "artifacts/make/r%04d/invent-revision-request.json"
+                        % checkpoint.round_index
+                    ),
+                    "invent_revision_evidence_root": (
+                        "artifacts/make/r%04d/revision-evidence"
+                        % checkpoint.round_index
+                    ),
+                }
+            )
+            context["make_invent_revision_allowed"] = True
         if make_proposal_rejection is not None:
             inputs["host_make_proposal_rejection"] = make_proposal_rejection
 
@@ -3205,6 +3315,81 @@ def _manifest_agent_artifacts(
     )
 
 
+def _evaluate_make_invent_revision_stage(
+    proposal: AgentOutcomeProposal,
+    *,
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    subject_sha256: str,
+    context: Mapping[str, Any],
+) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
+    """Verify exact contradiction evidence without judging its authored prose."""
+
+    if context.get("make_invent_revision_allowed") is not True:
+        raise StateConflict(
+            "Make Invent revision is absent from this run's frozen protocol"
+        )
+    if checkpoint.round_index >= checkpoint.max_rounds:
+        raise TransitionError("Invent-Make-Playtest round budget is exhausted")
+    contract_path = (
+        "artifacts/make/r%04d/invent-revision-request.json"
+        % checkpoint.round_index
+    )
+    source_path = (
+        "artifacts/make/r%04d/invent-revision-source.json"
+        % checkpoint.round_index
+    )
+    outcome = proposal.outcome
+    if (
+        outcome.stage != "make"
+        or outcome.status != "ready"
+        or outcome.proposed_transition != "invent"
+        or outcome.needs
+        or tuple(item.path for item in outcome.artifacts)
+        != (contract_path, source_path)
+    ):
+        raise ContractError(
+            "Make Invent revision must contain its exact request and authored source"
+        )
+    artifact = outcome.artifacts[0]
+    request = _read_contract(
+        run.run_root,
+        artifact,
+        NativeMakeInventRevision,
+        label="Make Invent-revision request",
+    )
+    request.assert_context(
+        context["assignment"],
+        context["invented"],
+        expected_round=checkpoint.round_index,
+    )
+    canonical = request.validate_evidence_tree(run.run_root)
+    additional = _manifest_agent_artifacts(
+        request.evidence_root, request.evidence_manifest
+    )
+    evidence = StageGateEvidence(
+        stage="make",
+        gate_id="make.invent-revision-v1",
+        validator_version="1.0.0",
+        passed=False,
+        checkpoint_sha256=checkpoint.checkpoint_sha256,
+        subject_sha256=subject_sha256,
+        outcome_sha256=proposal.outcome.sha256,
+        artifact_path=artifact.path,
+        artifact_sha256=artifact.sha256,
+        checks={
+            "revision_request_sha256": request.revision_request_sha256,
+            "feedback_sha256": request.feedback_sha256,
+            "feedback_count": len(request.feedback),
+            "evidence_artifact_sha256": canonical.artifact_sha256,
+            "evidence_tree_rehashed": True,
+            "upstream_bindings_valid": True,
+            "round_budget_available": True,
+        },
+    )
+    return StageGateDecision(evidence=evidence, transition="invent"), additional
+
+
 def _evaluate_make_stage(
     proposal: AgentOutcomeProposal,
     *,
@@ -3213,6 +3398,14 @@ def _evaluate_make_stage(
     subject_sha256: str,
     context: Mapping[str, Any],
 ) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
+    if proposal.outcome.proposed_transition == "invent":
+        return _evaluate_make_invent_revision_stage(
+            proposal,
+            run=run,
+            checkpoint=checkpoint,
+            subject_sha256=subject_sha256,
+            context=context,
+        )
     contract_path = "artifacts/make/r%04d/made.json" % checkpoint.round_index
     transition = context.get("make_transition")
     if transition not in ("playtest", "release"):
@@ -3516,20 +3709,26 @@ def _evaluate_playtest_stage(
                 label="routed Playtest %s config" % check.check_id,
             )
             expected_digest = inventory.get("configs/%s.json" % check.check_id)
+            binding_keys = tuple(
+                key
+                for key in ("artifact_sha256", "product_artifact_sha256")
+                if key in config
+            )
+            artifact_bindings = {
+                config[key] for key in binding_keys if isinstance(config[key], str)
+            }
             if (
                 expected_digest != check.config_sha256
                 or _sha256(content) != expected_digest
-                or set(config) != {
-                    "schema_version",
-                    "check_id",
-                    "seed",
-                    "artifact_sha256",
-                }
-                or config["schema_version"] != 1
-                or config["check_id"] != check.check_id
-                or type(config["seed"]) is not int
-                or config["artifact_sha256"]
-                != made.product_manifest.artifact_sha256
+                or config.get("schema_version") != 1
+                or config.get("check_id") != check.check_id
+                or (
+                    "seed" in config
+                    and type(config["seed"]) is not int
+                )
+                or len(artifact_bindings) != len(binding_keys)
+                or artifact_bindings
+                != {made.product_manifest.artifact_sha256}
             ):
                 raise ContractError(
                     "routed Playtest config is not bound to the current Made revision: %s"
@@ -5255,7 +5454,31 @@ def _resume_native_run_locked(
             _remove_release_effect_wait(run)
         checkpoint = run.resume()
         _rebind_existing_progress(paths, waiting_checkpoint, checkpoint)
-    elif checkpoint.status in ("failed", "complete"):
+    elif checkpoint.status == "complete":
+        action = "inspected-terminal"
+        if checkpoint.stage == "release":
+            verified = _existing_release_for_promotion(run, checkpoint)
+            receipt = _read_release_effect(run, verified.release)
+            if receipt is None or not receipt.is_verified_public:
+                raise StateConflict(
+                    "completed Release lacks its verified Factory receipt"
+                )
+            _assert_required_public_readback(verified.release, receipt)
+            projection = _try_record_public_example_projection(
+                run,
+                release=verified.release,
+                made=verified.made,
+                inventor_id=verified.inventor_id,
+                receipt=receipt,
+            )
+            if projection.get("status") == "materialized":
+                action = "reconciled-public-example"
+        return _native_receipt(
+            checkpoint,
+            paths=paths,
+            action=action,
+        )
+    elif checkpoint.status == "failed":
         return _native_receipt(
             checkpoint,
             paths=paths,

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "check_id": "mechanical-check",
+  "passed": true,
+  "observed_at": "2026-08-28T06:03:05Z",
+  "native_review": {
+    "path": "reviews/mechanical-check-review.md",
+    "sha256": "020d9856895ee955474c6b7d3a3694f4d6a24e089d46871786eb28f616b823de"
+  },
+  "independent_rerun": {
+    "check_fit_status": "pass",
+    "check_spec_status": "pass",
+    "motion_conditions_passed": 4,
+    "snap_seating_conditions_passed": 1,
+    "rotation_sweep_degrees": 360,
+    "rotation_samples": 37,
+    "spindle_radial_clearance_mm": 0.3,
+    "guide_radial_clearance_mm": 0.4,
+    "axial_rotor_clearance_mm": 0.3,
+    "minimum_notch_sector_distance_mm": 2.950188,
+    "required_notch_sector_distance_mm": 2.5,
+    "optical_endpoint_selected_counts": [5, 6, 7],
+    "optical_nonselected_intersections": 0,
+    "full_turn_multiple_complete_states": 0,
+    "portal_full_turn_leaks": 0,
+    "assembly_interference_count": 0,
+    "fresh_declared_outputs_reproducible": true
+  },
+  "limitations": [
+    "The tooth-suppressed and compressed-head models are rigid envelope proxies, not elastic simulations.",
+    "No insertion, retention, detent, or operating force; whitening; fracture; fatigue; wear; printer-process fit; or physical durability was measured.",
+    "Geometric optical isolation does not prove observed brightness, recognition, discovery, or human use."
+  ]
+}

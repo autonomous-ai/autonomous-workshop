@@ -136,7 +136,7 @@ run the materialized finalizer:
 ```
 
 Use `--help` for exact arguments. The active commands are `invent`, `make`,
-`playtest`, and `release`; the stage references describe their inputs. Frozen
+`make-revision`, `playtest`, and `release`; the stage references describe their inputs. Frozen
 historical runs may still receive Match. The
 finalizer validates and hashes exact bytes, writes the canonical contract under
 `artifacts/`, and atomically writes `agent-outcome.json` bound to the current
@@ -161,6 +161,12 @@ Spark: Wish -> Make -> Release
 Forge: Wish -> Invent -> Make -> Release
 Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
+
+Quest Playtest may return implementation evidence to Make or
+concept-invalidating evidence directly to Invent. A capable Forge or Quest
+Make stage may return exact build-blocking evidence to Invent. Every backward
+edge consumes the shared lifecycle round budget and is authorized only by a
+host-verified contract; Make never edits sealed Invent bytes.
 
 Host rejection feedback remains bound to the exact current-stage proposal.
 Repair Make or Release in place and finalize changed bytes. Reviews after

@@ -32,6 +32,7 @@ from workshop.errors import (
     StateConflict,
     TransitionError,
 )
+from workshop.make.revision import MAKE_INVENT_REVISION_CAPABILITY_PATH
 from workshop._validation import require_sha256
 from workshop.runtime.agent_assets import (
     InventorSkillBinding,
@@ -134,6 +135,18 @@ def _uses_effort_routes(payload: Mapping[str, Any]) -> bool:
     return (
         payload.get("schema_version") == 4
         and EFFORT_ROUTE_CAPABILITY_PATH
+        in {item["path"] for item in payload["inputs"]}
+    )
+
+
+def _allows_make_invent_revision(payload: Mapping[str, Any]) -> bool:
+    """Return whether this exact frozen run includes the repair capability."""
+
+    effort = _run_effort(payload)
+    return bool(
+        effort is not None
+        and effort.includes("invent")
+        and MAKE_INVENT_REVISION_CAPABILITY_PATH
         in {item["path"] for item in payload["inputs"]}
     )
 
@@ -1555,6 +1568,11 @@ class AgentRun:
                     raise TransitionError(
                         "Playtest may advance or return explicit feedback to Make or Invent"
                     )
+            elif outcome.stage == "make" and outcome.proposed_transition == "invent":
+                if not _allows_make_invent_revision(payload):
+                    raise TransitionError(
+                        "Make may return to Invent only for a frozen capable Forge or Quest run"
+                    )
             elif outcome.stage == "release":
                 frozen_inputs = {
                     item["path"] for item in payload["inputs"]
@@ -1660,12 +1678,19 @@ class AgentRun:
             or gate.subject_sha256 != subject
         ):
             raise TransitionError("deterministic gate is not bound to this exact outcome")
-        if (
+        backward_revision = (
             outcome.stage == "playtest"
             and outcome.proposed_transition in ("make", "invent")
-        ):
+        ) or (
+            outcome.stage == "make"
+            and outcome.proposed_transition == "invent"
+            and _allows_make_invent_revision(payload)
+        )
+        if backward_revision:
             if gate.passed:
-                raise TransitionError("passing Playtest must advance to Release")
+                if outcome.stage == "playtest":
+                    raise TransitionError("passing Playtest must advance to Release")
+                raise TransitionError("passing Make must advance to its next stage")
             if payload["round_index"] >= payload["max_rounds"]:
                 raise TransitionError("Invent-Make-Playtest round budget is exhausted")
         elif not gate.passed:
@@ -1710,7 +1735,9 @@ class AgentRun:
             and round_index == 0
         ):
             round_index = 1
-        elif outcome.stage == "playtest" and transition in ("make", "invent"):
+        elif (
+            outcome.stage == "playtest" and transition in ("make", "invent")
+        ) or (outcome.stage == "make" and transition == "invent"):
             round_index += 1
             invalidation = (
                 ("invent", *_DOWNSTREAM_OF_INVENT)

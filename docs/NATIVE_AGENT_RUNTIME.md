@@ -32,8 +32,8 @@ and tool-using work through Release:
 
 ```text
 Spark: Wish -> Make -> Release
-Forge: Wish -> Invent -> Make -> Release
-Quest: Wish -> Invent -> Make -> Playtest -> Release
+Forge: Wish -> Invent <-> Make -> Release
+Quest: Wish -> Invent <-> Make <-> Playtest -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
@@ -325,7 +325,7 @@ that artifact and independently proves that its selection, ranking, concept,
 and research derive the two sealed contracts, so a post-finalizer source edit
 cannot hide behind unchanged contract prose.
 
-For Quest and frozen pre-ADR-0015 runs, Playtest owns the backward transitions. A
+For Quest and frozen pre-ADR-0015 runs, Playtest owns its backward transitions. A
 verdict of `improve` or `block`
 preserves exact evidence and uses each feedback record's explicit invalidation
 boundary to propose Make or Invent. `["playtest", "release"]` is an
@@ -334,10 +334,22 @@ fundamental concept revision. If actionable findings use both, the broader
 Invent revision wins. The host follows these authored markers without judging
 their prose and applies one shared bounded round budget to both routes.
 
+New Forge and Quest runs also freeze the Make-to-Invent revision capability.
+When Make proves that the exact sealed concept prevents any conforming build,
+the active Make Goal preserves a canonical evidence tree and proposes an exact
+`NativeMakeInventRevision` contract. The host rehashes that evidence, binds the
+Wish, assignment, and Invented identities, records a failed Make gate, consumes
+the same shared round budget, invalidates Invent and every downstream stage,
+and starts a new Invent Goal with the request. This route is block-only: normal
+CAD defects remain Make's responsibility. Spark has no standalone Invent stage,
+and older frozen runs without the capability marker cannot acquire the edge on
+resume.
+
 A Make repair keeps the sealed Invent result authoritative. A concept revision
-receives the exact prior Invented and failing Playtested/feedback bytes with
-independent hashes, then invalidates every downstream product revision. New
-Make or Invent bytes invalidate their old downstream evidence.
+receives the exact prior Invented plus either failing Playtested/feedback bytes
+or the Make revision request, with independent hashes, then invalidates every
+downstream product revision. New Make or Invent bytes invalidate their old
+downstream evidence.
 
 ## Creative handoff and compound selection
 
@@ -530,8 +542,12 @@ private Wish demonstrate that:
    passing evidence; every exact `MANUAL.pdf` passes structural validation;
 7. no credential reaches the native subprocess or its readable filesystem;
 8. terminal Release requires exact full-tier print-ready CAD, validated
-   `MANUAL.pdf`, and authenticated public readback bound to those hashes; and
-9. the executable Workshop run ends at Release and makes no claim of physical
+   `MANUAL.pdf`, and authenticated public readback bound to those hashes;
+9. an optional Git snapshot can be retried after terminal Release and preserves
+   every sealed Invent/Make/Playtest attempt, Make product render, revision
+   request, and evidence tree without copying native-session or credential
+   state; and
+10. the executable Workshop run ends at Release and makes no claim of physical
    printing, delivery, or review.
 
 ## Engine portability

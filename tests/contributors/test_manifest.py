@@ -50,6 +50,7 @@ class RegistryTest(unittest.TestCase):
                 "eve",
                 "ivy",
                 "leo",
+                "luma-vale",
                 "mira-fold",
                 "pico-press",
                 "tess-loop",

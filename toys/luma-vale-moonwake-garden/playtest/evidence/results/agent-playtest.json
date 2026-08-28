@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "check_id": "agent-playtest",
+  "passed": true,
+  "observed_at": "2026-08-28T06:03:05Z",
+  "native_review": {
+    "path": "reviews/agent-playtest-review.md",
+    "sha256": "46bffafd2cc876ba0d837eca47246a5052d6c0e99935bf90d6e41257ff69e99a"
+  },
+  "findings": {
+    "endpoint_selected_counts": [5, 6, 7],
+    "endpoint_face_regions": ["upper", "right", "lower-left"],
+    "endpoint_views_distinct_in_monochrome": true,
+    "intermediate_view_is_partial_not_a_second_complete_endpoint": true,
+    "single_control": "right-edge rotor grip portal",
+    "single_motion": "continuous rotation through three 120-degree indexed poses",
+    "luma_taste_alignment": "Ambient light and overlapping physical geometry create the transformation; the petal garden is interaction-driving negative space rather than a generic punched star disk."
+  },
+  "limitations": [
+    "The ordinary monochrome render makes the grip cue subtler than the edge-separated inspection crop; Release should immediately teach the right-edge roll.",
+    "No first-ten-second discovery, brightness, off-axis appearance beyond modeled rays, constellation recognition, delight, or other human response was observed.",
+    "No physical print, fit, feel, or durability claim is supported."
+  ]
+}
