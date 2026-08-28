@@ -1,6 +1,6 @@
 ---
 name: autonomous-workshop
-description: Run, resume, or diagnose one Autonomous Workshop Wish through its frozen Spark, Forge, or Quest effort route using native Codex Goals, tools, and subagents while preserving deterministic host gates and host-controlled effects.
+description: Run, resume, or diagnose one Autonomous Workshop Wish through its frozen Spark, Forge, or Quest effort route using native Manager Goals, tools, and subagents while preserving deterministic host gates and host-controlled effects.
 ---
 
 # Autonomous Workshop
@@ -13,8 +13,9 @@ skill is your workflow playbook, not a separate agent process.
 
 ## Start every turn from host state
 
-1. Read the root `AGENTS.md` and the read-only `STAGE.json` in the persistent
-   toy project. Never edit `STAGE.json`.
+1. Read the root `AGENTS.md`, the host-written `MANAGER.json`, and the
+   read-only `STAGE.json` in the persistent toy project. Never edit `STAGE.json`
+   or `MANAGER.json`.
 2. Confirm its `stage`, `checkpoint_sha256`, `subject_sha256`, upstream
    bindings, output paths, current round, and round limit match the work you
    intend to do.
@@ -39,12 +40,12 @@ stages; do not create stage-specific sessions or impersonate Python workers.
 ## Run one native Goal for the current stage
 
 For each host-authorized Invent, Make, Playtest, or Release attempt,
-create one native Codex Goal. Keep only one Goal active at a time. If the Goal
+create one native Goal. Keep only one Goal active at a time. If the Goal
 for this exact checkpoint is already active after a resume, continue it.
 If a host rejection changed the current subject after a prior Goal completed,
 that completed Goal is stale for the new attempt; create a new Goal bound to
 the rejection-bearing subject.
-Use the Goal control exposed by the native Codex session; do not emulate Goal
+Use the Goal control exposed by this Manager runtime; do not emulate Goal
 state with a workspace file, prompt chain, or Python controller.
 
 The Goal must state:
@@ -59,7 +60,7 @@ The Goal must state:
 While pursuing that Goal, work in an eval-driven observe -> act -> evaluate ->
 improve loop. Inspect the baseline, make a focused change, run the relevant
 checks, inspect the generated artifact directly, record the important finding
-in workspace evidence, and continue. This loop is Codex behavior inside the
+in workspace evidence, and continue. This loop is native-runtime behavior inside the
 Goal, not another program or runtime. Native subagents may supply specialist
 work or independent judgment, but the root Manager synthesizes the result.
 
@@ -76,11 +77,12 @@ host-owned effect portion of Release. This design follows Codex's official patte
 
 ## Use the native Inventor roster
 
-`.codex/agents/*.toml` is the sole Inventor identity, Taste, and skill roster
-for this run. During the first enabled creative stage, compare every eligible
-custom agent in the host-provided roster and select the best fit. Forge and
+`.codex/agents/*.toml` remains the host identity binding for every Inventor.
+`MANAGER.json` names this runtime and its native agent directory. During the
+first enabled creative stage, compare every eligible custom agent in the
+host-provided roster and select the best fit. Forge and
 Quest select during Invent; Spark selects during Make. Use the exact selected
-`.codex/agents/<inventor-id>.toml` agent. Its host-materialized instructions
+Inventor agent. Its host-materialized instructions
 bind its exact source manifest, full Taste, and skill artifacts under
 `.agents/skills/`.
 

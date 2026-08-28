@@ -49,6 +49,13 @@ from workshop.runtime.codex import (
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     codex_supports_native_workshop,
 )
+from workshop.runtime.claude import claude_supports_native_workshop
+from workshop.runtime.grok import grok_supports_native_workshop
+from workshop.runtime.managers import (
+    DEFAULT_MANAGER_ID,
+    SUPPORTED_MANAGER_IDS,
+    manager_spec,
+)
 from workshop.runtime.package_data import (
     packaged_inventors_root,
     product_run_domain_skill_roots,
@@ -235,6 +242,9 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
     status = receipt.get("status", "unknown")
     stage = str(receipt.get("stage", "unknown")).title()
     print("Wish: %s" % product_id)
+    manager_id = receipt.get("manager")
+    if isinstance(manager_id, str) and manager_id:
+        print("Manager: %s" % manager_spec(manager_id).display_name)
     print("%s: %s at %s" % (verb, status, stage))
     progress = receipt.get("progress")
     if isinstance(progress, Mapping) and progress.get("status") == "available":
@@ -300,6 +310,7 @@ def _wish(args: argparse.Namespace) -> int:
     )
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
+    manager = manager_spec(args.manager)
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
     print(
         "Effort: %s — %s" % (effort.title, effort.description),
@@ -307,13 +318,24 @@ def _wish(args: argparse.Namespace) -> int:
         flush=True,
     )
     print(
-        "Starting one native Codex session for %s..." % effort.enabled_stages[0].title(),
+        "Manager: %s%s"
+        % (
+            manager.display_name,
+            " (experimental)" if manager.experimental else "",
+        ),
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Starting one native %s session for %s..."
+        % (manager.display_name, effort.enabled_stages[0].title()),
         file=progress,
         flush=True,
     )
     receipt = start_native_run(
         wish,
         effort=effort.name,
+        manager_id=manager.manager_id,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -554,17 +576,81 @@ def _doctor_factory() -> dict[str, str]:
     )
 
 
+def _doctor_optional_cli(
+    name: str,
+    *,
+    binary_env: str,
+    binary_name: str,
+    supports,
+    label: str,
+) -> dict[str, str]:
+    binary = os.environ.get(binary_env) or shutil.which(binary_name)
+    if not binary:
+        return _check_record(
+            name,
+            "skipped",
+            "%s is not installed; Codex remains the default Manager." % label,
+        )
+    try:
+        version = subprocess.run(
+            [binary, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+            env=codex_subprocess_environment(os.environ),
+        )
+    except (OSError, subprocess.SubprocessError):
+        return _check_record(
+            name,
+            "needs-attention",
+            "The configured %s command could not run." % label,
+            next_step="Check %s and the %s installation." % (binary_env, label),
+        )
+    output = version.stdout if isinstance(version.stdout, str) else ""
+    if version.returncode != 0 or not supports(output):
+        return _check_record(
+            name,
+            "needs-attention",
+            "%s is installed but is not a Workshop-supported native Manager." % label,
+            next_step="Upgrade %s, or keep using --manager codex." % label,
+        )
+    return _check_record(
+        name,
+        "ready",
+        "%s is available as an experimental Manager via --manager %s."
+        % (label, name),
+    )
+
+
 def _doctor(args: argparse.Namespace) -> int:
     root = _inventor_source_root(args.root)
-    checks = [
+    required = [
         _doctor_catalog(root),
         _doctor_codex(),
         _doctor_agent_assets(),
         _doctor_factory(),
     ]
+    checks = [
+        *required,
+        _doctor_optional_cli(
+            "claude",
+            binary_env="WORKSHOP_CLAUDE_BIN",
+            binary_name="claude",
+            supports=claude_supports_native_workshop,
+            label="Claude Code",
+        ),
+        _doctor_optional_cli(
+            "grok",
+            binary_env="WORKSHOP_GROK_BIN",
+            binary_name="grok",
+            supports=grok_supports_native_workshop,
+            label="Grok Build",
+        ),
+    ]
     status = (
         "ready"
-        if all(item["status"] == "ready" for item in checks)
+        if all(item["status"] == "ready" for item in required)
         else "needs-attention"
     )
     receipt = {
@@ -774,7 +860,7 @@ def parser() -> argparse.ArgumentParser:
     )
 
     wish = subcommands.add_parser(
-        "wish", help="persist one Wish and start its native Codex session"
+        "wish", help="persist one Wish and start its native Manager session"
     )
     wish.add_argument("objective", nargs="+", metavar="WISH")
     wish.add_argument(
@@ -786,6 +872,16 @@ def parser() -> argparse.ArgumentParser:
             "creative depth: spark (Wish->Make->Release; default), "
             "forge (Wish->Invent->Make->Release), or "
             "quest (Wish->Invent->Make->Playtest->Release)"
+        ),
+    )
+    wish.add_argument(
+        "--manager",
+        choices=tuple(SUPPORTED_MANAGER_IDS),
+        default=DEFAULT_MANAGER_ID,
+        metavar="RUNTIME",
+        help=(
+            "native Manager runtime: codex (default), claude, or grok; "
+            "frozen for the run and cannot be changed on resume"
         ),
     )
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
@@ -800,7 +896,7 @@ def parser() -> argparse.ArgumentParser:
     status.set_defaults(handler=_status)
 
     resume = subcommands.add_parser(
-        "resume", help="resume the exact native Codex session for one Wish"
+        "resume", help="resume the exact frozen native Manager session for one Wish"
     )
     resume.add_argument("product_id", help="saved Wish id")
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")

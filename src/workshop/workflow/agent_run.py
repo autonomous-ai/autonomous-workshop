@@ -38,6 +38,12 @@ from workshop.runtime.agent_assets import (
     inventor_custom_agent_bytes,
     parse_inventor_custom_agent_bytes,
 )
+from workshop.runtime.managers import (
+    DEFAULT_MANAGER_ID,
+    MANAGER_PROJECT_PATH,
+    manager_project_bytes,
+    manager_spec,
+)
 from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER,
     PRODUCT_RUN_ROOT_MARKER_BYTES,
@@ -623,6 +629,7 @@ class AgentRunCheckpoint:
     stage_artifacts: Mapping[str, tuple[AgentArtifact, ...]]
     invalidated_stages: tuple[str, ...]
     effort: Optional[str] = None
+    manager_id: str = DEFAULT_MANAGER_ID
 
     @property
     def complete(self) -> bool:
@@ -657,10 +664,12 @@ class AgentRun:
         inventor_source_root: Optional[Path] = None,
         max_rounds: int = 4,
         effort: Optional[str] = None,
+        manager_id: str = DEFAULT_MANAGER_ID,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
         selected_effort = workshop_effort(effort) if effort is not None else None
+        selected_manager = manager_spec(manager_id)
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
         try:
             requested = Path(run_root)
@@ -884,6 +893,11 @@ class AgentRun:
             ),
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
+            (
+                PurePosixPath(MANAGER_PROJECT_PATH),
+                manager_project_bytes(selected_manager),
+                0o400,
+            ),
         ]
         skill_target = PurePosixPath(".agents/skills/autonomous-workshop")
         all_input_files.extend(
@@ -1008,6 +1022,7 @@ class AgentRun:
             "history": [],
             "last_outcome_sha256": None,
             "previous_checkpoint_sha256": None,
+            "manager_id": selected_manager.manager_id,
         }
         if selected_effort is not None:
             core["effort"] = selected_effort.name
@@ -1150,6 +1165,8 @@ class AgentRun:
         schema_version = payload.get("schema_version")
         if schema_version == 4:
             expected_fields.add("effort")
+        if "manager_id" in payload:
+            expected_fields.add("manager_id")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
@@ -1180,6 +1197,11 @@ class AgentRun:
                 if isinstance(item, Mapping)
             }:
                 raise StateConflict("agent run effort capability is missing")
+        if "manager_id" in payload:
+            try:
+                manager_spec(payload["manager_id"])
+            except ContractError as exc:
+                raise StateConflict("agent run Manager is invalid") from exc
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -1427,6 +1449,7 @@ class AgentRun:
             stage_artifacts=MappingProxyType(self._stage_artifacts(payload, by_path)),
             invalidated_stages=tuple(payload["invalidated_stages"]),
             effort=payload.get("effort"),
+            manager_id=payload.get("manager_id", DEFAULT_MANAGER_ID),
         )
 
     def expected_gate_subject_sha256(self) -> str:

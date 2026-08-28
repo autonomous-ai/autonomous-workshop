@@ -120,8 +120,10 @@ missing or publication cannot be reconciled, Release waits safely for
 
 Every Wish first creates one private persistent project under
 `$WORKSHOP_HOME/runs/<wish-id>/workspace`, populates its product-run `AGENTS.md`,
-skills, and Inventor roster, and then starts one native Codex session with that
-project as its working directory. Choose how much creative depth the run gets:
+skills, and Inventor roster, and then starts one native coding-agent session with that
+project as its working directory. The default Manager is Codex; pass
+`--manager claude` or `--manager grok` only to use an experimental adapter.
+Choose how much creative depth the run gets:
 
 ```text
 Spark: Wish -> Make -> Release                 (default)
@@ -131,7 +133,8 @@ Quest: Wish -> Invent -> Make -> Playtest -> Release
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
-Pass `--effort spark`, `--effort forge`, or `--effort quest`. Inventor
+Pass `--effort spark`, `--effort forge`, or `--effort quest`. Omit `--manager`
+to keep Codex. Inventor
 selection is folded into the first active creative stage, so there is no
 separate Match turn. Disabled stages pass through without a native turn,
 artifact, gate, or fabricated evidence.
@@ -234,9 +237,9 @@ evidence-linked Release facts. Manager runtime support is deliberately pluggable
 
 | Workshop Manager runtime | Status |
 |---|---|
-| Codex | Implemented |
-| Claude Code | Planned adapter |
-| Grok Build | Planned adapter |
+| Codex | Implemented default (`--manager codex`) |
+| Claude Code | Experimental adapter (`--manager claude`) |
+| Grok Build | Experimental adapter (`--manager grok`) |
 
 Every adapter must preserve the same toy-project, stage-objective, checkpoint,
 gate, and effect boundaries.
@@ -314,6 +317,9 @@ I love mechanisms whose motion tells the story. I reject decoration without play
 - [Bob](inventors/bob/TASTE.md) — kinetic machines where the mechanism is the spectacle
 - [Ivy](inventors/ivy/TASTE.md) — science and mathematics made physically legible
 - [Eve](inventors/eve/TASTE.md) — real people, spaces, and objects made into little epics
+- [Mira Fold](inventors/mira-fold/TASTE.md) — compact tactile transformations with one hidden mechanical reveal
+- [Pico Press](inventors/pico-press/TASTE.md) — tiny support-free toys built around one crisp repeatable motion
+- [Tess Loop](inventors/tess-loop/TASTE.md) — flat-print modular systems that bloom into patterns and negative space
 
 Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the specialist contract.
 

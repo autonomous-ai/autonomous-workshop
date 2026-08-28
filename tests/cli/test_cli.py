@@ -123,9 +123,10 @@ class NativeCommandTest(unittest.TestCase):
     def test_wish_calls_only_native_start_and_keeps_json_stdout_clean(self):
         observed = {}
 
-        def start(wish, *, effort, activity_observer, timing_observer):
+        def start(wish, *, effort, manager_id, activity_observer, timing_observer):
             observed["wish"] = wish
             observed["effort"] = effort
+            observed["manager_id"] = manager_id
             timing_observer(timing_event())
             for activity in (
                 "starting",
@@ -155,6 +156,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "match")
         self.assertIn("Starting one native Codex session", stderr.getvalue())
+        self.assertEqual(observed["manager_id"], "codex")
         self.assertIn("reasoning about the current stage", stderr.getvalue())
         self.assertIn("process is still running", stderr.getvalue())
         self.assertIn("using a tool for the current stage", stderr.getvalue())
@@ -184,8 +186,9 @@ class NativeCommandTest(unittest.TestCase):
         start.assert_called_once()
 
     def test_human_wish_timing_uses_stdout_and_flushes(self):
-        def start(wish, *, effort, activity_observer, timing_observer):
+        def start(wish, *, effort, manager_id, activity_observer, timing_observer):
             self.assertEqual(effort, "spark")
+            self.assertEqual(manager_id, "codex")
             del wish, activity_observer
             timing_observer(timing_event(operation="stage.prepare"))
             timing_observer(
@@ -227,6 +230,17 @@ class NativeCommandTest(unittest.TestCase):
                 )
             self.assertEqual(result, 0)
             self.assertEqual(start.call_args.kwargs["effort"], effort)
+            self.assertEqual(start.call_args.kwargs["manager_id"], "codex")
+
+    def test_wish_passes_named_manager_to_the_native_host(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-grok"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--manager", "grok", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["manager_id"], "grok")
 
     def test_live_native_activity_repeats_only_throttled_running_updates(self):
         output = StringIO()

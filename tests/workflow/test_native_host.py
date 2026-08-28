@@ -739,7 +739,7 @@ class NativeHostTest(unittest.TestCase):
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
             self.assertIn("current make stage", prompt)
-            self.assertIn("Create one native Codex goal", prompt)
+            self.assertIn("Create one native Goal", prompt)
             self.assertIn("successful finalization as its stopping condition", prompt)
             self.assertIn("inspecting, acting, evaluating, and improving", prompt)
             self.assertIn("prior proposal failed its host gate", prompt)
@@ -1048,7 +1048,7 @@ class NativeHostTest(unittest.TestCase):
             ), mock.patch(
                 "workshop.workflow.native_run.time.sleep"
             ) as backoff, self.assertRaisesRegex(
-                WorkshopError, "exhausted its bounded Codex turn budget"
+                WorkshopError, "exhausted its bounded native-turn budget"
             ):
                 start_native_run(
                     Wish.create(

@@ -1416,6 +1416,9 @@ def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
 class CodexNativeSessionLauncher:
     """Launch or resume the one native Codex session for an entire Wish."""
 
+    manager_id = "codex"
+    session_checkpoint_name = "codex-session.json"
+
     def __init__(
         self,
         *,
