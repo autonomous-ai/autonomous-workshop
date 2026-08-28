@@ -1104,6 +1104,86 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
+    def test_quest_playtest_accepts_two_matching_artifact_binding_keys(self):
+        made = self.create_made()
+        evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
+        (evidence_root / "configs").mkdir(parents=True)
+        checks = []
+        check_ids = self.blueprint.required_playtest_checks()
+        product_sha256 = made.product_manifest.artifact_sha256
+        for index, check_id in enumerate(check_ids):
+            config_ref = "configs/%s.json" % check_id
+            evidence_ref = "%s.json" % check_id
+            self.write_json(
+                "artifacts/playtest/r0001/evidence/%s" % config_ref,
+                {
+                    "schema_version": 1,
+                    "check_id": check_id,
+                    "artifact_sha256": product_sha256,
+                    "product_artifact_sha256": (
+                        "0" * 64 if index == 0 else product_sha256
+                    ),
+                    "seed": 42,
+                },
+            )
+            (evidence_root / evidence_ref).write_bytes(
+                canonical_json({"check": check_id, "ok": True}) + b"\n"
+            )
+            checks.append(
+                {
+                    "check_id": check_id,
+                    "passed": True,
+                    "evaluator": "workshop-host",
+                    "evaluator_version": "1.0.0",
+                    "config_ref": config_ref,
+                    "evidence_ref": evidence_ref,
+                    "observed_at": "2026-08-26T00:00:00Z",
+                    "observations": {"ok": True},
+                }
+            )
+        self.write_stage(
+            "playtest",
+            {
+                "effort": "quest",
+                "made": made.to_dict(),
+                "required_check_ids": list(check_ids),
+            },
+            round_index=1,
+        )
+        self.write_json(
+            "drafts/playtest.json",
+            {"checks": checks, "feedback": [], "verdict": "pass"},
+        )
+
+        rejected = self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+            expected=2,
+        )
+        self.assertIn("not bound to the current Made revision", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        self.write_json(
+            "artifacts/playtest/r0001/evidence/configs/%s.json" % check_ids[0],
+            {
+                "schema_version": 1,
+                "check_id": check_ids[0],
+                "artifact_sha256": product_sha256,
+                "product_artifact_sha256": product_sha256,
+                "seed": 42,
+            },
+        )
+        self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+        )
+
     def test_release_seals_exact_codex_authored_page_and_matches_native_release(self):
         made = self.create_made()
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"

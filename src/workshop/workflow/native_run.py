@@ -160,12 +160,23 @@ _AGENT_OUTCOME_NAME = "agent-outcome.json"
 _AUTHORIZATION_NAME = "authorization.json"
 _RELEASE_EFFECT_WAIT_NAME = "release-effect-wait.json"
 _PUBLIC_EXAMPLE_STATUS_NAME = "public-example.json"
+_NATIVE_TOKEN_USAGE_NAME = "native-token-usage.json"
+_NATIVE_TOKEN_USAGE_KIND = "autonomous-workshop.native-token-usage"
+_NATIVE_TOKEN_SUMMARY_KIND = "autonomous-workshop.native-token-summary"
+_NATIVE_TOKEN_STAGES = ("match", "invent", "make", "playtest", "release")
 _CAD_GATE_REJECTIONS_DIRECTORY = "cad-gate-rejections"
 _CAD_GATE_REJECTION_KIND = "autonomous-workshop.cad-gate-rejection"
 _MAKE_PROPOSAL_REJECTIONS_DIRECTORY = "make-proposal-rejections"
 _MAKE_PROPOSAL_REJECTION_KIND = "autonomous-workshop.make-proposal-rejection"
 _MAKE_PROPOSAL_REJECTION_HEAD_KIND = (
     "autonomous-workshop.make-proposal-rejection-head"
+)
+_PLAYTEST_PROPOSAL_REJECTIONS_DIRECTORY = "playtest-proposal-rejections"
+_PLAYTEST_PROPOSAL_REJECTION_KIND = (
+    "autonomous-workshop.playtest-proposal-rejection"
+)
+_PLAYTEST_PROPOSAL_REJECTION_HEAD_KIND = (
+    "autonomous-workshop.playtest-proposal-rejection-head"
 )
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
 _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
@@ -176,6 +187,8 @@ _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES = 8 * 1024
 _MAX_MAKE_PROPOSAL_REJECTION_BYTES = 256 * 1024
 _MAX_MAKE_PROPOSAL_REJECTION_FEEDBACK_CHARS = 2_000
 _MAX_MAKE_PROPOSAL_REJECTIONS = 32
+_MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES = 256 * 1024
+_MAX_PLAYTEST_PROPOSAL_REJECTIONS = 32
 _MAX_LEGACY_CAD_GATE_EVIDENCE_BYTES = 3 * 1024 * 1024
 _MAX_NATIVE_TURNS = 32
 _RECOVERABLE_BACKOFF_BASE_SECONDS = 1.0
@@ -228,6 +241,19 @@ _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
         "The host rejected the agent-authored Make contract. Repair the Make "
         "product and rerun the Make finalizer so made.json and agent-outcome.json "
         "are regenerated from one internally consistent artifact tree."
+    ),
+}
+_PLAYTEST_PROPOSAL_REJECTION_FEEDBACK = {
+    "playtest-artifact-invalid": (
+        "The host could not safely reopen the exact Playtest evidence sealed by "
+        "the finalizer. Replace missing, linked, special, or subsequently changed "
+        "evidence with stable regular files, then rerun the Playtest finalizer. "
+        "After it succeeds, return control immediately without changing evidence."
+    ),
+    "playtest-contract-invalid": (
+        "The host rejected the agent-authored Playtest contract or its binding to "
+        "the current Made revision. Repair the configs, evidence, or authored "
+        "source, rerun the Playtest finalizer, and return control immediately."
     ),
 }
 
@@ -286,6 +312,15 @@ class _RecoverableNativeTurn(WorkshopError):
 
 class _MakeProposalRejected(Exception):
     """A valid Make envelope whose agent-authored candidate failed its contract."""
+
+    def __init__(self, failure_code: str, feedback: str) -> None:
+        self.failure_code = failure_code
+        self.feedback = feedback
+        super().__init__(failure_code)
+
+
+class _PlaytestProposalRejected(Exception):
+    """A valid Playtest envelope whose untrusted candidate failed its contract."""
 
     def __init__(self, failure_code: str, feedback: str) -> None:
         self.failure_code = failure_code
@@ -1253,6 +1288,402 @@ def _persist_make_proposal_rejection(
     return record
 
 
+def _playtest_proposal_rejection_directory(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    create: bool = False,
+) -> Path:
+    if checkpoint.stage != "playtest":
+        raise TransitionError("Playtest proposal rejection belongs to another stage")
+    current = run.host_state_root
+    for index, part in enumerate(
+        (
+            _PLAYTEST_PROPOSAL_REJECTIONS_DIRECTORY,
+            checkpoint.checkpoint_sha256,
+        )
+    ):
+        candidate = current / part
+        try:
+            identity = candidate.lstat()
+        except FileNotFoundError:
+            if not create:
+                remaining = (
+                    _PLAYTEST_PROPOSAL_REJECTIONS_DIRECTORY,
+                    checkpoint.checkpoint_sha256,
+                )[index:]
+                return current.joinpath(*remaining)
+            try:
+                candidate.mkdir(mode=0o700)
+                identity = candidate.lstat()
+            except OSError as exc:
+                raise StateConflict(
+                    "Playtest proposal rejection directory is unavailable"
+                ) from exc
+        except OSError as exc:
+            raise StateConflict(
+                "Playtest proposal rejection directory is unavailable"
+            ) from exc
+        if (
+            stat.S_ISLNK(identity.st_mode)
+            or not stat.S_ISDIR(identity.st_mode)
+            or stat.S_IMODE(identity.st_mode) != 0o700
+        ):
+            raise StateConflict(
+                "Playtest proposal rejection directory must be private"
+            )
+        current = candidate
+    return current
+
+
+def _playtest_proposal_rejection_record_path(
+    directory: Path, rejection_sha256: str
+) -> Path:
+    if re.fullmatch(r"[0-9a-f]{64}", rejection_sha256) is None:
+        raise StateConflict("Playtest proposal rejection identity is invalid")
+    return directory / ("rejection-%s.json" % rejection_sha256)
+
+
+def _playtest_proposal_quarantine_path(
+    directory: Path, proposal_file_sha256: str
+) -> Path:
+    if re.fullmatch(r"[0-9a-f]{64}", proposal_file_sha256) is None:
+        raise StateConflict("quarantined Playtest proposal identity is invalid")
+    return directory / ("outcome-%s.json" % proposal_file_sha256)
+
+
+def _validate_playtest_proposal_rejection_record(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    record: Mapping[str, Any],
+    *,
+    directory: Path,
+    seen: frozenset[str] = frozenset(),
+) -> Mapping[str, Any]:
+    expected = {
+        "schema_version",
+        "kind",
+        "product_id",
+        "stage",
+        "round",
+        "rejection_number",
+        "checkpoint_sha256",
+        "subject_sha256",
+        "previous_rejection_sha256",
+        "rejected_proposal_sha256",
+        "rejected_proposal_file_sha256",
+        "rejected_outcome_sha256",
+        "rejected_artifacts",
+        "failure_code",
+        "feedback",
+        "rejection_sha256",
+    }
+    digest_fields = (
+        "checkpoint_sha256",
+        "subject_sha256",
+        "rejected_proposal_sha256",
+        "rejected_proposal_file_sha256",
+        "rejected_outcome_sha256",
+        "rejection_sha256",
+    )
+    previous = record.get("previous_rejection_sha256")
+    artifacts = record.get("rejected_artifacts")
+    rejection_number = record.get("rejection_number")
+    rejection_sha256 = record.get("rejection_sha256")
+    failure_code = record.get("failure_code")
+    if (
+        set(record) != expected
+        or record.get("schema_version") != 1
+        or record.get("kind") != _PLAYTEST_PROPOSAL_REJECTION_KIND
+        or record.get("product_id") != checkpoint.product_id
+        or record.get("stage") != "playtest"
+        or record.get("round") != checkpoint.round_index
+        or type(rejection_number) is not int
+        or not 1 <= rejection_number <= _MAX_PLAYTEST_PROPOSAL_REJECTIONS
+        or record.get("checkpoint_sha256") != checkpoint.checkpoint_sha256
+        or (
+            previous is not None
+            and (
+                not isinstance(previous, str)
+                or re.fullmatch(r"[0-9a-f]{64}", previous) is None
+            )
+        )
+        or any(
+            not isinstance(record.get(name), str)
+            or re.fullmatch(r"[0-9a-f]{64}", record[name]) is None
+            for name in digest_fields
+        )
+        or failure_code not in _PLAYTEST_PROPOSAL_REJECTION_FEEDBACK
+        or record.get("feedback")
+        != _PLAYTEST_PROPOSAL_REJECTION_FEEDBACK.get(failure_code)
+        or not isinstance(artifacts, list)
+    ):
+        raise StateConflict("Playtest proposal rejection is invalid")
+    try:
+        artifact_values = tuple(
+            AgentArtifact.from_mapping(value) for value in artifacts
+        )
+    except ContractError as exc:
+        raise StateConflict(
+            "Playtest proposal rejection artifacts are invalid"
+        ) from exc
+    if [artifact.to_dict() for artifact in artifact_values] != artifacts:
+        raise StateConflict("Playtest proposal rejection artifacts are not canonical")
+    identity = {key: record[key] for key in expected - {"rejection_sha256"}}
+    if rejection_sha256 != _sha256(_canonical_json_bytes(identity)):
+        raise StateConflict("Playtest proposal rejection hash is invalid")
+    if rejection_sha256 in seen:
+        raise StateConflict("Playtest proposal rejection chain contains a cycle")
+
+    quarantine = _read_stable_private_bytes(
+        _playtest_proposal_quarantine_path(
+            directory, record["rejected_proposal_file_sha256"]
+        ),
+        label="quarantined Playtest proposal",
+        maximum_bytes=_MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES,
+    )
+    if _sha256(quarantine) != record["rejected_proposal_file_sha256"]:
+        raise StateConflict("quarantined Playtest proposal hash is invalid")
+    try:
+        proposal_document = _strict_json_bytes(
+            quarantine, label="quarantined Playtest proposal"
+        )
+        proposal = AgentOutcomeProposal.from_mapping(proposal_document)
+    except ContractError as exc:
+        raise StateConflict("quarantined Playtest proposal is invalid") from exc
+    if (
+        proposal.checkpoint_sha256 != checkpoint.checkpoint_sha256
+        or proposal.subject_sha256 != record["subject_sha256"]
+        or proposal.outcome.stage != "playtest"
+        or proposal.outcome.status != "ready"
+        or proposal.sha256 != record["rejected_proposal_sha256"]
+        or proposal.outcome.sha256 != record["rejected_outcome_sha256"]
+        or [artifact.to_dict() for artifact in proposal.outcome.artifacts]
+        != artifacts
+    ):
+        raise StateConflict(
+            "quarantined Playtest proposal disagrees with its rejection"
+        )
+
+    if previous is None:
+        if rejection_number != 1:
+            raise StateConflict("Playtest proposal rejection predecessor is invalid")
+    else:
+        if rejection_number <= 1:
+            raise StateConflict("Playtest proposal rejection predecessor is invalid")
+        previous_content = _read_stable_private_bytes(
+            _playtest_proposal_rejection_record_path(directory, previous),
+            label="prior Playtest proposal rejection",
+            maximum_bytes=_MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES,
+        )
+        try:
+            previous_record = _strict_json_bytes(
+                previous_content, label="prior Playtest proposal rejection"
+            )
+        except ContractError as exc:
+            raise StateConflict(
+                "prior Playtest proposal rejection is invalid"
+            ) from exc
+        if previous_content != _canonical_json_bytes(previous_record) + b"\n":
+            raise StateConflict(
+                "prior Playtest proposal rejection is not canonical"
+            )
+        validated_previous = _validate_playtest_proposal_rejection_record(
+            run,
+            checkpoint,
+            previous_record,
+            directory=directory,
+            seen=seen | {rejection_sha256},
+        )
+        if (
+            validated_previous["rejection_sha256"] != previous
+            or validated_previous["rejection_number"] != rejection_number - 1
+        ):
+            raise StateConflict("Playtest proposal rejection predecessor is invalid")
+    return dict(record)
+
+
+def _read_playtest_proposal_rejection(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> Optional[Mapping[str, Any]]:
+    if checkpoint.stage != "playtest":
+        return None
+    directory = _playtest_proposal_rejection_directory(run, checkpoint)
+    head_path = directory / "current.json"
+    if not head_path.exists() and not head_path.is_symlink():
+        return None
+    head_content = _read_stable_private_bytes(
+        head_path,
+        label="Playtest proposal rejection head",
+        maximum_bytes=4 * 1024,
+    )
+    try:
+        head = _strict_json_bytes(
+            head_content, label="Playtest proposal rejection head"
+        )
+    except ContractError as exc:
+        raise StateConflict("Playtest proposal rejection head is invalid") from exc
+    head_fields = {
+        "schema_version",
+        "kind",
+        "checkpoint_sha256",
+        "rejection_sha256",
+        "head_sha256",
+    }
+    head_identity = {key: head.get(key) for key in head_fields - {"head_sha256"}}
+    if (
+        head_content != _canonical_json_bytes(head) + b"\n"
+        or set(head) != head_fields
+        or head.get("schema_version") != 1
+        or head.get("kind") != _PLAYTEST_PROPOSAL_REJECTION_HEAD_KIND
+        or head.get("checkpoint_sha256") != checkpoint.checkpoint_sha256
+        or not isinstance(head.get("rejection_sha256"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", head["rejection_sha256"]) is None
+        or head.get("head_sha256") != _sha256(_canonical_json_bytes(head_identity))
+    ):
+        raise StateConflict("Playtest proposal rejection head is invalid")
+    record_content = _read_stable_private_bytes(
+        _playtest_proposal_rejection_record_path(
+            directory, head["rejection_sha256"]
+        ),
+        label="Playtest proposal rejection",
+        maximum_bytes=_MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES,
+    )
+    try:
+        record = _strict_json_bytes(
+            record_content, label="Playtest proposal rejection"
+        )
+    except ContractError as exc:
+        raise StateConflict("Playtest proposal rejection is invalid") from exc
+    if record_content != _canonical_json_bytes(record) + b"\n":
+        raise StateConflict("Playtest proposal rejection is not canonical")
+    validated = _validate_playtest_proposal_rejection_record(
+        run, checkpoint, record, directory=directory
+    )
+    if validated["rejection_sha256"] != head["rejection_sha256"]:
+        raise StateConflict(
+            "Playtest proposal rejection head points to another record"
+        )
+    return validated
+
+
+def _playtest_rejection_for_error(error: ContractError) -> _PlaytestProposalRejected:
+    if isinstance(error, StateConflict) or not isinstance(error, ContractError):
+        raise StateConflict("Playtest proposal rejection classification is invalid")
+    failure_code = (
+        "playtest-artifact-invalid"
+        if isinstance(error, ArtifactError)
+        else "playtest-contract-invalid"
+    )
+    return _PlaytestProposalRejected(
+        failure_code=failure_code,
+        feedback=_PLAYTEST_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+    )
+
+
+def _persist_playtest_proposal_rejection(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    proposal: AgentOutcomeProposal,
+    rejection: _PlaytestProposalRejected,
+) -> Mapping[str, Any]:
+    if checkpoint.stage != "playtest":
+        raise TransitionError("Playtest proposal rejection belongs to another stage")
+    if (
+        _PLAYTEST_PROPOSAL_REJECTION_FEEDBACK.get(rejection.failure_code)
+        != rejection.feedback
+    ):
+        raise StateConflict("Playtest proposal rejection feedback is invalid")
+    proposal_bytes = _current_agent_outcome_bytes(run, proposal)
+    proposal_file_sha256 = _sha256(proposal_bytes)
+    previous = _read_playtest_proposal_rejection(run, checkpoint)
+    if (
+        previous is not None
+        and previous["rejected_proposal_file_sha256"] == proposal_file_sha256
+        and previous["rejected_proposal_sha256"] == proposal.sha256
+        and previous["subject_sha256"] == proposal.subject_sha256
+    ):
+        return previous
+    if (
+        previous is not None
+        and previous["rejection_number"] >= _MAX_PLAYTEST_PROPOSAL_REJECTIONS
+    ):
+        raise WorkshopError(
+            "Playtest proposal exhausted its bounded host rejection budget"
+        )
+    directory = _playtest_proposal_rejection_directory(
+        run, checkpoint, create=True
+    )
+    quarantine_path = _playtest_proposal_quarantine_path(
+        directory, proposal_file_sha256
+    )
+    if quarantine_path.exists() or quarantine_path.is_symlink():
+        if _read_stable_private_bytes(
+            quarantine_path,
+            label="quarantined Playtest proposal",
+            maximum_bytes=_MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES,
+        ) != proposal_bytes:
+            raise StateConflict("quarantined Playtest proposal bytes changed")
+    else:
+        _atomic_private_write(quarantine_path, proposal_bytes)
+    identity: dict[str, Any] = {
+        "schema_version": 1,
+        "kind": _PLAYTEST_PROPOSAL_REJECTION_KIND,
+        "product_id": checkpoint.product_id,
+        "stage": "playtest",
+        "round": checkpoint.round_index,
+        "rejection_number": (
+            previous["rejection_number"] + 1 if previous is not None else 1
+        ),
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "subject_sha256": proposal.subject_sha256,
+        "previous_rejection_sha256": (
+            previous["rejection_sha256"] if previous is not None else None
+        ),
+        "rejected_proposal_sha256": proposal.sha256,
+        "rejected_proposal_file_sha256": proposal_file_sha256,
+        "rejected_outcome_sha256": proposal.outcome.sha256,
+        "rejected_artifacts": [
+            artifact.to_dict() for artifact in proposal.outcome.artifacts
+        ],
+        "failure_code": rejection.failure_code,
+        "feedback": rejection.feedback,
+    }
+    record = {
+        **identity,
+        "rejection_sha256": _sha256(_canonical_json_bytes(identity)),
+    }
+    encoded = _canonical_json_bytes(record) + b"\n"
+    if len(encoded) > _MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES:
+        raise StateConflict("Playtest proposal rejection exceeded its safe size limit")
+    record_path = _playtest_proposal_rejection_record_path(
+        directory, record["rejection_sha256"]
+    )
+    if record_path.exists() or record_path.is_symlink():
+        if _read_stable_private_bytes(
+            record_path,
+            label="Playtest proposal rejection",
+            maximum_bytes=_MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES,
+        ) != encoded:
+            raise StateConflict("Playtest proposal rejection identity was reused")
+    else:
+        _atomic_private_write(record_path, encoded)
+    head_identity = {
+        "schema_version": 1,
+        "kind": _PLAYTEST_PROPOSAL_REJECTION_HEAD_KIND,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "rejection_sha256": record["rejection_sha256"],
+    }
+    head = {
+        **head_identity,
+        "head_sha256": _sha256(_canonical_json_bytes(head_identity)),
+    }
+    _atomic_private_write(
+        directory / "current.json", _canonical_json_bytes(head) + b"\n"
+    )
+    return record
+
+
 def _remove_rejected_agent_outcome(
     run: AgentRun, rejection: Mapping[str, Any]
 ) -> None:
@@ -1706,6 +2137,10 @@ def _record_public_example_projection(
                 manager_id=checkpoint.manager_id,
                 effort=checkpoint.effort,
                 github_requested=github_requested,
+                token_summary=_native_token_summary(
+                    NativeRunPaths(run.run_root, run.host_state_root),
+                    checkpoint,
+                ),
             )
             target_relative = (
                 target.relative_to(repository).as_posix()
@@ -2203,6 +2638,7 @@ def _prepare_effort_stage_input(
     roster: InventorRoster,
     cad_gate_rejection: Optional[Mapping[str, Any]],
     make_proposal_rejection: Optional[Mapping[str, Any]],
+    playtest_proposal_rejection: Optional[Mapping[str, Any]],
 ) -> tuple[str, Mapping[str, Any], Mapping[str, Any]]:
     """Prepare a selectable-effort stage without fabricating skipped stages."""
 
@@ -2573,21 +3009,23 @@ def _prepare_effort_stage_input(
             },
         }
         if stage == "playtest":
-            subject = _stage_subject(
-                "playtest",
-                {
-                    "effort": effort.name,
-                    "made_sha256": made.made_sha256,
-                    "product_artifact_sha256": made.product_manifest.artifact_sha256,
-                    "blueprint_sha256": blueprint.sha256,
-                    "round": checkpoint.round_index,
-                    "host_cad_gate_rejection_sha256": (
-                        cad_gate_rejection["rejection_sha256"]
-                        if cad_gate_rejection is not None
-                        else None
-                    ),
-                },
-            )
+            subject_inputs = {
+                "effort": effort.name,
+                "made_sha256": made.made_sha256,
+                "product_artifact_sha256": made.product_manifest.artifact_sha256,
+                "blueprint_sha256": blueprint.sha256,
+                "round": checkpoint.round_index,
+                "host_cad_gate_rejection_sha256": (
+                    cad_gate_rejection["rejection_sha256"]
+                    if cad_gate_rejection is not None
+                    else None
+                ),
+            }
+            if playtest_proposal_rejection is not None:
+                subject_inputs["host_playtest_proposal_rejection_sha256"] = (
+                    playtest_proposal_rejection["rejection_sha256"]
+                )
+            subject = _stage_subject("playtest", subject_inputs)
             inputs = {
                 **common,
                 "round": checkpoint.round_index,
@@ -2598,6 +3036,10 @@ def _prepare_effort_stage_input(
                 "contract_path": "artifacts/playtest/r%04d/playtested.json"
                 % checkpoint.round_index,
             }
+            if playtest_proposal_rejection is not None:
+                inputs["host_playtest_proposal_rejection"] = (
+                    playtest_proposal_rejection
+                )
         elif stage == "release":
             release_contract = _materialized_release_contract(checkpoint)
             terminal_transition = _materialized_release_terminal_transition(checkpoint)
@@ -2726,6 +3168,9 @@ def _prepare_stage_input(
         cad_gate_rejection,
         make_proposal_rejection,
     )
+    playtest_proposal_rejection = _read_playtest_proposal_rejection(
+        run, checkpoint
+    )
     if _checkpoint_effort(checkpoint) is not None:
         return _prepare_effort_stage_input(
             run,
@@ -2733,6 +3178,7 @@ def _prepare_stage_input(
             roster=roster,
             cad_gate_rejection=cad_gate_rejection,
             make_proposal_rejection=make_proposal_rejection,
+            playtest_proposal_rejection=playtest_proposal_rejection,
         )
     normal_transition = {
         "match": "invent",
@@ -3003,6 +3449,10 @@ def _prepare_stage_input(
                                 else None
                             ),
                         }
+                        if playtest_proposal_rejection is not None:
+                            subject_inputs[
+                                "host_playtest_proposal_rejection_sha256"
+                            ] = playtest_proposal_rejection["rejection_sha256"]
                         subject = _stage_subject("playtest", subject_inputs)
                         inputs = {
                             **common,
@@ -3016,6 +3466,10 @@ def _prepare_stage_input(
                             "contract_path": "artifacts/playtest/r%04d/playtested.json"
                             % checkpoint.round_index,
                         }
+                        if playtest_proposal_rejection is not None:
+                            inputs["host_playtest_proposal_rejection"] = (
+                                playtest_proposal_rejection
+                            )
                     else:
                         release_contract = _materialized_release_contract(checkpoint)
                         context["release_contract"] = release_contract
@@ -3142,16 +3596,26 @@ def _launcher_call(
     *,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
+    unfinished_continuation: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
+    prompt = native_stage_prompt(checkpoint.stage)
+    if unfinished_continuation:
+        prompt += (
+            "\n\nYour previous native turn returned without "
+            "agent-outcome.json. The active Goal is not complete. Continue "
+            "the same Goal from the exact current files and STAGE.json, run "
+            "the required stage finalizer, and return only after it writes "
+            "agent-outcome.json."
+        )
     arguments = {
         "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256,
         "constitution_sha256": materialized_agent_instructions_sha256(checkpoint),
         "run_root": paths.workspace,
         "host_state_root": paths.host_state,
-        "prompt": native_stage_prompt(checkpoint.stage),
+        "prompt": prompt,
         "activity_observer": activity_observer,
         "finalization_marker": paths.workspace / _AGENT_OUTCOME_NAME,
     }
@@ -3593,6 +4057,154 @@ def _read_stable_private_json(
         return _strict_json_bytes(content, label=label)
     except ContractError as exc:
         raise StateConflict("%s is invalid" % label) from exc
+
+
+def _native_token_aggregate(
+    paths: NativeRunPaths, checkpoint: AgentRunCheckpoint
+) -> dict[str, dict[str, Any]]:
+    path = paths.host_state / _NATIVE_TOKEN_USAGE_NAME
+    if not path.exists() and not path.is_symlink():
+        return {}
+    value = _read_stable_private_json(
+        path,
+        label="native token usage",
+        maximum_bytes=128 * 1024,
+    )
+    if (
+        set(value)
+        != {"schema_version", "kind", "product_id", "wish_sha256", "stages"}
+        or value.get("schema_version") != 1
+        or value.get("kind") != _NATIVE_TOKEN_USAGE_KIND
+        or value.get("product_id") != checkpoint.product_id
+        or value.get("wish_sha256") != checkpoint.wish_sha256
+        or not isinstance(value.get("stages"), Mapping)
+        or not set(value["stages"]).issubset(_NATIVE_TOKEN_STAGES)
+    ):
+        raise StateConflict("native token usage binding is invalid")
+    stages: dict[str, Any] = {}
+    for stage_name, stage in value["stages"].items():
+        if (
+            not isinstance(stage, Mapping)
+            or set(stage) != {"turns", "measured_turns", "tokens"}
+            or type(stage.get("turns")) is not int
+            or type(stage.get("measured_turns")) is not int
+            or not 0 <= stage["measured_turns"] <= stage["turns"] <= 100_000
+        ):
+            raise StateConflict("native token stage aggregate is invalid")
+        if type(stage.get("tokens")) is not int or not 0 <= stage["tokens"] <= 10**18:
+            raise StateConflict("native token stage counter is invalid")
+        stages[stage_name] = {
+            "turns": stage["turns"],
+            "measured_turns": stage["measured_turns"],
+            "tokens": stage["tokens"],
+        }
+    return stages
+
+
+def _record_native_token_usage(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+    usage: Any,
+) -> None:
+    """Add one turn to the small best-effort stage aggregate."""
+
+    if checkpoint.stage not in _NATIVE_TOKEN_STAGES:
+        return
+    measured = usage if type(usage) is int and usage >= 0 else None
+    stages = _native_token_aggregate(paths, checkpoint)
+    previous = stages.get(checkpoint.stage)
+    stages[checkpoint.stage] = {
+        "turns": 1 if previous is None else previous["turns"] + 1,
+        "measured_turns": (
+            (0 if previous is None else previous["measured_turns"])
+            + (1 if measured is not None else 0)
+        ),
+        "tokens": (0 if previous is None else previous["tokens"])
+        + (0 if measured is None else measured),
+    }
+    _write_private_json(
+        paths.host_state / _NATIVE_TOKEN_USAGE_NAME,
+        {
+            "schema_version": 1,
+            "kind": _NATIVE_TOKEN_USAGE_KIND,
+            "product_id": checkpoint.product_id,
+            "wish_sha256": checkpoint.wish_sha256,
+            "stages": stages,
+        },
+    )
+
+
+def _unavailable_native_token_summary() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "kind": _NATIVE_TOKEN_SUMMARY_KIND,
+        "status": "unavailable",
+        "reason": "Native token usage was not reported for this run.",
+    }
+
+
+def _native_token_summary(
+    paths: NativeRunPaths, checkpoint: AgentRunCheckpoint
+) -> dict[str, Any]:
+    try:
+        observed_stages = _native_token_aggregate(paths, checkpoint)
+    except (OSError, WorkshopError):
+        return _unavailable_native_token_summary()
+    if not observed_stages:
+        return _unavailable_native_token_summary()
+
+    total_tokens = 0
+    recorded_turns = 0
+    measured_turns = 0
+    stages: dict[str, Any] = {}
+    for stage_name in _NATIVE_TOKEN_STAGES:
+        observed = observed_stages.get(stage_name)
+        turns = 0 if observed is None else observed["turns"]
+        measured = 0 if observed is None else observed["measured_turns"]
+        tokens = 0 if observed is None else observed["tokens"]
+        recorded_turns += turns
+        measured_turns += measured
+        total_tokens += tokens
+        status = "pending"
+        if checkpoint.effort is not None and stage_name == "match":
+            status = "folded"
+        elif checkpoint.effort == "spark" and stage_name == "invent":
+            status = "skipped"
+        elif checkpoint.effort in ("spark", "forge") and stage_name == "playtest":
+            status = "not-run"
+        elif turns:
+            status = "measured" if measured == turns else "partial"
+        stages[stage_name] = {
+            "status": status,
+            "turns": turns,
+            "measured_turns": measured,
+            "unmeasured_turns": turns - measured,
+            "tokens": tokens,
+        }
+    try:
+        durable_turns = native_progress_turn_floor(
+            paths.host_state / NATIVE_PROGRESS_FILENAME
+        )
+    except (OSError, WorkshopError):
+        durable_turns = recorded_turns
+    missing_turns = max(0, durable_turns - recorded_turns)
+    unmeasured_turns = recorded_turns - measured_turns + missing_turns
+    return {
+        "schema_version": 1,
+        "kind": _NATIVE_TOKEN_SUMMARY_KIND,
+        "status": (
+            "unavailable"
+            if measured_turns == 0
+            else ("partial" if unmeasured_turns else "measured")
+        ),
+        "turns": {
+            "total": recorded_turns + missing_turns,
+            "measured": measured_turns,
+            "unmeasured": unmeasured_turns,
+        },
+        "total_tokens": total_tokens,
+        "stages": stages,
+    }
 
 
 def _validate_legacy_full_tier_make_gate(
@@ -4748,6 +5360,15 @@ def _process_agent_outcome_inner(
             _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
             _remove_agent_outcome(run.run_root)
             return checkpoint
+        except (ArtifactError, ContractError) as error:
+            if isinstance(error, StateConflict):
+                raise
+            rejection = _playtest_rejection_for_error(error)
+            persisted = _persist_playtest_proposal_rejection(
+                run, checkpoint, proposal, rejection
+            )
+            _remove_rejected_agent_outcome(run, persisted)
+            return checkpoint
     elif checkpoint.stage == "release":
         try:
             with wish_run_timing_span(
@@ -4883,6 +5504,7 @@ def _run_native_session(
         else "start"
     )
     action = "resumed" if first_method == "resume" else "started"
+    unfinished_continuation = False
     while turns < _MAX_NATIVE_TURNS:
         checkpoint = run.snapshot()
         if checkpoint.status in ("waiting", "failed", "complete"):
@@ -4922,6 +5544,7 @@ def _run_native_session(
                 recovered_progress.observe("failed")
                 raise
             else:
+                unfinished_continuation = False
                 _rebind_existing_progress(
                     paths, checkpoint, updated, activity="completed"
                 )
@@ -4953,6 +5576,7 @@ def _run_native_session(
                     method,
                     checkpoint=checkpoint,
                     paths=paths,
+                    unfinished_continuation=unfinished_continuation,
                     activity_observer=turn_activity_observer,
                 )
         except WorkshopError as exc:
@@ -4967,8 +5591,32 @@ def _run_native_session(
             progress.observe("failed")
         else:
             progress.observe("finalizing")
+        try:
+            _record_native_token_usage(
+                paths,
+                checkpoint,
+                (
+                    getattr(last_session, "token_count", None)
+                    if launcher_failure is None
+                    else None
+                ),
+            )
+        except (OSError, WorkshopError):
+            # Token telemetry is best-effort and never a lifecycle gate.
+            pass
         turns += 1
         if not _agent_outcome_exists(run.run_root):
+            # A normal native turn may end before the active Goal reaches its
+            # finalizer. Continue the exact checkpointed session under the same
+            # immutable stage subject and shared turn budget. This is not gate
+            # evidence and creates no attempt; it merely avoids requiring an
+            # operator to issue `workshop resume` between ordinary agent turns.
+            if (
+                launcher_failure is None
+                and _session_status(paths, checkpoint.manager_id) == "checkpointed"
+            ):
+                unfinished_continuation = True
+                continue
             progress.observe("failed")
             if isinstance(launcher_failure, _RecoverableNativeTurn):
                 # A timeout or recognized provider disconnect is safe to
@@ -5003,6 +5651,7 @@ def _run_native_session(
         except WorkshopError:
             progress.observe("failed")
             raise
+        unfinished_continuation = False
         progress.rebind(updated, activity="completed")
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action
@@ -5283,6 +5932,16 @@ def _native_receipt(
         "native_turns": durable_turns,
         "progress": progress,
         "publication": publication,
+        "tokens": (
+            _native_token_summary(paths, checkpoint)
+            if paths is not None
+            else {
+                "schema_version": 1,
+                "kind": "autonomous-workshop.native-token-summary",
+                "status": "unavailable",
+                "reason": "Host token state was not provided.",
+            }
+        ),
     }
     if checkpoint.effort is not None:
         receipt["effort"] = checkpoint.effort

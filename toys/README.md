@@ -18,6 +18,21 @@ sanitized, workflow-shaped, content-addressed projection here under
 Workflow-shaped snapshots include a README table of public stage attempts
 from each `ATTEMPTS.json`.
 
+## Production acceptance runs
+
+These are ordinary CLI runs using real native Codex sessions, real Inventor
+bundles, the production CAD gates, authenticated Factory publication, and
+public readback. They are not mocked fixtures.
+
+| Toy | Inventor | Route exercised | Public acceptance |
+|---|---|---|---|
+| [Rainspell Dial](sonora-reed-rainspell-dial-three-field-sound-garden/) | [Sonora Reed](../inventors/sonora-reed/) | Forge | [Factory page](https://www.autonomous.ai/factory/product/rainspell-dial-three-field-sound-garden), CDN manual bytes verified |
+| [Eclipse Braid](kestrel-knot-eclipse-braid/) | [Kestrel Knot](../inventors/kestrel-knot/) | Spark via the CLI default | [Factory page](https://www.autonomous.ai/factory/product/eclipse-braid), CDN manual bytes verified |
+
+When Make seals a raster product render, the generated snapshot README embeds
+one exact local image—preferring `iso`/`isometric`, then `hero`, then `front`—so GitHub shows
+the product without depending on a mutable Factory CDN thumbnail.
+
 A current public snapshot follows the real lifecycle:
 
 - `wish/` records the exact Wish hash and, only with explicit consent, its
@@ -32,13 +47,18 @@ A current public snapshot follows the real lifecycle:
 - `release/` preserves the exact printable `MANUAL.pdf`, product facts,
   manual-design/review evidence, and Release contract;
 - `publication/PUBLICATION.json` records sanitized public URLs, listing facts,
-  and content hashes; `MANIFEST.json` hashes every public workflow file except
+  and content hashes;
+- `TOKENS.json` records best-effort Manager-reported input-plus-output token
+  totals by stage for new runs. It says `partial` or `unavailable` when the
+  Manager did not report every turn and never invents a dollar estimate;
+- `MANIFEST.json` hashes every public workflow file except
   itself and the generated root README. `SANITIZATION.json`, when present,
   records source/public hashes for host-local path prefixes replaced by stable
   placeholders.
 
-Historical schema-v1 snapshots may retain `MANUAL.md`; they are legacy
-evidence and are never rewritten or presented as a current terminal Release.
+Historical snapshots may lack `TOKENS.json`, and schema-v1 snapshots may retain
+`MANUAL.md`; they are legacy evidence and are never rewritten or presented as
+a current terminal Release.
 
 Snapshots never contain an undisclosed Wish, Codex prompt/transcript/chain of
 thought, host checkpoint, credentials, raw Factory receipt, generated G-code,

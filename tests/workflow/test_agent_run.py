@@ -948,6 +948,33 @@ class AgentRunTest(unittest.TestCase):
             )
         self.assertEqual(run.snapshot().stage, "playtest")
 
+    def test_host_gate_can_seal_a_product_file_larger_than_16_mib(self):
+        run = self.create()
+        for stage, transition in (
+            ("wish", "match"),
+            ("match", "invent"),
+            ("invent", "make"),
+        ):
+            self.advance(run, stage, transition)
+
+        outcome = self.outcome(run, "make", "playtest")
+        relative = "artifacts/make/r0001/product/renders/large.png"
+        large = run.run_root / relative
+        large.parent.mkdir(parents=True, exist_ok=True)
+        with large.open("wb") as stream:
+            stream.seek(17 * 1024 * 1024 - 1)
+            stream.write(b"\0")
+        artifact = AgentArtifact(relative, hashlib.sha256(large.read_bytes()).hexdigest())
+
+        checkpoint = run.apply_outcome(
+            outcome,
+            gate=self.gate(run, outcome),
+            additional_artifacts=(artifact,),
+        )
+
+        self.assertEqual(checkpoint.stage, "playtest")
+        self.assertIn(relative, {item.path for item in checkpoint.stage_artifacts["make"]})
+
     def test_four_round_cad_history_can_exceed_64_mib_but_not_128_mib(self):
         run = self.create(max_rounds=4)
         mib = 1024 * 1024
@@ -989,7 +1016,7 @@ class AgentRunTest(unittest.TestCase):
             return sum(item["size"] for item in document["sealed_artifacts"])
 
         # Keep the fixture disk-small while exercising the real cumulative budget;
-        # every simulated artifact remains within the real 16 MiB per-file limit.
+        # every simulated artifact remains within the real 95 MiB per-file limit.
         with patch.object(
             agent_run_module,
             "_read_relative_regular",

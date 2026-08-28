@@ -73,6 +73,26 @@ def _sha(value):
     return hashlib.sha256(value).hexdigest()
 
 
+def _token_summary():
+    return {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.native-token-summary",
+        "status": "measured",
+        "turns": {"total": 1, "measured": 1, "unmeasured": 0},
+        "total_tokens": 125,
+        "stages": {
+            name: {
+                "status": "measured" if name == "make" else "pending",
+                "turns": 1 if name == "make" else 0,
+                "measured_turns": 1 if name == "make" else 0,
+                "unmeasured_turns": 0,
+                "tokens": 125 if name == "make" else 0,
+            }
+            for name in ("match", "invent", "make", "playtest", "release")
+        },
+    }
+
+
 def _manual_pdf(
     *,
     page_count=1,
@@ -1324,6 +1344,7 @@ class NativeReleaseTest(unittest.TestCase):
             made=self.made,
             inventor_id="eve",
             receipt=receipt,
+            token_summary=_token_summary(),
         )
         self.assertEqual(target, repository / "toys/eve-moon-nook")
         self.assertEqual(
@@ -1359,6 +1380,9 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertTrue((target / "playtest/playtested.json").is_file())
         self.assertTrue((target / "release/release.json").is_file())
         self.assertTrue((target / "MANIFEST.json").is_file())
+        tokens = json.loads((target / "TOKENS.json").read_text(encoding="utf-8"))
+        self.assertEqual(tokens["status"], "measured")
+        self.assertEqual(tokens["stages"]["make"]["tokens"], 125)
         public_manifest = json.loads(
             (target / "MANIFEST.json").read_text(encoding="utf-8")
         )
@@ -1382,6 +1406,7 @@ class NativeReleaseTest(unittest.TestCase):
                 made=self.made,
                 inventor_id="eve",
                 receipt=receipt,
+                token_summary=_token_summary(),
             ),
             target,
         )
@@ -1394,6 +1419,7 @@ class NativeReleaseTest(unittest.TestCase):
                 made=self.made,
                 inventor_id="eve",
                 receipt=receipt,
+                token_summary=_token_summary(),
             )
 
     def test_public_example_copies_exact_pdf_manual_without_cover_or_rich_page_identity(self):

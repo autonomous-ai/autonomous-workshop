@@ -19,7 +19,7 @@ from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any, Mapping, Optional, Sequence
 
-from workshop.artifacts import assert_packable_content
+from workshop.artifacts import MAX_FILE_BYTES, assert_packable_content
 from workshop.contributors.extensions import (
     fingerprint_extension_skill,
     load_inventor_extension_bundles,
@@ -73,11 +73,11 @@ MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
 MAX_AGENT_INPUT_BYTES = 4 * 1024 * 1024
 MAX_AGENT_INPUT_FILES = 256
-MAX_AGENT_ARTIFACT_BYTES = 16 * 1024 * 1024
+MAX_AGENT_ARTIFACT_BYTES = MAX_FILE_BYTES
 # A four-round physical-product run may retain several immutable CAD, mesh,
 # slicer, and Playtest revisions. Keep a cumulative host budget while allowing
-# those bounded revisions to coexist; individual artifacts remain capped at
-# 16 MiB and each gate remains capped at 512 sealed files.
+# those bounded revisions to coexist; individual artifacts share the 95 MiB
+# product-package limit and each gate remains capped at 512 sealed files.
 MAX_AGENT_REFERENCED_BYTES = 128 * 1024 * 1024
 MAX_AGENT_ARTIFACTS_PER_OUTCOME = 16
 MAX_HOST_SEALED_ARTIFACTS_PER_GATE = 512

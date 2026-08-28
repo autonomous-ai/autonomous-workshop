@@ -51,7 +51,10 @@ from workshop.release.verification import (
     PRODUCT_VERIFICATION_PATH,
     read_product_verification,
 )
-from workshop.runtime import CodexRecoverableInvocationError, Receipt
+from workshop.runtime import (
+    CodexRecoverableInvocationError,
+    Receipt,
+)
 from workshop.runtime.agent_assets import ProductRunAgentAssets
 from workshop.wish import Wish
 from workshop.workflow import AgentRun
@@ -278,8 +281,16 @@ def _failed_cad_gate(
 
 
 class _SessionOutcome:
-    def __init__(self, arguments):
+    def __init__(self, arguments, stage):
         self.arguments = dict(arguments)
+        stage_input = {
+            "match": 50,
+            "invent": 100,
+            "make": 200,
+            "playtest": 300,
+            "release": 400,
+        }[stage]
+        self.token_count = stage_input + stage_input // 10
 
     def to_dict(self):
         return {
@@ -794,7 +805,7 @@ class _OneSessionProductAgent:
             raise AssertionError("native prompt does not identify the current stage")
         self.stage_packets.append(stage)
         getattr(self, "_author_%s" % stage["stage"])(run_root, stage)
-        return _SessionOutcome(arguments)
+        return _SessionOutcome(arguments, stage["stage"])
 
     def start(self, **arguments):
         self.starts.append(dict(arguments))
@@ -812,6 +823,76 @@ class _OneSessionProductAgent:
         if checkpoint.read_bytes() != _SESSION_CHECKPOINT:
             raise AssertionError("resume did not use the original native session checkpoint")
         return self._turn(arguments)
+
+
+class _PlaytestProposalLinkRepairAgent(_OneSessionProductAgent):
+    """Replace one finalized config with a link, then repair exact host feedback."""
+
+    def __init__(self, *, rejections_before_repair=1):
+        super().__init__()
+        self.playtest_attempts = 0
+        self.rejections_before_repair = rejections_before_repair
+
+    def _author_playtest(self, run_root, stage):
+        inputs = stage["inputs"]
+        check_id = inputs["required_check_ids"][0]
+        config = (
+            run_root
+            / inputs["evidence_root"]
+            / "configs"
+            / ("%s.json" % check_id)
+        )
+        if self.playtest_attempts > 0:
+            rejection = inputs.get("host_playtest_proposal_rejection")
+            if (
+                not isinstance(rejection, dict)
+                or rejection.get("failure_code")
+                != "playtest-artifact-invalid"
+                or rejection.get("rejection_number") != self.playtest_attempts
+            ):
+                raise AssertionError(
+                    "Playtest retry did not receive exact host proposal feedback"
+                )
+            if config.is_symlink():
+                config.unlink()
+        if self.playtest_attempts < self.rejections_before_repair:
+            super()._author_playtest(run_root, stage)
+            linked = run_root / (
+                "work/playtest/linked-config-%04d.json" % self.playtest_attempts
+            )
+            linked.parent.mkdir(parents=True, exist_ok=True)
+            linked.write_bytes(config.read_bytes())
+            config.unlink()
+            config.symlink_to(linked)
+        else:
+            super()._author_playtest(run_root, stage)
+        self.playtest_attempts += 1
+
+
+class _OneUnfinishedTurnAgent(_OneSessionProductAgent):
+    """Return once without a proposal, then finish through the same session."""
+
+    def __init__(self):
+        super().__init__()
+        self.returned_unfinished = False
+        self.received_continuation_prompt = False
+
+    def _turn(self, arguments):
+        if self.returned_unfinished:
+            if not self.received_continuation_prompt:
+                self.received_continuation_prompt = (
+                    "previous native turn returned without agent-outcome.json"
+                    in arguments["prompt"]
+                )
+                if not self.received_continuation_prompt:
+                    raise AssertionError("unfinished continuation prompt is missing")
+            return super()._turn(arguments)
+        self._assert_public_arguments(arguments)
+        run_root = Path(arguments["run_root"])
+        stage = _read_json(run_root / "STAGE.json")
+        self.stage_packets.append(stage)
+        self.returned_unfinished = True
+        return _SessionOutcome(arguments, stage["stage"])
 
 
 class _LegacyReleaseProductAgent(_OneSessionProductAgent):
@@ -1360,6 +1441,16 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(receipt["status"], "waiting")
             self.assertEqual(receipt["stage"], "release")
             self.assertEqual(receipt["native_turns"], 4)
+            self.assertEqual(receipt["tokens"]["status"], "measured")
+            self.assertEqual(
+                receipt["tokens"]["turns"],
+                {"total": 4, "measured": 4, "unmeasured": 0},
+            )
+            self.assertEqual(receipt["tokens"]["total_tokens"], 825)
+            self.assertEqual(
+                receipt["tokens"]["stages"]["make"]["tokens"],
+                220,
+            )
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
             self.assertIn("Factory credentials", receipt["publication"]["reason"])
@@ -1682,6 +1773,83 @@ class NativeFullRunTest(unittest.TestCase):
             ["invent", "make", "playtest", "make", "playtest", "release"],
         )
         self.assertNotIn("match", checkpoint.stage_artifacts)
+
+    def test_quest_playtest_linked_config_is_quarantined_and_repaired(self):
+        launcher = _PlaytestProposalLinkRepairAgent()
+
+        launcher, unused_checkpoint = self._run_playtest_routing_case(
+            playtest_plan=[],
+            wish_name="quest-playtest-linked-config-repair",
+            context_source="playtest-linked-config-recovery-regression",
+            launcher=launcher,
+            effort="quest",
+        )
+
+        playtest_packets = [
+            packet
+            for packet in launcher.stage_packets
+            if packet["stage"] == "playtest"
+        ]
+        self.assertEqual(len(playtest_packets), 2)
+        self.assertNotIn(
+            "host_playtest_proposal_rejection",
+            playtest_packets[0]["inputs"],
+        )
+        rejection = playtest_packets[1]["inputs"][
+            "host_playtest_proposal_rejection"
+        ]
+        self.assertEqual(rejection["failure_code"], "playtest-artifact-invalid")
+        self.assertEqual(rejection["rejection_number"], 1)
+
+    def test_quest_playtest_rejection_history_is_hash_chained(self):
+        launcher = _PlaytestProposalLinkRepairAgent(rejections_before_repair=2)
+
+        launcher, unused_checkpoint = self._run_playtest_routing_case(
+            playtest_plan=[],
+            wish_name="quest-playtest-rejection-chain",
+            context_source="playtest-rejection-chain-regression",
+            launcher=launcher,
+            effort="quest",
+        )
+
+        playtest_packets = [
+            packet
+            for packet in launcher.stage_packets
+            if packet["stage"] == "playtest"
+        ]
+        self.assertEqual(len(playtest_packets), 3)
+        first = playtest_packets[1]["inputs"][
+            "host_playtest_proposal_rejection"
+        ]
+        second = playtest_packets[2]["inputs"][
+            "host_playtest_proposal_rejection"
+        ]
+        self.assertEqual(first["rejection_number"], 1)
+        self.assertIsNone(first["previous_rejection_sha256"])
+        self.assertEqual(second["rejection_number"], 2)
+        self.assertEqual(
+            second["previous_rejection_sha256"], first["rejection_sha256"]
+        )
+
+    def test_unfinished_native_turn_continues_same_goal_automatically(self):
+        launcher = _OneUnfinishedTurnAgent()
+
+        launcher, checkpoint = self._run_playtest_routing_case(
+            playtest_plan=[],
+            wish_name="spark-unfinished-native-turn",
+            context_source="unfinished-native-turn-regression",
+            launcher=launcher,
+            effort="spark",
+        )
+
+        self.assertEqual(checkpoint.effort, "spark")
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            ["make", "make", "release"],
+        )
+        self.assertEqual(len(launcher.starts), 1)
+        self.assertGreaterEqual(len(launcher.resumes), 2)
+        self.assertTrue(launcher.received_continuation_prompt)
 
     def test_spark_release_uses_exact_creative_contract_paths(self):
         launcher = _OneSessionProductAgent(product_contract_name_collisions=True)

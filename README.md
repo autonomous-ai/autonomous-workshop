@@ -55,6 +55,10 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
+Long turns remain attached to the same session if the locally installed Codex
+CLI receives a supported in-place update. Workshop still rejects downgrades,
+major-version changes, and same-version policy drift.
+
 ## Workshop Managers
 
 One Wish is one native coding-agent session — the shop lead. Resume cannot switch Managers.
@@ -136,6 +140,21 @@ Your dog, your bike, your desk, your homelab — turned into a small world you c
 ![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
 *A 1:16 Formula 1 car*
 
+### Sonora Reed — sculpt sound from geometry ([TASTE.md](inventors/sonora-reed/TASTE.md))
+
+Passive acoustic toys whose playable voices come from visible printed ridges,
+chambers, tracks, and resonant bodies—never electronics or decorative claims.
+
+### Vela Bloom — make small shapes transform ([TASTE.md](inventors/vela-bloom/TASTE.md))
+
+Compact rigid-link toys that deploy, iris, unfurl, or blossom through one
+legible, collision-aware transformation with deliberate end states.
+
+### Kestrel Knot — make continuity feel impossible ([TASTE.md](inventors/kestrel-knot/TASTE.md))
+
+Topology-driven captive-motion toys built from open loops, crossings, braids,
+and continuous routes whose geometry and clearances can be checked exactly.
+
 ## Toys
 
 Toys that already left the Workshop. After Factory publication, a sanitized snapshot lands in [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.
@@ -145,6 +164,8 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Toy | Inventor | Effort | Snapshot | Factory |
 |---|---|---|---|---|
 | Saigon Skyline Chess | [Alice](inventors/alice/) | ✨ Spark | [`toys/alice-saigon-skyline-chess/`](toys/alice-saigon-skyline-chess/) | [saigon-skyline-chess](https://www.autonomous.ai/factory/product/saigon-skyline-chess) |
+| Rainspell Dial | [Sonora Reed](inventors/sonora-reed/) | 🔥 Forge | [`toys/sonora-reed-rainspell-dial-three-field-sound-garden/`](toys/sonora-reed-rainspell-dial-three-field-sound-garden/) | [rainspell-dial-three-field-sound-garden](https://www.autonomous.ai/factory/product/rainspell-dial-three-field-sound-garden) |
+| Eclipse Braid | [Kestrel Knot](inventors/kestrel-knot/) | ✨ Spark | [`toys/kestrel-knot-eclipse-braid/`](toys/kestrel-knot-eclipse-braid/) | [eclipse-braid](https://www.autonomous.ai/factory/product/eclipse-braid) |
 | Moonwake Garden | [Luma Vale](inventors/luma-vale/) | 🗺️ Quest | [`toys/luma-vale-moonwake-garden/`](toys/luma-vale-moonwake-garden/) | [moonwake-garden](https://www.autonomous.ai/factory/product/moonwake-garden) |
 | Horn Tip | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/factory/product/horn-tip) |
 | Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/factory/product/lunar-relay) |
@@ -155,13 +176,13 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 
 Horn Tip is a Spark run on Grok. A later Wish with the same prompt is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
 
-Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. See [`toys/README.md`](toys/) for what a snapshot includes.
+Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. New runs also report a best-effort total-token count by stage; it is telemetry, never a gate, and no dollar estimate is inferred. See [`toys/README.md`](toys/) for what a snapshot includes.
 
 ## Architecture
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=evidence-repair-v2)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=unfinished-turn-v1)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -179,6 +200,13 @@ shows that the sealed concept cannot be built as specified. Quest Playtest
 returns directly to Make for a build defect or directly to Invent for a concept
 defect. Each return starts a new stage Goal, invalidates stale downstream
 artifacts, and consumes the run's shared revision budget.
+If a Make or Playtest proposal cannot be safely reopened, Workshop quarantines
+its exact bytes and returns bounded, hash-bound repair feedback to that same
+stage instead of losing the run or weakening the gate.
+If a native turn simply returns before writing a proposal, Workshop continues
+the same checkpointed Goal automatically within the shared 32-turn command
+budget, explicitly reminding the session that its finalizer has not run; it
+does not create a stage attempt or require an operator resume.
 
 [![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
 

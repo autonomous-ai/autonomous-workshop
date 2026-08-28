@@ -174,6 +174,12 @@ final cited outputs under the exact `evidence_root`. Write one authored JSON
 source with exactly `checks`, `feedback`, and `verdict`. Every failing check
 must name a concrete area and repair.
 
+If `STAGE.json` contains `host_playtest_proposal_rejection`, read its exact
+failure code and feedback before repairing the evidence. The host quarantined
+the rejected proposal because its config, evidence, or contract could not be
+safely reopened or rebound. Replace linked, missing, special, or changed files
+with stable regular files and regenerate the proposal; never weaken the check.
+
 Choose each actionable feedback boundary explicitly:
 
 - implementation repair: `["playtest", "release"]`, returning to Make;

@@ -37,13 +37,17 @@ from workshop.release.native import (
 )
 from workshop.release.public_archive import write_public_workflow_archive
 from workshop.runtime import Receipt
-from workshop.runtime.managers import DEFAULT_MANAGER_ID, manager_spec
-from workshop.workflow.effort import workshop_effort
+from workshop.runtime.managers import (
+    DEFAULT_MANAGER_ID,
+    manager_spec,
+)
 
 
 _PUBLIC_SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _PUBLIC_INVENTOR = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _MAX_PUBLIC_NAME = 100
+_TOKEN_SUMMARY_KIND = "autonomous-workshop.native-token-summary"
+_TOKEN_STAGES = ("match", "invent", "make", "playtest", "release")
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -376,12 +380,16 @@ def _workflow_overview_markdown(staging: Path) -> str:
         None if assignment is None else assignment.get("selected_inventor_id")
     )
     match_count, match_outcome = (
-        ("1", "accepted") if match_payload is None else _attempt_count_and_outcome(match_payload)
+        ("1", "accepted")
+        if match_payload is None
+        else _attempt_count_and_outcome(match_payload)
     )
     if inventor is not None and "accepted" in match_outcome:
         match_outcome = "%s (%s)" % (match_outcome, inventor)
     make_count, make_outcome = (
-        ("1", "accepted") if make_payload is None else _attempt_count_and_outcome(make_payload)
+        ("1", "accepted")
+        if make_payload is None
+        else _attempt_count_and_outcome(make_payload)
     )
     release_count, release_outcome = (
         ("1", "accepted")
@@ -433,6 +441,68 @@ def _workflow_overview_markdown(staging: Path) -> str:
         "session resumes are not public.\n"
         % (effort, route, first_creative, table)
     )
+
+
+def _public_token_summary(value: Any) -> dict[str, Any]:
+    unavailable = {
+        "schema_version": 1,
+        "kind": _TOKEN_SUMMARY_KIND,
+        "status": "unavailable",
+    }
+    if value is None or (
+        isinstance(value, Mapping) and value.get("status") == "unavailable"
+    ):
+        return unavailable
+    if (
+        not isinstance(value, Mapping)
+        or value.get("schema_version") != 1
+        or value.get("kind") != _TOKEN_SUMMARY_KIND
+        or value.get("status") not in ("measured", "partial")
+        or not isinstance(value.get("turns"), Mapping)
+        or not isinstance(value.get("stages"), Mapping)
+        or set(value["stages"]) != set(_TOKEN_STAGES)
+    ):
+        raise ContractError("public native token summary is invalid")
+    turns = value["turns"]
+    if (
+        set(turns) != {"total", "measured", "unmeasured"}
+        or any(
+            type(count) is not int or not 0 <= count <= 100_000
+            for count in turns.values()
+        )
+        or turns["measured"] + turns["unmeasured"] != turns["total"]
+    ):
+        raise ContractError("public native token turn counts are invalid")
+    total_tokens = value.get("total_tokens")
+    if type(total_tokens) is not int or not 0 <= total_tokens <= 10**18:
+        raise ContractError("public native token total is invalid")
+    rebuilt_stages = {}
+    for name in _TOKEN_STAGES:
+        stage = value["stages"][name]
+        if not isinstance(stage, Mapping):
+            raise ContractError("public native token stage is invalid")
+        status = stage.get("status")
+        stage_turns = stage.get("turns")
+        tokens = stage.get("tokens")
+        if status not in {
+            "measured", "partial", "pending", "folded", "skipped", "not-run"
+        } or type(stage_turns) is not int or not 0 <= stage_turns <= 100_000:
+            raise ContractError("public native token stage status is invalid")
+        if type(tokens) is not int or not 0 <= tokens <= 10**18:
+            raise ContractError("public native token stage total is invalid")
+        rebuilt_stages[name] = {
+            "status": status,
+            "turns": stage_turns,
+            "tokens": tokens,
+        }
+    return {
+        "schema_version": 1,
+        "kind": _TOKEN_SUMMARY_KIND,
+        "status": value["status"],
+        "turns": dict(turns),
+        "total_tokens": total_tokens,
+        "stages": rebuilt_stages,
+    }
 
 
 def _snapshot_effort(staging: Path) -> str:
@@ -536,6 +606,7 @@ def materialize_public_example(
     manager_id: str = DEFAULT_MANAGER_ID,
     effort: Optional[str] = None,
     github_requested: bool = False,
+    token_summary: Optional[Mapping[str, Any]] = None,
 ) -> Path:
     """Create ``toys/<inventor>-<slug>`` from exact public Release bytes.
 
@@ -543,6 +614,10 @@ def materialize_public_example(
     symlink, partial directory, or different snapshot is a hard collision; no
     public example is overwritten or merged.
     """
+
+    # Imported at effect-composition time so the Release component does not
+    # create a module-load cycle through workflow -> integrations -> release.
+    from workshop.workflow.effort import workshop_effort
 
     if not isinstance(release, NativeRelease) or not isinstance(made, NativeMade):
         raise ContractError("public example requires typed Made and Release inputs")
@@ -775,6 +850,12 @@ def materialize_public_example(
             "primary_model": primary_model,
             "print_files": print_files,
         }
+        public_token_summary = _public_token_summary(token_summary)
+        _write_public_file(
+            staging,
+            "TOKENS.json",
+            _canonical_json(public_token_summary),
+        )
         write_public_workflow_archive(
             staging,
             run,
@@ -828,6 +909,7 @@ def materialize_public_example(
             "- `release/%s` — %s.\n"
             "- `release/` — accepted Release contract and exact package bytes.\n"
             "- `publication/PUBLICATION.json` — sanitized public readback identities.\n"
+            "- `TOKENS.json` — Manager-reported total tokens by stage; no dollar estimate.\n"
             "- `MANIFEST.json` — hashes every workflow file except itself and this README.\n"
             "%s"
             "%s\n"
@@ -938,6 +1020,7 @@ def materialize_public_example_if_source_checkout(
     manager_id: str = DEFAULT_MANAGER_ID,
     effort: Optional[str] = None,
     github_requested: bool = False,
+    token_summary: Optional[Mapping[str, Any]] = None,
 ) -> Optional[Path]:
     """Materialize a public example when the host is running from a checkout."""
 
@@ -954,6 +1037,7 @@ def materialize_public_example_if_source_checkout(
         manager_id=manager_id,
         effort=effort,
         github_requested=github_requested,
+        token_summary=token_summary,
     )
 
 

@@ -2179,6 +2179,40 @@ def _playtest_contract(
         ).as_posix()
         if config_ref not in inventory or evidence_ref not in inventory:
             raise ProposalError("Playtest check references a file outside its evidence tree")
+        if "effort" in inputs:
+            expected_config_ref = "configs/%s.json" % check_id
+            if config_ref != expected_config_ref:
+                raise ProposalError(
+                    "Playtest check config_ref must be %s" % expected_config_ref
+                )
+            config, config_content, _ = _read_json(
+                run_root,
+                "%s/%s" % (evidence_root_value, config_ref),
+                "Playtest %s config" % check_id,
+            )
+            binding_keys = tuple(
+                key
+                for key in ("artifact_sha256", "product_artifact_sha256")
+                if key in config
+            )
+            expected_artifact_sha256 = made["product_manifest"]["artifact_sha256"]
+            if (
+                hashlib.sha256(config_content).hexdigest()
+                != inventory[config_ref]
+                or config.get("schema_version") != 1
+                or config.get("check_id") != check_id
+                or ("seed" in config and type(config["seed"]) is not int)
+                or not binding_keys
+                or any(
+                    not isinstance(config[key], str)
+                    or config[key] != expected_artifact_sha256
+                    for key in binding_keys
+                )
+            ):
+                raise ProposalError(
+                    "Playtest config is not bound to the current Made revision: %s"
+                    % check_id
+                )
         observations = _mapping(
             check["observations"], "Playtest observations", nonempty=True
         )

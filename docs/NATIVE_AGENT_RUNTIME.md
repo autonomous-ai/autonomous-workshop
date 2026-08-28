@@ -127,6 +127,16 @@ session for another turn. This continuation consumes the existing
 create a separate retry budget. The delay is capped at 30 seconds and prevents
 a persistent provider outage from becoming a reconnect storm.
 
+The private session checkpoint also binds the Codex CLI version and exact
+runtime-policy hash. A package manager may replace the installed CLI while a
+long native turn is running. Resume accepts that drift only when the saved
+checkpoint is intact, every Wish, constitution, path, permission-profile,
+feature, and thread binding is unchanged, and the installed CLI is a strictly
+newer supported version in the same major line. The resumed process receives
+the newly computed current sandbox policy. Same-version policy drift, CLI
+downgrades, major-version migrations, and malformed checkpoints still fail
+closed.
+
 An interruption before the exact session identity is bound fails closed rather
 than automatically creating a second root session. Failed-turn events, unknown
 or malformed event streams, unsafe process termination, wrong session identity,
@@ -202,6 +212,12 @@ current stage-attempt number exactly like any other native turn. A separate
 private generation floor makes those counters monotonic: a callback abandoned
 by an earlier launcher may finish late, but its older record is no longer
 trusted and cannot roll status backward.
+
+When a Manager's terminal event includes usage, Workshop also keeps one small
+host-private aggregate of input-plus-output tokens by stage. The receipt and
+new public toy snapshot expose only those totals and whether coverage is
+measured, partial, or unavailable. This best-effort telemetry stores no prices,
+prompts, transcripts, or reasoning and cannot block or advance the lifecycle.
 
 ## Native subagents and Inventors
 
@@ -318,6 +334,30 @@ the current stage packet. It performs no improvement loop. After it succeeds,
 Codex completes the active Goal and returns control. The host rereads the
 proposal and artifact tree independently, reruns its trusted gates, seals all
 accepted bytes, and alone decides the transition.
+
+If a normal native turn returns before the Goal writes `agent-outcome.json`,
+the host does not invent a result or require an immediate operator command. An
+already checkpointed exact session is resumed automatically with the unchanged
+stage subject under the same 32-turn invocation budget and receives a fixed
+instruction that its finalizer has not yet written the required proposal. This
+continuation is not a stage attempt. Missing session identity and budget
+exhaustion still fail closed.
+
+For current Make and Playtest checkpoints, an otherwise bound proposal whose
+agent-authored contract or artifact tree cannot be safely reopened is not
+accepted and does not terminate the run. The host quarantines the exact
+proposal in private state, records one of a fixed set of failure classes,
+includes the rejection hash and actionable feedback in the next stage subject,
+and resumes the same native session. Each checkpoint has an independent
+32-rejection ceiling. A host-state conflict still fails closed. Current
+Playtest finalizers also reopen and bind every canonical config before writing
+`agent-outcome.json`, reducing the chance that an invalid proposal reaches the
+host gate.
+
+Host-selected product artifacts share the package contract's 95 MiB per-file
+limit while the durable run retains its 128 MiB cumulative referenced-artifact
+budget. This allows real CAD and render files larger than the former 16 MiB
+contract mismatch without making storage unbounded.
 
 For Invent, the finalizer also preserves the exact authored source bytes as
 `source.json` beside the assignment and Invented contracts. The host requires
