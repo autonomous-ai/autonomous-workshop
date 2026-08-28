@@ -112,7 +112,7 @@ jobs:
           touch build/lib/cli/removed_packaging_sentinel.py
       - name: build direct wheel and source distribution independently
         run: |
-          python -m pip install build "setuptools>=77" wheel
+          python -m pip install "build==1.6.0" "setuptools==84.0.0" "wheel==0.48.0"
           python -m build --wheel --outdir dist/direct
           python -m build --sdist --outdir dist/source
       - name: rebuild a wheel from the source distribution
