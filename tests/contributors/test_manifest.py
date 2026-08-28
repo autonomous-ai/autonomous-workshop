@@ -49,11 +49,14 @@ class RegistryTest(unittest.TestCase):
                 "bob",
                 "eve",
                 "ivy",
+                "kestrel-knot",
                 "leo",
                 "luma-vale",
                 "mira-fold",
                 "pico-press",
+                "sonora-reed",
                 "tess-loop",
+                "vela-bloom",
             ],
         )
         for manifest in manifests:

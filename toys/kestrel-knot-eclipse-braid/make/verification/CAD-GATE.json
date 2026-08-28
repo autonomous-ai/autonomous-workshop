@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "model": "Eclipse Braid",
+  "status": "passed",
+  "cad_project_path": "cad-source",
+  "entry": "cad-source/eclipse_braid.step.py",
+  "step_path": "assembled.step",
+  "step_sha256": "ccd188952e5a7105a2f1762f0e2fe5e7a630a65a88709233f0a7dd31f53a5a43",
+  "stl_path": "assembled.stl",
+  "stl_sha256": "07df975c71a124bbcd019b7610e434b6db0a8b143df43c83f0c2dedc599e61c5",
+  "geometry": {
+    "units": "mm",
+    "bounds_min": [-58.0, -42.0, 0.0],
+    "bounds_max": [58.0, 42.0, 25.98593],
+    "size": [116.0, 84.0, 25.98593],
+    "native_occurrences": 2,
+    "intentional_print_shells": 2,
+    "native_shape_count": 2
+  },
+  "final_pipeline": {
+    "ok": true,
+    "print_ready_claim": true,
+    "report": "evidence/final-verification.md",
+    "regenerated_from_source": true,
+    "layout_ok": true,
+    "bed_fit_ok": true,
+    "native_validation_failure_count": 0,
+    "native_interference_clash_count": 0,
+    "native_interference_tolerance_mm": 1.0,
+    "mesh_watertight": true,
+    "mesh_manifold": true,
+    "mesh_positive_volume": true,
+    "wall_threshold_mm": 0.8,
+    "surface_samples_below_wall_threshold": 0
+  },
+  "route_verification": {
+    "ok": true,
+    "report": "evidence/route-traversal.json",
+    "sample_count": 384,
+    "route_length_mm": 270.487,
+    "crossing_x_mm": [-17.0, 17.0],
+    "crossing_center_separation_mm": 34.0,
+    "crossing_layer_separation_mm": 13.4,
+    "half_route_tangent_dot": -1.0,
+    "home_return_tangent_dot": 1.0,
+    "bidirectional": true,
+    "topologically_captive": true
+  },
+  "reproducibility_repair": {
+    "subject_sha256": "6ce43b5d37e48d1e4747da1f0576334b9aca6c98648987dd2587c11525c66943",
+    "rejection_sha256": "c628ae1fd6c21bc18cbfeac1d6fb34c2ae522586fb6e9cfca984293e925e672c",
+    "prior_failure_code": "declared-cad-output-changed",
+    "canonical_project_is_source_only": true,
+    "fresh_gate_stability_report": "evidence/fresh-gate-stability.json"
+  },
+  "limitations": [
+    "Digital validation does not prove a successful physical print.",
+    "Friction, wear, comfort, durability, and meditative feel require physical evaluation.",
+    "The two exported shells are intentional: one connected track/frame and one separately movable captive runner."
+  ]
+}

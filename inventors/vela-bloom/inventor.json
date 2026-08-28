@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "570098bc9a566e7847ea82eff07f9b3dec97d9ee371b9aa9e9edb97676056b6b",
+      "kind": "codex-skill",
+      "name": "vela-bloom-inventor",
+      "path": "skills/vela-bloom-inventor"
+    }
+  ],
+  "id": "vela-bloom",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

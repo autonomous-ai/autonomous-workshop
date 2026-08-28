@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.make-product",
+  "status": "digitally-verified-print-ready",
+  "title": "Rainspell Dial: Three-Field Sound Garden",
+  "summary": "A palm-size, hand-powered desktop sound toy whose broad wheel carries one captive gravity plectrum across 46 visible printed ribs arranged as rain, frog-song, and cricket fields. Six dry-assembled rigid-filament parts provide a continuous reset, guarded contact path, three separately ported chamber geometries, and tool-free cap-controlled service.",
+  "category": "hand-powered passive acoustic desktop toy",
+  "envelope_mm": {
+    "width": 120.0,
+    "depth": 120.0,
+    "height_at_design_travel": 51.65
+  },
+  "interaction": {
+    "primary_control": "Turn the broad outer wheel clockwise by hand.",
+    "sequence": [
+      "rain",
+      "frog-song",
+      "crickets"
+    ],
+    "reset": "The 360-degree path is continuous; each field is separated by a 7-degree rib-free lane.",
+    "reverse_use": "Reverse rotation is reserved as a geometric clearing direction and has not been physically tested."
+  },
+  "printed_parts": [
+    {
+      "id": "base",
+      "name": "Three-chamber resonator bowl and spindle",
+      "step": "cad_project/part_base.step",
+      "stl": "cad_project/part_base.stl"
+    },
+    {
+      "id": "rib-deck",
+      "name": "Indexed annular sound deck",
+      "step": "cad_project/part_rib_deck.step",
+      "stl": "cad_project/part_rib_deck.stl"
+    },
+    {
+      "id": "wheel",
+      "name": "Broad hand wheel with guarded follower carriage",
+      "step": "cad_project/part_wheel.step",
+      "stl": "cad_project/part_wheel.stl"
+    },
+    {
+      "id": "plectrum",
+      "name": "Captive gravity follower",
+      "step": "cad_project/part_plectrum.step",
+      "stl": "cad_project/part_plectrum.stl"
+    },
+    {
+      "id": "follower-keeper",
+      "name": "Rigid sliding follower keeper",
+      "step": "cad_project/part_follower_keeper.step",
+      "stl": "cad_project/part_follower_keeper.stl"
+    },
+    {
+      "id": "cap",
+      "name": "Press-lift quarter-turn spindle cap",
+      "step": "cad_project/part_cap.step",
+      "stl": "cad_project/part_cap.stl"
+    }
+  ],
+  "material_and_print": {
+    "material": "ordinary rigid FDM filament such as PLA or PETG",
+    "nozzle_mm": 0.4,
+    "nominal_layer_height_mm": 0.2,
+    "supports_intended": false,
+    "nonprinted_hardware": false,
+    "assembly_policy": "dry assembly; no glue, beads, batteries, magnets, string, metal, purchased reeds, or flexible material"
+  },
+  "calculated_geometry": {
+    "event_count": 46,
+    "field_counts": {
+      "rain": 17,
+      "frog-song": 9,
+      "crickets": 20
+    },
+    "chamber_target_volumes_mm3": {
+      "rain": 8000.0,
+      "frog-song": 12000.0,
+      "crickets": 6000.0
+    },
+    "port_brep_areas_mm2": {
+      "rain": 17.9996,
+      "frog-song": 14.9996,
+      "crickets": 23.9996
+    }
+  },
+  "make_refinement": "The exact Ø14.5 wheel bore and full z=21–25 lower journal land are retained. Above z=25 the wheel uses one rounded 210-degree C-profile, replacing the Invent sketch's sub-nozzle 0.15 mm radial relief and opening the deliberate keeper service route after cap removal.",
+  "make_retry_repair": "The combined assembly retains native part labels but omits optional per-component STEP presentation colors, removing process-dependent style-record ordering without changing topology, geometry, or bounds. The six generated thickness reports use the host-equivalent relative `project` path. After a third host rejection proved that those 21 files were still not the complete mutable set, the active CAD handoff was rematerialized without run-specific `__cadgen__` caches, and the time-bearing PASS pipeline record was preserved at the product root outside the verifier-mutated project.",
+  "evidence": {
+    "cad_project": "cad_project",
+    "assembled_step": "assembled.step",
+    "assembled_stl": "assembled.stl",
+    "cad_verification": "assembled.step.json",
+    "final_pipeline": "CAD-VERIFICATION.md",
+    "declared_output_reproducibility": "cad_project/measure/reproducibility.md",
+    "geometry_audit": "cad_project/measure/acoustic_geometry.json",
+    "motion_manifest": "cad_project/measure/motion.json",
+    "visual_review": "cad_project/measure/visual_review.md",
+    "renders": [
+      "cad_project/renders/isometric.png",
+      "cad_project/renders/top.png",
+      "cad_project/renders/front.png"
+    ]
+  },
+  "physical_test_status": "not-run",
+  "playtest_status": "not-run",
+  "sound_claim_status": "calculated-intent-only",
+  "limitations": [
+    "No exact physical print, slicing study, clearance coupon, or assembly trial has been performed.",
+    "No microphone, loudness, pitch, hearing-safety, or human listening measurement establishes sound character, recognition, pleasantness, or relative voice strength.",
+    "No gravity free-fall, inversion, shake, walking, tipping, retention, bearing-noise, or repeated-cycle wear test has been performed.",
+    "The dry chamber labyrinths are serviceable seams and are not claimed airtight or tuned Helmholtz resonators.",
+    "Digital print-ready status means the declared CAD, fit, motion, mesh, and 0.8 mm wall gates passed; it is not a claim of successful manufacture."
+  ]
+}
