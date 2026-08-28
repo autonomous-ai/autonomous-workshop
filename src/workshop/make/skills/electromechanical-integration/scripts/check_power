@@ -1,0 +1,1780 @@
+#!/usr/bin/env python3
+"""Validate a powered-product evidence and integration manifest."""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import hashlib
+import json
+import math
+import sys
+from pathlib import Path
+from typing import Any
+
+
+# ``ref/`` is where a fetched component STEP is checksum-pinned, declared in
+# measure/mounts.json, and seen by the final mount preflight; ``ref/external/``
+# is the design-reference skill's namespace and holds no component.  A supplier
+# file parked anywhere else is invisible to all three at once, and the manifest
+# can then name the supplier part while the seat is measured against a
+# hand-authored envelope -- the exact substitution the mount gates exist to
+# refuse, passing because nothing ever compared the two.
+def _outside_ref(path: Path) -> bool:
+    return path.parts[:1] != ("ref",) or path.parts[:2] == ("ref", "external")
+
+
+ROLES = {
+    "source",
+    "protection",
+    "switch",
+    "controller",
+    "connector",
+    "wire",
+    "actuator",
+    "load",
+    "inlet",
+}
+RATED_CURRENT_ROLES = ROLES - {"actuator"}
+EVIDENCE_KINDS = {
+    "manufacturer_datasheet",
+    "manufacturer_product_page",
+    "standard",
+    "measured",
+}
+LIGHT_INSTALLATION_MODES = {
+    "removable_socket",
+    "soldered",
+    "fixed_module",
+    "integrated",
+}
+LIGHT_INTERFACE_TYPES = {
+    "twist_lock",
+    "bayonet",
+    "push_fit",
+    "threaded",
+    "plug_in",
+    "other",
+}
+RECEIVER_STRATEGIES = {"purchased_socket", "printed_receiver"}
+LOCK_DIRECTIONS = {"clockwise", "counterclockwise", "none"}
+MATING_MOTION_PHASES = ("insert", "lock", "retained", "unlock", "remove")
+FIT_COUPON_STATUSES = {"planned", "passed", "failed"}
+
+
+def _number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
+def _positive(value: Any) -> bool:
+    return _number(value) and value > 0
+
+
+def _sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdefABCDEF" for character in value)
+    )
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _voltage_range(component: dict[str, Any]) -> tuple[float, float] | None:
+    voltage = component.get("voltage_v")
+    if not isinstance(voltage, dict):
+        return None
+    lo, hi = voltage.get("min"), voltage.get("max")
+    if not _number(lo) or not _number(hi) or lo < 0 or hi < lo:
+        return None
+    return float(lo), float(hi)
+
+
+def _load_mounts(path: Path) -> tuple[set[str], dict[str, str], list[str]]:
+    if not path.is_file():
+        return set(), {}, [f"missing mount manifest: {path}"]
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return set(), {}, [f"cannot read mount manifest {path}: {exc}"]
+    if not isinstance(data, dict):
+        return set(), {}, [f"mount manifest root must be an object: {path}"]
+    mounts = data.get("mounts")
+    if not isinstance(mounts, list):
+        return set(), {}, [f"mount manifest has no mounts list: {path}"]
+    ids: set[str] = set()
+    components: dict[str, str] = {}
+    errors: list[str] = []
+    for index, item in enumerate(mounts):
+        if not isinstance(item, dict):
+            errors.append(f"mounts[{index}] must be an object in {path}")
+            continue
+        mount_id = item.get("id")
+        if not isinstance(mount_id, str) or not mount_id.strip():
+            errors.append(f"mounts[{index}].id is required in {path}")
+            continue
+        if mount_id in ids:
+            errors.append(f"duplicate mount id {mount_id!r} in {path}")
+            continue
+        ids.add(mount_id)
+        component = item.get("component")
+        if isinstance(component, str) and component.strip():
+            components[mount_id] = Path(component).as_posix()
+        else:
+            errors.append(f"mount {mount_id!r} has no component path in {path}")
+    return ids, components, errors
+
+
+def _load_motion_conditions(
+    path: Path,
+) -> tuple[dict[str, dict[str, Any]] | None, str | None]:
+    if not path.is_file():
+        return None, f"missing motion manifest: {path}"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"cannot read motion manifest {path}: {exc}"
+    if not isinstance(data, dict):
+        return None, f"motion manifest root must be an object: {path}"
+    conditions = data.get("conditions")
+    if not isinstance(conditions, list):
+        return None, f"motion manifest has no conditions list: {path}"
+    indexed = {
+        condition["id"]: condition
+        for condition in conditions
+        if isinstance(condition, dict) and isinstance(condition.get("id"), str)
+    }
+    return indexed, None
+
+
+def validate_manifest(
+    data: Any,
+    mount_ids: set[str],
+    project_dir: Path | None = None,
+    motion_conditions_by_id: dict[str, dict[str, Any]] | None = None,
+    mount_components: dict[str, str] | None = None,
+) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(data, dict):
+        return ["manifest root must be an object"]
+    schema_version = data.get("schema_version")
+    if schema_version not in (1, 2, 3):
+        errors.append("schema_version must be 1, 2, or 3")
+    if not isinstance(data.get("project"), str) or not data["project"].strip():
+        errors.append("project must be a non-empty string")
+    boundary = data.get("boundary")
+    if boundary not in {"onboard", "external"}:
+        errors.append("boundary must be onboard or external")
+
+    searches = data.get("github_search")
+    if not isinstance(searches, list) or not searches:
+        errors.append("github_search must contain at least one search record")
+    else:
+        for index, record in enumerate(searches):
+            label = f"github_search[{index}]"
+            if not isinstance(record, dict):
+                errors.append(f"{label} must be an object")
+                continue
+            if not isinstance(record.get("query"), str) or not record["query"].strip():
+                errors.append(f"{label}.query is required")
+            decision = record.get("decision")
+            if decision not in {"used", "rejected", "miss"}:
+                errors.append(f"{label}.decision must be used, rejected, or miss")
+            if decision == "used":
+                url = record.get("url")
+                if not isinstance(url, str) or not url.startswith("https://github.com/"):
+                    errors.append(f"{label}.url must be a GitHub repository URL")
+                for field in ("license", "relevant_feature", "idea_taken"):
+                    if not isinstance(record.get(field), str) or not record[field].strip():
+                        errors.append(f"{label}.{field} is required for a used result")
+                if schema_version in (2, 3) and (
+                    not isinstance(record.get("revision"), str)
+                    or not record["revision"].strip()
+                ):
+                    errors.append(f"{label}.revision is required for schema 2 or 3")
+                compatibility = record.get("compatibility")
+                if not isinstance(compatibility, dict) or not compatibility:
+                    errors.append(f"{label}.compatibility is required for a used result")
+                else:
+                    family = (
+                        compatibility.get("load_family")
+                        if schema_version in (2, 3)
+                        else compatibility.get(
+                            "actuator_family", compatibility.get("load_family")
+                        )
+                    )
+                    voltage = compatibility.get("source_voltage_v")
+                    if not isinstance(family, str) or not family.strip():
+                        errors.append(
+                            f"{label}.compatibility."
+                            f"{'load_family' if schema_version in (2, 3) else 'actuator_family'} "
+                            "is required"
+                        )
+                    if (
+                        not isinstance(voltage, list)
+                        or len(voltage) != 2
+                        or not all(_number(value) for value in voltage)
+                        or voltage[0] < 0
+                        or voltage[1] < voltage[0]
+                    ):
+                        errors.append(
+                            f"{label}.compatibility.source_voltage_v must be [min, max]"
+                        )
+                artifacts = record.get("artifacts")
+                if not isinstance(artifacts, list) or "cad" not in artifacts or not {
+                    "bom",
+                    "wiring",
+                    "schematic",
+                    "assembly",
+                }.intersection(artifacts):
+                    errors.append(
+                        f"{label}.artifacts needs cad plus bom, wiring, schematic, or assembly"
+                    )
+            elif decision in {"rejected", "miss"}:
+                if not isinstance(record.get("reason"), str) or not record["reason"].strip():
+                    errors.append(f"{label}.reason is required for {decision}")
+
+    used_search_component_ids: list[tuple[str, str]] = []
+    searched_component_mpns: dict[str, set[str]] = {}
+    component_searches = data.get("component_search")
+    if schema_version in (2, 3) and (
+        not isinstance(component_searches, list) or not component_searches
+    ):
+        errors.append(
+            "component_search must contain at least one public catalog/service "
+            "search record for schema 2 or 3"
+        )
+    elif isinstance(component_searches, list):
+        for index, record in enumerate(component_searches):
+            label = f"component_search[{index}]"
+            if not isinstance(record, dict):
+                errors.append(f"{label} must be an object")
+                continue
+            for field in ("query", "service"):
+                if not isinstance(record.get(field), str) or not record[field].strip():
+                    errors.append(f"{label}.{field} is required")
+            url = record.get("url")
+            if not isinstance(url, str) or not url.startswith(("https://", "http://")):
+                errors.append(f"{label}.url is required")
+            decision = record.get("decision")
+            if decision not in {"used", "rejected", "miss", "unavailable"}:
+                errors.append(
+                    f"{label}.decision must be used, rejected, miss, or unavailable"
+                )
+                continue
+            if decision == "used":
+                component_id = record.get("component_id")
+                if not isinstance(component_id, str) or not component_id.strip():
+                    errors.append(f"{label}.component_id is required for a used result")
+                else:
+                    used_search_component_ids.append((label, component_id))
+                part_number = record.get("part_number")
+                if not isinstance(part_number, str) or not part_number.strip():
+                    errors.append(f"{label}.part_number is required for a used result")
+                elif isinstance(component_id, str) and component_id.strip():
+                    searched_component_mpns.setdefault(component_id, set()).add(
+                        part_number
+                    )
+                artifacts = record.get("artifacts")
+                if not isinstance(artifacts, list) or not artifacts or not all(
+                    isinstance(artifact, str) and artifact.strip()
+                    for artifact in artifacts
+                ):
+                    errors.append(
+                        f"{label}.artifacts must be a non-empty string list for a used result"
+                    )
+                    artifacts = []
+                if (
+                    not isinstance(record.get("license_or_terms"), str)
+                    or not record["license_or_terms"].strip()
+                ):
+                    errors.append(
+                        f"{label}.license_or_terms is required for a used result"
+                    )
+                if "step" in {artifact.lower() for artifact in artifacts}:
+                    local_file = record.get("local_file")
+                    if not isinstance(local_file, str) or not local_file.strip():
+                        errors.append(
+                            f"{label}.local_file is required when a STEP artifact is used"
+                        )
+                    else:
+                        local_path = Path(local_file)
+                        if (
+                            local_path.is_absolute()
+                            or ".." in local_path.parts
+                            or local_path.suffix.lower() not in {".step", ".stp"}
+                        ):
+                            errors.append(
+                                f"{label}.local_file must be a project-local STEP/STP path"
+                            )
+                        elif _outside_ref(local_path):
+                            errors.append(
+                                f"{label}.local_file must be under ref/, not "
+                                f"{local_file!r}: a component STEP kept elsewhere is "
+                                "invisible to the mount preflight and to its checksum, "
+                                "so the seat gets measured against whatever is in ref/ "
+                                "instead (ref/external/ belongs to design-reference)"
+                            )
+                        elif project_dir is not None and not (
+                            project_dir / local_path
+                        ).is_file():
+                            errors.append(
+                                f"{label}.local_file does not exist: {local_file}"
+                            )
+                    declared_sha256 = record.get("sha256")
+                    if not _sha256(declared_sha256):
+                        errors.append(
+                            f"{label}.sha256 is required for a used STEP artifact"
+                        )
+                    elif (
+                        project_dir is not None
+                        and isinstance(local_file, str)
+                        and (project_dir / Path(local_file)).is_file()
+                        and _file_sha256(project_dir / Path(local_file))
+                        != declared_sha256.lower()
+                    ):
+                        errors.append(
+                            f"{label}.sha256 does not match {local_file}"
+                        )
+            elif not isinstance(record.get("reason"), str) or not record["reason"].strip():
+                errors.append(f"{label}.reason is required for {decision}")
+
+    raw_components = data.get("components")
+    if not isinstance(raw_components, list) or not raw_components:
+        errors.append("components must be a non-empty list")
+        raw_components = []
+    components: dict[str, dict[str, Any]] = {}
+    removable_lights: dict[str, dict[str, Any]] = {}
+    for index, component in enumerate(raw_components):
+        label = f"components[{index}]"
+        if not isinstance(component, dict):
+            errors.append(f"{label} must be an object")
+            continue
+        component_id = component.get("id")
+        if not isinstance(component_id, str) or not component_id.strip():
+            errors.append(f"{label}.id is required")
+            continue
+        if component_id in components:
+            errors.append(f"duplicate component id: {component_id}")
+            continue
+        components[component_id] = component
+        role = component.get("role")
+        if role not in ROLES:
+            errors.append(f"component {component_id}: invalid role {role!r}")
+        evidence = component.get("evidence")
+        if not isinstance(evidence, dict):
+            errors.append(f"component {component_id}: evidence is required")
+        else:
+            kind = evidence.get("kind")
+            if kind not in EVIDENCE_KINDS:
+                errors.append(
+                    f"component {component_id}: unsupported evidence kind {kind!r}"
+                )
+            url = evidence.get("url")
+            if not isinstance(url, str) or not url.startswith(("https://", "http://")):
+                errors.append(f"component {component_id}: evidence.url is required")
+            if kind == "measured" and (
+                not isinstance(evidence.get("method"), str)
+                or not evidence["method"].strip()
+            ):
+                errors.append(
+                    f"component {component_id}: measured evidence needs a method"
+                )
+        carried = component.get("carried")
+        if not isinstance(carried, bool):
+            errors.append(f"component {component_id}: carried must be boolean")
+        if carried is True:
+            mount_id = component.get("mount_id")
+            if not isinstance(mount_id, str) or not mount_id.strip():
+                errors.append(
+                    f"component {component_id}: carried component needs mount_id"
+                )
+            elif mount_id not in mount_ids:
+                errors.append(
+                    f"component {component_id}: mount_id {mount_id!r} not found in measure/mounts.json"
+                )
+            cad = component.get("cad")
+            if not isinstance(cad, dict):
+                errors.append(f"component {component_id}: carried component needs cad")
+            else:
+                mode = cad.get("mode")
+                rendered = cad.get("rendered")
+                source = cad.get("source")
+                if mode not in {"assembly", "validation_envelope"}:
+                    errors.append(
+                        f"component {component_id}: cad.mode must be assembly or validation_envelope"
+                    )
+                if mode == "assembly" and rendered is not True:
+                    errors.append(
+                        f"component {component_id}: assembly cad must set rendered true"
+                    )
+                if mode == "validation_envelope" and rendered is not False:
+                    errors.append(
+                        f"component {component_id}: validation envelope must set rendered false"
+                    )
+                if not isinstance(source, str) or not source.strip():
+                    errors.append(f"component {component_id}: cad.source is required")
+                else:
+                    source_path = Path(source)
+                    if (
+                        source_path.is_absolute()
+                        or ".." in source_path.parts
+                        or source_path.suffix.lower() not in {".step", ".stp"}
+                    ):
+                        errors.append(
+                            f"component {component_id}: cad.source must be a project-local STEP/STP path"
+                        )
+                    elif _outside_ref(source_path):
+                        errors.append(
+                            f"component {component_id}: cad.source must be under ref/, "
+                            f"not {source!r}; ref/external/ belongs to design-reference"
+                        )
+                    elif project_dir is not None and not (
+                        project_dir / source_path
+                    ).is_file():
+                        errors.append(
+                            f"component {component_id}: cad.source does not exist: {source}"
+                        )
+                    if (
+                        mount_components is not None
+                        and isinstance(mount_id, str)
+                        and mount_id in mount_components
+                        and source_path.as_posix() != mount_components[mount_id]
+                    ):
+                        errors.append(
+                            f"component {component_id}: mount_id {mount_id!r} seats "
+                            f"{mount_components[mount_id]!r}, not cad.source {source!r}"
+                        )
+        if role != "wire" and _voltage_range(component) is None:
+            errors.append(f"component {component_id}: valid voltage_v range is required")
+        if role in RATED_CURRENT_ROLES:
+            for field in ("continuous_current_a", "peak_current_a"):
+                if not _positive(component.get(field)):
+                    errors.append(
+                        f"component {component_id}: positive {field} is required"
+                    )
+        if role == "actuator":
+            for field in ("running_current_a", "stall_current_a"):
+                if not _positive(component.get(field)):
+                    errors.append(
+                        f"component {component_id}: positive {field} is required"
+                    )
+        if role == "load":
+            if schema_version not in (2, 3):
+                errors.append(
+                    f"component {component_id}: role load requires schema_version 2 or 3"
+                )
+            load_type = component.get("load_type")
+            if not isinstance(load_type, str) or not load_type.strip():
+                errors.append(f"component {component_id}: load_type is required")
+            if (
+                _positive(component.get("continuous_current_a"))
+                and _positive(component.get("peak_current_a"))
+                and component["peak_current_a"] < component["continuous_current_a"]
+            ):
+                errors.append(
+                    f"component {component_id}: peak current is below continuous current"
+                )
+            if load_type == "lighting":
+                lighting = component.get("lighting")
+                if not isinstance(lighting, dict):
+                    errors.append(
+                        f"component {component_id}: lighting declaration is required"
+                    )
+                else:
+                    for field in ("function", "color", "behavior"):
+                        if (
+                            not isinstance(lighting.get(field), str)
+                            or not lighting[field].strip()
+                        ):
+                            errors.append(
+                                f"component {component_id}: lighting.{field} is required"
+                            )
+                    if schema_version == 3:
+                        installation = lighting.get("installation")
+                        if not isinstance(installation, dict):
+                            errors.append(
+                                f"component {component_id}: "
+                                "lighting.installation is required for schema 3"
+                            )
+                        else:
+                            mode = installation.get("mode")
+                            if mode not in LIGHT_INSTALLATION_MODES:
+                                errors.append(
+                                    f"component {component_id}: lighting.installation.mode "
+                                    f"must be one of {sorted(LIGHT_INSTALLATION_MODES)}"
+                                )
+                            if mode == "removable_socket":
+                                for field in ("interface_id", "receiver"):
+                                    if (
+                                        not isinstance(installation.get(field), str)
+                                        or not installation[field].strip()
+                                    ):
+                                        errors.append(
+                                            f"component {component_id}: "
+                                            f"lighting.installation.{field} is required"
+                                        )
+                                removable_lights[component_id] = installation
+                                cad = component.get("cad")
+                                if not isinstance(cad, dict) or cad.get("mode") != "assembly":
+                                    errors.append(
+                                        f"component {component_id}: removable lighting "
+                                        "must use cad.mode assembly so check_motion can move it"
+                                    )
+
+    for label, component_id in used_search_component_ids:
+        if component_id not in components:
+            errors.append(
+                f"{label}.component_id {component_id!r} is absent from components"
+            )
+
+    interfaces: dict[str, dict[str, Any]] = {}
+    raw_interfaces = data.get("mating_interfaces") if schema_version == 3 else []
+    if schema_version == 3 and removable_lights and (
+        not isinstance(raw_interfaces, list) or not raw_interfaces
+    ):
+        errors.append(
+            "mating_interfaces must declare every removable lighting interface"
+        )
+        raw_interfaces = []
+    elif not isinstance(raw_interfaces, list):
+        raw_interfaces = []
+
+    resolved_motion_conditions = motion_conditions_by_id
+    motion_conditions_loaded = motion_conditions_by_id is not None
+    motion_load_error_reported = False
+    for index, interface in enumerate(raw_interfaces):
+        label = f"mating_interfaces[{index}]"
+        if not isinstance(interface, dict):
+            errors.append(f"{label} must be an object")
+            continue
+        interface_id = interface.get("id")
+        if not isinstance(interface_id, str) or not interface_id.strip():
+            errors.append(f"{label}.id is required")
+            continue
+        if interface_id in interfaces:
+            errors.append(f"duplicate mating interface id: {interface_id}")
+            continue
+        interfaces[interface_id] = interface
+
+        interface_type = interface.get("type")
+        if interface_type not in LIGHT_INTERFACE_TYPES:
+            errors.append(
+                f"mating interface {interface_id}: type must be one of "
+                f"{sorted(LIGHT_INTERFACE_TYPES)}"
+            )
+        for field in (
+            "load_component",
+            "receiver_strategy",
+            "receiver",
+            "contact_component",
+            "lamp_mpn",
+            "contact_mpn",
+        ):
+            if not isinstance(interface.get(field), str) or not interface[field].strip():
+                errors.append(f"mating interface {interface_id}: {field} is required")
+
+        load_component_id = interface.get("load_component")
+        load_component_key = (
+            load_component_id if isinstance(load_component_id, str) else ""
+        )
+        load_component = components.get(load_component_key)
+        if (
+            load_component is None
+            or load_component.get("role") != "load"
+            or load_component.get("load_type") != "lighting"
+        ):
+            errors.append(
+                f"mating interface {interface_id}: load_component must name a lighting load"
+            )
+        elif load_component.get("carried") is not True:
+            errors.append(
+                f"mating interface {interface_id}: removable lighting load must be carried"
+            )
+        installation = removable_lights.get(load_component_key)
+        if installation is None:
+            errors.append(
+                f"mating interface {interface_id}: load_component is not declared removable"
+            )
+        else:
+            if installation.get("interface_id") != interface_id:
+                errors.append(
+                    f"mating interface {interface_id}: component installation points to "
+                    f"{installation.get('interface_id')!r}"
+                )
+            if installation.get("receiver") != interface.get("receiver"):
+                errors.append(
+                    f"mating interface {interface_id}: receiver disagrees with component installation"
+                )
+        lamp_mpn = interface.get("lamp_mpn")
+        if (
+            isinstance(lamp_mpn, str)
+            and lamp_mpn.strip()
+            and lamp_mpn
+            not in searched_component_mpns.get(load_component_key, set())
+        ):
+            errors.append(
+                f"mating interface {interface_id}: lamp_mpn {lamp_mpn!r} has no matching "
+                f"used component_search record for {load_component_id!r}"
+            )
+
+        receiver_strategy = interface.get("receiver_strategy")
+        if receiver_strategy not in RECEIVER_STRATEGIES:
+            errors.append(
+                f"mating interface {interface_id}: receiver_strategy must be "
+                "purchased_socket or printed_receiver"
+            )
+        receiver_id = interface.get("receiver")
+        contact_component_id = interface.get("contact_component")
+        receiver_key = receiver_id if isinstance(receiver_id, str) else ""
+        contact_component_key = (
+            contact_component_id
+            if isinstance(contact_component_id, str)
+            else ""
+        )
+        contact_component = components.get(contact_component_key)
+        if contact_component is None or contact_component.get("role") != "connector":
+            errors.append(
+                f"mating interface {interface_id}: contact_component must name a connector"
+            )
+        elif contact_component.get("carried") is not True:
+            errors.append(
+                f"mating interface {interface_id}: contact_component must be carried"
+            )
+        if receiver_strategy == "purchased_socket":
+            receiver_component = components.get(receiver_key)
+            if receiver_component is None or receiver_component.get("role") != "connector":
+                errors.append(
+                    f"mating interface {interface_id}: purchased receiver must name a connector"
+                )
+            else:
+                if receiver_component.get("carried") is not True:
+                    errors.append(
+                        f"mating interface {interface_id}: purchased receiver must be carried"
+                    )
+                receiver_cad = receiver_component.get("cad")
+                if (
+                    not isinstance(receiver_cad, dict)
+                    or receiver_cad.get("mode") != "assembly"
+                ):
+                    errors.append(
+                        f"mating interface {interface_id}: purchased receiver must use "
+                        "cad.mode assembly so check_motion can treat it as an obstacle"
+                    )
+            if (
+                not isinstance(interface.get("receiver_mpn"), str)
+                or not interface["receiver_mpn"].strip()
+            ):
+                errors.append(
+                    f"mating interface {interface_id}: receiver_mpn is required for a purchased socket"
+                )
+            elif interface["receiver_mpn"] not in searched_component_mpns.get(
+                receiver_key, set()
+            ):
+                errors.append(
+                    f"mating interface {interface_id}: receiver_mpn "
+                    f"{interface['receiver_mpn']!r} has no matching used component_search "
+                    f"record for {receiver_id!r}"
+                )
+        elif receiver_strategy == "printed_receiver":
+            if (
+                not isinstance(interface.get("printed_receiver_justification"), str)
+                or not interface["printed_receiver_justification"].strip()
+            ):
+                errors.append(
+                    f"mating interface {interface_id}: printed receiver needs a justification"
+                )
+        contact_mpn = interface.get("contact_mpn")
+        if (
+            isinstance(contact_mpn, str)
+            and contact_mpn.strip()
+            and contact_mpn
+            not in searched_component_mpns.get(contact_component_key, set())
+        ):
+            errors.append(
+                f"mating interface {interface_id}: contact_mpn {contact_mpn!r} has no "
+                f"matching used component_search record for {contact_component_id!r}"
+            )
+
+        evidence = interface.get("evidence")
+        if not isinstance(evidence, dict):
+            errors.append(f"mating interface {interface_id}: evidence is required")
+        else:
+            for field in ("lamp_source", "receiver_source"):
+                value = evidence.get(field)
+                if not isinstance(value, str) or not value.startswith(
+                    ("https://", "http://")
+                ):
+                    errors.append(
+                        f"mating interface {interface_id}: evidence.{field} must be a URL"
+                    )
+            for field in ("lamp_revision", "receiver_revision"):
+                if not isinstance(evidence.get(field), str) or not evidence[field].strip():
+                    errors.append(
+                        f"mating interface {interface_id}: evidence.{field} is required"
+                    )
+
+        geometry = interface.get("geometry")
+        geometry_clearance: float | None = None
+        if not isinstance(geometry, dict):
+            errors.append(f"mating interface {interface_id}: geometry is required")
+        else:
+            for field in (
+                "source_datum",
+                "clearance_method",
+                "retention_stop",
+                "connector_access",
+                "tool_access",
+            ):
+                if not isinstance(geometry.get(field), str) or not geometry[field].strip():
+                    errors.append(
+                        f"mating interface {interface_id}: geometry.{field} is required"
+                    )
+            if not _positive(geometry.get("insertion_depth_mm")):
+                errors.append(
+                    f"mating interface {interface_id}: positive geometry.insertion_depth_mm is required"
+                )
+            if not _positive(geometry.get("clearance_mm")):
+                errors.append(
+                    f"mating interface {interface_id}: positive geometry.clearance_mm is required"
+                )
+            else:
+                geometry_clearance = float(geometry["clearance_mm"])
+            lock_rotation = geometry.get("lock_rotation_deg")
+            if not _number(lock_rotation) or lock_rotation < 0:
+                errors.append(
+                    f"mating interface {interface_id}: geometry.lock_rotation_deg must be non-negative"
+                )
+            lock_direction = geometry.get("lock_direction")
+            if lock_direction not in LOCK_DIRECTIONS:
+                errors.append(
+                    f"mating interface {interface_id}: geometry.lock_direction must be "
+                    "clockwise, counterclockwise, or none"
+                )
+            lug_count = geometry.get("lug_count")
+            if (
+                not isinstance(lug_count, int)
+                or isinstance(lug_count, bool)
+                or lug_count < 0
+            ):
+                errors.append(
+                    f"mating interface {interface_id}: geometry.lug_count must be a non-negative integer"
+                )
+            if interface_type in {"twist_lock", "bayonet", "threaded"}:
+                if not _positive(lock_rotation):
+                    errors.append(
+                        f"mating interface {interface_id}: rotational lock needs positive rotation"
+                    )
+                if lock_direction == "none":
+                    errors.append(
+                        f"mating interface {interface_id}: rotational lock needs a rotation direction"
+                    )
+            if interface_type in {"twist_lock", "bayonet"}:
+                if not isinstance(lug_count, int) or isinstance(lug_count, bool) or lug_count < 1:
+                    errors.append(
+                        f"mating interface {interface_id}: twist/bayonet lock needs at least one lug"
+                    )
+
+        motion_conditions = interface.get("motion_conditions")
+        declared_motion_ids: list[tuple[str, str]] = []
+        if not isinstance(motion_conditions, dict):
+            errors.append(
+                f"mating interface {interface_id}: motion_conditions is required"
+            )
+        else:
+            for phase in MATING_MOTION_PHASES:
+                condition_id = motion_conditions.get(phase)
+                if not isinstance(condition_id, str) or not condition_id.strip():
+                    errors.append(
+                        f"mating interface {interface_id}: motion_conditions.{phase} is required"
+                    )
+                else:
+                    declared_motion_ids.append((phase, condition_id))
+            if len({condition_id for _, condition_id in declared_motion_ids}) != len(
+                declared_motion_ids
+            ):
+                errors.append(
+                    f"mating interface {interface_id}: each motion phase needs a distinct condition id"
+                )
+            if project_dir is not None and not motion_conditions_loaded:
+                resolved_motion_conditions, motion_error = _load_motion_conditions(
+                    project_dir / "measure" / "motion.json"
+                )
+                motion_conditions_loaded = True
+                if motion_error is not None:
+                    errors.append(motion_error)
+                    motion_load_error_reported = True
+            if resolved_motion_conditions is not None:
+                for phase, condition_id in declared_motion_ids:
+                    condition = resolved_motion_conditions.get(condition_id)
+                    if condition is None:
+                        errors.append(
+                            f"mating interface {interface_id}: motion condition "
+                            f"{condition_id!r} not found in measure/motion.json"
+                        )
+                        continue
+                    expected = "blocked" if phase == "retained" else "clear"
+                    if condition.get("expect", "clear") != expected:
+                        errors.append(
+                            f"mating interface {interface_id}: motion condition "
+                            f"{condition_id!r} must expect {expected} for phase {phase}"
+                        )
+                    check = condition.get("check")
+                    if phase in {"insert", "retained", "remove"} and check != (
+                        "linear_motion_collision"
+                    ):
+                        errors.append(
+                            f"mating interface {interface_id}: motion condition "
+                            f"{condition_id!r} must use linear_motion_collision for phase {phase}"
+                        )
+                    expected_lock_check = None
+                    if interface_type in {"twist_lock", "bayonet", "threaded"}:
+                        expected_lock_check = "rotation_motion_collision"
+                    elif interface_type in {"push_fit", "plug_in"}:
+                        expected_lock_check = "linear_motion_collision"
+                    if (
+                        phase in {"lock", "unlock"}
+                        and expected_lock_check is not None
+                        and check != expected_lock_check
+                    ):
+                        errors.append(
+                            f"mating interface {interface_id}: motion condition "
+                            f"{condition_id!r} must use {expected_lock_check} for phase {phase}"
+                        )
+                    inputs = condition.get("inputs")
+                    if phase in {"lock", "retained", "unlock", "remove"} and (
+                        not isinstance(inputs, dict)
+                        or inputs.get("allow_seated_contact") is not True
+                    ):
+                        errors.append(
+                            f"mating interface {interface_id}: motion condition "
+                            f"{condition_id!r} must set inputs.allow_seated_contact true"
+                        )
+            elif project_dir is not None and not motion_load_error_reported:
+                errors.append(
+                    f"mating interface {interface_id}: removable lighting needs measure/motion.json"
+                )
+                motion_load_error_reported = True
+
+        fit_coupon = interface.get("fit_coupon")
+        if not isinstance(fit_coupon, dict):
+            errors.append(f"mating interface {interface_id}: fit_coupon is required")
+        else:
+            status = fit_coupon.get("status")
+            if status not in FIT_COUPON_STATUSES:
+                errors.append(
+                    f"mating interface {interface_id}: fit_coupon.status must be planned, passed, or failed"
+                )
+            elif status == "failed":
+                errors.append(
+                    f"mating interface {interface_id}: failed fit coupon blocks the interface"
+                )
+            for field in (
+                "material",
+                "process",
+                "orientation",
+                "hardware_sample",
+                "method",
+                "result",
+            ):
+                if not isinstance(fit_coupon.get(field), str) or not fit_coupon[field].strip():
+                    errors.append(
+                        f"mating interface {interface_id}: fit_coupon.{field} is required"
+                    )
+            candidates = fit_coupon.get("candidate_clearances_mm")
+            if (
+                not isinstance(candidates, list)
+                or len(candidates) < 3
+                or not all(_positive(value) for value in candidates)
+                or len({float(value) for value in candidates}) < 3
+            ):
+                errors.append(
+                    f"mating interface {interface_id}: fit_coupon.candidate_clearances_mm "
+                    "must contain at least three distinct positive values"
+                )
+                candidates = []
+            elif geometry_clearance is not None and not any(
+                math.isclose(
+                    geometry_clearance,
+                    candidate,
+                    rel_tol=0.0,
+                    abs_tol=1e-9,
+                )
+                for candidate in candidates
+            ):
+                errors.append(
+                    f"mating interface {interface_id}: geometry.clearance_mm is not "
+                    "included in the fit-coupon candidates"
+                )
+            selected = fit_coupon.get("selected_clearance_mm")
+            if status == "passed":
+                if not _positive(selected):
+                    errors.append(
+                        f"mating interface {interface_id}: passed fit coupon needs "
+                        "positive selected_clearance_mm"
+                    )
+                elif candidates and not any(
+                    math.isclose(selected, candidate, rel_tol=0.0, abs_tol=1e-9)
+                    for candidate in candidates
+                ):
+                    errors.append(
+                        f"mating interface {interface_id}: selected clearance was not tested"
+                    )
+                elif geometry_clearance is not None and not math.isclose(
+                    selected,
+                    geometry_clearance,
+                    rel_tol=0.0,
+                    abs_tol=1e-9,
+                ):
+                    errors.append(
+                        f"mating interface {interface_id}: passed coupon clearance "
+                        "does not match geometry.clearance_mm"
+                    )
+
+    if schema_version == 3:
+        for component_id, installation in removable_lights.items():
+            interface_id = installation.get("interface_id")
+            if interface_id not in interfaces:
+                errors.append(
+                    f"component {component_id}: removable lighting interface "
+                    f"{interface_id!r} is absent from mating_interfaces"
+                )
+
+    if boundary == "onboard" and not any(
+        component.get("role") == "source" and component.get("carried") is True
+        for component in components.values()
+    ):
+        errors.append("onboard boundary requires a carried source component")
+    if boundary == "external" and not any(
+        component.get("role") == "inlet" and component.get("carried") is True
+        for component in components.values()
+    ):
+        errors.append("external boundary requires a carried inlet component")
+
+    paths = data.get("paths")
+    if not isinstance(paths, list) or not paths:
+        errors.append("paths must be a non-empty list")
+        paths = []
+    seen_path_ids: set[str] = set()
+    for index, path in enumerate(paths):
+        label = f"paths[{index}]"
+        if not isinstance(path, dict):
+            errors.append(f"{label} must be an object")
+            continue
+        path_id = path.get("id")
+        if not isinstance(path_id, str) or not path_id.strip():
+            errors.append(f"{label}.id is required")
+            path_id = label
+        elif path_id in seen_path_ids:
+            errors.append(f"duplicate path id: {path_id}")
+        seen_path_ids.add(path_id)
+        source_id = path.get("source")
+        target_keys = [key for key in ("actuator", "load") if key in path]
+        if len(target_keys) != 1:
+            errors.append(
+                f"path {path_id}: exactly one of actuator or load is required"
+            )
+            target_key = "actuator"
+            target_id = path.get(target_key)
+        else:
+            target_key = target_keys[0]
+            target_id = path.get(target_key)
+        source = components.get(source_id) if isinstance(source_id, str) else None
+        target = components.get(target_id) if isinstance(target_id, str) else None
+        if source is None or source.get("role") != "source":
+            errors.append(f"path {path_id}: source must name a source component")
+        if target is None or target.get("role") != target_key:
+            errors.append(
+                f"path {path_id}: {target_key} must name a {target_key} component"
+            )
+        sequence = path.get("sequence")
+        if not isinstance(sequence, list) or len(sequence) < 3:
+            errors.append(
+                f"path {path_id}: sequence must contain a complete source-to-return path"
+            )
+            sequence = []
+        else:
+            if sequence[0] != source_id or sequence[-1] != source_id:
+                errors.append(
+                    f"path {path_id}: sequence must begin and end at source {source_id!r}"
+                )
+            if sequence.count(source_id) != 2:
+                errors.append(
+                    f"path {path_id}: source must appear exactly twice, at the two endpoints"
+                )
+            if sequence.count(target_id) != 1:
+                errors.append(
+                    f"path {path_id}: {target_key} must appear exactly once in sequence"
+                )
+            for component_id in sequence:
+                if not isinstance(component_id, str) or component_id not in components:
+                    errors.append(
+                        f"path {path_id}: unknown component {component_id!r} in sequence"
+                    )
+                    continue
+                component_role = components[component_id].get("role")
+                if component_role == "source" and component_id != source_id:
+                    errors.append(
+                        f"path {path_id}: inline source {component_id!r} is not the declared source"
+                    )
+                if component_role in {"actuator", "load"} and component_id != target_id:
+                    errors.append(
+                        f"path {path_id}: independently rated branch contains extra "
+                        f"{component_role} {component_id!r}"
+                    )
+        required_cont = path.get("required_continuous_current_a")
+        required_peak = path.get("required_peak_current_a")
+        if not _positive(required_cont):
+            errors.append(
+                f"path {path_id}: positive required_continuous_current_a is required"
+            )
+        if not _positive(required_peak):
+            errors.append(f"path {path_id}: positive required_peak_current_a is required")
+        if (
+            _positive(required_cont)
+            and _positive(required_peak)
+            and required_peak < required_cont
+        ):
+            errors.append(f"path {path_id}: peak current is below continuous current")
+        if (
+            target_key == "actuator"
+            and target is not None
+            and _positive(required_cont)
+            and _positive(target.get("running_current_a"))
+            and required_cont < target["running_current_a"]
+        ):
+            errors.append(
+                f"path {path_id}: required continuous current is below actuator running current"
+            )
+        if (
+            target_key == "actuator"
+            and target is not None
+            and _positive(required_peak)
+            and _positive(target.get("stall_current_a"))
+            and required_peak < target["stall_current_a"]
+        ):
+            errors.append(
+                f"path {path_id}: required peak current is below actuator stall/start current"
+            )
+
+        if source is not None:
+            source_voltage = _voltage_range(source)
+            if source_voltage is not None:
+                for component_id in dict.fromkeys(
+                    item for item in sequence if isinstance(item, str)
+                ):
+                    component = components.get(component_id)
+                    if component is None or component.get("role") == "wire":
+                        continue
+                    accepted = _voltage_range(component)
+                    if accepted is not None and (
+                        source_voltage[0] < accepted[0]
+                        or source_voltage[1] > accepted[1]
+                    ):
+                        errors.append(
+                            f"path {path_id}: source voltage {source_voltage} is outside "
+                            f"{component_id} range {accepted}"
+                        )
+        if _positive(required_cont) and _positive(required_peak):
+            for component_id in dict.fromkeys(
+                item for item in sequence if isinstance(item, str)
+            ):
+                component = components.get(component_id)
+                if component is None or component.get("role") == "actuator":
+                    continue
+                if component.get("role") in RATED_CURRENT_ROLES:
+                    if (
+                        _positive(component.get("continuous_current_a"))
+                        and component["continuous_current_a"] < required_cont
+                    ):
+                        errors.append(
+                            f"path {path_id}: {component_id} continuous-current rating is too low"
+                        )
+                    if (
+                        _positive(component.get("peak_current_a"))
+                        and component["peak_current_a"] < required_peak
+                    ):
+                        errors.append(
+                            f"path {path_id}: {component_id} peak-current rating is too low"
+                        )
+
+        for decision_name, allowed_roles in (
+            ("protection", {"protection"}),
+            ("control", {"switch", "controller"}),
+        ):
+            decision = path.get(decision_name)
+            if (
+                not isinstance(decision, dict)
+                or decision.get("status") not in {"present", "not_required"}
+            ):
+                errors.append(
+                    f"path {path_id}: {decision_name}.status must be present or not_required"
+                )
+                continue
+            if decision["status"] == "present":
+                component_id = decision.get("component")
+                component = components.get(component_id)
+                if (
+                    component is None
+                    or component.get("role") not in allowed_roles
+                    or component_id not in sequence
+                ):
+                    errors.append(
+                        f"path {path_id}: {decision_name} component is missing, "
+                        "wrong-role, or absent from sequence"
+                    )
+            else:
+                if (
+                    not isinstance(decision.get("justification"), str)
+                    or not decision["justification"].strip()
+                ):
+                    errors.append(
+                        f"path {path_id}: {decision_name} not_required needs a justification"
+                    )
+                evidence_url = decision.get("evidence_url")
+                if not isinstance(evidence_url, str) or not evidence_url.startswith(
+                    ("https://", "http://")
+                ):
+                    errors.append(
+                        f"path {path_id}: {decision_name} not_required needs evidence_url"
+                    )
+
+        route = path.get("route")
+        if not isinstance(route, dict):
+            errors.append(f"path {path_id}: route declaration is required")
+        else:
+            if route.get("modeled") is not True:
+                errors.append(f"path {path_id}: route.modeled must be true")
+            if route.get("strain_relief") is not True:
+                errors.append(f"path {path_id}: route.strain_relief must be true")
+            if not _positive(route.get("clearance_envelope_mm")):
+                errors.append(
+                    f"path {path_id}: positive route.clearance_envelope_mm is required"
+                )
+            if (
+                not isinstance(route.get("service_access"), str)
+                or not route["service_access"].strip()
+            ):
+                errors.append(f"path {path_id}: route.service_access is required")
+    return errors
+
+
+def manifest_notes(data: Any) -> list[str]:
+    """Valid declarations that still limit the physical handoff claim."""
+    if not isinstance(data, dict):
+        return []
+    notes = []
+    interfaces = data.get("mating_interfaces", [])
+    if not isinstance(interfaces, list):
+        return notes
+    for interface in interfaces:
+        if not isinstance(interface, dict):
+            continue
+        coupon = interface.get("fit_coupon")
+        if isinstance(coupon, dict) and coupon.get("status") == "planned":
+            notes.append(
+                f"mating interface {interface.get('id', '?')}: fit coupon is planned; "
+                "physical fit remains unverified"
+            )
+    return notes
+
+
+def _valid_fixture() -> tuple[dict[str, Any], set[str]]:
+    evidence = {
+        "kind": "manufacturer_datasheet",
+        "url": "https://manufacturer.example/data.pdf",
+    }
+    components = [
+        {
+            "id": "battery",
+            "role": "source",
+            "carried": True,
+            "mount_id": "battery_mount",
+            "cad": {
+                "mode": "validation_envelope",
+                "rendered": False,
+                "source": "ref/validation/battery-envelope.step",
+            },
+            "evidence": evidence,
+            "voltage_v": {"min": 3.0, "max": 4.2},
+            "continuous_current_a": 3.0,
+            "peak_current_a": 6.0,
+        },
+        {
+            "id": "fuse",
+            "role": "protection",
+            "carried": True,
+            "mount_id": "fuse_mount",
+            "cad": {
+                "mode": "validation_envelope",
+                "rendered": False,
+                "source": "ref/validation/fuse-envelope.step",
+            },
+            "evidence": evidence,
+            "voltage_v": {"min": 0.0, "max": 32.0},
+            "continuous_current_a": 2.0,
+            "peak_current_a": 4.0,
+        },
+        {
+            "id": "switch",
+            "role": "switch",
+            "carried": True,
+            "mount_id": "switch_mount",
+            "cad": {
+                "mode": "assembly",
+                "rendered": True,
+                "source": "ref/switch.step",
+            },
+            "evidence": evidence,
+            "voltage_v": {"min": 0.0, "max": 12.0},
+            "continuous_current_a": 2.0,
+            "peak_current_a": 4.0,
+        },
+        {
+            "id": "wire_out",
+            "role": "wire",
+            "carried": True,
+            "mount_id": "wire_out_envelope",
+            "cad": {
+                "mode": "validation_envelope",
+                "rendered": False,
+                "source": "ref/validation/wire-out-envelope.step",
+            },
+            "evidence": evidence,
+            "continuous_current_a": 3.0,
+            "peak_current_a": 6.0,
+        },
+        {
+            "id": "motor",
+            "role": "actuator",
+            "carried": True,
+            "mount_id": "motor_mount",
+            "cad": {
+                "mode": "assembly",
+                "rendered": True,
+                "source": "ref/motor.step",
+            },
+            "evidence": evidence,
+            "voltage_v": {"min": 3.0, "max": 6.0},
+            "running_current_a": 0.5,
+            "stall_current_a": 1.5,
+        },
+        {
+            "id": "wire_return",
+            "role": "wire",
+            "carried": True,
+            "mount_id": "wire_return_envelope",
+            "cad": {
+                "mode": "validation_envelope",
+                "rendered": False,
+                "source": "ref/validation/wire-return-envelope.step",
+            },
+            "evidence": evidence,
+            "continuous_current_a": 3.0,
+            "peak_current_a": 6.0,
+        },
+    ]
+    manifest = {
+        "schema_version": 1,
+        "project": "fixture",
+        "boundary": "onboard",
+        "github_search": [
+            {
+                "query": "brushed dc toy CAD wiring",
+                "url": "https://github.com/example/hardware",
+                "license": "MIT",
+                "decision": "used",
+                "artifacts": ["cad", "bom", "wiring"],
+                "relevant_feature": "battery hatch",
+                "idea_taken": "serviceable battery tray",
+                "compatibility": {
+                    "actuator_family": "brushed_dc",
+                    "source_voltage_v": [3.0, 4.2],
+                },
+            }
+        ],
+        "components": components,
+        "paths": [
+            {
+                "id": "drive",
+                "source": "battery",
+                "actuator": "motor",
+                "sequence": [
+                    "battery",
+                    "fuse",
+                    "switch",
+                    "wire_out",
+                    "motor",
+                    "wire_return",
+                    "battery",
+                ],
+                "required_continuous_current_a": 0.5,
+                "required_peak_current_a": 1.5,
+                "protection": {"status": "present", "component": "fuse"},
+                "control": {"status": "present", "component": "switch"},
+                "route": {
+                    "modeled": True,
+                    "clearance_envelope_mm": 3.0,
+                    "strain_relief": True,
+                    "service_access": "hatch",
+                },
+            }
+        ],
+    }
+    return manifest, {
+        "battery_mount",
+        "fuse_mount",
+        "switch_mount",
+        "motor_mount",
+        "wire_out_envelope",
+        "wire_return_envelope",
+    }
+
+
+def _valid_lighting_fixture() -> tuple[
+    dict[str, Any], set[str], dict[str, dict[str, Any]]
+]:
+    manifest, mounts = _valid_fixture()
+    manifest["schema_version"] = 3
+    compatibility = manifest["github_search"][0]["compatibility"]
+    compatibility["load_family"] = "navigation_led"
+    del compatibility["actuator_family"]
+    manifest["github_search"][0]["query"] = (
+        "model aircraft navigation LED CAD BOM wiring"
+    )
+    manifest["github_search"][0]["revision"] = "0123456789abcdef"
+    manifest["component_search"] = [
+        {
+            "query": "EXAMPLE-LED-RED STEP datasheet",
+            "service": "manufacturer",
+            "url": "https://manufacturer.example/example-led-red",
+            "decision": "used",
+            "component_id": "nav_light",
+            "part_number": "EXAMPLE-LED-RED",
+            "artifacts": ["datasheet", "step"],
+            "license_or_terms": "manufacturer CAD download terms",
+            "local_file": "ref/example-led-red.step",
+            "sha256": "0" * 64,
+        },
+        {
+            "query": "EXAMPLE-SOCKET STEP datasheet",
+            "service": "manufacturer",
+            "url": "https://manufacturer.example/example-socket",
+            "decision": "used",
+            "component_id": "nav_light_socket",
+            "part_number": "EXAMPLE-SOCKET",
+            "artifacts": ["datasheet"],
+            "license_or_terms": "manufacturer product-data terms",
+        }
+    ]
+    light = manifest["components"][4]
+    light.clear()
+    light.update(
+        {
+            "id": "nav_light",
+            "role": "load",
+            "load_type": "lighting",
+            "carried": True,
+            "mount_id": "nav_light_mount",
+            "cad": {
+                "mode": "assembly",
+                "rendered": True,
+                "source": "ref/example-led-red.step",
+            },
+            "evidence": {
+                "kind": "manufacturer_datasheet",
+                "url": "https://manufacturer.example/example-led-red.pdf",
+            },
+            "voltage_v": {"min": 3.0, "max": 6.0},
+            "continuous_current_a": 0.02,
+            "peak_current_a": 0.02,
+            "lighting": {
+                "function": "port navigation",
+                "color": "red",
+                "behavior": "steady",
+                "installation": {
+                    "mode": "removable_socket",
+                    "interface_id": "nav_light_twist_lock",
+                    "receiver": "nav_light_socket",
+                },
+            },
+        }
+    )
+    mounts.discard("motor_mount")
+    mounts.add("nav_light_mount")
+    manifest["components"].append(
+        {
+            "id": "nav_light_socket",
+            "role": "connector",
+            "carried": True,
+            "mount_id": "nav_light_socket_mount",
+            "cad": {
+                "mode": "assembly",
+                "rendered": True,
+                "source": "ref/example-socket.step",
+            },
+            "evidence": {
+                "kind": "manufacturer_datasheet",
+                "url": "https://manufacturer.example/example-socket.pdf",
+            },
+            "voltage_v": {"min": 0.0, "max": 12.0},
+            "continuous_current_a": 0.5,
+            "peak_current_a": 0.5,
+        }
+    )
+    mounts.add("nav_light_socket_mount")
+    path = manifest["paths"][0]
+    path["load"] = "nav_light"
+    del path["actuator"]
+    path["sequence"][4:5] = ["nav_light_socket", "nav_light"]
+    path["required_continuous_current_a"] = 0.02
+    path["required_peak_current_a"] = 0.02
+    manifest["mating_interfaces"] = [
+        {
+            "id": "nav_light_twist_lock",
+            "type": "twist_lock",
+            "load_component": "nav_light",
+            "receiver_strategy": "purchased_socket",
+            "receiver": "nav_light_socket",
+            "contact_component": "nav_light_socket",
+            "lamp_mpn": "EXAMPLE-LED-RED",
+            "receiver_mpn": "EXAMPLE-SOCKET",
+            "contact_mpn": "EXAMPLE-SOCKET",
+            "evidence": {
+                "lamp_source": "https://manufacturer.example/example-led-red.pdf",
+                "lamp_revision": "A",
+                "receiver_source": "https://manufacturer.example/example-socket.pdf",
+                "receiver_revision": "B",
+            },
+            "geometry": {
+                "source_datum": "lamp flange underside to socket mounting face",
+                "lug_count": 2,
+                "insertion_depth_mm": 6.0,
+                "lock_rotation_deg": 30.0,
+                "lock_direction": "clockwise",
+                "clearance_mm": 0.25,
+                "clearance_method": "receiver seat derived with cadfits slip clearance",
+                "retention_stop": "socket end stops and lug shoulders",
+                "connector_access": "rear contact tabs remain reachable through service hatch",
+                "tool_access": "lamp can be gripped and rotated by hand",
+            },
+            "motion_conditions": {
+                "insert": "nav-insert",
+                "lock": "nav-lock",
+                "retained": "nav-retained",
+                "unlock": "nav-unlock",
+                "remove": "nav-remove",
+            },
+            "fit_coupon": {
+                "status": "planned",
+                "material": "PETG",
+                "process": "FDM, 0.4 mm nozzle, 0.2 mm layer",
+                "orientation": "socket axis vertical",
+                "hardware_sample": "EXAMPLE-LED-RED and EXAMPLE-SOCKET production samples",
+                "candidate_clearances_mm": [0.15, 0.25, 0.35],
+                "method": "print receiver-seat coupons and dry-fit the exact hardware",
+                "result": "pending physical sample",
+            },
+        }
+    ]
+    motion_conditions = {
+        "nav-insert": {
+            "id": "nav-insert",
+            "check": "linear_motion_collision",
+            "expect": "clear",
+            "inputs": {},
+        },
+        "nav-lock": {
+            "id": "nav-lock",
+            "check": "rotation_motion_collision",
+            "expect": "clear",
+            "inputs": {"allow_seated_contact": True},
+        },
+        "nav-retained": {
+            "id": "nav-retained",
+            "check": "linear_motion_collision",
+            "expect": "blocked",
+            "inputs": {"allow_seated_contact": True},
+        },
+        "nav-unlock": {
+            "id": "nav-unlock",
+            "check": "rotation_motion_collision",
+            "expect": "clear",
+            "inputs": {"allow_seated_contact": True},
+        },
+        "nav-remove": {
+            "id": "nav-remove",
+            "check": "linear_motion_collision",
+            "expect": "clear",
+            "inputs": {"allow_seated_contact": True},
+        },
+    }
+    return manifest, mounts, motion_conditions
+
+
+def self_check() -> None:
+    manifest, mounts = _valid_fixture()
+    assert validate_manifest(manifest, mounts) == []
+    lighting_manifest, lighting_mounts, lighting_motion_conditions = (
+        _valid_lighting_fixture()
+    )
+    assert (
+        validate_manifest(
+            lighting_manifest,
+            lighting_mounts,
+            motion_conditions_by_id=lighting_motion_conditions,
+        )
+        == []
+    )
+    schema_2_lighting = copy.deepcopy(lighting_manifest)
+    schema_2_lighting["schema_version"] = 2
+    del schema_2_lighting["mating_interfaces"]
+    del schema_2_lighting["components"][4]["lighting"]["installation"]
+    assert validate_manifest(schema_2_lighting, lighting_mounts) == []
+    cases = []
+    bad = copy.deepcopy(manifest)
+    bad["components"][4]["voltage_v"]["max"] = 3.7
+    cases.append((bad, "outside motor range"))
+    bad = copy.deepcopy(manifest)
+    bad["components"][2]["peak_current_a"] = 1.0
+    cases.append((bad, "switch current"))
+    bad = copy.deepcopy(manifest)
+    bad["paths"][0]["sequence"][-1] = "switch"
+    cases.append((bad, "return path"))
+    bad = copy.deepcopy(manifest)
+    bad["paths"][0]["sequence"].insert(-1, "battery")
+    cases.append((bad, "source repeated inside branch"))
+    bad = copy.deepcopy(manifest)
+    extra_load = copy.deepcopy(bad["components"][4])
+    extra_load["id"] = "second_motor"
+    bad["components"].append(extra_load)
+    bad["paths"][0]["sequence"].insert(-1, "second_motor")
+    cases.append((bad, "two independently rated loads in one branch"))
+    bad = copy.deepcopy(manifest)
+    bad["github_search"] = []
+    cases.append((bad, "GitHub search"))
+    bad = copy.deepcopy(manifest)
+    bad["paths"][0]["route"]["strain_relief"] = False
+    cases.append((bad, "strain relief"))
+    bad = copy.deepcopy(manifest)
+    bad["boundary"] = "external"
+    cases.append((bad, "external boundary without inlet"))
+    bad = copy.deepcopy(manifest)
+    bad["components"][0]["cad"]["rendered"] = True
+    cases.append((bad, "rendered validation envelope"))
+    for candidate, name in cases:
+        assert validate_manifest(candidate, mounts), (
+            f"self-check failed to reject {name}"
+        )
+    assert validate_manifest(manifest, mounts - {"motor_mount"}), (
+        "self-check failed to reject missing mount"
+    )
+    assert validate_manifest(
+        manifest,
+        mounts,
+        mount_components={"motor_mount": "ref/not-the-motor.step"},
+    ), "self-check failed to reject a mount that seats the wrong component STEP"
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    del bad_lighting["components"][4]["lighting"]["behavior"]
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), (
+        "self-check failed to reject incomplete lighting declaration"
+    )
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    bad_lighting["component_search"] = []
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), (
+        "self-check failed to reject missing component search"
+    )
+    def _lighting_errors(manifest: dict) -> list[str]:
+        return validate_manifest(
+            manifest,
+            lighting_mounts,
+            motion_conditions_by_id=lighting_motion_conditions,
+        )
+
+    # Both fields carry a component STEP path and both failed the same way, so
+    # each branch is locked by its own message rather than by any rejection:
+    # a manifest can be invalid for a reason that has nothing to do with ref/.
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    bad_lighting["component_search"][0]["local_file"] = "catalog/example-led-red.step"
+    assert any("local_file must be under ref/" in error
+               for error in _lighting_errors(bad_lighting)), (
+        "self-check failed to reject a component STEP parked outside ref/"
+    )
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    bad_lighting["component_search"][0]["local_file"] = "ref/external/example-led-red.step"
+    assert any("local_file must be under ref/" in error
+               for error in _lighting_errors(bad_lighting)), (
+        "self-check failed to reject a component STEP in design-reference's namespace"
+    )
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    for component in bad_lighting["components"]:
+        if isinstance(component.get("cad"), dict):
+            component["cad"]["source"] = "catalog/example-led-red.step"
+            break
+    else:                                       # pragma: no cover - fixture drift
+        raise AssertionError("lighting fixture has no component carrying cad")
+    assert any("cad.source must be under ref/" in error
+               for error in _lighting_errors(bad_lighting)), (
+        "self-check failed to reject a seated STEP parked outside ref/"
+    )
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    del bad_lighting["github_search"][0]["revision"]
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), (
+        "self-check failed to reject mutable GitHub provenance"
+    )
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    del bad_lighting["mating_interfaces"][0]["receiver_mpn"]
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), "self-check failed to reject a purchased socket without an MPN"
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    bad_lighting["mating_interfaces"][0]["lamp_mpn"] = "SIMILAR-LAMP"
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), "self-check failed to reject an MPN absent from component_search"
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    del bad_lighting["mating_interfaces"][0]["motion_conditions"]["retained"]
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), "self-check failed to reject an incomplete lock motion sequence"
+    bad_motion = copy.deepcopy(lighting_motion_conditions)
+    bad_motion["nav-retained"]["expect"] = "clear"
+    assert validate_manifest(
+        lighting_manifest,
+        lighting_mounts,
+        motion_conditions_by_id=bad_motion,
+    ), "self-check failed to reject an unblocked retention check"
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    coupon = bad_lighting["mating_interfaces"][0]["fit_coupon"]
+    coupon["status"] = "passed"
+    coupon["selected_clearance_mm"] = 0.45
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), "self-check failed to reject an untested selected clearance"
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    coupon = bad_lighting["mating_interfaces"][0]["fit_coupon"]
+    coupon["status"] = "passed"
+    coupon["selected_clearance_mm"] = 0.15
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), "self-check failed to reject a tested clearance not applied to geometry"
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    bad_lighting["mating_interfaces"][0]["fit_coupon"]["status"] = "failed"
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), "self-check failed to block a failed fit coupon"
+    assert validate_manifest(
+        lighting_manifest,
+        lighting_mounts,
+        motion_conditions_by_id={
+            condition_id: condition
+            for condition_id, condition in lighting_motion_conditions.items()
+            if condition_id != "nav-remove"
+        },
+    ), "self-check failed to reject a missing motion-manifest condition"
+    bad_lighting = copy.deepcopy(lighting_manifest)
+    bad_lighting["mating_interfaces"] = []
+    assert validate_manifest(
+        bad_lighting,
+        lighting_mounts,
+        motion_conditions_by_id=lighting_motion_conditions,
+    ), "self-check failed to reject a removable light without an interface"
+    assert manifest_notes(lighting_manifest), (
+        "self-check failed to surface a planned fit coupon as physically unverified"
+    )
+    print("check_power self-check: PASS")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("project_dir", nargs="?", type=Path)
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--mounts", type=Path)
+    parser.add_argument("--json", action="store_true", dest="json_output")
+    parser.add_argument("--self-check", action="store_true")
+    args = parser.parse_args(argv)
+    if args.self_check:
+        self_check()
+        return 0
+    if args.project_dir is None:
+        parser.error("project_dir is required unless --self-check is used")
+    project_dir = args.project_dir.resolve()
+    manifest_path = (
+        args.manifest or project_dir / "measure" / "power.json"
+    ).resolve()
+    mounts_path = (
+        args.mounts or project_dir / "measure" / "mounts.json"
+    ).resolve()
+    try:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        errors = [f"cannot read power manifest {manifest_path}: {exc}"]
+        notes: list[str] = []
+    else:
+        mount_ids, mount_components, mount_errors = _load_mounts(mounts_path)
+        errors = mount_errors + validate_manifest(
+            data,
+            mount_ids,
+            project_dir,
+            mount_components=mount_components,
+        )
+        notes = manifest_notes(data) if not errors else []
+    result = {
+        "ok": not errors,
+        "project": str(project_dir),
+        "manifest": str(manifest_path),
+        "mounts": str(mounts_path),
+        "errors": errors,
+        "notes": notes,
+    }
+    if args.json_output:
+        print(json.dumps(result, separators=(",", ":"), sort_keys=True))
+    elif errors:
+        print(f"check_power: FAIL ({len(errors)} findings)")
+        for error in errors:
+            print(f"- {error}")
+    else:
+        print("check_power: PASS")
+        print(f"- manifest: {manifest_path}")
+        print(f"- mounts: {mounts_path}")
+        for note in notes:
+            print(f"- NOTE: {note}")
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

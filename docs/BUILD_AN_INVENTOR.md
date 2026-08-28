@@ -53,7 +53,8 @@ Good Taste helps the native agent make hard choices. Include:
 - a clear “not for” boundary;
 - truthful domain constraints that affect product decisions.
 
-Taste guides Match; it does not restrict what users may Wish for. Do not put
+Taste guides Inventor selection; it does not restrict what users may Wish for.
+Do not put
 credentials, effect authority, Python entry points, fixed prompts, customer
 data, or instructions for bypassing Workshop gates in Taste.
 
@@ -97,7 +98,7 @@ bindings:
 }
 ```
 
-Keep this file small. Match reasoning comes from the exact Wish, full Taste,
+Keep this file small. Selection reasoning comes from the exact Wish, full Taste,
 and specialist method rather than a predeclared product class. The host binds
 the manifest, Taste, and complete skill bytes into the generated custom-agent
 file; do not maintain a second hand-written run identity.
@@ -122,7 +123,7 @@ It may accept files and produce files or measurements. It must not:
 - read credentials or call credential-bearing effects;
 - hide reusable Workshop-wide behavior inside one Inventor.
 
-Each active Match, Invent, Make, Playtest, or Release attempt has one
+Each active Invent, Make, Playtest, or Release attempt has one
 native Codex Goal owned by the root Manager. The selected Inventor may
 contribute bounded specialist work inside that Goal. Codex observes, acts,
 evaluates, and improves; Inventor Python never implements the reasoning or
@@ -159,19 +160,23 @@ python tools/scan_secrets.py
 git diff --check
 ```
 
-Then start a representative private Wish and inspect the Match evidence:
+Then start a representative private Wish and inspect the selection evidence
+sealed by the first active creative stage. Spark is the default and folds
+selection into Make:
 
 ```bash
 uv run workshop wish \
   "I wish for a hand-cranked creature that climbs the edge of my bookshelf"
 ```
 
-The root Codex Manager compares every exact custom agent supplied in the
-`STAGE.json` Inventor roster, records an evidence-based ranking, and selects
-one. Where useful, it delegates bounded candidate analysis to native
-subagents. It then uses the selected `.codex/agents/<id>.toml`, whose
-instructions bind the exact manifest, full Taste, and skill resources. There
-is no profile launch, custom Python worker, or second root session to test.
+New runs do not have a separate Match turn. The root Codex Manager compares
+every exact custom agent supplied in the `STAGE.json` Inventor roster, records
+an evidence-based ranking, and selects one during Invent for Forge and Quest,
+or during Make for Spark. Where useful, it delegates bounded candidate
+analysis to native subagents. It then uses the selected
+`.codex/agents/<id>.toml`, whose instructions bind the exact manifest, full
+Taste, and skill resources. There is no profile launch, custom Python worker,
+or second root session to test.
 
 ## Shared craft belongs to Workshop stages
 
@@ -194,4 +199,5 @@ self-score or Python reward function.
 - Any Inventor-owned code is deterministic, tested, and cannot orchestrate
   agents, Goals, lifecycle, or effects.
 - Shared tools remain in Workshop rather than being copied into a specialist.
-- A private representative Wish can Match without weakening any host gate.
+- A private representative Wish can select this Inventor in its first active
+  creative stage without weakening any host gate.

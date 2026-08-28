@@ -1,108 +1,75 @@
-# Publish a sealed product
+# Publish a terminal Release
 
-Factory publication is an optional host effect against an already accepted
-Release. It is not product-run agent work and is not a prerequisite for
-Deliver.
+Factory publication is the required host-effect portion of Release. Workshop
+does not complete a run after merely creating local files: it completes only
+after the exact ready-to-print CAD and canonical `MANUAL.pdf` are public and
+authenticated readback proves their hashes.
+
+Printing, packing, shipping, delivery, and customer Review begin after this
+digital handoff and belong to Operations.
 
 ## What Release supplies
 
-The native Codex session writes `artifacts/release/package` with at least:
+The native Manager writes `artifacts/release/package` with at least:
 
 - canonical `MANUAL.pdf`, self-contained and ready to print for the box;
-- canonical `product.json` bound to the exact Made artifact and passing
-  Playtest evidence; and
+- canonical `product.json`, bound to the exact Made artifact and either Quest's
+  passing Playtest evidence or Spark/Forge's explicit Playtest `not-run`
+  omission; and
 - evidence-derived claims, contents, limitations, and optional editable manual
   source or accessible text companions.
 
-Release is one native Codex Goal. Codex reads the exact Made product and
-passing evidence, uses the materialized `manual-design` skill, authors the
-guide, renders every page, inspects it at print size and in grayscale, checks
-the copy against evidence, and improves it. This design/review loop is native
-Codex behavior, not a Python aesthetic score.
+Release is one native Goal. The Manager reads the exact Made product and the
+route's passing evidence or explicit omission, uses the materialized
+`manual-design` skill, authors the guide, renders every page, inspects it at
+print size and in grayscale, checks the copy against evidence, and improves
+it. This design/review loop belongs to the native coding agent, not to a
+Python aesthetic score.
 
 The run-local finalizer hashes the package and writes the canonical Release
-contract. The trusted host rereads, structurally validates, rehashes, and seals
+proposal. The trusted host rereads, structurally validates, rehashes, and seals
 the PDF and package. It rejects encrypted or active-content PDFs, external
 dependencies, unsafe page bounds, changed bytes, or missing meaningful text.
 Parser success proves structure, not beauty, comprehension, physical safety,
 or a successful print.
 
-Local Release then advances to Deliver without contacting Factory. The package
-must never contain credentials, remote receipts, or unsupported claims of
-manufacture, physical performance, human response, publication, or delivery.
+Before any Factory effect, the host also reruns the full-tier CAD gate on the
+exact sealed Made revision. That gate must prove the production model and its
+declared printable parts satisfy the current deterministic CAD, thickness, and
+printability requirements. Release cannot substitute a preview mesh or
+unverified export.
 
-## Public verification
+## One required publication step
 
-After Release succeeds, the host may derive
-`artifacts/release/VERIFICATION.json` as separate, best-effort enrichment.
-Codex does not author that file and it is not part of the authored package
-manifest. Schema v1 truthfully emits only **Digitally Verified** and binds the
-exact product, Playtest evidence, Release, and check hashes.
-
-The full evidence tree and authenticated receipts remain private. If
-verification generation fails or is missing, Release still succeeds and the
-website shows no badge. A future **Physically Verified** level requires a
-trusted receipt proving the exact released bytes were built and checked. See
-[Product verification](PRODUCT_VERIFICATION.md).
-
-## No publication by default
+Start or continue a run with the core CLI:
 
 ```bash
 uv run workshop wish "I wish for ..."
+uv run workshop resume <wish-id>
 ```
 
-This completes the local digital workflow without Factory credentials.
-Publication status remains `not-created`; that is not a failure.
+There is no `--publish` mode. Starting the Wish authorizes publication of that
+run's exact Release bytes, while the host keeps credentials and effect state
+outside the coding-agent session.
 
-## Explicit public promotion
+Once local validation passes, the host:
 
-Use `--publish` only when a Factory listing is intended:
+1. records a hash-bound Factory effect intent before network I/O;
+2. imports the exact production CAD, `MANUAL.pdf`, and supported product facts;
+3. promotes that same remote design publicly; and
+4. completes Release only after authenticated readback and the public manual
+   URL prove the exact sealed CAD and PDF hashes.
 
-```bash
-uv run workshop wish --publish "I wish for ..."
-```
+The Factory ZIP is a narrow production transport, not a mirror of the Made
+engineering tree. For a mesh product it contains one validated primary model
+and only the exact production parts and occurrence metadata supported by the
+current contract. Alternate exports, play poses, slicer-project files, and
+other redundant representations stay local so file-format duplication cannot
+be mistaken for extra printable parts or fulfillment cost.
 
-or record that prospective authority while resuming the same run:
-
-```bash
-uv run workshop resume --publish <wish-id>
-```
-
-When the adapter and credentials are available, the host transports the exact
-sealed model, supported product facts, and `MANUAL.pdf`, reconciles private
-readback, and promotes the same remote identity. Missing credentials or an
-unavailable adapter leaves publication pending/not-created without invalidating
-Release. The publication receipt stays in host-only state and binds exact
-artifact hashes.
-
-The Factory model ZIP is a narrow production transport, not a mirror of the
-Made engineering tree. For a mesh product it contains one root viewer STL and,
-when a validated occurrence family exists, only the required assembly STEP and
-sidecar plus the exact declared production STLs. Alternate STEP/3MF exports,
-play poses, slicer-project 3MFs, and other representations stay local. Factory's
-fallback price estimator counts geometry basenames as printable parts, so
-shipping those duplicates would turn file-format redundancy into a fictitious
-fulfilment cost.
-
-Workshop does not currently submit a price or claim that Factory's returned
-listing price is unit cost. An explicit price must wait for a hash-bound cost
-basis or authoritative Factory fulfilment quote; agent-authored prose, archive
-size, and the number of CAD representations are not cost evidence.
-The current Factory API has no such monetary response: its authenticated slice
-endpoint binds real CuraEngine profile and material totals to a design history,
-but does not return a quote or minimum price. The exact backend contract needed
-before Workshop may submit a price is documented in
-[Factory fulfillment quote contract](FACTORY_FULFILLMENT_QUOTE_CONTRACT.md).
-
-For a PDF-first Release, authenticated Factory readback supplies the immutable
-CDN `project_url` for that exact design history. The host derives only
-`<project_url>MANUAL.pdf` on Factory's pinned public CDN, downloads it without a
-bearer token, and requires its SHA-256 to equal the sealed Release manual before
-accepting the private draft and again before and after public promotion. A
-missing, redirected, oversized, or changed file leaves the optional publication
-unverified; it never invalidates the local Release. Successful CLI/status output
-includes the hash-verified manual URL so a browser can open the same bytes the
-host checked.
+Factory's mutable category ordering is never trusted: the handoff explicitly
+declares the canonical `toys` category, and authenticated readback must preserve
+it.
 
 ## Credentials
 
@@ -111,45 +78,75 @@ Supply Factory credentials through the private
 ephemeral host environment or secret manager. The trusted host loads them only
 when no native agent turn is running. Never put credentials in a Wish, prompt,
 `TASTE.md`, product-run workspace, Release package, source file, or commit. The
-Codex subprocess gets a scrubbed environment.
+coding-agent subprocess receives a scrubbed environment.
 
 The private file uses strict `NAME=raw-value` lines; it is not evaluated by a
-shell, so literal surrounding single or double quotes are invalid. A generic
-account uses `FACTORY_USERNAME` together with `FACTORY_PASSWORD`. For a scoped
-account, the variable name encodes the canonical Inventor id and its value must
-match it case-insensitively—for example, `FACTORY_LEO_USERNAME=leo`, or
-`FACTORY_LEO_SMITH_USERNAME=leo-smith`. All scoped usernames share the one
-`FACTORY_PASSWORD`. Run `workshop doctor` to validate names, identity bindings,
-pair completeness, file permissions, and syntax without printing any value.
+shell, so literal surrounding single or double quotes are invalid. Configure
+exactly one Workshop service account with `FACTORY_USERNAME` and
+`FACTORY_PASSWORD`. This account publishes every Release regardless of which
+Inventor the first active creative stage selected; a person running
+`workshop wish` never supplies a Factory username or password.
+
+For migration, exactly one legacy scoped username such as
+`FACTORY_ALICE_USERNAME=alice` is temporarily accepted with
+`FACTORY_PASSWORD`, but its variable name no longer grants or limits authority
+to that Inventor. Multiple scoped usernames, or a generic and scoped username
+together, are rejected as ambiguous. Rename the legacy key to
+`FACTORY_USERNAME`.
+
+Run `uv run workshop doctor` to validate account singularity, pair
+completeness, file permissions, and syntax without printing any secret value.
+At login, the returned Factory username must match the configured service
+account. Authenticated owner ids and exact artifact hashes remain bound through
+import, publication, reconciliation, and readback receipts. Missing or rejected
+credentials leave Release waiting with a concrete need; they do not create a
+successful private-only Release.
+
+Factory may display the Workshop service account as the public author. The
+actual Inventor remains independently bound in the sealed product facts; it is
+not inferred from the Factory login identity.
 
 ## Recovery
 
-After a timeout, disconnect, or malformed Factory response, do not blindly
-repeat the effect. The host loads the stored intent and exact Release identity,
-authenticates, and reconciles remote state before any bounded retry. If
-readback cannot prove completion or absence, the remote effect remains fenced
-for human reconciliation; the already sealed local Release remains valid.
-An `unknown` or crash-left `sending` publication intent takes precedence over
-an older verified-draft receipt in `workshop status`; status inspects the
-private ledger without authenticating or mutating it. A later `resume` uses the
-same idempotency identity and authenticated readback. It records proven public
-completion, but a remaining draft does not prove that the ambiguous send never
-happened and therefore cannot trigger a second publish call.
+After a timeout, disconnect, or malformed Factory response, Workshop does not
+blindly repeat the effect. The host loads the stored intent and exact Release
+identity, authenticates, and reconciles remote state before any bounded retry.
+If readback cannot prove completion or absence, Release stays fenced and
+waiting for later authenticated reconciliation or human action.
 
-A private or public Factory page proves only remote page state. It does not
+An `unknown` or crash-left `sending` intent takes precedence over an older
+verified-draft receipt in `workshop status`. A later `workshop resume` uses the
+same idempotency identity and records success only when readback proves the
+public result. Permanent contract and deterministic validation failures surface
+as failures rather than becoming retry loops.
+
+## Evidence and pricing boundaries
+
+After the local package passes, the host may derive
+`artifacts/release/VERIFICATION.json` as separate public-safe enrichment. Its
+current **Digitally Verified** level binds exact digital checks; it is not the
+receipt that completes publication and does not claim a physical print. A
+future **Physically Verified** level requires a trusted Operations receipt that
+proves the exact released bytes were built and checked. See
+[Product verification](PRODUCT_VERIFICATION.md).
+
+Workshop does not currently submit an explicit listing price or call Factory's
+auto-listing value a fulfillment cost. An explicit price must wait for a
+hash-bound quote tied to the exact design history. The required backend
+contract is documented in
+[Factory fulfillment quote contract](FACTORY_FULFILLMENT_QUOTE_CONTRACT.md).
+
+A public Factory page proves the terminal digital handoff only. It does not
 prove printing, manual insertion, QA, packing, shipment, delivery, or customer
 response.
 
 ## Showcase products
 
-Showcases use the same native Wish pipeline; there is no separate Python
-showcase builder or publisher. Start a representative Wish and retain its ID:
+Showcases use the same Wish pipeline; there is no separate builder or publisher:
 
 ```bash
-uv run workshop wish --publish "<showcase Wish>"
+uv run workshop wish "<showcase Wish>"
 ```
 
-The native session must complete Match, Invent, Make, Playtest, and local
-Release from that Wish before any Factory effect. Never publish a checked-in
-fixture, old outbox, hand-authored receipt, or legacy bundle as if it were the
-output of a current run.
+Never publish a checked-in fixture, old outbox, hand-authored receipt, or legacy
+bundle as if it were the output of a current run.

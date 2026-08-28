@@ -1,0 +1,12 @@
+{
+  "title": "Orbit Gobbler",
+  "summary": "A support-free, all-printable hand-cranked desk automaton whose captive cratered moon retracts into a cheerful one-eyed creature, completes a clearly exposed geared orbit, and pops back through a fixed C-shaped mouth every two crank turns.",
+  "status": "digitally-verified-print-ready",
+  "manufacturing_process": "FDM 3D printing with 0.4 mm nozzle; all parts print without supports in their declared orientations.",
+  "purchased_hardware": [],
+  "limitations": [
+    "Digital CAD inspection does not prove a successful physical print, fit, friction, cycle life, durability, child safety, or user response.",
+    "Clearances are parameterized starting values for PLA or PETG and require physical fit coupons before production claims.",
+    "Operate slowly while holding the base; the crank, moon, bezel, frame keys, and snap clips are not carry handles."
+  ]
+}

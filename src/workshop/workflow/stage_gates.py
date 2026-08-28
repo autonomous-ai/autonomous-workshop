@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass, field
+from pathlib import PurePosixPath
 from types import MappingProxyType
 from typing import Any, Mapping, Optional
 
@@ -45,7 +46,7 @@ _FORWARD = {
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
+    "release": "complete",
 }
 
 
@@ -241,11 +242,24 @@ class StageGateDecision:
             raise ContractError("stage gate decision requires host evidence")
         expected = _FORWARD.get(self.evidence.stage)
         if self.evidence.stage == "playtest" and not self.evidence.passed:
-            if self.transition != "make":
+            if self.transition not in ("make", "invent"):
                 raise ContractError(
-                    "failed Playtest gate must return actionable feedback to Make"
+                    "failed Playtest gate must return explicit feedback to Make or Invent"
                 )
         elif self.evidence.passed:
+            if self.evidence.stage == "make" and self.transition in (
+                "playtest",
+                "release",
+            ):
+                return
+            if self.evidence.stage == "release" and self.transition in (
+                "complete",
+                "deliver",
+            ):
+                # ``deliver`` is accepted only to read and finish a run whose
+                # immutable pre-terminal-Release finalizer still proposes that
+                # historical transition. New runs complete at Release.
+                return
             if expected is None or self.transition != expected:
                 raise ContractError("passed stage gate has an invalid transition")
         elif self.transition is not None:
@@ -393,50 +407,81 @@ def evaluate_match_stage(
     return StageGateDecision(evidence=evidence, transition="invent")
 
 
+def _vault_checks(vault: Optional[Vault], concept: Mapping[str, Any]) -> dict[str, Any]:
+    """Re-apply the run-local design vault rules to a sealed Invent concept.
+
+    With a vault snapshot every mechanism resolves or is declared novel, and no
+    declared conflict or unmet requirement survives.  Without one (a run that
+    predates the vault) the gate is unchanged.
+    """
+
+    if vault is None:
+        return {"design_vault_sha256": None, "vault_leads": 0}
+    try:
+        binding = assert_concept_compatible(vault, concept)
+    except VaultError as exc:
+        raise ContractError("Invent concept is refused by the design vault: %s" % exc) from exc
+    return {"design_vault_sha256": vault.sha256, "vault_leads": len(binding["leads"])}
+
+
 def evaluate_invent_stage(
     proposal: AgentOutcomeProposal,
     *,
     run_root: Any,
     expected_checkpoint_sha256: str,
     assignment: NativeMatchAssignment,
+    expected_subject_sha256: Optional[str] = None,
+    expected_artifact_path: str = INVENTED_PATH,
     vault: Optional[Vault] = None,
 ) -> StageGateDecision:
-    """Validate Invented against the accepted Match assignment and the vault.
-
-    With a vault snapshot the host re-applies the run-local mechanism rules:
-    every mechanism resolves or is declared novel, and no declared conflict or
-    unmet requirement survives.  Without one (a run that predates the vault)
-    the gate is unchanged.
-    """
+    """Validate Invented against the accepted Match assignment and the vault."""
 
     if not isinstance(assignment, NativeMatchAssignment):
         raise ContractError("Invent gate requires a native Match assignment")
     require_sha256(expected_checkpoint_sha256, "expected Invent checkpoint sha256")
     if proposal.checkpoint_sha256 != expected_checkpoint_sha256:
         raise StateConflict("Invent proposal belongs to another checkpoint")
-    expected_subject_sha256 = invent_gate_subject_sha256(assignment)
-    if proposal.subject_sha256 != expected_subject_sha256:
-        raise StateConflict("Invent proposal subject is not the full Invent input vector")
-    artifact = _ready_artifact(
-        proposal,
-        stage="invent",
-        transition="make",
-        canonical_path=INVENTED_PATH,
+    subject_sha256 = (
+        invent_gate_subject_sha256(assignment)
+        if expected_subject_sha256 is None
+        else require_sha256(
+            expected_subject_sha256, "expected Invent subject sha256"
+        )
     )
+    if proposal.subject_sha256 != subject_sha256:
+        raise StateConflict("Invent proposal subject is not the full Invent input vector")
+    if not isinstance(expected_artifact_path, str) or not expected_artifact_path:
+        raise ContractError("expected Invent artifact path is invalid")
+    outcome = proposal.outcome
+    source_path = (
+        PurePosixPath(expected_artifact_path).parent / "source.json"
+    ).as_posix()
+    paths = tuple(item.path for item in outcome.artifacts)
+    if (
+        outcome.stage != "invent"
+        or outcome.status != "ready"
+        or outcome.proposed_transition != "make"
+        or outcome.needs
+        or paths not in ((expected_artifact_path,), (expected_artifact_path, source_path))
+    ):
+        raise ContractError("invent outcome is not an exact ready forward proposal")
+    artifact = outcome.artifacts[0]
     invented = NativeInvented.from_mapping(
         _artifact_document(run_root, artifact, label="Invented artifact")
     )
     invented.assert_context(assignment)
-    vault_checks: dict[str, Any] = {"design_vault_sha256": None, "vault_leads": 0}
-    if vault is not None:
-        try:
-            binding = assert_concept_compatible(vault, invented.concept)
-        except VaultError as exc:
-            raise ContractError("Invent concept is refused by the design vault: %s" % exc) from exc
-        vault_checks = {
-            "design_vault_sha256": vault.sha256,
-            "vault_leads": len(binding["leads"]),
-        }
+    vault_checks = _vault_checks(vault, invented.concept)
+    source_artifact = outcome.artifacts[1] if len(outcome.artifacts) == 2 else None
+    if source_artifact is not None:
+        source = _artifact_document(
+            run_root, source_artifact, label="Invent authored source"
+        )
+        if (
+            set(source) != {"concept", "research"}
+            or source["concept"] != invented.to_dict()["concept"]
+            or source["research"] != invented.to_dict()["research"]
+        ):
+            raise ContractError("Invent source differs from its sealed contract")
     evidence = StageGateEvidence(
         stage="invent",
         gate_id=INVENT_GATE_ID,
@@ -452,7 +497,107 @@ def evaluate_invent_stage(
             "blueprint_sha256": invented.blueprint_sha256,
             "concept_sha256": invented.concept_sha256,
             "research_sha256": invented.research_sha256,
+            "source_artifact_sha256": (
+                source_artifact.sha256 if source_artifact is not None else None
+            ),
+            "source_bound": source_artifact is not None,
             "taste_sha256": invented.taste_sha256,
+            "wish_bound": True,
+            **vault_checks,
+        },
+    )
+    return StageGateDecision(evidence=evidence, transition="make")
+
+
+def evaluate_routed_invent_stage(
+    proposal: AgentOutcomeProposal,
+    *,
+    run_root: Any,
+    expected_checkpoint_sha256: str,
+    expected_subject_sha256: str,
+    wish_sha256: str,
+    roster: InventorRoster,
+    assignment_artifact_path: str,
+    invented_artifact_path: str,
+    vault: Optional[Vault] = None,
+) -> StageGateDecision:
+    """Validate combined selection + invention from one routed Invent turn."""
+
+    require_sha256(expected_checkpoint_sha256, "expected Invent checkpoint sha256")
+    require_sha256(expected_subject_sha256, "expected Invent subject sha256")
+    require_sha256(wish_sha256, "expected Invent Wish sha256")
+    if not isinstance(roster, InventorRoster):
+        raise ContractError("routed Invent gate requires an InventorRoster")
+    if (
+        proposal.checkpoint_sha256 != expected_checkpoint_sha256
+        or proposal.subject_sha256 != expected_subject_sha256
+    ):
+        raise StateConflict("routed Invent proposal belongs to another stage subject")
+    outcome = proposal.outcome
+    source_artifact_path = (
+        PurePosixPath(invented_artifact_path).parent / "source.json"
+    ).as_posix()
+    if (
+        outcome.stage != "invent"
+        or outcome.status != "ready"
+        or outcome.proposed_transition != "make"
+        or outcome.needs
+        or tuple(item.path for item in outcome.artifacts)
+        != (invented_artifact_path, assignment_artifact_path, source_artifact_path)
+    ):
+        raise ContractError(
+            "routed Invent outcome must contain its exact Invented, assignment, and source artifacts"
+        )
+    invented_artifact, assignment_artifact, source_artifact = outcome.artifacts
+    assignment = NativeMatchAssignment.from_mapping(
+        _artifact_document(
+            run_root, assignment_artifact, label="routed native Match assignment"
+        )
+    )
+    assignment.assert_context(wish_sha256=wish_sha256, roster=roster)
+    invented = NativeInvented.from_mapping(
+        _artifact_document(run_root, invented_artifact, label="routed Invented artifact")
+    )
+    invented.assert_context(assignment)
+    vault_checks = _vault_checks(vault, invented.concept)
+    source = _artifact_document(
+        run_root, source_artifact, label="routed Invent authored source"
+    )
+    expected_source_fields = {
+        "selected_inventor_id",
+        "ranking",
+        "concept",
+        "research",
+    }
+    if (
+        set(source) != expected_source_fields
+        or source["selected_inventor_id"] != assignment.selected_inventor_id
+        or source["ranking"] != [item.to_dict() for item in assignment.ranking]
+        or source["concept"] != invented.to_dict()["concept"]
+        or source["research"] != invented.to_dict()["research"]
+    ):
+        raise ContractError("routed Invent source differs from its sealed contracts")
+    evidence = StageGateEvidence(
+        stage="invent",
+        gate_id="invent.routed-concept-v1",
+        validator_version=VALIDATOR_VERSION,
+        passed=True,
+        checkpoint_sha256=proposal.checkpoint_sha256,
+        subject_sha256=proposal.subject_sha256,
+        outcome_sha256=outcome.sha256,
+        artifact_path=invented_artifact.path,
+        artifact_sha256=invented_artifact.sha256,
+        checks={
+            "assignment_artifact_sha256": assignment_artifact.sha256,
+            "assignment_sha256": assignment.assignment_sha256,
+            "blueprint_sha256": invented.blueprint_sha256,
+            "concept_sha256": invented.concept_sha256,
+            "research_sha256": invented.research_sha256,
+            "source_artifact_sha256": source_artifact.sha256,
+            "roster_sha256": roster.roster_sha256,
+            "selected_custom_agent_bound": True,
+            "source_bound": True,
+            "selected_taste_sha256": assignment.selected_taste_sha256,
             "wish_bound": True,
             **vault_checks,
         },
@@ -472,6 +617,7 @@ __all__ = [
     "StageGateEvidence",
     "VALIDATOR_VERSION",
     "evaluate_invent_stage",
+    "evaluate_routed_invent_stage",
     "evaluate_match_stage",
     "invent_gate_subject_sha256",
     "match_gate_subject_sha256",

@@ -15,7 +15,19 @@ vendoring the dataset into this repository.
 - Use this skill for shape archetypes, feature-order examples, and build123d
   idioms from existing designs.
 - Use `step-parts` instead for a bought motor, bearing, fastener, board, or
-  other standard component that the new model must physically fit.
+  other standard component that the new model must physically fit. That path
+  does not end at the search: download the STEP into `<project-dir>/ref/`,
+  derive the cavity and the screw pattern from that file with `$cad`'s
+  `scripts/cadmount.py`, declare the component in `measure/mounts.json`, and
+  gate it with `scripts/check_mount`. Nothing in this index carries a bought
+  part's dimensions, so a dimension taken from here is a number typed by hand.
+- Use `$electromechanical-integration` instead when the question is how a
+  functional motor, servo, solenoid, LED or lamp is powered, controlled, wired
+  and packaged, including the exact socket/contact system and removable-fit
+  verification. This skill's Fusion Gallery index supplies sketch/extrude
+  construction examples only: it carries no electrical ratings, exact
+  component identity, mating-interface evidence or physical-fit proof, and it
+  does not search GitHub open-hardware repositories or component libraries.
 - A design reference is not a scale anchor, dimensional authority, or proof of
   likeness. Measure the user's own images and validate the resulting model.
 - The indexed Fusion 360 Gallery Modified Set is licensed for
@@ -77,6 +89,8 @@ compact human-readable list.
 5. Record the selected id, local path, relevant feature, and the precise idea
    taken from it. Re-measure every dimension from the user's reference or spec.
 6. Run `verify` before handing off a project that contains fetched references.
+   The CAD final runner does this automatically whenever `ref/external/`
+   exists, and records a skipped row when no design reference was fetched.
 
 If no candidate is relevant, record the query as a miss and continue from the
 user's evidence. A weak analogy is worse than no analogy because it silently
@@ -92,7 +106,15 @@ measurement ledger.
 
 ## Maintenance
 
-The source registry is `data/sources.json`. Read
-`references/catalog-schema.md` only when changing a source adapter, the index
-format, or provenance layout. Re-run `sync --force` after changing the pinned
-revision, then run `self-check` and the tests.
+The source registry is `data/sources.json`. The client is
+`scripts/design_refs.py`; the adapter that turns a fetched archive into the
+searchable index — batch parsing, function extraction, duplicate rejection —
+is `scripts/catalog_build.py`, which `design_refs.py` imports and which the
+tests exercise directly. Read `references/catalog-schema.md` only when changing
+a source adapter, the index format, or provenance layout. Re-run `sync --force`
+after changing the pinned revision, then:
+
+```bash
+python "$DESIGN_REFERENCE_SKILL_ROOT/scripts/design_refs.py" self-check
+python -m pytest "$DESIGN_REFERENCE_SKILL_ROOT/tests" -q
+```

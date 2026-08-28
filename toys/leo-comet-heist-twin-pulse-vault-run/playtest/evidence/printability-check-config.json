@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "evaluator": "comet-heist-sealed-printability-audit",
+  "evaluator_version": "1.1.0",
+  "observed_at": "2026-08-27T18:47:27Z",
+  "binding": {
+    "stage_checkpoint_sha256": "57c63245d7b8b9578aa7fd0d54380205af91b83c9fe78a2808aaad8f4aa26882",
+    "stage_subject_sha256": "7bc45efb752b155dcb3990ac14383ad3c9f12d9c9e3d792c613f231a68975c90",
+    "made_path": "artifacts/make/r0002/made.json",
+    "made_file_sha256": "eee328cd5a9177ce1b241b2f3d6f89f73ea285e9f5c5cad8da6883bb9391431d",
+    "made_sha256": "2ba7764da19c3e4c392f3c56c877eefc24aa5b401797e73e524ca09640dc8dbb",
+    "product_artifact_sha256": "93944b68688d51e857380601c06871e8705e8e90d85da16d88b62d436fa834fe",
+    "verification_path": "artifacts/make/r0002/product/cad/verification.json",
+    "verification_sha256": "03e4b6fb42dff1ce33968489bf260abe43b888f98307a6cb10719a7fd6185f86",
+    "pipeline_report_path": "artifacts/make/r0002/product/cad/comet_heist/measure/verification-pipeline.md",
+    "pipeline_report_sha256": "c16351f0e6df3dddc4aee753732c70193377192e63f53bbe86f7547b9fa7b6b0",
+    "support_report_path": "artifacts/make/r0002/product/cad/comet_heist/measure/support-angle.json",
+    "support_report_sha256": "8c73e9c5a7e32cfbceab660acb0f46590e99763d9128988ac018f52fb0706d4f",
+    "prior_playtest_path": "artifacts/playtest/r0001/playtested.json",
+    "prior_playtest_sha256": "685dd129e6be0afc831a0269c1b6be5580156fd76df3fa8e492892b5ba371284",
+    "prior_playtested_identity_sha256": "c210cabab003b2f8b0451fbfbcfac7a029dd937bc1174832c447514c8dc9b937"
+  },
+  "acceptance": {
+    "bed_mm": [210.0, 210.0, 220.0],
+    "nozzle_mm": 0.4,
+    "required_printable_families": 9,
+    "required_thickness_threshold_mm": 0.8,
+    "support_angle_from_horizontal_deg": 45.0,
+    "require_all_part_steps_valid": true,
+    "require_all_part_stls_watertight": true,
+    "require_independent_mesh_rerun_all_pass": true,
+    "require_all_part_thickness_gates_passed": true,
+    "require_each_family_thickness_report_pass": true,
+    "require_declared_print_pose_matches_exported_part": true,
+    "require_support_evidence_exactly_matches_all_sealed_stls": true,
+    "support_plan": {
+      "part_comet_orbit.stl": "none",
+      "part_comet_sun.stl": "none",
+      "part_gate_bridge.stl": "generated-support-everywhere",
+      "part_gate_keeper.stl": "none",
+      "part_gravity_blade.stl": "generated-support-everywhere",
+      "part_ready_spent_magazine.stl": "generated-support-everywhere",
+      "part_seam_storage_key.stl": "none",
+      "part_tray_a.stl": "generated-support-everywhere",
+      "part_tray_b.stl": "generated-support-everywhere"
+    }
+  },
+  "expected_findings": {
+    "gravity_blade_declared_pose": "Panel parallel to the bed with trunnions vertical; lower trunnion end is the bed datum and generated support is required beneath the panel.",
+    "gravity_blade_exported_pose": "Low-profile 36.998 by 14.0 by 14.7 mm blade with the authored 90-degree Y rotation and vertical trunnions."
+  },
+  "prior_failure": {
+    "feedback_code": "rotate-blade-and-prove-support-needs",
+    "failure_code": "declared-print-pose-mismatch",
+    "rejected_blade_source_sha256": "50b890630598ad4f7549b76398587b73384558501c44df2e3625892a3ff6111c",
+    "rejected_blade_stl_sha256": "9a609a23a0c05e3c6f6bdb9881648390093c27ff22adebe61e1e834d6e771412",
+    "rejected_blade_envelope_mm": [14.7, 14.0, 36.998]
+  },
+  "scope": "Digital sealed-byte, source-pose, STL mesh/bed, sampled-thickness, and independently recomputed triangle-normal support evidence only; no slicer toolpath or physical print was performed."
+}

@@ -23,6 +23,14 @@ on any condition that could not run — a manifest naming a part that does not
 exist is a broken check, not a clear path. `--allow-inconclusive` relaxes that
 for the genuinely unmeasurable, and still prints what it skipped.
 
+Final `verify_project` reads the project's README and spec for documented
+assembly procedures. An assembly-scoped `insert`, `seat`, `press`, `slide`,
+`screw`, `snap`, `thread`, `lock`, or similar mating action requires this
+manifest; merely omitting the file cannot turn a claimed path into a skipped
+gate. Part count alone is deliberately not the trigger, because a print plate
+or set of independent variants may carry several printable entries and no
+assembly claim.
+
 ## Part names are placed instances
 
 Parts come from the combined `<name>.step.py`, in **assembly pose**. This is

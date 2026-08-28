@@ -17,7 +17,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 try:
@@ -26,6 +26,7 @@ except ImportError:  # pragma: no cover - Codex CLI hosts are currently POSIX
     fcntl = None  # type: ignore[assignment]
 
 from workshop.errors import (
+    AmbiguousEffectError,
     ArtifactError,
     ContractError,
     StateConflict,
@@ -39,8 +40,12 @@ from workshop.integrations.factory import (
     FACTORY_CONTENT_MAPPING,
     FactoryReleaseWriter,
     FactoryAgentSession,
+    FactoryAuthenticationError,
+    FactoryCredentialRejected,
     FactoryPublicTransition,
     factory_credentials_from_environment,
+    urllib_project_file_transport,
+    urllib_transport,
 )
 from workshop.invent.native import NativeInvented
 from workshop.invent.vault import (
@@ -53,6 +58,7 @@ from workshop.invent.vault import (
 )
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.native_gate import (
+    NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_GATE_KIND,
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
@@ -69,9 +75,16 @@ from workshop.playtest.evidence_ledger import append_rows, build_rows, recall, w
 from workshop.product import ToyBlueprint
 from workshop.product.blueprints import SCORE_AMBIGUOUS_SPREAD
 from workshop.release.contracts import ProductRelease, ReleaseContext
+from workshop.release.manual_design import (
+    MANUAL_DESIGN_EVIDENCE_PATH,
+    validate_bound_manual_design_evidence,
+)
 from workshop.release.native import (
+    DIRECT_RELEASE_PLAYTEST_STATUS,
+    DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
     NATIVE_RELEASE_LEGACY_MANUAL_PATH,
     NATIVE_RELEASE_MANUAL_PATH,
+    NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
     NativeRelease,
     NativeReleasePackage,
 )
@@ -84,10 +97,17 @@ from workshop.runtime import (
     CodexRecoverableInvocationError,
     CodexNativeSessionLauncher,
     CodexNativeSessionOutcome,
+    DEFAULT_MANAGER_ID,
     EffectLedger,
+    NativeManagerInvocationError,
+    NativeManagerRecoverableError,
     Receipt,
     factory_credential_environment,
+    factory_service_credential_environment,
+    manager_launcher,
+    manager_spec,
 )
+from workshop.runtime.managers import NativeSessionLauncher
 from workshop.runtime.agent_assets import (
     parse_inventor_custom_agent_bytes,
     product_run_agent_assets,
@@ -101,9 +121,11 @@ from workshop.runtime.progress import (
     NATIVE_PROGRESS_FILENAME,
     SAFE_NATIVE_ACTIVITY_CLASSES,
     NativeRunProgress,
+    WishRunTimingObserver,
     begin_native_progress,
     native_progress_turn_floor,
     trusted_native_progress,
+    wish_run_timing_span,
     write_native_progress,
 )
 from workshop.wish import Wish
@@ -113,6 +135,10 @@ from workshop.workflow.agent_run import (
     AgentRun,
     AgentRunCheckpoint,
     DeterministicGateReceipt,
+)
+from workshop.workflow.effort import (
+    EFFORT_ROUTE_CAPABILITY_PATH,
+    workshop_effort,
 )
 from workshop.workflow.proposals import (
     AgentOutcomeProposal,
@@ -124,6 +150,7 @@ from workshop.workflow.stage_gates import (
     StageGateEvidence,
     evaluate_invent_stage,
     evaluate_match_stage,
+    evaluate_routed_invent_stage,
     invent_gate_subject_sha256,
     match_gate_subject_sha256,
 )
@@ -131,7 +158,6 @@ from workshop.workflow.stage_gates import (
 
 _RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _INSTRUCTION_HASH_DOMAIN = b"autonomous-workshop/product-run-instructions/v1\0"
-_SESSION_CHECKPOINT_NAME = "codex-session.json"
 _STAGE_INPUT_NAME = "STAGE.json"
 _AGENT_OUTCOME_NAME = "agent-outcome.json"
 _AUTHORIZATION_NAME = "authorization.json"
@@ -139,12 +165,20 @@ _RELEASE_EFFECT_WAIT_NAME = "release-effect-wait.json"
 _PUBLIC_EXAMPLE_STATUS_NAME = "public-example.json"
 _CAD_GATE_REJECTIONS_DIRECTORY = "cad-gate-rejections"
 _CAD_GATE_REJECTION_KIND = "autonomous-workshop.cad-gate-rejection"
+_MAKE_PROPOSAL_REJECTIONS_DIRECTORY = "make-proposal-rejections"
+_MAKE_PROPOSAL_REJECTION_KIND = "autonomous-workshop.make-proposal-rejection"
+_MAKE_PROPOSAL_REJECTION_HEAD_KIND = (
+    "autonomous-workshop.make-proposal-rejection-head"
+)
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
 _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
 _SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _MAX_STAGE_INPUT_BYTES = 512 * 1024
 _MAX_CAD_GATE_REJECTION_BYTES = 64 * 1024
 _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES = 8 * 1024
+_MAX_MAKE_PROPOSAL_REJECTION_BYTES = 256 * 1024
+_MAX_MAKE_PROPOSAL_REJECTION_FEEDBACK_CHARS = 2_000
+_MAX_MAKE_PROPOSAL_REJECTIONS = 32
 _MAX_LEGACY_CAD_GATE_EVIDENCE_BYTES = 3 * 1024 * 1024
 _MAX_NATIVE_TURNS = 32
 _RECOVERABLE_BACKOFF_BASE_SECONDS = 1.0
@@ -152,8 +186,18 @@ _RECOVERABLE_BACKOFF_MAX_SECONDS = 30.0
 _RECOVERABLE_BACKOFF_JITTER_MIN = 0.75
 _RECOVERABLE_BACKOFF_JITTER_SPAN = 0.5
 _FACTORY_CREDENTIALS_NEED = (
-    "Factory credentials for the selected Inventor are missing or malformed; "
-    "configure a complete matching username/password pair, then resume this run."
+    "Factory credentials for Workshop's service account are missing or malformed; "
+    "configure FACTORY_USERNAME and FACTORY_PASSWORD, then resume this run."
+)
+_FACTORY_PUBLICATION_NEED = (
+    "Factory publication could not be verified; restore server connectivity, "
+    "then resume this run. Workshop will perform authenticated reconciliation "
+    "of the existing effect before any retry."
+)
+_LEGACY_RELEASE_UPGRADE_NEED = (
+    "This historical run has an obsolete Release contract. It remains readable, "
+    "but it cannot complete today's Workshop until it has a validated MANUAL.pdf "
+    "and full-tier, thickness-checked, print-ready CAD evidence."
 )
 _PRODUCT_RUN_FINALIZER_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/stage_proposal.py"
@@ -161,23 +205,73 @@ _PRODUCT_RUN_FINALIZER_INPUT = (
 _PRODUCT_RUN_PDF_VALIDATOR_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
 )
+_PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT = (
+    ".agents/skills/autonomous-workshop/references/manual-design-evidence-v1.md"
+)
+_PRODUCT_RUN_TERMINAL_RELEASE_INPUT = (
+    ".agents/skills/autonomous-workshop/references/release-terminal-v1.md"
+)
+_PRODUCT_RUN_DIRECT_RELEASE_INPUT = (
+    ".agents/skills/autonomous-workshop/references/direct-release-v1.md"
+)
+_PRODUCT_RUN_EFFORT_ROUTES_INPUT = EFFORT_ROUTE_CAPABILITY_PATH
+_MAKE_PROPOSAL_REJECTION_FEEDBACK = {
+    "make-product-metadata-invalid": (
+        "The host rejected product.json metadata. Add both title and summary "
+        "as non-empty text values of at most 2000 characters, then rerun "
+        "the Make finalizer so made.json, its manifest, and agent-outcome.json "
+        "are regenerated from the repaired bytes."
+    ),
+    "make-artifact-invalid": (
+        "The host could not safely identify the exact Make artifact tree. "
+        "Repair the product files and rerun the Make finalizer so every "
+        "artifact binding and hash is regenerated from the current bytes."
+    ),
+    "make-contract-invalid": (
+        "The host rejected the agent-authored Make contract. Repair the Make "
+        "product and rerun the Make finalizer so made.json and agent-outcome.json "
+        "are regenerated from one internally consistent artifact tree."
+    ),
+}
+
+# These are the only deterministic-test seams in the required publication
+# path.  Tests may replace outbound HTTP while retaining the production
+# Factory session, handoff writer, effect ledger, reconciliation, publication,
+# public readback, and receipt validation code.
+_FACTORY_TRANSPORT = urllib_transport
+_FACTORY_PROJECT_FILE_TRANSPORT = urllib_project_file_transport
+
+
+def _factory_transport_overrides() -> dict[str, Any]:
+    """Return only explicitly replaced outbound Factory transports."""
+
+    overrides: dict[str, Any] = {}
+    if _FACTORY_TRANSPORT is not urllib_transport:
+        overrides["transport"] = _FACTORY_TRANSPORT
+    if _FACTORY_PROJECT_FILE_TRANSPORT is not urllib_project_file_transport:
+        overrides["project_file_transport"] = _FACTORY_PROJECT_FILE_TRANSPORT
+    return overrides
 
 
 class _FactoryCredentialsUnavailable(Exception):
-    """Signal that optional publication is unavailable before any Factory effect."""
+    """Signal that required publication cannot begin without host credentials."""
 
     def __init__(self, inventor_id: str) -> None:
         self.inventor_id = inventor_id
         super().__init__(_FACTORY_CREDENTIALS_NEED)
 
 
-class _OptionalPublicationUnavailable(Exception):
-    """A publication attempt failed without changing local Release validity."""
+class _RequiredPublicationUnavailable(Exception):
+    """Required publication is unverified and must remain resumable at Release."""
+
+
+class _LegacyReleaseUpgradeRequired(Exception):
+    """A frozen historical proposal cannot satisfy today's terminal Release."""
 
 
 @dataclass(frozen=True)
 class _VerifiedRelease:
-    """Exact local Release bytes plus the context needed by an optional effect."""
+    """Exact local Release bytes plus the context needed by its public effect."""
 
     release: NativeRelease
     package: NativeReleasePackage
@@ -191,6 +285,15 @@ class _VerifiedRelease:
 
 class _RecoverableNativeTurn(WorkshopError):
     """Internal typed signal for a checkpoint-bound turn continuation."""
+
+
+class _MakeProposalRejected(Exception):
+    """A valid Make envelope whose agent-authored candidate failed its contract."""
+
+    def __init__(self, failure_code: str, feedback: str) -> None:
+        self.failure_code = failure_code
+        self.feedback = feedback
+        super().__init__(failure_code)
 
 
 @dataclass(frozen=True)
@@ -454,8 +557,8 @@ def _cad_gate_rejection_path(
     *,
     create_parent: bool = False,
 ) -> Path:
-    if checkpoint.stage not in ("make", "playtest"):
-        raise TransitionError("CAD gate rejection requires Make or Playtest")
+    if checkpoint.stage not in ("make", "playtest", "release"):
+        raise TransitionError("CAD gate rejection requires Make, Playtest, or Release")
     parent = run.host_state_root / _CAD_GATE_REJECTIONS_DIRECTORY
     try:
         identity = parent.lstat()
@@ -577,7 +680,7 @@ def _persist_cad_gate_rejection(
     proposal: AgentOutcomeProposal,
     rejection: NativeCadGateError,
 ) -> Mapping[str, Any]:
-    if checkpoint.stage not in ("make", "playtest"):
+    if checkpoint.stage not in ("make", "playtest", "release"):
         raise TransitionError("CAD gate rejection belongs to another stage")
     evidence = rejection.evidence
     if evidence.passed or evidence.failure_code != rejection.failure_code:
@@ -624,7 +727,7 @@ def _persist_cad_gate_rejection(
 def _read_cad_gate_rejection(
     run: AgentRun, checkpoint: AgentRunCheckpoint
 ) -> Optional[Mapping[str, Any]]:
-    if checkpoint.stage not in ("make", "playtest"):
+    if checkpoint.stage not in ("make", "playtest", "release"):
         return None
     path = _cad_gate_rejection_path(run, checkpoint)
     if not path.exists() and not path.is_symlink():
@@ -724,6 +827,480 @@ def _read_cad_gate_rejection(
     return record
 
 
+def _make_proposal_rejection_directory(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    create: bool = False,
+) -> Path:
+    if checkpoint.stage != "make":
+        raise TransitionError("Make proposal rejection belongs to another stage")
+    current = run.host_state_root
+    parts = (
+        _MAKE_PROPOSAL_REJECTIONS_DIRECTORY,
+        checkpoint.checkpoint_sha256,
+    )
+    for index, part in enumerate(parts):
+        candidate = current / part
+        try:
+            identity = candidate.lstat()
+        except FileNotFoundError:
+            if not create:
+                return current.joinpath(*parts[index:])
+            try:
+                candidate.mkdir(mode=0o700)
+                identity = candidate.lstat()
+            except OSError as exc:
+                raise StateConflict(
+                    "Make proposal rejection directory is unavailable"
+                ) from exc
+        except OSError as exc:
+            raise StateConflict(
+                "Make proposal rejection directory is unavailable"
+            ) from exc
+        if (
+            stat.S_ISLNK(identity.st_mode)
+            or not stat.S_ISDIR(identity.st_mode)
+            or stat.S_IMODE(identity.st_mode) != 0o700
+        ):
+            raise StateConflict("Make proposal rejection directory must be private")
+        current = candidate
+    return current
+
+
+def _read_stable_private_bytes(
+    path: Path, *, label: str, maximum_bytes: int
+) -> bytes:
+    try:
+        before = path.lstat()
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict("%s is unavailable" % label) from exc
+    if (
+        stat.S_ISLNK(before.st_mode)
+        or not stat.S_ISREG(before.st_mode)
+        or stat.S_IMODE(before.st_mode) != 0o600
+        or not 1 <= len(content) <= maximum_bytes
+        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+    ):
+        raise StateConflict("%s is not a stable private file" % label)
+    return content
+
+
+def _make_proposal_rejection_record_path(
+    directory: Path, rejection_sha256: str
+) -> Path:
+    if re.fullmatch(r"[0-9a-f]{64}", rejection_sha256) is None:
+        raise StateConflict("Make proposal rejection identity is invalid")
+    return directory / ("rejection-%s.json" % rejection_sha256)
+
+
+def _make_proposal_quarantine_path(
+    directory: Path, proposal_file_sha256: str
+) -> Path:
+    if re.fullmatch(r"[0-9a-f]{64}", proposal_file_sha256) is None:
+        raise StateConflict("quarantined Make proposal identity is invalid")
+    return directory / ("outcome-%s.json" % proposal_file_sha256)
+
+
+def _validate_make_proposal_rejection_record(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    record: Mapping[str, Any],
+    *,
+    directory: Path,
+    seen: frozenset[str] = frozenset(),
+) -> Mapping[str, Any]:
+    expected = {
+        "schema_version",
+        "kind",
+        "product_id",
+        "stage",
+        "round",
+        "rejection_number",
+        "checkpoint_sha256",
+        "subject_sha256",
+        "previous_rejection_sha256",
+        "rejected_proposal_sha256",
+        "rejected_proposal_file_sha256",
+        "rejected_outcome_sha256",
+        "rejected_artifacts",
+        "failure_code",
+        "feedback",
+        "rejection_sha256",
+    }
+    digest_fields = (
+        "checkpoint_sha256",
+        "subject_sha256",
+        "rejected_proposal_sha256",
+        "rejected_proposal_file_sha256",
+        "rejected_outcome_sha256",
+        "rejection_sha256",
+    )
+    previous = record.get("previous_rejection_sha256")
+    feedback = record.get("feedback")
+    artifacts = record.get("rejected_artifacts")
+    rejection_number = record.get("rejection_number")
+    rejection_sha256 = record.get("rejection_sha256")
+    failure_code = record.get("failure_code")
+    if (
+        set(record) != expected
+        or record.get("schema_version") != 1
+        or record.get("kind") != _MAKE_PROPOSAL_REJECTION_KIND
+        or record.get("product_id") != checkpoint.product_id
+        or record.get("stage") != "make"
+        or record.get("round") != checkpoint.round_index
+        or type(rejection_number) is not int
+        or not 1 <= rejection_number <= _MAX_MAKE_PROPOSAL_REJECTIONS
+        or record.get("checkpoint_sha256") != checkpoint.checkpoint_sha256
+        or (
+            previous is not None
+            and (
+                not isinstance(previous, str)
+                or re.fullmatch(r"[0-9a-f]{64}", previous) is None
+            )
+        )
+        or any(
+            not isinstance(record.get(name), str)
+            or re.fullmatch(r"[0-9a-f]{64}", record[name]) is None
+            for name in digest_fields
+        )
+        or failure_code not in _MAKE_PROPOSAL_REJECTION_FEEDBACK
+        or not isinstance(feedback, str)
+        or not feedback.strip()
+        or len(feedback) > _MAX_MAKE_PROPOSAL_REJECTION_FEEDBACK_CHARS
+        or any(ord(character) < 32 or ord(character) == 127 for character in feedback)
+        or feedback != _MAKE_PROPOSAL_REJECTION_FEEDBACK.get(failure_code)
+        or not isinstance(artifacts, list)
+    ):
+        raise StateConflict("Make proposal rejection is invalid")
+    try:
+        artifact_values = tuple(
+            AgentArtifact.from_mapping(value) for value in artifacts
+        )
+    except ContractError as exc:
+        raise StateConflict("Make proposal rejection artifacts are invalid") from exc
+    if [artifact.to_dict() for artifact in artifact_values] != artifacts:
+        raise StateConflict("Make proposal rejection artifacts are not canonical")
+    identity = {key: record[key] for key in expected - {"rejection_sha256"}}
+    if rejection_sha256 != _sha256(_canonical_json_bytes(identity)):
+        raise StateConflict("Make proposal rejection hash is invalid")
+    if rejection_sha256 in seen:
+        raise StateConflict("Make proposal rejection chain contains a cycle")
+
+    quarantine_path = _make_proposal_quarantine_path(
+        directory, record["rejected_proposal_file_sha256"]
+    )
+    quarantine = _read_stable_private_bytes(
+        quarantine_path,
+        label="quarantined Make proposal",
+        maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+    )
+    if _sha256(quarantine) != record["rejected_proposal_file_sha256"]:
+        raise StateConflict("quarantined Make proposal hash is invalid")
+    try:
+        document = _strict_json_bytes(quarantine, label="quarantined Make proposal")
+        proposal = AgentOutcomeProposal.from_mapping(document)
+    except ContractError as exc:
+        raise StateConflict("quarantined Make proposal is invalid") from exc
+    if (
+        proposal.checkpoint_sha256 != checkpoint.checkpoint_sha256
+        or proposal.subject_sha256 != record["subject_sha256"]
+        or proposal.outcome.stage != "make"
+        or proposal.outcome.status != "ready"
+        or proposal.outcome.proposed_transition != "playtest"
+        or proposal.sha256 != record["rejected_proposal_sha256"]
+        or proposal.outcome.sha256 != record["rejected_outcome_sha256"]
+        or [artifact.to_dict() for artifact in proposal.outcome.artifacts]
+        != artifacts
+    ):
+        raise StateConflict("quarantined Make proposal disagrees with its rejection")
+
+    if previous is None:
+        if rejection_number != 1:
+            raise StateConflict("Make proposal rejection predecessor is invalid")
+    else:
+        if rejection_number <= 1:
+            raise StateConflict("Make proposal rejection predecessor is invalid")
+        previous_content = _read_stable_private_bytes(
+            _make_proposal_rejection_record_path(directory, previous),
+            label="prior Make proposal rejection",
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+        )
+        try:
+            previous_record = _strict_json_bytes(
+                previous_content, label="prior Make proposal rejection"
+            )
+        except ContractError as exc:
+            raise StateConflict("prior Make proposal rejection is invalid") from exc
+        if previous_content != _canonical_json_bytes(previous_record) + b"\n":
+            raise StateConflict("prior Make proposal rejection is not canonical")
+        validated_previous = _validate_make_proposal_rejection_record(
+            run,
+            checkpoint,
+            previous_record,
+            directory=directory,
+            seen=seen | {rejection_sha256},
+        )
+        if (
+            validated_previous["rejection_sha256"] != previous
+            or validated_previous["rejection_number"] != rejection_number - 1
+        ):
+            raise StateConflict("Make proposal rejection predecessor is invalid")
+    return dict(record)
+
+
+def _read_make_proposal_rejection(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> Optional[Mapping[str, Any]]:
+    if checkpoint.stage != "make":
+        return None
+    directory = _make_proposal_rejection_directory(run, checkpoint)
+    head_path = directory / "current.json"
+    if not head_path.exists() and not head_path.is_symlink():
+        return None
+    content = _read_stable_private_bytes(
+        head_path,
+        label="Make proposal rejection head",
+        maximum_bytes=4 * 1024,
+    )
+    try:
+        head = _strict_json_bytes(content, label="Make proposal rejection head")
+    except ContractError as exc:
+        raise StateConflict("Make proposal rejection head is invalid") from exc
+    expected = {
+        "schema_version",
+        "kind",
+        "checkpoint_sha256",
+        "rejection_sha256",
+        "head_sha256",
+    }
+    identity = {key: head.get(key) for key in expected - {"head_sha256"}}
+    if (
+        content != _canonical_json_bytes(head) + b"\n"
+        or set(head) != expected
+        or head.get("schema_version") != 1
+        or head.get("kind") != _MAKE_PROPOSAL_REJECTION_HEAD_KIND
+        or head.get("checkpoint_sha256") != checkpoint.checkpoint_sha256
+        or not isinstance(head.get("rejection_sha256"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", head["rejection_sha256"]) is None
+        or head.get("head_sha256") != _sha256(_canonical_json_bytes(identity))
+    ):
+        raise StateConflict("Make proposal rejection head is invalid")
+    record_content = _read_stable_private_bytes(
+        _make_proposal_rejection_record_path(
+            directory, head["rejection_sha256"]
+        ),
+        label="Make proposal rejection",
+        maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+    )
+    try:
+        record = _strict_json_bytes(
+            record_content, label="Make proposal rejection"
+        )
+    except ContractError as exc:
+        raise StateConflict("Make proposal rejection is invalid") from exc
+    if record_content != _canonical_json_bytes(record) + b"\n":
+        raise StateConflict("Make proposal rejection is not canonical")
+    validated = _validate_make_proposal_rejection_record(
+        run, checkpoint, record, directory=directory
+    )
+    if validated["rejection_sha256"] != head["rejection_sha256"]:
+        raise StateConflict("Make proposal rejection head points to another record")
+    return validated
+
+
+def _make_rejection_for_error(error: ContractError) -> _MakeProposalRejected:
+    if isinstance(error, StateConflict) or not isinstance(error, ContractError):
+        raise StateConflict("Make proposal rejection classification is invalid")
+    message = str(error)
+    if message.startswith("Made product title ") or message.startswith(
+        "Made product summary "
+    ):
+        failure_code = "make-product-metadata-invalid"
+        return _MakeProposalRejected(
+            failure_code=failure_code,
+            feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+        )
+    if isinstance(error, ArtifactError):
+        failure_code = "make-artifact-invalid"
+        return _MakeProposalRejected(
+            failure_code=failure_code,
+            feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+        )
+    failure_code = "make-contract-invalid"
+    return _MakeProposalRejected(
+        failure_code=failure_code,
+        feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+    )
+
+
+def _current_agent_outcome_bytes(
+    run: AgentRun, proposal: AgentOutcomeProposal
+) -> bytes:
+    document, content = read_bounded_json_artifact(
+        run.run_root,
+        _AGENT_OUTCOME_NAME,
+        maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+        label=_AGENT_OUTCOME_NAME,
+    )
+    current = AgentOutcomeProposal.from_mapping(document)
+    if current.to_dict() != proposal.to_dict():
+        raise StateConflict("agent outcome changed while its rejection was recorded")
+    return content
+
+
+def _persist_make_proposal_rejection(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    proposal: AgentOutcomeProposal,
+    rejection: _MakeProposalRejected,
+) -> Mapping[str, Any]:
+    if checkpoint.stage != "make":
+        raise TransitionError("Make proposal rejection belongs to another stage")
+    if (
+        _MAKE_PROPOSAL_REJECTION_FEEDBACK.get(rejection.failure_code)
+        != rejection.feedback
+    ):
+        raise StateConflict("Make proposal rejection feedback is invalid")
+    proposal_bytes = _current_agent_outcome_bytes(run, proposal)
+    proposal_file_sha256 = _sha256(proposal_bytes)
+    previous = _read_make_proposal_rejection(run, checkpoint)
+    if (
+        previous is not None
+        and previous["rejected_proposal_file_sha256"] == proposal_file_sha256
+        and previous["rejected_proposal_sha256"] == proposal.sha256
+        and previous["subject_sha256"] == proposal.subject_sha256
+    ):
+        return previous
+    if (
+        previous is not None
+        and previous["rejection_number"] >= _MAX_MAKE_PROPOSAL_REJECTIONS
+    ):
+        raise WorkshopError(
+            "Make proposal exhausted its bounded host rejection budget"
+        )
+    directory = _make_proposal_rejection_directory(run, checkpoint, create=True)
+    quarantine_path = _make_proposal_quarantine_path(
+        directory, proposal_file_sha256
+    )
+    if quarantine_path.exists() or quarantine_path.is_symlink():
+        quarantined = _read_stable_private_bytes(
+            quarantine_path,
+            label="quarantined Make proposal",
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+        )
+        if quarantined != proposal_bytes:
+            raise StateConflict("quarantined Make proposal bytes changed")
+    else:
+        _atomic_private_write(quarantine_path, proposal_bytes)
+    identity: dict[str, Any] = {
+        "schema_version": 1,
+        "kind": _MAKE_PROPOSAL_REJECTION_KIND,
+        "product_id": checkpoint.product_id,
+        "stage": "make",
+        "round": checkpoint.round_index,
+        "rejection_number": (
+            previous["rejection_number"] + 1 if previous is not None else 1
+        ),
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "subject_sha256": proposal.subject_sha256,
+        "previous_rejection_sha256": (
+            previous["rejection_sha256"] if previous is not None else None
+        ),
+        "rejected_proposal_sha256": proposal.sha256,
+        "rejected_proposal_file_sha256": proposal_file_sha256,
+        "rejected_outcome_sha256": proposal.outcome.sha256,
+        "rejected_artifacts": [
+            artifact.to_dict() for artifact in proposal.outcome.artifacts
+        ],
+        "failure_code": rejection.failure_code,
+        "feedback": rejection.feedback,
+    }
+    record = {
+        **identity,
+        "rejection_sha256": _sha256(_canonical_json_bytes(identity)),
+    }
+    encoded = _canonical_json_bytes(record) + b"\n"
+    if len(encoded) > _MAX_MAKE_PROPOSAL_REJECTION_BYTES:
+        raise StateConflict("Make proposal rejection exceeded its safe size limit")
+    record_path = _make_proposal_rejection_record_path(
+        directory, record["rejection_sha256"]
+    )
+    if record_path.exists() or record_path.is_symlink():
+        existing = _read_stable_private_bytes(
+            record_path,
+            label="Make proposal rejection",
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+        )
+        if existing != encoded:
+            raise StateConflict("Make proposal rejection identity was reused")
+    else:
+        _atomic_private_write(record_path, encoded)
+
+    head_identity = {
+        "schema_version": 1,
+        "kind": _MAKE_PROPOSAL_REJECTION_HEAD_KIND,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "rejection_sha256": record["rejection_sha256"],
+    }
+    head = {
+        **head_identity,
+        "head_sha256": _sha256(_canonical_json_bytes(head_identity)),
+    }
+    _atomic_private_write(
+        directory / "current.json", _canonical_json_bytes(head) + b"\n"
+    )
+    return record
+
+
+def _remove_rejected_agent_outcome(
+    run: AgentRun, rejection: Mapping[str, Any]
+) -> None:
+    path = run.run_root / _AGENT_OUTCOME_NAME
+    if not path.exists() and not path.is_symlink():
+        return
+    try:
+        document, content = read_bounded_json_artifact(
+            run.run_root,
+            _AGENT_OUTCOME_NAME,
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+            label=_AGENT_OUTCOME_NAME,
+        )
+        proposal = AgentOutcomeProposal.from_mapping(document)
+    except ContractError as exc:
+        raise StateConflict("rejected agent outcome changed before removal") from exc
+    if (
+        _sha256(content) != rejection["rejected_proposal_file_sha256"]
+        or proposal.sha256 != rejection["rejected_proposal_sha256"]
+        or proposal.outcome.sha256 != rejection["rejected_outcome_sha256"]
+    ):
+        raise StateConflict("rejected agent outcome changed before removal")
+    _remove_agent_outcome(run.run_root)
+
+
+def _reconcile_rejected_agent_outcome(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> None:
+    rejection = _read_make_proposal_rejection(run, checkpoint)
+    if rejection is None or not _agent_outcome_exists(run.run_root):
+        return
+    try:
+        unused_document, content = read_bounded_json_artifact(
+            run.run_root,
+            _AGENT_OUTCOME_NAME,
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+            label=_AGENT_OUTCOME_NAME,
+        )
+    except ContractError:
+        return
+    del unused_document
+    if _sha256(content) == rejection["rejected_proposal_file_sha256"]:
+        _remove_rejected_agent_outcome(run, rejection)
+
+
 def _remove_agent_outcome(run_root: Path) -> None:
     path = run_root / _AGENT_OUTCOME_NAME
     if not path.exists() and not path.is_symlink():
@@ -812,14 +1389,33 @@ def _materialized_release_contract(
     inputs = checkpoint.input_sha256s
     if _PRODUCT_RUN_FINALIZER_INPUT not in inputs:
         raise StateConflict("native run lacks its materialized stage finalizer")
+    direct_release = _checkpoint_uses_direct_release(checkpoint)
+    manual_design_evidence = _PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT in inputs
+    if direct_release:
+        contract = {
+            "native_release_schema_version": 3,
+            "manual_path": NATIVE_RELEASE_MANUAL_PATH,
+            "product_schema_version": DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+            "product_status": "manual-ready",
+            "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
+            "playtest_omission_path": NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+        }
+        if manual_design_evidence:
+            contract["manual_design_evidence_path"] = MANUAL_DESIGN_EVIDENCE_PATH
+            contract["manual_design_evidence_schema_version"] = 1
+        return contract
     manual_first = _PRODUCT_RUN_PDF_VALIDATOR_INPUT in inputs
     if manual_first:
-        return {
+        contract = {
             "native_release_schema_version": 2,
             "manual_path": NATIVE_RELEASE_MANUAL_PATH,
             "product_schema_version": 4,
             "product_status": "manual-ready",
         }
+        if manual_design_evidence:
+            contract["manual_design_evidence_path"] = MANUAL_DESIGN_EVIDENCE_PATH
+            contract["manual_design_evidence_schema_version"] = 1
+        return contract
     return {
         "native_release_schema_version": 1,
         "manual_path": NATIVE_RELEASE_LEGACY_MANUAL_PATH,
@@ -1105,6 +1701,57 @@ def _prior_evidence(
         if node is not None
     ]
     return recall(_workshop_home(), mechanisms, exclude_product=checkpoint.product_id)
+def _checkpoint_effort(checkpoint: AgentRunCheckpoint):
+    """Return the exact frozen effort, or ``None`` for historical runs."""
+
+    if checkpoint.effort is None:
+        return None
+    capable = _PRODUCT_RUN_EFFORT_ROUTES_INPUT in checkpoint.input_sha256s
+    if not capable:
+        raise StateConflict("native run frozen effort lacks its immutable capability")
+    try:
+        return workshop_effort(checkpoint.effort)
+    except ContractError as exc:
+        raise StateConflict("native run frozen effort is invalid") from exc
+
+
+def _checkpoint_uses_direct_release(checkpoint: AgentRunCheckpoint) -> bool:
+    effort = _checkpoint_effort(checkpoint)
+    if effort is not None:
+        return not effort.includes("playtest")
+    return _PRODUCT_RUN_DIRECT_RELEASE_INPUT in checkpoint.input_sha256s
+
+
+def _checkpoint_next_stage(checkpoint: AgentRunCheckpoint, stage: str) -> str:
+    effort = _checkpoint_effort(checkpoint)
+    if effort is not None:
+        return effort.next_stage(stage)
+    if stage == "make" and _checkpoint_uses_direct_release(checkpoint):
+        return "release"
+    return {
+        "wish": "match",
+        "match": "invent",
+        "invent": "make",
+        "make": "playtest",
+        "playtest": "release",
+        "release": "complete",
+    }[stage]
+
+
+def _materialized_release_terminal_transition(
+    checkpoint: AgentRunCheckpoint,
+) -> str:
+    """Preserve the forward value understood by the frozen finalizer."""
+
+    if not isinstance(checkpoint, AgentRunCheckpoint):
+        raise ContractError("Release transition requires an AgentRun checkpoint")
+    if _PRODUCT_RUN_FINALIZER_INPUT not in checkpoint.input_sha256s:
+        raise StateConflict("native run lacks its materialized stage finalizer")
+    return (
+        "complete"
+        if _PRODUCT_RUN_TERMINAL_RELEASE_INPUT in checkpoint.input_sha256s
+        else "deliver"
+    )
 
 
 def native_stage_prompt(stage: str) -> str:
@@ -1117,12 +1764,17 @@ def native_stage_prompt(stage: str) -> str:
         "make",
         "playtest",
         "release",
-        "deliver",
     ):
         raise ContractError("native run stage is invalid")
     return (
         "Follow the local AGENTS.md and autonomous-workshop skill. "
-        "Read the host-written STAGE.json. Create one native Codex goal for the "
+        "Read the host-written STAGE.json. Treat every host-written rejection "
+        "in that packet as authoritative proof that the prior proposal failed "
+        "its host gate and that the current subject is a new stage attempt. If "
+        "the prior Goal is already complete, create a new Goal bound to this "
+        "current subject. Address the exact rejection before finalizing; never "
+        "rerun the finalizer or resubmit unchanged rejected bytes. Create one "
+        "native Goal for the "
         "current %s stage with successful finalization as its stopping condition; "
         "keep inspecting, acting, evaluating, and improving until that condition "
         "is met. Use the run-local deterministic proposal tool, complete the goal "
@@ -1130,6 +1782,24 @@ def native_stage_prompt(stage: str) -> str:
         "the Workshop host gate."
         % stage
     )
+
+
+def _current_make_proposal_rejection(
+    cad_gate_rejection: Optional[Mapping[str, Any]],
+    make_proposal_rejection: Optional[Mapping[str, Any]],
+) -> Optional[Mapping[str, Any]]:
+    """Hide proposal feedback once a newer CAD gate proves it was repaired.
+
+    The historical proposal-rejection chain remains durably validated and
+    auditable. A CAD rejection can exist only after the replacement Made
+    proposal passed its authored contract checks, so presenting the older
+    proposal feedback as still actionable would direct the next native turn
+    away from the current deterministic failure.
+    """
+
+    if cad_gate_rejection is not None:
+        return None
+    return make_proposal_rejection
 
 
 def _recoverable_native_turn_backoff_seconds(
@@ -1524,6 +2194,111 @@ def _stage_subject(stage: str, inputs: Mapping[str, Any]) -> str:
     )
 
 
+def _stage_artifact_named(
+    checkpoint: AgentRunCheckpoint, stage: str, name: str
+) -> AgentArtifact:
+    artifacts = checkpoint.stage_artifacts.get(stage, ())
+    matches = tuple(item for item in artifacts if PurePosixPath(item.path).name == name)
+    if len(matches) != 1:
+        raise TransitionError(
+            "native run requires exactly one %s artifact from %s" % (name, stage)
+        )
+    return matches[0]
+
+
+def _stage_artifact_at(
+    checkpoint: AgentRunCheckpoint, stage: str, path: str
+) -> AgentArtifact:
+    artifacts = checkpoint.stage_artifacts.get(stage, ())
+    matches = tuple(item for item in artifacts if item.path == path)
+    if len(matches) != 1:
+        raise TransitionError(
+            "native run requires exactly one %s artifact from %s" % (path, stage)
+        )
+    return matches[0]
+
+
+def _routed_invent_contract_paths(
+    checkpoint: AgentRunCheckpoint,
+) -> tuple[str, str]:
+    repairing = bool(
+        checkpoint.stage_artifacts.get("invent")
+        and "invent" in checkpoint.invalidated_stages
+    )
+    prefix = (
+        "artifacts/invent/r%04d" % checkpoint.round_index
+        if repairing
+        else "artifacts/invent"
+    )
+    return "%s/assignment.json" % prefix, "%s/invented.json" % prefix
+
+
+def _routed_make_creative_paths(round_index: int) -> tuple[str, str]:
+    prefix = "artifacts/make/r%04d" % round_index
+    return "%s/assignment.json" % prefix, "%s/invented.json" % prefix
+
+
+def _routed_creative_context(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    roster: InventorRoster,
+) -> tuple[
+    NativeMatchAssignment,
+    NativeInvented,
+    AgentArtifact,
+    AgentArtifact,
+    Any,
+]:
+    effort = _checkpoint_effort(checkpoint)
+    if effort is None:
+        raise StateConflict("routed creative context requires a frozen effort")
+    creative_stage = "make" if effort.name == "spark" else "invent"
+    if effort.name == "spark":
+        assignment_path, invented_path = _routed_make_creative_paths(
+            checkpoint.round_index
+        )
+        assignment_artifact = _stage_artifact_at(
+            checkpoint, creative_stage, assignment_path
+        )
+        invented_artifact = _stage_artifact_at(
+            checkpoint, creative_stage, invented_path
+        )
+    else:
+        assignment_artifact = _stage_artifact_named(
+            checkpoint, creative_stage, "assignment.json"
+        )
+        invented_artifact = _stage_artifact_named(
+            checkpoint, creative_stage, "invented.json"
+        )
+    assignment = _read_contract(
+        run.run_root,
+        assignment_artifact,
+        NativeMatchAssignment,
+        label="routed native Match assignment",
+    )
+    assignment.assert_context(
+        wish_sha256=checkpoint.wish_sha256,
+        roster=roster,
+    )
+    invented = _read_contract(
+        run.run_root,
+        invented_artifact,
+        NativeInvented,
+        label="routed native Invented contract",
+    )
+    invented.assert_context(assignment)
+    inventor_binding = _selected_inventor_binding(
+        run.run_root, checkpoint, assignment
+    )
+    return (
+        assignment,
+        invented,
+        assignment_artifact,
+        invented_artifact,
+        inventor_binding,
+    )
+
+
 def native_run_paths(
     product_id: str,
     *,
@@ -1665,6 +2440,419 @@ def _artifact_binding(artifact: AgentArtifact) -> dict[str, str]:
     return {"path": artifact.path, "sha256": artifact.sha256}
 
 
+def _prepare_effort_stage_input(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    roster: InventorRoster,
+    cad_gate_rejection: Optional[Mapping[str, Any]],
+    make_proposal_rejection: Optional[Mapping[str, Any]],
+) -> tuple[str, Mapping[str, Any], Mapping[str, Any]]:
+    """Prepare a selectable-effort stage without fabricating skipped stages."""
+
+    effort = _checkpoint_effort(checkpoint)
+    if effort is None or checkpoint.stage not in effort.enabled_stages:
+        raise TransitionError("native run stage is disabled by its frozen effort")
+    stage = checkpoint.stage
+    blueprint = ToyBlueprint()
+    normal_transition = effort.next_stage(stage)
+    context: dict[str, Any] = {
+        "roster": roster,
+        "blueprint": blueprint,
+        "effort": effort,
+    }
+    base: dict[str, Any] = {
+        "effort": effort.name,
+        "wish": {"path": "WISH.json", "sha256": checkpoint.wish_sha256},
+        "wish_sha256": checkpoint.wish_sha256,
+        "inventor_roster": roster.to_dict(),
+        "blueprint": blueprint.to_dict(),
+        "blueprint_sha256": blueprint.sha256,
+    }
+
+    if stage == "invent":
+        assignment_path, invented_path = _routed_invent_contract_paths(checkpoint)
+        subject_inputs: dict[str, Any] = {
+            "effort": effort.name,
+            "wish_sha256": checkpoint.wish_sha256,
+            "inventor_roster_sha256": roster.roster_sha256,
+            "blueprint_sha256": blueprint.sha256,
+            "repair_round": None,
+        }
+        inputs: dict[str, Any] = {
+            **base,
+            "assignment_contract_path": assignment_path,
+            "contract_path": invented_path,
+        }
+        prior_paths = checkpoint.stage_artifacts.get("invent")
+        if prior_paths:
+            if "invent" not in checkpoint.invalidated_stages:
+                raise StateConflict("an effort Invent retry requires invalidation")
+            (
+                prior_assignment,
+                prior_invented,
+                prior_assignment_artifact,
+                prior_invented_artifact,
+                unused_binding,
+            ) = _routed_creative_context(run, checkpoint, roster)
+            del unused_binding
+            prior_made = _read_contract(
+                run.run_root,
+                _stage_primary(checkpoint, "make"),
+                NativeMade,
+                label="prior routed native Made contract",
+            )
+            prior_made.assert_context(
+                prior_assignment,
+                prior_invented,
+                expected_round=prior_made.round,
+            )
+            failing_playtested_artifact = _stage_primary(checkpoint, "playtest")
+            failing_playtested = _read_contract(
+                run.run_root,
+                failing_playtested_artifact,
+                NativePlaytested,
+                label="failing routed native Playtested contract",
+            )
+            failing_playtested.assert_context(prior_made, blueprint)
+            if failing_playtested.proposed_transition != "invent":
+                raise StateConflict(
+                    "routed re-Invent requires concept-revision feedback"
+                )
+            feedback = [item.to_dict() for item in failing_playtested.feedback]
+            subject_inputs.update(
+                {
+                    "repair_round": checkpoint.round_index,
+                    "prior_assignment_sha256": prior_assignment.assignment_sha256,
+                    "prior_invented_sha256": prior_invented.invented_sha256,
+                    "prior_invented_artifact_sha256": prior_invented_artifact.sha256,
+                    "failing_playtested_sha256": failing_playtested.playtested_sha256,
+                    "feedback_sha256": failing_playtested.feedback_sha256,
+                }
+            )
+            inputs.update(
+                {
+                    "repair_round": checkpoint.round_index,
+                    "prior_assignment": prior_assignment.to_dict(),
+                    "prior_assignment_artifact": _artifact_binding(
+                        prior_assignment_artifact
+                    ),
+                    "prior_invented": prior_invented.to_dict(),
+                    "prior_invented_artifact": _artifact_binding(
+                        prior_invented_artifact
+                    ),
+                    "failing_playtested": failing_playtested.to_dict(),
+                    "failing_playtested_artifact": _artifact_binding(
+                        failing_playtested_artifact
+                    ),
+                    "feedback": feedback,
+                    "feedback_sha256": failing_playtested.feedback_sha256,
+                }
+            )
+        subject = _stage_subject("invent", subject_inputs)
+        context.update(
+            {
+                "routed_invent": True,
+                "assignment_contract_path": assignment_path,
+                "invent_contract_path": invented_path,
+            }
+        )
+
+    elif stage == "make":
+        context["make_transition"] = normal_transition
+        if effort.name == "spark":
+            assignment_path, invented_path = _routed_make_creative_paths(
+                checkpoint.round_index
+            )
+            common = dict(base)
+            common.update(
+                {
+                    "creative_source_required": True,
+                    "assignment_contract_path": assignment_path,
+                    "invented_contract_path": invented_path,
+                }
+            )
+            assignment = invented = None
+            context.update(
+                {
+                    "routed_make_creative": True,
+                    "assignment_contract_path": assignment_path,
+                    "invented_contract_path": invented_path,
+                }
+            )
+        else:
+            (
+                assignment,
+                invented,
+                assignment_artifact,
+                invented_artifact,
+                inventor_binding,
+            ) = _routed_creative_context(run, checkpoint, roster)
+            context.update(
+                {
+                    "assignment": assignment,
+                    "invented": invented,
+                    "inventor_binding": inventor_binding,
+                }
+            )
+            common = {
+                **base,
+                "assignment": assignment.to_dict(),
+                "assignment_artifact": {
+                    **_artifact_binding(assignment_artifact),
+                    "assignment_sha256": assignment.assignment_sha256,
+                },
+                "invented": invented.to_dict(),
+                "invented_artifact": {
+                    **_artifact_binding(invented_artifact),
+                    "invented_sha256": invented.invented_sha256,
+                },
+                "selected_inventor_agent": {
+                    "path": assignment.selected_agent_path,
+                    "sha256": assignment.selected_agent_sha256,
+                    "source_manifest_sha256": (
+                        assignment.selected_source_manifest_sha256
+                    ),
+                    "taste_sha256": assignment.selected_taste_sha256,
+                },
+            }
+        feedback_artifact: Optional[AgentArtifact] = None
+        prior = checkpoint.stage_artifacts.get("playtest")
+        if prior and "playtest" in checkpoint.invalidated_stages:
+            feedback_artifact = prior[0]
+        subject_inputs = {
+            "effort": effort.name,
+            "wish_sha256": checkpoint.wish_sha256,
+            "inventor_roster_sha256": roster.roster_sha256,
+            "assignment_sha256": (
+                assignment.assignment_sha256 if assignment is not None else None
+            ),
+            "invented_sha256": (
+                invented.invented_sha256 if invented is not None else None
+            ),
+            "blueprint_sha256": blueprint.sha256,
+            "round": checkpoint.round_index,
+            "feedback_sha256": (
+                feedback_artifact.sha256 if feedback_artifact else None
+            ),
+            "host_cad_gate_rejection_sha256": (
+                cad_gate_rejection["rejection_sha256"]
+                if cad_gate_rejection is not None
+                else None
+            ),
+        }
+        if make_proposal_rejection is not None:
+            subject_inputs["host_make_proposal_rejection_sha256"] = (
+                make_proposal_rejection["rejection_sha256"]
+            )
+        subject = _stage_subject("make", subject_inputs)
+        inputs = {
+            **common,
+            "round": checkpoint.round_index,
+            "previous_playtest": (
+                _artifact_binding(feedback_artifact)
+                if feedback_artifact is not None
+                else None
+            ),
+            "host_cad_gate_rejection": cad_gate_rejection,
+            "product_root": "artifacts/make/r%04d/product"
+            % checkpoint.round_index,
+            "contract_path": "artifacts/make/r%04d/made.json"
+            % checkpoint.round_index,
+            "required_root_files": [
+                "product.json",
+                "assembled.step",
+                "assembled.step.json",
+                "assembled.stl",
+            ],
+        }
+        if make_proposal_rejection is not None:
+            inputs["host_make_proposal_rejection"] = make_proposal_rejection
+
+    else:
+        (
+            assignment,
+            invented,
+            assignment_artifact,
+            invented_artifact,
+            inventor_binding,
+        ) = _routed_creative_context(run, checkpoint, roster)
+        made_artifact = _stage_primary(checkpoint, "make")
+        made = _read_contract(
+            run.run_root,
+            made_artifact,
+            NativeMade,
+            label="routed native Made contract",
+        )
+        made.assert_context(
+            assignment, invented, expected_round=checkpoint.round_index
+        )
+        context.update(
+            {
+                "assignment": assignment,
+                "invented": invented,
+                "made": made,
+                "inventor_binding": inventor_binding,
+            }
+        )
+        common = {
+            **base,
+            "assignment": assignment.to_dict(),
+            "assignment_artifact": {
+                **_artifact_binding(assignment_artifact),
+                "assignment_sha256": assignment.assignment_sha256,
+            },
+            "invented": invented.to_dict(),
+            "invented_artifact": {
+                **_artifact_binding(invented_artifact),
+                "invented_sha256": invented.invented_sha256,
+            },
+            "made": made.to_dict(),
+            "made_artifact": {
+                **_artifact_binding(made_artifact),
+                "made_sha256": made.made_sha256,
+                "product_artifact_sha256": made.product_manifest.artifact_sha256,
+                "product_root": made.product_root,
+            },
+            "selected_inventor_agent": {
+                "path": assignment.selected_agent_path,
+                "sha256": assignment.selected_agent_sha256,
+                "source_manifest_sha256": assignment.selected_source_manifest_sha256,
+                "taste_sha256": assignment.selected_taste_sha256,
+            },
+        }
+        if stage == "playtest":
+            subject = _stage_subject(
+                "playtest",
+                {
+                    "effort": effort.name,
+                    "made_sha256": made.made_sha256,
+                    "product_artifact_sha256": made.product_manifest.artifact_sha256,
+                    "blueprint_sha256": blueprint.sha256,
+                    "round": checkpoint.round_index,
+                    "host_cad_gate_rejection_sha256": (
+                        cad_gate_rejection["rejection_sha256"]
+                        if cad_gate_rejection is not None
+                        else None
+                    ),
+                },
+            )
+            inputs = {
+                **common,
+                "round": checkpoint.round_index,
+                "host_cad_gate_rejection": cad_gate_rejection,
+                "required_check_ids": list(blueprint.required_playtest_checks()),
+                "evidence_root": "artifacts/playtest/r%04d/evidence"
+                % checkpoint.round_index,
+                "contract_path": "artifacts/playtest/r%04d/playtested.json"
+                % checkpoint.round_index,
+            }
+        elif stage == "release":
+            release_contract = _materialized_release_contract(checkpoint)
+            terminal_transition = _materialized_release_terminal_transition(checkpoint)
+            normal_transition = terminal_transition
+            context.update(
+                {
+                    "release_contract": release_contract,
+                    "terminal_transition": terminal_transition,
+                }
+            )
+            subject_inputs = {
+                "effort": effort.name,
+                "wish_sha256": checkpoint.wish_sha256,
+                "taste_sha256": assignment.selected_taste_sha256,
+                "blueprint_sha256": blueprint.sha256,
+                "made_sha256": made.made_sha256,
+                "product_artifact_sha256": made.product_manifest.artifact_sha256,
+                "round": checkpoint.round_index,
+                "release_contract": release_contract,
+                "host_cad_gate_rejection_sha256": (
+                    cad_gate_rejection["rejection_sha256"]
+                    if cad_gate_rejection is not None
+                    else None
+                ),
+            }
+            inputs = {
+                **common,
+                "round": checkpoint.round_index,
+                "host_cad_gate_rejection": cad_gate_rejection,
+                "package_root": "artifacts/release/package",
+                "contract_path": "artifacts/release/release.json",
+                "release_contract": release_contract,
+                "required_package_files": [
+                    release_contract["manual_path"],
+                    "product.json",
+                ],
+            }
+            if release_contract.get("manual_design_evidence_path") is not None:
+                inputs["required_package_files"].append(
+                    release_contract["manual_design_evidence_path"]
+                )
+            if effort.includes("playtest"):
+                playtested_artifact = _stage_primary(checkpoint, "playtest")
+                playtested = _read_contract(
+                    run.run_root,
+                    playtested_artifact,
+                    NativePlaytested,
+                    label="routed native Playtested contract",
+                )
+                playtested.assert_context(made, blueprint)
+                if playtested.verdict != "pass":
+                    raise TransitionError("Release requires a passing Playtest")
+                context["playtested"] = playtested
+                subject_inputs.update(
+                    {
+                        "playtested_sha256": playtested.playtested_sha256,
+                        "evidence_artifact_sha256": (
+                            playtested.evidence_manifest.artifact_sha256
+                        ),
+                    }
+                )
+                inputs.update(
+                    {
+                        "playtested": playtested.to_dict(),
+                        "playtested_artifact": {
+                            **_artifact_binding(playtested_artifact),
+                            "playtested_sha256": playtested.playtested_sha256,
+                            "evidence_artifact_sha256": (
+                                playtested.evidence_manifest.artifact_sha256
+                            ),
+                        },
+                    }
+                )
+            else:
+                context["playtested"] = None
+                subject_inputs["playtest_status"] = DIRECT_RELEASE_PLAYTEST_STATUS
+                inputs["required_package_files"].append(
+                    NATIVE_RELEASE_PLAYTEST_OMISSION_PATH
+                )
+            subject = _stage_subject("release", subject_inputs)
+        else:  # pragma: no cover - effort membership is checked above
+            raise TransitionError("effort route cannot prepare this stage")
+
+    packet = {
+        "schema_version": 1,
+        "kind": _STAGE_INPUT_KIND,
+        "product_id": checkpoint.product_id,
+        "stage": stage,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "subject_sha256": subject,
+        "next_transition": normal_transition,
+        "round": (
+            checkpoint.round_index
+            if stage in ("make", "playtest", "release")
+            else None
+        ),
+        "max_rounds": checkpoint.max_rounds,
+        "inputs": inputs,
+    }
+    encoded = _canonical_json_bytes(packet) + b"\n"
+    if len(encoded) > _MAX_STAGE_INPUT_BYTES:
+        raise ArtifactError("native effort stage input exceeded its byte limit")
+    _atomic_private_write(run.run_root / _STAGE_INPUT_NAME, encoded, mode=0o400)
+    return subject, packet, context
+
+
 def _prepare_stage_input(
     run: AgentRun, checkpoint: AgentRunCheckpoint
 ) -> tuple[str, Mapping[str, Any], Mapping[str, Any]]:
@@ -1676,17 +2864,31 @@ def _prepare_stage_input(
     """
 
     stage = checkpoint.stage
-    if stage in ("wish", "deliver"):
+    if stage == "wish":
         raise TransitionError("%s does not use a native stage packet" % stage)
     roster = _inventor_roster(checkpoint)
     context: dict[str, Any] = {"roster": roster}
+    direct_release = _checkpoint_uses_direct_release(checkpoint)
     cad_gate_rejection = _read_cad_gate_rejection(run, checkpoint)
+    make_proposal_rejection = _read_make_proposal_rejection(run, checkpoint)
+    make_proposal_rejection = _current_make_proposal_rejection(
+        cad_gate_rejection,
+        make_proposal_rejection,
+    )
+    if _checkpoint_effort(checkpoint) is not None:
+        return _prepare_effort_stage_input(
+            run,
+            checkpoint,
+            roster=roster,
+            cad_gate_rejection=cad_gate_rejection,
+            make_proposal_rejection=make_proposal_rejection,
+        )
     normal_transition = {
         "match": "invent",
         "invent": "make",
-        "make": "playtest",
+        "make": "release" if direct_release else "playtest",
         "playtest": "release",
-        "release": "deliver",
+        "release": "complete",
     }[stage]
     round_value: Optional[int] = (
         checkpoint.round_index
@@ -1752,11 +2954,107 @@ def _prepare_stage_input(
         common["design_vault"] = _design_vault_binding(checkpoint, vault)
         context["design_vault"] = vault
         if stage == "invent":
-            subject = invent_gate_subject_sha256(assignment)
-            inputs = {
-                **common,
-                "contract_path": "artifacts/invent/invented.json",
-            }
+            prior_invented_paths = checkpoint.stage_artifacts.get("invent")
+            if prior_invented_paths:
+                if "invent" not in checkpoint.invalidated_stages:
+                    raise StateConflict(
+                        "an Invent retry requires explicit Playtest invalidation"
+                    )
+                prior_invented_artifact = prior_invented_paths[0]
+                prior_invented = _read_contract(
+                    run.run_root,
+                    prior_invented_artifact,
+                    NativeInvented,
+                    label="prior native Invented contract",
+                )
+                prior_invented.assert_context(assignment)
+                prior_made_artifact = _stage_primary(checkpoint, "make")
+                prior_made = _read_contract(
+                    run.run_root,
+                    prior_made_artifact,
+                    NativeMade,
+                    label="prior native Made contract",
+                )
+                prior_made.assert_context(
+                    assignment,
+                    prior_invented,
+                    expected_round=prior_made.round,
+                )
+                failing_playtested_artifact = _stage_primary(checkpoint, "playtest")
+                failing_playtested = _read_contract(
+                    run.run_root,
+                    failing_playtested_artifact,
+                    NativePlaytested,
+                    label="failing native Playtested contract",
+                )
+                failing_playtested.assert_context(prior_made, blueprint)
+                if failing_playtested.proposed_transition != "invent":
+                    raise StateConflict(
+                        "re-Invent requires explicit concept-revision feedback"
+                    )
+                feedback = [
+                    item.to_dict() for item in failing_playtested.feedback
+                ]
+                subject_inputs = {
+                    "wish_sha256": checkpoint.wish_sha256,
+                    "assignment_sha256": assignment.assignment_sha256,
+                    "taste_sha256": assignment.selected_taste_sha256,
+                    "blueprint_sha256": blueprint.sha256,
+                    "prior_invented_artifact_sha256": (
+                        prior_invented_artifact.sha256
+                    ),
+                    "prior_invented_sha256": prior_invented.invented_sha256,
+                    "failing_playtested_artifact_sha256": (
+                        failing_playtested_artifact.sha256
+                    ),
+                    "failing_playtested_sha256": (
+                        failing_playtested.playtested_sha256
+                    ),
+                    "feedback_sha256": failing_playtested.feedback_sha256,
+                    "repair_round": checkpoint.round_index,
+                }
+                subject = _stage_subject("invent", subject_inputs)
+                inputs = {
+                    **common,
+                    "repair_round": checkpoint.round_index,
+                    "prior_invented": prior_invented.to_dict(),
+                    "prior_invented_artifact": {
+                        **_artifact_binding(prior_invented_artifact),
+                        "invented_sha256": prior_invented.invented_sha256,
+                    },
+                    "failing_playtested": failing_playtested.to_dict(),
+                    "failing_playtested_artifact": {
+                        **_artifact_binding(failing_playtested_artifact),
+                        "playtested_sha256": (
+                            failing_playtested.playtested_sha256
+                        ),
+                    },
+                    "feedback": feedback,
+                    "feedback_sha256": failing_playtested.feedback_sha256,
+                    "contract_path": (
+                        "artifacts/invent/r%04d/invented.json"
+                        % checkpoint.round_index
+                    ),
+                }
+                context.update(
+                    {
+                        "prior_invented": prior_invented,
+                        "prior_made": prior_made,
+                        "failing_playtested": failing_playtested,
+                        "invent_contract_path": inputs["contract_path"],
+                    }
+                )
+            else:
+                if "invent" in checkpoint.invalidated_stages:
+                    raise StateConflict(
+                        "re-Invent lacks its exact prior Invented contract"
+                    )
+                subject = invent_gate_subject_sha256(assignment)
+                inputs = {
+                    **common,
+                    "contract_path": "artifacts/invent/invented.json",
+                }
+                context["invent_contract_path"] = inputs["contract_path"]
         else:
             invented_artifact = _stage_primary(checkpoint, "invent")
             invented = _read_contract(
@@ -1778,6 +3076,7 @@ def _prepare_stage_input(
             }
             if stage in ("make", "playtest", "release"):
                 if stage == "make":
+                    context["make_transition"] = normal_transition
                     feedback_artifact: Optional[AgentArtifact] = None
                     prior = checkpoint.stage_artifacts.get("playtest")
                     if prior and "playtest" in checkpoint.invalidated_stages:
@@ -1798,6 +3097,12 @@ def _prepare_stage_input(
                             else None
                         ),
                     }
+                    if make_proposal_rejection is not None:
+                        # Omitting this field before the first rejection keeps
+                        # pre-upgrade/frozen Make subjects byte-compatible.
+                        subject_inputs["host_make_proposal_rejection_sha256"] = (
+                            make_proposal_rejection["rejection_sha256"]
+                        )
                     subject = _stage_subject("make", subject_inputs)
                     score_history = _playtest_score_history(run.host_state_root)
                     inputs = {
@@ -1823,6 +3128,10 @@ def _prepare_stage_input(
                             "assembled.stl",
                         ],
                     }
+                    if make_proposal_rejection is not None:
+                        inputs["host_make_proposal_rejection"] = (
+                            make_proposal_rejection
+                        )
                 else:
                     made_artifact = _stage_primary(checkpoint, "make")
                     made = _read_contract(
@@ -1877,44 +3186,31 @@ def _prepare_stage_input(
                             % checkpoint.round_index,
                         }
                     else:
-                        playtested_artifact = _stage_primary(checkpoint, "playtest")
-                        playtested = _read_contract(
-                            run.run_root,
-                            playtested_artifact,
-                            NativePlaytested,
-                            label="native Playtested contract",
-                        )
-                        playtested.assert_context(made, blueprint)
-                        if playtested.verdict != "pass":
-                            raise TransitionError("Release requires a passing Playtest")
-                        context["playtested"] = playtested
                         release_contract = _materialized_release_contract(checkpoint)
                         context["release_contract"] = release_contract
-                        subject_inputs = {
+                        terminal_transition = _materialized_release_terminal_transition(
+                            checkpoint
+                        )
+                        context["terminal_transition"] = terminal_transition
+                        normal_transition = terminal_transition
+                        subject_inputs: dict[str, Any] = {
                             "wish_sha256": checkpoint.wish_sha256,
                             "taste_sha256": assignment.selected_taste_sha256,
                             "blueprint_sha256": blueprint.sha256,
                             "made_sha256": made.made_sha256,
                             "product_artifact_sha256": made.product_manifest.artifact_sha256,
-                            "playtested_sha256": playtested.playtested_sha256,
-                            "evidence_artifact_sha256": (
-                                playtested.evidence_manifest.artifact_sha256
-                            ),
                             "round": checkpoint.round_index,
                             "release_contract": release_contract,
+                            "host_cad_gate_rejection_sha256": (
+                                cad_gate_rejection["rejection_sha256"]
+                                if cad_gate_rejection is not None
+                                else None
+                            ),
                         }
-                        subject = _stage_subject("release", subject_inputs)
                         inputs = {
                             **common,
                             "round": checkpoint.round_index,
-                            "playtested": playtested.to_dict(),
-                            "playtested_artifact": {
-                                **_artifact_binding(playtested_artifact),
-                                "playtested_sha256": playtested.playtested_sha256,
-                                "evidence_artifact_sha256": (
-                                    playtested.evidence_manifest.artifact_sha256
-                                ),
-                            },
+                            "host_cad_gate_rejection": cad_gate_rejection,
                             "package_root": "artifacts/release/package",
                             "contract_path": "artifacts/release/release.json",
                             "release_contract": release_contract,
@@ -1923,6 +3219,58 @@ def _prepare_stage_input(
                                 "product.json",
                             ],
                         }
+                        if (
+                            release_contract.get("manual_design_evidence_path")
+                            is not None
+                        ):
+                            inputs["required_package_files"].append(
+                                release_contract["manual_design_evidence_path"]
+                            )
+                        if direct_release:
+                            context["playtested"] = None
+                            subject_inputs["playtest_status"] = (
+                                DIRECT_RELEASE_PLAYTEST_STATUS
+                            )
+                            inputs["required_package_files"].append(
+                                NATIVE_RELEASE_PLAYTEST_OMISSION_PATH
+                            )
+                        else:
+                            playtested_artifact = _stage_primary(
+                                checkpoint, "playtest"
+                            )
+                            playtested = _read_contract(
+                                run.run_root,
+                                playtested_artifact,
+                                NativePlaytested,
+                                label="native Playtested contract",
+                            )
+                            playtested.assert_context(made, blueprint)
+                            if playtested.verdict != "pass":
+                                raise TransitionError(
+                                    "Release requires a passing Playtest"
+                                )
+                            context["playtested"] = playtested
+                            subject_inputs.update(
+                                {
+                                    "playtested_sha256": playtested.playtested_sha256,
+                                    "evidence_artifact_sha256": (
+                                        playtested.evidence_manifest.artifact_sha256
+                                    ),
+                                }
+                            )
+                            inputs.update(
+                                {
+                                    "playtested": playtested.to_dict(),
+                                    "playtested_artifact": {
+                                        **_artifact_binding(playtested_artifact),
+                                        "playtested_sha256": playtested.playtested_sha256,
+                                        "evidence_artifact_sha256": (
+                                            playtested.evidence_manifest.artifact_sha256
+                                        ),
+                                    },
+                                }
+                            )
+                        subject = _stage_subject("release", subject_inputs)
 
     packet = {
         "schema_version": 1,
@@ -1945,14 +3293,27 @@ def _prepare_stage_input(
     return subject, packet, context
 
 
+def _native_launcher(manager_id: str) -> NativeSessionLauncher:
+    """Construct the frozen Manager launcher.
+
+    Codex stays constructed here so existing host tests can patch the concrete
+    class without going through the registry. Other Managers load by id.
+    """
+
+    if manager_id == DEFAULT_MANAGER_ID:
+        return CodexNativeSessionLauncher()
+    return manager_launcher(manager_id)
+
+
 def _launcher_call(
-    launcher: CodexNativeSessionLauncher,
+    launcher: NativeSessionLauncher,
     method: str,
     *,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
     activity_observer: Optional[Callable[[str], None]] = None,
-) -> CodexNativeSessionOutcome:
+) -> Any:
+    runtime = manager_spec(checkpoint.manager_id)
     arguments = {
         "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256,
@@ -1965,12 +3326,14 @@ def _launcher_call(
     }
     try:
         return getattr(launcher, method)(**arguments)
-    except CodexRecoverableInvocationError as exc:
+    except (CodexRecoverableInvocationError, NativeManagerRecoverableError) as exc:
         raise _RecoverableNativeTurn(
-            "native Codex session did not complete: %s" % exc
+            "native %s session did not complete: %s" % (runtime.display_name, exc)
         ) from None
-    except CodexInvocationError as exc:
-        raise WorkshopError("native Codex session did not complete: %s" % exc) from None
+    except (CodexInvocationError, NativeManagerInvocationError) as exc:
+        raise WorkshopError(
+            "native %s session did not complete: %s" % (runtime.display_name, exc)
+        ) from None
 
 
 def _validated_activity_observer(
@@ -1978,6 +3341,14 @@ def _validated_activity_observer(
 ) -> Optional[Callable[[str], None]]:
     if observer is not None and not callable(observer):
         raise ContractError("native run activity observer must be callable")
+    return observer
+
+
+def _validated_timing_observer(
+    observer: Optional[WishRunTimingObserver],
+) -> Optional[WishRunTimingObserver]:
+    if observer is not None and not callable(observer):
+        raise ContractError("Wish run timing observer must be callable")
     return observer
 
 
@@ -2040,7 +3411,7 @@ def _advance_validated_wish(run: AgentRun) -> AgentRunCheckpoint:
         stage="wish",
         status="ready",
         artifacts=(artifact,),
-        proposed_transition="match",
+        proposed_transition=_checkpoint_next_stage(checkpoint, "wish"),
     )
     evidence = {
         "schema_version": 1,
@@ -2151,22 +3522,70 @@ def _evaluate_make_stage(
     context: Mapping[str, Any],
 ) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
     contract_path = "artifacts/make/r%04d/made.json" % checkpoint.round_index
-    artifact = _ready_contract_artifact(
-        proposal,
-        stage="make",
-        transitions=("playtest",),
-        path=contract_path,
-    )
-    made = _read_contract(
-        run.run_root, artifact, NativeMade, label="native Made contract"
-    )
-    assignment = context["assignment"]
-    invented = context["invented"]
-    made.assert_context(assignment, invented, expected_round=checkpoint.round_index)
-    canonical = made.validate_product_tree(run.run_root)
-    build_groups = validate_build_groups(
-        invented.concept, run.run_root / Path(*made.product_root.split("/"))
-    )
+    transition = context.get("make_transition")
+    if transition not in ("playtest", "release"):
+        raise StateConflict("Make transition is not bound to the run protocol")
+    try:
+        if context.get("routed_make_creative") is True:
+            outcome = proposal.outcome
+            assignment_path = context["assignment_contract_path"]
+            invented_path = context["invented_contract_path"]
+            if (
+                outcome.stage != "make"
+                or outcome.status != "ready"
+                or outcome.proposed_transition != transition
+                or outcome.needs
+                or tuple(item.path for item in outcome.artifacts)
+                != (contract_path, assignment_path, invented_path)
+            ):
+                raise ContractError(
+                    "Spark Make outcome must contain exact Made, assignment, and Invented contracts"
+                )
+            artifact, assignment_artifact, invented_artifact = outcome.artifacts
+            assignment = _read_contract(
+                run.run_root,
+                assignment_artifact,
+                NativeMatchAssignment,
+                label="Spark native Match assignment",
+            )
+            assignment.assert_context(
+                wish_sha256=checkpoint.wish_sha256,
+                roster=context["roster"],
+            )
+            invented = _read_contract(
+                run.run_root,
+                invented_artifact,
+                NativeInvented,
+                label="Spark native Invented contract",
+            )
+            invented.assert_context(assignment)
+        else:
+            artifact = _ready_contract_artifact(
+                proposal,
+                stage="make",
+                transitions=(transition,),
+                path=contract_path,
+            )
+            assignment = context["assignment"]
+            invented = context["invented"]
+        made = _read_contract(
+            run.run_root, artifact, NativeMade, label="native Made contract"
+        )
+        made.assert_context(
+            assignment, invented, expected_round=checkpoint.round_index
+        )
+        canonical = made.validate_product_tree(run.run_root)
+        build_groups = validate_build_groups(
+            invented.concept, run.run_root / Path(*made.product_root.split("/"))
+        )
+        additional = _manifest_agent_artifacts(
+            made.product_root, made.product_manifest
+        )
+    except (ArtifactError, ContractError) as error:
+        # This boundary covers only bytes and bindings authored by the Make
+        # proposal. StateConflict is a separate hierarchy and the trusted CAD
+        # verifier is deliberately invoked below, outside this recovery path.
+        raise _make_rejection_for_error(error) from error
     verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
     if not isinstance(verifier_sha256, str):
         raise StateConflict("native run lacks its trusted CAD verifier binding")
@@ -2175,9 +3594,7 @@ def _evaluate_make_stage(
         run_root=run.run_root,
         host_state_root=run.host_state_root,
         expected_verifier_sha256=verifier_sha256,
-    )
-    additional = _manifest_agent_artifacts(
-        made.product_root, made.product_manifest
+        require_print_ready=transition == "release",
     )
     evidence = StageGateEvidence(
         stage="make",
@@ -2206,7 +3623,7 @@ def _evaluate_make_stage(
             "cad_verification_passed": cad_evidence.passed,
         },
     )
-    return StageGateDecision(evidence=evidence, transition="playtest"), additional
+    return StageGateDecision(evidence=evidence, transition=transition), additional
 
 
 def _read_stable_private_json(
@@ -2384,7 +3801,7 @@ def _evaluate_playtest_stage(
     artifact = _ready_contract_artifact(
         proposal,
         stage="playtest",
-        transitions=("release", "make"),
+        transitions=("release", "make", "invent"),
         path=contract_path,
     )
     playtested = _read_contract(
@@ -2397,6 +3814,41 @@ def _evaluate_playtest_stage(
     blueprint = context["blueprint"]
     playtested.assert_context(made, blueprint)
     canonical = playtested.validate_evidence_tree(run.run_root, made)
+    if checkpoint.effort is not None:
+        inventory = {
+            entry.path: entry.sha256
+            for entry in playtested.evidence_manifest.entries
+        }
+        for check in playtested.checks:
+            relative = "%s/configs/%s.json" % (
+                playtested.evidence_root,
+                check.check_id,
+            )
+            config, content = read_bounded_json_artifact(
+                run.run_root,
+                relative,
+                label="routed Playtest %s config" % check.check_id,
+            )
+            expected_digest = inventory.get("configs/%s.json" % check.check_id)
+            if (
+                expected_digest != check.config_sha256
+                or _sha256(content) != expected_digest
+                or set(config) != {
+                    "schema_version",
+                    "check_id",
+                    "seed",
+                    "artifact_sha256",
+                }
+                or config["schema_version"] != 1
+                or config["check_id"] != check.check_id
+                or type(config["seed"]) is not int
+                or config["artifact_sha256"]
+                != made.product_manifest.artifact_sha256
+            ):
+                raise ContractError(
+                    "routed Playtest config is not bound to the current Made revision: %s"
+                    % check.check_id
+                )
     verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
     if not isinstance(verifier_sha256, str):
         raise StateConflict("native run lacks its trusted CAD verifier binding")
@@ -2413,6 +3865,7 @@ def _evaluate_playtest_stage(
             expected_verifier_sha256=verifier_sha256,
         ),
         evidence_stage="playtest",
+        require_print_ready=playtested.verdict == "pass",
     )
     vault = context.get("design_vault")
     leads = (
@@ -2446,7 +3899,7 @@ def _evaluate_playtest_stage(
             "score_spread": summary["spread"],
         }
     passed = playtested.verdict == "pass"
-    transition = "release" if passed else "make"
+    transition = playtested.proposed_transition
     if proposal.outcome.proposed_transition != transition:
         raise ContractError("Playtest transition differs from its evidence verdict")
     additional = _manifest_agent_artifacts(
@@ -2467,6 +3920,7 @@ def _evaluate_playtest_stage(
             "product_artifact_sha256": made.product_manifest.artifact_sha256,
             "evidence_artifact_sha256": canonical.evidence.evidence_artifact_sha256,
             "required_playtest_checks_covered": True,
+            "routed_config_made_bindings": checkpoint.effort is not None,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verifier_mode": cad_evidence.verifier_mode,
             "cad_verification_tier": cad_evidence.verification_tier,
@@ -2495,19 +3949,11 @@ def _evaluate_playtest_stage(
     return StageGateDecision(evidence=evidence, transition=transition), additional
 
 
-def _factory_credentials(inventor_id: str) -> Any:
-    credential_environment = factory_credential_environment()
-    suffix = inventor_id.upper().replace("-", "_")
-    username = credential_environment.get("FACTORY_%s_USERNAME" % suffix)
-    if not isinstance(username, str) or not username:
-        username = credential_environment.get("FACTORY_USERNAME")
-    password = credential_environment.get("FACTORY_PASSWORD")
-    environment: dict[str, str] = {}
-    if isinstance(username, str) and username:
-        environment["FACTORY_USERNAME"] = username
-    if isinstance(password, str) and password:
-        environment["FACTORY_PASSWORD"] = password
-    return factory_credentials_from_environment(inventor_id, environment)
+def _factory_credentials() -> Any:
+    credential_environment = factory_service_credential_environment(
+        factory_credential_environment()
+    )
+    return factory_credentials_from_environment(credential_environment)
 
 
 def _release_effect_path(run: AgentRun) -> Path:
@@ -2521,7 +3967,7 @@ def _release_effect_wait_path(run: AgentRun) -> Path:
 def _read_release_effect_wait(
     run: AgentRun, checkpoint: AgentRunCheckpoint
 ) -> Optional[Mapping[str, Any]]:
-    """Read a credential-only Release wait bound to the current checkpoint."""
+    """Read one required-publication wait bound to the current checkpoint."""
 
     path = _release_effect_wait_path(run)
     if not path.exists() and not path.is_symlink():
@@ -2541,7 +3987,7 @@ def _read_release_effect_wait(
         value = _strict_json_bytes(content, label="Release effect wait")
     except ContractError as exc:
         raise StateConflict("Release effect wait is invalid") from exc
-    expected = {
+    legacy_expected = {
         "schema_version",
         "kind",
         "product_id",
@@ -2553,6 +3999,7 @@ def _read_release_effect_wait(
         "inventor_id",
         "need",
     }
+    current_expected = legacy_expected | {"outcome"}
     hash_fields = (
         "waiting_checkpoint_sha256",
         "proposal_checkpoint_sha256",
@@ -2560,8 +4007,10 @@ def _read_release_effect_wait(
         "proposal_outcome_sha256",
     )
     if (
-        set(value) != expected
-        or value["schema_version"] != 1
+        set(value) not in (legacy_expected, current_expected)
+        or value["schema_version"] not in (1, 2)
+        or (value["schema_version"] == 1 and set(value) != legacy_expected)
+        or (value["schema_version"] == 2 and set(value) != current_expected)
         or value["kind"] != "autonomous-workshop.release-effect-wait"
         or value["product_id"] != checkpoint.product_id
         or value["stage"] != "release"
@@ -2571,7 +4020,10 @@ def _read_release_effect_wait(
         or not isinstance(value["inventor_id"], str)
         or re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", value["inventor_id"])
         is None
-        or value["need"] != _FACTORY_CREDENTIALS_NEED
+        or value["need"] not in (
+            _FACTORY_CREDENTIALS_NEED,
+            _FACTORY_PUBLICATION_NEED,
+        )
         or any(
             not isinstance(value[name], str)
             or re.fullmatch(r"[0-9a-f]{64}", value[name]) is None
@@ -2579,7 +4031,52 @@ def _read_release_effect_wait(
         )
     ):
         raise StateConflict("Release effect wait belongs to different state")
+    if value["schema_version"] == 2:
+        try:
+            pending = AgentOutcome.from_mapping(value["outcome"])
+        except ContractError as exc:
+            raise StateConflict("Release effect wait outcome is invalid") from exc
+        if (
+            pending.stage != "release"
+            or pending.status != "ready"
+            or pending.sha256 != value["proposal_outcome_sha256"]
+        ):
+            raise StateConflict("Release effect wait outcome is not exact")
     return value
+
+
+def _write_release_effect_wait(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    proposal: AgentOutcomeProposal,
+    inventor_id: str,
+    need: str,
+) -> None:
+    """Bind a resumable Release wait to the exact unaccepted proposal."""
+
+    if (
+        checkpoint.stage != "release"
+        or checkpoint.status != "waiting"
+        or need not in (_FACTORY_CREDENTIALS_NEED, _FACTORY_PUBLICATION_NEED)
+    ):
+        raise TransitionError("Release effect wait requires a waiting Release")
+    _write_private_json(
+        _release_effect_wait_path(run),
+        {
+            "schema_version": 2,
+            "kind": "autonomous-workshop.release-effect-wait",
+            "product_id": checkpoint.product_id,
+            "stage": "release",
+            "waiting_checkpoint_sha256": checkpoint.checkpoint_sha256,
+            "proposal_checkpoint_sha256": proposal.checkpoint_sha256,
+            "proposal_subject_sha256": proposal.subject_sha256,
+            "proposal_outcome_sha256": proposal.outcome.sha256,
+            "outcome": proposal.outcome.to_dict(),
+            "inventor_id": inventor_id,
+            "need": need,
+        },
+    )
 
 
 def _remove_release_effect_wait(run: AgentRun) -> None:
@@ -2744,12 +4241,43 @@ def _write_release_effect(
     _write_private_json(_release_effect_path(run), effect)
 
 
+def _assert_required_public_readback(
+    release: NativeRelease, receipt: Receipt
+) -> None:
+    """Require the public receipt needed to complete this Release protocol."""
+
+    if not receipt.is_verified_public:
+        raise StateConflict("Release lacks authenticated public Factory readback")
+    if release.schema_version not in (2, 3):
+        return
+    manual_entry = next(
+        (
+            entry
+            for entry in release.package_manifest.entries
+            if entry.path == release.manual_path
+        ),
+        None,
+    )
+    manual_url = receipt.details.get("manual_url")
+    if (
+        manual_entry is None
+        or not isinstance(manual_url, str)
+        or not manual_url.startswith("https://")
+        or receipt.details.get("manual_path") != release.manual_path
+        or receipt.details.get("manual_sha256") != manual_entry.sha256
+        or receipt.details.get("manual_readback_sha256") != manual_entry.sha256
+    ):
+        raise StateConflict(
+            "Release lacks exact public MANUAL.pdf hash readback"
+        )
+
+
 def _verified_release(
     run: AgentRun,
     release: NativeRelease,
     *,
     made: NativeMade,
-    playtested: NativePlaytested,
+    playtested: Optional[NativePlaytested],
     assignment: NativeMatchAssignment,
     blueprint: ToyBlueprint,
     inventor_binding: Any,
@@ -2757,6 +4285,14 @@ def _verified_release(
     """Seal the exact local package without consulting an external service."""
 
     package = release.validate_package_tree(run.run_root, made, playtested)
+    release_contract = _materialized_release_contract(run.snapshot())
+    if release_contract.get("manual_design_evidence_path") is not None:
+        validate_bound_manual_design_evidence(
+            package.root,
+            package_manifest=release.package_manifest,
+            manual_path=release.manual_path,
+            made=made,
+        )
     product_release = ProductRelease.from_root(
         package.root,
         release.product_artifact_sha256,
@@ -2778,7 +4314,7 @@ def _verified_release(
 def _publication_release_context(
     run: AgentRun, verified: _VerifiedRelease
 ) -> ReleaseContext:
-    """Build Factory-only context after publication has been authorized."""
+    """Build Factory-only context after the native credential-free turn."""
 
     taste = parse_taste_bytes(
         verified.inventor_binding.taste_bytes,
@@ -2803,39 +4339,57 @@ def _publication_release_context(
 def _existing_release_for_promotion(
     run: AgentRun, checkpoint: AgentRunCheckpoint
 ) -> _VerifiedRelease:
-    """Revalidate a sealed local Release after lifecycle acceptance."""
+    """Revalidate exact authored Release bytes for publication or migration."""
 
-    if checkpoint.stage != "deliver" or checkpoint.status not in (
+    if checkpoint.stage not in ("release", "deliver") or checkpoint.status not in (
         "active",
         "waiting",
         "complete",
     ):
-        raise TransitionError("public promotion requires a verified Release")
-    if any(
-        stage in checkpoint.invalidated_stages
-        for stage in ("match", "invent", "make", "playtest", "release")
-    ):
+        raise TransitionError("public publication requires a verified Release")
+    effort = _checkpoint_effort(checkpoint)
+    direct_release = _checkpoint_uses_direct_release(checkpoint)
+    required_stages = (
+        effort.enabled_stages
+        if effort is not None
+        else (
+            ("match", "invent", "make", "release")
+            if direct_release
+            else ("match", "invent", "make", "playtest", "release")
+        )
+    )
+    if any(stage in checkpoint.invalidated_stages for stage in required_stages):
         raise StateConflict("public promotion cannot use invalidated stage evidence")
     roster = _inventor_roster(checkpoint)
-    assignment = _read_contract(
-        run.run_root,
-        _stage_primary(checkpoint, "match"),
-        NativeMatchAssignment,
-        label="native Match assignment",
-    )
-    assignment.assert_context(
-        wish_sha256=checkpoint.wish_sha256, roster=roster
-    )
-    inventor_binding = _selected_inventor_binding(
-        run.run_root, checkpoint, assignment
-    )
-    invented = _read_contract(
-        run.run_root,
-        _stage_primary(checkpoint, "invent"),
-        NativeInvented,
-        label="native Invented contract",
-    )
-    invented.assert_context(assignment)
+    if effort is not None:
+        (
+            assignment,
+            invented,
+            unused_assignment_artifact,
+            unused_invented_artifact,
+            inventor_binding,
+        ) = _routed_creative_context(run, checkpoint, roster)
+        del unused_assignment_artifact, unused_invented_artifact
+    else:
+        assignment = _read_contract(
+            run.run_root,
+            _stage_primary(checkpoint, "match"),
+            NativeMatchAssignment,
+            label="native Match assignment",
+        )
+        assignment.assert_context(
+            wish_sha256=checkpoint.wish_sha256, roster=roster
+        )
+        inventor_binding = _selected_inventor_binding(
+            run.run_root, checkpoint, assignment
+        )
+        invented = _read_contract(
+            run.run_root,
+            _stage_primary(checkpoint, "invent"),
+            NativeInvented,
+            label="native Invented contract",
+        )
+        invented.assert_context(assignment)
     made = _read_contract(
         run.run_root,
         _stage_primary(checkpoint, "make"),
@@ -2844,15 +4398,19 @@ def _existing_release_for_promotion(
     )
     made.assert_context(assignment, invented, expected_round=checkpoint.round_index)
     blueprint = ToyBlueprint()
-    playtested = _read_contract(
-        run.run_root,
-        _stage_primary(checkpoint, "playtest"),
-        NativePlaytested,
-        label="native Playtested contract",
-    )
-    playtested.assert_context(made, blueprint)
-    if playtested.verdict != "pass":
-        raise StateConflict("public promotion requires a passing Playtest")
+    playtested: Optional[NativePlaytested]
+    if direct_release:
+        playtested = None
+    else:
+        playtested = _read_contract(
+            run.run_root,
+            _stage_primary(checkpoint, "playtest"),
+            NativePlaytested,
+            label="native Playtested contract",
+        )
+        playtested.assert_context(made, blueprint)
+        if playtested.verdict != "pass":
+            raise StateConflict("public promotion requires a passing Playtest")
     release = _read_contract(
         run.run_root,
         _stage_primary(checkpoint, "release"),
@@ -2875,17 +4433,18 @@ def _attempt_release_publication(
     run: AgentRun,
     verified: _VerifiedRelease,
 ) -> tuple[Receipt, bool]:
-    """Create/promote optional Factory state through its durable effect ledger.
+    """Create and publish exact Factory state through its durable effect ledger.
 
-    Local validation happens before this helper.  Any failure here is
-    publication-specific and cannot retroactively invalidate the sealed local
-    Release.  The Factory adapters retain ambiguous outcomes in their ledger
-    and reconcile them before any later send.
+    Local bytes are validated before this helper, but the Release gate remains
+    open until authenticated public readback succeeds. The Factory adapters
+    retain ambiguous outcomes in their ledger and reconcile them before any
+    later send.
     """
 
     try:
         receipt = _read_release_effect(run, verified.release)
         if receipt is not None and receipt.is_verified_public:
+            _assert_required_public_readback(verified.release, receipt)
             _try_record_public_example_projection(
                 run,
                 release=verified.release,
@@ -2895,15 +4454,17 @@ def _attempt_release_publication(
             )
             return receipt, False
         try:
-            credentials = _factory_credentials(verified.inventor_id)
+            credentials = _factory_credentials()
         except ContractError:
             raise _FactoryCredentialsUnavailable(verified.inventor_id) from None
         ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
         if receipt is None:
+            transport_overrides = _factory_transport_overrides()
             writer = FactoryReleaseWriter(
                 ledger,
                 verified.inventor_id,
                 credentials,
+                **transport_overrides,
             )
             receipt = writer(
                 _publication_release_context(run, verified),
@@ -2914,13 +4475,14 @@ def _attempt_release_publication(
         if receipt.is_verified_draft:
             receipt = FactoryPublicTransition(
                 ledger,
-                FactoryAgentSession(credentials),
+                FactoryAgentSession(credentials, **_factory_transport_overrides()),
             ).publish(receipt)
             _write_release_effect(run, verified.release, receipt)
         if not receipt.is_verified_public:
             raise StateConflict(
-                "optional Factory publication lacks verified public readback"
+                "Factory publication lacks verified public readback"
             )
+        _assert_required_public_readback(verified.release, receipt)
         _try_record_public_example_projection(
             run,
             release=verified.release,
@@ -2931,19 +4493,10 @@ def _attempt_release_publication(
         return receipt, True
     except _FactoryCredentialsUnavailable:
         raise
-    except Exception as exc:
-        raise _OptionalPublicationUnavailable() from exc
-
-
-def _promote_existing_release(
-    run: AgentRun, checkpoint: AgentRunCheckpoint
-) -> bool:
-    """Publish one exact local Release without another native-agent turn."""
-
-    verified = _existing_release_for_promotion(run, checkpoint)
-    unused_receipt, changed = _attempt_release_publication(run, verified)
-    del unused_receipt
-    return changed
+    except FactoryCredentialRejected:
+        raise _FactoryCredentialsUnavailable(verified.inventor_id) from None
+    except (AmbiguousEffectError, FactoryAuthenticationError) as exc:
+        raise _RequiredPublicationUnavailable() from exc
 
 
 def _accept_local_release(
@@ -2952,7 +4505,7 @@ def _accept_local_release(
     *,
     context: Mapping[str, Any],
 ) -> _VerifiedRelease:
-    """Validate and seal Release bytes without requiring publication."""
+    """Validate the credential-free bytes before required publication."""
 
     return _verified_release(
         run,
@@ -2965,6 +4518,37 @@ def _accept_local_release(
     )
 
 
+def _verify_release_print_ready_cad(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    made: NativeMade,
+) -> Any:
+    """Re-run the current full CAD gate before any public Release claim."""
+
+    verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
+    if not isinstance(verifier_sha256, str):
+        raise StateConflict("native run lacks its trusted CAD verifier binding")
+    evidence = verify_native_made_cad(
+        made,
+        run_root=run.run_root,
+        host_state_root=run.host_state_root,
+        expected_verifier_sha256=verifier_sha256,
+        evidence_stage="release",
+        require_print_ready=True,
+    )
+    if (
+        not evidence.passed
+        or evidence.verification_tier != NATIVE_CAD_FULL_TIER
+        or not evidence.thickness_gate_required
+        or not evidence.print_ready_eligible
+    ):
+        raise StateConflict(
+            "Release requires full-tier CAD evidence eligible for a "
+            "ready-to-print handoff"
+        )
+    return evidence
+
+
 def _evaluate_release_stage(
     proposal: AgentOutcomeProposal,
     *,
@@ -2972,11 +4556,15 @@ def _evaluate_release_stage(
     checkpoint: AgentRunCheckpoint,
     subject_sha256: str,
     context: Mapping[str, Any],
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
+    terminal_transition = context.get("terminal_transition")
+    if terminal_transition not in ("complete", "deliver"):
+        raise StateConflict("native run lacks its frozen Release transition")
     artifact = _ready_contract_artifact(
         proposal,
         stage="release",
-        transitions=("deliver",),
+        transitions=(terminal_transition,),
         path="artifacts/release/release.json",
     )
     release = _read_contract(
@@ -2995,17 +4583,39 @@ def _evaluate_release_stage(
         )
     release.assert_context(context["made"], context["playtested"])
     verified = _accept_local_release(run, release, context=context)
+    if (
+        release.schema_version not in (2, 3)
+        or release.manual_path != NATIVE_RELEASE_MANUAL_PATH
+    ):
+        raise _LegacyReleaseUpgradeRequired(_LEGACY_RELEASE_UPGRADE_NEED)
+    cad_evidence = _verify_release_print_ready_cad(
+        run, checkpoint, context["made"]
+    )
+    with wish_run_timing_span(
+        timing_observer,
+        product_id=checkpoint.product_id,
+        stage=checkpoint.stage,
+        operation="effect.factory",
+    ):
+        publication, unused_changed = _attempt_release_publication(run, verified)
+    del unused_changed
+    if not publication.is_verified_public:
+        raise StateConflict("Release requires authenticated public readback")
     try:
-        verification = try_materialize_digital_verification(
-            run.run_root,
-            release,
-            context["made"],
-            context["playtested"],
+        verification = (
+            None
+            if context["playtested"] is None
+            else try_materialize_digital_verification(
+                run.run_root,
+                release,
+                context["made"],
+                context["playtested"],
+            )
         )
     except Exception:
         # Public verification is optional enrichment. It must never become a
-        # second Release, Factory, or Deliver gate, including if the helper
-        # itself regresses rather than returning its documented ``None``.
+        # second Release or Factory gate, including if the helper itself
+        # regresses rather than returning its documented ``None``.
         verification = None
     additional = _manifest_agent_artifacts(
         release.package_root, release.package_manifest
@@ -3024,8 +4634,8 @@ def _evaluate_release_stage(
         )
     evidence = StageGateEvidence(
         stage="release",
-        gate_id="release.local-package-v2",
-        validator_version="2.0.0",
+        gate_id="release.public-print-package-v3",
+        validator_version="3.0.0",
         passed=True,
         checkpoint_sha256=checkpoint.checkpoint_sha256,
         subject_sha256=subject_sha256,
@@ -3040,12 +4650,32 @@ def _evaluate_release_stage(
             "product_artifact_sha256": release.product_artifact_sha256,
             "manual_path": release.manual_path,
             "native_release_schema_version": release.schema_version,
+            "playtest_status": (
+                DIRECT_RELEASE_PLAYTEST_STATUS
+                if context["playtested"] is None
+                else "passed"
+            ),
             "package_tree_rehashed": True,
-            "local_release_sealed": True,
+            "cad_receipt_sha256": cad_evidence.receipt_sha256,
+            "cad_verifier_sha256": cad_evidence.verifier_sha256,
+            "cad_verifier_mode": cad_evidence.verifier_mode,
+            "cad_verification_tier": cad_evidence.verification_tier,
+            "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
+            "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
+            "publication_status": "public",
+            "factory_readback_verified": True,
+            "page_url": publication.details.get("page_url"),
+            "manual_url": publication.details.get("manual_url"),
+            "manual_readback_sha256": publication.details.get(
+                "manual_readback_sha256"
+            ),
             **verification_checks,
         },
     )
-    return StageGateDecision(evidence=evidence, transition="deliver"), additional
+    return (
+        StageGateDecision(evidence=evidence, transition=terminal_transition),
+        additional,
+    )
 
 
 def _persist_gate_decision(
@@ -3076,13 +4706,47 @@ def _process_agent_outcome(
     *,
     subject_sha256: str,
     context: Mapping[str, Any],
-    publish_requested: bool,
+    pending_proposal: Optional[AgentOutcomeProposal] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> AgentRunCheckpoint:
-    proposal = read_agent_outcome_proposal(
-        run.run_root,
-        expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
-        expected_subject_sha256=subject_sha256,
-    )
+    with wish_run_timing_span(
+        timing_observer,
+        product_id=checkpoint.product_id,
+        stage=checkpoint.stage,
+        operation="outcome.process",
+    ):
+        return _process_agent_outcome_inner(
+            run,
+            checkpoint,
+            subject_sha256=subject_sha256,
+            context=context,
+            pending_proposal=pending_proposal,
+            timing_observer=timing_observer,
+        )
+
+
+def _process_agent_outcome_inner(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    subject_sha256: str,
+    context: Mapping[str, Any],
+    pending_proposal: Optional[AgentOutcomeProposal],
+    timing_observer: Optional[WishRunTimingObserver],
+) -> AgentRunCheckpoint:
+    if pending_proposal is None:
+        proposal = read_agent_outcome_proposal(
+            run.run_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+            expected_subject_sha256=subject_sha256,
+        )
+    else:
+        proposal = pending_proposal
+        if (
+            proposal.checkpoint_sha256 != checkpoint.checkpoint_sha256
+            or proposal.subject_sha256 != subject_sha256
+        ):
+            raise StateConflict("pending Release proposal belongs to different state")
     run.validate_outcome(proposal.outcome)
     if proposal.outcome.status != "ready":
         updated = run.apply_outcome(proposal.outcome)
@@ -3091,55 +4755,181 @@ def _process_agent_outcome(
 
     additional: tuple[AgentArtifact, ...] = ()
     if checkpoint.stage == "match":
-        decision = evaluate_match_stage(
-            proposal,
-            run_root=run.run_root,
-            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
-            wish_sha256=checkpoint.wish_sha256,
-            roster=context["roster"],
-        )
+        with wish_run_timing_span(
+            timing_observer,
+            product_id=checkpoint.product_id,
+            stage=checkpoint.stage,
+            operation="gate.evaluate",
+        ):
+            decision = evaluate_match_stage(
+                proposal,
+                run_root=run.run_root,
+                expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+                wish_sha256=checkpoint.wish_sha256,
+                roster=context["roster"],
+            )
     elif checkpoint.stage == "invent":
-        decision = evaluate_invent_stage(
-            proposal,
-            run_root=run.run_root,
-            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
-            assignment=context["assignment"],
-            vault=context.get("design_vault"),
-        )
+        with wish_run_timing_span(
+            timing_observer,
+            product_id=checkpoint.product_id,
+            stage=checkpoint.stage,
+            operation="gate.evaluate",
+        ):
+            if context.get("routed_invent") is True:
+                decision = evaluate_routed_invent_stage(
+                    proposal,
+                    run_root=run.run_root,
+                    expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+                    expected_subject_sha256=subject_sha256,
+                    wish_sha256=checkpoint.wish_sha256,
+                    roster=context["roster"],
+                    assignment_artifact_path=context[
+                        "assignment_contract_path"
+                    ],
+                    invented_artifact_path=context["invent_contract_path"],
+                    vault=context.get("design_vault"),
+                )
+            else:
+                decision = evaluate_invent_stage(
+                    proposal,
+                    run_root=run.run_root,
+                    expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+                    expected_subject_sha256=subject_sha256,
+                    expected_artifact_path=context["invent_contract_path"],
+                    assignment=context["assignment"],
+                    vault=context.get("design_vault"),
+                )
     elif checkpoint.stage == "make":
         try:
-            decision, additional = _evaluate_make_stage(
-                proposal,
-                run=run,
-                checkpoint=checkpoint,
-                subject_sha256=subject_sha256,
-                context=context,
-            )
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="gate.evaluate",
+            ):
+                decision, additional = _evaluate_make_stage(
+                    proposal,
+                    run=run,
+                    checkpoint=checkpoint,
+                    subject_sha256=subject_sha256,
+                    context=context,
+                )
         except NativeCadGateError as rejection:
             _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
             _remove_agent_outcome(run.run_root)
             return checkpoint
+        except _MakeProposalRejected as rejection:
+            persisted = _persist_make_proposal_rejection(
+                run, checkpoint, proposal, rejection
+            )
+            _remove_rejected_agent_outcome(run, persisted)
+            return checkpoint
     elif checkpoint.stage == "playtest":
         try:
-            decision, additional = _evaluate_playtest_stage(
-                proposal,
-                run=run,
-                checkpoint=checkpoint,
-                subject_sha256=subject_sha256,
-                context=context,
-            )
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="gate.evaluate",
+            ):
+                decision, additional = _evaluate_playtest_stage(
+                    proposal,
+                    run=run,
+                    checkpoint=checkpoint,
+                    subject_sha256=subject_sha256,
+                    context=context,
+                )
         except NativeCadGateError as rejection:
             _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
             _remove_agent_outcome(run.run_root)
             return checkpoint
     elif checkpoint.stage == "release":
-        decision, additional = _evaluate_release_stage(
-            proposal,
-            run=run,
-            checkpoint=checkpoint,
-            subject_sha256=subject_sha256,
-            context=context,
-        )
+        try:
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="gate.evaluate",
+            ):
+                decision, additional = _evaluate_release_stage(
+                    proposal,
+                    run=run,
+                    checkpoint=checkpoint,
+                    subject_sha256=subject_sha256,
+                    context=context,
+                    timing_observer=timing_observer,
+                )
+        except _LegacyReleaseUpgradeRequired:
+            failed = AgentOutcome(
+                stage="release",
+                status="failed",
+                artifacts=proposal.outcome.artifacts,
+                needs=(_LEGACY_RELEASE_UPGRADE_NEED,),
+            )
+            updated = run.apply_outcome(failed)
+            _remove_agent_outcome(run.run_root)
+            return updated
+        except NativeCadGateError as rejection:
+            # Playtest normally prevents a non-print-ready revision from ever
+            # entering Release. A fresh Release replay can still uncover a
+            # transient timeout. Persist every exact rejection and discard the
+            # finalized proposal. Only a timeout may retry unchanged Release
+            # bytes; deterministic failures cannot be repaired in Release and
+            # therefore fail closed instead of consuming the native turn
+            # budget in a replay loop.
+            _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
+            _remove_agent_outcome(run.run_root)
+            if rejection.failure_code != "verifier-timeout":
+                return run.apply_outcome(
+                    AgentOutcome(
+                        stage="release",
+                        status="failed",
+                        artifacts=proposal.outcome.artifacts,
+                        needs=(
+                            "Release's final CAD guard rejected the sealed Make "
+                            "revision (%s); start a repaired Make revision in a "
+                            "new run rather than weakening or editing Release."
+                            % rejection.failure_code,
+                        ),
+                    )
+                )
+            return checkpoint
+        except _FactoryCredentialsUnavailable as unavailable:
+            need = _FACTORY_CREDENTIALS_NEED
+            waiting = AgentOutcome(
+                stage="release",
+                status="waiting",
+                artifacts=proposal.outcome.artifacts,
+                needs=(need,),
+            )
+            updated = run.apply_outcome(waiting)
+            _remove_agent_outcome(run.run_root)
+            _write_release_effect_wait(
+                run,
+                updated,
+                proposal=proposal,
+                inventor_id=unavailable.inventor_id,
+                need=need,
+            )
+            return updated
+        except _RequiredPublicationUnavailable:
+            need = _FACTORY_PUBLICATION_NEED
+            waiting = AgentOutcome(
+                stage="release",
+                status="waiting",
+                artifacts=proposal.outcome.artifacts,
+                needs=(need,),
+            )
+            updated = run.apply_outcome(waiting)
+            _remove_agent_outcome(run.run_root)
+            _write_release_effect_wait(
+                run,
+                updated,
+                proposal=proposal,
+                inventor_id=context["assignment"].selected_inventor_id,
+                need=need,
+            )
+            return updated
     else:  # pragma: no cover - guarded by packet preparation
         raise TransitionError("native stage cannot consume an agent proposal")
 
@@ -3153,32 +4943,12 @@ def _process_agent_outcome(
     _remove_agent_outcome(run.run_root)
     if checkpoint.stage == "playtest":
         _record_playtest_evidence(checkpoint, context)
-    if checkpoint.stage == "release" and publish_requested:
-        # Release is already durably accepted and bound to Deliver before any
-        # optional credential-bearing call begins. A missing credential or an
-        # unavailable/ambiguous publication can change only publication
-        # status; the Factory adapter's ledger owns safe reconciliation.
-        try:
-            _promote_existing_release(run, updated)
-        except (_FactoryCredentialsUnavailable, _OptionalPublicationUnavailable):
-            pass
+    if checkpoint.stage == "release" and updated.stage == "deliver":
+        # A frozen historical finalizer proposed ``deliver``. Publication has
+        # already passed the new Release gate, so migrate without creating or
+        # claiming a physical effect.
+        updated = run.complete_legacy_release()
     return updated
-
-
-def _wait_at_deliver(run: AgentRun) -> AgentRunCheckpoint:
-    checkpoint = run.snapshot()
-    if checkpoint.stage != "deliver" or checkpoint.status != "active":
-        raise TransitionError("Deliver wait requires an active Deliver checkpoint")
-    return run.apply_outcome(
-        AgentOutcome(
-            stage="deliver",
-            status="waiting",
-            needs=(
-                "Manufacturing and shipping were not authorized; the verified "
-                "product and Release remain ready for a later Deliver effect.",
-            ),
-        )
-    )
 
 
 def _rebind_existing_progress(
@@ -3196,27 +4966,42 @@ def _run_native_session(
     run: AgentRun,
     paths: NativeRunPaths,
     *,
-    launcher: CodexNativeSessionLauncher,
-    publish_requested: bool,
+    launcher: NativeSessionLauncher,
     activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
     """Advance through native stages until complete, wait, or failure."""
 
     last_session: Optional[CodexNativeSessionOutcome] = None
     turns = 0
-    first_method = "resume" if _session_status(paths) == "checkpointed" else "start"
+    first_method = (
+        "resume"
+        if _session_status(paths, run.snapshot().manager_id) == "checkpointed"
+        else "start"
+    )
     action = "resumed" if first_method == "resume" else "started"
     while turns < _MAX_NATIVE_TURNS:
         checkpoint = run.snapshot()
         if checkpoint.status in ("waiting", "failed", "complete"):
             return checkpoint, last_session, turns, action
         if checkpoint.stage == "deliver":
-            updated = _wait_at_deliver(run)
-            _rebind_existing_progress(
-                paths, checkpoint, updated, activity="completed"
+            raise TransitionError(
+                "legacy Deliver checkpoint must be reconciled before native work"
             )
-            return updated, last_session, turns, action
-        subject, unused_packet, context = _prepare_stage_input(run, checkpoint)
+        if checkpoint.stage == "make":
+            # A crash may land after the private rejection head is durable but
+            # before its exact unaccepted workspace marker is removed. Reap
+            # only that byte-identical marker before deriving the new subject.
+            _reconcile_rejected_agent_outcome(run, checkpoint)
+        with wish_run_timing_span(
+            timing_observer,
+            product_id=checkpoint.product_id,
+            stage=checkpoint.stage,
+            operation="stage.prepare",
+        ):
+            subject, unused_packet, context = _prepare_stage_input(
+                run, checkpoint
+            )
         del unused_packet
 
         if _agent_outcome_exists(run.run_root):
@@ -3228,11 +5013,8 @@ def _run_native_session(
                     checkpoint,
                     subject_sha256=subject,
                     context=context,
-                    publish_requested=publish_requested,
+                    timing_observer=timing_observer,
                 )
-            except StateConflict:
-                recovered_progress.observe("failed")
-                _remove_agent_outcome(run.run_root)
             except WorkshopError:
                 recovered_progress.observe("failed")
                 raise
@@ -3245,7 +5027,11 @@ def _run_native_session(
                 continue
 
         _remove_agent_outcome(run.run_root)
-        method = "resume" if _session_status(paths) == "checkpointed" else "start"
+        method = (
+            "resume"
+            if _session_status(paths, checkpoint.manager_id) == "checkpointed"
+            else "start"
+        )
         progress = _NativeProgressTracker.begin(paths, checkpoint)
         turn_activity_observer = _combined_activity_observer(
             progress,
@@ -3253,13 +5039,19 @@ def _run_native_session(
         )
         launcher_failure: Optional[WorkshopError] = None
         try:
-            last_session = _launcher_call(
-                launcher,
-                method,
-                checkpoint=checkpoint,
-                paths=paths,
-                activity_observer=turn_activity_observer,
-            )
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="session.%s" % method,
+            ):
+                last_session = _launcher_call(
+                    launcher,
+                    method,
+                    checkpoint=checkpoint,
+                    paths=paths,
+                    activity_observer=turn_activity_observer,
+                )
         except WorkshopError as exc:
             # The finalizer is an exact filesystem protocol, independent of the
             # Codex event-stream terminal signal.  A provider timeout or a
@@ -3282,7 +5074,7 @@ def _run_native_session(
                 # one mutation lock, and the normal turn budget remain in
                 # force.  An interruption before thread binding fails closed
                 # rather than creating a second root session automatically.
-                if _session_status(paths) == "checkpointed":
+                if _session_status(paths, checkpoint.manager_id) == "checkpointed":
                     if turns < _MAX_NATIVE_TURNS:
                         time.sleep(
                             _recoverable_native_turn_backoff_seconds(
@@ -3294,7 +5086,8 @@ def _run_native_session(
             if launcher_failure is not None:
                 raise launcher_failure
             raise WorkshopError(
-                "native Codex session returned without agent-outcome.json"
+                "native %s session returned without agent-outcome.json"
+                % manager_spec(checkpoint.manager_id).display_name
             )
         try:
             updated = _process_agent_outcome(
@@ -3302,7 +5095,7 @@ def _run_native_session(
                 checkpoint,
                 subject_sha256=subject,
                 context=context,
-                publish_requested=publish_requested,
+                timing_observer=timing_observer,
             )
         except WorkshopError:
             progress.observe("failed")
@@ -3310,23 +5103,31 @@ def _run_native_session(
         progress.rebind(updated, activity="completed")
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action
-    raise WorkshopError("native product run exhausted its bounded Codex turn budget")
+    raise WorkshopError("native product run exhausted its bounded native-turn budget")
 
 
-def _session_status(paths: NativeRunPaths) -> str:
-    checkpoint = paths.host_state / _SESSION_CHECKPOINT_NAME
+def _session_status(
+    paths: NativeRunPaths,
+    manager_id: str = DEFAULT_MANAGER_ID,
+) -> str:
+    runtime = manager_spec(manager_id)
+    checkpoint = paths.host_state / runtime.session_checkpoint_name
     if not checkpoint.exists() and not checkpoint.is_symlink():
         return "not-started"
     try:
         identity = checkpoint.lstat()
     except OSError as exc:
-        raise StateConflict("native Codex session checkpoint is unavailable") from exc
+        raise StateConflict(
+            "native %s session checkpoint is unavailable" % runtime.display_name
+        ) from exc
     if (
         checkpoint.is_symlink()
         or not stat.S_ISREG(identity.st_mode)
         or stat.S_IMODE(identity.st_mode) != 0o600
     ):
-        raise StateConflict("native Codex session checkpoint is not a private file")
+        raise StateConflict(
+            "native %s session checkpoint is not a private file" % runtime.display_name
+        )
     return "checkpointed"
 
 
@@ -3398,7 +5199,6 @@ def _native_receipt(
     paths: Optional[NativeRunPaths] = None,
     session: Optional[CodexNativeSessionOutcome] = None,
     action: str,
-    publish_requested: bool = False,
     turns: int = 0,
 ) -> dict[str, Any]:
     progress, durable_turns = _native_progress_receipt(
@@ -3406,10 +5206,11 @@ def _native_receipt(
     )
     publication: dict[str, Any] = {
         "status": "not-created",
-        "requested": bool(publish_requested),
+        "requested": True,
+        "required": True,
         "reason": (
-            "Factory credentials and authenticated effects remain outside the "
-            "native product-run session."
+            "Release is incomplete until Factory publication has authenticated "
+            "public readback. Credentials remain outside the native session."
         ),
     }
     needs: list[str] = []
@@ -3425,7 +5226,21 @@ def _native_receipt(
                     needs.append(effect_wait["need"])
                 publication["reason"] = effect_wait["need"]
         effect = paths.host_state / "release-effect.json"
-        if effect.exists() or effect.is_symlink():
+        if (
+            (effect.exists() or effect.is_symlink())
+            and checkpoint.stage == "release"
+            and checkpoint.status == "waiting"
+        ):
+            # The locally valid proposal has not passed its Release gate yet,
+            # so its release artifact is intentionally not an accepted stage
+            # binding. The durable Factory ledger will reconcile on resume.
+            publication.update(
+                {
+                    "status": "unknown",
+                    "verified": False,
+                }
+            )
+        elif effect.exists() or effect.is_symlink():
             effect_run = AgentRun.open(
                 paths.workspace, host_state_root=paths.host_state
             )
@@ -3440,11 +5255,12 @@ def _native_receipt(
             except WorkshopError:
                 publication = {
                     "status": "unavailable",
-                    "requested": bool(publish_requested),
+                    "requested": True,
+                    "required": True,
                     "verified": False,
                     "reason": (
-                        "Optional Factory state could not be verified; the "
-                        "sealed local Release remains valid."
+                        "Required Factory publication state could not be verified; "
+                        "Release remains incomplete."
                     ),
                 }
             else:
@@ -3454,7 +5270,8 @@ def _native_receipt(
                     "status": (
                         "public" if receipt.is_verified_public else "draft"
                     ),
-                    "requested": bool(publish_requested),
+                    "requested": True,
+                    "required": True,
                     "page_url": receipt.details.get("page_url"),
                     "manual_url": receipt.details.get("manual_url"),
                     "cover_url": receipt.details.get("cover_url"),
@@ -3474,19 +5291,20 @@ def _native_receipt(
                     except WorkshopError:
                         publication = {
                             "status": "unavailable",
-                            "requested": bool(publish_requested),
+                            "requested": True,
+                            "required": True,
                             "verified": False,
                             "reason": (
-                                "Optional Factory publication state could not "
-                                "be verified; the sealed local Release remains "
-                                "valid."
+                                "Required Factory publication state could not "
+                                "be verified; Release remains incomplete."
                             ),
                         }
                     else:
                         if publish_state in ("sending", "unknown"):
                             publication = {
                                 "status": "unknown",
-                                "requested": bool(publish_requested),
+                                "requested": True,
+                                "required": True,
                                 "verified": False,
                                 "reason": (
                                     "Factory publication requires authenticated "
@@ -3503,7 +5321,8 @@ def _native_receipt(
                 # "not-created" or imply that a retry is safe.
                 publication = {
                     "status": "unknown",
-                    "requested": bool(publish_requested),
+                    "requested": True,
+                    "required": True,
                     "verified": False,
                     "reason": (
                         "Factory effect state requires authenticated "
@@ -3511,8 +5330,7 @@ def _native_receipt(
                     ),
                 }
             elif (
-                publish_requested
-                and checkpoint.stage == "deliver"
+                checkpoint.stage == "deliver"
                 and checkpoint.status in ("active", "waiting", "complete")
             ):
                 # Credential discovery is a local, read-only host operation.
@@ -3524,24 +5342,33 @@ def _native_receipt(
                 )
                 verified = _existing_release_for_promotion(effect_run, checkpoint)
                 try:
-                    _factory_credentials(verified.inventor_id)
+                    _factory_credentials()
                 except ContractError:
                     publication["reason"] = _FACTORY_CREDENTIALS_NEED
                     if _FACTORY_CREDENTIALS_NEED not in needs:
                         needs.append(_FACTORY_CREDENTIALS_NEED)
                 else:
                     publication["reason"] = (
-                        "Publication was requested but no verified Factory "
-                        "receipt exists; resume this run to reconcile or retry "
-                        "the optional publication effect."
+                        "No verified public Factory receipt exists; resume this "
+                        "run to reconcile or retry required publication."
                     )
+    visible_stage = "release" if checkpoint.stage == "deliver" else checkpoint.stage
+    visible_status = checkpoint.status
+    if checkpoint.stage == "deliver":
+        # Historical Deliver checkpoints stay readable, but neither a public
+        # page nor an old fulfillment status proves today's PDF + print-ready
+        # terminal Release contract. An eligible run is migrated explicitly
+        # during resume; until then it is never reported as complete.
+        visible_status = "waiting"
+        if _LEGACY_RELEASE_UPGRADE_NEED not in needs:
+            needs.append(_LEGACY_RELEASE_UPGRADE_NEED)
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",
         "rounds": rounds,
         "product_id": checkpoint.product_id,
-        "status": checkpoint.status,
-        "stage": checkpoint.stage,
+        "status": visible_status,
+        "stage": visible_stage,
         "revision": checkpoint.revision,
         "round": checkpoint.round_index,
         "max_rounds": checkpoint.max_rounds,
@@ -3556,6 +5383,9 @@ def _native_receipt(
         "progress": progress,
         "publication": publication,
     }
+    if checkpoint.effort is not None:
+        receipt["effort"] = checkpoint.effort
+    receipt["manager"] = checkpoint.manager_id
     if needs:
         receipt["needs"] = list(needs)
     if session is not None:
@@ -3566,63 +5396,90 @@ def _native_receipt(
 def start_native_run(
     wish: Wish,
     *,
-    publish_requested: bool = False,
+    effort: Optional[str] = None,
+    manager_id: Optional[str] = None,
+    publish_requested: Optional[bool] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Persist one Wish and immediately start its whole-run native session.
 
-    ``activity_observer`` receives only content-free native activity classes.
-    It is optional presentation telemetry and cannot change the run result.
+    ``effort`` freezes one selectable route for a new run. ``None`` retains the
+    schema-v3 lifecycle only for source-compatible programmatic callers; the
+    public CLI always passes its named default.
+
+    ``manager_id`` freezes the native Manager runtime. ``None`` selects Codex.
+
+    ``publish_requested`` is a source-compatibility shim for callers of the
+    former optional-publication API. Release publication is now mandatory, so
+    either legacy boolean has the same terminal behavior and the CLI no longer
+    exposes the choice.
+
+    Both observers receive only bounded, content-free progress. They are
+    optional presentation telemetry and cannot change the run result.
     """
 
+    selected_effort = workshop_effort(effort) if effort is not None else None
+    selected_manager = manager_spec(
+        DEFAULT_MANAGER_ID if manager_id is None else manager_id
+    )
+    if publish_requested is not None and type(publish_requested) is not bool:
+        raise ContractError("legacy publication option must be boolean")
+
     activity_observer = _validated_activity_observer(activity_observer)
-    assets = product_run_agent_assets()
-    wish_bytes = canonical_wish_bytes(wish)
-    domain_skill_roots = dict(product_run_domain_skill_roots())
-    inventor_source_root = _product_run_inventor_source_root(assets)
-    paths = native_run_paths(wish.product_id, create=True)
-    try:
-        with tempfile.TemporaryDirectory(prefix="workshop-design-vault-") as staging:
-            domain_skill_roots[RUN_VAULT_SKILL] = _stage_design_vault_skill(
-                Path(staging), domain_skill_roots[RUN_VAULT_SKILL]
-            )
-            run = AgentRun.create(
-                paths.workspace,
-                paths.host_state,
-                product_id=wish.product_id,
-                wish_bytes=wish_bytes,
-                product_run_constitution_source=assets.constitution,
-                skill_root=assets.skill_root,
-                domain_skill_roots=domain_skill_roots,
-                inventor_source_root=inventor_source_root,
-                max_rounds=4,
-            )
-    except Exception:
-        # Asset validation normally happens before reserving the run container.
-        # AgentRun also validates all materialized inputs before creating its
-        # workspace.  If either boundary still fails early, release only this
-        # exact empty reservation so the same Wish id can be retried.  A
-        # partial workspace or host state is deliberately preserved.
+    timing_observer = _validated_timing_observer(timing_observer)
+    with wish_run_timing_span(
+        timing_observer,
+        product_id=wish.product_id,
+        stage="wish",
+        operation="run.initialize",
+    ):
+        assets = product_run_agent_assets()
+        wish_bytes = canonical_wish_bytes(wish)
+        domain_skill_roots = dict(product_run_domain_skill_roots())
+        inventor_source_root = _product_run_inventor_source_root(assets)
+        paths = native_run_paths(wish.product_id, create=True)
         try:
-            paths.workspace.parent.rmdir()
-        except OSError:
-            pass
-        raise
+            with tempfile.TemporaryDirectory(prefix="workshop-design-vault-") as staging:
+                domain_skill_roots[RUN_VAULT_SKILL] = _stage_design_vault_skill(
+                    Path(staging), domain_skill_roots[RUN_VAULT_SKILL]
+                )
+                run = AgentRun.create(
+                    paths.workspace,
+                    paths.host_state,
+                    product_id=wish.product_id,
+                    wish_bytes=wish_bytes,
+                    product_run_constitution_source=assets.constitution,
+                    skill_root=assets.skill_root,
+                    domain_skill_roots=domain_skill_roots,
+                    inventor_source_root=inventor_source_root,
+                    max_rounds=4,
+                    effort=(selected_effort.name if selected_effort is not None else None),
+                    manager_id=selected_manager.manager_id,
+                )
+        except Exception:
+            # If setup fails early, release only this exact empty reservation.
+            # A partial workspace or host state is deliberately preserved.
+            try:
+                paths.workspace.parent.rmdir()
+            except OSError:
+                pass
+            raise
     with _native_run_mutation_lock(paths):
         _record_authorization(
             paths,
             product_id=wish.product_id,
-            publish_requested=publish_requested,
+            publish_requested=True,
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
-        launcher = CodexNativeSessionLauncher()
+        launcher = _native_launcher(checkpoint.manager_id)
         checkpoint, session, turns, action = _run_native_session(
             run,
             paths,
             launcher=launcher,
-            publish_requested=publish_requested,
             activity_observer=activity_observer,
+            timing_observer=timing_observer,
         )
         return {
             **_native_receipt(
@@ -3630,7 +5487,6 @@ def start_native_run(
                 paths=paths,
                 session=session,
                 action=action,
-                publish_requested=publish_requested,
                 turns=turns,
             ),
             "wish": wish.to_dict(),
@@ -3643,28 +5499,54 @@ def _resume_native_run_locked(
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
-    publish_requested: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Mutate one native run while its process lock is held."""
 
-    authorization = _record_authorization(
+    _record_authorization(
         paths,
         product_id=product_id,
-        publish_requested=publish_requested,
+        publish_requested=True,
         create=False,
     )
     promotion_action: Optional[str] = None
     if (
-        authorization["publish_requested"]
-        and checkpoint.stage == "deliver"
+        checkpoint.stage == "deliver"
         and checkpoint.status in ("active", "waiting", "complete")
     ):
+        verified = _existing_release_for_promotion(run, checkpoint)
+        if (
+            verified.release.schema_version not in (2, 3)
+            or verified.release.manual_path != NATIVE_RELEASE_MANUAL_PATH
+        ):
+            return _native_receipt(
+                checkpoint,
+                paths=paths,
+                action="legacy-release-needs-upgrade",
+            )
         try:
-            promoted = _promote_existing_release(run, checkpoint)
+            _verify_release_print_ready_cad(run, checkpoint, verified.made)
+        except NativeCadGateError:
+            return _native_receipt(
+                checkpoint,
+                paths=paths,
+                action="legacy-release-cad-rejected",
+            )
+        try:
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="effect.factory",
+            ):
+                unused_receipt, promoted = _attempt_release_publication(
+                    run, verified
+                )
+                del unused_receipt
         except _FactoryCredentialsUnavailable:
             promotion_action = "publication-not-created"
-        except _OptionalPublicationUnavailable:
+        except _RequiredPublicationUnavailable:
             promotion_action = "publication-unverified"
         else:
             promotion_action = (
@@ -3672,20 +5554,72 @@ def _resume_native_run_locked(
                 if promoted
                 else "publication-already-public"
             )
-        if checkpoint.status in ("waiting", "complete"):
+            checkpoint = run.complete_legacy_release()
+        if checkpoint.stage == "release" or promotion_action is not None:
             return _native_receipt(
                 checkpoint,
                 paths=paths,
                 action=promotion_action,
-                publish_requested=True,
             )
     if checkpoint.status == "waiting":
         waiting_checkpoint = checkpoint
         effect_wait = _read_release_effect_wait(run, checkpoint)
+        if effect_wait is not None and effect_wait["schema_version"] == 2:
+            pending_outcome = AgentOutcome.from_mapping(effect_wait["outcome"])
+            checkpoint = run.resume()
+            _rebind_existing_progress(paths, waiting_checkpoint, checkpoint)
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="stage.prepare",
+            ):
+                subject, unused_packet, context = _prepare_stage_input(
+                    run, checkpoint
+                )
+            del unused_packet
+            if subject != effect_wait["proposal_subject_sha256"]:
+                raise StateConflict(
+                    "pending Release proposal subject changed while waiting"
+                )
+            proposal = AgentOutcomeProposal(
+                checkpoint_sha256=checkpoint.checkpoint_sha256,
+                subject_sha256=subject,
+                outcome=pending_outcome,
+            )
+            _remove_release_effect_wait(run)
+            updated = _process_agent_outcome(
+                run,
+                checkpoint,
+                subject_sha256=subject,
+                context=context,
+                pending_proposal=proposal,
+                timing_observer=timing_observer,
+            )
+            _rebind_existing_progress(
+                paths, checkpoint, updated, activity="completed"
+            )
+            if updated.status == "waiting":
+                renewed_wait = _read_release_effect_wait(run, updated)
+                action = (
+                    "publication-not-created"
+                    if renewed_wait is not None
+                    and renewed_wait["need"] == _FACTORY_CREDENTIALS_NEED
+                    else "publication-unverified"
+                )
+            elif updated.status == "complete":
+                action = "published-release"
+            else:
+                action = "release-cad-rejected"
+            return _native_receipt(
+                updated,
+                paths=paths,
+                action=action,
+            )
         if effect_wait is not None:
-            # Compatibility for legacy runs that waited at Release solely for
-            # credentials. Resume the local stage once; the new gate accepts
-            # its exact package independently of any optional publication.
+            # A schema-v1 wait did not retain the exact ready outcome. Resume
+            # it through one native turn for backward compatibility; all new
+            # waits replay host-side without depending on agent availability.
             _remove_release_effect_wait(run)
         checkpoint = run.resume()
         _rebind_existing_progress(paths, waiting_checkpoint, checkpoint)
@@ -3694,15 +5628,14 @@ def _resume_native_run_locked(
             checkpoint,
             paths=paths,
             action="inspected-terminal",
-            publish_requested=authorization["publish_requested"],
         )
-    launcher = CodexNativeSessionLauncher()
+    launcher = _native_launcher(checkpoint.manager_id)
     checkpoint, session, turns, action = _run_native_session(
         run,
         paths,
         launcher=launcher,
-        publish_requested=authorization["publish_requested"],
         activity_observer=activity_observer,
+        timing_observer=timing_observer,
     )
     if action == "started":
         action = "started-after-interruption"
@@ -3713,7 +5646,6 @@ def _resume_native_run_locked(
         paths=paths,
         session=session,
         action=action,
-        publish_requested=authorization["publish_requested"],
         turns=turns,
     )
 
@@ -3721,16 +5653,24 @@ def _resume_native_run_locked(
 def resume_native_run(
     product_id: str,
     *,
-    publish_requested: bool = False,
+    publish_requested: Optional[bool] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Resume one exact native session under an exclusive host mutation lock.
 
-    ``activity_observer`` receives only content-free native activity classes.
-    It is optional presentation telemetry and cannot change the run result.
+    The ignored keyword preserves source compatibility with the former
+    optional-publication API; every resumed Release now requires publication.
+
+    Both observers receive only bounded, content-free progress. They are
+    optional presentation telemetry and cannot change the run result.
     """
 
+    if publish_requested is not None and type(publish_requested) is not bool:
+        raise ContractError("legacy publication option must be boolean")
+
     activity_observer = _validated_activity_observer(activity_observer)
+    timing_observer = _validated_timing_observer(timing_observer)
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
         run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
@@ -3740,8 +5680,8 @@ def resume_native_run(
             run=run,
             checkpoint=checkpoint,
             paths=paths,
-            publish_requested=publish_requested,
             activity_observer=activity_observer,
+            timing_observer=timing_observer,
         )
 
 
@@ -3751,7 +5691,7 @@ def native_run_status(product_id: str) -> Mapping[str, Any]:
     run, checkpoint = _open_native_run(product_id)
     del run
     paths = native_run_paths(product_id)
-    authorization = _record_authorization(
+    _record_authorization(
         paths,
         product_id=product_id,
         publish_requested=False,
@@ -3762,9 +5702,8 @@ def native_run_status(product_id: str) -> Mapping[str, Any]:
             checkpoint,
             paths=paths,
             action="inspected",
-            publish_requested=authorization["publish_requested"],
         ),
-        "session_status": _session_status(paths),
+        "session_status": _session_status(paths, checkpoint.manager_id),
     }
 
 

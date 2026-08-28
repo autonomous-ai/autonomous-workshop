@@ -406,6 +406,24 @@ class NativePlaytested:
         payload["playtested_sha256"] = self.playtested_sha256
         return payload
 
+    @property
+    def feedback_sha256(self) -> str:
+        """Bind the exact canonical feedback bytes independently for re-Invent."""
+
+        return hashlib.sha256(
+            _canonical_json([item.to_dict() for item in self.feedback])
+        ).hexdigest()
+
+    @property
+    def proposed_transition(self) -> str:
+        """Derive routing only from verdict and explicit authored invalidations."""
+
+        if self.verdict == "pass":
+            return "release"
+        if any(item.requests_concept_revision for item in self.feedback):
+            return "invent"
+        return "make"
+
     @classmethod
     def from_mapping(cls, value: Any) -> "NativePlaytested":
         expected = {

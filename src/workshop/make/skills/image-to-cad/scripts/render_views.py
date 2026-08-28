@@ -119,6 +119,11 @@ DEFAULT_TOLERANCE = 0.1
 DEFAULT_PAD = 0.04
 SEARCH_SIZE = 240
 STALE_MIN_IOU = 0.999
+# Two references that the search hands the SAME camera must look the same. When
+# they do not, the reference mask is lying and every IoU in the run is about the
+# mask rather than the shape -- see `mask_contradictions`.
+SAME_CAMERA_DEG = 20.0
+DIFFERENT_SILHOUETTE_IOU = 0.85
 
 # Z-up, right-handed. Azimuth is measured from +X toward +Y; elevation from the
 # XY plane. "front" looks from -Y, which puts +X to the right and +Z up -- the
@@ -596,6 +601,7 @@ def main(argv: list[str] | None = None) -> int:
         print(exc, file=sys.stderr)
         return 2
     pairs: list[tuple[str, Path]] = []
+    matched: list[dict] = []
     for i, (ref_path, reference) in enumerate(zip(matches, prepared_references)):
         label = labels[i] if i < len(labels) else ref_path.stem
         # --poses-from turns a match into a REPLAY: same camera, so the IoU
@@ -627,6 +633,14 @@ def main(argv: list[str] | None = None) -> int:
                         "iou": final["iou"], "aspect_delta": final["aspect_delta"],
                         "poses_tried": best["poses_tried"], "ok": ok, **pose})
         pairs.append((label, ref_path))
+        matched.append({"label": label, "az": pose["az"], "el": pose["el"],
+                        "mask": reference})
+
+    # Two references handed the same camera must look alike. When they do not,
+    # the reference mask is what the search fitted, and every IoU above is
+    # about the mask rather than the shape.
+    suspect = mask_contradictions(matched)
+    failed = failed or bool(suspect)
 
     # any stored pose no --view or --match claimed is replayed as a plain view
     for label, pose in stored.items():
@@ -657,7 +671,8 @@ def main(argv: list[str] | None = None) -> int:
             drift.append(entry)
 
     payload = {"source": str(source), "out": str(out_dir), "poses": poses,
-               "views": results, "step_drift": drift, "ok": not failed,
+               "views": results, "step_drift": drift,
+               "mask_contradictions": suspect, "ok": not failed,
                "tolerance": args.tolerance, "size": args.size}
     if poses:
         (out_dir / "poses.json").write_text(json.dumps(
@@ -678,6 +693,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{r['label']:<14}{r['iou']:>7.3f} {flag} {pose}  {how}")
         else:
             print(f"{r['label']:<14}{'':>9}{pose}")
+    if suspect:
+        print()
+        print("MASK SUSPECT -- these references were handed the same camera but "
+              "do not look alike:", file=sys.stderr)
+        for c in suspect:
+            print(f"  {c['a']} and {c['b']}: cameras agree to "
+                  f"{c['camera_delta_deg']} deg, yet their own silhouettes score "
+                  f"IoU {c['reference_iou']}", file=sys.stderr)
+        print("  The search is fitting the reference MASK, not the shape. Every "
+              "IoU above is about the mask.", file=sys.stderr)
+        print("  Fix the references first:", file=sys.stderr)
+        print("      ref_silhouette.py <project>/ref/*.png", file=sys.stderr)
+
     if drift:
         print()
         for d in drift:
@@ -701,6 +729,39 @@ def main(argv: list[str] | None = None) -> int:
 
 # --------------------------------------------------------------------------
 # fixtures
+
+
+def mask_contradictions(matched: list[dict]) -> list[dict]:
+    """References given the same camera whose own silhouettes disagree.
+
+    This is the cheapest tell that the reference MASK, not the model, is what
+    the gate is measuring. `--match` searches for the camera that maximises
+    IoU; when the mask has punched holes in several references, the search
+    fits the holes and lands on nearly the same pose for viewpoints that are
+    plainly different. That happened on a real project and cost an hour of
+    sweeping shape parameters that were never wrong: three references recovered
+    az -71, -75 and -77 degrees, and after the masks were fixed the same search
+    returned -86, -73 and -118.
+
+    A pair is a contradiction when the cameras agree to `SAME_CAMERA_DEG` but
+    the two reference silhouettes are further apart than
+    `DIFFERENT_SILHOUETTE_IOU`. Genuinely similar viewpoints share a camera AND
+    a silhouette, so they do not fire.
+    """
+    out = []
+    for i, a in enumerate(matched):
+        for b in matched[i + 1:]:
+            if (abs(a["az"] - b["az"]) > SAME_CAMERA_DEG
+                    or abs(a["el"] - b["el"]) > SAME_CAMERA_DEG):
+                continue
+            iou = compare(a["mask"], b["mask"])["iou"]
+            if iou < DIFFERENT_SILHOUETTE_IOU:
+                out.append({"a": a["label"], "b": b["label"],
+                            "camera_delta_deg": round(
+                                max(abs(a["az"] - b["az"]),
+                                    abs(a["el"] - b["el"])), 2),
+                            "reference_iou": round(iou, 4)})
+    return out
 
 
 def self_check() -> int:
@@ -853,6 +914,27 @@ def self_check() -> int:
           and (a["az"], a["el"], a["fov"]) == (b["az"], b["el"], b["fov"]),
           f"searched {a['iou']:.6f} over {a['poses_tried']} poses, "
           f"replayed {b['iou']:.6f} over {b['poses_tried']}")
+
+    # The mask-contradiction detector. It must fire when two references share a
+    # camera but not a silhouette, and stay silent when they share both --
+    # otherwise it either cries wolf on genuinely similar viewpoints or misses
+    # the one tell that the reference mask is lying.
+    tall = np.zeros((60, 60), bool); tall[5:55, 24:36] = True
+    wide = np.zeros((60, 60), bool); wide[24:36, 5:55] = True
+    same = tall.copy()
+    fires = mask_contradictions([
+        {"label": "a", "az": -71.0, "el": 5.0, "mask": normalise(tall)},
+        {"label": "b", "az": -75.0, "el": 6.0, "mask": normalise(wide)}])
+    quiet = mask_contradictions([
+        {"label": "a", "az": -71.0, "el": 5.0, "mask": normalise(tall)},
+        {"label": "b", "az": -75.0, "el": 6.0, "mask": normalise(same)}])
+    apart = mask_contradictions([
+        {"label": "a", "az": -71.0, "el": 5.0, "mask": normalise(tall)},
+        {"label": "b", "az": 40.0, "el": 6.0, "mask": normalise(wide)}])
+    check("same camera + different silhouettes is flagged", len(fires) == 1,
+          f"{fires}")
+    check("same camera + same silhouette is not", quiet == [], f"{quiet}")
+    check("different cameras are never flagged", apart == [], f"{apart}")
 
     print()
     if failures:

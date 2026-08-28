@@ -9,14 +9,10 @@ and Grok Build are future adapters to the same boundary.
 
 The first version makes open-ended playthings for grown-ups (14+). Users state
 what they want in their own words; they do not choose a product class before
-the Workshop can begin. A universal toy blueprint supplies the shared contract
-and baseline Playtest checks: `agent-playtest`, `mechanical-check`, and
-`printability-check`. The host derives that exact tuple from
-`ToyBlueprint.required_playtest_checks()`. These checks are Codex-authored
-digital assessments unless host-replayed evidence or a physical receipt
-explicitly proves more; they never establish a successful print or physical
-fit by themselves. The Wish, selected Inventor, and evolving artifact determine
-any additional specialist method or evidence.
+the Workshop can begin. A universal toy blueprint supplies the shared product
+contract. Spark and Forge omit Playtest truthfully; Quest activates the bounded
+Playtest evidence loop. The Wish, selected Inventor,
+and evolving artifact determine any additional specialist method or evidence.
 
 Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
@@ -24,30 +20,36 @@ decorated, and be represented no more strongly than its evidence permits.
 ## Lifecycle
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Spark: Wish -> Make -> Release
+Forge: Wish -> Invent -> Make -> Release
+Quest: Wish -> Invent -> Make -> Playtest -> Release
+
+Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
 - **Wish** preserves the person's exact words and explicit constraints.
-- **Match** selects and binds one Inventor for that Wish.
+- The first active creative stage selects and binds one Inventor. Optional
+  stages pass through without turns, artifacts, gates, or fabricated evidence.
 - **Invent** researches, explores, selects, and seals one bounded product
   concept, including the physical facts and provenance Make needs.
 - **Make** consumes that exact sealed Invent result and creates the actual
   product tree, CAD project, assemblies, and deterministic CAD verification.
-- **Playtest** inspects and simulates that exact Made revision. Evidence-linked
-  failures return to Make within a bounded round budget.
-- **Release** creates and seals a self-contained printable `MANUAL.pdf` plus
-  bounded evidence-linked product facts. The manual is the canonical customer
-  artifact; website publication is optional.
-- **Deliver** is currently a truthful wait boundary. The host does not perform
-  or claim manufacture, hands-on QA, packing, carrier handoff, or delivery.
-  Those future effects require separate authorization and reconciled physical
-  receipts bound to the exact approved bytes.
+  In Spark, selection and compact invention are sealed inside this same turn.
+- **Playtest** independently evaluates the sealed Made revision only in Quest,
+  preserving exact evidence and bounded Make/Invent feedback routes.
+- **Release** creates and seals a self-contained printable `MANUAL.pdf`,
+  revalidates the exact Made revision as full-tier print-ready CAD, and
+  publishes both through Factory with authenticated public hash readback.
+  The manual is the canonical customer artifact.
+- **Printing**, **Deliver**, and **Review** show the rest of the product story
+  after Release. They belong to the Operations team and are not executable
+  Workshop stages.
 
 Release is the final digital product-design stage because the in-box experience
 is part of the product. Codex owns manual structure, copy, visuals, rendering,
-and revision while the host validates exact PDF and product bytes. The host
-keeps authenticated Factory transport and every physical effect outside the
-agent.
+and revision while the host validates exact PDF, product, and CAD bytes. The
+host alone performs authenticated Factory transport. Every physical effect
+remains outside both the agent and the executable Workshop lifecycle.
 
 Customer Reviews happen after delivery and may inform a later Wish or revision.
 They do not mutate a completed run.
@@ -55,10 +57,11 @@ They do not mutate a completed run.
 ## One Manager session per Wish
 
 `workshop wish` first creates and populates one private persistent project at
-`$WORKSHOP_HOME/runs/<wish-id>/workspace`, then starts one coding-agent session
-with that directory as its working directory before Match. The same session
+`$WORKSHOP_HOME/runs/<wish-id>/workspace`, freezes the selected effort, then
+starts one coding-agent session with that directory as its working directory
+for the first enabled creative stage. The same session
 handles discovery, research, concept
-work, CAD, inspection, repair, Playtest judgment, manual design, and bounded
+work, CAD, inspection, repair, manual design, and bounded
 product facts. `workshop resume` continues the exact recorded session id.
 
 Within either command, a timed-out native turn or explicitly recognized
@@ -76,16 +79,16 @@ daemonizing or detaching. It never starts a replacement session when identity
 is ambiguous.
 
 That root session plays the Workshop Manager role. In the current adapter it is
-Codex, and it may dynamically delegate bounded matching, specialist creation,
+Codex, and it may dynamically delegate bounded selection, specialist creation,
 or independent inspection through standard Codex-native subagents. Those
 children are part of the Manager's native agent tree; they are not separately
 launched OS-level Codex processes, Python workers, or lifecycle sessions. The
 root Manager receives each host stage packet, synthesizes child work, and
 submits the one proposal the host verifies.
 
-Stage names are host checkpoints, not Python workers or model roles. During
-Match, the Manager may ask native children for bounded candidate-fit analysis,
-then makes one evidence-based selection. The host materializes every eligible
+Stage names are host checkpoints, not Python workers or model roles. During the
+first enabled creative stage, the Manager may ask native children for bounded
+candidate-fit analysis, then makes one evidence-based selection. The host materializes every eligible
 Inventor through Codex's documented project-scoped custom-agent convention;
 Codex owns native spawning, routing, waiting, and synthesis.
 
@@ -117,7 +120,7 @@ files, manifests, gate receipts, or effect receipts.
 
 ## One native Goal per active stage attempt
 
-For each host-authorized Match, Invent, Make, Playtest, or Release
+For each host-authorized Invent, Make, Playtest, or Release
 attempt, the root Codex session creates one native Goal. Only one Goal is
 active at a time. It names one objective, the exact inputs to inspect, proof
 artifacts and checks, and a verifiable stopping condition: the current stage
@@ -131,11 +134,9 @@ separate loop primitive or Python program. The Goal completes only after the
 finalizer succeeds; Codex then returns to the host instead of starting the next
 stage.
 
-Wish is sealed by the host before Match, and Deliver is a host effect boundary,
-so neither is an agent Goal. A failed Playtest Goal still completes after it
-finalizes truthful evidence. The host applies the round budget, invalidates
-downstream evidence, and checkpoints the return to Make. Codex interprets the
-feedback and repairs the product inside the next Make Goal.
+Wish is sealed by the host before the first enabled stage, so it is not an agent Goal. Host gate
+rejections remain bound to the exact proposal and return to the same stage for
+repair; unchanged rejected bytes cannot be resubmitted as success.
 
 ## Trust boundary
 
@@ -144,14 +145,13 @@ feedback and repairs the product inside the next Make Goal.
 - root-session Workshop management, native subagent delegation, and synthesis;
 - one active native Goal per cognitive stage attempt and the
   observe -> act -> evaluate -> improve work inside it;
-- understanding the Wish and Match reasoning;
+- understanding the Wish and selecting an Inventor inside the first active stage;
 - native search and source provenance;
 - concept exploration and design decisions;
-- use of CAD, image-to-CAD, design-reference, STEP-parts, rendering, and other
-  materialized skills;
+- use of CAD, image-to-CAD, design-reference, STEP-parts,
+  electromechanical-integration, rendering, and other materialized skills;
 - creation and repair of product files;
-- AI Playtest perspectives and evidence-linked feedback;
-- the printable `MANUAL.pdf`, evidence-bound claims, and bounded Release facts;
+- the printable `MANUAL.pdf`, truthful omission record, and bounded Release facts;
 - a compact proposal for the next host transition.
 
 ### The Python host owns
@@ -199,9 +199,10 @@ not call a model or pass a gate. The host verifies the proposal binding, rereads
 the whole artifact tree, reruns trusted checks, seals accepted bytes, and alone
 advances the durable checkpoint.
 
-If a Playtest verdict is `improve` or `block`, the proposal returns to Make and
-preserves feedback evidence. A changed Make revision invalidates old Playtest,
-Release, and Deliver evidence.
+For new direct-Release runs, a changed Make revision invalidates Release and
+must pass the full CAD gate again. Frozen pre-ADR-0015 runs retain their
+materialized Playtest routing and evidence contracts; the host does not
+reinterpret those historical checkpoints.
 
 ## Evidence boundaries
 
@@ -213,32 +214,34 @@ Release, and Deliver evidence.
 | CAD/kernel verification | topology, dimensions, required files, and exact computed geometry properties | successful physical printing or durability |
 | Slicer analysis | predicted printability under an exact machine/material/profile | a successful print or surface quality |
 | Structurally validated manual PDF | exact sealed customer guidance, printable pages, and extractable text | beauty, comprehension, safety certification, or a physical print |
-| Host Factory receipt | reconciled optional remote draft/publication state for exact hashes | local Release success, manufacture, shipment, or delivery |
-| Future Deliver receipts | the exact production, QA, packing, or carrier event observed | a later event or customer experience |
+| Host Factory receipt | authenticated public publication of the exact ready-to-print CAD and manual hashes required by Release | manufacture, printing, shipment, delivery, or customer response |
+| Future Operations receipts | the exact production, QA, packing, or carrier event observed | a later event or customer experience |
 | Customer Review | what one verified recipient reported | universal preference or an earlier Playtest fact |
 
 Unknown, missing, stale, malformed, mismatched, or timed-out evidence cannot
 pass. A model's confidence is never independent evidence.
 
-## Manual-first Release and optional Factory publication
+## Manual-first terminal Release and required Factory publication
 
-The local Release package is rooted at `artifacts/release/package` and contains
+The Release package is rooted at `artifacts/release/package` and contains
 at least:
 
 - self-contained `MANUAL.pdf`, bound to the package manifest and suitable for
   printing into the physical box;
-- canonical `product.json` with exact Made/Playtest identities, concise product
-  facts, what arrives, limitations, and claims copied from exact Playtest
-  evidence;
+- canonical schema-v5 `product.json` with the exact Made identity, concise
+  product facts, what arrives, limitations, and `playtest_status: not-run`;
+- canonical `PLAYTEST-NOT-RUN.json`, with no Playtest claims;
 - optional editable manual source or accessible text companions that do not
   contradict the PDF.
 
-The current contract pair is NativeRelease schema v2 with `MANUAL.pdf` and
-product schema v4/`manual-ready`. Legacy NativeRelease schema v1 remains
+The current contract pair is NativeRelease schema v3 with `MANUAL.pdf` and
+product schema v5/`manual-ready`. NativeRelease schema v2/product schema v4
+remains valid for frozen Playtest runs. Legacy NativeRelease schema v1 remains
 readable only with `MANUAL.md` and product schema v3/`page-ready`; the host
-validates it under those original rules rather than upgrading it implicitly.
+validates it under those original rules but cannot report it as a successful
+current Release without an explicit migration through today's gates.
 
-Local Release data cannot contain credentials, remote receipts, external PDF
+Release-authored data cannot contain credentials, remote receipts, external PDF
 dependencies, active content, or unsupported claims of manufacture, physical
 performance, human response, publication, or delivery. Embedded fonts,
 vectors, and product-derived images are valid manual content. Codex renders and
@@ -246,24 +249,27 @@ visually inspects every page; the trusted host separately parses, bounds,
 rehashes, and seals the exact PDF and package. Parser success is not an
 aesthetic or physical-verification score.
 
-Local Release advances to Deliver without contacting Factory. If requested and
-configured, the host may separately transport the exact sealed model,
-`MANUAL.pdf`, and supported product facts, persist a hash-bound effect intent,
-and require authenticated readback. Remote field limits can fail that optional
-effect but cannot invalidate the local Release.
+After accepting those local bytes, the host reruns the full-tier CAD gate over
+the exact sealed Made revision. It then transports the exact production model,
+`MANUAL.pdf`, and supported product facts, persists a hash-bound effect intent,
+and requires authenticated public readback. Release completes only when that
+readback proves the same CAD and manual hashes. Missing credentials and typed
+transient or ambiguous results leave Release waiting for reconciliation;
+permanent contract or server rejections fail closed.
 
 The Factory import declares the canonical `toys` category. An omitted category
 would be assigned to Factory's first active category, so Workshop never relies
 on that mutable ordering. Draft and public evidence are accepted only when
 authenticated readback preserves the declared category slug.
 
-The CLI default creates no publication. `--publish` records explicit
-prospective authority for the host to import and promote the exact released
-bytes when the adapter and credentials are available. Factory credentials are
-stored outside the run in the private Workshop home, loaded only between native
-turns, and never copied into the run workspace or Codex process. Missing
-credentials leave publication `not-created`; a public page is never a Deliver
-receipt.
+Starting `workshop wish` authorizes this one required publication for the exact
+run bytes; there is no separate publish mode. One host-owned Workshop Factory
+service account publishes every Inventor's Release. Its credentials are stored
+outside the run in the private Workshop home, loaded only between native turns,
+and never copied into the run workspace or coding-agent process. Inventor
+provenance stays in the sealed Release facts rather than being inferred from
+the publisher username. Missing credentials leave Release incomplete. A public
+page is the terminal digital handoff, never a printing or delivery receipt.
 
 ## Shared implementation
 
@@ -295,16 +301,15 @@ inventors/<id>/
 src/
   cli/                     parsing, presentation, and exit codes only
   workshop/
-    product/               universal blueprint and baseline checks
+    product/               universal blueprint and compatibility check ids
     wish/                  exact customer-intent contract
     match/                 Inventor roster and assignment contract/gate
     invent/                researched concept contract/gate
     make/                  Made/CAD contracts and deterministic gates
       skills/              canonical reusable Make domain skills
-    playtest/              evidence, feedback, and Playtested contract/gate
-    release/               local package and Release contract/gate
+    playtest/              frozen-run/future evidence contracts and gates
+    release/               terminal package and Release contract/gate
       skills/manual-design/ canonical printable-manual design skill
-    deliver/               truthful wait boundary; future physical effects
     workflow/              lifecycle/checkpoint protocol and trusted run host
     artifacts/             immutable artifact identity
     runtime/               native session and trusted state/effect boundaries

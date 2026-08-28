@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "product": "Orbit Gobbler",
+  "units": "mm",
+  "cad_project_path": "cad",
+  "source_entry": "cad/orbit_gobbler.step.py",
+  "rejection_repair": {
+    "host_rejection_sha256": "f05c6981c65b313563451d17f230c51e4f4852089b20312fa8ff820225868339",
+    "failure_code": "verifier-output-limit",
+    "rejection_subject_sha256": "1339f1b4ead7f2d6c6c2e23cbba9bb7f6cf3b10d887daa8d1ca40b875072995a",
+    "rejected_made_sha256": "336ae33352ab20f9abbc07796eeb569992a79a656cc27937ffb65bd9a292015a",
+    "rejected_product_artifact_sha256": "54d912f4d073dd9e7650458980747677bf7a34dbdd8133aa3ed1f8c0c7c2d29f",
+    "rejected_stdout_bytes": 66161,
+    "host_stdout_limit_bytes": 65536,
+    "repaired_isolated_stdout_bytes": 61677,
+    "repaired_stdout_margin_bytes": 3859,
+    "repaired_isolated_stderr_bytes": 2022,
+    "isolated_exit_code": 0,
+    "evidence_path": "cad/measure/output-limit-repair.md",
+    "evidence_sha256": "05b25378479307f065dc30c9439853a4e627ac313d1f2e96d975149b30f9fb75",
+    "detail": "The unchanged 23-piece ledger now uses one print target for each of two already-identical quantity-two pairs: the central/grip snap clips and their 8 mm-shaft thrust washers. No verification class was suppressed; the exact copied-project fresh exports strict-fit pipeline passed below the host stream limit."
+  },
+  "prior_rejection_repair": {
+    "host_rejection_sha256": "8477e569ec82dd0d5148e9a3a0f3072356561020d32e5b2e97e8de7d70056eb0",
+    "failure_code": "declared-cad-output-changed",
+    "portable_fit_utility_path": "cad/cadfits.py",
+    "portable_fit_utility_sha256": "f69cb9f34a6c78714827a7276e005dae0bf2f7a01dd30cbbce49541fb524f3fb",
+    "detail": "Product-local hooks remain isolated-project portable and nonfunctional per-occurrence STEP colors remain removed."
+  },
+  "assembled_step": {
+    "path": "assembled.step",
+    "sha256": "ef2bfe9f066fe287daea189220e1132ae209a97610d3fb31f11a930e0cc4b938",
+    "identical_to": "cad/orbit_gobbler.step"
+  },
+  "assembled_stl": {
+    "path": "assembled.stl",
+    "sha256": "d0684acee72f2f778db6838d4928e9e7df0046a27116b0cdb355855f77afd1d8",
+    "role": "multi-shell assembly preview; the individual cad/part_*.stl files are the printable targets",
+    "identical_to": "cad/orbit_gobbler.stl"
+  },
+  "final_pipeline": {
+    "status": "pass",
+    "exit_code": 0,
+    "mode": "final",
+    "recorded_utc": "2026-08-27T20:02:35+00:00",
+    "elapsed_seconds": 256.31,
+    "report_path": "cad/measure/verification-pipeline.md",
+    "report_sha256": "c4399f8c7f367de4f625b8892efce53f5c32f2965bb7fcf858d7049dbd235dcb",
+    "print_ready_claim": true,
+    "fresh_generation": true,
+    "exports_checked": true,
+    "strict_fit": true,
+    "wall_thickness_checked": true,
+    "bed_mm": [200, 200, 220],
+    "nozzle_mm": 0.4,
+    "command": [
+      ".agents/skills/cad/scripts/verify_project",
+      "cad",
+      "--fresh",
+      "--exports",
+      "--strict-fit"
+    ]
+  },
+  "checks": {
+    "layout": {
+      "status": "pass",
+      "detail": "Every STEP entry follows the project split rule."
+    },
+    "fresh_generation": {
+      "status": "pass",
+      "entry_count": 20,
+      "detail": "One assembly entry and 19 unique printable part entries regenerated successfully."
+    },
+    "print_target_fit": {
+      "status": "pass",
+      "part_type_count": 19,
+      "piece_count": 23,
+      "single_body_targets": 19,
+      "bed_mm": [200, 200, 220]
+    },
+    "wish_specific_spec": {
+      "status": "pass",
+      "path": "cad/measure/check_spec.py",
+      "sha256": "ac5b58a285c371968aa21f11e744cc0c7a21285a36b56074dbcb17c09706c121",
+      "detail": "The 19-type/23-piece ledger, exact 20:40 ratio, 37.5 mm pitch-centre spacing, 12 mm radial reveal, full cycle partition, 25.11 degree nominal pressure-angle target, sealed X envelope, corrected height, bed fit, and no purchased hardware all passed."
+    },
+    "fit_audit": {
+      "status": "pass",
+      "path": "cad/measure/check_fit.py",
+      "sha256": "3239c1ca7ffc65e4e19b93a59f0594221b1db12f1207318b5ce3692679d5d23d",
+      "detail": "All 15 named mate, clearance, deck-separation, end-material, groove, snap-clip, and bezel-post relationships passed in both the product tree and isolated copied project."
+    },
+    "motion": {
+      "status": "pass",
+      "condition_count": 3,
+      "path": "cad/measure/motion.json",
+      "sha256": "5c2202974a00bf6b9da7343e3cc58d57e82d4c73c8a7f86f9d1b90a1bf22a443",
+      "detail": "Bezel withdrawal and grip service paths are clear; the follower axle is blocked in its declared capture direction."
+    },
+    "kernel_and_interference": {
+      "status": "pass",
+      "request_count": 41,
+      "detail": "Reference, validity, and zero-untrusted-overlap assembly inspections all passed."
+    },
+    "isolated_portability_determinism_and_output": {
+      "status": "pass",
+      "independent_generation_count": 2,
+      "identical_assembly_step_sha256": "ef2bfe9f066fe287daea189220e1132ae209a97610d3fb31f11a930e0cc4b938",
+      "host_equivalent_isolated_pipeline_exit_code": 0,
+      "isolated_stdout_bytes": 61677,
+      "stdout_limit_bytes": 65536,
+      "stdout_margin_bytes": 3859,
+      "evidence_path": "cad/measure/determinism.md",
+      "evidence_sha256": "12c5313633ff2de97542172f0e4e3b005f7a61934db5dbff845da96a8751a95c",
+      "detail": "The copied-project pipeline passed every final gate below the host stream limit, and its generated assembly, shared clip, and shared washer STEP bytes match the candidate tree exactly."
+    },
+    "mesh_and_wall": {
+      "status": "pass",
+      "print_target_count": 19,
+      "minimum_wall_mm": 0.8,
+      "failed_target_count": 0,
+      "detail": "Every unique printable STL is watertight, manifold, positively wound, one connected shell, within the declared bed, and has zero sampled surface below the 0.8 mm wall threshold within measurement resolution. Quantity-two pieces reuse the same checked artifact bytes."
+    },
+    "render_inspection": {
+      "status": "pass",
+      "paths": [
+        "cad/snap/front.png",
+        "cad/snap/right.png",
+        "cad/snap/iso.png"
+      ],
+      "sha256": [
+        "40b5a0aabf610189179299d8be23fb9a414c56e174784343686ec3438bf6061c",
+        "b4bc1f8e4bb97166f41a0c3788f68dd8a146df27590cf3b73f3b51c008edf008",
+        "b98f53e5eddefa7c44b06945b6da41d5561245ebf647be4bcea03f4d60c7180a"
+      ],
+      "detail": "Front, right, and isometric silhouettes rendered from the exact final assembly STEP were visually inspected for silhouette, spacing, support structure, and obvious floating geometry."
+    }
+  },
+  "evidence_boundary": "This is deterministic digital CAD evidence. It does not prove a successful physical print, physical fit, friction, insertion force, retention force, torque, cycle life, wear, durability, child safety, or user response."
+}

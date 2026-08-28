@@ -1,4 +1,5 @@
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -11,6 +12,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+import reportlab
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen.canvas import Canvas
+
 from workshop.artifacts import build_artifact_manifest
 from workshop.workflow.native_run import (
     _MAX_NATIVE_TURNS,
@@ -20,10 +26,14 @@ from workshop.workflow.native_run import (
 )
 from workshop.errors import ArtifactError, StateConflict
 from workshop.invent.vault import Vault, seed_vault
+from workshop.errors import ArtifactError, EffectError, StateConflict
 from workshop.invent.native import NativeInvented
+from workshop.integrations.factory import FACTORY_CONTENT_MAPPING
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
     NATIVE_CAD_FULL_TIER,
+    NATIVE_CAD_NON_PRINT_READY_TIER,
+    NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     CapturedVerifierStream,
@@ -32,7 +42,13 @@ from workshop.make.native_gate import (
 )
 from workshop.match.native import NativeMatchAssignment
 from workshop.playtest.native import NativePlaytested
-from workshop.release.native import NativeRelease
+from workshop.release.native import (
+    NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+    NativeRelease,
+    direct_release_claims,
+    playtest_omission_record,
+    playtest_omission_sha256,
+)
 from workshop.release.verification import (
     PRODUCT_VERIFICATION_PATH,
     read_product_verification,
@@ -48,6 +64,7 @@ from workshop.workflow.proposals import AgentOutcomeProposal
 _OBSERVED_AT = "2026-08-26T00:00:00+00:00"
 _PAGE_URL = "https://www.autonomous.ai/factory/product/orbit-dog"
 _COVER_URL = "https://cdn.autonomous.ai/products/orbit-dog/cover.webp"
+_MANUAL_URL = "https://cdn.autonomous.ai/projects/orbit-dog-1/MANUAL.pdf"
 _SESSION_CHECKPOINT = b'{"session_id":"fixture-native-session"}\n'
 
 
@@ -81,39 +98,119 @@ def _sha256(content):
 def _manual_pdf():
     """Return one deterministic, text-extractable A6 manual fixture."""
 
-    content = (
-        b"BT\n/F1 15 Tf\n36 370 Td\n(Orbit Dog Draughts) Tj\n"
-        b"0 -28 Td\n/F1 10 Tf\n(Set out the board and every playing piece.) Tj\n"
-        b"0 -18 Td\n(Use standard English draughts rules.) Tj\n"
-        b"0 -18 Td\n(For ages fourteen and older. Keep small parts away.) Tj\nET\n"
+    font_name = "WorkshopFixtureVera"
+    if font_name not in pdfmetrics.getRegisteredFontNames():
+        font_path = Path(reportlab.__file__).resolve().parent / "fonts/Vera.ttf"
+        pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
+    output = io.BytesIO()
+    canvas = Canvas(
+        output,
+        pagesize=(297.64, 419.53),
+        pageCompression=1,
+        invariant=1,
+        initialFontName=font_name,
     )
-    objects = (
-        b"<< /Type /Catalog /Pages 2 0 R >>",
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    for page, lines in (
         (
-            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 297.64 419.53] "
-            b"/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>"
+            1,
+            (
+                "Orbit Dog Draughts",
+                "Meet the exact board and every playing piece.",
+                "A tiny orbital match is ready to begin.",
+            ),
         ),
-        b"<< /Length %d >>\nstream\n" % len(content) + content + b"endstream",
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        (
+            2,
+            (
+                "Set up and play",
+                "Use standard English draughts rules.",
+                "For ages fourteen and older. Keep small parts away.",
+            ),
+        ),
+    ):
+        del page
+        canvas.setFont(font_name, 15)
+        canvas.drawString(30, 370, lines[0])
+        canvas.setFont(font_name, 10)
+        canvas.drawString(30, 340, lines[1])
+        canvas.drawString(30, 320, lines[2])
+        canvas.showPage()
+    canvas.save()
+    return output.getvalue()
+
+
+def _manual_design_evidence(manual, made):
+    visual = next(
+        entry
+        for entry in made["product_manifest"]["entries"]
+        if entry["path"] == "assembled.stl"
     )
-    document = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
-    offsets = [0]
-    for number, body in enumerate(objects, 1):
-        offsets.append(len(document))
-        document.extend(b"%d 0 obj\n" % number)
-        document.extend(body)
-        document.extend(b"\nendobj\n")
-    xref = len(document)
-    document.extend(b"xref\n0 %d\n" % (len(objects) + 1))
-    document.extend(b"0000000000 65535 f \n")
-    for offset in offsets[1:]:
-        document.extend(b"%010d 00000 n \n" % offset)
-    document.extend(
-        b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n"
-        % (len(objects) + 1, xref)
+    return {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.manual-design-evidence",
+        "manual_sha256": _sha256(manual),
+        "design_mode": "bespoke",
+        "creative_brief": {
+            "emotional_promise": "Unbox a tiny orbital rivalry that feels ready for a first match.",
+            "physical_format": "Two-page A6 field card",
+            "format_rationale": "Two compact pages keep the inventory and first turn visible together.",
+            "visual_motif": "Orbital paths connect exact piece silhouettes to numbered actions.",
+            "palette": ["deep space navy", "warm paper white", "signal orange"],
+            "typography": ["Vera display", "Vera instructional body"],
+            "teaching_arc": [
+                "Meet the exact board and pieces",
+                "Set up the first orbital match",
+                "Play, reset, and pack away",
+            ],
+        },
+        "product_visuals": [
+            {
+                "source_path": visual["path"],
+                "source_sha256": visual["sha256"],
+                "pages": [1, 2],
+            }
+        ],
+        "review": {
+            "page_count": 2,
+            "color_pages": [1, 2],
+            "grayscale_pages": [1, 2],
+            "first_time_owner_pass": True,
+            "independent_reviewer": "native-subagent",
+            "findings": ["The setup action initially competed with the cover title."],
+            "resolved_changes": ["Moved setup to page two and strengthened its action hierarchy."],
+            "status": "approved",
+        },
+    }
+
+
+def _product_run_assets_without_direct_release(
+    root: Path,
+    *,
+    markdown_release: bool = False,
+) -> ProductRunAgentAssets:
+    """Copy a frozen pre-direct-Release product-run protocol for compatibility tests."""
+
+    repository = Path(__file__).resolve().parents[2]
+    legacy_root = root / "legacy-assets"
+    constitution = legacy_root / ".agents/product-run/AGENTS.md"
+    constitution.parent.mkdir(parents=True)
+    shutil.copy2(repository / ".agents/product-run/AGENTS.md", constitution)
+    skill_root = legacy_root / ".agents/product-run/.agents/skills/autonomous-workshop"
+    shutil.copytree(
+        repository / ".agents/product-run/.agents/skills/autonomous-workshop",
+        skill_root,
     )
-    return bytes(document)
+    shutil.copytree(repository / "inventors", legacy_root / "inventors")
+    (skill_root / "references/direct-release-v1.md").unlink()
+    if markdown_release:
+        (skill_root / "scripts/pdf_validator.py").unlink()
+        (skill_root / "references/release-terminal-v1.md").unlink()
+    return ProductRunAgentAssets(
+        constitution=constitution,
+        skill_root=skill_root,
+        sha256="0" * 64,
+        source="repository",
+    )
 
 
 def _failed_cad_gate(
@@ -124,6 +221,7 @@ def _failed_cad_gate(
     timed_out,
     stdout_content=b"CAD verifier inspected the sealed revision.\n",
     stderr_content=None,
+    verification_tier=NATIVE_CAD_FULL_TIER,
 ):
     if stderr_content is None:
         stderr_content = (
@@ -136,6 +234,8 @@ def _failed_cad_gate(
         stderr_content,
         64 * 1024,
     )
+    lower_tier = verification_tier == NATIVE_CAD_NON_PRINT_READY_TIER
+    evidence_stage = arguments.get("evidence_stage", "make")
     evidence = NativeCadGateEvidence(
         passed=False,
         failure_code=failure_code,
@@ -151,6 +251,7 @@ def _failed_cad_gate(
             "--fresh",
             "--exports",
             "--strict-fit",
+            *(("--skip-thickness",) if lower_tier else ()),
         ),
         returncode=-9 if timed_out else 7,
         duration_ms=1_800_000 if timed_out else 11,
@@ -158,10 +259,19 @@ def _failed_cad_gate(
         stdout=stdout,
         stderr=stderr,
         source_tree_unchanged=True,
+        verification_tier=verification_tier,
+        verifier_mode=(
+            NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE
+            if lower_tier
+            else NATIVE_CAD_VERIFIER_MODE
+        ),
+        evidence_stage=evidence_stage,
     )
-    evidence_parent = Path(arguments["host_state_root"]) / "evidence" / "make"
+    evidence_parent = (
+        Path(arguments["host_state_root"]) / "evidence" / evidence_stage
+    )
     current = Path(arguments["host_state_root"])
-    for part in ("evidence", "make"):
+    for part in ("evidence", evidence_stage):
         current = current / part
         current.mkdir(mode=0o700, exist_ok=True)
         os.chmod(current, 0o700)
@@ -218,13 +328,16 @@ def _fixture_components():
 class _OneSessionProductAgent:
     """A deterministic stand-in for one resumed native Codex session."""
 
-    def __init__(self, *, playtest_plan=None, confirm_first_lead=False):
+    def __init__(
+        self, *, playtest_plan=None, confirm_first_lead=False, product_contract_name_collisions=False
+    ):
         self.starts = []
         self.resumes = []
         self.stage_packets = []
         self.finalizer_commands = []
         self.playtest_plan = list(playtest_plan) if playtest_plan else []
         self.confirm_first_lead = confirm_first_lead
+        self.product_contract_name_collisions = product_contract_name_collisions
 
     @staticmethod
     def _checkpoint(arguments):
@@ -284,11 +397,21 @@ class _OneSessionProductAgent:
         assert result["outcome_path"] == expected_outcome, "finalizer authored an unexpected outcome"
 
     def _author_match(self, run_root, stage):
+        ranking = self._ranking(stage)
+        source = "authored/match.json"
+        _write_json(
+            run_root / source,
+            {"selected_inventor_id": "alice", "ranking": ranking},
+        )
+        self._run_finalizer(run_root, "match", "--source", source)
+
+    @staticmethod
+    def _ranking(stage):
         inventors = stage["inputs"]["inventor_roster"]["inventors"]
         ids = [entry["inventor_id"] for entry in inventors]
         if ids != sorted(ids) or "alice" not in ids:
             raise AssertionError("fixture received a non-canonical inventor roster")
-        ranking = [
+        return [
             {
                 "inventor_id": inventor_id,
                 "rationale": (
@@ -301,27 +424,28 @@ class _OneSessionProductAgent:
             }
             for inventor_id in (["alice"] + [item for item in ids if item != "alice"])
         ]
-        source = "authored/match.json"
-        _write_json(
-            run_root / source,
-            {"selected_inventor_id": "alice", "ranking": ranking},
-        )
-        self._run_finalizer(run_root, "match", "--source", source)
-
     def _author_invent(self, run_root, stage):
-        assignment = stage["inputs"]["assignment"]
-        if assignment["selected_inventor_id"] != "alice":
+        assignment = stage["inputs"].get("assignment")
+        if assignment is not None and assignment["selected_inventor_id"] != "alice":
             raise AssertionError("Invent did not receive the accepted Match assignment")
+        revised = "failing_playtested" in stage["inputs"]
         source = "authored/invent.json"
-        _write_json(
-            run_root / source,
-            {
+        authored = {
                 "concept": {
-                    "title": "Orbit Dog Draughts",
+                    "title": (
+                        "Orbit Dog Draughts — Aligned Orbits"
+                        if revised
+                        else "Orbit Dog Draughts"
+                    ),
                     "summary": (
                         "A pocket draughts set whose concentric board, opposing orbit "
                         "packs, and king pieces turn the requested dog into the geometry "
                         "of a familiar public-domain game."
+                        + (
+                            " Every orbit now maps one-to-one to legal squares."
+                            if revised
+                            else ""
+                        )
                     ),
                     "signature_decision": (
                         "Every playable square is an orbital waypoint and each side uses "
@@ -345,6 +469,10 @@ class _OneSessionProductAgent:
                         {"key": key, **fields}
                         for key, fields in _fixture_components().items()
                     ],
+                    "assumptions": ["Players know English draughts rules."],
+                    "unresolved_risks": [
+                        "Physical fit and handling have not been tested by a person."
+                    ],
                 },
                 "research": {
                     "rules_basis": "English draughts movement remains unchanged.",
@@ -357,8 +485,15 @@ class _OneSessionProductAgent:
                     ],
                     "safety_boundary": "Ages 14+; small parts are explicitly identified.",
                 },
-            },
-        )
+            }
+        if assignment is None:
+            authored.update(
+                {
+                    "selected_inventor_id": "alice",
+                    "ranking": self._ranking(stage),
+                }
+            )
+        _write_json(run_root / source, authored)
         self._run_finalizer(run_root, "invent", "--source", source)
 
     def _author_make(self, run_root, stage):
@@ -368,8 +503,54 @@ class _OneSessionProductAgent:
         (product_root / "cad" / "project").mkdir(parents=True, exist_ok=True)
         (product_root / "validation").mkdir(exist_ok=True)
         wish = _read_json(run_root / "WISH.json")
-        invented = inputs["invented"]
-        if invented["concept"]["title"] != "Orbit Dog Draughts":
+        invented = inputs.get("invented")
+        spark_source = None
+        if invented is None:
+            spark_source = "authored/spark-make.json"
+            spark_authored = {
+                "selected_inventor_id": "alice",
+                "ranking": self._ranking(stage),
+                "concept": {
+                    "title": "Orbit Dog Draughts",
+                    "summary": (
+                        "A compact orbital draughts set designed and built in one "
+                        "Spark Make turn."
+                    ),
+                    "signature_decision": (
+                        "Every playable square is an orbital waypoint without changing "
+                        "the familiar rules."
+                    ),
+                    "interaction": (
+                        "Two players move dog pieces along the board's orbital "
+                        "waypoints, capture by jumping, and stack a piece to crown it."
+                    ),
+                    "envelope_mm": {
+                        "length_mm": 200.0,
+                        "width_mm": 200.0,
+                        "height_mm": 20.0,
+                    },
+                    "mechanisms": ["stacking-and-balancing", "square-grid"],
+                    "build_plan": [
+                        {"group": "board", "parts": ["board"], "exit_criteria": "Recesses are 1 mm deep."},
+                        {"group": "pieces", "parts": ["pieces"], "exit_criteria": "Pieces seat and stack."},
+                    ],
+                    "components": [
+                        {"key": key, **fields}
+                        for key, fields in _fixture_components().items()
+                    ],
+                    "assumptions": ["Players know English draughts rules."],
+                    "unresolved_risks": [
+                        "Physical fit and handling have not been tested by a person."
+                    ],
+                },
+                "research": {
+                    "rules_basis": "English draughts movement remains unchanged.",
+                    "scope": "Compact evidence sufficient for the Spark build.",
+                },
+            }
+            _write_json(run_root / spark_source, spark_authored)
+            invented = {"concept": spark_authored["concept"]}
+        if not invented["concept"]["title"].startswith("Orbit Dog Draughts"):
             raise AssertionError("Make did not receive the accepted Invent result")
         product = {
             "schema_version": 1,
@@ -395,6 +576,9 @@ class _OneSessionProductAgent:
             ],
         }
         _write_json(product_root / "product.json", product)
+        if self.product_contract_name_collisions:
+            _write_json(product_root / "assignment.json", {"product_asset": True})
+            _write_json(product_root / "invented.json", {"product_asset": True})
         (product_root / "wish.json").write_bytes((run_root / "WISH.json").read_bytes())
         (product_root / "assembled.step").write_bytes(
             b"ISO-10303-21;\nHEADER;ENDSEC;\nDATA;ENDSEC;\nEND-ISO-10303-21;\n"
@@ -434,18 +618,28 @@ class _OneSessionProductAgent:
                     b"solid %s\nendsolid %s\n" % (key.encode(), key.encode())
                 )
             self._run_finalizer(
-                run_root, "make-group", "--product-root", product_root_value, "--group", group["group"]
+                run_root,
+                "make-group",
+                *(("--source", spark_source) if spark_source is not None else ()),
+                "--product-root",
+                product_root_value,
+                "--group",
+                group["group"],
             )
-        self._run_finalizer(
-            run_root,
-            "make",
-            "--product-root",
-            product_root_value,
-            "--cad-project-path",
-            "cad/project",
-            "--cad-verification-path",
-            "validation/cad-verification.json",
+        arguments = ["make"]
+        if spark_source is not None:
+            arguments.extend(("--source", spark_source))
+        arguments.extend(
+            (
+                "--product-root",
+                product_root_value,
+                "--cad-project-path",
+                "cad/project",
+                "--cad-verification-path",
+                "validation/cad-verification.json",
+            )
         )
+        self._run_finalizer(run_root, *arguments)
 
     def _author_playtest(self, run_root, stage):
         inputs = stage["inputs"]
@@ -491,7 +685,33 @@ class _OneSessionProductAgent:
                     },
                 }
             )
-        if self.playtest_plan:
+        cad_rejection = inputs.get("host_cad_gate_rejection")
+        if (
+            isinstance(cad_rejection, dict)
+            and cad_rejection.get("failure_code") == "cad-not-print-ready"
+        ):
+            verdict, feedback = (
+                "improve",
+                [
+                    {
+                        "code": "cad-not-print-ready",
+                        "area": "make",
+                        "severity": "block",
+                        "finding": (
+                            "The host's exact CAD replay found this revision is "
+                            "digital-only and cannot support the required "
+                            "ready-to-print Release."
+                        ),
+                        "change": (
+                            "Rebuild the CAD at the full verification tier, "
+                            "including wall-thickness checks."
+                        ),
+                        "evidence_refs": ["results/printability-check.json"],
+                        "invalidates": ["playtest", "release"],
+                    }
+                ],
+            )
+        elif self.playtest_plan:
             verdict, feedback = self.playtest_plan.pop(0)
         else:
             verdict, feedback = "pass", []
@@ -545,6 +765,52 @@ class _OneSessionProductAgent:
     def _author_release(self, run_root, stage):
         inputs = stage["inputs"]
         made = inputs["made"]
+        package_root_value = inputs["package_root"]
+        package_root = run_root / package_root_value
+        package_root.mkdir(parents=True, exist_ok=True)
+        manual = _manual_pdf()
+        (package_root / "MANUAL.pdf").write_bytes(manual)
+        if (
+            inputs["release_contract"].get("manual_design_evidence_path")
+            == "MANUAL-DESIGN.json"
+        ):
+            _write_json(
+                package_root / "MANUAL-DESIGN.json",
+                _manual_design_evidence(manual, made),
+            )
+        if inputs["release_contract"]["native_release_schema_version"] == 3:
+            _write_json(
+                package_root / NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+                playtest_omission_record(),
+            )
+            _write_json(
+                package_root / "product.json",
+                {
+                    "schema_version": 5,
+                    "kind": "workshop.release-package",
+                    "status": "manual-ready",
+                    "title": made["product"]["title"],
+                    "summary": made["product"]["summary"],
+                    "what_arrives": list(made["product"]["components"]),
+                    "limitations": list(made["product"]["limitations"]),
+                    "product_artifact_sha256": made["product_manifest"][
+                        "artifact_sha256"
+                    ],
+                    "playtest_status": "not-run",
+                    "playtest_evidence_artifact_sha256": (
+                        playtest_omission_sha256()
+                    ),
+                    "claims": direct_release_claims(),
+                },
+            )
+            self._run_finalizer(
+                run_root,
+                "release",
+                "--package-root",
+                package_root_value,
+            )
+            return
+
         playtested = inputs["playtested"]
         if playtested.get("kind") != "autonomous-workshop.playtested":
             raise AssertionError("Release did not receive the full Playtest contract")
@@ -563,10 +829,6 @@ class _OneSessionProductAgent:
                 "evaluator": check["evaluator"],
                 "evaluator_version": check["evaluator_version"],
             }
-        package_root_value = inputs["package_root"]
-        package_root = run_root / package_root_value
-        package_root.mkdir(parents=True, exist_ok=True)
-        (package_root / "MANUAL.pdf").write_bytes(_manual_pdf())
         _write_json(
             package_root / "product.json",
             {
@@ -751,7 +1013,7 @@ class _LegacyReleaseProductAgent(_OneSessionProductAgent):
                     sha256=_sha256(contract_bytes),
                 ),
             ),
-            proposed_transition="deliver",
+            proposed_transition=stage["next_transition"],
         )
         proposal = AgentOutcomeProposal(
             checkpoint_sha256=stage["checkpoint_sha256"],
@@ -781,20 +1043,77 @@ class _TimeoutOnceProductAgent(_OneSessionProductAgent):
         raise CodexRecoverableInvocationError("fixture native turn timed out")
 
 
+class _ConceptRevisionProductAgent(_OneSessionProductAgent):
+    """Verify re-Invent lineage and author a changed versioned contract."""
+
+    def __init__(self, *, playtest_plan=None):
+        super().__init__(playtest_plan=playtest_plan)
+        self.invent_outputs = []
+
+    def _author_invent(self, run_root, stage):
+        inputs = stage["inputs"]
+        if "failing_playtested" in inputs:
+            prior_invented = inputs["prior_invented"]
+            failing_playtested = inputs["failing_playtested"]
+            feedback = inputs["feedback"]
+            if inputs["repair_round"] != 2:
+                raise AssertionError("re-Invent did not retain the shared repair round")
+            prior_binding = inputs["prior_invented_artifact"]
+            if "invented_sha256" in prior_binding:
+                if prior_binding["invented_sha256"] != prior_invented[
+                    "invented_sha256"
+                ]:
+                    raise AssertionError(
+                        "re-Invent prior Invented identity is unbound"
+                    )
+            elif prior_binding["sha256"] != _sha256(
+                (run_root / prior_binding["path"]).read_bytes()
+            ):
+                raise AssertionError("re-Invent prior Invented artifact is unbound")
+            playtested_binding = inputs["failing_playtested_artifact"]
+            if "playtested_sha256" in playtested_binding:
+                if playtested_binding["playtested_sha256"] != failing_playtested[
+                    "playtested_sha256"
+                ]:
+                    raise AssertionError(
+                        "re-Invent failing Playtested identity is unbound"
+                    )
+            elif playtested_binding["sha256"] != _sha256(
+                (run_root / playtested_binding["path"]).read_bytes()
+            ):
+                raise AssertionError(
+                    "re-Invent failing Playtested artifact is unbound"
+                )
+            if feedback != failing_playtested["feedback"]:
+                raise AssertionError("re-Invent feedback differs from Playtested bytes")
+            if inputs["feedback_sha256"] != _sha256(_canonical_json(feedback)):
+                raise AssertionError("re-Invent feedback hash is not canonical")
+
+        super()._author_invent(run_root, stage)
+        contract_path = inputs["contract_path"]
+        self.invent_outputs.append(
+            (contract_path, (run_root / contract_path).read_bytes())
+        )
+        if len(self.invent_outputs) == 2:
+            first_path, first_bytes = self.invent_outputs[0]
+            if (run_root / first_path).read_bytes() != first_bytes:
+                raise AssertionError("re-Invent overwrote the sealed prior contract")
+
+
 class _FactoryEffects:
     def __init__(self):
         self.secret = "fixture-host-secret"
         self.credentials_value = SimpleNamespace(
             username="alice", password=self.secret
         )
-        self.credential_requests = []
+        self.credential_requests = 0
         self.writer_calls = []
         self.session_calls = []
         self.publish_calls = []
         self.ledgers = []
 
-    def credentials(self, inventor_id):
-        self.credential_requests.append(inventor_id)
+    def credentials(self):
+        self.credential_requests += 1
         return self.credentials_value
 
     def writer(self, ledger, inventor_id, credentials):
@@ -804,8 +1123,25 @@ class _FactoryEffects:
 
         def write(context, root, manifest):
             fixture.writer_calls.append((context, root, manifest))
-            if not (Path(root) / "MANUAL.pdf").is_file():
+            manual_path = (
+                "MANUAL.pdf"
+                if (Path(root) / "MANUAL.pdf").is_file()
+                else "MANUAL.md"
+            )
+            if not (Path(root) / manual_path).is_file():
                 raise AssertionError("Factory effect did not receive the verified manual")
+            context.assert_current()
+            product_root = context.made.artifact_root
+            exact_print_package = {
+                "assembled.step": (product_root / "assembled.step").read_bytes(),
+                "assembled.stl": (product_root / "assembled.stl").read_bytes(),
+                manual_path: (Path(root) / manual_path).read_bytes(),
+            }
+            if not exact_print_package["assembled.step"].startswith(
+                b"ISO-10303-21;"
+            ) or not exact_print_package["assembled.stl"].startswith(b"solid "):
+                raise AssertionError("Factory effect lacked ready-to-print model bytes")
+            fixture.handoff_files = exact_print_package
             product_page_sha256 = next(
                 entry.sha256
                 for entry in manifest.entries
@@ -814,8 +1150,32 @@ class _FactoryEffects:
             manual_sha256 = next(
                 entry.sha256
                 for entry in manifest.entries
-                if entry.path == "MANUAL.pdf"
+                if entry.path == manual_path
             )
+            details = {
+                "release_sha256": manifest.artifact_sha256,
+                "product_page_sha256": product_page_sha256,
+                "manual_path": manual_path,
+                "manual_sha256": manual_sha256,
+                "page_url": _PAGE_URL,
+                "cover_url": _COVER_URL,
+            }
+            if manual_path == "MANUAL.pdf":
+                details.update(
+                    {
+                        "manual_url": _MANUAL_URL,
+                        "manual_readback_sha256": manual_sha256,
+                    }
+                )
+            else:
+                details.update(
+                    {
+                        "factory_content_sha256": _sha256(
+                            b"fixture-factory-content"
+                        ),
+                        "factory_content_mapping": FACTORY_CONTENT_MAPPING,
+                    }
+                )
             return Receipt(
                 payload_sha256=_sha256(b"fixture-model-handoff"),
                 artifact_sha256=context.made.artifact_sha256,
@@ -823,14 +1183,7 @@ class _FactoryEffects:
                 status="draft",
                 observed_at=_OBSERVED_AT,
                 reference="design-orbit-dog",
-                details={
-                    "release_sha256": manifest.artifact_sha256,
-                    "product_page_sha256": product_page_sha256,
-                    "manual_path": "MANUAL.pdf",
-                    "manual_sha256": manual_sha256,
-                    "page_url": _PAGE_URL,
-                    "cover_url": _COVER_URL,
-                },
+                details=details,
                 design_id="design-orbit-dog",
                 slug="orbit-dog",
                 owner_id="owner-alice",
@@ -877,9 +1230,70 @@ class _FactoryEffects:
 
 
 class NativeFullRunTest(unittest.TestCase):
-    def test_release_without_factory_credentials_reaches_deliver(self):
+    def test_permanent_factory_error_is_visible_and_not_an_outage_wait(self):
+        launcher = _OneSessionProductAgent()
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        def writer(unused_ledger, unused_inventor_id, unused_credentials):
+            def reject(unused_context, unused_root, unused_manifest):
+                raise EffectError("Factory permanently rejected this handoff")
+
+            return reject
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            wish = Wish.create(
+                "orbit-dog-permanent-factory-error",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                return_value=SimpleNamespace(username="alice", password="secret"),
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=writer,
+            ), self.assertRaisesRegex(
+                EffectError, "permanently rejected"
+            ):
+                start_native_run(wish)
+
+            paths = SimpleNamespace(
+                workspace=home / "runs" / wish.product_id / "workspace",
+                host_state=home / "state" / wish.product_id,
+            )
+            checkpoint = AgentRun.open(
+                paths.workspace, host_state_root=paths.host_state
+            ).snapshot()
+            self.assertEqual((checkpoint.stage, checkpoint.status), ("release", "active"))
+            self.assertTrue((paths.workspace / "agent-outcome.json").is_file())
+            self.assertFalse((paths.host_state / "release-effect-wait.json").exists())
+
+    def test_release_waits_for_required_factory_credentials(self):
         launcher = _OneSessionProductAgent()
         effects = _FactoryEffects()
+        timing_events = []
 
         def verify_cad(made, **arguments):
             return SimpleNamespace(
@@ -893,7 +1307,8 @@ class NativeFullRunTest(unittest.TestCase):
             )
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
             wish = Wish.create(
                 "orbit-dog-local-release",
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -927,7 +1342,10 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.materialize_public_example_if_source_checkout",
                 side_effect=RuntimeError("unexpected public example regression"),
             ):
-                receipt = start_native_run(wish, publish_requested=True)
+                receipt = start_native_run(
+                    wish,
+                    timing_observer=timing_events.append,
+                )
                 paths = native_run_paths(wish.product_id)
                 run = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state
@@ -935,67 +1353,80 @@ class NativeFullRunTest(unittest.TestCase):
                 checkpoint = run.snapshot()
 
             self.assertEqual(receipt["status"], "waiting")
-            self.assertEqual(receipt["stage"], "deliver")
-            self.assertEqual(receipt["native_turns"], 5)
+            self.assertEqual(receipt["stage"], "release")
+            self.assertEqual(receipt["native_turns"], 4)
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
             self.assertIn("Factory credentials", receipt["publication"]["reason"])
             self.assertIn("Factory credentials", receipt["needs"][0])
             self.assertEqual(checkpoint.status, "waiting")
-            self.assertEqual(checkpoint.stage, "deliver")
+            self.assertEqual(checkpoint.stage, "release")
             self.assertEqual(len(launcher.starts), 1)
-            self.assertEqual(len(launcher.resumes), 4)
+            self.assertEqual(len(launcher.resumes), 3)
             self.assertEqual(
                 [packet["stage"] for packet in launcher.stage_packets],
-                ["match", "invent", "make", "playtest", "release"],
+                ["match", "invent", "make", "release"],
             )
             release_packet = launcher.stage_packets[-1]
             self.assertEqual(
                 release_packet["inputs"]["release_contract"],
                 {
-                    "native_release_schema_version": 2,
+                    "native_release_schema_version": 3,
                     "manual_path": "MANUAL.pdf",
-                    "product_schema_version": 4,
+                    "product_schema_version": 5,
                     "product_status": "manual-ready",
+                    "playtest_status": "not-run",
+                    "playtest_omission_path": "PLAYTEST-NOT-RUN.json",
+                    "manual_design_evidence_path": "MANUAL-DESIGN.json",
+                    "manual_design_evidence_schema_version": 1,
                 },
             )
             self.assertEqual(
                 release_packet["inputs"]["required_package_files"],
-                ["MANUAL.pdf", "product.json"],
+                [
+                    "MANUAL.pdf",
+                    "product.json",
+                    "MANUAL-DESIGN.json",
+                    "PLAYTEST-NOT-RUN.json",
+                ],
             )
-            release_gate_path = sorted(
-                (paths.host_state / "gates").glob("*-release.json")
-            )[-1]
-            release_gate = _read_json(release_gate_path)
-            checks = release_gate["evidence"]["checks"]
-            self.assertTrue(checks["local_release_sealed"])
-            self.assertTrue(checks["package_tree_rehashed"])
-            self.assertEqual(checks["manual_path"], "MANUAL.pdf")
-            self.assertNotIn("publication_status", checks)
-            self.assertNotIn("factory_readback_verified", checks)
+            self.assertEqual(release_packet["next_transition"], "complete")
             self.assertEqual(
-                checks["product_verification_status"],
-                "not-recorded",
+                list((paths.host_state / "gates").glob("*-release.json")), []
             )
             stage_finalizers = [
                 command for command in launcher.finalizer_commands if command[4] != "make-group"
             ]
-            self.assertEqual(len(stage_finalizers), 5)
+            self.assertEqual(len(stage_finalizers), 4)
             self.assertEqual(
                 sum(1 for command in launcher.finalizer_commands if command[4] == "make-group"), 2
             )
             self.assertEqual(effects.writer_calls, [])
             self.assertEqual(effects.publish_calls, [])
-            self.assertFalse((paths.host_state / "release-effect-wait.json").exists())
+            factory_events = [
+                event
+                for event in timing_events
+                if event.operation == "effect.factory"
+            ]
+            self.assertEqual(
+                [event.state for event in factory_events],
+                ["started", "failed"],
+            )
+            self.assertNotIn(
+                "Factory credentials",
+                repr([event.to_dict() for event in factory_events]),
+            )
+            self.assertTrue((paths.host_state / "release-effect-wait.json").exists())
             self.assertFalse((paths.host_state / "release-effect.json").exists())
             self.assertFalse((paths.host_state / "factory-effects.sqlite3").exists())
-            self.assertIn("release", checkpoint.stage_artifacts)
+            self.assertNotIn("release", checkpoint.stage_artifacts)
             self.assertTrue(
                 (paths.workspace / "artifacts/release/package/MANUAL.pdf").is_file()
             )
 
-    def test_frozen_legacy_run_receives_and_finishes_its_markdown_release(self):
+    def test_frozen_legacy_markdown_release_is_readable_but_cannot_complete(self):
         launcher = _LegacyReleaseProductAgent()
+        effects = _FactoryEffects()
 
         def verify_cad(made, **arguments):
             return SimpleNamespace(
@@ -1011,28 +1442,9 @@ class NativeFullRunTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             repository = Path(__file__).resolve().parents[2]
-            legacy_root = root / "legacy-assets"
-            constitution = legacy_root / ".agents/product-run/AGENTS.md"
-            constitution.parent.mkdir(parents=True)
-            shutil.copy2(
-                repository / ".agents/product-run/AGENTS.md",
-                constitution,
-            )
-            skill_root = (
-                legacy_root
-                / ".agents/product-run/.agents/skills/autonomous-workshop"
-            )
-            shutil.copytree(
-                repository
-                / ".agents/product-run/.agents/skills/autonomous-workshop",
-                skill_root,
-            )
-            (skill_root / "scripts/pdf_validator.py").unlink()
-            assets = ProductRunAgentAssets(
-                constitution=constitution,
-                skill_root=skill_root,
-                sha256="0" * 64,
-                source="package",
+            assets = _product_run_assets_without_direct_release(
+                root,
+                markdown_release=True,
             )
             home = root / "workshop-home"
             wish = Wish.create(
@@ -1058,6 +1470,18 @@ class NativeFullRunTest(unittest.TestCase):
             ), mock.patch(
                 "workshop.workflow.native_run.verify_native_made_cad",
                 side_effect=verify_cad,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=effects.credentials,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=effects.writer,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession",
+                side_effect=effects.session,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=effects.transition,
             ):
                 receipt = start_native_run(wish)
                 paths = native_run_paths(wish.product_id)
@@ -1065,9 +1489,10 @@ class NativeFullRunTest(unittest.TestCase):
                     paths.workspace, host_state_root=paths.host_state
                 ).snapshot()
 
-            self.assertEqual(receipt["stage"], "deliver")
-            self.assertEqual(receipt["status"], "waiting")
-            self.assertEqual(checkpoint.stage, "deliver")
+            self.assertEqual(receipt["stage"], "release")
+            self.assertEqual(receipt["status"], "failed")
+            self.assertEqual(checkpoint.stage, "release")
+            self.assertEqual(checkpoint.status, "failed")
             release_packet = launcher.stage_packets[-1]
             self.assertEqual(
                 release_packet["inputs"]["required_package_files"],
@@ -1082,16 +1507,12 @@ class NativeFullRunTest(unittest.TestCase):
             package = paths.workspace / "artifacts/release/package"
             self.assertTrue((package / "MANUAL.md").is_file())
             self.assertFalse((package / "MANUAL.pdf").exists())
-            release_gate = _read_json(
-                sorted((paths.host_state / "gates").glob("*-release.json"))[-1]
-            )
-            self.assertEqual(release_gate["evidence"]["checks"]["manual_path"], "MANUAL.md")
             self.assertEqual(
-                release_gate["evidence"]["checks"][
-                    "native_release_schema_version"
-                ],
-                1,
+                list((paths.host_state / "gates").glob("*-release.json")), []
             )
+            self.assertEqual(receipt["publication"]["status"], "not-created")
+            self.assertEqual(effects.writer_calls, [])
+            self.assertEqual(effects.publish_calls, [])
 
     def test_manual_first_run_cannot_downgrade_to_the_readable_legacy_schema(self):
         launcher = _ManualFirstDowngradeProductAgent()
@@ -1108,7 +1529,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            assets = _product_run_assets_without_direct_release(root)
             wish = Wish.create(
                 "manual-first-no-downgrade",
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -1117,6 +1540,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.product_run_agent_assets",
+                return_value=assets,
             ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
@@ -1137,7 +1563,7 @@ class NativeFullRunTest(unittest.TestCase):
             )
             self.assertEqual(
                 release_packet["inputs"]["required_package_files"],
-                ["MANUAL.pdf", "product.json"],
+                ["MANUAL.pdf", "product.json", "MANUAL-DESIGN.json"],
             )
 
     def _run_playtest_routing_case(
@@ -1147,6 +1573,7 @@ class NativeFullRunTest(unittest.TestCase):
         wish_name,
         context_source,
         launcher=None,
+        effort=None,
     ):
         if launcher is None:
             launcher = _OneSessionProductAgent(playtest_plan=playtest_plan)
@@ -1166,7 +1593,13 @@ class NativeFullRunTest(unittest.TestCase):
             )
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            assets = (
+                _product_run_assets_without_direct_release(root)
+                if effort is None
+                else None
+            )
             wish = Wish.create(
                 wish_name,
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -1197,16 +1630,169 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.FactoryPublicTransition",
                 side_effect=effects.transition,
             ):
-                receipt = start_native_run(wish, publish_requested=False)
+                asset_patch = (
+                    mock.patch(
+                        "workshop.workflow.native_run.product_run_agent_assets",
+                        return_value=assets,
+                    )
+                    if assets is not None
+                    else mock.patch(
+                        "workshop.workflow.native_run._source_checkout_root",
+                        return_value=None,
+                    )
+                )
+                with asset_patch:
+                    receipt = start_native_run(wish, effort=effort)
                 paths = native_run_paths(wish.product_id)
                 run = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state
                 )
                 checkpoint = run.snapshot()
 
-        self.assertEqual(receipt["status"], "waiting")
-        self.assertEqual(receipt["stage"], "deliver")
+        self.assertEqual(receipt["status"], "complete")
+        self.assertEqual(receipt["stage"], "release")
         return launcher, checkpoint
+
+    def test_quest_playtest_repair_returns_to_make_without_match(self):
+        launcher, checkpoint = self._run_playtest_routing_case(
+            effort="quest",
+            playtest_plan=[
+                (
+                    "improve",
+                    [
+                        {
+                            "code": "piece-clearance",
+                            "area": "make",
+                            "severity": "block",
+                            "finding": "The piece clearance needs a build-only repair.",
+                            "change": "Increase the printable clearance and rebuild.",
+                            "evidence_refs": ["results/mechanical-check.json"],
+                            "invalidates": ["playtest", "release"],
+                        }
+                    ],
+                )
+            ],
+            wish_name="quest-build-repair",
+            context_source="quest-build-repair-test",
+        )
+
+        self.assertEqual(checkpoint.effort, "quest")
+        self.assertEqual(checkpoint.round_index, 2)
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            ["invent", "make", "playtest", "make", "playtest", "release"],
+        )
+        self.assertNotIn("match", checkpoint.stage_artifacts)
+
+    def test_spark_release_uses_exact_creative_contract_paths(self):
+        launcher = _OneSessionProductAgent(product_contract_name_collisions=True)
+        launcher, checkpoint = self._run_playtest_routing_case(
+            effort="spark",
+            launcher=launcher,
+            playtest_plan=[],
+            wish_name="spark-contract-name-collisions",
+            context_source="spark-contract-name-collisions-test",
+        )
+
+        self.assertTrue(checkpoint.complete)
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            ["make", "release"],
+        )
+        make_paths = {artifact.path for artifact in checkpoint.stage_artifacts["make"]}
+        self.assertIn("artifacts/make/r0001/assignment.json", make_paths)
+        self.assertIn("artifacts/make/r0001/invented.json", make_paths)
+        self.assertIn(
+            "artifacts/make/r0001/product/assignment.json", make_paths
+        )
+        self.assertIn("artifacts/make/r0001/product/invented.json", make_paths)
+
+    def test_quest_concept_revision_reinvents_without_match(self):
+        launcher = _ConceptRevisionProductAgent()
+        launcher, checkpoint = self._run_playtest_routing_case(
+            effort="quest",
+            playtest_plan=[
+                (
+                    "block",
+                    [
+                        {
+                            "code": "waypoint-misalignment",
+                            "area": "make",
+                            "severity": "block",
+                            "finding": (
+                                "The orbital waypoints do not align with the "
+                                "draughts grid, so legal jumps are ambiguous."
+                            ),
+                            "change": (
+                                "Revise the concept so its orbital interaction maps "
+                                "unambiguously to every legal playable square."
+                            ),
+                            "evidence_refs": ["results/mechanical-check.json"],
+                            "invalidates": [
+                                "invent",
+                                "make",
+                                "playtest",
+                                "release",
+                            ],
+                        }
+                    ],
+                )
+            ],
+            wish_name="quest-orbit-dog-design-revision",
+            context_source="quest-playtest-design-revision-test",
+            launcher=launcher,
+        )
+
+        self.assertEqual(checkpoint.effort, "quest")
+        self.assertEqual(checkpoint.round_index, 2)
+        self.assertEqual(
+            (checkpoint.stage, checkpoint.status), ("release", "complete")
+        )
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            [
+                "invent",
+                "make",
+                "playtest",
+                "invent",
+                "make",
+                "playtest",
+                "release",
+            ],
+        )
+        self.assertNotIn("match", checkpoint.stage_artifacts)
+        first_invent_packet = launcher.stage_packets[0]
+        reinvent_packet = launcher.stage_packets[3]
+        self.assertEqual(
+            first_invent_packet["inputs"]["assignment_contract_path"],
+            "artifacts/invent/assignment.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["assignment_contract_path"],
+            "artifacts/invent/r0002/assignment.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["contract_path"],
+            "artifacts/invent/r0002/invented.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["prior_invented_artifact"]["path"],
+            "artifacts/invent/invented.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["failing_playtested_artifact"]["path"],
+            "artifacts/playtest/r0001/playtested.json",
+        )
+        self.assertEqual(
+            [path for path, unused_bytes in launcher.invent_outputs],
+            [
+                "artifacts/invent/invented.json",
+                "artifacts/invent/r0002/invented.json",
+            ],
+        )
+        self.assertNotEqual(
+            launcher.invent_outputs[0][1], launcher.invent_outputs[1][1]
+        )
 
     def test_timeout_continues_same_session_through_the_full_run(self):
         with mock.patch("workshop.workflow.native_run.time.sleep") as backoff:
@@ -1217,8 +1803,8 @@ class NativeFullRunTest(unittest.TestCase):
                 launcher=_TimeoutOnceProductAgent(),
             )
 
-        self.assertEqual(checkpoint.stage, "deliver")
-        self.assertEqual(checkpoint.status, "waiting")
+        self.assertEqual(checkpoint.stage, "release")
+        self.assertEqual(checkpoint.status, "complete")
         self.assertEqual(len(launcher.starts), 1)
         self.assertEqual(len(launcher.resumes), 5)
         backoff.assert_called_once()
@@ -1227,7 +1813,8 @@ class NativeFullRunTest(unittest.TestCase):
             ["match", "invent", "make", "playtest", "release"],
         )
 
-    def test_design_invalidating_playtest_verdict_routes_back_to_make(self):
+    def test_concept_invalidating_playtest_routes_to_bound_reinvent_checkpoint(self):
+        launcher = _ConceptRevisionProductAgent()
         launcher, checkpoint = self._run_playtest_routing_case(
             playtest_plan=[
                 (
@@ -1242,20 +1829,27 @@ class NativeFullRunTest(unittest.TestCase):
                                 "draughts grid, so legal jumps are ambiguous."
                             ),
                             "change": (
-                                "Revise the design and geometry in Make so every "
-                                "waypoint is centered on a playable square."
+                                "Revise the concept so its orbital interaction maps "
+                                "unambiguously to every legal playable square."
                             ),
                             "evidence_refs": ["results/mechanical-check.json"],
-                            "invalidates": ["playtest", "release", "deliver"],
+                            "invalidates": [
+                                "invent",
+                                "make",
+                                "playtest",
+                                "release",
+                            ],
                         }
                     ],
                 )
             ],
             wish_name="orbit-dog-design-revision",
             context_source="native-playtest-design-revision-test",
+            launcher=launcher,
         )
 
         self.assertEqual(checkpoint.round_index, 2)
+        self.assertEqual((checkpoint.stage, checkpoint.status), ("release", "complete"))
         self.assertEqual(
             [packet["stage"] for packet in launcher.stage_packets],
             [
@@ -1263,25 +1857,46 @@ class NativeFullRunTest(unittest.TestCase):
                 "invent",
                 "make",
                 "playtest",
+                "invent",
                 "make",
                 "playtest",
                 "release",
             ],
         )
-        first_make_packet = launcher.stage_packets[2]
-        second_make_packet = launcher.stage_packets[4]
-        self.assertEqual(first_make_packet["round"], 1)
-        self.assertEqual(second_make_packet["round"], 2)
+        first_invent_packet = launcher.stage_packets[1]
+        reinvent_packet = launcher.stage_packets[4]
+        self.assertIsNone(first_invent_packet["round"])
+        self.assertIsNone(reinvent_packet["round"])
         self.assertNotEqual(
-            first_make_packet["checkpoint_sha256"],
-            second_make_packet["checkpoint_sha256"],
+            first_invent_packet["checkpoint_sha256"],
+            reinvent_packet["checkpoint_sha256"],
         )
         self.assertEqual(
-            second_make_packet["inputs"]["previous_playtest"]["path"],
+            reinvent_packet["inputs"]["failing_playtested_artifact"]["path"],
             "artifacts/playtest/r0001/playtested.json",
         )
-        make_artifacts = checkpoint.stage_artifacts["make"]
-        self.assertTrue(any("r0002" in artifact.path for artifact in make_artifacts))
+        self.assertEqual(
+            reinvent_packet["inputs"]["prior_invented_artifact"]["path"],
+            "artifacts/invent/invented.json",
+        )
+        self.assertEqual(
+            reinvent_packet["inputs"]["contract_path"],
+            "artifacts/invent/r0002/invented.json",
+        )
+        self.assertEqual(
+            [path for path, unused_bytes in launcher.invent_outputs],
+            [
+                "artifacts/invent/invented.json",
+                "artifacts/invent/r0002/invented.json",
+            ],
+        )
+        self.assertNotEqual(
+            launcher.invent_outputs[0][1], launcher.invent_outputs[1][1]
+        )
+        self.assertEqual(
+            checkpoint.stage_artifacts["invent"][0].path,
+            "artifacts/invent/r0002/invented.json",
+        )
 
     def test_build_only_playtest_verdict_routes_back_to_make(self):
         launcher, checkpoint = self._run_playtest_routing_case(
@@ -1302,7 +1917,7 @@ class NativeFullRunTest(unittest.TestCase):
                                 "next Make revision."
                             ),
                             "evidence_refs": ["results/printability-check.json"],
-                            "invalidates": ["playtest", "release", "deliver"],
+                            "invalidates": ["playtest", "release"],
                         }
                     ],
                 )
@@ -1344,7 +1959,7 @@ class NativeFullRunTest(unittest.TestCase):
                     "is centered on a playable square."
                 ),
                 "evidence_refs": ["results/mechanical-check.json"],
-                "invalidates": ["playtest", "release", "deliver"],
+                "invalidates": ["playtest", "release"],
             }
         ]
         launcher, checkpoint = self._run_playtest_routing_case(
@@ -1550,6 +2165,13 @@ class NativeFullRunTest(unittest.TestCase):
                     failure_code="verifier-timeout",
                     timed_out=True,
                 )
+            if len(cad_calls) == 6:
+                raise _failed_cad_gate(
+                    made,
+                    arguments,
+                    failure_code="verifier-timeout",
+                    timed_out=True,
+                )
             return SimpleNamespace(
                 passed=True,
                 receipt_sha256=_sha256(
@@ -1563,7 +2185,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
 
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            assets = _product_run_assets_without_direct_release(root)
             wish = Wish.create(
                 "orbit-dog-cad-retry",
                 "Build a pocket draughts set inspired by my orbit-loving dog.",
@@ -1572,6 +2196,9 @@ class NativeFullRunTest(unittest.TestCase):
             )
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.product_run_agent_assets",
+                return_value=assets,
             ), mock.patch(
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
@@ -1594,19 +2221,19 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.FactoryPublicTransition",
                 side_effect=effects.transition,
             ):
-                receipt = start_native_run(wish, publish_requested=False)
+                receipt = start_native_run(wish)
                 paths = native_run_paths(wish.product_id)
                 checkpoint = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state
                 ).snapshot()
 
-            self.assertEqual(receipt["status"], "waiting")
-            self.assertEqual(receipt["stage"], "deliver")
-            self.assertEqual(receipt["native_turns"], 8)
-            self.assertEqual(checkpoint.stage, "deliver")
-            self.assertEqual(checkpoint.status, "waiting")
+            self.assertEqual(receipt["status"], "complete")
+            self.assertEqual(receipt["stage"], "release")
+            self.assertEqual(receipt["native_turns"], 9)
+            self.assertEqual(checkpoint.stage, "release")
+            self.assertEqual(checkpoint.status, "complete")
             self.assertEqual(len(launcher.starts), 1)
-            self.assertEqual(len(launcher.resumes), 7)
+            self.assertEqual(len(launcher.resumes), 8)
             self.assertEqual(
                 [packet["stage"] for packet in launcher.stage_packets],
                 [
@@ -1618,15 +2245,17 @@ class NativeFullRunTest(unittest.TestCase):
                     "playtest",
                     "playtest",
                     "release",
+                    "release",
                 ],
             )
-            self.assertEqual(len(cad_calls), 5)
+            self.assertEqual(len(cad_calls), 7)
             self.assertFalse((paths.workspace / "agent-outcome.json").exists())
 
             make_initial, make_retry, make_second_retry = (
                 launcher.stage_packets[2:5]
             )
             playtest_initial, playtest_retry = launcher.stage_packets[5:7]
+            release_initial, release_retry = launcher.stage_packets[7:9]
             rejection_pairs = (
                 (
                     make_initial,
@@ -1643,6 +2272,12 @@ class NativeFullRunTest(unittest.TestCase):
                 (
                     playtest_initial,
                     playtest_retry,
+                    "verifier-timeout",
+                    True,
+                ),
+                (
+                    release_initial,
+                    release_retry,
                     "verifier-timeout",
                     True,
                 ),
@@ -1714,11 +2349,17 @@ class NativeFullRunTest(unittest.TestCase):
                     "captured_text_tail"
                 ],
             )
+            self.assertIn(
+                "verifier-timeout",
+                release_retry["inputs"]["host_cad_gate_rejection"]["stderr"][
+                    "captured_text_tail"
+                ],
+            )
 
             rejection_root = paths.host_state / "cad-gate-rejections"
             self.assertEqual(stat.S_IMODE(rejection_root.stat().st_mode), 0o700)
             rejection_paths = sorted(rejection_root.glob("*.json"))
-            self.assertEqual(len(rejection_paths), 2)
+            self.assertEqual(len(rejection_paths), 3)
             for rejection_path in rejection_paths:
                 self.assertEqual(stat.S_IMODE(rejection_path.stat().st_mode), 0o600)
                 persisted = _read_json(rejection_path)
@@ -1741,10 +2382,126 @@ class NativeFullRunTest(unittest.TestCase):
                 ],
                 persisted_make["rejection_sha256"],
             )
+            self.assertEqual(len(effects.publish_calls), 1)
+
+    def test_non_print_ready_playtest_returns_to_make_before_release(self):
+        launcher = _OneSessionProductAgent()
+        effects = _FactoryEffects()
+        cad_calls = []
+
+        def verified(made, arguments, *, lower=False):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(
+                    (made.made_sha256 + str(len(cad_calls))).encode("ascii")
+                ),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=(
+                    NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE
+                    if lower
+                    else NATIVE_CAD_VERIFIER_MODE
+                ),
+                verification_tier=(
+                    NATIVE_CAD_NON_PRINT_READY_TIER
+                    if lower
+                    else NATIVE_CAD_FULL_TIER
+                ),
+                thickness_gate_required=not lower,
+                print_ready_eligible=not lower,
+            )
+
+        def verify_cad(made, **arguments):
+            cad_calls.append((made, dict(arguments)))
+            call = len(cad_calls)
+            if call == 2:
+                self.assertTrue(arguments["require_print_ready"])
+                self.assertEqual(effects.publish_calls, [])
+                raise _failed_cad_gate(
+                    made,
+                    arguments,
+                    failure_code="cad-not-print-ready",
+                    timed_out=False,
+                    verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
+                )
+            return verified(made, arguments, lower=call in (1, 3))
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            assets = _product_run_assets_without_direct_release(root)
+            wish = Wish.create(
+                "orbit-dog-lower-tier-repair",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.product_run_agent_assets",
+                return_value=assets,
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=effects.credentials,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=effects.writer,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession",
+                side_effect=effects.session,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=effects.transition,
+            ):
+                receipt = start_native_run(wish)
+                repair_binding = launcher.stage_packets[5]["inputs"][
+                    "previous_playtest"
+                ]
+                repair_playtest = _read_json(
+                    native_run_paths(wish.product_id).workspace
+                    / repair_binding["path"]
+                )
+
+        self.assertEqual(
+            (receipt["stage"], receipt["status"]), ("release", "complete")
+        )
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            [
+                "match",
+                "invent",
+                "make",
+                "playtest",
+                "playtest",
+                "make",
+                "playtest",
+                "release",
+            ],
+        )
+        rejected_retry = launcher.stage_packets[4]
+        self.assertEqual(
+            rejected_retry["inputs"]["host_cad_gate_rejection"]["failure_code"],
+            "cad-not-print-ready",
+        )
+        self.assertEqual(repair_playtest["verdict"], "improve")
+        self.assertEqual(
+            repair_playtest["feedback"][0]["code"],
+            "cad-not-print-ready",
+        )
+        self.assertEqual(len(effects.publish_calls), 1)
+        self.assertEqual(cad_calls[-1][1]["evidence_stage"], "release")
 
     def test_one_native_session_runs_every_stage_and_host_seals_the_release(self):
         launcher = _OneSessionProductAgent()
         effects = _FactoryEffects()
+        timing_events = []
         cad_calls = []
 
         def verify_cad(made, **arguments):
@@ -1793,55 +2550,55 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.FactoryPublicTransition",
                 side_effect=effects.transition,
             ):
-                local_receipt = start_native_run(wish, publish_requested=False)
+                receipt = start_native_run(
+                    wish,
+                    timing_observer=timing_events.append,
+                )
                 paths = native_run_paths(wish.product_id)
-                native_calls_before_promotion = len(launcher.starts) + len(
-                    launcher.resumes
-                )
                 effect_path = paths.host_state / "release-effect.json"
-                self.assertFalse(effect_path.exists())
-                receipt = resume_native_run(
-                    wish.product_id, publish_requested=True
-                )
+                self.assertTrue(effect_path.exists())
                 run = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state
                 )
                 checkpoint = run.snapshot()
 
-            self.assertEqual(local_receipt["status"], "waiting")
-            self.assertEqual(local_receipt["stage"], "deliver")
-            self.assertEqual(local_receipt["native_turns"], 5)
-            self.assertEqual(local_receipt["publication"]["status"], "not-created")
-            self.assertEqual(receipt["status"], "waiting")
-            self.assertEqual(receipt["stage"], "deliver")
-            self.assertEqual(receipt["native_turns"], 5)
-            self.assertEqual(receipt["action"], "published-existing-release")
+            self.assertEqual(receipt["status"], "complete")
+            self.assertEqual(receipt["stage"], "release")
+            self.assertEqual(receipt["native_turns"], 4)
+            self.assertEqual(receipt["action"], "started")
             self.assertEqual(receipt["publication"]["status"], "public")
             self.assertTrue(receipt["publication"]["verified"])
             self.assertEqual(receipt["publication"]["page_url"], _PAGE_URL)
-            self.assertEqual(checkpoint.stage, "deliver")
-            self.assertEqual(checkpoint.status, "waiting")
             self.assertEqual(
-                len(launcher.starts) + len(launcher.resumes),
-                native_calls_before_promotion,
+                [
+                    (event.stage, event.operation, event.state)
+                    for event in timing_events
+                    if event.operation == "effect.factory"
+                ],
+                [
+                    ("release", "effect.factory", "started"),
+                    ("release", "effect.factory", "completed"),
+                ],
             )
+            self.assertEqual(checkpoint.stage, "release")
+            self.assertEqual(checkpoint.status, "complete")
 
             self.assertEqual(len(launcher.starts), 1)
-            self.assertEqual(len(launcher.resumes), 4)
+            self.assertEqual(len(launcher.resumes), 3)
             self.assertEqual(
                 [packet["stage"] for packet in launcher.stage_packets],
-                ["match", "invent", "make", "playtest", "release"],
+                ["match", "invent", "make", "release"],
             )
             stage_finalizers = [
                 command for command in launcher.finalizer_commands if command[4] != "make-group"
             ]
-            self.assertEqual(len(stage_finalizers), 5)
+            self.assertEqual(len(stage_finalizers), 4)
             self.assertEqual(
                 sum(1 for command in launcher.finalizer_commands if command[4] == "make-group"), 2
             )
             self.assertEqual(
                 len({packet["checkpoint_sha256"] for packet in launcher.stage_packets}),
-                5,
+                4,
             )
             session_calls = launcher.starts + launcher.resumes
             for field in (
@@ -1861,29 +2618,46 @@ class NativeFullRunTest(unittest.TestCase):
 
             release_packet = launcher.stage_packets[-1]
             self.assertEqual(
-                release_packet["inputs"]["playtested"]["kind"],
-                "autonomous-workshop.playtested",
+                release_packet["inputs"]["release_contract"],
+                {
+                    "native_release_schema_version": 3,
+                    "manual_path": "MANUAL.pdf",
+                    "product_schema_version": 5,
+                    "product_status": "manual-ready",
+                    "playtest_status": "not-run",
+                    "playtest_omission_path": "PLAYTEST-NOT-RUN.json",
+                    "manual_design_evidence_path": "MANUAL-DESIGN.json",
+                    "manual_design_evidence_schema_version": 1,
+                },
             )
             self.assertEqual(
-                release_packet["inputs"]["playtested_artifact"][
-                    "playtested_sha256"
+                release_packet["inputs"]["required_package_files"],
+                [
+                    "MANUAL.pdf",
+                    "product.json",
+                    "MANUAL-DESIGN.json",
+                    "PLAYTEST-NOT-RUN.json",
                 ],
-                release_packet["inputs"]["playtested"]["playtested_sha256"],
             )
+            self.assertNotIn("playtested", release_packet["inputs"])
 
             self.assertEqual(len(cad_calls), 2)
-            self.assertEqual(cad_calls[0][0].made_sha256, cad_calls[1][0].made_sha256)
+            self.assertEqual(
+                {call[0].made_sha256 for call in cad_calls},
+                {cad_calls[0][0].made_sha256},
+            )
             verifier_path = paths.workspace / ".agents/skills/cad/scripts/verify_project"
             verifier_sha256 = _sha256(verifier_path.read_bytes())
             for made, arguments in cad_calls:
                 self.assertEqual(arguments["run_root"], paths.workspace)
                 self.assertEqual(arguments["host_state_root"], paths.host_state)
+                self.assertTrue(arguments["require_print_ready"])
                 self.assertEqual(
                     arguments["expected_verifier_sha256"], verifier_sha256
                 )
                 self.assertEqual(made.product["title"], "Orbit Dog Draughts")
 
-            self.assertEqual(effects.credential_requests, ["alice"])
+            self.assertEqual(effects.credential_requests, 1)
             self.assertEqual(len(effects.writer_calls), 2)
             self.assertIs(effects.writer_calls[0][2], effects.credentials_value)
             self.assertEqual(len(effects.ledgers), 1)
@@ -1927,15 +2701,10 @@ class NativeFullRunTest(unittest.TestCase):
                     "artifacts/make/r0001/product/cad/project/build.py",
                     "artifacts/make/r0001/product/validation/cad-verification.json",
                 },
-                "playtest": {
-                    "artifacts/playtest/r0001/playtested.json",
-                    "artifacts/playtest/r0001/evidence/results/agent-playtest.json",
-                    "artifacts/playtest/r0001/evidence/results/mechanical-check.json",
-                    "artifacts/playtest/r0001/evidence/results/printability-check.json",
-                },
                 "release": {
                     "artifacts/release/release.json",
                     "artifacts/release/package/MANUAL.pdf",
+                    "artifacts/release/package/PLAYTEST-NOT-RUN.json",
                     "artifacts/release/package/product.json",
                 },
             }
@@ -1957,19 +2726,15 @@ class NativeFullRunTest(unittest.TestCase):
             made = NativeMade.from_mapping(
                 _read_json(paths.workspace / checkpoint.stage_artifacts["make"][0].path)
             )
-            playtested = NativePlaytested.from_mapping(
-                _read_json(paths.workspace / checkpoint.stage_artifacts["playtest"][0].path)
-            )
             release = NativeRelease.from_mapping(
                 _read_json(paths.workspace / checkpoint.stage_artifacts["release"][0].path)
             )
             invented.assert_context(assignment)
             made.assert_context(assignment, invented, expected_round=1)
-            release.validate_package_tree(paths.workspace, made, playtested)
-            verification = read_product_verification(
-                paths.workspace / PRODUCT_VERIFICATION_PATH
+            release.validate_package_tree(paths.workspace, made, None)
+            self.assertFalse(
+                (paths.workspace / PRODUCT_VERIFICATION_PATH).exists()
             )
-            verification.assert_context(release, made, playtested)
 
             tamper_targets = (
                 (
@@ -1977,15 +2742,15 @@ class NativeFullRunTest(unittest.TestCase):
                     lambda: made.validate_product_tree(paths.workspace),
                 ),
                 (
-                    paths.workspace
-                    / "artifacts/playtest/r0001/evidence/results/agent-playtest.json",
-                    lambda: playtested.validate_evidence_tree(paths.workspace, made),
-                ),
-                (
                     paths.workspace / "artifacts/release/package/MANUAL.pdf",
                     lambda: release.validate_package_tree(
-                        paths.workspace, made, playtested
+                        paths.workspace, made, None
                     ),
+                ),
+                (
+                    paths.workspace
+                    / "artifacts/release/package/PLAYTEST-NOT-RUN.json",
+                    lambda: release.validate_package_tree(paths.workspace, made, None),
                 ),
             )
             for target, validator in tamper_targets:
@@ -2009,13 +2774,11 @@ class NativeFullRunTest(unittest.TestCase):
                     "0001-match.json",
                     "0002-invent.json",
                     "0003-make.json",
-                    "0004-playtest.json",
-                    "0005-release.json",
+                    "0004-release.json",
                 ],
             )
             make_gate = _read_json(paths.host_state / "gates/0003-make.json")
-            playtest_gate = _read_json(paths.host_state / "gates/0004-playtest.json")
-            release_gate = _read_json(paths.host_state / "gates/0005-release.json")
+            release_gate = _read_json(paths.host_state / "gates/0004-release.json")
             invent_gate = _read_json(paths.host_state / "gates/0002-invent.json")
             by_stage = {packet["stage"]: packet for packet in launcher.stage_packets}
             design_vault = by_stage["invent"]["inputs"]["design_vault"]
@@ -2033,20 +2796,6 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(
                 invent_gate["evidence"]["checks"]["vault_leads"], len(leads)
             )
-            self.assertEqual(by_stage["playtest"]["inputs"]["vault_leads"], leads)
-            self.assertEqual(
-                playtest_gate["evidence"]["checks"]["vault_leads_answered"], len(leads)
-            )
-            self.assertEqual(playtest_gate["evidence"]["checks"]["vault_leads_confirmed"], 0)
-            self.assertEqual(playtest_gate["evidence"]["checks"]["score_reads"], 3)
-            self.assertEqual(
-                playtest_gate["evidence"]["checks"]["score_median"],
-                {"wish_fit": 8, "play": 8, "legibility": 8, "build_confidence": 8},
-            )
-            self.assertEqual(
-                playtest_gate["evidence"]["checks"]["score_spread"],
-                {"wish_fit": 1, "play": 1, "legibility": 1, "build_confidence": 1},
-            )
             self.assertEqual(by_stage["make"]["inputs"]["score_history"], [])
             self.assertEqual(by_stage["make"]["inputs"]["regression"], {})
             self.assertEqual(by_stage["make"]["inputs"]["ambiguous"], [])
@@ -2057,19 +2806,134 @@ class NativeFullRunTest(unittest.TestCase):
                 (paths.workspace / "artifacts/make/r0001/product/groups/pieces.json").is_file()
             )
             self.assertTrue(
-                playtest_gate["evidence"]["checks"]["cad_verification_passed"]
+                release_gate["evidence"]["checks"]["cad_print_ready_eligible"]
+            )
+            self.assertEqual(
+                release_gate["evidence"]["checks"]["publication_status"],
+                "public",
             )
             self.assertTrue(
-                release_gate["evidence"]["checks"]["local_release_sealed"]
+                release_gate["evidence"]["checks"]["factory_readback_verified"]
+            )
+            self.assertEqual(
+                release_gate["evidence"]["checks"]["playtest_status"],
+                "not-run",
             )
             self.assertEqual(
                 release_gate["evidence"]["checks"]["product_verification_status"],
-                "recorded",
+                "not-recorded",
             )
-            self.assertEqual(
-                release_gate["evidence"]["checks"]["product_verification_sha256"],
-                verification.sha256,
+            self.assertNotIn(
+                "product_verification_sha256", release_gate["evidence"]["checks"]
             )
+
+    def test_each_selectable_effort_runs_its_exact_passthrough_route(self):
+        routes = {
+            "spark": ["make", "release"],
+            "forge": ["invent", "make", "release"],
+            "quest": ["invent", "make", "playtest", "release"],
+        }
+
+        for effort, expected_stages in routes.items():
+            with self.subTest(effort=effort), tempfile.TemporaryDirectory() as temporary:
+                launcher = _OneSessionProductAgent()
+                effects = _FactoryEffects()
+                home = Path(temporary).resolve() / "workshop-home"
+                wish = Wish.create(
+                    "effort-%s" % effort,
+                    "Build a pocket draughts set inspired by my orbit-loving dog.",
+                )
+
+                def verify_cad(made, **arguments):
+                    return SimpleNamespace(
+                        passed=True,
+                        receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                        verifier_sha256=arguments["expected_verifier_sha256"],
+                        verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                        verification_tier=NATIVE_CAD_FULL_TIER,
+                        thickness_gate_required=True,
+                        print_ready_eligible=True,
+                    )
+
+                with mock.patch.dict(
+                    os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+                ), mock.patch(
+                    "workshop.workflow.native_run._source_checkout_root",
+                    return_value=None,
+                ), mock.patch(
+                    "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                    return_value=launcher,
+                ), mock.patch(
+                    "workshop.workflow.native_run.verify_native_made_cad",
+                    side_effect=verify_cad,
+                ), mock.patch(
+                    "workshop.workflow.native_run._factory_credentials",
+                    side_effect=effects.credentials,
+                ), mock.patch(
+                    "workshop.workflow.native_run.FactoryReleaseWriter",
+                    side_effect=effects.writer,
+                ), mock.patch(
+                    "workshop.workflow.native_run.FactoryAgentSession",
+                    side_effect=effects.session,
+                ), mock.patch(
+                    "workshop.workflow.native_run.FactoryPublicTransition",
+                    side_effect=effects.transition,
+                ):
+                    receipt = start_native_run(wish, effort=effort)
+                    paths = native_run_paths(wish.product_id)
+                    checkpoint = AgentRun.open(
+                        paths.workspace, host_state_root=paths.host_state
+                    ).snapshot()
+
+                self.assertEqual(receipt["status"], "complete")
+                self.assertEqual(receipt["effort"], effort)
+                self.assertEqual(checkpoint.effort, effort)
+                self.assertEqual(
+                    [packet["stage"] for packet in launcher.stage_packets],
+                    expected_stages,
+                )
+                self.assertEqual(receipt["native_turns"], len(expected_stages))
+                self.assertNotIn("match", checkpoint.stage_artifacts)
+                self.assertEqual(
+                    "playtest" in checkpoint.stage_artifacts,
+                    effort == "quest",
+                )
+                creative_stage = "make" if effort == "spark" else "invent"
+                creative_paths = {
+                    Path(item.path).name
+                    for item in checkpoint.stage_artifacts[creative_stage]
+                }
+                self.assertTrue(
+                    {"assignment.json", "invented.json"} <= creative_paths
+                )
+                release = NativeRelease.from_mapping(
+                    _read_json(
+                        paths.workspace
+                        / checkpoint.stage_artifacts["release"][0].path
+                    )
+                )
+                self.assertEqual(release.schema_version, 2 if effort == "quest" else 3)
+                if effort == "quest":
+                    by_stage = {
+                        packet["stage"]: packet for packet in launcher.stage_packets
+                    }
+                    leads = by_stage["make"]["inputs"]["vault_leads"]
+                    self.assertTrue(leads)
+                    self.assertEqual(by_stage["playtest"]["inputs"]["vault_leads"], leads)
+                    checks = _read_json(
+                        next((paths.host_state / "gates").glob("*-playtest.json"))
+                    )["evidence"]["checks"]
+                    self.assertEqual(checks["vault_leads_answered"], len(leads))
+                    self.assertEqual(checks["vault_leads_confirmed"], 0)
+                    self.assertEqual(checks["score_reads"], 3)
+                    self.assertEqual(
+                        checks["score_median"],
+                        {"wish_fit": 8, "play": 8, "legibility": 8, "build_confidence": 8},
+                    )
+                    self.assertEqual(
+                        checks["score_spread"],
+                        {"wish_fit": 1, "play": 1, "legibility": 1, "build_confidence": 1},
+                    )
 
 
 if __name__ == "__main__":

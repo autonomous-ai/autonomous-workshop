@@ -61,7 +61,7 @@ class ReleaseContext:
     taste: Taste
     blueprint: ToyBlueprint
     made: Made
-    playtested: Playtested
+    playtested: Playtested | None
     workspace: Path
     lease_token: Optional[str] = field(default=None, repr=False, compare=False)
 
@@ -70,11 +70,11 @@ class ReleaseContext:
             raise ContractError("ReleaseContext requires a Wish and Taste")
         if not isinstance(self.blueprint, ToyBlueprint):
             raise ContractError("ReleaseContext requires a ToyBlueprint")
-        if not isinstance(self.made, Made) or not isinstance(self.playtested, Playtested):
-            raise ContractError(
-                "ReleaseContext requires Made and Playtested results"
-            )
-        if not self.playtested.passed:
+        if not isinstance(self.made, Made):
+            raise ContractError("ReleaseContext requires a Made result")
+        if self.playtested is not None and not isinstance(self.playtested, Playtested):
+            raise ContractError("ReleaseContext Playtested result is invalid")
+        if self.playtested is not None and not self.playtested.passed:
             raise ContractError("Release cannot begin before Playtest passes")
         root = Path(self.workspace)
         if not root.is_absolute():
@@ -93,16 +93,17 @@ class ReleaseContext:
         """Recheck that Release still describes the exact Playtested Make."""
 
         self.made.assert_current()
-        self.playtested.assert_artifact(self.made.artifact_sha256)
+        if self.playtested is not None:
+            self.playtested.assert_artifact(self.made.artifact_sha256)
 
 
 @dataclass(frozen=True)
 class ProductRelease:
-    """One locally verified and sealed customer Release package.
+    """The locally verified package component of terminal Release.
 
-    This contract deliberately stops at exact local bytes.  A Factory draft or
-    public page is optional host-owned enrichment with its own durable receipt;
-    it is not part of Release acceptance.
+    This narrow contract deliberately stops at exact local bytes. The Workflow
+    host separately requires a durable Factory effect receipt and authenticated
+    public readback before the Release checkpoint can complete.
     """
 
     root: Path
@@ -154,7 +155,26 @@ class ProductRelease:
             raise ContractError(
                 "ProductRelease product.json must use canonical JSON encoding"
             )
-        release_schema_version = 1 if manual.as_posix() == "MANUAL.md" else 2
+        if not isinstance(page_value, Mapping):
+            raise ContractError(
+                "ProductRelease product.json must contain one JSON object"
+            )
+        product_schema_version = page_value.get("schema_version")
+        release_schema_version = {
+            3: 1,
+            4: 2,
+            5: 3,
+        }.get(product_schema_version)
+        if release_schema_version is None:
+            raise ContractError("ProductRelease product.json schema is unsupported")
+        expected_manual_path = (
+            "MANUAL.md" if release_schema_version == 1 else "MANUAL.pdf"
+        )
+        if manual.as_posix() != expected_manual_path:
+            raise ContractError(
+                "ProductRelease product.json schema_version %d requires %s"
+                % (product_schema_version, expected_manual_path)
+            )
         page = validate_release_product(
             page_value,
             release_schema_version=release_schema_version,

@@ -15,10 +15,11 @@ import re
 import stat
 import tempfile
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Callable, Iterator, Mapping, Optional, Sequence
 
 from workshop.errors import ContractError
 
@@ -38,6 +39,16 @@ SAFE_NATIVE_ACTIVITY_CLASSES = (
     "completed",
     "failed",
 )
+WISH_RUN_TIMING_OPERATIONS = (
+    "run.initialize",
+    "stage.prepare",
+    "session.start",
+    "session.resume",
+    "outcome.process",
+    "gate.evaluate",
+    "effect.factory",
+)
+WISH_RUN_TIMING_STATES = ("started", "completed", "failed")
 _ACTIVE_ACTIVITY_CLASSES = frozenset(
     ("starting", "running", "reasoning", "tool", "subagent", "finalizing")
 )
@@ -46,6 +57,9 @@ _STAGES = frozenset(
 )
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_UTC_TIMESTAMP = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$"
+)
 _MAX_COUNTER = 1_000_000
 # Safely representable by ``datetime`` on supported POSIX hosts and centuries
 # beyond the useful lifetime of a run, while rejecting hostile huge epochs.
@@ -54,6 +68,77 @@ _MAX_TIMESTAMP_MS = 10**13
 
 class NativeProgressUnavailable(Exception):
     """The optional progress record cannot be trusted or used."""
+
+
+@dataclass(frozen=True)
+class WishRunTimingEvent:
+    """One bounded, content-free foreground timing observation."""
+
+    observed_at: str
+    product_id: str
+    stage: str
+    operation: str
+    state: str
+    elapsed_ms: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.observed_at, str)
+            or _UTC_TIMESTAMP.fullmatch(self.observed_at) is None
+        ):
+            raise ContractError("Wish timing timestamp is invalid")
+        try:
+            datetime.fromisoformat(self.observed_at.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ContractError("Wish timing timestamp is invalid") from exc
+        if (
+            not isinstance(self.product_id, str)
+            or _IDENTIFIER.fullmatch(self.product_id) is None
+        ):
+            raise ContractError("Wish timing product_id is invalid")
+        _require_stage(self.stage, "Wish timing stage")
+        if self.operation not in WISH_RUN_TIMING_OPERATIONS:
+            raise ContractError("Wish timing operation is invalid")
+        if self.state not in WISH_RUN_TIMING_STATES:
+            raise ContractError("Wish timing state is invalid")
+        if self.state == "started":
+            if self.elapsed_ms is not None:
+                raise ContractError(
+                    "started Wish timing event cannot have elapsed_ms"
+                )
+        elif (
+            type(self.elapsed_ms) is not int
+            or not 0 <= self.elapsed_ms <= _MAX_TIMESTAMP_MS
+        ):
+            raise ContractError(
+                "terminal Wish timing event requires nonnegative elapsed_ms"
+            )
+
+    def to_dict(self) -> dict[str, Any]:
+        value: dict[str, Any] = {
+            "observed_at": self.observed_at,
+            "product_id": self.product_id,
+            "stage": self.stage,
+            "operation": self.operation,
+            "state": self.state,
+        }
+        if self.elapsed_ms is not None:
+            value["elapsed_ms"] = self.elapsed_ms
+        return value
+
+
+WishRunTimingObserver = Callable[[WishRunTimingEvent], None]
+
+
+def _observe_wish_timing(
+    observer: WishRunTimingObserver,
+    event: WishRunTimingEvent,
+) -> None:
+    try:
+        observer(event)
+    except Exception:
+        # Presentation telemetry is never lifecycle or gate authority.
+        pass
 
 
 def _strict_object(pairs: Sequence[tuple[str, Any]]) -> dict[str, Any]:
@@ -92,6 +177,61 @@ def _timestamp(value_ms: int) -> str:
         .isoformat(timespec="milliseconds")
         .replace("+00:00", "Z")
     )
+
+
+@contextmanager
+def wish_run_timing_span(
+    observer: Optional[WishRunTimingObserver],
+    *,
+    product_id: str,
+    stage: str,
+    operation: str,
+) -> Iterator[None]:
+    """Emit one paired foreground timing observation around an operation."""
+
+    if observer is None:
+        yield
+        return
+    started_at = time.monotonic()
+    _observe_wish_timing(
+        observer,
+        WishRunTimingEvent(
+            observed_at=_timestamp(_now_ms()),
+            product_id=product_id,
+            stage=stage,
+            operation=operation,
+            state="started",
+        ),
+    )
+    try:
+        yield
+    except BaseException:
+        elapsed_ms = int(max(0.0, time.monotonic() - started_at) * 1000)
+        _observe_wish_timing(
+            observer,
+            WishRunTimingEvent(
+                observed_at=_timestamp(_now_ms()),
+                product_id=product_id,
+                stage=stage,
+                operation=operation,
+                state="failed",
+                elapsed_ms=elapsed_ms,
+            ),
+        )
+        raise
+    else:
+        elapsed_ms = int(max(0.0, time.monotonic() - started_at) * 1000)
+        _observe_wish_timing(
+            observer,
+            WishRunTimingEvent(
+                observed_at=_timestamp(_now_ms()),
+                product_id=product_id,
+                stage=stage,
+                operation=operation,
+                state="completed",
+                elapsed_ms=elapsed_ms,
+            ),
+        )
 
 
 def _require_sha256(value: Any, label: str) -> str:
@@ -595,11 +735,16 @@ __all__ = [
     "NATIVE_PROGRESS_FILENAME",
     "NATIVE_PROGRESS_KIND",
     "SAFE_NATIVE_ACTIVITY_CLASSES",
+    "WISH_RUN_TIMING_OPERATIONS",
+    "WISH_RUN_TIMING_STATES",
     "NativeProgressUnavailable",
     "NativeRunProgress",
+    "WishRunTimingEvent",
+    "WishRunTimingObserver",
     "begin_native_progress",
     "native_progress_turn_floor",
     "read_native_progress",
     "trusted_native_progress",
+    "wish_run_timing_span",
     "write_native_progress",
 ]

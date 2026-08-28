@@ -29,6 +29,7 @@ SKILL_PATHS = {
     "cad": "make/skills/cad",
     "design-reference": "make/skills/design-reference",
     "design-vault": "invent/skills/design-vault",
+    "electromechanical-integration": "make/skills/electromechanical-integration",
     "image-to-cad": "make/skills/image-to-cad",
     "manual-design": "release/skills/manual-design",
     "step-parts": "make/skills/step-parts",
@@ -37,7 +38,17 @@ SKILLS = tuple(SKILL_PATHS)
 LISTED_MAKE_SKILLS = tuple(
     name for name, relative in SKILL_PATHS.items() if relative.startswith("make/")
 )
-INVENTORS = ("abo", "alice", "bob", "eve", "ivy", "leo")
+INVENTORS = (
+    "abo",
+    "alice",
+    "bob",
+    "eve",
+    "ivy",
+    "leo",
+    "mira-fold",
+    "pico-press",
+    "tess-loop",
+)
 CODEX_THREAD_ID = "12345678-1234-5678-9234-567812345678"
 
 
@@ -488,7 +499,7 @@ for inventor_id in inventor_ids:
                         / (inventor_id + "-inventor")
                         / "SKILL.md"
                     ).is_file()
-                    for inventor_id in ("abo", "alice", "bob", "eve", "ivy", "leo")
+                    for inventor_id in expected_inventor_ids
                 ),
                 "no_catalog": not (run_root / "catalog").exists(),
                 "private_temp": (
@@ -593,7 +604,8 @@ def _native_wish_smoke(
     if (
         receipt.get("kind") != "native-agent-run"
         or receipt.get("status") != "waiting"
-        or receipt.get("stage") != "match"
+        or receipt.get("stage") != "make"
+        or receipt.get("effort") != "spark"
         or receipt.get("native_turns") != 1
         or receipt.get("action") != "started"
     ):
@@ -605,7 +617,14 @@ def _native_wish_smoke(
     expected_state = workshop_home / "state" / product_id
     probes = tuple(workshop_home.rglob("native-packaging-probe.json"))
     if probes != (expected_workspace / "native-packaging-probe.json",):
-        raise AssertionError("installed Wish did not launch from its toy project")
+        raise AssertionError(
+            "installed Wish did not launch from its toy project: expected %s, got %r; receipt=%r"
+            % (
+                expected_workspace / "native-packaging-probe.json",
+                probes,
+                receipt,
+            )
+        )
     workspace = probes[0].parent
     status = _json(
         (workshop, "status", product_id, "--json"),
@@ -635,7 +654,8 @@ def _native_wish_smoke(
     )
     roster = agent_checkpoint.get("inventor_roster")
     if (
-        agent_checkpoint.get("schema_version") != 3
+        agent_checkpoint.get("schema_version") != 4
+        or agent_checkpoint.get("effort") != "spark"
         or not isinstance(roster, list)
         or tuple(item.get("inventor_id") for item in roster) != INVENTORS
         or tuple(item.get("agent_path") for item in roster)
@@ -646,7 +666,7 @@ def _native_wish_smoke(
         )
         or stat.S_IMODE(agent_checkpoint_path.stat().st_mode) != 0o600
     ):
-        raise AssertionError("installed Wish host roster is not the schema-v3 roster")
+        raise AssertionError("installed Wish host roster is not the schema-v4 Spark roster")
 
     probe = json.loads(
         (workspace / "native-packaging-probe.json").read_text(encoding="utf-8")
@@ -700,7 +720,7 @@ def _native_wish_smoke(
         raise AssertionError("installed toy has no complete custom Inventor roster")
     if probe["product_id"] != product_id or not all(probe["prelaunch"].values()):
         raise AssertionError("toy project was not populated before Codex launched")
-    if "current match stage" not in probe["prompt"]:
+    if "current make stage" not in probe["prompt"]:
         raise AssertionError("installed native Codex received the wrong stage prompt")
 
     constitution = repository / ".agents" / "product-run" / "AGENTS.md"
@@ -881,14 +901,22 @@ def acceptance(
         )
         if tuple(item["id"] for item in inventors) != INVENTORS:
             raise AssertionError("installed inventor catalog is incomplete")
-        _native_wish_smoke(
-            workshop=workshop,
-            python=python,
-            root=root,
-            repository=repository,
-            away=away,
-            environment=environment,
-        )
+        wish_help = _run(
+            (workshop, "wish", "--help"), cwd=away, environment=environment
+        ).stdout
+        if not all(
+            token in wish_help for token in ("--effort", "spark", "forge", "quest")
+        ):
+            raise AssertionError("installed Wish help lacks selectable effort routes")
+        if with_dependencies:
+            _native_wish_smoke(
+                workshop=workshop,
+                python=python,
+                root=root,
+                repository=repository,
+                away=away,
+                environment=environment,
+            )
 
 
 def main(argv=None) -> int:

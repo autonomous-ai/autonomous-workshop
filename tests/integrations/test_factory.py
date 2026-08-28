@@ -123,18 +123,17 @@ class ScriptedSessionTransport:
 class FactorySessionTest(unittest.TestCase):
     def test_credentials_are_exact_and_redacted(self):
         credentials = factory_credentials_from_environment(
-            "alice",
-            {"FACTORY_USERNAME": "alice", "FACTORY_PASSWORD": "test-secret"},
+            {
+                "FACTORY_USERNAME": "workshop.publisher",
+                "FACTORY_PASSWORD": "test-secret",
+            },
         )
-        self.assertEqual(credentials.username, "alice")
-        self.assertNotIn("alice", repr(credentials))
+        self.assertEqual(credentials.username, "workshop.publisher")
+        self.assertNotIn("workshop.publisher", repr(credentials))
         self.assertNotIn("test-secret", repr(credentials))
         with self.assertRaisesRegex(ContractError, "configured together"):
-            factory_credentials_from_environment("alice", {"FACTORY_USERNAME": "alice"})
-        with self.assertRaisesRegex(ContractError, "exactly match"):
             factory_credentials_from_environment(
-                "bob",
-                {"FACTORY_USERNAME": "alice", "FACTORY_PASSWORD": "test-secret"},
+                {"FACTORY_USERNAME": "workshop.publisher"}
             )
 
     def test_bearer_is_memory_only_cached_and_same_origin(self):
@@ -179,6 +178,38 @@ class FactorySessionTest(unittest.TestCase):
             rejected_session.login()
         self.assertNotIn("test-secret", str(raised.exception))
         self.assertNotIn("provider-secret", str(raised.exception))
+
+    def test_login_identity_must_match_configured_service_account(self):
+        def wrong_identity(method, url, headers, body, timeout):
+            return HttpResponse(
+                200,
+                {"Content-Type": "application/json"},
+                json.dumps(
+                    {
+                        "access_token": "wrong-account-token",
+                        "token_type": "Bearer",
+                        "expires_in": 31_536_000,
+                        "user": {
+                            "id": "owner-other",
+                            "username": "other-service-account",
+                        },
+                    }
+                ).encode(),
+            )
+
+        session = FactoryAgentSession(
+            FactoryAgentCredentials("alice", "test-secret"),
+            transport=wrong_identity,
+        )
+        with self.assertRaisesRegex(
+            FactoryCredentialRejected, "configured Workshop service account"
+        ) as raised:
+            session.login()
+        rendered = str(raised.exception)
+        self.assertNotIn("alice", rendered)
+        self.assertNotIn("test-secret", rendered)
+        self.assertNotIn("other-service-account", rendered)
+        self.assertEqual(repr(session), "FactoryAgentSession(authenticated=false)")
 
     def test_manual_readback_is_pinned_and_never_sends_a_bearer(self):
         transport = FactoryTransport()
@@ -279,7 +310,7 @@ class FactoryTransport:
                     self.import_status, {}, b'{"error":"request rejected"}'
                 )
             return HttpResponse(201, {}, json.dumps(self.design()).encode())
-        if method == "GET" and url.endswith("/MANUAL.pdf"):
+        if method == "GET" and url.endswith("/manual.pdf"):
             self.project_file_reads += 1
             return HttpResponse(
                 200, {"Content-Type": "application/pdf"}, self.manual_bytes
@@ -454,6 +485,17 @@ class FactoryReleaseTest(unittest.TestCase):
         )
         return manual
 
+    def test_workshop_service_account_can_publish_for_another_inventor(self):
+        receipt = FactoryReleaseWriter(
+            self.ledger,
+            "mira-fold",
+            FactoryAgentCredentials("alice", "test-secret"),
+            transport=FactoryTransport(),
+        )(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(receipt.owner_id, "owner-alice")
+
     def _reseal_product(self, made_product=None):
         product = self.made.artifact_root
         if made_product is None:
@@ -570,7 +612,7 @@ class FactoryReleaseTest(unittest.TestCase):
         )
         self.assertEqual(
             receipt.details["manual_url"],
-            "https://cdn.autonomous.ai/projects/history-1/MANUAL.pdf",
+            "https://cdn.autonomous.ai/projects/history-1/manual.pdf",
         )
         self.assertEqual(
             receipt.details["manual_readback_sha256"],
@@ -591,6 +633,11 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertIn("MANUAL.pdf", archive.namelist())
             self.assertNotIn("MANUAL.md", archive.namelist())
             self.assertEqual(archive.read("MANUAL.pdf"), manual)
+            self.assertNotIn("assembled.step", archive.namelist())
+            self.assertEqual(
+                archive.read("assembled.stl"),
+                (self.made.artifact_root / "assembled.stl").read_bytes(),
+            )
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(
                 facts["manual"],
@@ -599,6 +646,10 @@ class FactoryReleaseTest(unittest.TestCase):
                     "sha256": hashlib.sha256(manual).hexdigest(),
                 },
             )
+            self.assertEqual(
+                facts["primary_model"]["path"],
+                "assembled.stl",
+            )
             self.assertEqual(facts["release"], self.page)
 
         replay = self.writer(transport)(self.context, self.release, self.manifest)
@@ -606,7 +657,7 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(transport.imports, 1)
         self.assertEqual(transport.project_file_reads, 1)
         manual_call = next(
-            call for call in transport.calls if call[1].endswith("/MANUAL.pdf")
+            call for call in transport.calls if call[1].endswith("/manual.pdf")
         )
         self.assertNotIn("Authorization", manual_call[2])
 
@@ -1182,6 +1233,32 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(recovery.imports, 0)
         self.assertEqual(self.ledger.get(intent.intent_id).state, "succeeded")
 
+    def test_lost_import_response_recovers_by_stable_slug_without_resending(self):
+        class LostImportResponse(FactoryTransport):
+            def __init__(self):
+                super().__init__()
+                self.lost = False
+
+            def __call__(self, method, url, headers, body, timeout):
+                response = super().__call__(method, url, headers, body, timeout)
+                if method == "POST" and url.endswith("/designs/import") and not self.lost:
+                    self.lost = True
+                    raise RuntimeError("response lost after exact import")
+                return response
+
+        transport = LostImportResponse()
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.state, "unknown")
+        self.assertIsNone(intent.response)
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.imports, 1)
+        self.assertEqual(self.ledger.get(intent.intent_id).state, "succeeded")
+
     def test_import_category_must_survive_authenticated_readback(self):
         class CategoryChangesAfterImport(FactoryTransport):
             def __call__(self, method, url, headers, body, timeout):
@@ -1377,7 +1454,7 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         self.assertEqual(transport.project_file_reads, 2)
         self.assertEqual(
             receipt.details["manual_url"],
-            "https://cdn.autonomous.ai/projects/history-1/MANUAL.pdf",
+            "https://cdn.autonomous.ai/projects/history-1/manual.pdf",
         )
         self.assertEqual(
             receipt.details["manual_readback_sha256"],

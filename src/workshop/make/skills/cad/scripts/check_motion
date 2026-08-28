@@ -20,12 +20,8 @@ form the gate can only ask whether parts come apart, never whether they stay
 together, and a connector modelled as a plain boss in a plain pocket reads as a
 clean pass.
 
-Method ported from `evaluate-cad-reconstruction` in the panda-social-cc-agent
-repo, which samples the same paths against triangle meshes. The sampling and the
-manifest vocabulary carry over; the mesh collision does not. This repo is
-STEP-first, so a step tests `(moved & obstacle).volume` on the B-rep -- exact
-where the mesh version approximates, and there is no reason to take the weaker
-answer when the stronger one is already in the toolchain.
+This repo is STEP-first, so a step tests `(moved & obstacle).volume` on the
+B-rep.
 
     scripts/check_motion <project-dir> --manifest measure/motion.json
     scripts/check_motion <project-dir> --manifest -        # from stdin

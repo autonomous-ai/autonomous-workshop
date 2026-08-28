@@ -14,12 +14,14 @@ import zlib
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
+from workshop.errors import ContractError
 from workshop.invent.native import NativeInvented
 from tests.invent.test_native_contract import BUILD_PLAN_VIOLATIONS, CONCEPT_VIOLATIONS, v4_concept, v5_concept
 from tests.make.test_build_groups import seal_group, write_parts
 from tests.invent.test_vault import write_vault
 from tests.playtest.test_native_playtested import DIMS, LEAD_ANSWER_CASES, SCORE_CASES
 from workshop.invent.vault import Vault
+from workshop.make.contracts import Made
 from workshop.make.native import NativeMade
 from workshop.match.native import (
     InventorRoster,
@@ -58,7 +60,7 @@ FORWARD = {
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
+    "release": "complete",
 }
 
 
@@ -346,15 +348,26 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertEqual(content, canonical_json(document))
         return document, content
 
-    def assert_outcome(self, stage, contract_path, contract_bytes, transition):
+    def assert_outcome(
+        self,
+        stage,
+        contract_path,
+        contract_bytes,
+        transition,
+        additional_artifacts=(),
+    ):
         document, _ = self.assert_canonical_file("agent-outcome.json")
         proposal = AgentOutcomeProposal.from_mapping(document)
         self.assertEqual(proposal.outcome.stage, stage)
         self.assertEqual(proposal.outcome.proposed_transition, transition)
-        self.assertEqual(len(proposal.outcome.artifacts), 1)
+        self.assertEqual(len(proposal.outcome.artifacts), 1 + len(additional_artifacts))
         artifact = proposal.outcome.artifacts[0]
         self.assertEqual(artifact.path, contract_path)
         self.assertEqual(artifact.sha256, sha256(contract_bytes))
+        self.assertEqual(
+            tuple((item.path, item.sha256) for item in proposal.outcome.artifacts[1:]),
+            tuple(additional_artifacts),
+        )
         self.assertEqual(proposal.checkpoint_sha256, "1" * 64)
         self.assertEqual(proposal.subject_sha256, "2" * 64)
 
@@ -459,11 +472,158 @@ class StageProposalToolTest(unittest.TestCase):
         )
         observed_invented = NativeInvented.from_mapping(invented_document)
         self.assertEqual(observed_invented, self.invented)
+        source_bytes = (self.run_root / "artifacts/invent/source.json").read_bytes()
         self.assert_outcome(
             "invent",
             "artifacts/invent/invented.json",
             invented_bytes,
             "make",
+            (("artifacts/invent/source.json", sha256(source_bytes)),),
+        )
+
+    def test_routed_invent_seals_assignment_and_invented_contracts_together(self):
+        assignment_path = "artifacts/invent/assignment.json"
+        invented_path = "artifacts/invent/invented.json"
+        invented_source = self.invented.to_dict()
+        self.write_stage(
+            "invent",
+            {
+                **self.match_inputs(),
+                "assignment_contract_path": assignment_path,
+                "contract_path": invented_path,
+            },
+        )
+        self.write_json(
+            "drafts/routed-invent.json",
+            {
+                "selected_inventor_id": "eve",
+                "ranking": [item.to_dict() for item in self.assignment.ranking],
+                "concept": invented_source["concept"],
+                "research": invented_source["research"],
+            },
+        )
+
+        self.run_tool("invent", "--source", "drafts/routed-invent.json")
+
+        assignment_document, assignment_bytes = self.assert_canonical_file(
+            assignment_path
+        )
+        invented_document, invented_bytes = self.assert_canonical_file(invented_path)
+        source_bytes = (self.run_root / "artifacts/invent/source.json").read_bytes()
+        self.assertEqual(
+            NativeMatchAssignment.from_mapping(assignment_document), self.assignment
+        )
+        self.assertEqual(NativeInvented.from_mapping(invented_document), self.invented)
+        proposal_document, _ = self.assert_canonical_file("agent-outcome.json")
+        proposal = AgentOutcomeProposal.from_mapping(proposal_document)
+        self.assertEqual(
+            tuple((item.path, item.sha256) for item in proposal.outcome.artifacts),
+            (
+                (invented_path, sha256(invented_bytes)),
+                (assignment_path, sha256(assignment_bytes)),
+                ("artifacts/invent/source.json", sha256(source_bytes)),
+            ),
+        )
+        self.assertEqual(proposal.outcome.proposed_transition, "make")
+
+    def test_spark_make_seals_all_compound_creative_contracts(self):
+        product_root, _, _, _ = self.create_product()
+        assignment_path = "artifacts/make/r0001/assignment.json"
+        invented_path = "artifacts/make/r0001/invented.json"
+        made_path = "artifacts/make/r0001/made.json"
+        invented_source = self.invented.to_dict()
+        self.write_stage(
+            "make",
+            {
+                **self.match_inputs(),
+                "creative_source_required": True,
+                "assignment_contract_path": assignment_path,
+                "invented_contract_path": invented_path,
+            },
+            round_index=1,
+        )
+        self.write_json(
+            "drafts/spark-make.json",
+            {
+                "selected_inventor_id": "eve",
+                "ranking": [item.to_dict() for item in self.assignment.ranking],
+                "concept": invented_source["concept"],
+                "research": invented_source["research"],
+            },
+        )
+
+        self.run_tool(
+            "make",
+            "--source",
+            "drafts/spark-make.json",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+        )
+
+        made_document, made_bytes = self.assert_canonical_file(made_path)
+        assignment_document, assignment_bytes = self.assert_canonical_file(
+            assignment_path
+        )
+        invented_document, invented_bytes = self.assert_canonical_file(invented_path)
+        assignment = NativeMatchAssignment.from_mapping(assignment_document)
+        invented = NativeInvented.from_mapping(invented_document)
+        made = NativeMade.from_mapping(made_document)
+        self.assertEqual(assignment, self.assignment)
+        self.assertEqual(invented, self.invented)
+        made.assert_context(assignment, invented, expected_round=1)
+        made.validate_product_tree(self.run_root)
+        self.assertEqual(
+            made.product_manifest.to_dict(),
+            build_artifact_manifest(
+                product_root, created_at="content-addressed"
+            ).to_dict(),
+        )
+        proposal_document, _ = self.assert_canonical_file("agent-outcome.json")
+        proposal = AgentOutcomeProposal.from_mapping(proposal_document)
+        self.assertEqual(
+            tuple((item.path, item.sha256) for item in proposal.outcome.artifacts),
+            (
+                (made_path, sha256(made_bytes)),
+                (assignment_path, sha256(assignment_bytes)),
+                (invented_path, sha256(invented_bytes)),
+            ),
+        )
+        self.assertEqual(proposal.outcome.proposed_transition, "playtest")
+
+    def test_spark_make_requires_creative_source_before_sealing(self):
+        self.create_product()
+        self.write_stage(
+            "make",
+            {
+                **self.match_inputs(),
+                "creative_source_required": True,
+                "assignment_contract_path": (
+                    "artifacts/make/r0001/assignment.json"
+                ),
+                "invented_contract_path": "artifacts/make/r0001/invented.json",
+            },
+            round_index=1,
+        )
+
+        result = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("Spark Make requires --source creative JSON", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+        self.assertFalse(
+            (self.run_root / "artifacts/make/r0001/made.json").exists()
         )
 
     def materialize_vault(self, *, tool=True, vault=True, corrupt=False):
@@ -792,6 +952,92 @@ class StageProposalToolTest(unittest.TestCase):
             "playtest",
         )
 
+    def test_make_rejects_invalid_required_product_metadata_before_outputs(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        invalid_products = (
+            (
+                "aliases do not replace required fields",
+                {
+                    "name": "Moon Nook",
+                    "description": "A tiny lunar observatory.",
+                },
+                "Make product title",
+            ),
+            (
+                "missing title",
+                {"summary": "A tiny lunar observatory."},
+                "Make product title",
+            ),
+            (
+                "blank title",
+                {"title": " \t\n", "summary": "A tiny lunar observatory."},
+                "Make product title",
+            ),
+            (
+                "oversized title",
+                {"title": "x" * 2_001, "summary": "A tiny lunar observatory."},
+                "Make product title",
+            ),
+            (
+                "missing summary",
+                {"title": "Moon Nook"},
+                "Make product summary",
+            ),
+            (
+                "blank summary",
+                {"title": "Moon Nook", "summary": " \t\n"},
+                "Make product summary",
+            ),
+            (
+                "oversized summary",
+                {"title": "Moon Nook", "summary": "x" * 2_001},
+                "Make product summary",
+            ),
+            (
+                "control character",
+                {"title": "Moon Nook", "summary": "Tiny\u0000 observatory"},
+                "Make product summary",
+            ),
+        )
+
+        for label, product, error_label in invalid_products:
+            with self.subTest(label=label):
+                (product_root / "product.json").write_bytes(canonical_json(product))
+                result = self.run_tool(
+                    "make",
+                    "--product-root",
+                    "artifacts/make/r0001/product",
+                    "--cad-project-path",
+                    "cad/project",
+                    "--cad-verification-path",
+                    "validation/cad-build.json",
+                    expected=2,
+                )
+                self.assertIn(error_label, result.stderr)
+                with self.assertRaisesRegex(
+                    ContractError, error_label.replace("Make ", "Made ")
+                ):
+                    Made(
+                        product_root,
+                        build_artifact_manifest(
+                            product_root, created_at="content-addressed"
+                        ),
+                        product,
+                    )
+                self.assertFalse(
+                    (self.run_root / "artifacts/make/r0001/made.json").exists()
+                )
+                self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_make_rejects_editor_backup_and_patch_debris(self):
         product_root, _, _, _ = self.create_product()
         self.write_stage(
@@ -1111,7 +1357,7 @@ class StageProposalToolTest(unittest.TestCase):
             "finding": "The deterministic check failed.",
             "change": "Revise the exact product and rerun the check.",
             "evidence_refs": [failed["evidence_ref"]],
-            "invalidates": ["playtest", "release", "deliver"],
+            "invalidates": ["playtest", "release"],
         }
         self.write_json(
             "drafts/playtest-failed.json",
@@ -1136,10 +1382,40 @@ class StageProposalToolTest(unittest.TestCase):
             "make",
         )
 
-        feedback["invalidates"] = ["make", "playtest", "release"]
+        feedback["severity"] = "block"
+        feedback["area"] = "invent"
+        feedback["change"] = "Revise the concept before rebuilding the product."
+        feedback["invalidates"] = ["invent", "make", "playtest", "release"]
+        self.write_json(
+            "drafts/playtest-reinvent.json",
+            {"checks": checks, "feedback": [feedback], "verdict": "block"},
+        )
+        self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest-reinvent.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+        )
+        reinvent_document, reinvent_bytes = self.assert_canonical_file(
+            "artifacts/playtest/r0001/playtested.json"
+        )
+        self.assertEqual(reinvent_document["verdict"], "block")
+        self.assertEqual(
+            NativePlaytested.from_mapping(reinvent_document).proposed_transition,
+            "invent",
+        )
+        self.assert_outcome(
+            "playtest",
+            "artifacts/playtest/r0001/playtested.json",
+            reinvent_bytes,
+            "invent",
+        )
+
+        feedback["invalidates"] = ["invent", "playtest", "release"]
         self.write_json(
             "drafts/playtest-invalid-invalidation.json",
-            {"checks": checks, "feedback": [feedback], "verdict": "improve"},
+            {"checks": checks, "feedback": [feedback], "verdict": "block"},
         )
         rejected = self.run_tool(
             "playtest",
@@ -1150,7 +1426,7 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn(
-            "the verdict already routes the repair to Make",
+            "every downstream stage",
             rejected.stderr,
         )
 
@@ -1315,7 +1591,40 @@ class StageProposalToolTest(unittest.TestCase):
             "release",
             "artifacts/release/release.json",
             release_bytes,
-            "deliver",
+            "complete",
+        )
+
+        self.write_stage(
+            "release",
+            {
+                "made": made.to_dict(),
+                "playtested": playtested.to_dict(),
+                "release_contract": {
+                    "native_release_schema_version": 2,
+                    "manual_path": "MANUAL.pdf",
+                    "product_schema_version": 4,
+                    "product_status": "manual-ready",
+                    "manual_design_evidence_path": "MANUAL-DESIGN.json",
+                    "manual_design_evidence_schema_version": 1,
+                },
+            },
+            round_index=1,
+        )
+        missing_design_evidence = self.run_tool(
+            "release",
+            "--package-root",
+            "artifacts/release/package",
+            expected=2,
+        )
+        self.assertIn(
+            "manifest lacks MANUAL-DESIGN.json",
+            missing_design_evidence.stderr,
+        )
+
+        self.write_stage(
+            "release",
+            {"made": made.to_dict(), "playtested": playtested.to_dict()},
+            round_index=1,
         )
 
         invalid_product_cases = (
@@ -1325,7 +1634,7 @@ class StageProposalToolTest(unittest.TestCase):
             ),
             (
                 {"schema_version": 3, "status": "page-ready"},
-                "not a manual-ready package",
+                "fields are invalid",
             ),
             (
                 {"what_arrives": []},

@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import hashlib
+import io
 import json
 import math
 import os
@@ -41,14 +42,21 @@ PLAYTESTED_KIND = "autonomous-workshop.playtested"
 RELEASE_KIND = "autonomous-workshop.release"
 
 STAGES = ("match", "invent", "make", "playtest", "release")
-JOBS = ("wish", "invent", "make", "playtest", "release", "deliver")
-PLAYTEST_FEEDBACK_INVALIDATES = frozenset(("playtest", "release", "deliver"))
+JOBS = ("wish", "invent", "make", "playtest", "release")
+PLAYTEST_MAKE_INVALIDATES = ("playtest", "release")
+PLAYTEST_INVENT_INVALIDATES = (
+    "invent",
+    "make",
+    "playtest",
+    "release",
+)
+PLAYTEST_FEEDBACK_INVALIDATES = frozenset(PLAYTEST_INVENT_INVALIDATES)
 FORWARD = {
     "match": "invent",
     "invent": "make",
-    "make": "playtest",
+    "make": "release",
     "playtest": "release",
-    "release": "deliver",
+    "release": "complete",
 }
 STAGE_FIELDS = {
     "schema_version",
@@ -72,6 +80,7 @@ MAX_OUTCOME_BYTES = 128 * 1024
 MAX_CONTRACT_BYTES = 16 * 1024 * 1024
 MAX_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
 MAX_RELEASE_MANUAL_BYTES = 16 * 1024 * 1024
+MAX_MANUAL_DESIGN_EVIDENCE_BYTES = 64 * 1024
 MAX_RELEASE_PDF_VALIDATOR_OUTPUT_BYTES = 4 * 1024
 RELEASE_PDF_VALIDATION_TIMEOUT_SECONDS = 15
 MAX_FILE_BYTES = 95 * 1024 * 1024
@@ -196,6 +205,11 @@ QUANTITY_HEDGE_RE = re.compile(
     r"enough|as needed|or so)\b"
 )
 VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
+MANUAL_DESIGN_EVIDENCE_PATH = "MANUAL-DESIGN.json"
+MANUAL_DESIGN_EVIDENCE_KIND = "autonomous-workshop.manual-design-evidence"
+MANUAL_VISUAL_SUFFIXES = frozenset(
+    (".3mf", ".glb", ".jpeg", ".jpg", ".obj", ".png", ".step", ".stl", ".svg", ".webp")
+)
 
 FORBIDDEN_RELEASE_MEDIA_SUFFIXES = frozenset(
     (
@@ -230,7 +244,7 @@ FORBIDDEN_RELEASE_MEDIA_SUFFIXES = frozenset(
         ".webp",
     )
 )
-RELEASE_PRODUCT_FIELDS = frozenset(
+MANUAL_RELEASE_PRODUCT_FIELDS = frozenset(
     (
         "schema_version",
         "kind",
@@ -244,6 +258,12 @@ RELEASE_PRODUCT_FIELDS = frozenset(
         "claims",
     )
 )
+DIRECT_RELEASE_PRODUCT_FIELDS = frozenset(
+    (*MANUAL_RELEASE_PRODUCT_FIELDS, "playtest_status")
+)
+PLAYTEST_OMISSION_PATH = "PLAYTEST-NOT-RUN.json"
+PLAYTEST_OMISSION_KIND = "autonomous-workshop.playtest-omission"
+PLAYTEST_OMISSION_STATUS = "not-run"
 class ProposalError(Exception):
     """One deterministic proposal input is invalid or unsafe."""
 
@@ -880,7 +900,12 @@ def _load_stage(run_root: Path, expected_stage: str) -> dict[str, Any]:
         raise ProposalError("STAGE.json describes another stage")
     _sha256(stage["checkpoint_sha256"], "STAGE checkpoint_sha256")
     _sha256(stage["subject_sha256"], "STAGE subject_sha256")
-    if stage["next_transition"] != FORWARD[expected_stage]:
+    allowed_transitions = (
+        ("playtest", "release")
+        if expected_stage == "make"
+        else (FORWARD[expected_stage],)
+    )
+    if stage["next_transition"] not in allowed_transitions:
         raise ProposalError("STAGE.json next_transition is invalid")
     maximum = _positive_int(stage["max_rounds"], "STAGE max_rounds")
     if expected_stage in ("match", "invent"):
@@ -1402,6 +1427,13 @@ def _invent_contract(
         stage["inputs"], {"assignment"}, "Invent STAGE inputs"
     )
     assignment = _validate_assignment(inputs["assignment"])
+    return _invent_contract_for_assignment(run_root, assignment, source)
+
+
+def _invent_contract_for_assignment(
+    run_root: Path, assignment: Mapping[str, Any], source: Mapping[str, Any]
+) -> dict[str, Any]:
+    assignment = _validate_assignment(assignment)
     authored = _fields(source, {"concept", "research"}, "Invent authored source")
     concept = _mapping(authored["concept"], "Invent concept", nonempty=True)
     research = _mapping(authored["research"], "Invent research", nonempty=True)
@@ -1482,14 +1514,52 @@ def _validate_build_groups(concept: Mapping[str, Any], product_root: Path) -> di
     return {"groups": len(plan), "parts": len(hashes)}
 
 
+def _spark_creative_contracts(
+    run_root: Path, stage: Mapping[str, Any], source_value: str | None
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Seal the Spark Make turn's own Match assignment and Invented contract."""
+
+    if not source_value:
+        raise ProposalError("Spark Make requires --source creative JSON")
+    source, _, _ = _read_json(run_root, source_value, "Spark Make authored source")
+    authored = _fields(
+        source,
+        {"selected_inventor_id", "ranking", "concept", "research"},
+        "Spark Make authored source",
+    )
+    assignment = _match_contract(
+        stage,
+        {
+            "selected_inventor_id": authored["selected_inventor_id"],
+            "ranking": authored["ranking"],
+        },
+    )
+    invented = _invent_contract_for_assignment(
+        run_root,
+        assignment,
+        {"concept": authored["concept"], "research": authored["research"]},
+    )
+    return assignment, invented
+
+
 def _make_group(
-    run_root: Path, stage: Mapping[str, Any], *, product_root_value: str, group_name: str
+    run_root: Path,
+    stage: Mapping[str, Any],
+    *,
+    product_root_value: str,
+    group_name: str,
+    assignment_value: Mapping[str, Any] | None = None,
+    invented_value: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Seal one build group: its parts exist and their exact bytes are recorded."""
 
-    inputs = _required_fields(stage["inputs"], {"assignment", "invented"}, "Make STAGE inputs")
-    assignment = _validate_assignment(inputs["assignment"])
-    invented = _validate_invented(inputs["invented"], assignment)
+    inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+    if assignment_value is None or invented_value is None:
+        required = _required_fields(inputs, {"assignment", "invented"}, "Make STAGE inputs")
+        assignment_value = required["assignment"]
+        invented_value = required["invented"]
+    assignment = _validate_assignment(assignment_value)
+    invented = _validate_invented(invented_value, assignment)
     concept = invented["concept"]
     plan = concept.get("build_plan") if invented["schema_version"] >= 5 else None
     if not plan:
@@ -1537,12 +1607,18 @@ def _make_contract(
     product_root_value: str,
     cad_project_path: str,
     cad_verification_path: str,
+    assignment_value: Mapping[str, Any] | None = None,
+    invented_value: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    inputs = _required_fields(
-        stage["inputs"], {"assignment", "invented"}, "Make STAGE inputs"
-    )
-    assignment = _validate_assignment(inputs["assignment"])
-    invented = _validate_invented(inputs["invented"], assignment)
+    inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+    if assignment_value is None or invented_value is None:
+        required = _required_fields(
+            inputs, {"assignment", "invented"}, "Make STAGE inputs"
+        )
+        assignment_value = required["assignment"]
+        invented_value = required["invented"]
+    assignment = _validate_assignment(assignment_value)
+    invented = _validate_invented(invented_value, assignment)
     round_index = stage["round"]
     expected_root = "artifacts/make/r%04d/product" % round_index
     if product_root_value != expected_root:
@@ -1571,7 +1647,9 @@ def _make_contract(
         "%s/product.json" % product_root_value,
         "Make product.json",
     )
-    _mapping(product_document, "Make product.json", nonempty=True)
+    product = _mapping(product_document, "Make product.json", nonempty=True)
+    _bounded_text(product.get("title"), "Make product title", 2_000)
+    _bounded_text(product.get("summary"), "Make product summary", 2_000)
     verification_sha256, _, _ = _hash_regular(
         run_root,
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
@@ -1600,7 +1678,7 @@ def _make_contract(
         "product_root": product_root_value,
         "cad_project_path": project_relative.as_posix(),
         "product_manifest": manifest,
-        "product": product_document,
+        "product": product,
         "product_json_sha256": hashlib.sha256(product_bytes).hexdigest(),
         "cad_verification_path": verification_relative.as_posix(),
         "cad_verification_sha256": verification_sha256,
@@ -1663,10 +1741,38 @@ def _feedback(value: Any) -> dict[str, Any]:
     invalidates = _array(item["invalidates"], "feedback invalidates", nonempty=True)
     if any(stage not in PLAYTEST_FEEDBACK_INVALIDATES for stage in invalidates):
         raise ProposalError(
-            "feedback invalidates must contain only playtest, release, or deliver; "
-            "the verdict already routes the repair to Make"
+            "feedback invalidates contains a stage outside the repair lifecycle"
+        )
+    if len(invalidates) != len(set(invalidates)):
+        raise ProposalError("feedback invalidates must not contain duplicates")
+    if "invent" in invalidates:
+        if item["severity"] not in ("improve", "block"):
+            raise ProposalError(
+                "only actionable feedback may request concept revision"
+            )
+        if set(invalidates) != set(PLAYTEST_INVENT_INVALIDATES):
+            raise ProposalError(
+                "concept revision must invalidate Invent and every downstream stage"
+            )
+    elif tuple(invalidates) != PLAYTEST_MAKE_INVALIDATES:
+        raise ProposalError(
+            "Make repair feedback must invalidate playtest and release"
         )
     return dict(item)
+
+
+def _playtest_transition(playtested: Mapping[str, Any]) -> str:
+    """Follow the authored invalidation marker without judging feedback prose."""
+
+    if playtested["verdict"] == "pass":
+        return "release"
+    if any(
+        feedback["severity"] in ("improve", "block")
+        and "invent" in feedback["invalidates"]
+        for feedback in playtested["feedback"]
+    ):
+        return "invent"
+    return "make"
 
 
 def _validate_playtested(
@@ -1816,6 +1922,30 @@ def _expected_release_claims(playtested: Mapping[str, Any]) -> dict[str, Any]:
     return claims
 
 
+def _playtest_omission_record() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "kind": PLAYTEST_OMISSION_KIND,
+        "status": PLAYTEST_OMISSION_STATUS,
+        "reason": "Playtest is deferred for this Release.",
+    }
+
+
+def _playtest_omission_sha256() -> str:
+    return hashlib.sha256(canonical_json(_playtest_omission_record())).hexdigest()
+
+
+def _direct_release_claims() -> dict[str, Any]:
+    return {
+        "playtest": {
+            "status": PLAYTEST_OMISSION_STATUS,
+            "claims": [],
+            "evidence_ref": PLAYTEST_OMISSION_PATH,
+            "evidence_sha256": _playtest_omission_sha256(),
+        }
+    }
+
+
 def _release_page_text(value: Any, label: str, maximum: int) -> str:
     if (
         not isinstance(value, str)
@@ -1853,11 +1983,59 @@ def _release_page_text_list(
 
 
 def _validate_release_product(value: Any) -> dict[str, Any]:
-    product = _fields(value, RELEASE_PRODUCT_FIELDS, "Release product.json")
+    if isinstance(value, Mapping) and value.get("schema_version") == 4:
+        product = _fields(
+            value, MANUAL_RELEASE_PRODUCT_FIELDS, "Release product.json"
+        )
+        if (
+            product["kind"] != "workshop.release-package"
+            or product["status"] != "manual-ready"
+        ):
+            raise ProposalError("Release product.json is not a manual-ready package")
+        _sha256(
+            product["product_artifact_sha256"],
+            "Release product artifact sha256",
+        )
+        _sha256(
+            product["playtest_evidence_artifact_sha256"],
+            "Release Playtest evidence sha256",
+        )
+        claims = _mapping(product["claims"], "Release claims", nonempty=True)
+        return {
+            "schema_version": 4,
+            "kind": "workshop.release-package",
+            "status": "manual-ready",
+            "title": _release_page_text(product["title"], "Release title", 300),
+            "summary": _release_page_text(
+                product["summary"], "Release summary", 2_000
+            ),
+            "what_arrives": _release_page_text_list(
+                product["what_arrives"],
+                "Release what_arrives",
+                maximum_items=100,
+                maximum_item_length=1_000,
+            ),
+            "limitations": _release_page_text_list(
+                product["limitations"],
+                "Release limitations",
+                maximum_items=100,
+                maximum_item_length=2_000,
+                allow_empty=True,
+            ),
+            "product_artifact_sha256": product["product_artifact_sha256"],
+            "playtest_evidence_artifact_sha256": product[
+                "playtest_evidence_artifact_sha256"
+            ],
+            "claims": dict(claims),
+        }
+    product = _fields(
+        value, DIRECT_RELEASE_PRODUCT_FIELDS, "Release product.json"
+    )
     if (
-        product["schema_version"] != 4
+        product["schema_version"] != 5
         or product["kind"] != "workshop.release-package"
         or product["status"] != "manual-ready"
+        or product["playtest_status"] != PLAYTEST_OMISSION_STATUS
     ):
         raise ProposalError("Release product.json is not a manual-ready package")
     _sha256(
@@ -1868,9 +2046,14 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
         product["playtest_evidence_artifact_sha256"],
         "Release Playtest evidence sha256",
     )
+    omission_sha256 = _playtest_omission_sha256()
+    if product["playtest_evidence_artifact_sha256"] != omission_sha256:
+        raise ProposalError("Release product.json identifies another Playtest omission")
     claims = _mapping(product["claims"], "Release claims", nonempty=True)
+    if dict(claims) != _direct_release_claims():
+        raise ProposalError("Release claims must state that Playtest was not run")
     validated = {
-        "schema_version": 4,
+        "schema_version": 5,
         "kind": "workshop.release-package",
         "status": "manual-ready",
         "title": _release_page_text(product["title"], "Release title", 300),
@@ -1889,6 +2072,7 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
             allow_empty=True,
         ),
         "product_artifact_sha256": product["product_artifact_sha256"],
+        "playtest_status": PLAYTEST_OMISSION_STATUS,
         "playtest_evidence_artifact_sha256": product[
             "playtest_evidence_artifact_sha256"
         ],
@@ -2046,6 +2230,280 @@ def _assert_scored(inputs: Mapping[str, Any], checks: Sequence[Mapping[str, Any]
             raise ProposalError(
                 "passing Playtest medians sit below the floor of %d: %s" % (floor, ", ".join(low))
             )
+def _manual_design_text_list(
+    value: Any,
+    label: str,
+    *,
+    minimum_items: int,
+    maximum_items: int,
+    minimum_length: int = 2,
+    maximum_length: int = 500,
+) -> list[str]:
+    items = _array(value, label, nonempty=True)
+    if not minimum_items <= len(items) <= maximum_items:
+        raise ProposalError("%s has an invalid item count" % label)
+    result = [
+        _release_page_text(item, "%s item" % label, maximum_length)
+        for item in items
+    ]
+    if any(len(item) < minimum_length for item in result):
+        raise ProposalError("%s items are not substantive" % label)
+    if len({item.casefold() for item in result}) != len(result):
+        raise ProposalError("%s must not contain duplicates" % label)
+    return result
+
+
+def _pdf_object(value: Any) -> Any:
+    return value.get_object() if hasattr(value, "get_object") else value
+
+
+def _manual_font_is_embedded(raw_font: Any) -> bool:
+    font = _pdf_object(raw_font)
+    if not isinstance(font, Mapping):
+        return False
+    if str(font.get("/Subtype")) == "/Type3":
+        return True
+    if str(font.get("/Subtype")) == "/Type0":
+        descendants = _pdf_object(font.get("/DescendantFonts"))
+        return (
+            isinstance(descendants, Sequence)
+            and bool(descendants)
+            and all(_manual_font_is_embedded(item) for item in descendants)
+        )
+    descriptor = _pdf_object(font.get("/FontDescriptor"))
+    return isinstance(descriptor, Mapping) and any(
+        descriptor.get(name) is not None
+        for name in ("/FontFile", "/FontFile2", "/FontFile3")
+    )
+
+
+def _manual_pages_and_embedded_fonts(manual: bytes) -> int:
+    try:
+        from pypdf import PdfReader
+
+        pages = list(PdfReader(io.BytesIO(manual), strict=True).pages)
+    except Exception as exc:
+        raise ProposalError(
+            "Release MANUAL.pdf cannot be inspected for design evidence"
+        ) from exc
+    missing = set()
+    observed = 0
+    visited: set[int] = set()
+
+    def inspect_resources(raw_resources: Any) -> None:
+        nonlocal observed
+        resources = _pdf_object(raw_resources)
+        if not isinstance(resources, Mapping) or id(resources) in visited:
+            return
+        visited.add(id(resources))
+        fonts = _pdf_object(resources.get("/Font"))
+        if isinstance(fonts, Mapping):
+            for resource_name, raw_font in fonts.items():
+                observed += 1
+                font = _pdf_object(raw_font)
+                if not _manual_font_is_embedded(font):
+                    missing.add(
+                        str(font.get("/BaseFont"))
+                        if isinstance(font, Mapping)
+                        else str(resource_name)
+                    )
+        xobjects = _pdf_object(resources.get("/XObject"))
+        if isinstance(xobjects, Mapping):
+            for raw_xobject in xobjects.values():
+                xobject = _pdf_object(raw_xobject)
+                if isinstance(xobject, Mapping):
+                    inspect_resources(xobject.get("/Resources"))
+
+    for page in pages:
+        inspect_resources(page.get("/Resources"))
+    if not pages or observed < 1:
+        raise ProposalError("Release MANUAL.pdf has no inspectable fonts")
+    if missing:
+        raise ProposalError(
+            "Release MANUAL.pdf must embed every used font: %s"
+            % ", ".join(sorted(missing))
+        )
+    return len(pages)
+
+
+def _manual_design_required(inputs: Mapping[str, Any]) -> bool:
+    release_contract = inputs.get("release_contract")
+    if release_contract is None:
+        return False
+    contract = _mapping(release_contract, "Release protocol")
+    path = contract.get("manual_design_evidence_path")
+    version = contract.get("manual_design_evidence_schema_version")
+    if path is None and version is None:
+        return False
+    if path != MANUAL_DESIGN_EVIDENCE_PATH or version != 1:
+        raise ProposalError("Release manual design evidence protocol is invalid")
+    return True
+
+
+def _validate_manual_design_evidence(
+    run_root: Path,
+    *,
+    package_root_value: str,
+    inventory: Mapping[str, Mapping[str, Any]],
+    manual: bytes,
+    made: Mapping[str, Any],
+    required: bool,
+) -> None:
+    if not required:
+        return
+    entry = inventory.get(MANUAL_DESIGN_EVIDENCE_PATH)
+    if entry is None:
+        raise ProposalError("Release package lacks MANUAL-DESIGN.json")
+    document, content, _ = _read_json(
+        run_root,
+        "%s/%s" % (package_root_value, MANUAL_DESIGN_EVIDENCE_PATH),
+        "Release MANUAL-DESIGN.json",
+        maximum=MAX_MANUAL_DESIGN_EVIDENCE_BYTES,
+    )
+    if content != canonical_json(document):
+        raise ProposalError("Release MANUAL-DESIGN.json must use canonical JSON")
+    if hashlib.sha256(content).hexdigest() != entry["sha256"]:
+        raise ProposalError("Release MANUAL-DESIGN.json changed after package hashing")
+    evidence = _fields(
+        document,
+        {
+            "schema_version",
+            "kind",
+            "manual_sha256",
+            "design_mode",
+            "creative_brief",
+            "product_visuals",
+            "review",
+        },
+        "Release manual design evidence",
+    )
+    if (
+        evidence["schema_version"] != 1
+        or evidence["kind"] != MANUAL_DESIGN_EVIDENCE_KIND
+        or evidence["design_mode"] != "bespoke"
+        or _sha256(evidence["manual_sha256"], "Release manual sha256")
+        != hashlib.sha256(manual).hexdigest()
+    ):
+        raise ProposalError("Release manual design evidence identity is invalid")
+    brief = _fields(
+        evidence["creative_brief"],
+        {
+            "emotional_promise",
+            "physical_format",
+            "format_rationale",
+            "visual_motif",
+            "palette",
+            "typography",
+            "teaching_arc",
+        },
+        "Release manual creative brief",
+    )
+    for field, minimum, maximum in (
+        ("emotional_promise", 20, 500),
+        ("physical_format", 3, 200),
+        ("format_rationale", 20, 1_000),
+        ("visual_motif", 20, 500),
+    ):
+        value = _release_page_text(
+            brief[field], "Release manual creative brief %s" % field, maximum
+        )
+        if len(value) < minimum:
+            raise ProposalError("Release manual creative brief is not substantive")
+    _manual_design_text_list(
+        brief["palette"], "Release manual palette", minimum_items=3, maximum_items=8
+    )
+    _manual_design_text_list(
+        brief["typography"],
+        "Release manual typography",
+        minimum_items=2,
+        maximum_items=6,
+    )
+    _manual_design_text_list(
+        brief["teaching_arc"],
+        "Release manual teaching arc",
+        minimum_items=3,
+        maximum_items=12,
+        minimum_length=8,
+    )
+    page_count = _manual_pages_and_embedded_fonts(manual)
+    visuals = _array(
+        evidence["product_visuals"], "Release manual product visuals", nonempty=True
+    )
+    made_entries = {
+        item["path"]: item for item in made["product_manifest"]["entries"]
+    }
+    covered = set()
+    seen = set()
+    for raw_visual in visuals:
+        visual = _fields(
+            raw_visual,
+            {"source_path", "source_sha256", "pages"},
+            "Release manual product visual",
+        )
+        source = visual["source_path"]
+        pure = PurePosixPath(source) if isinstance(source, str) else PurePosixPath(".")
+        made_entry = made_entries.get(source)
+        if (
+            not isinstance(source, str)
+            or pure.is_absolute()
+            or ".." in pure.parts
+            or pure.as_posix() != source
+            or pure.suffix.casefold() not in MANUAL_VISUAL_SUFFIXES
+            or made_entry is None
+            or visual["source_sha256"] != made_entry["sha256"]
+            or source in seen
+        ):
+            raise ProposalError("Release manual visual differs from sealed Made bytes")
+        pages = _array(visual["pages"], "Release manual visual pages", nonempty=True)
+        if (
+            any(type(page) is not int or not 1 <= page <= page_count for page in pages)
+            or pages != sorted(set(pages))
+        ):
+            raise ProposalError("Release manual visual page references are invalid")
+        seen.add(source)
+        covered.update(pages)
+    if 1 not in covered:
+        raise ProposalError("Release manual cover must use an exact product visual")
+    review = _fields(
+        evidence["review"],
+        {
+            "page_count",
+            "color_pages",
+            "grayscale_pages",
+            "first_time_owner_pass",
+            "independent_reviewer",
+            "findings",
+            "resolved_changes",
+            "status",
+        },
+        "Release manual review",
+    )
+    expected_pages = list(range(1, page_count + 1))
+    if (
+        review["page_count"] != page_count
+        or review["color_pages"] != expected_pages
+        or review["grayscale_pages"] != expected_pages
+        or review["first_time_owner_pass"] is not True
+        or review["independent_reviewer"] != "native-subagent"
+        or review["status"] != "approved"
+    ):
+        raise ProposalError("Release manual review is incomplete")
+    _manual_design_text_list(
+        review["findings"],
+        "Release manual review findings",
+        minimum_items=1,
+        maximum_items=20,
+        minimum_length=8,
+        maximum_length=1_000,
+    )
+    _manual_design_text_list(
+        review["resolved_changes"],
+        "Release manual resolved changes",
+        minimum_items=1,
+        maximum_items=20,
+        minimum_length=8,
+        maximum_length=1_000,
+    )
 
 
 def _playtest_contract(
@@ -2165,7 +2623,7 @@ def _playtest_contract(
     return {**identity, "playtested_sha256": json_sha256(identity)}
 
 
-def _release_contract(
+def _playtested_release_contract(
     run_root: Path,
     stage: Mapping[str, Any],
     *,
@@ -2174,6 +2632,7 @@ def _release_contract(
     inputs = _required_fields(
         stage["inputs"], {"made", "playtested"}, "Release STAGE inputs"
     )
+    manual_design_required = _manual_design_required(inputs)
     made = _validate_made(inputs["made"])
     playtested = _validate_playtested(inputs["playtested"], made)
     round_index = stage["round"]
@@ -2187,7 +2646,10 @@ def _release_contract(
         raise ProposalError("Release package root must be %s" % expected_root)
     manifest = _tree_manifest(run_root, package_root_value, "Release package tree")
     inventory = {entry["path"]: entry for entry in manifest["entries"]}
-    for required in ("MANUAL.pdf", "product.json"):
+    required_files = ["MANUAL.pdf", "product.json"]
+    if manual_design_required:
+        required_files.append(MANUAL_DESIGN_EVIDENCE_PATH)
+    for required in required_files:
         if required not in inventory:
             raise ProposalError("Release package manifest lacks %s" % required)
     forbidden_media = sorted(
@@ -2210,6 +2672,14 @@ def _release_contract(
     if hashlib.sha256(manual).hexdigest() != inventory["MANUAL.pdf"]["sha256"]:
         raise ProposalError("Release MANUAL.pdf changed after package hashing")
     _validate_pdf_manual(manual)
+    _validate_manual_design_evidence(
+        run_root,
+        package_root_value=package_root_value,
+        inventory=inventory,
+        manual=manual,
+        made=made,
+        required=manual_design_required,
+    )
 
     product: dict[str, Any] | None = None
     product_bytes: bytes | None = None
@@ -2250,9 +2720,7 @@ def _release_contract(
     if product.get("title") != made["product"].get("title"):
         raise ProposalError("Release title differs from the exact Made product")
 
-    unchanged = _tree_manifest(
-        run_root, package_root_value, "Release package tree"
-    )
+    unchanged = _tree_manifest(run_root, package_root_value, "Release package tree")
     if unchanged != manifest:
         raise ProposalError("Release package changed during validation")
     product_json_sha256 = hashlib.sha256(product_bytes).hexdigest()
@@ -2277,16 +2745,186 @@ def _release_contract(
     return result
 
 
+def _direct_release_contract(
+    run_root: Path,
+    stage: Mapping[str, Any],
+    *,
+    package_root_value: str,
+) -> dict[str, Any]:
+    inputs = _required_fields(stage["inputs"], {"made"}, "Release STAGE inputs")
+    manual_design_required = _manual_design_required(inputs)
+    made = _validate_made(inputs["made"])
+    round_index = stage["round"]
+    if made["round"] != round_index:
+        raise ProposalError("Release round differs from Made")
+
+    expected_root = "artifacts/release/package"
+    if package_root_value != expected_root:
+        raise ProposalError("Release package root must be %s" % expected_root)
+    manifest = _tree_manifest(run_root, package_root_value, "Release package tree")
+    inventory = {entry["path"]: entry for entry in manifest["entries"]}
+    required_files = ["MANUAL.pdf", "product.json", PLAYTEST_OMISSION_PATH]
+    if manual_design_required:
+        required_files.append(MANUAL_DESIGN_EVIDENCE_PATH)
+    for required in required_files:
+        if required not in inventory:
+            raise ProposalError("Release package manifest lacks %s" % required)
+    forbidden_media = sorted(
+        path
+        for path in inventory
+        if PurePosixPath(path).suffix.casefold()
+        in FORBIDDEN_RELEASE_MEDIA_SUFFIXES
+    )
+    if forbidden_media:
+        raise ProposalError(
+            "Release package cannot contain media files: %s" % forbidden_media
+        )
+
+    manual, _ = _read_regular(
+        run_root,
+        "%s/MANUAL.pdf" % package_root_value,
+        "Release MANUAL.pdf",
+        maximum=MAX_RELEASE_MANUAL_BYTES,
+    )
+    if hashlib.sha256(manual).hexdigest() != inventory["MANUAL.pdf"]["sha256"]:
+        raise ProposalError("Release MANUAL.pdf changed after package hashing")
+    _validate_pdf_manual(manual)
+    _validate_manual_design_evidence(
+        run_root,
+        package_root_value=package_root_value,
+        inventory=inventory,
+        manual=manual,
+        made=made,
+        required=manual_design_required,
+    )
+
+    omission, _ = _read_regular(
+        run_root,
+        "%s/%s" % (package_root_value, PLAYTEST_OMISSION_PATH),
+        "Release Playtest omission",
+        maximum=MAX_RELEASE_CONTRACT_BYTES,
+    )
+    if omission != canonical_json(_playtest_omission_record()):
+        raise ProposalError("Release Playtest omission is not canonical")
+    omission_sha256 = _playtest_omission_sha256()
+    if inventory[PLAYTEST_OMISSION_PATH]["sha256"] != omission_sha256:
+        raise ProposalError("Release Playtest omission changed after package hashing")
+
+    product: dict[str, Any] | None = None
+    product_bytes: bytes | None = None
+    for path, entry in inventory.items():
+        if PurePosixPath(path).suffix.casefold() != ".json":
+            continue
+        document, content, _ = _read_json(
+            run_root,
+            "%s/%s" % (package_root_value, path),
+            "Release %s" % path,
+            maximum=MAX_RELEASE_CONTRACT_BYTES,
+        )
+        if content != canonical_json(document):
+            raise ProposalError("Release %s must use canonical JSON encoding" % path)
+        if hashlib.sha256(content).hexdigest() != entry["sha256"]:
+            raise ProposalError("Release %s changed after package hashing" % path)
+        if path == "product.json":
+            product = document
+            product_bytes = content
+    if product is None or product_bytes is None:
+        raise ProposalError("Release product.json is unavailable")
+    validated_product = _validate_release_product(product)
+    if validated_product != product:
+        raise ProposalError("Release product.json is not canonical page content")
+
+    product_artifact_sha256 = made["product_manifest"]["artifact_sha256"]
+    evidence_artifact_sha256 = omission_sha256
+    if product.get("product_artifact_sha256") != product_artifact_sha256:
+        raise ProposalError("Release product.json identifies another product")
+    if (
+        product.get("playtest_evidence_artifact_sha256")
+        != evidence_artifact_sha256
+    ):
+        raise ProposalError("Release product.json identifies other Playtest evidence")
+    claims = _mapping(product["claims"], "Release claims", nonempty=True)
+    if claims != _direct_release_claims():
+        raise ProposalError("Release claims must state that Playtest was not run")
+    if product.get("title") != made["product"].get("title"):
+        raise ProposalError("Release title differs from the exact Made product")
+
+    unchanged = _tree_manifest(
+        run_root, package_root_value, "Release package tree"
+    )
+    if unchanged != manifest:
+        raise ProposalError("Release package changed during validation")
+    product_json_sha256 = hashlib.sha256(product_bytes).hexdigest()
+    identity = {
+        "schema_version": 3,
+        "kind": RELEASE_KIND,
+        "round": round_index,
+        "made_sha256": made["made_sha256"],
+        "playtested_sha256": omission_sha256,
+        "product_artifact_sha256": product_artifact_sha256,
+        "playtest_evidence_artifact_sha256": evidence_artifact_sha256,
+        "package_root": package_root_value,
+        "package_manifest": manifest,
+        "manual_path": "MANUAL.pdf",
+        "product_json_path": "product.json",
+        "product_json_sha256": product_json_sha256,
+        "product": product,
+    }
+    result = {**identity, "release_sha256": json_sha256(identity)}
+    if len(canonical_json(result)) > MAX_RELEASE_CONTRACT_BYTES:
+        raise ProposalError("native Release exceeds its byte limit")
+    return result
+
+
+def _release_contract(
+    run_root: Path,
+    stage: Mapping[str, Any],
+    *,
+    package_root_value: str,
+) -> dict[str, Any]:
+    inputs = _mapping(stage["inputs"], "Release STAGE inputs", nonempty=True)
+    if "playtested" in inputs:
+        return _playtested_release_contract(
+            run_root,
+            stage,
+            package_root_value=package_root_value,
+        )
+    return _direct_release_contract(
+        run_root,
+        stage,
+        package_root_value=package_root_value,
+    )
+
+
 def _contract_path(stage: str, round_index: Any) -> str:
     if stage == "match":
         return MATCH_PATH
     if stage == "invent":
-        return INVENT_PATH
+        raise ProposalError("Invent contract path requires its STAGE inputs")
     if stage == "make":
         return "artifacts/make/r%04d/made.json" % round_index
     if stage == "playtest":
         return "artifacts/playtest/r%04d/playtested.json" % round_index
     return "artifacts/release/release.json"
+
+
+def _stage_contract_path(stage: Mapping[str, Any]) -> str:
+    if stage["stage"] != "invent":
+        return _contract_path(stage["stage"], stage["round"])
+    inputs = _mapping(stage["inputs"], "Invent STAGE inputs", nonempty=True)
+    contract_path = _safe_relative(
+        inputs.get("contract_path", INVENT_PATH), "Invent contract_path"
+    ).as_posix()
+    repair_round = inputs.get("repair_round")
+    expected = (
+        INVENT_PATH
+        if repair_round is None
+        else "artifacts/invent/r%04d/invented.json"
+        % _positive_int(repair_round, "Invent repair_round")
+    )
+    if contract_path != expected:
+        raise ProposalError("Invent contract_path is not canonical for this revision")
+    return contract_path
 
 
 def _seal(
@@ -2295,18 +2933,46 @@ def _seal(
     contract: Mapping[str, Any],
     *,
     transition: str,
+    additional_contracts: Sequence[tuple[str, Mapping[str, Any]]] = (),
+    additional_files: Sequence[tuple[str, bytes]] = (),
 ) -> dict[str, Any]:
-    contract_path = _contract_path(stage["stage"], stage["round"])
+    contract_path = _stage_contract_path(stage)
     contract_bytes = canonical_json(contract)
     if len(contract_bytes) > MAX_CONTRACT_BYTES:
         raise ProposalError("stage contract exceeds the native artifact limit")
     _atomic_write(run_root, contract_path, contract_bytes)
     artifact_sha256 = hashlib.sha256(contract_bytes).hexdigest()
+    artifacts = [{"path": contract_path, "sha256": artifact_sha256}]
+    for additional_path, additional_contract in additional_contracts:
+        relative = _safe_relative(additional_path, "additional contract path").as_posix()
+        if relative == contract_path or any(item["path"] == relative for item in artifacts):
+            raise ProposalError("stage contract paths must be unique")
+        if not relative.startswith("artifacts/%s/" % stage["stage"]):
+            raise ProposalError("additional contract must stay under the current stage")
+        content = canonical_json(additional_contract)
+        if len(content) > MAX_CONTRACT_BYTES:
+            raise ProposalError("additional stage contract exceeds the artifact limit")
+        _atomic_write(run_root, relative, content)
+        artifacts.append(
+            {"path": relative, "sha256": hashlib.sha256(content).hexdigest()}
+        )
+    for additional_path, content in additional_files:
+        relative = _safe_relative(additional_path, "additional artifact path").as_posix()
+        if any(item["path"] == relative for item in artifacts):
+            raise ProposalError("stage artifact paths must be unique")
+        if not relative.startswith("artifacts/%s/" % stage["stage"]):
+            raise ProposalError("additional artifact must stay under the current stage")
+        if not isinstance(content, bytes) or not content or len(content) > MAX_JSON_BYTES:
+            raise ProposalError("additional stage artifact is invalid")
+        _atomic_write(run_root, relative, content)
+        artifacts.append(
+            {"path": relative, "sha256": hashlib.sha256(content).hexdigest()}
+        )
     outcome = {
         "schema_version": 1,
         "stage": stage["stage"],
         "status": "ready",
-        "artifacts": [{"path": contract_path, "sha256": artifact_sha256}],
+        "artifacts": artifacts,
         "needs": [],
         "proposed_transition": transition,
     }
@@ -2356,6 +3022,13 @@ def _parser() -> argparse.ArgumentParser:
     make = subparsers.add_parser("make", help="Seal one exact product tree.")
     make.add_argument("--product-root", required=True, help="Run-local product tree.")
     make.add_argument(
+        "--source",
+        help=(
+            "Run-local selection, concept, and research JSON; required only "
+            "for Spark effort."
+        ),
+    )
+    make.add_argument(
         "--cad-project-path",
         required=True,
         help="CAD project directory relative to the product tree.",
@@ -2368,6 +3041,9 @@ def _parser() -> argparse.ArgumentParser:
 
     make_group = subparsers.add_parser(
         "make-group", help="Seal one build group of the current Make attempt."
+    )
+    make_group.add_argument(
+        "--source", help="Run-local Spark creative JSON (Spark Make only)."
     )
     make_group.add_argument("--product-root", required=True, help="Run-local product tree.")
     make_group.add_argument("--group", required=True, help="Group name from the sealed build_plan.")
@@ -2399,25 +3075,93 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     run_root = _canonical_root(args.run_root)
     if args.command == "make-group":
         stage = _load_stage(run_root, "make")
+        inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+        assignment = invented = None
+        source_value = getattr(args, "source", None)
+        if inputs.get("creative_source_required") is True:
+            assignment, invented = _spark_creative_contracts(run_root, stage, source_value)
+        elif source_value is not None:
+            raise ProposalError("this Make stage does not accept --source")
         return _make_group(
-            run_root, stage, product_root_value=args.product_root, group_name=args.group
+            run_root,
+            stage,
+            product_root_value=args.product_root,
+            group_name=args.group,
+            assignment_value=assignment,
+            invented_value=invented,
         )
     stage = _load_stage(run_root, args.command)
+    additional_contracts: list[tuple[str, Mapping[str, Any]]] = []
+    additional_files: list[tuple[str, bytes]] = []
     if args.command == "match":
         source, _, _ = _read_json(run_root, args.source, "Match authored source")
         contract = _match_contract(stage, source)
         transition = stage["next_transition"]
     elif args.command == "invent":
-        source, _, _ = _read_json(run_root, args.source, "Invent authored source")
-        contract = _invent_contract(run_root, stage, source)
+        source, source_content, _ = _read_json(
+            run_root, args.source, "Invent authored source"
+        )
+        inputs = _mapping(stage["inputs"], "Invent STAGE inputs", nonempty=True)
+        if "assignment" in inputs:
+            contract = _invent_contract(run_root, stage, source)
+        else:
+            authored = _fields(
+                source,
+                {"selected_inventor_id", "ranking", "concept", "research"},
+                "routed Invent authored source",
+            )
+            assignment = _match_contract(
+                stage,
+                {
+                    "selected_inventor_id": authored["selected_inventor_id"],
+                    "ranking": authored["ranking"],
+                },
+            )
+            contract = _invent_contract_for_assignment(
+                run_root,
+                assignment,
+                {"concept": authored["concept"], "research": authored["research"]},
+            )
+            assignment_path = _safe_relative(
+                inputs.get("assignment_contract_path"),
+                "routed Invent assignment_contract_path",
+            ).as_posix()
+            additional_contracts.append((assignment_path, assignment))
+        source_path = (
+            _safe_relative(
+                inputs.get("contract_path", INVENT_PATH),
+                "Invent contract_path",
+            ).parent
+            / "source.json"
+        ).as_posix()
+        additional_files.append((source_path, source_content))
         transition = stage["next_transition"]
     elif args.command == "make":
+        inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+        assignment = invented = None
+        if inputs.get("creative_source_required") is True:
+            assignment, invented = _spark_creative_contracts(run_root, stage, args.source)
+            assignment_path = _safe_relative(
+                inputs.get("assignment_contract_path"),
+                "Spark Make assignment_contract_path",
+            ).as_posix()
+            invented_path = _safe_relative(
+                inputs.get("invented_contract_path"),
+                "Spark Make invented_contract_path",
+            ).as_posix()
+            additional_contracts.extend(
+                ((assignment_path, assignment), (invented_path, invented))
+            )
+        elif args.source is not None:
+            raise ProposalError("this Make stage does not accept --source")
         contract = _make_contract(
             run_root,
             stage,
             product_root_value=args.product_root,
             cad_project_path=args.cad_project_path,
             cad_verification_path=args.cad_verification_path,
+            assignment_value=assignment,
+            invented_value=invented,
         )
         transition = stage["next_transition"]
     elif args.command == "playtest":
@@ -2428,10 +3172,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             source,
             evidence_root_value=args.evidence_root,
         )
-        if contract["verdict"] == "pass":
-            transition = "release"
-        else:
-            transition = "make"
+        transition = _playtest_transition(contract)
     elif args.command == "release":
         contract = _release_contract(
             run_root,
@@ -2441,7 +3182,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         transition = stage["next_transition"]
     else:  # pragma: no cover - argparse rejects unknown commands
         raise ProposalError("unsupported stage command")
-    return _seal(run_root, stage, contract, transition=transition)
+    return _seal(
+        run_root,
+        stage,
+        contract,
+        transition=transition,
+        additional_contracts=additional_contracts,
+        additional_files=additional_files,
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:

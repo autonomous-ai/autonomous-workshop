@@ -13,6 +13,11 @@ and Workshop never moves them or silently chooses between duplicate roots.
 After Factory publication and public readback succeed, the host can create a
 deliberately small sanitized projection here under
 `<inventor>-<product-slug>/`.
+[`pico-press-horn-tip/`](pico-press-horn-tip/) is a Spark example produced by
+`--manager grok`; its README has the exact CLI used to create it.
+Workflow-shaped snapshots include a README table of public stage attempts
+from each `ATTEMPTS.json`.
+
 A public snapshot contains only:
 
 - `README.md`, the exact printable `MANUAL.pdf`, and the exact public
@@ -23,6 +28,9 @@ A public snapshot contains only:
   `print/`, including their declared quantities;
 - the exact public primary STL under `model/` when the Factory primary is a
   mesh.
+
+Historical schema-v1 snapshots may retain `MANUAL.md`; they are legacy
+evidence and are never rewritten or presented as a current terminal Release.
 
 Snapshots never contain the private Wish, Codex transcript, host checkpoint,
 Factory receipt, generated G-code, internal evidence tree, or product-run agent

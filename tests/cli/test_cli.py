@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from cli.main import main, parser
+from workshop.runtime.progress import WishRunTimingEvent
 
 
 cli_main = importlib.import_module("cli.main")
@@ -24,12 +25,24 @@ def native_receipt(*, status="waiting", stage="match", published=False, progress
         "stage": stage,
         "publication": {
             "status": "public" if published else "not-created",
-            "requested": published,
+            "requested": True,
+            "required": True,
         },
     }
     if progress is not None:
         receipt["progress"] = progress
     return receipt
+
+
+def timing_event(*, state="started", elapsed_ms=None, operation="session.start"):
+    return WishRunTimingEvent(
+        observed_at="2026-08-27T03:14:15.926Z",
+        product_id="wish-one",
+        stage="match",
+        operation=operation,
+        state=state,
+        elapsed_ms=elapsed_ms,
+    )
 
 
 class NativeCommandTest(unittest.TestCase):
@@ -90,6 +103,8 @@ class NativeCommandTest(unittest.TestCase):
             ),
             ("check", ".", "--run"),
             ("wish", "a moon", "--draft"),
+            ("wish", "a moon", "--publish"),
+            ("resume", "wish-one", "--publish"),
         ):
             with self.subTest(arguments=arguments), redirect_stderr(StringIO()), self.assertRaises(SystemExit):
                 command.parse_args(arguments)
@@ -110,9 +125,11 @@ class NativeCommandTest(unittest.TestCase):
     def test_wish_calls_only_native_start_and_keeps_json_stdout_clean(self):
         observed = {}
 
-        def start(wish, *, publish_requested, activity_observer):
+        def start(wish, *, effort, manager_id, activity_observer, timing_observer):
             observed["wish"] = wish
-            observed["publish_requested"] = publish_requested
+            observed["effort"] = effort
+            observed["manager_id"] = manager_id
+            timing_observer(timing_event())
             for activity in (
                 "starting",
                 "reasoning",
@@ -123,6 +140,9 @@ class NativeCommandTest(unittest.TestCase):
                 "completed",
             ):
                 activity_observer(activity)
+            timing_observer(
+                timing_event(state="completed", elapsed_ms=2_375)
+            )
             return native_receipt()
 
         stdout = StringIO()
@@ -138,54 +158,125 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "match")
         self.assertIn("Starting one native Codex session", stderr.getvalue())
-        self.assertIn("not published by default", stderr.getvalue())
+        self.assertEqual(observed["manager_id"], "codex")
         self.assertIn("reasoning about the current stage", stderr.getvalue())
         self.assertIn("process is still running", stderr.getvalue())
         self.assertIn("using a tool for the current stage", stderr.getvalue())
         self.assertIn("turn complete; Workshop is verifying it", stderr.getvalue())
+        self.assertIn(
+            "[2026-08-27T03:14:15.926Z] wish=wish-one stage=match "
+            "operation=session.start state=started",
+            stderr.getvalue(),
+        )
+        self.assertIn("state=completed elapsed_ms=2375", stderr.getvalue())
+        self.assertNotIn("a moon that waddles", stderr.getvalue())
         self.assertEqual(stderr.getvalue().count("process is still running"), 1)
         self.assertEqual(stderr.getvalue().count("using a tool"), 1)
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
-        self.assertFalse(observed["publish_requested"])
+        self.assertEqual(observed["effort"], "spark")
+        self.assertIn("Effort: Spark", stderr.getvalue())
         native_start.assert_called_once()
 
-    def test_wish_publish_is_explicit_and_strict_wait_exits_one(self):
+    def test_wish_strict_wait_exits_one_without_a_publication_flag(self):
         stdout = StringIO()
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
             "cli.main.start_native_run", return_value=native_receipt()
         ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
-            result = main(("wish", "a moon", "--publish", "--strict", "--json"))
+            result = main(("wish", "a moon", "--strict", "--json"))
         self.assertEqual(result, 1)
         start.assert_called_once()
-        self.assertTrue(start.call_args.kwargs["publish_requested"])
+
+    def test_human_wish_timing_uses_stdout_and_flushes(self):
+        def start(wish, *, effort, manager_id, activity_observer, timing_observer):
+            self.assertEqual(effort, "spark")
+            self.assertEqual(manager_id, "codex")
+            del wish, activity_observer
+            timing_observer(timing_event(operation="stage.prepare"))
+            timing_observer(
+                timing_event(
+                    operation="stage.prepare",
+                    state="completed",
+                    elapsed_ms=42,
+                )
+            )
+            return native_receipt()
+
+        stdout = StringIO()
+        stderr = StringIO()
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-one"
+        ), mock.patch(
+            "cli.main.start_native_run", side_effect=start
+        ), mock.patch.object(
+            stdout, "flush", wraps=stdout.flush
+        ) as flush, redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(("wish", "private human objective"))
+
+        self.assertEqual(result, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertIn("operation=stage.prepare state=started", stdout.getvalue())
+        self.assertIn("state=completed elapsed_ms=42", stdout.getvalue())
+        self.assertNotIn("private human objective", stdout.getvalue())
+        self.assertGreaterEqual(flush.call_count, 2)
+
+    def test_wish_passes_each_named_effort_to_the_native_host(self):
+        for effort in ("spark", "forge", "quest"):
+            with self.subTest(effort=effort), mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-" + effort
+            ), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                result = main(
+                    ("wish", "a moon", "--effort", effort, "--json")
+                )
+            self.assertEqual(result, 0)
+            self.assertEqual(start.call_args.kwargs["effort"], effort)
+            self.assertEqual(start.call_args.kwargs["manager_id"], "codex")
+
+    def test_wish_passes_named_manager_to_the_native_host(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-grok"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--manager", "grok", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["manager_id"], "grok")
 
     def test_live_native_activity_repeats_only_throttled_running_updates(self):
         output = StringIO()
-        activity = cli_main._LiveNativeActivity(output)
+        progress = cli_main._LiveWishProgress(output)
         with mock.patch(
             "cli.main.time.monotonic",
             side_effect=(100.0, 129.9, 130.0),
         ):
-            activity("running")
-            activity("running")
-            activity("running")
+            progress.activity("running")
+            progress.activity("running")
+            progress.activity("running")
 
         self.assertEqual(output.getvalue().count("process is still running"), 2)
 
     def test_live_native_activity_rate_limits_high_churn_classes(self):
         output = StringIO()
-        activity = cli_main._LiveNativeActivity(output)
+        progress = cli_main._LiveWishProgress(output)
         with mock.patch(
             "cli.main.time.monotonic",
             side_effect=(100.0, 100.5, 102.0),
         ):
-            activity("reasoning")
-            activity("tool")
-            activity("tool")
+            progress.activity("reasoning")
+            progress.activity("tool")
+            progress.activity("tool")
 
         self.assertEqual(output.getvalue().count("reasoning"), 1)
         self.assertEqual(output.getvalue().count("using a tool"), 1)
+
+    def test_failed_activity_neutrally_reports_proposal_check(self):
+        output = StringIO()
+        cli_main._LiveWishProgress(output).activity("failed")
+
+        self.assertIn("checking for a valid stage proposal", output.getvalue())
+        self.assertNotIn("turn stopped", output.getvalue())
 
     def test_status_is_read_only_native_inspection(self):
         stdout = StringIO()
@@ -238,7 +329,7 @@ class NativeCommandTest(unittest.TestCase):
 
     def test_status_text_surfaces_actionable_publication_need(self):
         stdout = StringIO()
-        receipt = native_receipt(status="waiting", stage="deliver")
+        receipt = native_receipt(status="waiting", stage="release")
         reason = (
             "Factory credentials are missing; configure them, then resume this run."
         )
@@ -261,7 +352,7 @@ class NativeCommandTest(unittest.TestCase):
 
     def test_status_text_surfaces_hash_verified_manual_url(self):
         stdout = StringIO()
-        receipt = native_receipt(status="complete", stage="deliver")
+        receipt = native_receipt(status="complete", stage="release")
         receipt["publication"] = {
             "status": "public",
             "requested": True,
@@ -285,8 +376,16 @@ class NativeCommandTest(unittest.TestCase):
         )
 
     def test_resume_calls_only_native_resume_and_has_strict_wait_policy(self):
-        def resume_run(product_id, *, publish_requested, activity_observer):
+        def resume_run(product_id, *, activity_observer, timing_observer):
+            timing_observer(timing_event(operation="session.resume"))
             activity_observer("tool")
+            timing_observer(
+                timing_event(
+                    operation="session.resume",
+                    state="completed",
+                    elapsed_ms=911,
+                )
+            )
             return native_receipt(stage="make")
 
         stdout = StringIO()
@@ -294,17 +393,17 @@ class NativeCommandTest(unittest.TestCase):
         with mock.patch(
             "cli.main.resume_native_run", side_effect=resume_run
         ) as resume, redirect_stdout(stdout), redirect_stderr(stderr):
-            result = main(
-                ("resume", "wish-one", "--publish", "--strict", "--json")
-            )
+            result = main(("resume", "wish-one", "--strict", "--json"))
         self.assertEqual(result, 1)
         resume.assert_called_once()
         self.assertEqual(resume.call_args.args, ("wish-one",))
-        self.assertTrue(resume.call_args.kwargs["publish_requested"])
         self.assertTrue(callable(resume.call_args.kwargs["activity_observer"]))
+        self.assertTrue(callable(resume.call_args.kwargs["timing_observer"]))
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "make")
         self.assertIn("exact native Codex session", stderr.getvalue())
         self.assertIn("using a tool for the current stage", stderr.getvalue())
+        self.assertIn("operation=session.resume state=started", stderr.getvalue())
+        self.assertIn("state=completed elapsed_ms=911", stderr.getvalue())
 
     def test_failed_native_run_exits_one_even_without_strict(self):
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
@@ -313,11 +412,12 @@ class NativeCommandTest(unittest.TestCase):
         ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
             self.assertEqual(main(("wish", "a moon")), 1)
 
-    def test_draft_is_the_parser_default(self):
+    def test_publication_flags_are_not_part_of_the_core_cli(self):
         command = parser()
-        self.assertFalse(command.parse_args(("wish", "a moon")).publish)
-        self.assertFalse(command.parse_args(("resume", "wish-one")).publish)
-        self.assertTrue(command.parse_args(("wish", "a moon", "--publish")).publish)
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            command.parse_args(("wish", "a moon", "--publish"))
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            command.parse_args(("resume", "wish-one", "--publish"))
 
 
 class DoctorTest(unittest.TestCase):
@@ -366,7 +466,7 @@ class DoctorTest(unittest.TestCase):
         self.assertIn("goals, subagents, and isolation", check["detail"])
         self.assertIn("0.145.0", check["next"])
 
-    def test_missing_factory_credentials_are_optional_for_local_release(self):
+    def test_missing_factory_credentials_block_terminal_release(self):
         ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
         stdout = StringIO()
         with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
@@ -380,12 +480,11 @@ class DoctorTest(unittest.TestCase):
         ), redirect_stdout(stdout):
             result = main(("doctor", "--json"))
         receipt = json.loads(stdout.getvalue())
-        self.assertEqual(result, 0)
-        self.assertEqual(receipt["status"], "ready")
+        self.assertEqual(result, 1)
+        self.assertEqual(receipt["status"], "needs-attention")
         factory = next(item for item in receipt["checks"] if item["name"] == "factory-credentials")
-        self.assertEqual(factory["status"], "ready")
-        self.assertIn("local Release remains available", factory["detail"])
-        self.assertIn("requested publication", factory["detail"])
+        self.assertEqual(factory["status"], "needs-attention")
+        self.assertIn("Release requires public Factory publication", factory["detail"])
 
     def test_partial_factory_credentials_fail_without_printing_values(self):
         secret = "do-not-print-this-value"
@@ -420,16 +519,48 @@ class DoctorTest(unittest.TestCase):
         self.assertIn("exactly match", check["detail"])
         self.assertNotIn(secret_username, json.dumps(check))
 
-    def test_generic_factory_pair_remains_ready(self):
+    def test_generic_factory_service_account_is_ready_for_every_inventor(self):
         with mock.patch(
             "cli.main.factory_credential_environment",
             return_value={
-                "FACTORY_USERNAME": "inventor-from-run",
+                "FACTORY_USERNAME": "alice",
                 "FACTORY_PASSWORD": "secret",
             },
         ):
             check = cli_main._doctor_factory()
         self.assertEqual(check["status"], "ready")
+        self.assertIn("service-account pair", check["detail"])
+        self.assertIn("every Inventor", check["detail"])
+
+    def test_one_legacy_scoped_username_is_ready_with_migration_guidance(self):
+        with mock.patch(
+            "cli.main.factory_credential_environment",
+            return_value={
+                "FACTORY_ALICE_USERNAME": "alice",
+                "FACTORY_PASSWORD": "secret",
+            },
+        ):
+            check = cli_main._doctor_factory()
+        self.assertEqual(check["status"], "ready")
+        self.assertIn("service account for every Inventor", check["detail"])
+        self.assertIn("FACTORY_USERNAME", check["next"])
+
+    def test_multiple_factory_accounts_fail_without_printing_values(self):
+        first = "alice"
+        second = "leo-smith"
+        with mock.patch(
+            "cli.main.factory_credential_environment",
+            return_value={
+                "FACTORY_ALICE_USERNAME": first,
+                "FACTORY_LEO_SMITH_USERNAME": second,
+                "FACTORY_PASSWORD": "secret",
+            },
+        ):
+            check = cli_main._doctor_factory()
+        self.assertEqual(check["status"], "needs-attention")
+        self.assertIn("only one Workshop service account", check["detail"])
+        self.assertNotIn(first, json.dumps(check))
+        self.assertNotIn(second, json.dumps(check))
 
     def test_repository_agent_assets_include_executable_cad_verifier(self):
         self.assertEqual(cli_main._doctor_agent_assets()["status"], "ready")

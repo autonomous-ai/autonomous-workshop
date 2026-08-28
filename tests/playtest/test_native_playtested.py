@@ -346,7 +346,7 @@ class NativePlaytestedTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "cannot contain failures"):
             self._playtested(verdict="pass", failed="agent-playtest")
 
-    def test_host_reads_make_targeted_feedback_but_rejects_upstream_stages(self):
+    def test_feedback_explicitly_routes_make_repair_or_concept_revision(self):
         accepted = Feedback(
             code="repair-snap",
             area="make",
@@ -361,15 +361,66 @@ class NativePlaytestedTest(unittest.TestCase):
             accepted.invalidates,
             ("make", "playtest", "release"),
         )
-        with self.assertRaisesRegex(ContractError, "outside the Make repair loop"):
+        concept = Feedback(
+            code="restart-invent",
+            area="invent",
+            severity="block",
+            finding="The sealed concept cannot produce an unambiguous game.",
+            change="Revise the concept before producing new geometry.",
+            evidence_refs=("mechanical-check.json",),
+            invalidates=("invent", "make", "playtest", "release"),
+        )
+        self.assertTrue(concept.requests_concept_revision)
+        self.assertFalse(accepted.requests_concept_revision)
+
+        with self.assertRaisesRegex(ContractError, "every downstream stage"):
             Feedback(
-                code="restart-invent",
+                code="partial-restart",
                 area="invent",
                 severity="block",
                 finding="The concept should be replaced.",
                 change="Return to Invent.",
                 invalidates=("invent",),
             )
+
+    def test_playtested_transition_and_feedback_hash_follow_authored_feedback(self):
+        make_repair = self._playtested(
+            verdict="improve", failed="mechanical-check"
+        )
+        self.assertEqual(make_repair.proposed_transition, "make")
+
+        concept_feedback = Feedback(
+            code="concept-conflict",
+            area="invent",
+            severity="block",
+            finding="The concept's interaction cannot satisfy the Wish.",
+            change="Revise the concept before rebuilding the product.",
+            evidence_refs=("mechanical-check.json",),
+            invalidates=("invent", "make", "playtest", "release"),
+        )
+        concept_revision = NativePlaytested(
+            round=make_repair.round,
+            made_sha256=make_repair.made_sha256,
+            product_artifact_sha256=make_repair.product_artifact_sha256,
+            blueprint_sha256=make_repair.blueprint_sha256,
+            evidence_root=make_repair.evidence_root,
+            evidence_manifest=make_repair.evidence_manifest,
+            checks=make_repair.checks,
+            feedback=(concept_feedback,),
+            verdict="block",
+        )
+
+        expected_feedback = json.dumps(
+            [concept_feedback.to_dict()],
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        self.assertEqual(concept_revision.proposed_transition, "invent")
+        self.assertEqual(
+            concept_revision.feedback_sha256,
+            hashlib.sha256(expected_feedback).hexdigest(),
+        )
 
 
 if __name__ == "__main__":

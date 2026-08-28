@@ -156,3 +156,34 @@ Do not call a part optimised from a volume in a chat log. `--report` writes a
 markdown record next to the other verification artifacts, and a project that
 ships a hollowed part should say the wall it was shelled at, beside the
 `check_thickness` result that measured it.
+
+## Every thin region, not just the thinnest point
+
+`check_thickness` reports the sub-minimum samples **clustered into regions**,
+worst first, because reporting only `thickness.min()` makes a part with several
+knife edges take one round per edge -- fix the worst, re-run, meet the next, and
+each round costs a rebuild, an export and a fresh voxelisation.
+
+On a six-part pump that pattern turned an 8 s measurement into most of an hour,
+and it hid the actual defect. The single reported point sat on a bore/front-face
+corner at the grid floor; clustering the same run showed **33 regions**, and the
+six largest were all on the hose-barb ridge crests reading 0.51 mm:
+
+    1. 0.51 mm at (-46.5, 12.5, 26.9)   16 samples, 1.4 mm2, runs 9.2 mm
+    2. 0.51 mm at ( 49.7, 13.8, 15.9)   15 samples, 1.3 mm2, runs 6.9 mm
+    ... and 27 smaller region(s)
+
+The cause was a repair for an earlier finding: a 0.5 mm flat land had been put
+on each crest to remove a knife edge, and **the land was itself below the
+minimum wall**. Widening it to 0.9 mm took the part from 158 sub-minimum samples
+in 33 regions to 4 in 2.
+
+Two rules follow:
+
+- **A feature added to remove a knife edge must clear the minimum wall in its
+  own right.** A land, a chamfer face or a fillet flat narrower than 2 x nozzle
+  trades one finding for another, and the trade is invisible while the gate
+  reports one point.
+- **Read the region list before editing.** Samples within `4 x pitch` are one
+  region, so a wedge running along an edge stays one finding; a count in the
+  dozens means many separate places, not one bad face.

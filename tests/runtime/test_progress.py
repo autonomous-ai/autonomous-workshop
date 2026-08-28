@@ -6,13 +6,16 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from workshop.errors import ContractError
 from workshop.runtime.progress import (
     NATIVE_PROGRESS_FILENAME,
     NativeProgressUnavailable,
+    WishRunTimingEvent,
     begin_native_progress,
     native_progress_turn_floor,
     read_native_progress,
     trusted_native_progress,
+    wish_run_timing_span,
     write_native_progress,
 )
 
@@ -228,6 +231,189 @@ class NativeProgressTest(unittest.TestCase):
                     )
                 )
 
+
+class WishRunTimingTest(unittest.TestCase):
+    def event(self, **overrides):
+        values = {
+            "observed_at": "2026-08-27T03:14:15.926Z",
+            "product_id": "wish-progress",
+            "stage": "make",
+            "operation": "session.resume",
+            "state": "completed",
+            "elapsed_ms": 37,
+        }
+        values.update(overrides)
+        return WishRunTimingEvent(**values)
+
+    def test_event_is_bounded_and_elapsed_is_terminal_only(self):
+        self.assertEqual(
+            self.event().to_dict(),
+            {
+                "observed_at": "2026-08-27T03:14:15.926Z",
+                "product_id": "wish-progress",
+                "stage": "make",
+                "operation": "session.resume",
+                "state": "completed",
+                "elapsed_ms": 37,
+            },
+        )
+        started = self.event(state="started", elapsed_ms=None)
+        self.assertNotIn("elapsed_ms", started.to_dict())
+        with self.assertRaisesRegex(ContractError, "cannot have elapsed_ms"):
+            self.event(state="started")
+        with self.assertRaisesRegex(ContractError, "requires nonnegative"):
+            self.event(elapsed_ms=-1)
+
+    def test_event_rejects_unknown_identifiers_and_arbitrary_metadata(self):
+        invalid = (
+            ({"observed_at": "not-a-timestamp"}, "timestamp"),
+            ({"product_id": "private wish text"}, "product_id"),
+            ({"stage": "concept"}, "stage"),
+            ({"operation": "provider.private-response"}, "operation"),
+            ({"state": "waiting"}, "state"),
+        )
+        for overrides, message in invalid:
+            with self.subTest(overrides=overrides):
+                with self.assertRaisesRegex(ContractError, message):
+                    self.event(**overrides)
+        with self.assertRaises(TypeError):
+            WishRunTimingEvent(
+                observed_at="2026-08-27T03:14:15.926Z",
+                product_id="wish-progress",
+                stage="make",
+                operation="session.resume",
+                state="started",
+                private_response="secret",
+            )
+
+    def test_span_is_noop_without_observer(self):
+        with mock.patch(
+            "workshop.runtime.progress._now_ms",
+            side_effect=AssertionError("wall clock should not be read"),
+        ), mock.patch(
+            "workshop.runtime.progress.time.monotonic",
+            side_effect=AssertionError("monotonic clock should not be read"),
+        ):
+            with wish_run_timing_span(
+                None,
+                product_id="wish-progress",
+                stage="make",
+                operation="stage.prepare",
+            ):
+                pass
+
+    def test_span_emits_pair_with_monotonic_nonnegative_duration(self):
+        events = []
+        with mock.patch(
+            "workshop.runtime.progress._now_ms",
+            side_effect=(1_000, 500),
+        ), mock.patch(
+            "workshop.runtime.progress.time.monotonic",
+            side_effect=(10.0, 11.25),
+        ):
+            with wish_run_timing_span(
+                events.append,
+                product_id="wish-progress",
+                stage="make",
+                operation="stage.prepare",
+            ):
+                pass
+        self.assertEqual([event.state for event in events], ["started", "completed"])
+        self.assertEqual(events[1].elapsed_ms, 1_250)
+        self.assertEqual(events[1].observed_at, "1970-01-01T00:00:00.500Z")
+
+        events.clear()
+        with mock.patch(
+            "workshop.runtime.progress._now_ms",
+            side_effect=(1_000, 1_001),
+        ), mock.patch(
+            "workshop.runtime.progress.time.monotonic",
+            side_effect=(12.0, 11.0),
+        ):
+            with wish_run_timing_span(
+                events.append,
+                product_id="wish-progress",
+                stage="make",
+                operation="stage.prepare",
+            ):
+                pass
+        self.assertEqual(events[1].elapsed_ms, 0)
+
+    def test_span_reports_failure_without_masking_or_exposing_it(self):
+        events = []
+        failure = RuntimeError("private provider response")
+        with mock.patch(
+            "workshop.runtime.progress._now_ms",
+            side_effect=(1_000, 1_125),
+        ), mock.patch(
+            "workshop.runtime.progress.time.monotonic",
+            side_effect=(20.0, 20.125),
+        ):
+            try:
+                with wish_run_timing_span(
+                    events.append,
+                    product_id="wish-progress",
+                    stage="release",
+                    operation="effect.factory",
+                ):
+                    raise failure
+            except RuntimeError as observed:
+                self.assertIs(observed, failure)
+            else:  # pragma: no cover
+                self.fail("timing span swallowed the original exception")
+        self.assertEqual([event.state for event in events], ["started", "failed"])
+        self.assertEqual(events[1].elapsed_ms, 125)
+        self.assertNotIn("private provider response", repr(events[1].to_dict()))
+
+    def test_failed_observer_cannot_mask_operation_failure(self):
+        failure = RuntimeError("operation failed")
+        calls = 0
+
+        def observer(event):
+            nonlocal calls
+            calls += 1
+            if event.state == "failed":
+                raise OSError("progress stream failed")
+
+        with mock.patch(
+            "workshop.runtime.progress._now_ms",
+            side_effect=(1_000, 1_001),
+        ), mock.patch(
+            "workshop.runtime.progress.time.monotonic",
+            side_effect=(1.0, 1.001),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "operation failed") as raised:
+                with wish_run_timing_span(
+                    observer,
+                    product_id="wish-progress",
+                    stage="release",
+                    operation="effect.factory",
+                ):
+                    raise failure
+        self.assertIs(raised.exception, failure)
+        self.assertEqual(calls, 2)
+
+    def test_observer_failure_cannot_prevent_successful_operation(self):
+        ran = False
+
+        def observer(unused_event):
+            raise OSError("progress stream failed")
+
+        with mock.patch(
+            "workshop.runtime.progress._now_ms",
+            side_effect=(1_000, 1_001),
+        ), mock.patch(
+            "workshop.runtime.progress.time.monotonic",
+            side_effect=(1.0, 1.001),
+        ):
+            with wish_run_timing_span(
+                observer,
+                product_id="wish-progress",
+                stage="make",
+                operation="stage.prepare",
+            ):
+                ran = True
+        self.assertTrue(ran)
 
 if __name__ == "__main__":
     unittest.main()

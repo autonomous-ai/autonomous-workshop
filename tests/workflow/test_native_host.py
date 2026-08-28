@@ -23,6 +23,7 @@ from types import SimpleNamespace
 from workshop.workflow.native_run import (
     _MAX_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
+    _current_make_proposal_rejection,
     _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
@@ -291,8 +292,22 @@ class _UnboundRecoverableLauncher(_FakeLauncher):
 
 
 class NativeHostTest(unittest.TestCase):
+    def test_newer_cad_rejection_supersedes_resolved_make_proposal_feedback(self):
+        proposal_rejection = {"failure_code": "make-product-metadata-invalid"}
+        cad_rejection = {"failure_code": "declared-cad-output-changed"}
+
+        self.assertIs(
+            _current_make_proposal_rejection(None, proposal_rejection),
+            proposal_rejection,
+        )
+        self.assertIsNone(
+            _current_make_proposal_rejection(cad_rejection, proposal_rejection)
+        )
+
     @staticmethod
-    def _release_protocol_checkpoint(*, manual_first):
+    def _release_protocol_checkpoint(
+        *, manual_first, direct_release=False, manual_design=False
+    ):
         inputs = {
             ".agents/skills/autonomous-workshop/scripts/stage_proposal.py": "a" * 64,
         }
@@ -300,6 +315,14 @@ class NativeHostTest(unittest.TestCase):
             inputs[
                 ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
             ] = "b" * 64
+        if direct_release:
+            inputs[
+                ".agents/skills/autonomous-workshop/references/direct-release-v1.md"
+            ] = "c" * 64
+        if manual_design:
+            inputs[
+                ".agents/skills/autonomous-workshop/references/manual-design-evidence-v1.md"
+            ] = "d" * 64
         return AgentRunCheckpoint(
             product_id="release-protocol-fixture",
             stage="release",
@@ -324,6 +347,25 @@ class NativeHostTest(unittest.TestCase):
         current = _materialized_release_contract(
             self._release_protocol_checkpoint(manual_first=True)
         )
+        direct = _materialized_release_contract(
+            self._release_protocol_checkpoint(
+                manual_first=True,
+                direct_release=True,
+            )
+        )
+        reviewed = _materialized_release_contract(
+            self._release_protocol_checkpoint(
+                manual_first=True,
+                manual_design=True,
+            )
+        )
+        reviewed_direct = _materialized_release_contract(
+            self._release_protocol_checkpoint(
+                manual_first=True,
+                direct_release=True,
+                manual_design=True,
+            )
+        )
 
         self.assertEqual(
             legacy,
@@ -341,6 +383,41 @@ class NativeHostTest(unittest.TestCase):
                 "manual_path": "MANUAL.pdf",
                 "product_schema_version": 4,
                 "product_status": "manual-ready",
+            },
+        )
+        self.assertEqual(
+            direct,
+            {
+                "native_release_schema_version": 3,
+                "manual_path": "MANUAL.pdf",
+                "product_schema_version": 5,
+                "product_status": "manual-ready",
+                "playtest_status": "not-run",
+                "playtest_omission_path": "PLAYTEST-NOT-RUN.json",
+            },
+        )
+        self.assertEqual(
+            reviewed,
+            {
+                "native_release_schema_version": 2,
+                "manual_path": "MANUAL.pdf",
+                "product_schema_version": 4,
+                "product_status": "manual-ready",
+                "manual_design_evidence_path": "MANUAL-DESIGN.json",
+                "manual_design_evidence_schema_version": 1,
+            },
+        )
+        self.assertEqual(
+            reviewed_direct,
+            {
+                "native_release_schema_version": 3,
+                "manual_path": "MANUAL.pdf",
+                "product_schema_version": 5,
+                "product_status": "manual-ready",
+                "playtest_status": "not-run",
+                "playtest_omission_path": "PLAYTEST-NOT-RUN.json",
+                "manual_design_evidence_path": "MANUAL-DESIGN.json",
+                "manual_design_evidence_schema_version": 1,
             },
         )
 
@@ -592,7 +669,6 @@ class NativeHostTest(unittest.TestCase):
                         "of",
                         "my",
                         "dog",
-                        "--publish",
                         "--json",
                     )
                 )
@@ -632,6 +708,7 @@ class NativeHostTest(unittest.TestCase):
                 "cad",
                 "design-reference",
                 "design-vault",
+                "electromechanical-integration",
                 "image-to-cad",
                 "manual-design",
                 "step-parts",
@@ -645,7 +722,17 @@ class NativeHostTest(unittest.TestCase):
                         / "SKILL.md"
                     ).is_file()
                 )
-            for inventor_id in ("abo", "alice", "bob", "eve", "ivy", "leo"):
+            for inventor_id in (
+                "abo",
+                "alice",
+                "bob",
+                "eve",
+                "ivy",
+                "leo",
+                "mira-fold",
+                "pico-press",
+                "tess-loop",
+            ):
                 self.assertTrue(
                     (workspace / ".codex" / "agents" / (inventor_id + ".toml")).is_file()
                 )
@@ -670,10 +757,14 @@ class NativeHostTest(unittest.TestCase):
             prompt = arguments["prompt"]
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
-            self.assertIn("current match stage", prompt)
-            self.assertIn("Create one native Codex goal", prompt)
+            self.assertIn("current make stage", prompt)
+            self.assertIn("Create one native Goal", prompt)
             self.assertIn("successful finalization as its stopping condition", prompt)
             self.assertIn("inspecting, acting, evaluating, and improving", prompt)
+            self.assertIn("prior proposal failed its host gate", prompt)
+            self.assertIn("current subject is a new stage attempt", prompt)
+            self.assertIn("never rerun the finalizer", prompt)
+            self.assertIn("resubmit unchanged rejected bytes", prompt)
             self.assertIn("complete the goal", prompt)
             self.assertIn("STAGE.json", prompt)
             self.assertIn("agent-outcome.json", prompt)
@@ -682,7 +773,13 @@ class NativeHostTest(unittest.TestCase):
             self.assertNotIn("FACTORY", prompt)
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
-            self.assertIn("before Match", stderr.getvalue())
+            self.assertEqual(receipt["effort"], "spark")
+            self.assertIn("Effort: Spark", stderr.getvalue())
+            self.assertIn(
+                "Starting one native Codex session for Make",
+                stderr.getvalue(),
+            )
+
     def test_wish_snapshots_the_host_vault_when_one_exists(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
@@ -1019,6 +1116,7 @@ class NativeHostTest(unittest.TestCase):
             self.assertTrue((workspace / "agent-outcome.json").is_file())
 
             resumed = _FakeLauncher()
+            timing_events = []
             with mock.patch.dict(
                 os.environ, environment, clear=True
             ), mock.patch(
@@ -1028,7 +1126,10 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=resumed,
             ):
-                receipt = resume_native_run(product_id)
+                receipt = resume_native_run(
+                    product_id,
+                    timing_observer=timing_events.append,
+                )
 
             self.assertEqual(receipt["stage"], "invent")
             self.assertEqual(receipt["status"], "waiting")
@@ -1046,6 +1147,26 @@ class NativeHostTest(unittest.TestCase):
                     ]
                 ),
                 1,
+            )
+            match_starts = [
+                event.operation
+                for event in timing_events
+                if event.stage == "match" and event.state == "started"
+            ]
+            invent_starts = [
+                event.operation
+                for event in timing_events
+                if event.stage == "invent" and event.state == "started"
+            ]
+            self.assertEqual(
+                match_starts,
+                ["stage.prepare", "outcome.process", "gate.evaluate"],
+            )
+            self.assertNotIn("session.start", match_starts)
+            self.assertNotIn("session.resume", match_starts)
+            self.assertEqual(
+                invent_starts,
+                ["stage.prepare", "session.resume", "outcome.process"],
             )
 
     def test_recoverable_timeout_continues_same_session_inside_one_command(self):
@@ -1116,7 +1237,7 @@ class NativeHostTest(unittest.TestCase):
             ), mock.patch(
                 "workshop.workflow.native_run.time.sleep"
             ) as backoff, self.assertRaisesRegex(
-                WorkshopError, "exhausted its bounded Codex turn budget"
+                WorkshopError, "exhausted its bounded native-turn budget"
             ):
                 start_native_run(
                     Wish.create(
@@ -1368,6 +1489,61 @@ class NativeHostTest(unittest.TestCase):
             ["starting", "reasoning", "tool", "running"],
         )
 
+    def test_start_and_resume_emit_paired_timing_without_changing_turns(self):
+        launcher = _FakeLauncher()
+        events = []
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "timed-progress-wish"
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ):
+                started = start_native_run(
+                    Wish.create(product_id, "private objective value"),
+                    timing_observer=events.append,
+                )
+                resumed = resume_native_run(
+                    product_id,
+                    timing_observer=events.append,
+                )
+
+        self.assertEqual((started["native_turns"], resumed["native_turns"]), (1, 2))
+        starts = [event for event in events if event.state == "started"]
+        terminals = [event for event in events if event.state != "started"]
+        self.assertEqual(len(starts), len(terminals))
+        self.assertEqual(
+            [event.operation for event in starts],
+            [
+                "run.initialize",
+                "stage.prepare",
+                "session.start",
+                "outcome.process",
+                "stage.prepare",
+                "session.resume",
+                "outcome.process",
+            ],
+        )
+        self.assertEqual(
+            [
+                (event.product_id, event.stage, event.operation)
+                for event in starts
+            ],
+            [
+                (event.product_id, event.stage, event.operation)
+                for event in terminals
+            ],
+        )
+        rendered = repr([event.to_dict() for event in events])
+        self.assertNotIn("private objective value", rendered)
+        self.assertNotIn("fixture stops after one native turn", rendered)
+
     def test_invalid_activity_observer_is_rejected_before_run_creation(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -1377,6 +1553,22 @@ class NativeHostTest(unittest.TestCase):
                 start_native_run(
                     Wish.create("invalid-progress-sink", "a bounded clockwork toy"),
                     activity_observer="not-callable",
+                )
+
+            self.assertFalse(home.exists())
+
+    def test_invalid_timing_observer_is_rejected_before_run_creation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), self.assertRaisesRegex(ContractError, "observer must be callable"):
+                start_native_run(
+                    Wish.create(
+                        "invalid-timing-sink",
+                        "a bounded clockwork toy",
+                    ),
+                    timing_observer="not-callable",
                 )
 
             self.assertFalse(home.exists())
@@ -1451,11 +1643,14 @@ class NativeHostTest(unittest.TestCase):
                 self.assertEqual(recovered["native_turns"], 2)
                 self.assertEqual(recovered["progress"]["status"], "available")
 
-    def test_native_commands_default_to_private_draft(self):
+    def test_native_commands_have_no_optional_publication_mode(self):
         command = parser()
-        self.assertFalse(command.parse_args(("wish", "a moon")).publish)
-        self.assertFalse(command.parse_args(("resume", "wish-one")).publish)
-        self.assertTrue(command.parse_args(("wish", "a moon", "--publish")).publish)
+        self.assertFalse(hasattr(command.parse_args(("wish", "a moon")), "publish"))
+        self.assertFalse(
+            hasattr(command.parse_args(("resume", "wish-one")), "publish")
+        )
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            command.parse_args(("wish", "a moon", "--publish"))
 
 
 if __name__ == "__main__":

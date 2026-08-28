@@ -1,9 +1,18 @@
-# Make and Playtest contracts
+# Make contract
 
 Read `STAGE.json`. It binds the exact sealed upstream artifacts, universal
-blueprint, canonical output paths, current round, round limit, and any prior
-Playtest feedback. Verify those bytes before acting. Host rounds and
-checkpoints bound the work; Codex performs the reasoning and repair.
+blueprint, canonical output paths, current round, and any host rejection
+feedback. Verify those bytes before acting. Host checkpoints bound the work;
+Codex performs the reasoning and repair.
+
+If `STAGE.json` contains `host_make_proposal_rejection` or
+`host_cad_gate_rejection`, the previous Make finalizer did not pass the host
+gate. Read the complete rejection and its bounded diagnostics, repair the
+exact cited defect, rerun the relevant checks, and verify that the rejected
+product or evidence bytes changed before invoking the finalizer again. A
+completed Goal for the earlier subject is not completion for this new
+rejection-bound attempt. Do not merely regenerate and resubmit the same Made
+contract.
 
 `inputs.vault_leads` lists what the design vault records against the sealed
 concept's mechanisms: `risk` entries with the anti-pattern, the recorded
@@ -21,33 +30,38 @@ history, not as verdicts about this revision.
 ## Make Goal and improvement loop
 
 Create one native Codex Goal for the current Make attempt. Its objective is to
-produce the exact buildable, inspectable product artifact required by the
-sealed Invent output and, on a later round, repair the failures cited by the
-prior Playtest. Its stopping condition is a successful `make` finalizer for
+produce the exact ready-to-print, inspectable product artifact required by the
+current effort. Its stopping condition is a successful `make` finalizer for
 the current checkpoint.
 
-The sealed Invent result is the primary reference for form, proportion,
-construction, component breakdown, and intended interaction. Read both its
-selected `concept` and its `research`; preserve its explicit dimensions and
-constraints, and do not reinterpret the Wish from scratch. Realize every
-component and interface the selected concept names in the actual product tree.
+For Forge and Quest, the sealed Invent result is the primary reference for
+form, proportion, construction, component breakdown, and intended interaction.
+Read both its selected `concept` and `research`; preserve its explicit
+dimensions and constraints. For Spark, `STAGE.json` sets
+`creative_source_required: true`: compare the complete roster, select the
+best-fit Inventor, use that custom agent, and write one compact authored source
+with exactly `selected_inventor_id`, roster-covering `ranking`, `concept`, and
+`research`. The Make finalizer seals those bindings together with the Made
+contract, so Spark still has exact creative provenance without another turn.
 
 While pursuing the Goal:
 
 1. **Observe:** Inspect the sealed Invent concept and research, the selected
    Inventor instructions, universal blueprint, current revision workspace,
-   deterministic tool policy, and every evidence-linked feedback item from a
-   prior Playtest. `STAGE.json` also carries `score_history` (every prior
-   round's medians and spreads), `regression` (dimensions the last repair
-   made worse, with the delta), and `ambiguous` (dimensions readers disagreed
-   on). A repair that fixes the cited failure while a regression grows is not
-   an improvement; address the regression in the same round. When the host
-   sets `repair_base`, the previous round scored strictly worse than an
-   earlier sealed round by machine counts (failing checks plus actionable
-   feedback): start this round's repair from that sealed `product_root` and
-   `made_sha256`, not from the last revision.
+   deterministic tool policy, every current host rejection, and every
+   evidence-linked feedback item from a prior Playtest. `STAGE.json` also
+   carries `score_history` (every prior round's medians and spreads),
+   `regression` (dimensions the last repair made worse, with the delta), and
+   `ambiguous` (dimensions readers disagreed on). A repair that fixes the
+   cited failure while a regression grows is not an improvement; address the
+   regression in the same round. When the host sets `repair_base`, the
+   previous round scored strictly worse than an earlier sealed round by
+   machine counts (failing checks plus actionable feedback): start this
+   round's repair from that sealed `product_root` and `made_sha256`, not from
+   the last revision.
 2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
-   `design-reference`, and `step-parts` skills under `.agents/skills/` to
+   `design-reference`, `electromechanical-integration`, and `step-parts`
+   skills under `.agents/skills/` to
    create or repair the actual product artifact. Use native subagents for bounded mechanism, CAD, or
    review tasks when useful.
 3. **Evaluate:** Build the artifact, run narrow deterministic checkers, inspect
@@ -76,6 +90,10 @@ deterministic checks, inspect the result, then seal the group:
   --run-root . make-group --product-root <STAGE product_root> --group <group>
 ```
 
+For Spark, also pass the same `--source <spark-creative-source.json>` that the
+`make` finalizer takes below; each group is sealed against that authored
+concept's `build_plan`.
+
 The finalizer records the exact part bytes under `groups/<group>.json`. If a
 group cannot be sealed after focused repair, stop the Goal with a truthful
 need instead of building later groups on it — later groups mate with this
@@ -88,7 +106,23 @@ Leave the product tree at the exact `product_root` in `STAGE.json`. It must
 include the required root product metadata, CAD project, assembled STEP/STL
 outputs, and deterministic CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
-rather than prose assertions. Then run:
+rather than prose assertions.
+
+The root `product.json` must be a JSON object containing at least these exact
+metadata keys (additional product-specific fields are allowed):
+
+```json
+{
+  "title": "Moon Nook",
+  "summary": "A tiny lunar observatory built for tabletop play."
+}
+```
+
+Both `title` and `summary` must be strings with non-whitespace content and no
+more than 2,000 characters. Do not substitute aliases such as `name` or
+`description`; the Make finalizer and trusted host require the exact keys.
+
+Then run:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
@@ -98,85 +132,51 @@ rather than prose assertions. Then run:
   --cad-verification-path <path inside product root>
 ```
 
+For Spark only, also pass `--source <spark-creative-source.json>` using the
+four-field source described above. Do not pass `--source` when `STAGE.json`
+already contains sealed `assignment` and `invented` inputs.
+
 The deterministic finalizer hashes the complete tree and writes the canonical
 Made contract. Complete the Make Goal only after it succeeds, then return to
 the host. The host copies the exact tree into an isolated verifier, reruns the
 trusted CAD gate, compares bytes, and seals the accepted revision. Narrative
 or model confidence never overrides a failed or absent measurement.
 
-When the deliverable is intentionally digital/mesh-only and is not eligible
-for a print-ready claim, declare that limitation in both sealed inputs: set
-root `product.json.status` to exactly
-`digitally-verified-not-print-ready` and set the declared CAD verification
-JSON's `final_pipeline.print_ready_claim` to the literal boolean `false`.
-Only that agreeing pair authorizes the host's lower tier, which skips wall
-thickness while retaining fresh generation, fit, local spec, mount, motion,
-kernel, interference, export, and mesh gates. Never use the status alone,
-spell `false` as a string, or describe a lower-tier result as print-ready in
-Playtest evidence, Release facts, the manual, or product copy. Omit the lower
-tier declarations for a print-ready-eligible artifact; the host then requires
-the wall-thickness gate.
+Spark and Forge advance directly to Release and therefore require the full
+verifier, including wall thickness and print-ready eligibility, at Make. They
+must not simulate Playtest; Release records that it was not run. Quest advances
+to the host-authored Playtest stage below.
 
 ## Playtest Goal and independent evidence loop
 
-Create one native Codex Goal for the current Playtest attempt. Its objective is
-to independently evaluate the one sealed Made revision and produce complete,
-reproducible evidence with a truthful `pass`, `improve`, or `block` verdict.
-Its stopping condition is a successful `playtest` finalizer for the current
-checkpoint. Finalizing an evidence-backed failure satisfies the Playtest Goal;
-passing the product is not required when the evidence says it fails.
+This section applies only when `STAGE.json.stage` is `playtest`, which occurs
+only for Quest. Create one native Codex Goal whose objective is to independently
+evaluate the exact sealed Made revision and produce complete, reproducible
+evidence with a truthful `pass`, `improve`, or `block` verdict. Its stopping
+condition is a successful `playtest` finalizer. An evidence-backed failure
+satisfies the Goal; never reason a failed check into a pass.
 
-The universal baseline requires exactly these check ids unless the current
-`STAGE.json` states otherwise:
-
-- `agent-playtest`
-- `mechanical-check`
-- `printability-check`
-
-Product-specific risks may justify additional inspections and evidence, but
-never omit or rename the host-required checks.
-
-All three baseline results are Codex-authored digital assessments unless the
-host supplies replayed deterministic evidence or an authenticated physical
-receipt that explicitly proves more. A digital mechanical or printability
-assessment never proves successful printing, physical fit, durability, or
-human play.
+The host packet lists every required check id. Each must appear exactly once,
+cite a canonical configuration and static evidence file, and stay bound to the
+sealed Made artifact. Digital assessment never proves successful printing,
+physical fit, durability, or human play.
 
 While pursuing the Goal:
 
-1. **Observe:** Inspect the exact sealed Made tree, its manifest, required
-   check ids, test configurations, rendered outputs, and the product's stated
-   rules and claims. Establish a baseline before judging it.
-2. **Act:** Use independent native subagents for first-time, optimizing,
-   exploratory, and adversarial player perspectives. Run required seeded
-   simulations and artifact inspections through the narrow deterministic
-   tools. Preserve each configuration and output as exact evidence.
-3. **Evaluate:** Compare each observation with its rubric and artifact bytes.
-   Keep native-agent judgment separate from deterministic measurements. Check
-   evidence coverage, reproducibility, and whether feedback names a concrete
-   failure and repair direction.
-4. **Improve:** Repair missing or weak test evidence, rerun invalid tests, and
-   sharpen feedback. Do not modify the sealed Made product during Playtest or
-   reason a failed check into a pass.
+1. **Observe:** Inspect the exact Made tree, manifest, required checks, rules,
+   rendered outputs, and claims without modifying sealed bytes.
+2. **Act:** Use independent native subagents and narrow deterministic tools for
+   player perspectives, seeded simulations, and artifact inspection. Preserve
+   exact configurations and outputs.
+3. **Evaluate:** Separate native-agent judgment from deterministic measurement;
+   verify evidence coverage, reproducibility, and concrete repair direction.
+4. **Improve:** Repair weak evidence and rerun invalid tests, but never edit the
+   sealed Made product during Playtest.
 
-Keep replay work separate from evidence and treat the sealed Made tree as
-strictly read-only. Run temporary wrappers, copied inputs, caches, and transient
-renders under `work/playtest/rNNNN/`, where `NNNN` is the current zero-padded
-round. Default to copying only the exact inputs needed into that work area
-before executing or importing them. A tool may read sealed bytes in place only
-when it is known not to write beside its input. For Python or CAD tooling, set
-`PYTHONDONTWRITEBYTECODE=1` and redirect `XDG_CACHE_HOME`, `TMPDIR`, `TMP`, and
-`TEMP` into the work area; never leave `__pycache__`, `__cadgen__`, lock,
-progress, or scene-cache files in the Made tree. Record the sealed Made path and
-hash, copied-input hash, exact command, seed, and tool version in a canonical
-config file. Put only those configs and the final static outputs cited by
-checks under the exact `evidence_root`; do not duplicate Made source, working
-trees, cache directories, transcripts, or JSONL streams there. Keep the
-three-field authored proposal under `drafts/`.
-
-Leave the exact evidence tree requested by `STAGE.json` and one authored JSON
-source with exactly `checks`, `feedback`, and `verdict`. Every required check
-id must appear once and cite its config and evidence file.
+Keep transient work under `work/playtest/rNNNN/` and only canonical configs and
+final cited outputs under the exact `evidence_root`. Write one authored JSON
+source with exactly `checks`, `feedback`, and `verdict`. Every failing check
+must name a concrete area and repair.
 
 When `STAGE.json` carries `vault_leads`, the `agent-playtest` check's
 `observations` must answer every lead once under `vault_leads`:
@@ -207,14 +207,15 @@ The host keeps the median and the spread per dimension in the gate receipt.
 A `pass` verdict is refused when any median sits below `score_floor`. A
 spread of 3 or more is a finding about the artifact — readers cannot tell
 whether it has that property — not noise to average away. Never invent
-physical trials, human players, measurements, or results. Every failing check
-must name the concrete product or design area and the repair direction.
-Invalidate Playtest and its downstream evidence; the host returns every
-evidence-backed failure directly to Make, where the next Goal repairs the
-product against the same sealed Invent result. Each feedback `invalidates`
-array may therefore contain only `playtest`, `release`, and `deliver`. Do not
-put `make` in that array: the failed verdict and proposed transition already
-route the work to a new Make attempt. Then run:
+physical trials, human players, measurements, or results.
+
+Choose each actionable feedback boundary explicitly:
+
+- implementation repair: `["playtest", "release"]`, returning to Make;
+- concept revision: `["invent", "make", "playtest", "release"]`,
+  returning to Invent with the exact prior design and evidence.
+
+Then run:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
@@ -223,13 +224,7 @@ route the work to a new Make attempt. Then run:
   --evidence-root <STAGE evidence_root>
 ```
 
-The deterministic finalizer validates evidence coverage and writes the
-canonical Playtested contract. Complete the Playtest Goal after it succeeds
-and return to the host, regardless of the truthful verdict.
-
-For `improve` or `block`, the host alone consumes a bounded round, invalidates
-downstream evidence, and checkpoints the transition back to Make. The host
-does not interpret or repair the product or design. In the next Make Goal,
-Codex reads the exact feedback, decides the repair within the sealed Invent
-direction, and runs the new build/evaluation loop. Only a host-verified pass
-for the current Made bytes can advance to Release.
+The host follows the structured invalidation marker mechanically, consumes the
+shared round budget, and seals the exact evidence. Complete the Playtest Goal
+after finalization and return control regardless of the truthful verdict. Only
+a host-verified pass for the current Made bytes advances to Release.

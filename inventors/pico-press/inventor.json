@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "5374e8e8cc46866d77dfeeaf6b430af914b1904d5f0894bc817bbdca07078aba",
+      "kind": "codex-skill",
+      "name": "pico-press-inventor",
+      "path": "skills/pico-press-inventor"
+    }
+  ],
+  "id": "pico-press",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

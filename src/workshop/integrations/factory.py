@@ -41,6 +41,7 @@ from workshop.errors import (
 )
 from workshop.make.cad.mesh import inspect_stl_path
 from workshop.release.native import (
+    DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
     FACTORY_CONTENT_BODY_MAX,
     FACTORY_CONTENT_BODY_MIN,
     FACTORY_CONTENT_LABEL_MAX,
@@ -67,6 +68,11 @@ FACTORY_RELEASE_PAGE_PATH = "workshop-release-page.json"
 FACTORY_RELEASE_LEGACY_MANUAL_PATH = "MANUAL.md"
 FACTORY_RELEASE_MANUAL_PATH = FACTORY_RELEASE_LEGACY_MANUAL_PATH
 FACTORY_RELEASE_PDF_MANUAL_PATH = "MANUAL.pdf"
+# Factory preserves the Release filename inside the imported ZIP, but its
+# immutable project CDN normalizes the PDF object name to lowercase. Keep the
+# two names explicit: the former is part of Workshop's sealed Release
+# contract, while the latter is the authenticated server readback contract.
+FACTORY_PROJECT_PDF_MANUAL_FILENAME = "manual.pdf"
 FACTORY_RELEASE_MANUAL_PATHS = frozenset(
     (FACTORY_RELEASE_LEGACY_MANUAL_PATH, FACTORY_RELEASE_PDF_MANUAL_PATH)
 )
@@ -155,7 +161,10 @@ def _manual_path_for_release_product(product: Mapping[str, Any]) -> str:
     schema_version = product.get("schema_version")
     if schema_version == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
         return FACTORY_RELEASE_LEGACY_MANUAL_PATH
-    if schema_version == RELEASE_PRODUCT_SCHEMA_VERSION:
+    if schema_version in (
+        RELEASE_PRODUCT_SCHEMA_VERSION,
+        DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+    ):
         return FACTORY_RELEASE_PDF_MANUAL_PATH
     raise ContractError("Factory Release product schema has no manual binding")
 
@@ -213,7 +222,7 @@ def _factory_project_file_url(project_url: Any, path: str) -> str:
         (
             "https",
             DEFAULT_FACTORY_PROJECT_CDN_HOST,
-            parsed.path + FACTORY_RELEASE_PDF_MANUAL_PATH,
+            parsed.path + FACTORY_PROJECT_PDF_MANUAL_FILENAME,
             "",
             "",
         )
@@ -1448,11 +1457,16 @@ class FactoryAgentCredentials:
 
 
 def factory_credentials_from_environment(
-    inventor_id: str,
     environ: Mapping[str, str],
 ) -> FactoryAgentCredentials:
-    if not isinstance(inventor_id, str) or not _INVENTOR_ID.fullmatch(inventor_id):
-        raise ContractError("Factory inventor_id must be a canonical slug")
+    """Create the host-owned Workshop service-account credential.
+
+    Factory authentication is independent of the Inventor selected for a
+    product run. Inventor provenance is carried by the sealed Release facts;
+    authenticated effect ownership is bound separately through Factory's
+    returned owner id and the durable receipts.
+    """
+
     if not isinstance(environ, Mapping):
         raise ContractError("Factory credential environment must be a mapping")
     username = environ.get("FACTORY_USERNAME")
@@ -1461,10 +1475,7 @@ def factory_credentials_from_environment(
         raise ContractError("Factory agent credentials are not configured")
     if not isinstance(username, str) or not isinstance(password, str):
         raise ContractError("Factory username/password must be configured together")
-    credentials = FactoryAgentCredentials(username, password)
-    if credentials.username.casefold() != inventor_id.casefold():
-        raise ContractError("Factory username must exactly match the selected inventor_id")
-    return credentials
+    return FactoryAgentCredentials(username, password)
 
 
 @dataclass(frozen=True)
@@ -1624,6 +1635,13 @@ class FactoryAgentSession:
                     "Factory agent login returned HTTP %s" % response.status
                 )
             token, identity = self._login_value(response)
+            if identity.username.casefold() != self._credentials.username.casefold():
+                self._access_token = None
+                self._identity = None
+                raise FactoryCredentialRejected(
+                    "Factory login identity did not match the configured "
+                    "Workshop service account"
+                )
             self._access_token = token
             self._identity = identity
             return identity
@@ -1929,8 +1947,6 @@ class FactoryReleaseWriter:
             raise ContractError("Factory inventor_id must be a canonical slug")
         if not isinstance(credentials, FactoryAgentCredentials):
             raise ContractError("Factory Release writer requires typed credentials")
-        if credentials.username.casefold() != inventor_id.casefold():
-            raise ContractError("Factory account must match the selected inventor")
         self.inventor_id = inventor_id
         self.ledger = ledger
         self.session = FactoryAgentSession(
@@ -2096,18 +2112,34 @@ class FactoryReleaseWriter:
         intent: EffectIntent,
         proof: Mapping[str, Any],
     ) -> Receipt:
-        if intent.response is None:
-            raise AmbiguousEffectError(
-                "Factory import outcome is unknown and exposes no safe readback identity"
-            )
+        imported_design = intent.response
+        if imported_design is None:
+            # A transport can lose the import response after Factory persisted
+            # the request. The Workshop product id is the requested stable slug;
+            # use it only as a discovery key, then require the normal owner,
+            # category, history, package and manual bindings below. A missing or
+            # different design remains unknown and is never blindly retried.
+            response = client.get_design(intent.product_id)
+            if response.status != 200:
+                raise AmbiguousEffectError(
+                    "Factory import outcome is unknown and exact slug readback failed"
+                )
+            try:
+                imported_design = _json_body(
+                    response, "Factory unknown-import slug readback"
+                )
+            except (ContractError, EffectError) as exc:
+                raise AmbiguousEffectError(
+                    "Factory import outcome is unknown and slug readback is invalid"
+                ) from exc
         try:
             receipt, observed = self._readback_private(
-                client, intent, intent.response, proof
+                client, intent, imported_design, proof
             )
             resolved = self.ledger.resolve_succeeded(
                 intent.intent_id,
                 receipt,
-                {"import": dict(intent.response), "readback": dict(observed)},
+                {"import": dict(imported_design), "readback": dict(observed)},
             )
         except (ContractError, EffectError, ReceiptError, StateConflict) as exc:
             raise AmbiguousEffectError(
@@ -2478,7 +2510,10 @@ class FactoryReleaseWriter:
                 product_page_sha256=product_page_sha256,
                 manual_sha256=manual_sha256,
             )
-        if page.get("schema_version") != RELEASE_PRODUCT_SCHEMA_VERSION:
+        if page.get("schema_version") not in (
+            RELEASE_PRODUCT_SCHEMA_VERSION,
+            DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+        ):
             raise ContractError("Factory Release product schema is unsupported")
         return imported
 
@@ -2515,8 +2550,6 @@ class FactoryReleaseWriter:
         if FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(context.made.product):
             raise ContractError("Made product facts contain Release page fields")
         identity = self.session.login()
-        if identity.username.casefold() != self.inventor_id.casefold():
-            raise ContractError("authenticated Factory account does not match Inventor")
         client = FactoryClient(self.session.authenticated_transport)
 
         product_facts = {
@@ -2688,7 +2721,7 @@ class FactoryReleaseWriter:
 
 
 class FactoryPublicTransition:
-    """Promote one exact private Factory draft after explicit CLI authority."""
+    """Promote one exact private draft under the Wish's Release authority."""
 
     def __init__(self, ledger: EffectLedger, session: FactoryAgentSession) -> None:
         if not isinstance(ledger, EffectLedger):

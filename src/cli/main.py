@@ -45,19 +45,32 @@ from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.execution import codex_subprocess_environment
 from workshop.runtime.credentials import (
     factory_credential_environment,
-    validate_factory_credential_configuration,
+    factory_service_credential_environment,
 )
 from workshop.runtime.codex import (
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     codex_supports_native_workshop,
+)
+from workshop.runtime.claude import claude_supports_native_workshop
+from workshop.runtime.grok import grok_supports_native_workshop
+from workshop.runtime.managers import (
+    DEFAULT_MANAGER_ID,
+    SUPPORTED_MANAGER_IDS,
+    manager_spec,
 )
 from workshop.runtime.package_data import (
     default_workshop_home,
     packaged_inventors_root,
     product_run_domain_skill_roots,
 )
+from workshop.runtime.progress import WishRunTimingEvent
 from workshop.wish import Wish, generate_wish_id
 from workshop.workflow import native_run_status, resume_native_run, start_native_run
+from workshop.workflow.effort import (
+    DEFAULT_WORKSHOP_EFFORT,
+    WORKSHOP_EFFORTS,
+    workshop_effort,
+)
 
 
 _INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
@@ -72,12 +85,14 @@ _LIVE_ACTIVITY_MESSAGES = {
     "subagent": "Native Codex: coordinating a subagent.",
     "finalizing": "Native Codex: reported progress for the current stage.",
     "completed": "Native Codex: turn complete; Workshop is verifying it.",
-    "failed": "Native Codex: turn stopped; Workshop is checking the result.",
+    "failed": (
+        "Native Codex: turn ended; Workshop is checking for a valid stage proposal."
+    ),
 }
 
 
-class _LiveNativeActivity:
-    """Render bounded, content-free foreground progress without log churn."""
+class _LiveWishProgress:
+    """Render bounded Wish timing and native activity without log churn."""
 
     def __init__(self, stream: TextIO) -> None:
         self._stream = stream
@@ -86,7 +101,7 @@ class _LiveNativeActivity:
         self._last_active_at: Optional[float] = None
         self._last_running_at: Optional[float] = None
 
-    def __call__(self, activity: str) -> None:
+    def activity(self, activity: str) -> None:
         message = _LIVE_ACTIVITY_MESSAGES.get(activity)
         if message is None:
             return
@@ -113,6 +128,19 @@ class _LiveNativeActivity:
                     self._last_active_at = now
                 self._last_non_running = activity
             print(message, file=self._stream, flush=True)
+
+    def timing(self, event: WishRunTimingEvent) -> None:
+        fields = [
+            "[%s]" % event.observed_at,
+            "wish=%s" % event.product_id,
+            "stage=%s" % event.stage,
+            "operation=%s" % event.operation,
+            "state=%s" % event.state,
+        ]
+        if event.elapsed_ms is not None:
+            fields.append("elapsed_ms=%d" % event.elapsed_ms)
+        with self._lock:
+            print(" ".join(fields), file=self._stream, flush=True)
 
 
 def _shell_command(*parts: Any) -> str:
@@ -217,6 +245,9 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
     status = receipt.get("status", "unknown")
     stage = str(receipt.get("stage", "unknown")).title()
     print("Wish: %s" % product_id)
+    manager_id = receipt.get("manager")
+    if isinstance(manager_id, str) and manager_id:
+        print("Manager: %s" % manager_spec(manager_id).display_name)
     print("%s: %s at %s" % (verb, status, stage))
     progress = receipt.get("progress")
     if isinstance(progress, Mapping) and progress.get("status") == "available":
@@ -301,24 +332,42 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
 
 
 def _wish(args: argparse.Namespace) -> int:
+    effort = workshop_effort(args.effort)
     wish = Wish.create(
         generate_wish_id(),
         " ".join(args.objective),
         context={"source": "workshop-cli"},
     )
     progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
+    manager = manager_spec(args.manager)
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
-    print("Starting one native Codex session before Match...", file=progress, flush=True)
-    if not args.publish:
-        print(
-            "Publication: not published by default; use --publish for explicit public authority.",
-            file=progress,
-            flush=True,
-        )
+    print(
+        "Effort: %s — %s" % (effort.title, effort.description),
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Manager: %s%s"
+        % (
+            manager.display_name,
+            " (experimental)" if manager.experimental else "",
+        ),
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Starting one native %s session for %s..."
+        % (manager.display_name, effort.enabled_stages[0].title()),
+        file=progress,
+        flush=True,
+    )
     receipt = start_native_run(
         wish,
-        publish_requested=args.publish,
-        activity_observer=_LiveNativeActivity(progress),
+        effort=effort.name,
+        manager_id=manager.manager_id,
+        activity_observer=live_progress.activity,
+        timing_observer=live_progress.timing,
     )
     if args.json:
         _print_json(receipt)
@@ -338,6 +387,7 @@ def _status(args: argparse.Namespace) -> int:
 
 def _resume(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
     print(
         "Resuming the exact native Codex session for %s..." % args.product_id,
         file=progress,
@@ -345,8 +395,8 @@ def _resume(args: argparse.Namespace) -> int:
     )
     receipt = resume_native_run(
         args.product_id,
-        publish_requested=args.publish,
-        activity_observer=_LiveNativeActivity(progress),
+        activity_observer=live_progress.activity,
+        timing_observer=live_progress.timing,
     )
     if args.json:
         _print_json(receipt)
@@ -484,7 +534,9 @@ def _doctor_agent_assets() -> dict[str, str]:
 def _doctor_factory() -> dict[str, str]:
     try:
         credential_environment = factory_credential_environment()
-        validate_factory_credential_configuration(credential_environment)
+        service_environment = factory_service_credential_environment(
+            credential_environment
+        )
     except WorkshopError as exc:
         return _check_record(
             "factory-credentials",
@@ -495,9 +547,9 @@ def _doctor_factory() -> dict[str, str]:
                 "file or configure a complete host environment pair."
             ),
         )
-    password = bool(credential_environment.get("FACTORY_PASSWORD"))
-    generic_username = bool(credential_environment.get("FACTORY_USERNAME"))
-    scoped_usernames = tuple(
+    password = bool(service_environment.get("FACTORY_PASSWORD"))
+    username = bool(service_environment.get("FACTORY_USERNAME"))
+    legacy_scoped_username = any(
         name
         for name, value in credential_environment.items()
         if name.startswith("FACTORY_")
@@ -505,41 +557,130 @@ def _doctor_factory() -> dict[str, str]:
         and name != "FACTORY_USERNAME"
         and bool(value)
     )
-    username = generic_username or bool(scoped_usernames)
     if username and password:
-        return _check_record(
-            "factory-credentials",
-            "ready",
-            "A complete host-only Factory credential pair is available.",
-        )
-    if not username and not password:
+        if legacy_scoped_username:
+            return _check_record(
+                "factory-credentials",
+                "ready",
+                (
+                    "One legacy Factory username is available as Workshop's "
+                    "host-only service account for every Inventor."
+                ),
+                next_step=(
+                    "Rename the legacy scoped username variable to "
+                    "FACTORY_USERNAME; its old scope no longer grants or limits "
+                    "publication authority."
+                ),
+            )
         return _check_record(
             "factory-credentials",
             "ready",
             (
-                "Factory credentials are not configured; local Release remains "
-                "available and only an explicitly requested publication needs them."
+                "One complete host-only Workshop Factory service-account pair "
+                "is available for every Inventor."
+            ),
+        )
+    if not username and not password:
+        return _check_record(
+            "factory-credentials",
+            "needs-attention",
+            (
+                "Factory credentials are not configured; Release requires public "
+                "Factory publication."
+            ),
+            next_step=(
+                "Configure the Workshop service account as FACTORY_USERNAME and "
+                "FACTORY_PASSWORD in the private "
+                "$WORKSHOP_HOME/credentials/factory.env file; Wish users do not "
+                "supply Factory credentials."
             ),
         )
     return _check_record(
         "factory-credentials",
         "needs-attention",
-        "Factory credentials are only partially configured.",
-        next_step="Configure a username and FACTORY_PASSWORD together in the host environment.",
+        "Workshop's Factory service-account credentials are only partially configured.",
+        next_step=(
+            "Configure FACTORY_USERNAME and FACTORY_PASSWORD together in the "
+            "host environment."
+        ),
+    )
+
+
+def _doctor_optional_cli(
+    name: str,
+    *,
+    binary_env: str,
+    binary_name: str,
+    supports,
+    label: str,
+) -> dict[str, str]:
+    binary = os.environ.get(binary_env) or shutil.which(binary_name)
+    if not binary:
+        return _check_record(
+            name,
+            "skipped",
+            "%s is not installed; Codex remains the default Manager." % label,
+        )
+    try:
+        version = subprocess.run(
+            [binary, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+            env=codex_subprocess_environment(os.environ),
+        )
+    except (OSError, subprocess.SubprocessError):
+        return _check_record(
+            name,
+            "needs-attention",
+            "The configured %s command could not run." % label,
+            next_step="Check %s and the %s installation." % (binary_env, label),
+        )
+    output = version.stdout if isinstance(version.stdout, str) else ""
+    if version.returncode != 0 or not supports(output):
+        return _check_record(
+            name,
+            "needs-attention",
+            "%s is installed but is not a Workshop-supported native Manager." % label,
+            next_step="Upgrade %s, or keep using --manager codex." % label,
+        )
+    return _check_record(
+        name,
+        "ready",
+        "%s is available as an experimental Manager via --manager %s."
+        % (label, name),
     )
 
 
 def _doctor(args: argparse.Namespace) -> int:
     root = _inventor_source_root(args.root)
-    checks = [
+    required = [
         _doctor_catalog(root),
         _doctor_codex(),
         _doctor_agent_assets(),
         _doctor_factory(),
     ]
+    checks = [
+        *required,
+        _doctor_optional_cli(
+            "claude",
+            binary_env="WORKSHOP_CLAUDE_BIN",
+            binary_name="claude",
+            supports=claude_supports_native_workshop,
+            label="Claude Code",
+        ),
+        _doctor_optional_cli(
+            "grok",
+            binary_env="WORKSHOP_GROK_BIN",
+            binary_name="grok",
+            supports=grok_supports_native_workshop,
+            label="Grok Build",
+        ),
+    ]
     status = (
         "ready"
-        if all(item["status"] == "ready" for item in checks)
+        if all(item["status"] == "ready" for item in required)
         else "needs-attention"
     )
     receipt = {
@@ -825,16 +966,6 @@ def _evidence(args: argparse.Namespace) -> int:
     return 0
 
 
-def _add_publication_options(command: argparse.ArgumentParser) -> None:
-    command.add_argument(
-        "--publish",
-        dest="publish",
-        action="store_true",
-        help="authorize optional Factory publication of the verified Release",
-    )
-    command.set_defaults(publish=False)
-
-
 def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(
         prog="workshop",
@@ -854,12 +985,32 @@ def parser() -> argparse.ArgumentParser:
     )
 
     wish = subcommands.add_parser(
-        "wish", help="persist one Wish and start its native Codex session"
+        "wish", help="persist one Wish and start its native Manager session"
     )
     wish.add_argument("objective", nargs="+", metavar="WISH")
+    wish.add_argument(
+        "--effort",
+        choices=tuple(WORKSHOP_EFFORTS),
+        default=DEFAULT_WORKSHOP_EFFORT,
+        metavar="MODE",
+        help=(
+            "creative depth: spark (Wish->Make->Release; default), "
+            "forge (Wish->Invent->Make->Release), or "
+            "quest (Wish->Invent->Make->Playtest->Release)"
+        ),
+    )
+    wish.add_argument(
+        "--manager",
+        choices=tuple(SUPPORTED_MANAGER_IDS),
+        default=DEFAULT_MANAGER_ID,
+        metavar="RUNTIME",
+        help=(
+            "native Manager runtime: codex (default), claude, or grok; "
+            "frozen for the run and cannot be changed on resume"
+        ),
+    )
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
-    _add_publication_options(wish)
     wish.set_defaults(handler=_wish)
 
     status = subcommands.add_parser(
@@ -870,12 +1021,11 @@ def parser() -> argparse.ArgumentParser:
     status.set_defaults(handler=_status)
 
     resume = subcommands.add_parser(
-        "resume", help="resume the exact native Codex session for one Wish"
+        "resume", help="resume the exact frozen native Manager session for one Wish"
     )
     resume.add_argument("product_id", help="saved Wish id")
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
     resume.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
-    _add_publication_options(resume)
     resume.set_defaults(handler=_resume)
 
     doctor = subcommands.add_parser(

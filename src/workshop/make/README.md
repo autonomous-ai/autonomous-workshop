@@ -10,8 +10,9 @@ Reusable Codex-native creation capabilities live once in `skills/`. The host
 materializes their exact locked bytes into each private product run; Inventors
 use those shared capabilities without copying or wrapping them in Python.
 
-The `cad`, `design-reference`, `image-to-cad`, and `step-parts` skills are
-reviewed snapshots of `autonomous-ai/autonomous-product-to-cad`. `LOCK.json` binds
+The `cad`, `design-reference`, `electromechanical-integration`,
+`image-to-cad`, and `step-parts` skills are reviewed snapshots of
+`autonomous-ai/autonomous-product-to-cad`. `LOCK.json` binds
 their canonical trees to an exact upstream revision, while `PROVENANCE.md`
 records local path adaptations and the distinct license status of each
 upstream tree.

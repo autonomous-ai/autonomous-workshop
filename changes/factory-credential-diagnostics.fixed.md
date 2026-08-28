@@ -1,3 +1,4 @@
 - Reject literal quote-wrapped Factory credential values and make `workshop
-  doctor` verify scoped Inventor identity bindings and complete username/password
-  pairs without exposing credential values.
+  doctor` verify one complete host-owned service-account pair without exposing
+  credential values. One legacy scoped Alice-style username is normalized only
+  as a migration alias; ambiguous multi-account configuration is rejected.

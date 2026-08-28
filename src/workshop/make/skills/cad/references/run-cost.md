@@ -74,7 +74,7 @@ revolves, polar-patterned cuts, ~110 faces on its largest part, no lofts:
 | `check_motion` (8 conditions) | 10.0 s |
 | `export --stl` x6 | 1.0 s |
 | `check_mesh` x6 | 1.3 s |
-| `check_thickness` x6 | **36.9 s** |
+| `check_thickness` x6 | **36.9 s** (before the `march` change below) |
 | `render_views` (4 views + 3 searched poses + `--compare-step`) | **42.1 s** |
 | `check_likeness` | 0.8 s |
 | **the whole suite, once** | **1 m 53 s** |
@@ -105,8 +105,25 @@ What that changes about how to spend a round:
   with a single match costs, and adding `--poses-from` to that same command line
   turns 59.2 s of searching into 7.8 s of replay with identical numbers. Search
   once, replay while editing, search again at the end.
-- **`check_thickness` is the per-part tax.** 8 s on a 65 cm3 housing, 1.3 s on a
-  vane. Run it on the part you changed while iterating, all six once at the end.
+- **`check_thickness` was the per-part tax, and is now about a quarter of it.**
+  8 s on a 65 cm3 housing and 1.3 s on a vane, both measured before `march`
+  stopped stepping rays that had already left the material. That loop runs until
+  the *last* ray resolves, and a ray fired down a long axis never resolves at
+  all, so a few hundred stragglers carried the whole 400k-sample array 20x
+  further than the work required -- 33x on a rocket shell. Re-measured after the
+  change, on a five-part lamp at `--nozzle 0.25`: **42.4 s -> 10.6 s** for the
+  set and **17.2 s -> 2.4 s** on its worst part, with byte-identical reports, the
+  self-check unchanged, and 60/60 synthetic topologies matching the old
+  implementation exactly. The figures above this bullet were not re-taken.
+
+  What is left scales with surface area and with grid pitch, and pitch comes
+  from the nozzle: `min_wall / 6`, so `--nozzle 0.25` builds a grid two and a
+  half times finer than `--nozzle 0.4` and cost 3.1x as much on the same part.
+  `--voxel` overrides it, at the price of a wider pass/fail band -- the gate
+  fails only below `min_wall - pitch/2`, so a 0.40 mm grid puts +/-0.20 of slack
+  on a 0.50 mm limit. The parts are independent files: running the five
+  concurrently took that 10.6 s to 4.3 s on a 10-core host. Iterating one part
+  at a time is no longer the saving it was.
 - **Do not let a local audit go unmeasured.** `measure/check_landmarks.py` on
   this project cost **61.1 s** — 62 % of the entire suite — until one ledger row
   stopped sampling the solid and started reading its edges, which took it to

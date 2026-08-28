@@ -124,7 +124,7 @@ class ProductReleaseContractTest(unittest.TestCase):
     def test_local_release_rejects_schema_three_with_pdf_manual(self):
         (self.root / "MANUAL.md").rename(self.root / "MANUAL.pdf")
 
-        with self.assertRaisesRegex(ContractError, "requires product.json schema_version 4"):
+        with self.assertRaisesRegex(ContractError, "schema_version 3 requires MANUAL.md"):
             ProductRelease.from_root(
                 self.root, SHA256, "MANUAL.pdf", self.claims
             )
@@ -164,7 +164,7 @@ class ProductReleaseContractTest(unittest.TestCase):
             ).encode("utf-8")
         )
 
-        with self.assertRaisesRegex(ContractError, "requires product.json schema_version 3"):
+        with self.assertRaisesRegex(ContractError, "schema_version 4 requires MANUAL.pdf"):
             ProductRelease.from_root(
                 self.root, SHA256, "MANUAL.md", self.claims
             )

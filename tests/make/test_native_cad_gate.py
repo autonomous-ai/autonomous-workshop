@@ -13,6 +13,7 @@ from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
+    DEFAULT_NATIVE_CAD_OUTPUT_BYTES,
     NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_NON_PRINT_READY_TIER,
     NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE,
@@ -223,6 +224,28 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(payload, evidence.to_dict())
         self.assertEqual(stat.S_IMODE(evidence_path.stat().st_mode), 0o600)
 
+    def test_default_output_bound_accommodates_a_verbose_multi_part_success(self):
+        output = b"verified part\n" * 6_000
+
+        def runner(command, **arguments):
+            del command
+            self.assertEqual(
+                arguments["max_output_bytes"], DEFAULT_NATIVE_CAD_OUTPUT_BYTES
+            )
+            return VerifierProcessResult.from_bytes(
+                0,
+                output,
+                maximum_bytes=arguments["max_output_bytes"],
+            )
+
+        evidence = self._verify(
+            runner, max_output_bytes=DEFAULT_NATIVE_CAD_OUTPUT_BYTES
+        )
+
+        self.assertTrue(evidence.passed)
+        self.assertFalse(evidence.stdout.truncated)
+        self.assertEqual(evidence.stdout.total_bytes, len(output))
+
     def test_playtest_replay_preserves_the_accepted_make_evidence(self):
         runner = lambda *args, **kwargs: VerifierProcessResult.from_bytes(0)
         make_evidence = self._verify(runner)
@@ -270,6 +293,33 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(
             evidence.to_dict()["verification_tier"],
             "digitally-verified-not-print-ready",
+        )
+
+    def test_print_ready_requirement_rejects_a_passing_lower_tier(self):
+        self._rewrite_claim_declarations(
+            product_status=NATIVE_CAD_NON_PRINT_READY_TIER,
+            print_ready_claim=False,
+        )
+
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(
+                lambda *args, **kwargs: VerifierProcessResult.from_bytes(0),
+                evidence_stage="playtest",
+                require_print_ready=True,
+            )
+
+        rejection = caught.exception
+        self.assertEqual(rejection.failure_code, "cad-not-print-ready")
+        self.assertEqual(
+            rejection.evidence.verification_tier,
+            NATIVE_CAD_NON_PRINT_READY_TIER,
+        )
+        self.assertFalse(rejection.evidence.thickness_gate_required)
+        self.assertFalse(rejection.evidence.print_ready_eligible)
+        self.assertEqual(rejection.evidence.evidence_stage, "playtest")
+        self.assertEqual(
+            json.loads(rejection.evidence_path.read_text()),
+            rejection.evidence.to_dict(),
         )
 
     def test_status_alone_cannot_weaken_the_cad_gate(self):

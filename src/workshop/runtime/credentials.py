@@ -187,17 +187,34 @@ def factory_credential_environment(
                 label="Factory",
             )
         )
-    loaded.update(_credential_environment_values(values))
+    environment_values = _credential_environment_values(values)
+    environment_usernames = {
+        name
+        for name in environment_values
+        if name == "FACTORY_USERNAME"
+        or _FACTORY_SCOPED_USERNAME_NAME.fullmatch(name) is not None
+    }
+    if environment_usernames:
+        # A process-level username overrides the file's service-account
+        # username even when an older file used the scoped compatibility form.
+        # Password-only overrides continue to pair with the file username.
+        for name in tuple(loaded):
+            if name == "FACTORY_USERNAME" or (
+                _FACTORY_SCOPED_USERNAME_NAME.fullmatch(name) is not None
+            ):
+                loaded.pop(name)
+    loaded.update(environment_values)
     return loaded
 
 
 def validate_factory_credential_configuration(values: Mapping[str, str]) -> None:
     """Validate one host credential set without returning or exposing secrets.
 
-    A scoped variable such as ``FACTORY_LEO_USERNAME`` is an identity binding,
-    not just a label: its value must be ``leo`` (case-insensitively). Hyphens in
-    canonical Inventor ids are represented by underscores in variable names.
-    Every supported username form shares the one ``FACTORY_PASSWORD`` value.
+    The canonical configuration is one Workshop-owned service account under
+    ``FACTORY_USERNAME`` and ``FACTORY_PASSWORD``. Exactly one legacy scoped
+    username is accepted temporarily as an unambiguous compatibility alias;
+    it is normalized to the same single service account and never binds
+    publication authority to the selected Inventor.
     """
 
     if not isinstance(values, Mapping):
@@ -206,18 +223,24 @@ def validate_factory_credential_configuration(values: Mapping[str, str]) -> None
     usernames_present = False
     generic_username = values.get("FACTORY_USERNAME")
     if generic_username is not None:
-        if not isinstance(generic_username, str) or not generic_username:
+        if (
+            not isinstance(generic_username, str)
+            or not generic_username
+            or generic_username != generic_username.strip()
+            or len(generic_username.encode("utf-8")) > 512
+            or any(
+                ord(character) < 33 or ord(character) == 127
+                for character in generic_username
+            )
+        ):
             raise ContractError("Factory generic username is malformed")
         if _is_quote_wrapped(generic_username):
             raise ContractError(
                 "Factory generic username must not contain literal surrounding quotes"
             )
-        if _FACTORY_INVENTOR_ID.fullmatch(generic_username.casefold()) is None:
-            raise ContractError(
-                "Factory generic username must be a canonical inventor_id"
-            )
         usernames_present = True
 
+    scoped_usernames: list[tuple[str, str]] = []
     for name, username in values.items():
         if not isinstance(name, str):
             continue
@@ -240,12 +263,33 @@ def validate_factory_credential_configuration(values: Mapping[str, str]) -> None
                 "Factory scoped username must exactly match the inventor_id "
                 "encoded by its variable name"
             )
+        scoped_usernames.append((name, username))
         usernames_present = True
+
+    if generic_username is not None and scoped_usernames:
+        raise ContractError(
+            "Factory credentials must define only one Workshop service account; "
+            "remove legacy scoped username variables"
+        )
+    if len(scoped_usernames) > 1:
+        raise ContractError(
+            "Factory credentials must define only one Workshop service account; "
+            "replace legacy scoped username variables with FACTORY_USERNAME"
+        )
 
     password = values.get("FACTORY_PASSWORD")
     password_present = password is not None
     if password_present:
-        if not isinstance(password, str) or not password:
+        if (
+            not isinstance(password, str)
+            or not password
+            or password != password.strip()
+            or len(password.encode("utf-8")) > 4096
+            or any(
+                ord(character) < 33 or ord(character) == 127
+                for character in password
+            )
+        ):
             raise ContractError("Factory password is malformed")
         if _is_quote_wrapped(password):
             raise ContractError(
@@ -258,9 +302,41 @@ def validate_factory_credential_configuration(values: Mapping[str, str]) -> None
         )
 
 
+def factory_service_credential_environment(
+    values: Mapping[str, str],
+) -> Mapping[str, str]:
+    """Normalize one validated Workshop Factory service-account pair.
+
+    A single legacy ``FACTORY_<INVENTOR>_USERNAME`` value is accepted only so
+    existing private hosts can migrate without interrupting Release. Its
+    variable name grants no Inventor-scoped authority.
+    """
+
+    validate_factory_credential_configuration(values)
+    username = values.get("FACTORY_USERNAME")
+    if username is None:
+        scoped = [
+            value
+            for name, value in values.items()
+            if isinstance(name, str)
+            and _FACTORY_SCOPED_USERNAME_NAME.fullmatch(name) is not None
+        ]
+        username = scoped[0] if scoped else None
+    password = values.get("FACTORY_PASSWORD")
+    if username is None and password is None:
+        return {}
+    assert isinstance(username, str)
+    assert isinstance(password, str)
+    return {
+        "FACTORY_USERNAME": username,
+        "FACTORY_PASSWORD": password,
+    }
+
+
 __all__ = [
     "MAX_FACTORY_CREDENTIAL_FILE_BYTES",
     "factory_credential_environment",
     "factory_credential_file",
+    "factory_service_credential_environment",
     "validate_factory_credential_configuration",
 ]

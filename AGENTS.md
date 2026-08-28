@@ -27,23 +27,29 @@ processes.
 
 All implementation and product-run work must preserve these boundaries:
 
-- `workshop wish` persists the exact Wish, creates a private run workspace, and
-  launches one native coding-agent session before Match.
+- `workshop wish` persists the exact Wish and frozen effort, creates a private
+  run workspace, and launches one native coding-agent session for the first
+  enabled creative stage.
 - `workshop resume` resumes that exact session id. Stages are durable lifecycle
   checkpoints, not separate one-shot model sessions or personas.
-- Native Codex performs Match reasoning, research, concept exploration,
+- Native Codex performs Inventor selection, research, concept exploration,
   creation, inspection, and repair with its own tools and applicable skills.
-- The universal digital Playtest baseline is `agent-playtest`,
-  `mechanical-check`, and `printability-check`, as returned by
-  `ToyBlueprint.required_playtest_checks()`. Codex-authored assessment is not
-  evidence of successful printing, physical fit, durability, or human response
-  unless a host-replayed check or authenticated physical receipt proves it.
-- Every active Match, Invent, Make, Playtest, or Release attempt uses
+- New runs freeze one selectable lifecycle: Spark is `Wish -> Make -> Release`,
+  Forge is `Wish -> Invent -> Make -> Release`, and Quest is
+  `Wish -> Invent -> Make -> Playtest -> Release`. Passed-through stages create
+  no turn, artifact, gate, or evidence. Spark/Forge Release explicitly records
+  Playtest `not-run`; Quest requires passing Playtest evidence. Frozen older
+  runs retain their materialized protocol when resumed.
+- Every active Invent, Make, Playtest, or Release attempt uses
   one native Codex Goal with one objective, proof artifacts, and a verifiable
-  stopping condition: the current stage finalizer succeeds. Only one Goal is
-  active at a time. Codex works toward it by observing, acting, evaluating exact output,
+  stopping condition: the current stage finalizer succeeds. Inventor selection
+  is folded into the first active creative stage instead of a separate Match
+  turn. Only one Goal is active at a time. Codex works toward it by observing,
+  acting, evaluating exact output,
   and improving. That loop is native-agent behavior, not a Python program.
-  Wish and Deliver remain host boundaries rather than agent Goals.
+  Wish is a host boundary rather than an agent Goal. Authenticated publication
+  is the host-owned effect portion of Release; physical Operations begin only
+  after Workshop completes.
 - An Inventor is a declared specialist bundle. `TASTE.md` governs creative
   judgment; `inventor.json` identifies the specialist and binds its exact
   extension trees; the required `<id>-inventor` skill defines its
@@ -78,11 +84,19 @@ candidate fan-out, model judges, stage-role views, or repair reasoning.
 
 Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0012-codex-orchestrated-runtime.md`, and
-`docs/adr/0013-manual-first-release.md` before changing the CLI, runtime,
+`docs/adr/0013-manual-first-release.md`, and
+`docs/adr/0014-terminal-published-release.md`, and
+`docs/adr/0015-defer-playtest.md`, and
+`docs/adr/0016-selectable-effort-routes.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
-supersedes ADR 0012's page-first Release details. The native-session path is the
-production architecture. Preserve useful deterministic contracts and tests; do
-not reintroduce removed cognitive orchestration as a compatibility layer.
+supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
+optional-publication and executable-Deliver details. ADR 0015 supersedes the
+active Playtest stage while preserving truthful omission and frozen-run
+compatibility. ADR 0016 supersedes ADR 0015's fixed topology for new runs while
+preserving its truthful omission contract for Spark and Forge. The
+native-session path is the production architecture.
+Preserve useful deterministic contracts and tests; do not reintroduce removed
+cognitive orchestration as a compatibility layer.
 
 ## Repository ownership
 
@@ -90,7 +104,7 @@ not reintroduce removed cognitive orchestration as a compatibility layer.
 - `src/workshop/runtime/`: native engine adapters and trusted state/effect
   boundaries.
 - `src/workshop/workflow/`: lifecycle protocol, checkpoints, invalidation,
-  Make–Playtest round budgets, and the trusted whole-run host composition.
+  frozen-run repair budgets, and the trusted whole-run host composition.
 - `src/workshop/<stage>/`: stage-owned public contracts and deterministic tools.
 - `src/workshop/make/skills/`: reusable domain skills owned by Make.
 - `.agents/product-run/`: complete template materialized only into a toy

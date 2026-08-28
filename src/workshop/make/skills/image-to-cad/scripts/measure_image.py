@@ -491,9 +491,10 @@ def cross_check(records: list[dict[str, Any]]) -> dict[str, Any] | None:
     if len(rows) < 2:
         return None
     a = np.array(rows)
-    # Fix log L = 0 to remove the free scale, then least-squares the rest.
-    a_free, obs_v = a[:, 1:], np.array(obs) - a[:, 0] * 0.0
-    sol, *_ = np.linalg.lstsq(a_free, obs_v, rcond=None)
+    # Only ratios are observable, so fix log L = 0 to remove the free overall
+    # scale; column 0 then contributes nothing and the remaining two columns
+    # are least-squared against the observed log aspects.
+    sol, *_ = np.linalg.lstsq(a[:, 1:], np.array(obs), rcond=None)
     logs = np.array([0.0, sol[0], sol[1]])
     resid = a @ logs - np.array(obs)
     worst = float(np.max(np.abs(np.expm1(resid))))
@@ -850,7 +851,146 @@ def summarise(record: dict[str, Any]) -> str:
     )
 
 
+# --------------------------------------------------------------------------
+# self-check
+# --------------------------------------------------------------------------
+#
+# Every [observed] number in a build spec comes through this file, and the two
+# parts most worth pinning are the ones with no visible failure mode: the mask
+# (a region it drops is simply absent from every ratio) and the cross-check
+# (a residual it under-reports reads as "these views agree"). Each fixture
+# below therefore also runs the naive alternative, so the output shows what
+# the rule is worth rather than only that it ran.
+
+
+def _sc_rect(w: int, h: int, *, shadow: bool = False,
+             offhue: bool = False) -> np.ndarray:
+    """A synthetic view: dark object on a light ground, 400x400."""
+    canvas = np.full((400, 400, 3), 210, dtype=np.uint8)
+    x0, y0 = 200 - w // 2, 200 - h // 2
+    canvas[y0:y0 + h, x0:x0 + w] = (40, 40, 40)
+    if offhue:
+        # a saturated region attached to the object whose LUMINANCE sits on
+        # top of the background: invisible to a one-sided luma threshold.
+        canvas[y0:y0 + 40, x0 + w:x0 + w + 50] = (232, 196, 40)
+    if shadow:
+        # a soft contact shadow: neutral, darker than the ground, attached.
+        canvas[y0 + h:y0 + h + 26, x0 - 20:x0 + w + 20] = (170, 170, 170)
+    return canvas
+
+
+def _sc_measure(canvas: np.ndarray, label: str, tmp: Path, **kw) -> dict:
+    path = tmp / f"{label}.png"
+    Image.fromarray(canvas).save(path)
+    return measure(path, label, kw.pop("threshold", 28.0), False, **kw)
+
+
+def self_check() -> int:
+    import tempfile
+
+    ok = True
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+
+        # ---- the cross-check gate, against a box whose ratios are known ----
+        # L=120 W=80 H=60  ->  top 120x80, side 120x60, front 80x60
+        views = [_sc_measure(_sc_rect(120, 80), "top", tmp),
+                 _sc_measure(_sc_rect(120, 60), "side", tmp),
+                 _sc_measure(_sc_rect(80, 60), "front", tmp)]
+        cc = cross_check(views)
+        got = cc["solved_ratio_L_W_H"]
+        near = (abs(got[1] - 2 / 3) < 0.01 and abs(got[2] - 0.5) < 0.01
+                and cc["worst_disagreement_pct"] < 0.5)
+        print(f"{'ok  ' if near else 'FAIL'} three consistent views solve the "
+              f"true ratio  - {got} vs [1, 0.667, 0.5], worst "
+              f"{cc['worst_disagreement_pct']:.2f} %")
+        ok &= near
+
+        bad = [views[0], views[1], _sc_measure(_sc_rect(64, 60), "front", tmp)]
+        cc_bad = cross_check(bad)
+        caught = cc_bad["verdict"].startswith("INCONSISTENT")
+        print(f"{'ok  ' if caught else 'FAIL'} one foreshortened view is "
+              f"caught, not averaged in  - worst "
+              f"{cc_bad['worst_disagreement_pct']:.2f} %")
+        ok &= caught
+
+        # with exactly three views the residual spreads evenly: the gate can
+        # say the SET is bad, never which member is. Documented, so pinned.
+        spread = list(cc_bad["per_view_disagreement_pct"].values())
+        even = max(spread) - min(spread) < 1.0
+        print(f"{'ok  ' if even else 'FAIL'} and cannot yet name the bad view "
+              f"- {spread} (this is what a 4th view buys)")
+        ok &= even
+
+        alone = cross_check([views[0]])
+        print(f"{'ok  ' if alone is None else 'FAIL'} one view constrains "
+              f"nothing and returns no verdict")
+        ok &= alone is None
+
+        # ---- the mask: a cast shadow must not become part of the object ----
+        rec = _sc_measure(_sc_rect(120, 240, shadow=True), "shadow", tmp)
+        tight = rec["bbox_px"]["h"] == 240
+        print(f"{'ok  ' if tight else 'FAIL'} an attached cast shadow does not "
+              f"inflate the box  - h {rec['bbox_px']['h']} (want 240)")
+        ok &= tight
+
+        loose = _sc_measure(_sc_rect(120, 240, shadow=True), "shadow2", tmp,
+                            reject_shadow=False)
+        worse = loose["bbox_px"]["h"] > rec["bbox_px"]["h"]
+        print(f"{'ok  ' if worse else 'FAIL'} and a pure luminance threshold "
+              f"does  - h {loose['bbox_px']['h']}, so every ratio off by "
+              f"{100 * (loose['bbox_px']['h'] / 240 - 1):.0f} %")
+        ok &= worse
+
+        # ---- the mask: an off-hue region at background luminance is kept ----
+        two = _sc_measure(_sc_rect(120, 240, offhue=True), "offhue", tmp)
+        kept = two["bbox_px"]["w"] == 170
+        print(f"{'ok  ' if kept else 'FAIL'} a chromatically distinct region "
+              f"at background luminance survives  - w {two['bbox_px']['w']} "
+              f"(want 170)")
+        ok &= kept
+
+        canvas = _sc_rect(120, 240, offhue=True).astype(float)
+        gray = canvas @ np.array([0.299, 0.587, 0.114])
+        one, _bg, _n = object_mask(canvas, gray, 28.0, False, two_sided=False)
+        xs = np.nonzero(one.any(axis=0))[0]
+        one_w = int(xs.max() - xs.min() + 1)
+        dropped = one_w < two["bbox_px"]["w"]
+        print(f"{'ok  ' if dropped else 'FAIL'} and a one-sided test loses it "
+              f"without saying so  - w {one_w}")
+        ok &= dropped
+
+        # ---- interrogating the mask: a row that breaks into two parts ----
+        split = _sc_rect(120, 240)
+        split[:, 195:205] = 210                    # a 10 px gap down the middle
+        rec = _sc_measure(split, "split", tmp, rows_at="200")
+        runs = rec["row_scan"][0]["runs"]
+        two_runs = len(runs) == 2
+        print(f"{'ok  ' if two_runs else 'FAIL'} --rows reports a split row as "
+              f"two runs, not one part  - {len(runs)} runs")
+        ok &= two_runs
+
+        wide = _sc_measure(split, "split2", tmp, rows_at="200", run_gap=20)
+        merged = len(wide["row_scan"][0]["runs"]) == 1
+        print(f"{'ok  ' if merged else 'FAIL'} and --run-gap decides how wide "
+              f"a hole must be to count  - 1 run at gap 20")
+        ok &= merged
+
+        # ---- a window's aspect is not the object's ----
+        win = _sc_measure(_sc_rect(120, 240), "win", tmp, region=[150, 150, 250, 250])
+        scoped = "REGION ONLY" in win.get("scope", "")
+        print(f"{'ok  ' if scoped else 'FAIL'} --region stamps its record so a "
+              f"window's aspect is never read as L:W:H")
+        ok &= scoped
+
+    print("\nall fixtures pass" if ok else "\nself-check FAILED")
+    return 0 if ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if "--self-check" in argv:
+        return self_check()
     ap = argparse.ArgumentParser(
         description="Measure reference-image proportions for a CAD build spec."
     )
@@ -935,6 +1075,8 @@ def main(argv: list[str] | None = None) -> int:
         help="per-channel RGB distance counted as a match for --isolate (default 46)",
     )
     ap.add_argument("--json-only", action="store_true", help="suppress the stderr summary")
+    ap.add_argument("--self-check", action="store_true",
+                    help="run the built-in fixtures and exit")
     args = ap.parse_args(argv)
 
     try:

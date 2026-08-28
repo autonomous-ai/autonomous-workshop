@@ -39,8 +39,8 @@ NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE = (
 NATIVE_CAD_FULL_TIER = "full-with-thickness"
 NATIVE_CAD_NON_PRINT_READY_TIER = "digitally-verified-not-print-ready"
 DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS = 1_800.0
-DEFAULT_NATIVE_CAD_OUTPUT_BYTES = 64 * 1024
 MAX_NATIVE_CAD_OUTPUT_BYTES = 1024 * 1024
+DEFAULT_NATIVE_CAD_OUTPUT_BYTES = MAX_NATIVE_CAD_OUTPUT_BYTES
 MAX_NATIVE_CAD_VERIFIER_BYTES = 4 * 1024 * 1024
 MAX_NATIVE_CAD_VOLATILE_REPORT_BYTES = 2 * 1024 * 1024
 
@@ -654,7 +654,7 @@ class NativeCadGateEvidence:
             raise ContractError("native CAD gate booleans are invalid")
         if type(self.legacy_full_tier_compatibility) is not bool:
             raise ContractError("native CAD gate compatibility marker is invalid")
-        if self.evidence_stage not in ("make", "playtest"):
+        if self.evidence_stage not in ("make", "playtest", "release"):
             raise ContractError("native CAD gate evidence stage is invalid")
         if self.passed != (self.failure_code is None):
             raise ContractError("native CAD gate result and failure code disagree")
@@ -783,7 +783,7 @@ class NativeCadGateError(ArtifactError):
 def _evidence_path(
     host_state_root: Path, made: NativeMade, evidence_stage: str
 ) -> Path:
-    if evidence_stage not in ("make", "playtest"):
+    if evidence_stage not in ("make", "playtest", "release"):
         raise ContractError("native CAD gate evidence stage is invalid")
     parent = host_state_root / "evidence" / evidence_stage
     current = host_state_root
@@ -848,6 +848,7 @@ def verify_native_made_cad(
     max_output_bytes: int = DEFAULT_NATIVE_CAD_OUTPUT_BYTES,
     legacy_full_tier_validator: Optional[Callable[[], None]] = None,
     evidence_stage: str = "make",
+    require_print_ready: bool = False,
 ) -> NativeCadGateEvidence:
     """Run the final CAD gate on an isolated copy and persist host evidence.
 
@@ -880,7 +881,9 @@ def verify_native_made_cad(
         legacy_full_tier_validator
     ):
         raise ContractError("legacy full-tier validator must be callable")
-    if evidence_stage not in ("make", "playtest"):
+    if type(require_print_ready) is not bool:
+        raise ContractError("native CAD print-ready requirement must be boolean")
+    if evidence_stage not in ("make", "playtest", "release"):
         raise ContractError("native CAD gate evidence stage is invalid")
 
     root = _canonical_directory(run_root, "native CAD gate run root")
@@ -1004,6 +1007,14 @@ def verify_native_made_cad(
                 failure_code = "verifier-output-limit"
             elif result.returncode != 0:
                 failure_code = "verifier-nonzero"
+            elif require_print_ready and (
+                gate_policy.tier != NATIVE_CAD_FULL_TIER
+                or legacy_full_tier_compatibility
+            ):
+                # A lower-tier verifier may pass its declared digital checks,
+                # but it cannot advance a workflow whose terminal artifact is
+                # explicitly a ready-to-print handoff.
+                failure_code = "cad-not-print-ready"
 
     if result is None:  # pragma: no cover - guarded above
         raise ArtifactError("native CAD verifier produced no process result")

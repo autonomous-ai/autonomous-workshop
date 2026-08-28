@@ -119,7 +119,8 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
             self.assertEqual(receipt["wish"]["objective"], objective)
             self.assertEqual(receipt["wish"]["context"], {"source": "workshop-cli"})
             self.assertEqual(receipt["kind"], "native-agent-run")
-            self.assertEqual(receipt["stage"], "match")
+            self.assertEqual(receipt["stage"], "make")
+            self.assertEqual(receipt["effort"], "spark")
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertIn(
                 "Native Codex: reported progress for the current stage.",
@@ -169,7 +170,7 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
                 'project_root_markers=[".workshop-product-run-root"]',
                 observed["arguments"],
             )
-            self.assertIn("current match stage", observed["prompt"])
+            self.assertIn("current make stage", observed["prompt"])
             self.assertNotIn(objective, observed["prompt"])
             self.assertFalse((workspace / "agent-outcome.json").exists())
 

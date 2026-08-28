@@ -1,10 +1,12 @@
-"""Credential-free local Release proposal for one native-agent product run.
+"""Credential-free authored Release proposal for one native-agent product run.
 
-The native Codex session assembles the complete customer package without
-credentials or remote effects.  This module binds exact Made and Playtested
-inputs to exact package bytes so the trusted host can accept a local
-``ProductRelease`` first.  Factory import and publication are separate,
-optional host effects with their own receipts.
+The native coding-agent session assembles the complete customer package
+without credentials or remote effects. This module binds exact Made input,
+plus either passing Playtest evidence or a canonical record that Playtest was
+not run, to exact package bytes. The trusted host validates the local
+``ProductRelease`` component first. The workflow's terminal Release gate then
+revalidates print-ready CAD and requires host-owned Factory publication with
+authenticated readback.
 """
 
 from __future__ import annotations
@@ -39,12 +41,16 @@ NATIVE_RELEASE_PACKAGE_ROOT = "artifacts/release/package"
 NATIVE_RELEASE_MANUAL_PATH = "MANUAL.pdf"
 NATIVE_RELEASE_LEGACY_MANUAL_PATH = "MANUAL.md"
 NATIVE_RELEASE_PRODUCT_PATH = "product.json"
+NATIVE_RELEASE_PLAYTEST_OMISSION_PATH = "PLAYTEST-NOT-RUN.json"
+NATIVE_RELEASE_PLAYTEST_OMISSION_KIND = "autonomous-workshop.playtest-omission"
 MAX_NATIVE_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
 MAX_NATIVE_RELEASE_MANUAL_BYTES = 16 * 1024 * 1024
 MAX_NATIVE_RELEASE_LEGACY_MANUAL_BYTES = 2 * 1024 * 1024
 MAX_NATIVE_RELEASE_PDF_PAGES = 64
 RELEASE_PRODUCT_SCHEMA_VERSION = 4
 RELEASE_PRODUCT_STATUS = "manual-ready"
+DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION = 5
+DIRECT_RELEASE_PLAYTEST_STATUS = "not-run"
 LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION = 3
 LEGACY_RELEASE_PRODUCT_STATUS = "page-ready"
 FACTORY_CONTENT_LABEL_MAX = 40
@@ -82,6 +88,21 @@ _RELEASE_PRODUCT_FIELDS = frozenset(
         "what_arrives",
         "limitations",
         "product_artifact_sha256",
+        "playtest_evidence_artifact_sha256",
+        "claims",
+    )
+)
+_DIRECT_RELEASE_PRODUCT_FIELDS = frozenset(
+    (
+        "schema_version",
+        "kind",
+        "status",
+        "title",
+        "summary",
+        "what_arrives",
+        "limitations",
+        "product_artifact_sha256",
+        "playtest_status",
         "playtest_evidence_artifact_sha256",
         "claims",
     )
@@ -148,6 +169,33 @@ def _canonical_json(value: Any) -> bytes:
         ).encode("utf-8")
     except (TypeError, ValueError, UnicodeError) as exc:
         raise ContractError("native Release values must be finite JSON") from exc
+
+
+def playtest_omission_record() -> dict[str, Any]:
+    """Return the one canonical, truthful record for a deferred Playtest."""
+
+    return {
+        "schema_version": 1,
+        "kind": NATIVE_RELEASE_PLAYTEST_OMISSION_KIND,
+        "status": DIRECT_RELEASE_PLAYTEST_STATUS,
+        "reason": "Playtest is deferred for this Release.",
+    }
+
+
+def playtest_omission_sha256() -> str:
+    return hashlib.sha256(_canonical_json(playtest_omission_record())).hexdigest()
+
+
+def direct_release_claims() -> dict[str, Any]:
+    omission_sha256 = playtest_omission_sha256()
+    return {
+        "playtest": {
+            "status": DIRECT_RELEASE_PLAYTEST_STATUS,
+            "claims": [],
+            "evidence_ref": NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+            "evidence_sha256": omission_sha256,
+        }
+    }
 
 
 def _freeze(value: Any) -> Any:
@@ -697,6 +745,51 @@ def _validate_manual_release_product(product: Mapping[str, Any]) -> dict[str, An
     }
 
 
+def _validate_direct_release_product(product: Mapping[str, Any]) -> dict[str, Any]:
+    if set(product) != _DIRECT_RELEASE_PRODUCT_FIELDS:
+        raise ContractError("native direct Release product.json fields are invalid")
+    omission_sha256 = playtest_omission_sha256()
+    if (
+        product.get("schema_version") != DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION
+        or product.get("kind") != "workshop.release-package"
+        or product.get("status") != RELEASE_PRODUCT_STATUS
+        or product.get("playtest_status") != DIRECT_RELEASE_PLAYTEST_STATUS
+        or product.get("playtest_evidence_artifact_sha256") != omission_sha256
+        or product.get("claims") != direct_release_claims()
+    ):
+        raise ContractError(
+            "native direct Release product.json must record Playtest as not run"
+        )
+    require_sha256(
+        product.get("product_artifact_sha256"),
+        "native direct Release product artifact sha256",
+    )
+    return {
+        "schema_version": DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+        "kind": "workshop.release-package",
+        "status": RELEASE_PRODUCT_STATUS,
+        "title": _page_text(product.get("title"), "native Release title", 300),
+        "summary": _page_text(product.get("summary"), "native Release summary", 2_000),
+        "what_arrives": _page_text_list(
+            product.get("what_arrives"),
+            "native Release what_arrives",
+            maximum_items=100,
+            maximum_item_length=1_000,
+        ),
+        "limitations": _page_text_list(
+            product.get("limitations"),
+            "native Release limitations",
+            maximum_items=100,
+            maximum_item_length=2_000,
+            allow_empty=True,
+        ),
+        "product_artifact_sha256": product["product_artifact_sha256"],
+        "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
+        "playtest_evidence_artifact_sha256": omission_sha256,
+        "claims": direct_release_claims(),
+    }
+
+
 def validate_release_product(
     value: Any,
     *,
@@ -707,13 +800,13 @@ def validate_release_product(
     if release_schema_version is not None:
         if (
             type(release_schema_version) is not int
-            or release_schema_version not in (1, 2)
+            or release_schema_version not in (1, 2, 3)
         ):
-            raise ContractError("native Release schema_version must be 1 or 2")
+            raise ContractError("native Release schema_version must be 1, 2, or 3")
     product = copy_json_mapping(value, "native Release product.json", nonempty=True)
     product_schema_version = product.get("schema_version")
     if release_schema_version is not None:
-        expected = 3 if release_schema_version == 1 else 4
+        expected = {1: 3, 2: 4, 3: 5}[release_schema_version]
         if product_schema_version != expected:
             raise ContractError(
                 "native Release schema_version %d requires product.json schema_version %d"
@@ -723,7 +816,9 @@ def validate_release_product(
         return _validate_legacy_release_product(product)
     if product_schema_version == RELEASE_PRODUCT_SCHEMA_VERSION:
         return _validate_manual_release_product(product)
-    raise ContractError("native Release product.json schema_version must be 3 or 4")
+    if product_schema_version == DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION:
+        return _validate_direct_release_product(product)
+    raise ContractError("native Release product.json schema_version must be 3, 4, or 5")
 
 
 @dataclass(frozen=True)
@@ -736,7 +831,7 @@ class NativeReleasePackage:
     product: Mapping[str, Any]
     claims: Mapping[str, Any]
     made: Made
-    playtested: Playtested
+    playtested: Playtested | None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "product", _freeze(_thaw(self.product)))
@@ -763,8 +858,8 @@ class NativeRelease:
     release_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
-            raise ContractError("native Release schema_version must be 1 or 2")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2, 3):
+            raise ContractError("native Release schema_version must be 1, 2, or 3")
         if self.kind != NATIVE_RELEASE_KIND:
             raise ContractError("native Release kind is invalid")
         if type(self.round) is not int or not 1 <= self.round <= 100:
@@ -801,7 +896,10 @@ class NativeRelease:
         if self.package_manifest.created_at != "content-addressed":
             raise ContractError("native Release manifest must be content-addressed")
         inventory = {entry.path: entry for entry in self.package_manifest.entries}
-        for required in (self.manual_path, self.product_json_path):
+        required_paths = [self.manual_path, self.product_json_path]
+        if self.schema_version == 3:
+            required_paths.append(NATIVE_RELEASE_PLAYTEST_OMISSION_PATH)
+        for required in required_paths:
             if required not in inventory:
                 raise ContractError("native Release manifest lacks %s" % required)
         manual_limit = (
@@ -925,11 +1023,30 @@ class NativeRelease:
             raise ContractError("native Release hashes or canonical identity are invalid")
         return release
 
-    def assert_context(self, made: NativeMade, playtested: NativePlaytested) -> None:
-        if not isinstance(made, NativeMade) or not isinstance(
-            playtested, NativePlaytested
-        ):
-            raise ContractError("native Release context requires NativeMade and NativePlaytested")
+    def assert_context(
+        self, made: NativeMade, playtested: NativePlaytested | None
+    ) -> None:
+        if not isinstance(made, NativeMade):
+            raise ContractError("native Release context requires NativeMade")
+        if self.schema_version == 3:
+            omission_sha256 = playtest_omission_sha256()
+            if (
+                playtested is not None
+                or self.round != made.round
+                or self.made_sha256 != made.made_sha256
+                or self.product_artifact_sha256
+                != made.product_manifest.artifact_sha256
+                or self.playtested_sha256 != omission_sha256
+                or self.playtest_evidence_artifact_sha256 != omission_sha256
+            ):
+                raise ContractError(
+                    "native direct Release belongs to different Workshop inputs"
+                )
+            return
+        if not isinstance(playtested, NativePlaytested):
+            raise ContractError(
+                "native Release context requires NativeMade and NativePlaytested"
+            )
         if (
             playtested.verdict != "pass"
             or self.round != made.round
@@ -949,7 +1066,7 @@ class NativeRelease:
         self,
         run_root: Path,
         made: NativeMade,
-        playtested: NativePlaytested,
+        playtested: NativePlaytested | None,
     ) -> NativeReleasePackage:
         """Rehash Release and upstream trees without performing any effect."""
 
@@ -963,6 +1080,7 @@ class NativeRelease:
         )
         if current.to_dict() != self.package_manifest.to_dict():
             raise ArtifactError("native Release package differs from its manifest")
+        inventory = {entry.path: entry for entry in current.entries}
 
         manual_limit = (
             MAX_NATIVE_RELEASE_LEGACY_MANUAL_BYTES
@@ -1016,10 +1134,33 @@ class NativeRelease:
             raise ContractError("native Release proposal differs from product.json")
 
         canonical_made = made.validate_product_tree(root)
-        canonical_playtested = playtested.validate_evidence_tree(root, made)
-        if not canonical_playtested.passed:
-            raise ContractError("native Release requires passing exact Playtest evidence")
-        expected_claims = _expected_claims(canonical_playtested)
+        if self.schema_version == 3:
+            omission_path = package_root / NATIVE_RELEASE_PLAYTEST_OMISSION_PATH
+            omission = _read_regular(
+                omission_path,
+                "native Release Playtest omission",
+                MAX_NATIVE_RELEASE_CONTRACT_BYTES,
+            )
+            expected_omission = _canonical_json(playtest_omission_record())
+            if omission != expected_omission:
+                raise ContractError(
+                    "native direct Release Playtest omission is not canonical"
+                )
+            omission_entry = inventory.get(NATIVE_RELEASE_PLAYTEST_OMISSION_PATH)
+            omission_sha256 = playtest_omission_sha256()
+            if omission_entry is None or omission_entry.sha256 != omission_sha256:
+                raise ArtifactError(
+                    "native direct Release Playtest omission differs from its manifest"
+                )
+            canonical_playtested = None
+            expected_claims = direct_release_claims()
+        else:
+            if not isinstance(playtested, NativePlaytested):
+                raise ContractError("native Release requires exact Playtest evidence")
+            canonical_playtested = playtested.validate_evidence_tree(root, made)
+            if not canonical_playtested.passed:
+                raise ContractError("native Release requires passing exact Playtest evidence")
+            expected_claims = _expected_claims(canonical_playtested)
         if observed_product["claims"] != expected_claims:
             raise ContractError("native Release claims differ from exact Playtest evidence")
         if observed_product.get("title") != canonical_made.product.get("title"):
@@ -1064,6 +1205,8 @@ __all__ = [
     "FACTORY_CONTENT_BODY_MIN",
     "FACTORY_CONTENT_LABEL_MAX",
     "FACTORY_CONTENT_STORY_BLOCKS_MAX",
+    "DIRECT_RELEASE_PLAYTEST_STATUS",
+    "DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION",
     "LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION",
     "LEGACY_RELEASE_PRODUCT_STATUS",
     "MAX_NATIVE_RELEASE_CONTRACT_BYTES",
@@ -1073,6 +1216,8 @@ __all__ = [
     "NATIVE_RELEASE_KIND",
     "NATIVE_RELEASE_LEGACY_MANUAL_PATH",
     "NATIVE_RELEASE_MANUAL_PATH",
+    "NATIVE_RELEASE_PLAYTEST_OMISSION_KIND",
+    "NATIVE_RELEASE_PLAYTEST_OMISSION_PATH",
     "NATIVE_RELEASE_PACKAGE_ROOT",
     "NATIVE_RELEASE_PATH",
     "NATIVE_RELEASE_PRODUCT_PATH",
@@ -1083,4 +1228,7 @@ __all__ = [
     "read_native_release",
     "validate_release_pdf_manual",
     "validate_release_product",
+    "direct_release_claims",
+    "playtest_omission_record",
+    "playtest_omission_sha256",
 ]

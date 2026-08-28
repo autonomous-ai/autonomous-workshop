@@ -38,11 +38,21 @@ from workshop.runtime.agent_assets import (
     inventor_custom_agent_bytes,
     parse_inventor_custom_agent_bytes,
 )
+from workshop.runtime.managers import (
+    DEFAULT_MANAGER_ID,
+    MANAGER_PROJECT_PATH,
+    manager_project_bytes,
+    manager_spec,
+)
 from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER,
     PRODUCT_RUN_ROOT_MARKER_BYTES,
 )
 from workshop.wish import Wish
+from workshop.workflow.effort import (
+    EFFORT_ROUTE_CAPABILITY_PATH,
+    workshop_effort,
+)
 
 
 AGENT_RUN_STAGES = (
@@ -52,8 +62,11 @@ AGENT_RUN_STAGES = (
     "make",
     "playtest",
     "release",
-    "deliver",
 )
+# ``deliver`` existed as a host-only wait checkpoint before Release became the
+# terminal Workshop stage.  It remains readable solely so an installed host can
+# migrate an existing run after verifying its exact public Release.
+_READABLE_AGENT_RUN_STAGES = (*AGENT_RUN_STAGES, "deliver")
 AGENT_OUTCOME_STATUSES = ("ready", "waiting", "failed")
 MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
@@ -77,8 +90,7 @@ _FORWARD_TRANSITIONS = {
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
-    "deliver": "complete",
+    "release": "complete",
 }
 _UPSTREAM_STAGE = {
     "match": "wish",
@@ -86,9 +98,18 @@ _UPSTREAM_STAGE = {
     "make": "invent",
     "playtest": "make",
     "release": "playtest",
+    # Read-only compatibility for checkpoints written by the former
+    # Release -> Deliver lifecycle.
     "deliver": "release",
 }
-_DOWNSTREAM_OF_MAKE = ("playtest", "release", "deliver")
+_DOWNSTREAM_OF_INVENT = ("make", "playtest", "release")
+_DOWNSTREAM_OF_MAKE = ("playtest", "release")
+_TERMINAL_RELEASE_MARKER = (
+    ".agents/skills/autonomous-workshop/references/release-terminal-v1.md"
+)
+_DIRECT_RELEASE_MARKER = (
+    ".agents/skills/autonomous-workshop/references/direct-release-v1.md"
+)
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
@@ -101,6 +122,44 @@ _EFFECT_RECEIPT_PATH = re.compile(
     r"[^/]{0,32}receipt|receipt[^/]{0,32}"
     r"(?:factory|carrier|shipment|manufactur|publication|payment|effect)"
 )
+
+
+def _uses_direct_release(payload: Mapping[str, Any]) -> bool:
+    return _DIRECT_RELEASE_MARKER in {
+        item["path"] for item in payload["inputs"]
+    }
+
+
+def _uses_effort_routes(payload: Mapping[str, Any]) -> bool:
+    return (
+        payload.get("schema_version") == 4
+        and EFFORT_ROUTE_CAPABILITY_PATH
+        in {item["path"] for item in payload["inputs"]}
+    )
+
+
+def _run_effort(payload: Mapping[str, Any]):
+    if not _uses_effort_routes(payload):
+        return None
+    return workshop_effort(payload.get("effort"))
+
+
+def _forward_transition(payload: Mapping[str, Any], stage: str) -> str:
+    effort = _run_effort(payload)
+    if effort is not None:
+        return effort.next_stage(stage)
+    if stage == "make" and _uses_direct_release(payload):
+        return "release"
+    return _FORWARD_TRANSITIONS[stage]
+
+
+def _upstream_stage(payload: Mapping[str, Any], stage: str) -> str:
+    effort = _run_effort(payload)
+    if effort is not None:
+        return effort.previous_stage(stage)
+    if stage == "release" and _uses_direct_release(payload):
+        return "make"
+    return _UPSTREAM_STAGE[stage]
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -445,6 +504,10 @@ class AgentOutcome:
         if self.proposed_transition is not None and self.proposed_transition not in (
             *AGENT_RUN_STAGES,
             "complete",
+            # A frozen pre-terminal-Release finalizer proposes this value.  It
+            # is accepted only for a Release outcome and immediately migrated
+            # by the native host; no new Deliver work is created.
+            "deliver",
         ):
             raise ContractError("agent proposed transition is invalid")
         if self.status == "ready":
@@ -565,6 +628,8 @@ class AgentRunCheckpoint:
     inventor_roster: tuple[Mapping[str, Any], ...]
     stage_artifacts: Mapping[str, tuple[AgentArtifact, ...]]
     invalidated_stages: tuple[str, ...]
+    effort: Optional[str] = None
+    manager_id: str = DEFAULT_MANAGER_ID
 
     @property
     def complete(self) -> bool:
@@ -598,9 +663,13 @@ class AgentRun:
         domain_skill_roots: Optional[Mapping[str, Path]] = None,
         inventor_source_root: Optional[Path] = None,
         max_rounds: int = 4,
+        effort: Optional[str] = None,
+        manager_id: str = DEFAULT_MANAGER_ID,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
+        selected_effort = workshop_effort(effort) if effort is not None else None
+        selected_manager = manager_spec(manager_id)
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
         try:
             requested = Path(run_root)
@@ -671,6 +740,17 @@ class AgentRun:
             _reject_private_agent_bytes(
                 ".agents/skills/autonomous-workshop/%s" % relative.as_posix(),
                 content,
+            )
+        effort_capable = any(
+            (
+                PurePosixPath(".agents/skills/autonomous-workshop") / relative
+            ).as_posix()
+            == EFFORT_ROUTE_CAPABILITY_PATH
+            for relative, _, _ in skill_files
+        )
+        if not effort_capable and selected_effort is not None:
+            raise ContractError(
+                "selected Workshop effort requires the materialized effort-route capability"
             )
 
         domain_files: list[tuple[PurePosixPath, bytes, int]] = []
@@ -813,6 +893,11 @@ class AgentRun:
             ),
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
+            (
+                PurePosixPath(MANAGER_PROJECT_PATH),
+                manager_project_bytes(selected_manager),
+                0o400,
+            ),
         ]
         skill_target = PurePosixPath(".agents/skills/autonomous-workshop")
         all_input_files.extend(
@@ -915,7 +1000,7 @@ class AgentRun:
                 os.chmod(directory, 0o500)
             os.chmod(codex_input_root, 0o500)
         core: dict[str, Any] = {
-            "schema_version": 3,
+            "schema_version": 4 if selected_effort is not None else 3,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
             "product_id": product_id,
             "run_root_sha256": _sha256(str(selected).encode("utf-8")),
@@ -937,7 +1022,10 @@ class AgentRun:
             "history": [],
             "last_outcome_sha256": None,
             "previous_checkpoint_sha256": None,
+            "manager_id": selected_manager.manager_id,
         }
+        if selected_effort is not None:
+            core["effort"] = selected_effort.name
         checkpoint_sha256 = cls._write_checkpoint_file(
             selected_host / "agent-run.json", core
         )
@@ -1074,13 +1162,18 @@ class AgentRun:
             "previous_checkpoint_sha256",
             "checkpoint_sha256",
         }
+        schema_version = payload.get("schema_version")
+        if schema_version == 4:
+            expected_fields.add("effort")
+        if "manager_id" in payload:
+            expected_fields.add("manager_id")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
-            type(payload["schema_version"]) is not int
-            or payload["schema_version"] != 3
+            type(schema_version) is not int
+            or schema_version not in (3, 4)
             or payload["kind"] != AGENT_RUN_CHECKPOINT_KIND
-            or payload["stage"] not in AGENT_RUN_STAGES
+            or payload["stage"] not in _READABLE_AGENT_RUN_STAGES
             or payload["status"] not in ("active", "waiting", "failed", "complete")
             or type(payload["revision"]) is not int
             or payload["revision"] < 0
@@ -1092,6 +1185,23 @@ class AgentRun:
             or len(payload["history"]) > payload["max_rounds"] * 3 + 16
         ):
             raise StateConflict("agent run checkpoint values are invalid")
+        if schema_version == 4:
+            try:
+                selected_effort = workshop_effort(payload["effort"])
+            except ContractError as exc:
+                raise StateConflict("agent run effort is invalid") from exc
+            if payload["stage"] not in selected_effort.lifecycle:
+                raise StateConflict("agent run stage is disabled by its frozen effort")
+            if EFFORT_ROUTE_CAPABILITY_PATH not in {
+                item.get("path") for item in payload.get("inputs", ())
+                if isinstance(item, Mapping)
+            }:
+                raise StateConflict("agent run effort capability is missing")
+        if "manager_id" in payload:
+            try:
+                manager_spec(payload["manager_id"])
+            except ContractError as exc:
+                raise StateConflict("agent run Manager is invalid") from exc
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -1276,7 +1386,11 @@ class AgentRun:
         if not isinstance(stage_artifacts, Mapping):
             raise StateConflict("agent run stage artifact bindings are invalid")
         for stage, paths in stage_artifacts.items():
-            if stage not in AGENT_RUN_STAGES or not isinstance(paths, list) or not paths:
+            if (
+                stage not in _READABLE_AGENT_RUN_STAGES
+                or not isinstance(paths, list)
+                or not paths
+            ):
                 raise StateConflict("agent run stage artifact bindings are invalid")
             if any(path not in by_path for path in paths) or len(paths) != len(set(paths)):
                 raise StateConflict("agent run stage artifact binding is unsealed")
@@ -1334,6 +1448,8 @@ class AgentRun:
             ),
             stage_artifacts=MappingProxyType(self._stage_artifacts(payload, by_path)),
             invalidated_stages=tuple(payload["invalidated_stages"]),
+            effort=payload.get("effort"),
+            manager_id=payload.get("manager_id", DEFAULT_MANAGER_ID),
         )
 
     def expected_gate_subject_sha256(self) -> str:
@@ -1341,7 +1457,7 @@ class AgentRun:
         stage = payload["stage"]
         if stage == "wish":
             return self._wish_sha256(payload)
-        upstream = _UPSTREAM_STAGE[stage]
+        upstream = _upstream_stage(payload, stage)
         paths = payload["stage_artifacts"].get(upstream)
         if not paths:
             raise TransitionError("agent run lacks the sealed upstream stage artifact")
@@ -1369,10 +1485,24 @@ class AgentRun:
             gate_checkpoint_sha256, "predecessor gate checkpoint sha256"
         )
         payload = self._load()
-        expected_stage = _FORWARD_TRANSITIONS.get(receipt.stage)
+        forward = _forward_transition(payload, receipt.stage)
+        expected_stages = (
+            ("release", "deliver")
+            if receipt.stage == "release"
+            else (forward,)
+        )
         history = payload["history"]
-        if expected_stage != payload["stage"] or not history:
+        if payload["stage"] not in expected_stages or not history:
             raise StateConflict("gate is not the accepted predecessor of current state")
+        expected_transition = (
+            "complete"
+            if receipt.stage == "release" and payload["stage"] == "release"
+            else (
+                "deliver"
+                if receipt.stage == "release"
+                else forward
+            )
+        )
         record = history[-1]
         expected_fields = {
             "stage",
@@ -1391,7 +1521,7 @@ class AgentRun:
             or set(record) != expected_fields
             or record["stage"] != receipt.stage
             or record["status"] != "ready"
-            or record["transition"] != expected_stage
+            or record["transition"] != expected_transition
             or record["outcome_sha256"] != receipt.outcome_sha256
             or record["gate_sha256"] != receipt.sha256
             or record["gate_id"] != receipt.gate_id
@@ -1419,10 +1549,21 @@ class AgentRun:
         if outcome.stage != payload["stage"]:
             raise TransitionError("agent outcome is for a different stage")
         if outcome.status == "ready":
-            allowed = _FORWARD_TRANSITIONS[outcome.stage]
+            allowed = _forward_transition(payload, outcome.stage)
             if outcome.stage == "playtest":
-                if outcome.proposed_transition not in (allowed, "make"):
-                    raise TransitionError("Playtest may advance or return feedback to Make")
+                if outcome.proposed_transition not in (allowed, "make", "invent"):
+                    raise TransitionError(
+                        "Playtest may advance or return explicit feedback to Make or Invent"
+                    )
+            elif outcome.stage == "release":
+                frozen_inputs = {
+                    item["path"] for item in payload["inputs"]
+                }
+                legacy_allowed = _TERMINAL_RELEASE_MARKER not in frozen_inputs
+                if outcome.proposed_transition != allowed and not (
+                    legacy_allowed and outcome.proposed_transition == "deliver"
+                ):
+                    raise TransitionError("Release may complete the Workshop run")
             elif outcome.proposed_transition != allowed:
                 raise TransitionError("agent proposed an illegal lifecycle transition")
 
@@ -1519,11 +1660,14 @@ class AgentRun:
             or gate.subject_sha256 != subject
         ):
             raise TransitionError("deterministic gate is not bound to this exact outcome")
-        if outcome.stage == "playtest" and outcome.proposed_transition == "make":
+        if (
+            outcome.stage == "playtest"
+            and outcome.proposed_transition in ("make", "invent")
+        ):
             if gate.passed:
                 raise TransitionError("passing Playtest must advance to Release")
             if payload["round_index"] >= payload["max_rounds"]:
-                raise TransitionError("Make-Playtest round budget is exhausted")
+                raise TransitionError("Invent-Make-Playtest round budget is exhausted")
         elif not gate.passed:
             raise TransitionError("a failed deterministic gate cannot advance")
 
@@ -1533,8 +1677,8 @@ class AgentRun:
             stage: list(paths) for stage, paths in payload["stage_artifacts"].items()
         }
         invalidated = set(payload["invalidated_stages"])
-        if outcome.stage == "make":
-            old_paths = stage_artifacts.get("make")
+        if outcome.stage in ("invent", "make"):
+            old_paths = stage_artifacts.get(outcome.stage)
             old_binding: tuple[tuple[str, str], ...] = ()
             if old_paths:
                 by_path = {item["path"]: item for item in payload["sealed_artifacts"]}
@@ -1545,7 +1689,12 @@ class AgentRun:
                 (artifact.path, artifact.sha256) for artifact in all_artifacts
             )
             if old_binding and old_binding != new_binding:
-                for stage in _DOWNSTREAM_OF_MAKE:
+                downstream = (
+                    _DOWNSTREAM_OF_INVENT
+                    if outcome.stage == "invent"
+                    else _DOWNSTREAM_OF_MAKE
+                )
+                for stage in downstream:
                     stage_artifacts.pop(stage, None)
                     invalidated.add(stage)
         stage_artifacts[outcome.stage] = [item.path for item in all_artifacts]
@@ -1555,15 +1704,24 @@ class AgentRun:
         round_index = payload["round_index"]
         status = "active"
         next_stage = transition
-        if outcome.stage == "invent" and transition == "make":
+        if (
+            outcome.stage in ("wish", "invent")
+            and transition == "make"
+            and round_index == 0
+        ):
             round_index = 1
-        elif outcome.stage == "playtest" and transition == "make":
+        elif outcome.stage == "playtest" and transition in ("make", "invent"):
             round_index += 1
-            for stage in _DOWNSTREAM_OF_MAKE:
+            invalidation = (
+                ("invent", *_DOWNSTREAM_OF_INVENT)
+                if transition == "invent"
+                else _DOWNSTREAM_OF_MAKE
+            )
+            for stage in invalidation:
                 invalidated.add(stage)
-            next_stage = "make"
+            next_stage = transition
         elif transition == "complete":
-            next_stage = "deliver"
+            next_stage = outcome.stage
             status = "complete"
 
         updated["stage"] = next_stage
@@ -1585,6 +1743,47 @@ class AgentRun:
                 "gate_passed": gate.passed,
                 "gate_evidence_sha256": gate.evidence_sha256,
                 "transition": transition,
+            }
+        ]
+        self._write_next(payload, updated)
+        return self.snapshot()
+
+    def complete_legacy_release(self) -> AgentRunCheckpoint:
+        """Migrate one historical Deliver checkpoint to terminal Release.
+
+        The native host calls this only after revalidating the sealed Release
+        and obtaining an exact, authenticated public Factory receipt.  No
+        physical Deliver effect is inferred or performed.
+        """
+
+        payload = self._load()
+        if (
+            payload["stage"] != "deliver"
+            or payload["status"] not in ("active", "waiting", "complete")
+            or not payload["stage_artifacts"].get("release")
+            or "release" in payload["invalidated_stages"]
+            or _TERMINAL_RELEASE_MARKER
+            in {item["path"] for item in payload["inputs"]}
+        ):
+            raise TransitionError(
+                "legacy Deliver migration requires one current sealed Release"
+            )
+        updated = dict(payload)
+        updated["stage"] = "release"
+        updated["status"] = "complete"
+        updated["invalidated_stages"] = [
+            stage
+            for stage in AGENT_RUN_STAGES
+            if stage in payload["invalidated_stages"]
+        ]
+        updated["history"] = payload["history"] + [
+            {
+                "stage": "release",
+                "status": "legacy-terminal-migration",
+                "outcome_sha256": payload["last_outcome_sha256"],
+                "artifact_paths": list(payload["stage_artifacts"]["release"]),
+                "gate_sha256": None,
+                "transition": "complete",
             }
         ]
         self._write_next(payload, updated)

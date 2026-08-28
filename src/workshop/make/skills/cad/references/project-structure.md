@@ -71,10 +71,11 @@ python "$CAD_SKILL_ROOT/scripts/check_layout" <project-dir>
 python "$CAD_SKILL_ROOT/scripts/check_layout" --json
 ```
 
-It fails a project three ways:
+It fails a project four ways:
 
 | rule | what it caught |
 |---|---|
+| `placeholder-project-name` | a scaffold directory or combined entry such as `project_name` or `object_name` reached the build instead of being renamed for the object; parent scans also find abandoned artifact-only directories |
 | `unsplit-entry` | an entry generator over the thresholds with no `part_*.step.py` beside it |
 | `missing-assembly-entry` | part entries with no combined assembly entry — both halves are required, see SKILL.md step 6 |
 | `oversized-library` | a project **that has part entries** whose importable modules have passed the Tier 3 threshold below |
@@ -124,7 +125,7 @@ whose parts have stopped being readable side by side is still due the package.
 │   ├── __init__.py
 │   └── product.py
 ├── <name>.step.py      assembly entry
-└── part_<x>.step.py    one print-orientation entry per printable part
+└── part_<x>.step.py    one review/edit entry per named part
 ```
 
 There is no project manifest and no directory-level build. Every tier is built
@@ -144,8 +145,17 @@ the same way: `scripts/gen` on an explicit entry target.
   - A **printable part** returns in its print orientation, bed datum at Z=0.
   - A **logical part** — a group of a one-piece model, split for review and
     editing rather than for the bed — returns in assembly coordinates, carries
-    no mating features, and says so in its docstring. A display model that
-    stays one printed piece still gets these entries.
+    no mating features, says so in its docstring, and declares
+    `PRINTABLE = False`. A display model that stays one printed piece still gets
+    these entries; its combined entry declares `PRINTABLE = True` and is the
+    STL/check target.
+- **`PRINTABLE` is the static print-target contract.** It must be a literal
+  module-level boolean when present. Legacy `part_*` entries default to `True`;
+  a Tier 1 combined entry with no part entries also defaults to `True`. In a
+  split project the combined entry defaults to view-only, so set it `True` only
+  when that exact combined geometry is one physical print. `verify_project`
+  passes only the resulting print targets to `check_fit`, STL export,
+  `check_mesh` and `check_thickness`.
 - **A STEP output keeps its generator's basename and directory.** `--write`
   puts `<name>.step` next to `<name>.step.py`.
 

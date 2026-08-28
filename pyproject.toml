@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "autonomous-workshop"
 version = "0.6.0"
-description = "A request-driven toy workshop that routes each Wish to the right inventor"
+description = "Turn a Wish into a public Release of print-ready CAD and an in-box MANUAL.pdf"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"

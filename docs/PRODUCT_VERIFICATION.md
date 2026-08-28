@@ -1,5 +1,9 @@
 # Product verification
 
+> Current status: Spark and Forge do not emit `VERIFICATION.json`. Quest may
+> derive this optional projection from its passing Playtest, and frozen
+> historical Playtest runs retain their original contract.
+
 Autonomous Workshop has exactly two product-verification levels:
 
 1. **Digitally Verified**
@@ -9,10 +13,11 @@ These are verification levels for a one-off Wish. They are not prototype and
 mass-production tiers. Manufacture, shipment, and delivery are separate
 fulfillment statuses and never raise a verification level by themselves.
 
-Verification is an optional public projection, not a lifecycle gate. Existing
-Make and Playtest gates remain authoritative. A missing, malformed, or
-unwritable public verification record must not block Release, Factory
-publication, or Deliver; it means only that no public badge was recorded.
+Verification is an optional public projection, not a lifecycle gate. Where the
+retained protocol applies, Make, Playtest, and terminal Release gates remain
+authoritative. A missing,
+malformed, or unwritable public verification record must not block Release's
+required Factory publication; it means only that no public badge was recorded.
 
 ## Authority
 
@@ -80,8 +85,8 @@ proof may be attached later without rerunning or blocking the digital workflow.
 
 ## The public manifest
 
-As a best-effort post-Release enrichment, the host writes the canonical
-public-safe file at:
+As best-effort enrichment after validating Release's exact local inputs and
+public Factory receipt, the host writes the canonical public-safe file at:
 
 ```text
 artifacts/release/VERIFICATION.json

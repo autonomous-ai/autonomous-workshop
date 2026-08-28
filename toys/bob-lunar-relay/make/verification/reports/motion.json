@@ -1,0 +1,70 @@
+{
+  "assembly": "moon_relay.step.py",
+  "conditions": [
+    {
+      "id": "rocker-sweep-negative",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The left moon can descend through the declared half-cycle without striking the base or locked axle.",
+      "inputs": {
+        "moving_part": "moon_rocker",
+        "obstacle_parts": ["lunar_base", "quarter_turn_axle"],
+        "axis_point": [0, 0, 17.5],
+        "axis_direction": [0, 1, 0],
+        "start_deg": 0,
+        "end_deg": -8,
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.05}
+    },
+    {
+      "id": "rocker-sweep-positive",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The right moon can descend through the declared half-cycle without striking the base or locked axle.",
+      "inputs": {
+        "moving_part": "moon_rocker",
+        "obstacle_parts": ["lunar_base", "quarter_turn_axle"],
+        "axis_point": [0, 0, 17.5],
+        "axis_direction": [0, 1, 0],
+        "start_deg": 0,
+        "end_deg": 8,
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.05}
+    },
+    {
+      "id": "axle-quarter-turn-clear",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The external locking tab has room to rotate between locked and keyway-aligned poses.",
+      "inputs": {
+        "moving_part": "quarter_turn_axle",
+        "obstacle_parts": ["lunar_base", "moon_rocker"],
+        "axis_point": [0, 0, 17.5],
+        "axis_direction": [0, 1, 0],
+        "start_deg": 0,
+        "end_deg": 90,
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.05}
+    },
+    {
+      "id": "axle-locked-withdrawal-blocked",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "In the locked pose the vertical far tab must strike the far cheek before the axle can withdraw.",
+      "inputs": {
+        "moving_part": "quarter_turn_axle",
+        "obstacle_parts": ["lunar_base"],
+        "translation": [0, 10, 0],
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.05}
+    }
+  ]
+}

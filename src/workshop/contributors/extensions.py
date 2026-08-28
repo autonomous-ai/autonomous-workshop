@@ -46,6 +46,7 @@ _RESERVED_SKILL_NAMES = frozenset(
         "autonomous-workshop",
         "cad",
         "design-reference",
+        "electromechanical-integration",
         "image-to-cad",
         "step-parts",
     )
