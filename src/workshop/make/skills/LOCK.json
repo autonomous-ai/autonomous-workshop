@@ -3,28 +3,28 @@
   "schema_version": 1,
   "skills": {
     "cad": {
-      "sha256": "3ada7fb6f2cd89a3844e33de6c278c92b9224ec5958832470af60f710bd67d73",
-      "source_commit": "5d1e24a6dcdac2626ddef8f74b55130f20094cee",
+      "sha256": "e6ab234b9e0e5470613714d6b137e4fbe77a4ebc503e856b9d104c59eeb11cc3",
+      "source_commit": "4800bbe89c92366995960f73650e994e96e52756",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "design-reference": {
-      "sha256": "b393c74cb60e9a233057028c6adf56ae8c8f52818b52eb748db1310476ed5004",
-      "source_commit": "5d1e24a6dcdac2626ddef8f74b55130f20094cee",
+      "sha256": "4033358a4f9cd1721566b3513070a983e0cdc0069a1425a175436655f3f5a1fa",
+      "source_commit": "4800bbe89c92366995960f73650e994e96e52756",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "electromechanical-integration": {
-      "sha256": "08de4e16a3731624ac8728f26d04646a5f0c071d7fc68717d2ce8774949d2aa2",
-      "source_commit": "5d1e24a6dcdac2626ddef8f74b55130f20094cee",
+      "sha256": "414343a556a6f5eaddaee9da025aeab2c3e2785d7b0c9867e5a542ce8c72a5f5",
+      "source_commit": "4800bbe89c92366995960f73650e994e96e52756",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "image-to-cad": {
-      "sha256": "46031d63bed18a9abc6538d7a682ea0f7c0290ab286349e36a5ca71158852fd2",
-      "source_commit": "5d1e24a6dcdac2626ddef8f74b55130f20094cee",
+      "sha256": "6273d278ba0a49eab804fa0e21d9088a884a31ae6dbe558c009d8bc4098c9ee2",
+      "source_commit": "4800bbe89c92366995960f73650e994e96e52756",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "step-parts": {
       "sha256": "9d85f015c81b7f6afe3f2ee609d9eaa6e935325cb66be67916a8d7cc36bf3f4b",
-      "source_commit": "5d1e24a6dcdac2626ddef8f74b55130f20094cee",
+      "source_commit": "4800bbe89c92366995960f73650e994e96e52756",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     }
   }

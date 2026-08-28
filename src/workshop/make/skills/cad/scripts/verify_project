@@ -57,7 +57,6 @@ IMAGE_SCRIPTS_DIR = SCRIPTS_DIR.parents[1] / "image-to-cad" / "scripts"
 POWER_SCRIPTS_DIR = (
     SCRIPTS_DIR.parents[1] / "electromechanical-integration" / "scripts"
 )
-DESIGN_REFERENCE_SCRIPTS_DIR = SCRIPTS_DIR.parents[1] / "design-reference" / "scripts"
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
 DEFAULT_PREVIEW_TOLERANCE = 0.1
@@ -366,21 +365,18 @@ def _component_steps(project: Path) -> tuple[list[Path], list[Path]]:
     """Component STEP files, split into canonical and misplaced paths.
 
     Generated STEP artifacts have a sibling ``.step.py`` entry and are not
-    components. ``ref/external/`` belongs to design-reference. Every remaining
-    STEP is bought/foreign geometry and must live under ``ref/`` so the final
-    mount preflight cannot be bypassed by putting the supplier file in a
-    sibling ``catalog/`` directory and checking a hand-authored envelope.
+    components. Every remaining STEP is bought/foreign geometry and must live
+    under ``ref/`` so the final mount preflight cannot be bypassed by putting
+    the supplier file in a sibling ``catalog/`` directory and checking a
+    hand-authored envelope.
     """
     reference_dir = project / "ref"
-    external = reference_dir / "external"
     canonical: list[Path] = []
     misplaced: list[Path] = []
     for path in sorted(project.rglob("*")):
         if not path.is_file() or path.suffix.lower() not in {".step", ".stp"}:
             continue
         if "__cadgen__" in path.relative_to(project).parts:
-            continue
-        if external in path.parents:
             continue
         # ``part_body.step`` -> ``part_body.step.py``. A sibling source marks
         # a generated deliverable, not a fetched component.
@@ -717,31 +713,6 @@ def _final(
 ) -> int:
     entries = [assembly, *parts]
     entry_args = [_path_arg(path, runner.cwd) for path in entries]
-
-    external_refs = project / "ref" / "external"
-    if external_refs.is_dir():
-        design_ref_gate = DESIGN_REFERENCE_SCRIPTS_DIR / "design_refs.py"
-        if not design_ref_gate.is_file():
-            print(
-                f"verify_project: design-reference gate not found: {design_ref_gate}",
-                file=sys.stderr,
-            )
-            return 2
-        if not _run_or_stop(
-            runner,
-            [
-                sys.executable,
-                design_ref_gate,
-                "verify",
-                _path_arg(project, runner.cwd),
-            ],
-        ):
-            return 1
-    else:
-        runner.skipped(
-            "design_refs verify",
-            "no ref/external directory; no fetched design reference is declared",
-        )
 
     if not _run_or_stop(
         runner,

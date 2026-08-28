@@ -26,8 +26,9 @@ functional electrical load or moves under power:
    descriptions**: every visible component written out in words, before any
    decision about parts.
 5. **Size** — real-world dimensions in mm, with the scale anchor that produced them.
-6. **Decomposition** — printed parts, the standard elements sourced from a
-   catalog, then the feature tree inside each.
+6. **Decomposition and design selection** — printed parts, feature trees,
+   research logs, then one evidence-backed selected design for every applicable
+   exterior, mechanical, electrical, lighting and bought-device domain.
 7. **Per-feature detail + build123d operation** — one row per feature: geometry,
    numbers, the exact API call, the plane/selector it runs on, boolean order.
 8. **Powered system / mechanism** — the power boundary and electrical loads;
@@ -57,9 +58,9 @@ would edit to fix it.
 ## The loop
 
 ```
-triage image(s) → measure pixels → anchor the scale → build 3 views
-       ↑                                                    ↓
-       └──── revise ←── check ledger + self-critique ←── decompose → map to build123d
+triage → measure → scale → build 3 views → decompose → write research contracts
+   ↑                                                         ↓
+   └── revise ← self-critique ← map operations ← select design ← research + compare
 ```
 
 You close this loop before the user sees anything. The check step is Step 7.
@@ -71,7 +72,6 @@ repository checkout:
 
 ```bash
 IMAGE_TO_CAD_SKILL_ROOT="$(workshop skills path)/image-to-cad"
-DESIGN_REFERENCE_SKILL_ROOT="$(workshop skills path)/design-reference"
 STEP_PARTS_SKILL_ROOT="$(workshop skills path)/step-parts"
 CAD_SKILL_ROOT="$(workshop skills path)/cad"
 ```
@@ -202,8 +202,9 @@ a finding: it tells the next turn not to re-run the same search.
 reference is useful when the object is a mechanical/product form or when one
 feature's build123d construction family is uncertain. It is not useful as a
 substitute silhouette for a unique organic subject. Record the one or two
-form-and-feature queries worth running after decomposition; never search by
-product name alone and then copy the nearest-looking object.
+form-and-feature queries worth running after decomposition; research Internet
+sources for specifications and construction evidence, never search by product
+name alone and then copy the nearest-looking object.
 
 **G. Is any light functional?** A glowing region, coloured lens, beacon,
 headlamp, tail lamp, light strip, illuminated button or backlight is a powered
@@ -216,6 +217,30 @@ services on a confirmed catalog miss. If the lamp is removable, discovery must
 select the exact mating socket and contacts at the same time; a lamp MPN without
 its receiver is not a completed component choice. Every search outcome becomes
 provenance; a login wall is unavailable, not a miss.
+
+**H. Which design domains must this analysis select?** Inventory five domains:
+exterior construction, mechanical mechanism, electrical topology, lighting,
+and other bought devices. Mark inactive domains `N/A`; every active domain must
+end this `image-to-cad` turn with one selected design in spec section **6g**.
+
+Selection does not mean guessing early. A construction family directly forced
+by the visible form — for example a revolved body or a changing-section loft —
+may be selected from the image evidence. A mechanism, electrical topology,
+actuator, lamp/emitter, socket/contact system or other bought device follows a
+strict research-first order:
+
+1. write the functional, dimensional, packaging and evidence contract;
+2. research Internet and networked-catalog sources using that contract;
+3. extract applicable specifications, constraints, revisions and licenses;
+4. compare viable candidates and name meaningful rejections;
+5. select the design and exact component/interface only from the resulting
+   evidence.
+
+Do not select an exact MPN from appearance and then search for evidence that
+confirms it. The only exact part that may enter the analysis preselected is one
+the user explicitly requires; research still verifies its ratings, geometry
+and mating interfaces. Steps 2–4b produce the measured constraints needed by
+the contracts; Steps 5c–5e run the research, and Step 5f records the selection.
 
 ---
 
@@ -507,9 +532,14 @@ into the likeness renders.
 
 ---
 
-## Step 5 — Decompose
+## Step 5 — Decompose, research, and select the design
 
-Two levels, and **do not confuse them**:
+The order inside this step is load-bearing: 5a–5b expose the parts, features and
+interfaces; 5c–5e research the active domains; 5f selects the design. Do not
+fill an exact mechanism, electrical topology, lamp, actuator or bought-device
+choice into the selected-design row before its research log exists.
+
+Two decomposition levels, and **do not confuse them**:
 
 ### 5a. Printed parts — default to ONE
 
@@ -599,7 +629,26 @@ that row the seat has no gate at all — `validate`, `interfere`, `check_fit`,
 `check_motion` and `check_mesh` all pass a bracket whose screw holes were never
 drilled. `$cad`'s `references/bought-parts.md` carries the rest.
 
-### 5d. If anything is powered or driven, solve it before Step 6
+### 5d. Research mechanical, electrical and lighting systems before selecting them
+
+For every mechanical mechanism — driven, hand-operated, gravity-loaded or
+purely retaining — first write a selection contract: required input and output
+motion, travel or angle, direction, load/torque/force when known, speed/duty
+when relevant, available envelope, fixed datums, assembly and service path,
+print/process constraints, and the evidence needed to accept a candidate.
+Search the Internet for applicable mechanism families and cited
+implementations, and use `$design-reference` when a build123d construction
+analogy would help. Compare the viable archetypes the evidence returns; then
+select one and record why the nearest alternative was rejected. A hidden
+mechanism may be `[inferred]` or `[assumed]`, but it may not be unresearched.
+
+For every electrical load, actuator or lighting system, write its functional,
+electrical, optical and packaging contract before choosing a topology or MPN,
+then invoke `$electromechanical-integration` Phase A. That phase performs the
+Internet/catalog research and comparison; this spec records its selected
+topology, exact devices and rejected alternatives. User-mandated exact hardware
+is still researched for ratings, geometry, receiver/contact compatibility and
+service requirements before it is accepted into the design.
 
 A functional light needs spec section **8** even when nothing moves. Inventory
 the emitter/module, driver/control, visible lens/light-pipe/diffuser, source,
@@ -681,29 +730,48 @@ questions. Those need a print, not a gate.
 ### 5e. Search analogous designs — patterns, never dimensions
 
 When Step 1F found a real construction question, use `$design-reference` after
-the feature tree is known and before writing Step 6:
+the feature tree is known and before writing Step 6. Research current Internet
+sources with the form/feature/operation query. Prefer manufacturer/standard or
+official technical sources for numerical specifications, and licensed source
+CAD repositories for construction patterns. Record used, rejected, missed and
+unavailable results with stable URL, revision/commit, license, exact
+specification or constraint taken, relevant feature and construction lesson.
 
-```bash
-python "$DESIGN_REFERENCE_SKILL_ROOT/scripts/design_refs.py" search \
-    "<construction family> <defining feature> <operation cue>" --limit 5
-```
+Compare candidates against the research contract; do not prefer a result merely
+because it appeared first. The user's image/spec still owns every dimension,
+placement and silhouette that no authoritative product source fixes. Add each
+outcome-defining result to spec section **6d**. If the subject is an organic form
+for which analogous research cannot help, record
+`N/A — no applicable construction analogy` instead of forcing one.
 
-Select a result only when a named feature demonstrates a relevant construction
-pattern. Fetch it into the current project and add it to spec section **6d**.
-The user's image/spec still owns every dimension, placement and silhouette;
-catalog volume and area are validation facts for the upstream model, not a
-scale anchor. If nothing is relevant, record the query as `MISS`. If the
-subject is an organic form for which this sketch-and-extrude corpus cannot help,
-record `N/A — no applicable construction analogy` instead of forcing one.
+### 5f. Select and freeze the analysis design
 
-The current indexed source is licensed for **non-commercial research only**.
-Do not search or fetch its source for a commercial task. A reference that is
-used must retain its local `LICENSE.md` and `provenance.json`; run
-`design_refs.py verify <project-dir>` before handoff.
+After the research logs are complete, fill spec section **6g**. Write one row
+for each of these domains: exterior construction, mechanical mechanism,
+electrical topology, lighting, and other bought devices. Use `N/A` only for an
+inactive domain. Each active row contains:
+
+- the selection contract written before search;
+- the Internet research, specifications, constraints and evidence used;
+- the viable candidates compared;
+- the selected design, including exact MPN/interface when the domain buys one;
+- the nearest rejected alternative and the rejection reason;
+- any assumption that remains after research.
+
+This is the design decision, not a suggestion list for the CAD turn. By handoff,
+CAD must be able to implement the selected construction, mechanism, topology
+and devices without choosing among alternatives. If research cannot support a
+selection, leave the spec incomplete and put the unresolved decision in Open
+questions; do not hide it behind a generic motor, lamp, box or mechanism.
 
 ---
 
 ## Step 6 — Map every feature to a build123d operation
+
+Implement the selected design from section 6g. Do not silently replace its
+mechanism, electrical topology, lamp/interface or bought device while mapping
+features. If a Step 6 operation exposes a contradiction, return to the relevant
+research contract, revise the selection and update 6g before continuing.
 
 For each feature in the tree, give a row with **six** columns. The whole point
 of this section is that `cad` never has to invent an approach:
@@ -960,7 +1028,8 @@ The spec maps onto `cad` one-to-one:
 | Catalog search log (5c / spec 6c) | `cad` skips its own `$step-parts` pass for every row already decided here, and imports each catalog hit with `cadgen.step_scene.import_step` |
 | Mount declarations (5c / spec 6e) | `measure/mounts.json` for `scripts/check_mount`, including the exact component path and `sha256` copied from 6c; the seat and bolt pattern `cad` derives from each component's own STEP with `scripts/cadmount.py` rather than typing them |
 | Removable-light interfaces (5d / spec 6f) | schema 3 `measure/power.json`, the purchased socket seat or `cadfits`-derived printed receiver, five linked conditions in `measure/motion.json`, and the physical fit-coupon status |
-| Design-reference log (5e / spec 6d) | reference-only construction evidence; `cad` may reuse the named idiom but does not import or execute the fetched excerpt |
+| Design-reference log (5e / spec 6d) | URL-cited construction evidence only; `cad` may reuse the named idiom but does not import or execute external reference code or geometry |
+| Analysis design selection (5f / spec 6g) | the construction family, mechanism, electrical topology, lighting strategy and exact bought-device choices that `cad` implements; CAD does not reopen candidate selection |
 | Feature table (Step 6), in order | the body of `gen_step()` |
 | Mechanism (spec 8) | the kinematic parameters and the feasibility `assert` in `<name>_lib.py`, and `measure/motion.json` for `scripts/check_motion` |
 | Approved spec versus repaired source | `measure/check_spec.py`; every CAD repair that changes a parameter, landmark, part count, or construction family is reconciled back into the spec |
@@ -1002,9 +1071,10 @@ Load only when the trigger applies:
   per-region colour. **Load when the subject is an animal, figure, hull, or
   any body whose section changes along a curved spine** — that is a large
   fraction of what people photograph.
-- `$design-reference` — analogous parametric designs and cited build123d
-  excerpts. **Load when Step 1F identifies a mechanical/product construction
-  question; do not load it for bought components or as a source of scale.**
+- `$design-reference` — Internet research for analogous construction patterns
+  and authoritative design specifications. **Load when Step 1F identifies a
+  mechanical/product construction question; do not load it for bought
+  component geometry or treat an analogy as a source of scale.**
 - `$electromechanical-integration` and its
   `references/lighting-discovery.md` — automatic GitHub, catalog and public-CAD
   discovery; authoritative electrical/optical evidence; power paths and CAD
@@ -1046,7 +1116,13 @@ Load only when the trigger applies:
   look identical in the finished model. Section 6c is what tells them apart.
 - **Never let an analogous design override the user's evidence.** Section 6d
   may supply a construction idiom, never dimensions, scale, placement, or a
-  substitute silhouette. Every fetched result retains provenance and license.
+  substitute silhouette. Every used result records its Internet URL, revision
+  and license; do not download it into a local design-reference store.
+- **Analysis owns the design selection.** Section 6g selects every active
+  exterior, mechanical, electrical, lighting and bought-device domain before
+  CAD handoff. A mechanism, topology, lamp, actuator, socket/contact set or
+  other bought device is selected only after its research contract, searches
+  and candidate comparison are recorded.
 - **A driven mechanism is specified, never implied.** If a part moves under a
   band, spring, motor or gravity, section 8 names the archetype, fixes the link
   lengths, and carries a feasibility `assert`. Every deterministic gate in the
@@ -1100,6 +1176,9 @@ Load only when the trigger applies:
    catalog hit used, hit rejected with the reason, search missed, or service
    unavailable. Say "no standard or powered elements" only if Steps 1E and 1G
    found none. Silence here reads as "never looked".
-7. **Design references** — ids used with the named construction lesson, the
-   recorded query miss, or `N/A` with the reason.
-8. **Next step** — the `cad` handoff line.
+7. **Design references** — Internet URLs/revisions used with the exact sourced
+   specification or construction lesson, recorded misses, or `N/A` with the
+   reason.
+8. **Selected design** — one line per active 6g domain, with the evidence-backed
+   choice and nearest rejected alternative.
+9. **Next step** — the `cad` handoff line.

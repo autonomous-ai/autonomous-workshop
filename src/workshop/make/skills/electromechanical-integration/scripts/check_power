@@ -14,14 +14,13 @@ from typing import Any
 
 
 # ``ref/`` is where a fetched component STEP is checksum-pinned, declared in
-# measure/mounts.json, and seen by the final mount preflight; ``ref/external/``
-# is the design-reference skill's namespace and holds no component.  A supplier
-# file parked anywhere else is invisible to all three at once, and the manifest
-# can then name the supplier part while the seat is measured against a
-# hand-authored envelope -- the exact substitution the mount gates exist to
-# refuse, passing because nothing ever compared the two.
+# measure/mounts.json, and seen by the final mount preflight. A supplier file
+# parked anywhere else is invisible to all three at once, and the manifest can
+# then name the supplier part while the seat is measured against a hand-authored
+# envelope -- the exact substitution the mount gates exist to refuse, passing
+# because nothing ever compared the two.
 def _outside_ref(path: Path) -> bool:
-    return path.parts[:1] != ("ref",) or path.parts[:2] == ("ref", "external")
+    return path.parts[:1] != ("ref",)
 
 
 ROLES = {
@@ -323,7 +322,7 @@ def validate_manifest(
                                 f"{local_file!r}: a component STEP kept elsewhere is "
                                 "invisible to the mount preflight and to its checksum, "
                                 "so the seat gets measured against whatever is in ref/ "
-                                "instead (ref/external/ belongs to design-reference)"
+                                "instead"
                             )
                         elif project_dir is not None and not (
                             project_dir / local_path
@@ -437,7 +436,7 @@ def validate_manifest(
                     elif _outside_ref(source_path):
                         errors.append(
                             f"component {component_id}: cad.source must be under ref/, "
-                            f"not {source!r}; ref/external/ belongs to design-reference"
+                            f"not {source!r}"
                         )
                     elif project_dir is not None and not (
                         project_dir / source_path
@@ -1617,12 +1616,6 @@ def self_check() -> None:
     assert any("local_file must be under ref/" in error
                for error in _lighting_errors(bad_lighting)), (
         "self-check failed to reject a component STEP parked outside ref/"
-    )
-    bad_lighting = copy.deepcopy(lighting_manifest)
-    bad_lighting["component_search"][0]["local_file"] = "ref/external/example-led-red.step"
-    assert any("local_file must be under ref/" in error
-               for error in _lighting_errors(bad_lighting)), (
-        "self-check failed to reject a component STEP in design-reference's namespace"
     )
     bad_lighting = copy.deepcopy(lighting_manifest)
     for component in bad_lighting["components"]:

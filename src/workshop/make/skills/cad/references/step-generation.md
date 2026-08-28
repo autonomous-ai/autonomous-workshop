@@ -78,8 +78,7 @@ Replace `--unpowered` with `--powered` in the image-derived command when the
 product has a functional electrical load. For a non-image final command, add
 `--powered` when applicable.
 
-`verify_project` runs `check_layout`, verifies fetched design-reference
-provenance, performs one final multi-target generation,
+`verify_project` runs `check_layout`, performs one final multi-target generation,
 `check_fit`, the local `measure/check_{fit,spec,landmarks}.py` hooks that exist,
 `check_mount`, `check_power` and `check_motion` when their manifests exist, then one batched
 refs/validate/interfere pass. With `--exports`, it exports each printable STL,
