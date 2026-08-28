@@ -1,12 +1,15 @@
 # Horn Tip
 
+![Horn Tip](../../docs/images/horn-tip.jpg)
+
 A tiny one-piece crescent desk rocker. Press a rounded horn with a fingertip and it tips, then gravity walks it back to rest on its outer curve.
 
 [View the verified public product page](https://www.autonomous.ai/factory/product/horn-tip)
 
 This snapshot is a Spark effort (`Wish -> Make -> Release`) produced by the
-experimental Grok Build Manager. Pico Press was selected during Make. Playtest
-was not run; Release records that omission explicitly.
+experimental Grok Build Manager. [Pico Press](../../inventors/pico-press/) was
+selected during Make. Playtest was not run; Release records that omission
+explicitly.
 
 | Frozen on this run | Value |
 |---|---|
@@ -14,7 +17,7 @@ was not run; Release records that omission explicitly.
 | Native CLI | `grok` 1.0.5 (`5115b46bc909`) |
 | Model | `grok-4.6` |
 | Effort | Spark (`--effort spark`) |
-| Inventor | Pico Press |
+| Inventor | [Pico Press](../../inventors/pico-press/) |
 | Factory | https://www.autonomous.ai/factory/product/horn-tip |
 
 ## Workflow
@@ -24,7 +27,7 @@ Spark: `Wish -> Make -> Release`. Inventor selection is folded into Make.
 | Stage | Attempts | Outcome |
 |---|---|---|
 | Wish | host | frozen |
-| Match | 1 | accepted (Pico Press) |
+| Match | 1 | accepted ([Pico Press](../../inventors/pico-press/)) |
 | Invent | skipped | Spark pass-through |
 | Make | 1 | accepted |
 | Playtest | not run | Spark omission |
