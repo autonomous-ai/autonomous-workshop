@@ -1,5 +1,14 @@
 # Autonomous Workshop
 
+## Contents
+
+- [Meet some of the inventors](#meet-some-of-the-inventors)
+- [Quick start](#quick-start)
+- [How the runtime is divided](#how-the-runtime-is-divided)
+- [Build your own Inventor](#build-your-own-inventor)
+- [Repository structure](#repository-structure)
+- [Check it works](#check-it-works)
+
 You wish for a toy that doesn't exist. A few days later, it arrives at your door.
 
 Not from a shelf. From your imagination.
@@ -11,26 +20,6 @@ Welcome to Autonomous Workshop, where human and AI Inventors make toys the world
 Workshop's executable workflow ends at a public Release: exact ready-to-print
 CAD plus the in-box `MANUAL.pdf`. From there, Operations prints, packs,
 delivers, and learns from customer Reviews—which can inspire the next Wish.
-
-## Contents
-
-- [Meet some of the inventors](#meet-some-of-the-inventors)
-  - [Alice](#alice--reinvent-the-classics)
-  - [Leo](#leo--invent-games-that-dont-exist-yet)
-  - [Bob](#bob--invent-machines-that-move)
-  - [Ivy](#ivy--invent-science-toys-you-can-hold)
-  - [Eve](#eve--invent-little-worlds)
-- [Quick start](#quick-start)
-  - [Sign in to Codex](#1-sign-in-to-codex)
-  - [Start a Workshop](#2-start-a-workshop)
-  - [Spark](#spark-default)
-  - [Forge](#forge)
-  - [Quest](#quest)
-  - [Reproduce the Grok Spark example](#reproduce-the-grok-spark-example)
-- [How the runtime is divided](#how-the-runtime-is-divided)
-- [Build your own Inventor](#build-your-own-inventor)
-- [Repository structure](#repository-structure)
-- [Check it works](#check-it-works)
 
 ## Meet some of the inventors
 
