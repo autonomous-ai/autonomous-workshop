@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import hashlib
+import io
 import json
 import math
 import os
@@ -79,6 +80,7 @@ MAX_OUTCOME_BYTES = 128 * 1024
 MAX_CONTRACT_BYTES = 16 * 1024 * 1024
 MAX_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
 MAX_RELEASE_MANUAL_BYTES = 16 * 1024 * 1024
+MAX_MANUAL_DESIGN_EVIDENCE_BYTES = 64 * 1024
 MAX_RELEASE_PDF_VALIDATOR_OUTPUT_BYTES = 4 * 1024
 RELEASE_PDF_VALIDATION_TIMEOUT_SECONDS = 15
 MAX_FILE_BYTES = 95 * 1024 * 1024
@@ -163,6 +165,11 @@ INVENTOR_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 PRODUCT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 CHECK_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
+MANUAL_DESIGN_EVIDENCE_PATH = "MANUAL-DESIGN.json"
+MANUAL_DESIGN_EVIDENCE_KIND = "autonomous-workshop.manual-design-evidence"
+MANUAL_VISUAL_SUFFIXES = frozenset(
+    (".3mf", ".glb", ".jpeg", ".jpg", ".obj", ".png", ".step", ".stl", ".svg", ".webp")
+)
 
 FORBIDDEN_RELEASE_MEDIA_SUFFIXES = frozenset(
     (
@@ -1724,6 +1731,282 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
     return validated
 
 
+def _manual_design_text_list(
+    value: Any,
+    label: str,
+    *,
+    minimum_items: int,
+    maximum_items: int,
+    minimum_length: int = 2,
+    maximum_length: int = 500,
+) -> list[str]:
+    items = _array(value, label, nonempty=True)
+    if not minimum_items <= len(items) <= maximum_items:
+        raise ProposalError("%s has an invalid item count" % label)
+    result = [
+        _release_page_text(item, "%s item" % label, maximum_length)
+        for item in items
+    ]
+    if any(len(item) < minimum_length for item in result):
+        raise ProposalError("%s items are not substantive" % label)
+    if len({item.casefold() for item in result}) != len(result):
+        raise ProposalError("%s must not contain duplicates" % label)
+    return result
+
+
+def _pdf_object(value: Any) -> Any:
+    return value.get_object() if hasattr(value, "get_object") else value
+
+
+def _manual_font_is_embedded(raw_font: Any) -> bool:
+    font = _pdf_object(raw_font)
+    if not isinstance(font, Mapping):
+        return False
+    if str(font.get("/Subtype")) == "/Type3":
+        return True
+    if str(font.get("/Subtype")) == "/Type0":
+        descendants = _pdf_object(font.get("/DescendantFonts"))
+        return (
+            isinstance(descendants, Sequence)
+            and bool(descendants)
+            and all(_manual_font_is_embedded(item) for item in descendants)
+        )
+    descriptor = _pdf_object(font.get("/FontDescriptor"))
+    return isinstance(descriptor, Mapping) and any(
+        descriptor.get(name) is not None
+        for name in ("/FontFile", "/FontFile2", "/FontFile3")
+    )
+
+
+def _manual_pages_and_embedded_fonts(manual: bytes) -> int:
+    try:
+        from pypdf import PdfReader
+
+        pages = list(PdfReader(io.BytesIO(manual), strict=True).pages)
+    except Exception as exc:
+        raise ProposalError(
+            "Release MANUAL.pdf cannot be inspected for design evidence"
+        ) from exc
+    missing = set()
+    observed = 0
+    visited: set[int] = set()
+
+    def inspect_resources(raw_resources: Any) -> None:
+        nonlocal observed
+        resources = _pdf_object(raw_resources)
+        if not isinstance(resources, Mapping) or id(resources) in visited:
+            return
+        visited.add(id(resources))
+        fonts = _pdf_object(resources.get("/Font"))
+        if isinstance(fonts, Mapping):
+            for resource_name, raw_font in fonts.items():
+                observed += 1
+                font = _pdf_object(raw_font)
+                if not _manual_font_is_embedded(font):
+                    missing.add(
+                        str(font.get("/BaseFont"))
+                        if isinstance(font, Mapping)
+                        else str(resource_name)
+                    )
+        xobjects = _pdf_object(resources.get("/XObject"))
+        if isinstance(xobjects, Mapping):
+            for raw_xobject in xobjects.values():
+                xobject = _pdf_object(raw_xobject)
+                if isinstance(xobject, Mapping):
+                    inspect_resources(xobject.get("/Resources"))
+
+    for page in pages:
+        inspect_resources(page.get("/Resources"))
+    if not pages or observed < 1:
+        raise ProposalError("Release MANUAL.pdf has no inspectable fonts")
+    if missing:
+        raise ProposalError(
+            "Release MANUAL.pdf must embed every used font: %s"
+            % ", ".join(sorted(missing))
+        )
+    return len(pages)
+
+
+def _manual_design_required(inputs: Mapping[str, Any]) -> bool:
+    release_contract = inputs.get("release_contract")
+    if release_contract is None:
+        return False
+    contract = _mapping(release_contract, "Release protocol")
+    path = contract.get("manual_design_evidence_path")
+    version = contract.get("manual_design_evidence_schema_version")
+    if path is None and version is None:
+        return False
+    if path != MANUAL_DESIGN_EVIDENCE_PATH or version != 1:
+        raise ProposalError("Release manual design evidence protocol is invalid")
+    return True
+
+
+def _validate_manual_design_evidence(
+    run_root: Path,
+    *,
+    package_root_value: str,
+    inventory: Mapping[str, Mapping[str, Any]],
+    manual: bytes,
+    made: Mapping[str, Any],
+    required: bool,
+) -> None:
+    if not required:
+        return
+    entry = inventory.get(MANUAL_DESIGN_EVIDENCE_PATH)
+    if entry is None:
+        raise ProposalError("Release package lacks MANUAL-DESIGN.json")
+    document, content, _ = _read_json(
+        run_root,
+        "%s/%s" % (package_root_value, MANUAL_DESIGN_EVIDENCE_PATH),
+        "Release MANUAL-DESIGN.json",
+        maximum=MAX_MANUAL_DESIGN_EVIDENCE_BYTES,
+    )
+    if content != canonical_json(document):
+        raise ProposalError("Release MANUAL-DESIGN.json must use canonical JSON")
+    if hashlib.sha256(content).hexdigest() != entry["sha256"]:
+        raise ProposalError("Release MANUAL-DESIGN.json changed after package hashing")
+    evidence = _fields(
+        document,
+        {
+            "schema_version",
+            "kind",
+            "manual_sha256",
+            "design_mode",
+            "creative_brief",
+            "product_visuals",
+            "review",
+        },
+        "Release manual design evidence",
+    )
+    if (
+        evidence["schema_version"] != 1
+        or evidence["kind"] != MANUAL_DESIGN_EVIDENCE_KIND
+        or evidence["design_mode"] != "bespoke"
+        or _sha256(evidence["manual_sha256"], "Release manual sha256")
+        != hashlib.sha256(manual).hexdigest()
+    ):
+        raise ProposalError("Release manual design evidence identity is invalid")
+    brief = _fields(
+        evidence["creative_brief"],
+        {
+            "emotional_promise",
+            "physical_format",
+            "format_rationale",
+            "visual_motif",
+            "palette",
+            "typography",
+            "teaching_arc",
+        },
+        "Release manual creative brief",
+    )
+    for field, minimum, maximum in (
+        ("emotional_promise", 20, 500),
+        ("physical_format", 3, 200),
+        ("format_rationale", 20, 1_000),
+        ("visual_motif", 20, 500),
+    ):
+        value = _release_page_text(
+            brief[field], "Release manual creative brief %s" % field, maximum
+        )
+        if len(value) < minimum:
+            raise ProposalError("Release manual creative brief is not substantive")
+    _manual_design_text_list(
+        brief["palette"], "Release manual palette", minimum_items=3, maximum_items=8
+    )
+    _manual_design_text_list(
+        brief["typography"],
+        "Release manual typography",
+        minimum_items=2,
+        maximum_items=6,
+    )
+    _manual_design_text_list(
+        brief["teaching_arc"],
+        "Release manual teaching arc",
+        minimum_items=3,
+        maximum_items=12,
+        minimum_length=8,
+    )
+    page_count = _manual_pages_and_embedded_fonts(manual)
+    visuals = _array(
+        evidence["product_visuals"], "Release manual product visuals", nonempty=True
+    )
+    made_entries = {
+        item["path"]: item for item in made["product_manifest"]["entries"]
+    }
+    covered = set()
+    seen = set()
+    for raw_visual in visuals:
+        visual = _fields(
+            raw_visual,
+            {"source_path", "source_sha256", "pages"},
+            "Release manual product visual",
+        )
+        source = visual["source_path"]
+        pure = PurePosixPath(source) if isinstance(source, str) else PurePosixPath(".")
+        made_entry = made_entries.get(source)
+        if (
+            not isinstance(source, str)
+            or pure.is_absolute()
+            or ".." in pure.parts
+            or pure.as_posix() != source
+            or pure.suffix.casefold() not in MANUAL_VISUAL_SUFFIXES
+            or made_entry is None
+            or visual["source_sha256"] != made_entry["sha256"]
+            or source in seen
+        ):
+            raise ProposalError("Release manual visual differs from sealed Made bytes")
+        pages = _array(visual["pages"], "Release manual visual pages", nonempty=True)
+        if (
+            any(type(page) is not int or not 1 <= page <= page_count for page in pages)
+            or pages != sorted(set(pages))
+        ):
+            raise ProposalError("Release manual visual page references are invalid")
+        seen.add(source)
+        covered.update(pages)
+    if 1 not in covered:
+        raise ProposalError("Release manual cover must use an exact product visual")
+    review = _fields(
+        evidence["review"],
+        {
+            "page_count",
+            "color_pages",
+            "grayscale_pages",
+            "first_time_owner_pass",
+            "independent_reviewer",
+            "findings",
+            "resolved_changes",
+            "status",
+        },
+        "Release manual review",
+    )
+    expected_pages = list(range(1, page_count + 1))
+    if (
+        review["page_count"] != page_count
+        or review["color_pages"] != expected_pages
+        or review["grayscale_pages"] != expected_pages
+        or review["first_time_owner_pass"] is not True
+        or review["independent_reviewer"] != "native-subagent"
+        or review["status"] != "approved"
+    ):
+        raise ProposalError("Release manual review is incomplete")
+    _manual_design_text_list(
+        review["findings"],
+        "Release manual review findings",
+        minimum_items=1,
+        maximum_items=20,
+        minimum_length=8,
+        maximum_length=1_000,
+    )
+    _manual_design_text_list(
+        review["resolved_changes"],
+        "Release manual resolved changes",
+        minimum_items=1,
+        maximum_items=20,
+        minimum_length=8,
+        maximum_length=1_000,
+    )
+
+
 def _playtest_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -1844,6 +2127,7 @@ def _playtested_release_contract(
     inputs = _required_fields(
         stage["inputs"], {"made", "playtested"}, "Release STAGE inputs"
     )
+    manual_design_required = _manual_design_required(inputs)
     made = _validate_made(inputs["made"])
     playtested = _validate_playtested(inputs["playtested"], made)
     round_index = stage["round"]
@@ -1857,7 +2141,10 @@ def _playtested_release_contract(
         raise ProposalError("Release package root must be %s" % expected_root)
     manifest = _tree_manifest(run_root, package_root_value, "Release package tree")
     inventory = {entry["path"]: entry for entry in manifest["entries"]}
-    for required in ("MANUAL.pdf", "product.json"):
+    required_files = ["MANUAL.pdf", "product.json"]
+    if manual_design_required:
+        required_files.append(MANUAL_DESIGN_EVIDENCE_PATH)
+    for required in required_files:
         if required not in inventory:
             raise ProposalError("Release package manifest lacks %s" % required)
     forbidden_media = sorted(
@@ -1880,6 +2167,14 @@ def _playtested_release_contract(
     if hashlib.sha256(manual).hexdigest() != inventory["MANUAL.pdf"]["sha256"]:
         raise ProposalError("Release MANUAL.pdf changed after package hashing")
     _validate_pdf_manual(manual)
+    _validate_manual_design_evidence(
+        run_root,
+        package_root_value=package_root_value,
+        inventory=inventory,
+        manual=manual,
+        made=made,
+        required=manual_design_required,
+    )
 
     product: dict[str, Any] | None = None
     product_bytes: bytes | None = None
@@ -1952,6 +2247,7 @@ def _direct_release_contract(
     package_root_value: str,
 ) -> dict[str, Any]:
     inputs = _required_fields(stage["inputs"], {"made"}, "Release STAGE inputs")
+    manual_design_required = _manual_design_required(inputs)
     made = _validate_made(inputs["made"])
     round_index = stage["round"]
     if made["round"] != round_index:
@@ -1962,7 +2258,10 @@ def _direct_release_contract(
         raise ProposalError("Release package root must be %s" % expected_root)
     manifest = _tree_manifest(run_root, package_root_value, "Release package tree")
     inventory = {entry["path"]: entry for entry in manifest["entries"]}
-    for required in ("MANUAL.pdf", "product.json", PLAYTEST_OMISSION_PATH):
+    required_files = ["MANUAL.pdf", "product.json", PLAYTEST_OMISSION_PATH]
+    if manual_design_required:
+        required_files.append(MANUAL_DESIGN_EVIDENCE_PATH)
+    for required in required_files:
         if required not in inventory:
             raise ProposalError("Release package manifest lacks %s" % required)
     forbidden_media = sorted(
@@ -1985,6 +2284,14 @@ def _direct_release_contract(
     if hashlib.sha256(manual).hexdigest() != inventory["MANUAL.pdf"]["sha256"]:
         raise ProposalError("Release MANUAL.pdf changed after package hashing")
     _validate_pdf_manual(manual)
+    _validate_manual_design_evidence(
+        run_root,
+        package_root_value=package_root_value,
+        inventory=inventory,
+        manual=manual,
+        made=made,
+        required=manual_design_required,
+    )
 
     omission, _ = _read_regular(
         run_root,

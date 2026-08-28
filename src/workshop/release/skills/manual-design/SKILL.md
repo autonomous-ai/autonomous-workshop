@@ -13,9 +13,16 @@ play experience without a website, phone, QR code, or prior explanation.
 
 - Inspect the Wish, selected Taste, sealed product facts, exact geometry,
   component inventory, and passing Playtest findings before designing.
+- Before laying out pages, commit to a short creative brief: the emotional
+  promise, physical format and rationale, product-specific visual motif,
+  palette, typography, and teaching arc. Use it to make the manual feel like
+  part of this toy rather than documentation wrapped around it.
 - Depict only included parts and supported interactions. Prefer renders,
   silhouettes, exploded views, and diagrams derived from the exact product
   artifacts; do not invent geometry or imply unverified physical performance.
+- Put an exact product-derived visual on the cover. A title over empty space,
+  ASCII art, or an unstyled technical-report/manpage fallback is not an
+  acceptable substitute for art direction.
 - Choose the physical format to suit the toy and box: a card, foldout, leaflet,
   or booklet may each be right. Decide page size, orientation, page count,
   binding, margins, and bleed deliberately instead of defaulting every toy to
@@ -61,6 +68,10 @@ essential step or rule.
   text rather than outlining it when the authoring method permits.
 - Embed every font and asset needed to render the PDF. The final file must not
   depend on local paths, remote images, active scripts, or external resources.
+- Treat a missing creative dependency as a design problem to solve with
+  available vector drawing, CAD renders, or bundled fonts. Do not silently
+  fall back to stock Times, an operating-system fallback font, or a generic
+  word-processor layout.
 
 ## Inspect the artifact, not just its source
 
@@ -77,3 +88,16 @@ reference, as applicable. Revise the source and repeat both visual inspections
 until the result is clear, complete, accurate, and excellent. Save the final
 self-contained customer file as `MANUAL.pdf`; editable sources may accompany it
 but do not replace it.
+
+After the first complete render, ask an independent native visual-editor
+subagent to inspect the exact color and grayscale pages without coaching it
+toward a desired verdict. Resolve at least one concrete finding, rerender every
+page, and perform the first-time-owner pass again. The root Manager owns the
+final decision.
+
+When `STAGE.json` names `MANUAL-DESIGN.json` as required Release evidence, read
+`.agents/skills/autonomous-workshop/references/manual-design-evidence-v1.md` and
+write that canonical file beside `MANUAL.pdf`. Bind the exact final PDF hash,
+the creative brief, exact Made visual sources, every reviewed color and
+grayscale page, the independent finding, and the resolved revision. This is a
+workflow proof, not a beauty score; never claim a review that did not occur.

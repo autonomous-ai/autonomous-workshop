@@ -68,6 +68,11 @@ FACTORY_RELEASE_PAGE_PATH = "workshop-release-page.json"
 FACTORY_RELEASE_LEGACY_MANUAL_PATH = "MANUAL.md"
 FACTORY_RELEASE_MANUAL_PATH = FACTORY_RELEASE_LEGACY_MANUAL_PATH
 FACTORY_RELEASE_PDF_MANUAL_PATH = "MANUAL.pdf"
+# Factory preserves the Release filename inside the imported ZIP, but its
+# immutable project CDN normalizes the PDF object name to lowercase. Keep the
+# two names explicit: the former is part of Workshop's sealed Release
+# contract, while the latter is the authenticated server readback contract.
+FACTORY_PROJECT_PDF_MANUAL_FILENAME = "manual.pdf"
 FACTORY_RELEASE_MANUAL_PATHS = frozenset(
     (FACTORY_RELEASE_LEGACY_MANUAL_PATH, FACTORY_RELEASE_PDF_MANUAL_PATH)
 )
@@ -217,7 +222,7 @@ def _factory_project_file_url(project_url: Any, path: str) -> str:
         (
             "https",
             DEFAULT_FACTORY_PROJECT_CDN_HOST,
-            parsed.path + FACTORY_RELEASE_PDF_MANUAL_PATH,
+            parsed.path + FACTORY_PROJECT_PDF_MANUAL_FILENAME,
             "",
             "",
         )

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-labelledby="title description">
+  <title id="title">Quest effort route: Wish to Invent to Make to Playtest to Release</title>
+  <desc id="description">Quest is the fullest Autonomous Workshop route. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Invent, followed by Make and Playtest. Release requires passing Playtest evidence bound to the current Made revision, verifies the CAD and manual, publishes with public hash readback, and hands the product to Operations.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/></filter>
+    <marker id="arrow" viewBox="0 0 12 12" markerWidth="18" markerHeight="18" refX="11" refY="6" orient="auto" markerUnits="userSpaceOnUse" overflow="visible"><polygon points="0,0 12,6 0,12" fill="#525b66"/></marker>
+    <style>
+      .title { font: 700 34px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #17202a; }
+      .subtitle { font: 400 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #626b76; }
+      .eyebrow { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1.5px; fill: #747c85; }
+      .heading { font: 700 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #17202a; }
+      .body { font: 400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #515a65; }
+      .small { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #626b76; }
+      .route { fill: none; stroke: #525b66; stroke-width: 3; marker-end: url(#arrow); }
+      .repair { fill: none; stroke: #d97706; stroke-width: 2.5; stroke-dasharray: 7 5; marker-end: url(#arrow); }
+      .node { fill: #ffffff; stroke: #d7d3cc; stroke-width: 2; }
+      .manager { fill: #f0f5f4; stroke: #56847c; stroke-width: 2; }
+      .active { fill: #fff8ec; stroke: #e8a548; stroke-width: 2.5; }
+      .proof { fill: #eef8ff; stroke: #67aee0; stroke-width: 2; }
+      .ops { fill: #f4f0ff; stroke: #8b6fc0; stroke-width: 2.5; }
+      .orange { fill: #a85e05; }
+      .blue { fill: #11689f; }
+      .purple { fill: #604092; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="820" rx="28" fill="#f5f2ec"/>
+  <text x="55" y="64" class="eyebrow orange">QUEST · FULLEST ROUTE</text>
+  <text x="55" y="108" class="title">Explore, engineer, and prove the experience.</text>
+  <text x="55" y="139" class="subtitle">Quest adds a real Playtest gate. Failure returns to Make or Invent; Release must bind passing evidence.</text>
+
+  <g filter="url(#shadow)"><rect x="55" y="185" width="1090" height="68" rx="18" class="manager"/></g>
+  <text x="83" y="212" class="eyebrow" fill="#376b61">WORKSHOP MANAGER</text>
+  <text x="83" y="237" class="body">The host freezes Quest and owns gates + publication; each active attempt gets one Codex Goal.</text>
+
+  <path class="route" d="M 175 355 H 210"/>
+  <path class="route" d="M 390 355 H 425"/>
+  <path class="route" d="M 605 355 H 640"/>
+  <path class="route" d="M 820 355 H 855"/>
+  <path class="route" d="M 1035 355 H 1070"/>
+
+  <g filter="url(#shadow)"><rect x="55" y="300" width="120" height="110" rx="20" class="node"/></g>
+  <text x="76" y="330" class="eyebrow">IMAGINE</text>
+  <text x="76" y="363" class="heading">WISH</text>
+  <text x="76" y="389" class="body">Exact words.</text>
+
+  <g filter="url(#shadow)"><rect x="210" y="285" width="180" height="150" rx="20" class="active"/></g>
+  <text x="233" y="315" class="eyebrow orange">CODEX GOAL · INVENT</text>
+  <text x="233" y="349" class="heading">INVENT</text>
+  <text x="233" y="376" class="body">Choose Inventor.</text>
+  <text x="233" y="398" class="body">Research + explore.</text>
+  <text x="233" y="420" class="body">Verify concept.</text>
+
+  <g filter="url(#shadow)"><rect x="425" y="285" width="180" height="150" rx="20" class="active"/></g>
+  <text x="448" y="315" class="eyebrow orange">CODEX GOAL · MAKE</text>
+  <text x="448" y="349" class="heading">MAKE</text>
+  <text x="448" y="376" class="body">Build exact CAD.</text>
+  <text x="448" y="398" class="body">Inspect + improve.</text>
+  <text x="448" y="420" class="body">Pass Make gate.</text>
+
+  <g filter="url(#shadow)"><rect x="640" y="285" width="180" height="150" rx="20" class="active"/></g>
+  <text x="663" y="315" class="eyebrow orange">CODEX GOAL · PLAYTEST</text>
+  <text x="663" y="349" class="heading">PLAYTEST</text>
+  <text x="663" y="376" class="body">Test exact build.</text>
+  <text x="663" y="398" class="body">Record evidence.</text>
+  <text x="663" y="420" class="body">Repair failures.</text>
+
+  <g filter="url(#shadow)"><rect x="855" y="285" width="180" height="150" rx="20" class="active"/></g>
+  <text x="878" y="315" class="eyebrow orange">CODEX GOAL · RELEASE</text>
+  <text x="878" y="349" class="heading">RELEASE</text>
+  <text x="878" y="376" class="body">Seal CAD + manual.</text>
+  <text x="878" y="398" class="body">Bind passing proof.</text>
+  <text x="878" y="420" class="body">Read back hashes.</text>
+
+  <g filter="url(#shadow)"><rect x="1070" y="300" width="75" height="110" rx="20" class="ops"/></g>
+  <text x="1108" y="332" text-anchor="middle" class="eyebrow purple">OPS</text>
+  <text x="1108" y="365" text-anchor="middle" class="heading">→</text>
+  <text x="1108" y="391" text-anchor="middle" class="body">Print</text>
+
+  <path class="repair" d="M 730 445 V 480 H 515 V 445"/>
+  <text x="622" y="501" text-anchor="middle" class="small orange">FAILED PLAYTEST → MAKE OR INVENT → NEW REVISION</text>
+
+  <text x="55" y="550" class="eyebrow blue">QUEST RELEASE PROOF</text>
+  <g filter="url(#shadow)"><rect x="55" y="575" width="520" height="112" rx="18" class="proof"/></g>
+  <text x="82" y="608" class="heading">BOUND PLAYTEST EVIDENCE</text>
+  <text x="82" y="635" class="body">Passing evidence names the current Made revision—not an earlier build.</text>
+  <text x="82" y="662" class="small blue">PLAYTEST TURN · ARTIFACT · GATE · PASSING EVIDENCE</text>
+
+  <g filter="url(#shadow)"><rect x="625" y="575" width="520" height="112" rx="18" fill="#ffffff" stroke="#d7d3cc" stroke-width="2"/></g>
+  <text x="652" y="608" class="heading">PUBLICATION + HANDOFF</text>
+  <text x="652" y="635" class="body">Exact CAD and manual hashes are authenticated and read back publicly.</text>
+  <text x="652" y="662" class="small purple">THEN OPERATIONS: PRINT · DELIVER · REVIEW</text>
+
+  <g filter="url(#shadow)"><rect x="55" y="729" width="1090" height="50" rx="16" fill="#f4f0ff" stroke="#8b6fc0" stroke-width="2"/></g>
+  <text x="600" y="760" text-anchor="middle" class="body">No enabled stage is passed through. Workshop publishes the digital Release; Operations owns every physical step.</text>
+</svg>

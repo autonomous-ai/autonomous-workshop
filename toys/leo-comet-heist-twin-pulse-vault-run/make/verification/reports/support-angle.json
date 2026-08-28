@@ -1,0 +1,182 @@
+{
+  "families": [
+    {
+      "critical_downward_area_mm2": 0.0,
+      "critical_downward_triangle_count": 0,
+      "critical_z_range_mm": null,
+      "envelope_mm": [
+        29.981,
+        29.991,
+        6.3
+      ],
+      "path": "part_comet_orbit.stl",
+      "sha256": "d527b7d1f6cdb00a2d00212477abc0556564c4b889353fa306e147a496851e3d",
+      "support_mode": "none",
+      "support_plan_matches_geometry": true,
+      "triangle_count": 1124
+    },
+    {
+      "critical_downward_area_mm2": 0.0,
+      "critical_downward_triangle_count": 0,
+      "critical_z_range_mm": null,
+      "envelope_mm": [
+        29.981,
+        29.991,
+        6.3
+      ],
+      "path": "part_comet_sun.stl",
+      "sha256": "807413fdafeaddfeed8eac893a63c372eca6792ed9bee6261ac209354362cc25",
+      "support_mode": "none",
+      "support_plan_matches_geometry": true,
+      "triangle_count": 752
+    },
+    {
+      "critical_downward_area_mm2": 2436.417,
+      "critical_downward_triangle_count": 144,
+      "critical_z_range_mm": [
+        2.0,
+        8.0
+      ],
+      "envelope_mm": [
+        65.6,
+        110.0,
+        20.0
+      ],
+      "path": "part_gate_bridge.stl",
+      "sha256": "297f187916ab19f42f29564c5eb280ba88d29cffc8e718bcd1118524ff7b7e66",
+      "support_mode": "generated-support-everywhere",
+      "support_plan_matches_geometry": true,
+      "triangle_count": 620
+    },
+    {
+      "critical_downward_area_mm2": 0.0,
+      "critical_downward_triangle_count": 0,
+      "critical_z_range_mm": null,
+      "envelope_mm": [
+        28.0,
+        10.0,
+        8.5
+      ],
+      "path": "part_gate_keeper.stl",
+      "sha256": "eadaf34e5b5a2bf6ef8b006454441ace55a8a313a5b7c1dbecf13c6e8525a771",
+      "support_mode": "none",
+      "support_plan_matches_geometry": true,
+      "triangle_count": 20
+    },
+    {
+      "critical_downward_area_mm2": 299.727,
+      "critical_downward_triangle_count": 37,
+      "critical_z_range_mm": [
+        3.35,
+        5.35
+      ],
+      "envelope_mm": [
+        36.998,
+        14.0,
+        14.7
+      ],
+      "path": "part_gravity_blade.stl",
+      "sha256": "d41bf22b6e63e7f1ab8d986dd41e167e264828425729eb0e7a1228fa408cd89e",
+      "support_mode": "generated-support-everywhere",
+      "support_plan_matches_geometry": true,
+      "triangle_count": 412
+    },
+    {
+      "critical_downward_area_mm2": 48.0,
+      "critical_downward_triangle_count": 4,
+      "critical_z_range_mm": [
+        7.0,
+        12.0
+      ],
+      "envelope_mm": [
+        44.0,
+        72.0,
+        15.0
+      ],
+      "path": "part_ready_spent_magazine.stl",
+      "sha256": "d8048b8745391589a877b0456411d65c101aed46c16ebb3d2165e79390dbdca7",
+      "support_mode": "generated-support-everywhere",
+      "support_plan_matches_geometry": true,
+      "triangle_count": 4832
+    },
+    {
+      "critical_downward_area_mm2": 0.0,
+      "critical_downward_triangle_count": 0,
+      "critical_z_range_mm": null,
+      "envelope_mm": [
+        52.0,
+        12.0,
+        4.0
+      ],
+      "path": "part_seam_storage_key.stl",
+      "sha256": "66363260663277cde5fde110006b435ceb96693d31c49c37b67b8dff5e874ed2",
+      "support_mode": "none",
+      "support_plan_matches_geometry": true,
+      "triangle_count": 276
+    },
+    {
+      "critical_downward_area_mm2": 958.302,
+      "critical_downward_triangle_count": 394,
+      "critical_z_range_mm": [
+        4.0,
+        18.0
+      ],
+      "envelope_mm": [
+        206.0,
+        186.0,
+        20.0
+      ],
+      "path": "part_tray_a.stl",
+      "sha256": "5db461afbd08434f188aa3e08f5ee6850fe5ec54d1fab69c39c4037e8b5f30db",
+      "support_mode": "generated-support-everywhere",
+      "support_plan_matches_geometry": true,
+      "triangle_count": 4016
+    },
+    {
+      "critical_downward_area_mm2": 1330.302,
+      "critical_downward_triangle_count": 396,
+      "critical_z_range_mm": [
+        1.2,
+        18.0
+      ],
+      "envelope_mm": [
+        206.0,
+        186.0,
+        20.0
+      ],
+      "path": "part_tray_b.stl",
+      "sha256": "c1594810ec520b0250ebee81f2d0d0342904d92c1c306d620e23995ab7d9422f",
+      "support_mode": "generated-support-everywhere",
+      "support_plan_matches_geometry": true,
+      "triangle_count": 4024
+    }
+  ],
+  "gravity_blade_entry": {
+    "panel_support_reason": "The coaxial trunnion projects 3.35 mm beyond each broad blade face; with the trunnion vertical, the lower end contacts the bed and the parallel panel requires generated support.",
+    "path": "part_gravity_blade.step.py",
+    "rotation_y_deg": 90,
+    "sha256": "59b2fcf5177cfd46698130aa9f7ffa73ac8211b8f8863f0946ccab4aa22d1d2c"
+  },
+  "kind": "comet-heist.support-angle-screen",
+  "limitations": [
+    "This triangle-normal screen is support-angle evidence, not a slicer run or generated toolpath.",
+    "The declared support mode does not prove support accessibility, surface quality, material behavior, dimensional accuracy, or a successful print.",
+    "Physical printing, fit, friction, oscillation, impact retention, wear, handling, and durability remain unverified."
+  ],
+  "method": {
+    "angle_from_horizontal_deg": 45.0,
+    "bed_face_tolerance_mm": 0.01,
+    "critical_area_tolerance_mm2": 0.5,
+    "description": "Downward STL facets whose surface is less than 45 degrees above horizontal are accumulated unless they lie on the build plate.",
+    "nominal_layer_mm": 0.2
+  },
+  "passed": true,
+  "schema_version": 1,
+  "tests": {
+    "exact_family_coverage": true,
+    "gravity_blade_low_profile_with_vertical_trunnions": true,
+    "magazine_tongue_exposed_by_screen": true,
+    "support_plan_matches_all_fresh_meshes": true,
+    "tray_retention_lips_exposed_by_screen": true
+  }
+}

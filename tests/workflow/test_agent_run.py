@@ -13,6 +13,7 @@ import workshop.workflow.agent_run as agent_run_module
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
 from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
+from workshop.runtime.managers import manager_project_bytes, manager_spec
 from workshop.workflow import (
     AgentArtifact,
     AgentOutcome,
@@ -133,6 +134,7 @@ class AgentRunTest(unittest.TestCase):
             ".workshop-product-run-root": b"autonomous-workshop-product-run\n",
             "WISH.json": self.wish_bytes,
             "AGENTS.md": b"# Product run constitution\n",
+            "MANAGER.json": manager_project_bytes(manager_spec("codex")),
             ".agents/skills/autonomous-workshop/SKILL.md": b"# Workshop skill\n",
             ".agents/skills/autonomous-workshop/references/make-playtest.md": (
                 b"exact gate guidance\n"
@@ -155,6 +157,8 @@ class AgentRunTest(unittest.TestCase):
             (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
         )
         self.assertEqual(checkpoint_document["schema_version"], 3)
+        self.assertEqual(checkpoint_document["manager_id"], "codex")
+        self.assertEqual(checkpoint.manager_id, "codex")
         self.assertEqual(checkpoint.inventor_roster, ())
         for relative, content in expected.items():
             path = run.run_root / relative
@@ -164,6 +168,23 @@ class AgentRunTest(unittest.TestCase):
                 checkpoint.input_sha256s[relative], hashlib.sha256(content).hexdigest()
             )
 
+    def test_create_freezes_the_selected_manager(self):
+        run = self.create(manager_id="grok")
+        checkpoint = run.snapshot()
+        self.assertEqual(checkpoint.manager_id, "grok")
+        payload = json.loads(
+            (run.run_root / "MANAGER.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(payload["manager_id"], "grok")
+        self.assertEqual(payload["agent_directory"], ".grok/agents")
+
+    def test_create_rejects_an_unknown_manager(self):
+        with self.assertRaises(ContractError):
+            self.create(manager_id="not-a-runtime")
+
+    def test_reopen_after_create(self):
+        run = self.create()
+        checkpoint = run.snapshot()
         reopened = AgentRun.open(
             run.run_root,
             host_state_root=run.host_state_root,

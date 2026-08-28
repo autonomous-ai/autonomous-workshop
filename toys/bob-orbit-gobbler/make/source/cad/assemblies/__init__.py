@@ -1,0 +1,1 @@
+"""Orbit Gobbler assembly positioning."""

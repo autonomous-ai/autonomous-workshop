@@ -1,0 +1,78 @@
+{
+  "binding": {
+    "assembled_step_path": "artifacts/make/r0002/product/assembled.step",
+    "assembled_step_sha256": "1189402a296c3889b8b178732273bb3b29618cea83cbdb36b33a99637c08b9df",
+    "made_file_sha256": "eee328cd5a9177ce1b241b2f3d6f89f73ea285e9f5c5cad8da6883bb9391431d",
+    "made_path": "artifacts/make/r0002/made.json",
+    "made_sha256": "2ba7764da19c3e4c392f3c56c877eefc24aa5b401797e73e524ca09640dc8dbb",
+    "motion_path": "artifacts/make/r0002/product/cad/comet_heist/measure/motion.json",
+    "motion_sha256": "ee7b1c4c3c9b01b2a37969d1a8a099a915622bcb004f44eaf8513a6e7aebcdcf",
+    "product_artifact_sha256": "93944b68688d51e857380601c06871e8705e8e90d85da16d88b62d436fa834fe",
+    "stage_checkpoint_sha256": "57c63245d7b8b9578aa7fd0d54380205af91b83c9fe78a2808aaad8f4aa26882",
+    "stage_subject_sha256": "7bc45efb752b155dcb3990ac14383ad3c9f12d9c9e3d792c613f231a68975c90",
+    "verification_path": "artifacts/make/r0002/product/cad/verification.json",
+    "verification_sha256": "03e4b6fb42dff1ce33968489bf260abe43b888f98307a6cb10719a7fd6185f86"
+  },
+  "evaluator": "comet-heist-sealed-mechanical-audit",
+  "evaluator_version": "1.1.0",
+  "limitations": [
+    "The intended stop is plus/minus 50 degrees; collision sampling covers plus/minus 45 degrees.",
+    "The near gate is tested directly; far-gate equivalence follows symmetric source geometry.",
+    "No physical print was tested: fit, friction, gravity return, three center crossings, three-second motion, impact retention, seam flatness, rattle, manual fit, and 100-cycle durability remain unknown."
+  ],
+  "measurements": {
+    "assembly_interference_clash_count": 0,
+    "bridge_capture_first_step_overlap_mm3": 49.5,
+    "connector_ledger": {
+      "axial_clearance_each_mm": 0.35,
+      "bridge_slide_mm": 6.0,
+      "foot_vertical_clearance_mm": 0.25,
+      "lap_width_mm": 2.0,
+      "magazine_clearance_each_mm": 0.3,
+      "retaining_shoulder_thickness_mm": 2.5,
+      "seam_key_clearance_each_mm": 0.3,
+      "seat_diameter_mm": 4.6,
+      "trunnion_diameter_mm": 4.0,
+      "trunnion_radial_clearance_mm": 0.2999999999999998
+    },
+    "motion_conditions_passed": 6,
+    "motion_coverage": [
+      "near blade clear at +45 degrees",
+      "near blade clear at -45 degrees",
+      "seam key removal clear",
+      "seam key downward travel blocked",
+      "bridge 6 mm unlock slide clear",
+      "seated bridge direct lift blocked"
+    ],
+    "spec": {
+      "deployed_envelope_mm": [
+        486.0,
+        190.0,
+        68.0
+      ],
+      "instance_count": 24,
+      "neutral_side_gap_mm": 35.0,
+      "nominal_closed_gap_mm": 12.785,
+      "nominal_open_gap_mm": 57.215,
+      "nominal_stop_shift_mm": 22.215,
+      "packed_envelope_mm": [
+        210.0,
+        190.0,
+        52.0
+      ],
+      "physical_claims_proven": false
+    }
+  },
+  "observed_at": "2026-08-27T18:47:27Z",
+  "passed": true,
+  "schema_version": 1,
+  "tests": {
+    "connector_ledger_rerun": true,
+    "final_pipeline_pass": true,
+    "required_occurrences": true,
+    "six_declared_motion_conditions": true,
+    "spec_rerun": true,
+    "strict_fit": true,
+    "zero_assembly_interference_clashes": true
+  }
+}

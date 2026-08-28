@@ -1,7 +1,7 @@
 {
   "extensions": [
     {
-      "artifact_sha256": "9a974b75e9c0f4b4b977eb712c0e22d96f610539647ad40384b07240ddb82570",
+      "artifact_sha256": "3e4af3579a3f2b45c2801858193e0d4bfdb0c0772b893740e06d1ca6232108c5",
       "kind": "codex-skill",
       "name": "tess-loop-inventor",
       "path": "skills/tess-loop-inventor"

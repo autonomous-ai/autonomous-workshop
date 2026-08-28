@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "stage": "make",
+  "round": 2,
+  "checkpoint_sha256": "d57c79ad163850a64d366ea1c234711c6766911df0f038f300361b9acf531714",
+  "subject_sha256": "a459da17cfbf9e5551486c1c8bc7c73542afded49f3ff44ded42c5f0bf5daafc",
+  "assignment_sha256": "1adad988bf5ac84e363906b96fcfd0fdc55586771b6c7b4e23ff66dc721cbce3",
+  "invented_sha256": "daedec26cba0cf850003896000e653627e02731d84239765e4c76019314239c5",
+  "cad_project_path": "cad/comet_heist",
+  "playtest_repair": {
+    "playtested_path": "artifacts/playtest/r0001/playtested.json",
+    "playtested_file_sha256": "685dd129e6be0afc831a0269c1b6be5580156fd76df3fa8e492892b5ba371284",
+    "playtested_sha256": "c210cabab003b2f8b0451fbfbcfac7a029dd937bc1174832c447514c8dc9b937",
+    "feedback_code": "rotate-blade-and-prove-support-needs",
+    "failure_code": "declared-print-pose-mismatch",
+    "repair": "Rotate the independent gravity-blade print entry 90 degrees about Y into a low-profile pose with vertical trunnions, regenerate its STEP/STL, and screen every printable family at 45 degrees with explicit generated-support declarations.",
+    "rejected_blade_source_sha256": "50b890630598ad4f7549b76398587b73384558501c44df2e3625892a3ff6111c",
+    "repaired_blade_source_sha256": "59b2fcf5177cfd46698130aa9f7ffa73ac8211b8f8863f0946ccab4aa22d1d2c",
+    "rejected_blade_step_sha256": "2779ff980b478a8f9d4f7f5b1e33e3d98b97e15040a9231204d856169cc0715b",
+    "repaired_blade_step_sha256": "481f8117f7f08fe5dc69ee627ed77104fec64bb0b60250f3d365f5b59d7b55c0",
+    "rejected_blade_stl_sha256": "9a609a23a0c05e3c6f6bdb9881648390093c27ff22adebe61e1e834d6e771412",
+    "repaired_blade_stl_sha256": "d41bf22b6e63e7f1ab8d986dd41e167e264828425729eb0e7a1228fa408cd89e",
+    "rejected_blade_envelope_mm": [14.7, 14.0, 36.998],
+    "repaired_blade_envelope_mm": [36.998, 14.0, 14.7],
+    "step_diff": {
+      "topology_changed": false,
+      "geometry_changed": true,
+      "bbox_changed": true,
+      "face_count_delta": 0,
+      "edge_count_delta": 0,
+      "shape_count_delta": 0
+    },
+    "assembled_gameplay_pose_byte_identical": true,
+    "rejected_and_repaired_assembled_step_sha256": "1189402a296c3889b8b178732273bb3b29618cea83cbdb36b33a99637c08b9df"
+  },
+  "support_angle_screen": {
+    "passed": true,
+    "report_path": "cad/comet_heist/measure/support-angle.json",
+    "report_sha256": "8c73e9c5a7e32cfbceab660acb0f46590e99763d9128988ac018f52fb0706d4f",
+    "checker_path": "cad/comet_heist/measure/check_support.py",
+    "checker_sha256": "8a80df22c002870ab87e2ae754b9280cebc3216df988fb86bef08eedf04cfa2a",
+    "angle_from_horizontal_deg": 45.0,
+    "exact_family_coverage": 9,
+    "generated_support_families": [
+      "part_gate_bridge.stl",
+      "part_gravity_blade.stl",
+      "part_ready_spent_magazine.stl",
+      "part_tray_a.stl",
+      "part_tray_b.stl"
+    ],
+    "no_support_families": [
+      "part_comet_orbit.stl",
+      "part_comet_sun.stl",
+      "part_gate_keeper.stl",
+      "part_seam_storage_key.stl"
+    ],
+    "blade_critical_downward_area_mm2": 299.727,
+    "tray_retention_lips_detected": true,
+    "magazine_tongue_detected": true,
+    "scope": "deterministic triangle-normal screen, not a slicer run or generated toolpath"
+  },
+  "final_pipeline": {
+    "passed": true,
+    "exit_code": 0,
+    "print_ready_claim": true,
+    "print_ready_scope": "All nine source-derived family STEP/STL artifacts pass the declared bed, mesh, sampled-thickness, and explicit support-plan gates; this does not claim a slicer run, generated toolpath, or successful physical print.",
+    "report_path": "cad/comet_heist/measure/verification-pipeline.md",
+    "report_sha256": "c16351f0e6df3dddc4aee753732c70193377192e63f53bbe86f7547b9fa7b6b0",
+    "bed_mm": [210.0, 210.0, 220.0],
+    "nozzle_mm": 0.4,
+    "printable_family_count": 9,
+    "strict_fit": true,
+    "all_part_steps_valid": true,
+    "all_part_stls_watertight": true,
+    "all_part_thickness_gates_passed": true,
+    "assembly_interference_clash_count": 0,
+    "motion_conditions_passed": 6,
+    "bridge_capture_gate": {
+      "unlock_slide_mm": 6.0,
+      "unlock_slide_clear": true,
+      "seated_direct_lift_blocked": true,
+      "blocking_part": "tray_a",
+      "first_step_overlap_mm3": 49.5
+    }
+  },
+  "assembled_artifacts": {
+    "step_path": "assembled.step",
+    "step_sha256": "1189402a296c3889b8b178732273bb3b29618cea83cbdb36b33a99637c08b9df",
+    "stl_path": "assembled.stl",
+    "stl_sha256": "e7c0b94929ce5277d6a8935abfab63280b6690c37346e7217a1b797f33aba60c",
+    "occurrence_count": 24,
+    "envelope_mm": [486.0, 190.0, 68.0],
+    "step_valid": true,
+    "stl_topology_observations": {
+      "watertight_boundary_edges": 0,
+      "consistent_winding_failures": 0,
+      "positive_volume_cm3": 439.34,
+      "connected_shells": 23,
+      "bed_fit_passed": false,
+      "reason": "The 486 x 190 x 68 mm STL is the deployed multi-body visualization pose, not one printable bed job; all nine per-family STLs pass the declared 210 x 210 x 220 mm bed gate."
+    },
+    "root_step_is_exact_canonical_cad_step": true
+  },
+  "spec_checks": {
+    "packed_envelope_mm": [210.0, 190.0, 52.0],
+    "neutral_blade_gap_each_mm": 35.0,
+    "nominal_closed_gap_mm": 12.785,
+    "nominal_open_gap_mm": 57.215,
+    "rules_path": "RULES.md",
+    "rules_sha256": "279623eecbc0d52fb09df34f0ff797b779b20f2159ead2f0fc659643994acfa8"
+  },
+  "visual_inspection": {
+    "performed": true,
+    "views": {
+      "iso": "5597ec363e66ea24f5386aa2239ba3030c11ca4733e0fde83ecd4753fd7574c9",
+      "top": "3606304f4c7cc94d190f72f5ce642b6ce5e434e794e121671df1ff8af2f76d68",
+      "right": "7e42a2050b9e7229b1623950a3c786644d83404ef8ed0ca1042973048006e0e7"
+    },
+    "finding": "The unchanged deployed assembly remains a symmetric elongated field with two serial portal bridges and end magazines; no clipping or gross scale/pose anomaly is visible. The repaired independent print pose is established by STEP bounds and triangle-normal evidence, not inferred from these assembly views."
+  },
+  "physical_evidence": {
+    "performed": false,
+    "unverified": [
+      "successful slicing or printing",
+      "support accessibility, removal, and surface quality",
+      "bed adhesion, warping, and dimensional compensation",
+      "seam step and floor flatness",
+      "printed fit and friction",
+      "three center crossings and three-second oscillation",
+      "impact retention",
+      "100-cycle durability",
+      "human timing and score calibration",
+      "packed rattle and folded-manual fit"
+    ]
+  },
+  "independent_reviews": [
+    {
+      "reviewer": "leo_make_review",
+      "verdict": "pass",
+      "blocking_findings": [],
+      "finding": "The changed low-profile blade print entry, nine-family support evidence, fresh full CAD checks, unchanged rules, and byte-identical gameplay assembly exactly address the failed print-pose gate without adding physical claims."
+    },
+    {
+      "reviewer": "printability_review_r2",
+      "verdict": "pass",
+      "blocking_findings": [],
+      "finding": "All nine current STL hashes are covered by the passing 45-degree audit, including the blade underside, tray lips, and magazine tongue; authored documentation correctly limits the result to digital evidence."
+    }
+  ]
+}

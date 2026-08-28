@@ -32,7 +32,7 @@ not another Manager agent.
 
 ## Native Goals and improvement loops
 
-Use one native Codex Goal for each cognitive stage attempt. The improvement
+Use one native Goal for each cognitive stage attempt. The improvement
 loop is how you work while pursuing that Goal; it is not a separate runtime or
 Workshop program. Never implement a cognitive, reward, judge, retry, or
 feedback loop in Python.
@@ -41,8 +41,8 @@ feedback loop in Python.
   Playtest, or Release attempt, create one Goal for that stage. If that
   exact stage Goal is already active after a resume, continue it instead of
   creating another.
-- Use Codex's native Goal control. Do not emulate Goal state with a workspace
-  file, prompt chain, or Python controller.
+- Use this Manager runtime's native Goal control. Do not emulate Goal state
+  with a workspace file, prompt chain, or Python controller.
 - Give the Goal one concrete objective, the immutable inputs it must read, the
   proof artifacts or checks that demonstrate success, and the exact stopping
   condition: the current stage finalizer succeeds and writes the bounded

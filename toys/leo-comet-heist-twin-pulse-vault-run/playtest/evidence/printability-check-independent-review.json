@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "reviewer": "printability-playtest-r2-native-agent",
+  "observed_at": "2026-08-27T18:50:00Z",
+  "binding": {
+    "made_file_sha256": "eee328cd5a9177ce1b241b2f3d6f89f73ea285e9f5c5cad8da6883bb9391431d",
+    "product_artifact_sha256": "93944b68688d51e857380601c06871e8705e8e90d85da16d88b62d436fa834fe",
+    "support_report_sha256": "8c73e9c5a7e32cfbceab660acb0f46590e99763d9128988ac018f52fb0706d4f",
+    "repaired_blade_stl_sha256": "d41bf22b6e63e7f1ab8d986dd41e167e264828425729eb0e7a1228fa408cd89e"
+  },
+  "verdict": "pass",
+  "blocking_findings": [],
+  "findings": [
+    "The blade source, STEP, and STL changed from the rejected bytes; its envelope changed from upright 14.7 by 14 by 36.998 mm to low-profile 36.998 by 14 by 14.7 mm with a vertical trunnion axis.",
+    "All nine exact family STLs independently passed mesh, 210 by 210 by 220 mm bed, and 0.80 mm sampled-thickness gates.",
+    "An independent 45-degree recomputation matched the sealed support report and exact STL hashes for all nine families, including both tray lips and the magazine tongue."
+  ],
+  "limits": [
+    "The triangle-normal audit is not a slicer run or generated toolpath.",
+    "No successful print, support accessibility/removal, surface quality, adhesion, warping, bed-origin/brim fit, dimensional compensation, physical fit, durability, or human play was tested.",
+    "The largest tray has only 4 mm total nominal margin on the tight bed axis."
+  ]
+}

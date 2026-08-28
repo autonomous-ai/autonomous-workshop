@@ -1,0 +1,30 @@
+# Verification pipeline record
+
+- Recorded: 2026-08-27T15:54:26+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 46.30 s
+- Bed: 120 x 120 x 120 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/check_layout' artifacts/make/r0001/product/cad/moon_relay` | rc=0 | 0.03 |
+| 2 | `design_refs verify  # NOT RUN: no ref/external directory; no fetched design reference is declared` | skipped | 0.00 |
+| 3 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/gen' artifacts/make/r0001/product/cad/moon_relay/moon_relay.step.py artifacts/make/r0001/product/cad/moon_relay/part_lunar_base.step.py artifacts/make/r0001/product/cad/moon_relay/part_moon_rocker.step.py artifacts/make/r0001/product/cad/moon_relay/part_quarter_turn_axle.step.py --write --json` | rc=0 | 5.21 |
+| 4 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/check_fit' artifacts/make/r0001/product/cad/moon_relay --bed 120.0 120.0 --entry artifacts/make/r0001/product/cad/moon_relay/part_lunar_base.step.py --entry artifacts/make/r0001/product/cad/moon_relay/part_moon_rocker.step.py --entry artifacts/make/r0001/product/cad/moon_relay/part_quarter_turn_axle.step.py --strict` | rc=0 | 4.38 |
+| 5 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 artifacts/make/r0001/product/cad/moon_relay/measure/check_fit.py` | rc=0 | 4.18 |
+| 6 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 artifacts/make/r0001/product/cad/moon_relay/measure/check_spec.py` | rc=0 | 4.48 |
+| 7 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 8 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 9 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/check_motion' artifacts/make/r0001/product/cad/moon_relay --manifest artifacts/make/r0001/product/cad/moon_relay/measure/motion.json` | rc=0 | 4.94 |
+| 10 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/inspect' batch (9 JSONL requests)` | rc=0 | 6.82 |
+| 11 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/moon_relay/moon_relay.step --glb --json` | rc=0 | 0.72 |
+| 12 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/moon_relay/part_lunar_base.step --stl --json` | rc=0 | 0.68 |
+| 13 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/moon_relay/part_lunar_base.stl --bed 120x120x120` | rc=0 | 0.41 |
+| 14 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/moon_relay/part_lunar_base.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/moon_relay/measure/thickness-lunar_base.md` | rc=0 | 3.22 |
+| 15 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/moon_relay/part_moon_rocker.step --stl --json` | rc=0 | 0.67 |
+| 16 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/moon_relay/part_moon_rocker.stl --bed 120x120x120` | rc=0 | 0.42 |
+| 17 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/moon_relay/part_moon_rocker.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/moon_relay/measure/thickness-moon_rocker.md` | rc=0 | 7.92 |
+| 18 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/moon_relay/part_quarter_turn_axle.step --stl --json` | rc=0 | 0.68 |
+| 19 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/moon_relay/part_quarter_turn_axle.stl --bed 120x120x120` | rc=0 | 0.42 |
+| 20 | `/Users/ab/code/autonomous-workshop/.venv/bin/python3 '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260827-151228-eb2cddd1/workspace/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/moon_relay/part_quarter_turn_axle.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/moon_relay/measure/thickness-quarter_turn_axle.md` | rc=0 | 1.12 |

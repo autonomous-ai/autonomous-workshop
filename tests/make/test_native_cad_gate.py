@@ -13,6 +13,7 @@ from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
+    DEFAULT_NATIVE_CAD_OUTPUT_BYTES,
     NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_NON_PRINT_READY_TIER,
     NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE,
@@ -222,6 +223,28 @@ class NativeCadGateTest(unittest.TestCase):
         payload = json.loads(evidence_path.read_text())
         self.assertEqual(payload, evidence.to_dict())
         self.assertEqual(stat.S_IMODE(evidence_path.stat().st_mode), 0o600)
+
+    def test_default_output_bound_accommodates_a_verbose_multi_part_success(self):
+        output = b"verified part\n" * 6_000
+
+        def runner(command, **arguments):
+            del command
+            self.assertEqual(
+                arguments["max_output_bytes"], DEFAULT_NATIVE_CAD_OUTPUT_BYTES
+            )
+            return VerifierProcessResult.from_bytes(
+                0,
+                output,
+                maximum_bytes=arguments["max_output_bytes"],
+            )
+
+        evidence = self._verify(
+            runner, max_output_bytes=DEFAULT_NATIVE_CAD_OUTPUT_BYTES
+        )
+
+        self.assertTrue(evidence.passed)
+        self.assertFalse(evidence.stdout.truncated)
+        self.assertEqual(evidence.stdout.total_bytes, len(output))
 
     def test_playtest_replay_preserves_the_accepted_make_evidence(self):
         runner = lambda *args, **kwargs: VerifierProcessResult.from_bytes(0)

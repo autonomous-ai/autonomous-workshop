@@ -538,9 +538,9 @@ private Wish demonstrate that:
 
 | Manager runtime | Status |
 |---|---|
-| Codex | Implemented |
-| Claude Code | Planned adapter |
-| Grok Build | Planned adapter |
+| Codex | Implemented default |
+| Claude Code | Experimental adapter |
+| Grok Build | Experimental adapter |
 
 The stable seam is the persistent toy project, stage objective and proof
 condition, `STAGE.json`, compact outcome protocol, start/resume adapter, and

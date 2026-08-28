@@ -1,0 +1,47 @@
+{
+  "assembly": "orbit_gobbler.step.py",
+  "conditions": [
+    {
+      "id": "bezel-withdraws-forward",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "After release, the one-piece bezel and its four round posts must withdraw straight forward from the frame holes.",
+      "inputs": {
+        "moving_part": "mouth_bezel",
+        "obstacle_parts": ["frame_cam"],
+        "translation": [0, -35, 0],
+        "steps": 18,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "grip-withdraws-forward",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "With its horseshoe snap clip and washer removed, the grip must slide straight off the crank post.",
+      "inputs": {
+        "moving_part": "grip",
+        "obstacle_parts": ["crank_arm"],
+        "translation": [0, -30, 0],
+        "steps": 16,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "follower-axle-is-captured",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "The integral rear snap collar must block rigid withdrawal through the D-shaped slider opening; assembly depends on elastic snap insertion and remains physically unverified.",
+      "inputs": {
+        "moving_part": "follower_axle",
+        "obstacle_parts": ["lunar_slider", "follower_roller"],
+        "translation": [0, -32, 0],
+        "steps": 18,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    }
+  ]
+}
