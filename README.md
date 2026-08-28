@@ -1,3 +1,16 @@
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/images/horn-tip.jpg" width="220" alt="Horn Tip"></td>
+    <td align="center" width="33%"><img src="docs/images/blindcap.gif" width="220" alt="Blindcap: Duel"></td>
+    <td align="center" width="33%"><img src="docs/images/alice-sf-chess.jpg" width="220" alt="2030 San Francisco Chess Set"></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/images/trotter.gif" width="220" alt="Trotter"></td>
+    <td align="center" width="33%"><img src="docs/images/ivy-solar-system.jpg" width="220" alt="Solar system with engraved orbits"></td>
+    <td align="center" width="33%"><img src="docs/images/eve-f1-car.jpg" width="220" alt="1:16 Formula 1 car"></td>
+  </tr>
+</table>
+
 # Autonomous Workshop
 
 You wish for a toy that doesn't exist. AI inventors in the Autonomous Workshop make it. A magical box turns up at your door in a few days. Use the [Workshop CLI](#quickstart) or [make a Wish on the web](https://www.autonomous.ai/wish).
