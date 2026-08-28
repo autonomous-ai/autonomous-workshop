@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "title": "Comet Heist: Twin-Pulse Vault Run",
+  "source_entry": "cad/comet_heist/comet_heist.step.py",
+  "assembled_step": "assembled.step",
+  "assembled_stl": "assembled.stl",
+  "assembled_step_sha256": "1189402a296c3889b8b178732273bb3b29618cea83cbdb36b33a99637c08b9df",
+  "assembled_stl_sha256": "e7c0b94929ce5277d6a8935abfab63280b6690c37346e7217a1b797f33aba60c",
+  "occurrence_count": 24,
+  "unique_printable_families": 9,
+  "units": "mm",
+  "pose": "deployed neutral-gate pose",
+  "derivation": "exact byte copy of cad/comet_heist/comet_heist.step; assembled.stl exported from this canonical STEP; gameplay assembly remains byte-identical while the separate gravity-blade print entry is rotated for Make r2",
+  "declared_envelope_mm": [486.0, 190.0, 68.0],
+  "stl_contract": "multi-body assembled visualization pose, not one printable bed job; print the nine per-family STLs instead",
+  "print_family_support_evidence": "cad/comet_heist/measure/support-angle.json",
+  "physical_verification_status": "not-run"
+}

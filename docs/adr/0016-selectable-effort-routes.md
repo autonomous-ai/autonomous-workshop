@@ -10,7 +10,7 @@
 One fixed creative workflow makes fast product experiments pay for the same
 number of native turns as deeper work. Match also consumes a separate turn even
 though Inventor selection is useful context for whichever creative stage acts
-first. Workshop needs a quick path for testing, a balanced default, and an
+first. Workshop needs a quick default path, an explicit balanced path, and an
 evidence-heavy path without turning skipped work into a false pass.
 
 Effort must be frozen per run. Resume cannot reinterpret an existing run after
@@ -26,7 +26,7 @@ Forge: Wish -> Invent -> Make -> Release
 Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
 
-Forge is the CLI default. The exact lowercase values are `spark`, `forge`, and
+Spark is the CLI default. The exact lowercase values are `spark`, `forge`, and
 `quest`.
 
 New effort-aware runs use checkpoint schema v4 and freeze the selected value
@@ -95,7 +95,7 @@ for those sessions.
 
 ## Verification
 
-- CLI tests prove all three names are parsed and forwarded, with Forge as the
+- CLI tests prove all three names are parsed and forwarded, with Spark as the
   default.
 - Pure workflow tests prove optional stages are absent from checkpoint
   artifacts and illegal transitions fail closed.

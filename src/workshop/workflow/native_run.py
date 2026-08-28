@@ -62,6 +62,10 @@ from workshop.match.native import (
 from workshop.playtest.native import NativePlaytested
 from workshop.product import ToyBlueprint
 from workshop.release.contracts import ProductRelease, ReleaseContext
+from workshop.release.manual_design import (
+    MANUAL_DESIGN_EVIDENCE_PATH,
+    validate_bound_manual_design_evidence,
+)
 from workshop.release.native import (
     DIRECT_RELEASE_PLAYTEST_STATUS,
     DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
@@ -80,11 +84,17 @@ from workshop.runtime import (
     CodexRecoverableInvocationError,
     CodexNativeSessionLauncher,
     CodexNativeSessionOutcome,
+    DEFAULT_MANAGER_ID,
     EffectLedger,
+    NativeManagerInvocationError,
+    NativeManagerRecoverableError,
     Receipt,
     factory_credential_environment,
     factory_service_credential_environment,
+    manager_launcher,
+    manager_spec,
 )
+from workshop.runtime.managers import NativeSessionLauncher
 from workshop.runtime.agent_assets import (
     parse_inventor_custom_agent_bytes,
     product_run_agent_assets,
@@ -135,7 +145,6 @@ from workshop.workflow.stage_gates import (
 
 _RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _INSTRUCTION_HASH_DOMAIN = b"autonomous-workshop/product-run-instructions/v1\0"
-_SESSION_CHECKPOINT_NAME = "codex-session.json"
 _STAGE_INPUT_NAME = "STAGE.json"
 _AGENT_OUTCOME_NAME = "agent-outcome.json"
 _AUTHORIZATION_NAME = "authorization.json"
@@ -182,6 +191,9 @@ _PRODUCT_RUN_FINALIZER_INPUT = (
 )
 _PRODUCT_RUN_PDF_VALIDATOR_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
+)
+_PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT = (
+    ".agents/skills/autonomous-workshop/references/manual-design-evidence-v1.md"
 )
 _PRODUCT_RUN_TERMINAL_RELEASE_INPUT = (
     ".agents/skills/autonomous-workshop/references/release-terminal-v1.md"
@@ -1347,8 +1359,9 @@ def _materialized_release_contract(
     if _PRODUCT_RUN_FINALIZER_INPUT not in inputs:
         raise StateConflict("native run lacks its materialized stage finalizer")
     direct_release = _checkpoint_uses_direct_release(checkpoint)
+    manual_design_evidence = _PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT in inputs
     if direct_release:
-        return {
+        contract = {
             "native_release_schema_version": 3,
             "manual_path": NATIVE_RELEASE_MANUAL_PATH,
             "product_schema_version": DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
@@ -1356,14 +1369,22 @@ def _materialized_release_contract(
             "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
             "playtest_omission_path": NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
         }
+        if manual_design_evidence:
+            contract["manual_design_evidence_path"] = MANUAL_DESIGN_EVIDENCE_PATH
+            contract["manual_design_evidence_schema_version"] = 1
+        return contract
     manual_first = _PRODUCT_RUN_PDF_VALIDATOR_INPUT in inputs
     if manual_first:
-        return {
+        contract = {
             "native_release_schema_version": 2,
             "manual_path": NATIVE_RELEASE_MANUAL_PATH,
             "product_schema_version": 4,
             "product_status": "manual-ready",
         }
+        if manual_design_evidence:
+            contract["manual_design_evidence_path"] = MANUAL_DESIGN_EVIDENCE_PATH
+            contract["manual_design_evidence_schema_version"] = 1
+        return contract
     return {
         "native_release_schema_version": 1,
         "manual_path": NATIVE_RELEASE_LEGACY_MANUAL_PATH,
@@ -1445,7 +1466,7 @@ def native_stage_prompt(stage: str) -> str:
         "the prior Goal is already complete, create a new Goal bound to this "
         "current subject. Address the exact rejection before finalizing; never "
         "rerun the finalizer or resubmit unchanged rejected bytes. Create one "
-        "native Codex goal for the "
+        "native Goal for the "
         "current %s stage with successful finalization as its stopping condition; "
         "keep inspecting, acting, evaluating, and improving until that condition "
         "is met. Use the run-local deterministic proposal tool, complete the goal "
@@ -2455,6 +2476,10 @@ def _prepare_effort_stage_input(
                     "product.json",
                 ],
             }
+            if release_contract.get("manual_design_evidence_path") is not None:
+                inputs["required_package_files"].append(
+                    release_contract["manual_design_evidence_path"]
+                )
             if effort.includes("playtest"):
                 playtested_artifact = _stage_primary(checkpoint, "playtest")
                 playtested = _read_contract(
@@ -2866,6 +2891,13 @@ def _prepare_stage_input(
                                 "product.json",
                             ],
                         }
+                        if (
+                            release_contract.get("manual_design_evidence_path")
+                            is not None
+                        ):
+                            inputs["required_package_files"].append(
+                                release_contract["manual_design_evidence_path"]
+                            )
                         if direct_release:
                             context["playtested"] = None
                             subject_inputs["playtest_status"] = (
@@ -2933,14 +2965,27 @@ def _prepare_stage_input(
     return subject, packet, context
 
 
+def _native_launcher(manager_id: str) -> NativeSessionLauncher:
+    """Construct the frozen Manager launcher.
+
+    Codex stays constructed here so existing host tests can patch the concrete
+    class without going through the registry. Other Managers load by id.
+    """
+
+    if manager_id == DEFAULT_MANAGER_ID:
+        return CodexNativeSessionLauncher()
+    return manager_launcher(manager_id)
+
+
 def _launcher_call(
-    launcher: CodexNativeSessionLauncher,
+    launcher: NativeSessionLauncher,
     method: str,
     *,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
     activity_observer: Optional[Callable[[str], None]] = None,
-) -> CodexNativeSessionOutcome:
+) -> Any:
+    runtime = manager_spec(checkpoint.manager_id)
     arguments = {
         "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256,
@@ -2953,12 +2998,14 @@ def _launcher_call(
     }
     try:
         return getattr(launcher, method)(**arguments)
-    except CodexRecoverableInvocationError as exc:
+    except (CodexRecoverableInvocationError, NativeManagerRecoverableError) as exc:
         raise _RecoverableNativeTurn(
-            "native Codex session did not complete: %s" % exc
+            "native %s session did not complete: %s" % (runtime.display_name, exc)
         ) from None
-    except CodexInvocationError as exc:
-        raise WorkshopError("native Codex session did not complete: %s" % exc) from None
+    except (CodexInvocationError, NativeManagerInvocationError) as exc:
+        raise WorkshopError(
+            "native %s session did not complete: %s" % (runtime.display_name, exc)
+        ) from None
 
 
 def _validated_activity_observer(
@@ -3824,6 +3871,14 @@ def _verified_release(
     """Seal the exact local package without consulting an external service."""
 
     package = release.validate_package_tree(run.run_root, made, playtested)
+    release_contract = _materialized_release_contract(run.snapshot())
+    if release_contract.get("manual_design_evidence_path") is not None:
+        validate_bound_manual_design_evidence(
+            package.root,
+            package_manifest=release.package_manifest,
+            manual_path=release.manual_path,
+            made=made,
+        )
     product_release = ProductRelease.from_root(
         package.root,
         release.product_artifact_sha256,
@@ -4491,7 +4546,7 @@ def _run_native_session(
     run: AgentRun,
     paths: NativeRunPaths,
     *,
-    launcher: CodexNativeSessionLauncher,
+    launcher: NativeSessionLauncher,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
@@ -4499,7 +4554,11 @@ def _run_native_session(
 
     last_session: Optional[CodexNativeSessionOutcome] = None
     turns = 0
-    first_method = "resume" if _session_status(paths) == "checkpointed" else "start"
+    first_method = (
+        "resume"
+        if _session_status(paths, run.snapshot().manager_id) == "checkpointed"
+        else "start"
+    )
     action = "resumed" if first_method == "resume" else "started"
     while turns < _MAX_NATIVE_TURNS:
         checkpoint = run.snapshot()
@@ -4548,7 +4607,11 @@ def _run_native_session(
                 continue
 
         _remove_agent_outcome(run.run_root)
-        method = "resume" if _session_status(paths) == "checkpointed" else "start"
+        method = (
+            "resume"
+            if _session_status(paths, checkpoint.manager_id) == "checkpointed"
+            else "start"
+        )
         progress = _NativeProgressTracker.begin(paths, checkpoint)
         turn_activity_observer = _combined_activity_observer(
             progress,
@@ -4591,7 +4654,7 @@ def _run_native_session(
                 # one mutation lock, and the normal turn budget remain in
                 # force.  An interruption before thread binding fails closed
                 # rather than creating a second root session automatically.
-                if _session_status(paths) == "checkpointed":
+                if _session_status(paths, checkpoint.manager_id) == "checkpointed":
                     if turns < _MAX_NATIVE_TURNS:
                         time.sleep(
                             _recoverable_native_turn_backoff_seconds(
@@ -4603,7 +4666,8 @@ def _run_native_session(
             if launcher_failure is not None:
                 raise launcher_failure
             raise WorkshopError(
-                "native Codex session returned without agent-outcome.json"
+                "native %s session returned without agent-outcome.json"
+                % manager_spec(checkpoint.manager_id).display_name
             )
         try:
             updated = _process_agent_outcome(
@@ -4619,23 +4683,31 @@ def _run_native_session(
         progress.rebind(updated, activity="completed")
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action
-    raise WorkshopError("native product run exhausted its bounded Codex turn budget")
+    raise WorkshopError("native product run exhausted its bounded native-turn budget")
 
 
-def _session_status(paths: NativeRunPaths) -> str:
-    checkpoint = paths.host_state / _SESSION_CHECKPOINT_NAME
+def _session_status(
+    paths: NativeRunPaths,
+    manager_id: str = DEFAULT_MANAGER_ID,
+) -> str:
+    runtime = manager_spec(manager_id)
+    checkpoint = paths.host_state / runtime.session_checkpoint_name
     if not checkpoint.exists() and not checkpoint.is_symlink():
         return "not-started"
     try:
         identity = checkpoint.lstat()
     except OSError as exc:
-        raise StateConflict("native Codex session checkpoint is unavailable") from exc
+        raise StateConflict(
+            "native %s session checkpoint is unavailable" % runtime.display_name
+        ) from exc
     if (
         checkpoint.is_symlink()
         or not stat.S_ISREG(identity.st_mode)
         or stat.S_IMODE(identity.st_mode) != 0o600
     ):
-        raise StateConflict("native Codex session checkpoint is not a private file")
+        raise StateConflict(
+            "native %s session checkpoint is not a private file" % runtime.display_name
+        )
     return "checkpointed"
 
 
@@ -4891,6 +4963,7 @@ def _native_receipt(
     }
     if checkpoint.effort is not None:
         receipt["effort"] = checkpoint.effort
+    receipt["manager"] = checkpoint.manager_id
     if needs:
         receipt["needs"] = list(needs)
     if session is not None:
@@ -4902,6 +4975,7 @@ def start_native_run(
     wish: Wish,
     *,
     effort: Optional[str] = None,
+    manager_id: Optional[str] = None,
     publish_requested: Optional[bool] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
@@ -4911,6 +4985,8 @@ def start_native_run(
     ``effort`` freezes one selectable route for a new run. ``None`` retains the
     schema-v3 lifecycle only for source-compatible programmatic callers; the
     public CLI always passes its named default.
+
+    ``manager_id`` freezes the native Manager runtime. ``None`` selects Codex.
 
     ``publish_requested`` is a source-compatibility shim for callers of the
     former optional-publication API. Release publication is now mandatory, so
@@ -4922,6 +4998,9 @@ def start_native_run(
     """
 
     selected_effort = workshop_effort(effort) if effort is not None else None
+    selected_manager = manager_spec(
+        DEFAULT_MANAGER_ID if manager_id is None else manager_id
+    )
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
 
@@ -4950,6 +5029,7 @@ def start_native_run(
                 inventor_source_root=inventor_source_root,
                 max_rounds=4,
                 effort=(selected_effort.name if selected_effort is not None else None),
+                manager_id=selected_manager.manager_id,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
@@ -4967,7 +5047,7 @@ def start_native_run(
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
-        launcher = CodexNativeSessionLauncher()
+        launcher = _native_launcher(checkpoint.manager_id)
         checkpoint, session, turns, action = _run_native_session(
             run,
             paths,
@@ -5123,7 +5203,7 @@ def _resume_native_run_locked(
             paths=paths,
             action="inspected-terminal",
         )
-    launcher = CodexNativeSessionLauncher()
+    launcher = _native_launcher(checkpoint.manager_id)
     checkpoint, session, turns, action = _run_native_session(
         run,
         paths,
@@ -5197,7 +5277,7 @@ def native_run_status(product_id: str) -> Mapping[str, Any]:
             paths=paths,
             action="inspected",
         ),
-        "session_status": _session_status(paths),
+        "session_status": _session_status(paths, checkpoint.manager_id),
     }
 
 

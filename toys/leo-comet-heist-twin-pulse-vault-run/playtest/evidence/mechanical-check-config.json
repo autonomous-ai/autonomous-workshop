@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "evaluator": "comet-heist-sealed-mechanical-audit",
+  "evaluator_version": "1.1.0",
+  "observed_at": "2026-08-27T18:47:27Z",
+  "binding": {
+    "stage_checkpoint_sha256": "57c63245d7b8b9578aa7fd0d54380205af91b83c9fe78a2808aaad8f4aa26882",
+    "stage_subject_sha256": "7bc45efb752b155dcb3990ac14383ad3c9f12d9c9e3d792c613f231a68975c90",
+    "made_path": "artifacts/make/r0002/made.json",
+    "made_file_sha256": "eee328cd5a9177ce1b241b2f3d6f89f73ea285e9f5c5cad8da6883bb9391431d",
+    "made_sha256": "2ba7764da19c3e4c392f3c56c877eefc24aa5b401797e73e524ca09640dc8dbb",
+    "product_artifact_sha256": "93944b68688d51e857380601c06871e8705e8e90d85da16d88b62d436fa834fe",
+    "verification_path": "artifacts/make/r0002/product/cad/verification.json",
+    "verification_sha256": "03e4b6fb42dff1ce33968489bf260abe43b888f98307a6cb10719a7fd6185f86",
+    "assembled_step_path": "artifacts/make/r0002/product/assembled.step",
+    "assembled_step_sha256": "1189402a296c3889b8b178732273bb3b29618cea83cbdb36b33a99637c08b9df",
+    "motion_path": "artifacts/make/r0002/product/cad/comet_heist/measure/motion.json",
+    "motion_sha256": "ee7b1c4c3c9b01b2a37969d1a8a099a915622bcb004f44eaf8513a6e7aebcdcf"
+  },
+  "acceptance": {
+    "require_final_pipeline_pass": true,
+    "require_strict_fit": true,
+    "maximum_assembly_interference_clashes": 0,
+    "minimum_declared_motion_conditions_passed": 6,
+    "require_connector_ledger_rerun_pass": true,
+    "require_spec_rerun_pass": true,
+    "required_occurrence_count": 24
+  },
+  "scope": "Digital geometric and kinematic feasibility only; the pass must not be represented as physical mechanism validation."
+}

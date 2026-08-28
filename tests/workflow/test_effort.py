@@ -10,7 +10,7 @@ from workshop.workflow.effort import (
 
 class WorkshopEffortTest(unittest.TestCase):
     def test_named_efforts_have_exact_passthrough_lifecycles(self):
-        self.assertEqual(DEFAULT_WORKSHOP_EFFORT, "forge")
+        self.assertEqual(DEFAULT_WORKSHOP_EFFORT, "spark")
         self.assertEqual(
             {name: effort.lifecycle for name, effort in WORKSHOP_EFFORTS.items()},
             {

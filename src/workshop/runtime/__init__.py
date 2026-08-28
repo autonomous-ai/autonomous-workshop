@@ -13,6 +13,15 @@ from workshop.runtime.codex import (
     CodexNativeSessionOutcome,
     codex_supports_native_workshop,
 )
+from workshop.runtime.managers import (
+    DEFAULT_MANAGER_ID,
+    MANAGER_PROJECT_PATH,
+    SUPPORTED_MANAGER_IDS,
+    NativeManagerInvocationError,
+    NativeManagerRecoverableError,
+    manager_launcher,
+    manager_spec,
+)
 from workshop.runtime.effects import EffectIntent, EffectLedger
 from workshop.runtime.credentials import (
     factory_credential_environment,
@@ -26,14 +35,21 @@ __all__ = [
     "CodexInvocationError",
     "CodexRecoverableInvocationError",
     "CODEX_PERMISSION_PROFILE",
+    "DEFAULT_MANAGER_ID",
+    "MANAGER_PROJECT_PATH",
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
+    "SUPPORTED_MANAGER_IDS",
     "CodexNativeSessionBinding",
     "CodexNativeSessionLauncher",
     "CodexNativeSessionOutcome",
     "EffectIntent",
     "EffectLedger",
+    "NativeManagerInvocationError",
+    "NativeManagerRecoverableError",
     "Receipt",
     "codex_supports_native_workshop",
+    "manager_launcher",
+    "manager_spec",
     "factory_credential_environment",
     "factory_credential_file",
     "factory_service_credential_environment",

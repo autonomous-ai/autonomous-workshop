@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 2050" role="img" aria-labelledby="title description">
   <title id="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</title>
-  <desc id="description">A journey from Wish into a pluggable agentic runtime, where one root coding-agent session acts as Workshop Manager. Each new run freezes one effort route: Spark goes through Make and Release, Forge goes through Invent, Make, and Release, and Quest adds Playtest before Release. Inventor selection happens inside the first creative stage rather than in a separate Match turn. Release hands off to the Operations team for Printing, Deliver, and customer Review.</desc>
+  <desc id="description">A journey from Wish into a pluggable agentic runtime, where one root coding-agent session acts as Workshop Manager. Each active stage attempt receives one native Codex Goal whose stopping condition is successful stage finalization. Each new run freezes one effort route: Spark goes through Make and Release, Forge goes through Invent, Make, and Release, and Quest adds Playtest before Release. Inventor selection happens inside the first creative stage rather than in a separate Match turn. Release hands off to the Operations team for Printing, Deliver, and customer Review.</desc>
 
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
@@ -8,9 +8,6 @@
     </filter>
     <marker id="arrow-main" viewBox="0 0 12 12" markerWidth="24" markerHeight="24" refX="11" refY="6" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
       <polygon points="0,0 12,6 0,12" fill="#525b66"/>
-    </marker>
-    <marker id="arrow-micro" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto" markerUnits="strokeWidth">
-      <path d="M 0 0 L 9 4.5 L 0 9 z" fill="#d97706"/>
     </marker>
     <marker id="arrow-ai" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#1675b8"/>
@@ -40,13 +37,12 @@
       .pill-future { fill: #ffffff; stroke: #82a79f; stroke-width: 1; }
       .pill-now-text { font: 700 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0.6px; fill: #ffffff; }
       .pill-future-text { font: 700 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0.4px; fill: #376b61; }
-      .micro-copy { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1px; fill: #a85e05; }
+      .goal-copy { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1px; fill: #a85e05; }
       .gate { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #a85e05; }
       .gate-ai { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #11689f; }
       .edge-label-ai { font: 700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #11689f; }
       .edge-label-human { font: 700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #6840aa; }
       .flow { fill: none; stroke: #525b66; stroke-width: 2.5; marker-end: url(#arrow-main); }
-      .micro { fill: none; stroke: #d97706; stroke-width: 2.5; marker-end: url(#arrow-micro); }
       .feedback-ai { fill: none; stroke: #1675b8; stroke-width: 3; marker-end: url(#arrow-ai); }
       .feedback-human { fill: none; stroke: #7c4dcc; stroke-width: 3; marker-end: url(#arrow-human); }
     </style>
@@ -61,8 +57,8 @@
       <text x="40" y="5" class="legend">through the Workshop</text>
     </g>
     <g transform="translate(230 0)">
-      <path d="M 0 2 C 6 19, 24 19, 30 2" fill="none" stroke="#d97706" stroke-width="3"/>
-      <text x="40" y="5" class="legend">inspect, act, verify, improve</text>
+      <line x1="0" y1="0" x2="30" y2="0" stroke="#d97706" stroke-width="3"/>
+      <text x="40" y="5" class="legend">one Codex Goal per active stage attempt</text>
     </g>
     <g transform="translate(520 0)">
       <line x1="0" y1="0" x2="30" y2="0" stroke="#7c4dcc" stroke-width="3"/>
@@ -114,8 +110,8 @@
   </g>
   <text x="210" y="348" class="eyebrow eyebrow-manager">PLUGGABLE AGENTIC RUNTIME</text>
   <text x="210" y="380" class="heading">WORKSHOP MANAGER</text>
-  <text x="210" y="405" class="body">One root coding-agent session runs each enabled stage through Release</text>
-  <text x="210" y="426" class="body">inside this toy's persistent project; the host owns gates and publishing.</text>
+  <text x="210" y="405" class="body">One root coding-agent session runs each enabled stage through Release.</text>
+  <text x="210" y="426" class="body">Each attempt gets one Goal; the host owns gates and publishing.</text>
   <rect x="230" y="440" width="138" height="22" rx="11" class="pill-future"/>
   <text x="299" y="455" text-anchor="middle" class="pill-future-text">CLAUDE CODE</text>
   <rect x="382" y="440" width="138" height="22" rx="11" class="pill-now"/>
@@ -130,8 +126,8 @@
   </g>
   <text x="250" y="548" class="eyebrow">FREEZE ONE ROUTE FOR THIS RUN</text>
   <text x="250" y="580" class="heading">EFFORT</text>
-  <text x="250" y="606" class="body">Spark · Make → Release</text>
-  <text x="250" y="628" class="body">Forge · Invent → Make → Release (default)</text>
+  <text x="250" y="606" class="body">Spark · Make → Release (default)</text>
+  <text x="250" y="628" class="body">Forge · Invent → Make → Release</text>
   <text x="250" y="650" class="body">Quest · Invent → Make → Playtest → Release</text>
 
   <!-- Invent -->
@@ -144,11 +140,9 @@
   <text x="250" y="786" class="body">Choose the Inventor whose Taste fits the Wish.</text>
   <text x="250" y="808" class="body">Research, explore, and fix the selected design.</text>
   <text x="250" y="830" class="body">Brief every part before geometry begins.</text>
-  <path class="micro" d="M 665 728 C 735 702, 764 755, 730 802 C 700 842, 633 813, 646 766"/>
-  <text x="697" y="737" text-anchor="middle" class="micro-copy">OBSERVE</text>
-  <text x="697" y="759" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="781" text-anchor="middle" class="micro-copy">VERIFY</text>
-  <text x="697" y="803" text-anchor="middle" class="micro-copy">IMPROVE</text>
+  <text x="690" y="749" text-anchor="middle" class="goal-copy">CODEX GOAL</text>
+  <text x="690" y="777" text-anchor="middle" class="body">Select + seal</text>
+  <text x="690" y="799" text-anchor="middle" class="body">one design</text>
 
   <!-- Invent gate -->
   <rect x="516" y="856" width="144" height="26" rx="13" fill="#fff8ec"/>
@@ -164,11 +158,9 @@
   <text x="250" y="986" class="body">Turn the selected design into mechanical CAD.</text>
   <text x="250" y="1008" class="body">Build printable parts that fit, move,</text>
   <text x="250" y="1030" class="body">and feel right.</text>
-  <path class="micro" d="M 665 928 C 735 902, 764 955, 730 1002 C 700 1042, 633 1013, 646 966"/>
-  <text x="697" y="937" text-anchor="middle" class="micro-copy">OBSERVE</text>
-  <text x="697" y="959" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="981" text-anchor="middle" class="micro-copy">VERIFY</text>
-  <text x="697" y="1003" text-anchor="middle" class="micro-copy">IMPROVE</text>
+  <text x="690" y="949" text-anchor="middle" class="goal-copy">CODEX GOAL</text>
+  <text x="690" y="977" text-anchor="middle" class="body">Build + prove</text>
+  <text x="690" y="999" text-anchor="middle" class="body">exact CAD</text>
 
   <!-- Make gate -->
   <rect x="516" y="1056" width="144" height="26" rx="13" fill="#fff8ec"/>
@@ -183,11 +175,9 @@
   <text x="250" y="1141" class="heading">PLAYTEST</text>
   <text x="250" y="1168" class="body">Inspect the exact build; record deterministic proof.</text>
   <text x="250" y="1190" class="body">Failures return to Make or Invent for repair.</text>
-  <path class="micro" d="M 665 1108 C 735 1082, 764 1135, 730 1182 C 700 1222, 633 1193, 646 1146"/>
-  <text x="697" y="1117" text-anchor="middle" class="micro-copy">OBSERVE</text>
-  <text x="697" y="1139" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="1161" text-anchor="middle" class="micro-copy">VERIFY</text>
-  <text x="697" y="1183" text-anchor="middle" class="micro-copy">IMPROVE</text>
+  <text x="690" y="1129" text-anchor="middle" class="goal-copy">CODEX GOAL</text>
+  <text x="690" y="1157" text-anchor="middle" class="body">Evaluate build</text>
+  <text x="690" y="1179" text-anchor="middle" class="body">truthfully</text>
 
   <!-- Playtest gate -->
   <rect x="516" y="1236" width="164" height="26" rx="13" fill="#fff8ec"/>
@@ -202,11 +192,9 @@
   <text x="250" y="1361" class="heading">RELEASE</text>
   <text x="250" y="1388" class="body">Seal ready-to-print CAD and the in-box manual PDF.</text>
   <text x="250" y="1410" class="body">Quest binds Playtest proof; Spark and Forge record not-run.</text>
-  <path class="micro" d="M 665 1328 C 735 1302, 764 1355, 730 1402 C 700 1442, 633 1413, 646 1366"/>
-  <text x="697" y="1337" text-anchor="middle" class="micro-copy">OBSERVE</text>
-  <text x="697" y="1359" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="1381" text-anchor="middle" class="micro-copy">VERIFY</text>
-  <text x="697" y="1403" text-anchor="middle" class="micro-copy">IMPROVE</text>
+  <text x="690" y="1349" text-anchor="middle" class="goal-copy">CODEX GOAL</text>
+  <text x="690" y="1377" text-anchor="middle" class="body">Package exact</text>
+  <text x="690" y="1399" text-anchor="middle" class="body">CAD + manual</text>
 
   <!-- Release gate -->
   <rect x="310" y="1456" width="168" height="26" rx="13" fill="#fff8ec"/>

@@ -161,8 +161,8 @@ git diff --check
 ```
 
 Then start a representative private Wish and inspect the selection evidence
-sealed by the first active creative stage. Forge is the default and folds
-selection into Invent:
+sealed by the first active creative stage. Spark is the default and folds
+selection into Make:
 
 ```bash
 uv run workshop wish \

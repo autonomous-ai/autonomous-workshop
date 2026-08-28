@@ -1,7 +1,7 @@
 {
   "extensions": [
     {
-      "artifact_sha256": "ce5864276ff52dc75388e7203d9d2751bdb9ebfd24785731e14f8649177f0a11",
+      "artifact_sha256": "5374e8e8cc46866d77dfeeaf6b430af914b1904d5f0894bc817bbdca07078aba",
       "kind": "codex-skill",
       "name": "pico-press-inventor",
       "path": "skills/pico-press-inventor"

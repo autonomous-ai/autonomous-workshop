@@ -1,0 +1,357 @@
+{
+  "binding": {
+    "made_file_sha256": "eee328cd5a9177ce1b241b2f3d6f89f73ea285e9f5c5cad8da6883bb9391431d",
+    "made_path": "artifacts/make/r0002/made.json",
+    "made_sha256": "2ba7764da19c3e4c392f3c56c877eefc24aa5b401797e73e524ca09640dc8dbb",
+    "pipeline_report_path": "artifacts/make/r0002/product/cad/comet_heist/measure/verification-pipeline.md",
+    "pipeline_report_sha256": "c16351f0e6df3dddc4aee753732c70193377192e63f53bbe86f7547b9fa7b6b0",
+    "prior_playtest_path": "artifacts/playtest/r0001/playtested.json",
+    "prior_playtest_sha256": "685dd129e6be0afc831a0269c1b6be5580156fd76df3fa8e492892b5ba371284",
+    "prior_playtested_identity_sha256": "c210cabab003b2f8b0451fbfbcfac7a029dd937bc1174832c447514c8dc9b937",
+    "product_artifact_sha256": "93944b68688d51e857380601c06871e8705e8e90d85da16d88b62d436fa834fe",
+    "stage_checkpoint_sha256": "57c63245d7b8b9578aa7fd0d54380205af91b83c9fe78a2808aaad8f4aa26882",
+    "stage_subject_sha256": "7bc45efb752b155dcb3990ac14383ad3c9f12d9c9e3d792c613f231a68975c90",
+    "support_report_path": "artifacts/make/r0002/product/cad/comet_heist/measure/support-angle.json",
+    "support_report_sha256": "8c73e9c5a7e32cfbceab660acb0f46590e99763d9128988ac018f52fb0706d4f",
+    "verification_path": "artifacts/make/r0002/product/cad/verification.json",
+    "verification_sha256": "03e4b6fb42dff1ce33968489bf260abe43b888f98307a6cb10719a7fd6185f86"
+  },
+  "evaluator": "comet-heist-sealed-printability-audit",
+  "evaluator_version": "1.1.0",
+  "limitations": [
+    "No slicer run or successful physical print is evidenced by this audit.",
+    "Bed origin exclusions, brim, supports, layer adhesion, warping, dimensional compensation, surface finish, and actual print time/material remain unknown.",
+    "Watertight meshes and sampled thickness are digital eligibility evidence, not proof of physical manufacture or durability."
+  ],
+  "measurements": {
+    "all_part_stls_watertight": true,
+    "bed_mm": [
+      210.0,
+      210.0,
+      220.0
+    ],
+    "gravity_blade_declared_pose": "Panel parallel to the bed with trunnions vertical; lower trunnion end is the bed datum and generated support is required beneath the panel.",
+    "gravity_blade_exported_pose": "Low-profile 36.998 by 14.0 by 14.7 mm blade with the authored 90-degree Y rotation and vertical trunnions.",
+    "gravity_blade_exported_stl_envelope_mm": [
+      36.998,
+      14.0,
+      14.7
+    ],
+    "independent_mesh_reruns": {
+      "part_comet_orbit.stl": {
+        "envelope_mm": [
+          30.0,
+          30.0,
+          6.3
+        ],
+        "passed": true,
+        "sha256": "d527b7d1f6cdb00a2d00212477abc0556564c4b889353fa306e147a496851e3d"
+      },
+      "part_comet_sun.stl": {
+        "envelope_mm": [
+          30.0,
+          30.0,
+          6.3
+        ],
+        "passed": true,
+        "sha256": "807413fdafeaddfeed8eac893a63c372eca6792ed9bee6261ac209354362cc25"
+      },
+      "part_gate_bridge.stl": {
+        "envelope_mm": [
+          65.6,
+          110.0,
+          20.0
+        ],
+        "passed": true,
+        "sha256": "297f187916ab19f42f29564c5eb280ba88d29cffc8e718bcd1118524ff7b7e66"
+      },
+      "part_gate_keeper.stl": {
+        "envelope_mm": [
+          28.0,
+          10.0,
+          8.5
+        ],
+        "passed": true,
+        "sha256": "eadaf34e5b5a2bf6ef8b006454441ace55a8a313a5b7c1dbecf13c6e8525a771"
+      },
+      "part_gravity_blade.stl": {
+        "envelope_mm": [
+          37.0,
+          14.0,
+          14.7
+        ],
+        "passed": true,
+        "sha256": "d41bf22b6e63e7f1ab8d986dd41e167e264828425729eb0e7a1228fa408cd89e"
+      },
+      "part_ready_spent_magazine.stl": {
+        "envelope_mm": [
+          44.0,
+          72.0,
+          15.0
+        ],
+        "passed": true,
+        "sha256": "d8048b8745391589a877b0456411d65c101aed46c16ebb3d2165e79390dbdca7"
+      },
+      "part_seam_storage_key.stl": {
+        "envelope_mm": [
+          52.0,
+          12.0,
+          4.0
+        ],
+        "passed": true,
+        "sha256": "66363260663277cde5fde110006b435ceb96693d31c49c37b67b8dff5e874ed2"
+      },
+      "part_tray_a.stl": {
+        "envelope_mm": [
+          206.0,
+          186.0,
+          20.0
+        ],
+        "passed": true,
+        "sha256": "5db461afbd08434f188aa3e08f5ee6850fe5ec54d1fab69c39c4037e8b5f30db"
+      },
+      "part_tray_b.stl": {
+        "envelope_mm": [
+          206.0,
+          186.0,
+          20.0
+        ],
+        "passed": true,
+        "sha256": "c1594810ec520b0250ebee81f2d0d0342904d92c1c306d620e23995ab7d9422f"
+      }
+    },
+    "independent_support_rerun": {
+      "part_comet_orbit.stl": {
+        "critical_downward_area_mm2": 0.0,
+        "critical_downward_triangle_count": 0,
+        "critical_z_range_mm": null,
+        "envelope_mm": [
+          29.981,
+          29.991,
+          6.3
+        ],
+        "sha256": "d527b7d1f6cdb00a2d00212477abc0556564c4b889353fa306e147a496851e3d",
+        "triangle_count": 1124
+      },
+      "part_comet_sun.stl": {
+        "critical_downward_area_mm2": 0.0,
+        "critical_downward_triangle_count": 0,
+        "critical_z_range_mm": null,
+        "envelope_mm": [
+          29.981,
+          29.991,
+          6.3
+        ],
+        "sha256": "807413fdafeaddfeed8eac893a63c372eca6792ed9bee6261ac209354362cc25",
+        "triangle_count": 752
+      },
+      "part_gate_bridge.stl": {
+        "critical_downward_area_mm2": 2436.417,
+        "critical_downward_triangle_count": 144,
+        "critical_z_range_mm": [
+          2.0,
+          8.0
+        ],
+        "envelope_mm": [
+          65.6,
+          110.0,
+          20.0
+        ],
+        "sha256": "297f187916ab19f42f29564c5eb280ba88d29cffc8e718bcd1118524ff7b7e66",
+        "triangle_count": 620
+      },
+      "part_gate_keeper.stl": {
+        "critical_downward_area_mm2": 0.0,
+        "critical_downward_triangle_count": 0,
+        "critical_z_range_mm": null,
+        "envelope_mm": [
+          28.0,
+          10.0,
+          8.5
+        ],
+        "sha256": "eadaf34e5b5a2bf6ef8b006454441ace55a8a313a5b7c1dbecf13c6e8525a771",
+        "triangle_count": 20
+      },
+      "part_gravity_blade.stl": {
+        "critical_downward_area_mm2": 299.727,
+        "critical_downward_triangle_count": 37,
+        "critical_z_range_mm": [
+          3.35,
+          5.35
+        ],
+        "envelope_mm": [
+          36.998,
+          14.0,
+          14.7
+        ],
+        "sha256": "d41bf22b6e63e7f1ab8d986dd41e167e264828425729eb0e7a1228fa408cd89e",
+        "triangle_count": 412
+      },
+      "part_ready_spent_magazine.stl": {
+        "critical_downward_area_mm2": 48.0,
+        "critical_downward_triangle_count": 4,
+        "critical_z_range_mm": [
+          7.0,
+          12.0
+        ],
+        "envelope_mm": [
+          44.0,
+          72.0,
+          15.0
+        ],
+        "sha256": "d8048b8745391589a877b0456411d65c101aed46c16ebb3d2165e79390dbdca7",
+        "triangle_count": 4832
+      },
+      "part_seam_storage_key.stl": {
+        "critical_downward_area_mm2": 0.0,
+        "critical_downward_triangle_count": 0,
+        "critical_z_range_mm": null,
+        "envelope_mm": [
+          52.0,
+          12.0,
+          4.0
+        ],
+        "sha256": "66363260663277cde5fde110006b435ceb96693d31c49c37b67b8dff5e874ed2",
+        "triangle_count": 276
+      },
+      "part_tray_a.stl": {
+        "critical_downward_area_mm2": 958.302,
+        "critical_downward_triangle_count": 394,
+        "critical_z_range_mm": [
+          4.0,
+          18.0
+        ],
+        "envelope_mm": [
+          206.0,
+          186.0,
+          20.0
+        ],
+        "sha256": "5db461afbd08434f188aa3e08f5ee6850fe5ec54d1fab69c39c4037e8b5f30db",
+        "triangle_count": 4016
+      },
+      "part_tray_b.stl": {
+        "critical_downward_area_mm2": 1330.302,
+        "critical_downward_triangle_count": 396,
+        "critical_z_range_mm": [
+          1.2,
+          18.0
+        ],
+        "envelope_mm": [
+          206.0,
+          186.0,
+          20.0
+        ],
+        "sha256": "c1594810ec520b0250ebee81f2d0d0342904d92c1c306d620e23995ab7d9422f",
+        "triangle_count": 4024
+      }
+    },
+    "largest_part_nominal_xy_mm": [
+      206.0,
+      186.0
+    ],
+    "nominal_xy_margin_on_declared_bed_mm": [
+      4.0,
+      24.0
+    ],
+    "nozzle_mm": 0.4,
+    "printable_family_count": 9,
+    "prior_failure_repair": {
+      "failure_code": "declared-print-pose-mismatch",
+      "feedback_code": "rotate-blade-and-prove-support-needs",
+      "rejected_blade_envelope_mm": [
+        14.7,
+        14.0,
+        36.998
+      ],
+      "rejected_blade_source_sha256": "50b890630598ad4f7549b76398587b73384558501c44df2e3625892a3ff6111c",
+      "rejected_blade_stl_sha256": "9a609a23a0c05e3c6f6bdb9881648390093c27ff22adebe61e1e834d6e771412",
+      "repaired_blade_envelope_mm": [
+        36.998,
+        14.0,
+        14.7
+      ],
+      "repaired_blade_source_sha256": "59b2fcf5177cfd46698130aa9f7ffa73ac8211b8f8863f0946ccab4aa22d1d2c",
+      "repaired_blade_stl_sha256": "d41bf22b6e63e7f1ab8d986dd41e167e264828425729eb0e7a1228fa408cd89e"
+    },
+    "support_angle_from_horizontal_deg": 45.0,
+    "support_plan": {
+      "part_comet_orbit.stl": "none",
+      "part_comet_sun.stl": "none",
+      "part_gate_bridge.stl": "generated-support-everywhere",
+      "part_gate_keeper.stl": "none",
+      "part_gravity_blade.stl": "generated-support-everywhere",
+      "part_ready_spent_magazine.stl": "generated-support-everywhere",
+      "part_seam_storage_key.stl": "none",
+      "part_tray_a.stl": "generated-support-everywhere",
+      "part_tray_b.stl": "generated-support-everywhere"
+    },
+    "support_report_passed": true,
+    "thickness_reports": {
+      "thickness-comet_orbit.md": {
+        "distribution_pass": true,
+        "sha256": "8f5b412a9fc88608132db6a437312cfccfcd17e5e505f9ca924794846a8d7849",
+        "wall_threshold_pass": true
+      },
+      "thickness-comet_sun.md": {
+        "distribution_pass": true,
+        "sha256": "fd88520ac9cc704cf03b0133a96e0d3199e4572b5dec7738a487690cedf90795",
+        "wall_threshold_pass": true
+      },
+      "thickness-gate_bridge.md": {
+        "distribution_pass": true,
+        "sha256": "8966732ccf4bed53e0e8952f49b803249b9326ee8416143da23fefeb2eb72acf",
+        "wall_threshold_pass": true
+      },
+      "thickness-gate_keeper.md": {
+        "distribution_pass": true,
+        "sha256": "2a874ddf7b3223f112d2c1de75b6f4b4fcfb566a3a6f0934da31324cc39ac5a0",
+        "wall_threshold_pass": true
+      },
+      "thickness-gravity_blade.md": {
+        "distribution_pass": true,
+        "sha256": "8907e1f23659da88add1caa7976ce3f42c0b2833c7dc4f379c10dee012d2c46f",
+        "wall_threshold_pass": true
+      },
+      "thickness-ready_spent_magazine.md": {
+        "distribution_pass": true,
+        "sha256": "cdf9244cf4c5009c305368b57222b3aad2e2e09acc6f425b7a7c5312a8a1dcfd",
+        "wall_threshold_pass": true
+      },
+      "thickness-seam_storage_key.md": {
+        "distribution_pass": true,
+        "sha256": "f125327f6c4bb1787325cd61eab2d43347dfddd7585e3f9aef01644c9e122318",
+        "wall_threshold_pass": true
+      },
+      "thickness-tray_a.md": {
+        "distribution_pass": true,
+        "sha256": "ed8eab2bff25373523d7550a2c08dcd5aec7b23844885596219f63c7a0f676e9",
+        "wall_threshold_pass": true
+      },
+      "thickness-tray_b.md": {
+        "distribution_pass": true,
+        "sha256": "ca6ade5860d776767d583bc762bb6ac1f7f381d02ed981d30bdb7663d047a61f",
+        "wall_threshold_pass": true
+      }
+    }
+  },
+  "observed_at": "2026-08-27T18:47:27Z",
+  "passed": true,
+  "repair_finding": "The prior declared-print-pose-mismatch is repaired in changed sealed bytes: the blade is low-profile with vertical trunnions, and all nine exact family STLs are covered by matching 45-degree support evidence.",
+  "schema_version": 1,
+  "tests": {
+    "all_part_steps_valid": true,
+    "all_part_stls_watertight": true,
+    "all_part_thickness_gates_passed": true,
+    "declared_bed_matches": true,
+    "declared_nozzle_matches": true,
+    "declared_print_pose_matches_exported_part": true,
+    "final_pipeline_pass": true,
+    "independent_mesh_rerun_all_pass": true,
+    "nine_passing_thickness_reports": true,
+    "nine_printable_families": true,
+    "prior_failure_bytes_changed": true,
+    "support_angle_evidence_passes": true,
+    "support_evidence_exactly_matches_all_sealed_stls": true,
+    "tray_lips_and_magazine_tongue_detected": true
+  }
+}

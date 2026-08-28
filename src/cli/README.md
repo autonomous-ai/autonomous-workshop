@@ -9,5 +9,5 @@ Run it from a source checkout with `PYTHONPATH=src python -m cli --help`, or use
 the installed `workshop` command.
 
 `workshop wish --effort spark|forge|quest "..."` freezes the selected route;
-Forge is the default. Status and resume read that durable choice rather than
+Spark is the default. Status and resume read that durable choice rather than
 accepting a new effort value.

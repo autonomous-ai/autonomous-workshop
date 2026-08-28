@@ -601,8 +601,8 @@ def _native_wish_smoke(
     if (
         receipt.get("kind") != "native-agent-run"
         or receipt.get("status") != "waiting"
-        or receipt.get("stage") != "invent"
-        or receipt.get("effort") != "forge"
+        or receipt.get("stage") != "make"
+        or receipt.get("effort") != "spark"
         or receipt.get("native_turns") != 1
         or receipt.get("action") != "started"
     ):
@@ -652,7 +652,7 @@ def _native_wish_smoke(
     roster = agent_checkpoint.get("inventor_roster")
     if (
         agent_checkpoint.get("schema_version") != 4
-        or agent_checkpoint.get("effort") != "forge"
+        or agent_checkpoint.get("effort") != "spark"
         or not isinstance(roster, list)
         or tuple(item.get("inventor_id") for item in roster) != INVENTORS
         or tuple(item.get("agent_path") for item in roster)
@@ -663,7 +663,7 @@ def _native_wish_smoke(
         )
         or stat.S_IMODE(agent_checkpoint_path.stat().st_mode) != 0o600
     ):
-        raise AssertionError("installed Wish host roster is not the schema-v4 Forge roster")
+        raise AssertionError("installed Wish host roster is not the schema-v4 Spark roster")
 
     probe = json.loads(
         (workspace / "native-packaging-probe.json").read_text(encoding="utf-8")
@@ -717,7 +717,7 @@ def _native_wish_smoke(
         raise AssertionError("installed toy has no complete custom Inventor roster")
     if probe["product_id"] != product_id or not all(probe["prelaunch"].values()):
         raise AssertionError("toy project was not populated before Codex launched")
-    if "current invent stage" not in probe["prompt"]:
+    if "current make stage" not in probe["prompt"]:
         raise AssertionError("installed native Codex received the wrong stage prompt")
 
     constitution = repository / ".agents" / "product-run" / "AGENTS.md"
