@@ -89,6 +89,28 @@ Every adapter must keep the same toy-project, stage-objective, checkpoint, gate,
 
 Each Inventor is a specialist point of view, not a category of Wish. Several can make the same kind of toy in their own way. Many more are coming, and you can add your own.
 
+An Inventor is a declared specialist bundle: `TASTE.md` for creative judgment, `inventor.json` for identity and skill hashes, and a required `<id>-inventor` skill. Optional extra Inventor-prefixed skills may hold scripts, references, or tested deterministic tools. For a run, `.codex/agents/*.toml` is the sole roster. Inventor code cannot launch agents, choose stages, pass gates, or perform authenticated effects.
+
+```bash
+uv run workshop create inventor \
+  --taste ./TASTE.md
+```
+
+The file must be named `TASTE.md`. Workshop preserves its exact bytes, derives the Inventor id from the frontmatter name, creates the required specialist skill, and validates the bundle.
+
+```markdown
+---
+name: Ada
+description: Choose Ada for hand-cranked creatures; not static models or games.
+---
+
+# Ada's taste
+
+I love mechanisms whose motion tells the story. I reject decoration without play.
+```
+
+Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the specialist contract.
+
 ### Alice — reinvent the classics ([TASTE.md](inventors/alice/TASTE.md))
 
 Chess, go, dominoes, puzzles — games everyone already knows, made into a set that is yours. Alice never touches the rules. She changes what the pieces are, so the set is about you.
@@ -127,28 +149,6 @@ Your dog, your bike, your desk, your homelab — turned into a small world you c
 
 ![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
 *A 1:16 Formula 1 car*
-
-An Inventor is a declared specialist bundle: `TASTE.md` for creative judgment, `inventor.json` for identity and skill hashes, and a required `<id>-inventor` skill. Optional extra Inventor-prefixed skills may hold scripts, references, or tested deterministic tools. For a run, `.codex/agents/*.toml` is the sole roster. Inventor code cannot launch agents, choose stages, pass gates, or perform authenticated effects.
-
-```bash
-uv run workshop create inventor \
-  --taste ./TASTE.md
-```
-
-The file must be named `TASTE.md`. Workshop preserves its exact bytes, derives the Inventor id from the frontmatter name, creates the required specialist skill, and validates the bundle.
-
-```markdown
----
-name: Ada
-description: Choose Ada for hand-cranked creatures; not static models or games.
----
-
-# Ada's taste
-
-I love mechanisms whose motion tells the story. I reject decoration without play.
-```
-
-Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the specialist contract.
 
 ## Toys
 
