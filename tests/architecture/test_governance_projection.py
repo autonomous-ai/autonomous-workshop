@@ -56,7 +56,9 @@ class GovernanceProjectionTest(unittest.TestCase):
         codeowners = (REPOSITORY / ".github" / "CODEOWNERS").read_text(
             encoding="utf-8"
         )
-        maintainers = (REPOSITORY / "MAINTAINERS.md").read_text(encoding="utf-8")
+        maintainers = (REPOSITORY / ".github" / "MAINTAINERS.md").read_text(
+            encoding="utf-8"
+        )
         for component in self.components:
             self.assertTrue(component["primary_github"])
             self.assertTrue(component["docs"])

@@ -69,8 +69,8 @@ Workflow alone sequences stages. Integrations implement ports declared by the
 owning component. CLI and inventor profiles consume public Workshop APIs; the
 Workshop library never imports either application.
 
-The accepted boundary is documented in [ADR 0001](docs/adr/0001-component-oriented-source-layout.md)
-and [ADR 0002](docs/adr/0002-dependency-and-orchestration-boundaries.md).
+The accepted boundary is documented in [ADR 0001](../docs/adr/0001-component-oriented-source-layout.md)
+and [ADR 0002](../docs/adr/0002-dependency-and-orchestration-boundaries.md).
 
 ## Contribution and review process
 
@@ -95,7 +95,7 @@ or changes to installed skills and schemas.
 
 Public Python compatibility follows the documented release policy. Durable
 state, manifests, evidence, receipts, hashes, and artifact bytes receive the
-stronger rules in [ADR 0003](docs/adr/0003-durable-compatibility-during-refactoring.md):
+stronger rules in [ADR 0003](../docs/adr/0003-durable-compatibility-during-refactoring.md):
 old evidence is read by versioned readers and is not rewritten to match new
 source names.
 

@@ -4,7 +4,7 @@ schema_version = 1
 name = "autonomous-workshop"
 ownership_source = ".github/components.toml"
 codeowners_projection = ".github/CODEOWNERS"
-maintainers_projection = "MAINTAINERS.md"
+maintainers_projection = ".github/MAINTAINERS.md"
 
 [policy]
 primary_required = true
@@ -218,6 +218,6 @@ primary_github = ["@deehw"]
 backup_github = []
 backup_status = "vacant"
 risk = "critical"
-source = [".github/**", ".gitattributes", ".gitignore", "src/workshop/__init__.py", "src/workshop/_validation.py", "src/workshop/errors.py", "docs/**", "tools/**", "changes/**", "MANIFEST.in", "setup.py", "pyproject.toml", "uv.lock", "LICENSE", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md", "MAINTAINERS.md", "GOVERNANCE.md", "SECURITY.md", "CODE_OF_CONDUCT.md", "SUPPORT.md"]
+source = [".github/**", ".gitattributes", ".gitignore", "src/workshop/__init__.py", "src/workshop/_validation.py", "src/workshop/errors.py", "docs/**", "tools/**", "changes/**", "MANIFEST.in", "setup.py", "pyproject.toml", "uv.lock", "LICENSE", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md"]
 tests = ["tests/architecture/**", "tests/packaging/**"]
-docs = ["README.md", "CONTRIBUTING.md", "src/cli/README.md"]
+docs = ["README.md", ".github/CONTRIBUTING.md", "src/cli/README.md"]

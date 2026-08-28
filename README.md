@@ -224,7 +224,7 @@ See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md), [Workshop archi
 
 ## Contributing
 
-This is the shop floor for Workshop code and Inventor sources. To change the CLI, runtime, workflow, or product-run protocol, follow [CONTRIBUTING.md](CONTRIBUTING.md). To add a specialist, start from [Build an Inventor](docs/BUILD_AN_INVENTOR.md).
+This is the shop floor for Workshop code and Inventor sources. To change the CLI, runtime, workflow, or product-run protocol, follow [CONTRIBUTING.md](.github/CONTRIBUTING.md). To add a specialist, start from [Build an Inventor](docs/BUILD_AN_INVENTOR.md).
 
 ```bash
 uv run workshop doctor

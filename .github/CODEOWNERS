@@ -59,8 +59,9 @@
 /THIRD_PARTY_NOTICES.md @deehw
 /CHANGELOG.md @deehw
 /changes/ @deehw
-/MAINTAINERS.md @deehw
-/GOVERNANCE.md @deehw
-/SECURITY.md @deehw
-/CODE_OF_CONDUCT.md @deehw
-/SUPPORT.md @deehw
+/.github/MAINTAINERS.md @deehw
+/.github/GOVERNANCE.md @deehw
+/.github/SECURITY.md @deehw
+/.github/CODE_OF_CONDUCT.md @deehw
+/.github/SUPPORT.md @deehw
+/.github/CONTRIBUTING.md @deehw

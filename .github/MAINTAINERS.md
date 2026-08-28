@@ -2,7 +2,7 @@
 
 Autonomous Workshop assigns one directly responsible individual (DRI) and one
 backup to every component. The machine-readable source of truth is
-[`.github/components.toml`](.github/components.toml); [CODEOWNERS](.github/CODEOWNERS)
+[`components.toml`](components.toml); [CODEOWNERS](CODEOWNERS)
 is its GitHub review projection.
 
 Only accounts confirmed by repository history are listed. `Vacant` is an

@@ -4,10 +4,10 @@ Autonomous Workshop is one native Codex workflow with a small trusted Python
 host. Contributions should make that shared system or one declared Inventor
 specialist better without creating another agent framework.
 
-Read [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md) and
-[Workshop architecture](docs/ARCHITECTURE.md) before changing the CLI, runtime,
+Read [Native coding-agent runtime](../docs/NATIVE_AGENT_RUNTIME.md) and
+[Workshop architecture](../docs/ARCHITECTURE.md) before changing the CLI, runtime,
 workflow, lifecycle contracts, or product-run instructions. Read
-[Build an Inventor](docs/BUILD_AN_INVENTOR.md) before adding a specialist.
+[Build an Inventor](../docs/BUILD_AN_INVENTOR.md) before adding a specialist.
 
 ## Set up the repository
 
