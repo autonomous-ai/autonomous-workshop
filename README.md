@@ -89,14 +89,14 @@ Every adapter must keep the same toy-project, stage-objective, checkpoint, gate,
 
 Each Inventor is a specialist point of view, not a category of Wish. Several can make the same kind of toy in their own way. Many more are coming, and you can add your own.
 
-### Alice — reinvent the classics
+### Alice — reinvent the classics ([TASTE.md](inventors/alice/TASTE.md))
 
 Chess, go, dominoes, puzzles — games everyone already knows, made into a set that is yours. Alice never touches the rules. She changes what the pieces are, so the set is about you.
 
 ![2030 San Francisco Chess Set](docs/images/alice-sf-chess.jpg)
 *2030 San Francisco Chess Set*
 
-### Leo — invent games that don't exist yet
+### Leo — invent games that don't exist yet ([TASTE.md](inventors/leo/TASTE.md))
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to sit at a table. Quest effort exercises those rules with seeded Playtest evidence; Spark and Forge truthfully release without claiming that testing occurred.
 
@@ -105,7 +105,7 @@ https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
 *[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel)
 — a two-player hidden-information strategy game of mushrooms, probes, and crowns*
 
-### Bob — invent machines that move
+### Bob — invent machines that move ([TASTE.md](inventors/bob/TASTE.md))
 
 Things that do one delightful thing when you wind them up, let them go, or drop something in. No motors, no batteries, no electronics — the movement has to come out of the shape itself.
 
@@ -114,33 +114,19 @@ https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
 *[Trotter](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
 — a palm-size, rubber-band-powered quadruped*
 
-### Ivy — invent science toys you can hold
+### Ivy — invent science toys you can hold ([TASTE.md](inventors/ivy/TASTE.md))
 
 The planets, a swinging pendulum, a shape that looks impossible — real science, small enough to pick up. Ivy says where her numbers came from and what she left out, because here being wrong is worse than being boring.
 
 ![A solar system with its orbits engraved](docs/images/ivy-solar-system.jpg)
 *A solar system with its orbits engraved — $59.99*
 
-### Eve — invent little worlds
+### Eve — invent little worlds ([TASTE.md](inventors/eve/TASTE.md))
 
 Your dog, your bike, your desk, your homelab — turned into a small world you can put on a shelf. Eve's only counts if it could not have existed before your wish.
 
 ![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
 *A 1:16 Formula 1 car*
-
-### Roster
-
-| Inventor | Taste | Craft |
-|---|---|---|
-| [ABO](inventors/abo/) | [TASTE.md](inventors/abo/TASTE.md) | original abstract strategy, judged on rules and structure |
-| [Alice](inventors/alice/) | [TASTE.md](inventors/alice/TASTE.md) | personal heirloom editions of known games |
-| [Leo](inventors/leo/) | [TASTE.md](inventors/leo/TASTE.md) | original games whose personalization changes play |
-| [Bob](inventors/bob/) | [TASTE.md](inventors/bob/TASTE.md) | kinetic machines where the mechanism is the spectacle |
-| [Ivy](inventors/ivy/) | [TASTE.md](inventors/ivy/TASTE.md) | science and mathematics made physically legible |
-| [Eve](inventors/eve/) | [TASTE.md](inventors/eve/TASTE.md) | real people, spaces, and objects made into little epics |
-| [Mira Fold](inventors/mira-fold/) | [TASTE.md](inventors/mira-fold/TASTE.md) | compact tactile transformations with one hidden reveal |
-| [Pico Press](inventors/pico-press/) | [TASTE.md](inventors/pico-press/TASTE.md) | tiny support-free toys around one crisp repeatable motion |
-| [Tess Loop](inventors/tess-loop/) | [TASTE.md](inventors/tess-loop/TASTE.md) | flat-print modular systems that bloom into pattern |
 
 An Inventor is a declared specialist bundle: `TASTE.md` for creative judgment, `inventor.json` for identity and skill hashes, and a required `<id>-inventor` skill. Optional extra Inventor-prefixed skills may hold scripts, references, or tested deterministic tools. For a run, `.codex/agents/*.toml` is the sole roster. Inventor code cannot launch agents, choose stages, pass gates, or perform authenticated effects.
 
