@@ -14,6 +14,7 @@ from unittest import mock
 
 from workshop.errors import ArtifactError, StateConflict, WorkshopError
 from workshop.integrations.factory import (
+    FACTORY_PROJECT_PDF_MANUAL_FILENAME,
     FACTORY_TOY_CATEGORY_SLUG,
     FactoryProjectFileResponse,
     HttpResponse,
@@ -190,7 +191,11 @@ class _DeterministicFactoryTransport:
 
     def project_file(self, method, url, headers, body, timeout):
         self.calls.append((method, url, dict(headers), body, timeout))
-        if method != "GET" or not url.endswith("/MANUAL.pdf") or body is not None:
+        if (
+            method != "GET"
+            or not url.endswith("/" + FACTORY_PROJECT_PDF_MANUAL_FILENAME)
+            or body is not None
+        ):
             raise AssertionError("unexpected Factory project-file request")
         return FactoryProjectFileResponse(
             200, {"Content-Type": "application/pdf"}, self.manual

@@ -11,6 +11,7 @@ contract construction to the materialized production finalizer.
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -18,6 +19,11 @@ import subprocess
 import sys
 import stat
 from pathlib import Path
+
+import reportlab
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen.canvas import Canvas
 
 
 THREAD_ID = "00000000-0000-4000-8000-000000000001"
@@ -47,39 +53,90 @@ def emit(value) -> None:
 
 
 def manual_pdf() -> bytes:
-    content = (
-        b"BT\n/F1 15 Tf\n36 370 Td\n(Orbit Dog Draughts) Tj\n"
-        b"0 -28 Td\n/F1 10 Tf\n(Set out the board and every playing piece.) Tj\n"
-        b"0 -18 Td\n(Use standard English draughts rules.) Tj\n"
-        b"0 -18 Td\n(Ages fourteen plus. Keep small parts away.) Tj\nET\n"
+    font_name = "DeterministicWorkshopVera"
+    if font_name not in pdfmetrics.getRegisteredFontNames():
+        font_path = Path(reportlab.__file__).resolve().parent / "fonts/Vera.ttf"
+        pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
+    output = io.BytesIO()
+    canvas = Canvas(
+        output,
+        pagesize=(297.64, 419.53),
+        pageCompression=1,
+        invariant=1,
+        initialFontName=font_name,
     )
-    objects = (
-        b"<< /Type /Catalog /Pages 2 0 R >>",
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    for lines in (
         (
-            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 297.64 419.53] "
-            b"/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>"
+            "Orbit Dog Draughts",
+            "Meet the exact board and every playing piece.",
+            "A tiny orbital match is ready to begin.",
         ),
-        b"<< /Length %d >>\nstream\n" % len(content) + content + b"endstream",
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        (
+            "Set up and play",
+            "Use standard English draughts rules.",
+            "For ages fourteen and older. Keep small parts away.",
+        ),
+    ):
+        canvas.setFont(font_name, 15)
+        canvas.drawString(30, 370, lines[0])
+        canvas.setFont(font_name, 10)
+        canvas.drawString(30, 340, lines[1])
+        canvas.drawString(30, 320, lines[2])
+        canvas.showPage()
+    canvas.save()
+    return output.getvalue()
+
+
+def manual_design_evidence(manual: bytes, made) -> dict:
+    visual = next(
+        entry
+        for entry in made["product_manifest"]["entries"]
+        if entry["path"] == "assembled.stl"
     )
-    document = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
-    offsets = [0]
-    for number, body in enumerate(objects, 1):
-        offsets.append(len(document))
-        document.extend(b"%d 0 obj\n" % number)
-        document.extend(body)
-        document.extend(b"\nendobj\n")
-    xref = len(document)
-    document.extend(b"xref\n0 %d\n" % (len(objects) + 1))
-    document.extend(b"0000000000 65535 f \n")
-    for offset in offsets[1:]:
-        document.extend(b"%010d 00000 n \n" % offset)
-    document.extend(
-        b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n"
-        % (len(objects) + 1, xref)
-    )
-    return bytes(document)
+    return {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.manual-design-evidence",
+        "manual_sha256": hashlib.sha256(manual).hexdigest(),
+        "design_mode": "bespoke",
+        "creative_brief": {
+            "emotional_promise": (
+                "Unbox a tiny orbital rivalry that feels ready for a first match."
+            ),
+            "physical_format": "Two-page A6 field card",
+            "format_rationale": (
+                "Two compact pages keep the inventory and first turn visible together."
+            ),
+            "visual_motif": (
+                "Orbital paths connect exact piece silhouettes to numbered actions."
+            ),
+            "palette": ["deep space navy", "warm paper white", "signal orange"],
+            "typography": ["Vera display", "Vera instructional body"],
+            "teaching_arc": [
+                "Meet the exact board and pieces",
+                "Set up the first orbital match",
+                "Play, reset, and pack away",
+            ],
+        },
+        "product_visuals": [
+            {
+                "source_path": visual["path"],
+                "source_sha256": visual["sha256"],
+                "pages": [1, 2],
+            }
+        ],
+        "review": {
+            "page_count": 2,
+            "color_pages": [1, 2],
+            "grayscale_pages": [1, 2],
+            "first_time_owner_pass": True,
+            "independent_reviewer": "native-subagent",
+            "findings": ["The setup action initially competed with the cover title."],
+            "resolved_changes": [
+                "Moved setup to page two and strengthened its action hierarchy."
+            ],
+            "status": "approved",
+        },
+    }
 
 
 def tetrahedron_stl() -> bytes:
@@ -523,6 +580,14 @@ def author_release(root: Path, stage) -> None:
     else:
         manual = manual_pdf()
     (package / "MANUAL.pdf").write_bytes(manual)
+    if (
+        inputs["release_contract"].get("manual_design_evidence_path")
+        == "MANUAL-DESIGN.json"
+    ):
+        write_json(
+            package / "MANUAL-DESIGN.json",
+            manual_design_evidence(manual, made),
+        )
     if inputs["release_contract"]["native_release_schema_version"] == 3:
         omission = {
             "schema_version": 1,
