@@ -1,12 +1,6 @@
 # Autonomous Workshop
 
-You wish for a toy that doesn't exist. A few days later, it arrives at your door.
-
-Not from a shelf. From your imagination.
-
-Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen. A run ends at a public Release: exact ready-to-print CAD plus the in-box `MANUAL.pdf`. Operations then prints, packs, delivers, and learns from Reviews.
-
-## Contents
+You wish for a toy that doesn't exist. A few days later, it arrives at your door. Not from a shelf. From your imagination. Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
 - [Quick start](#quick-start)
 - [Workshop Managers](#workshop-managers)
