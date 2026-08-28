@@ -19,7 +19,7 @@ uv run workshop wish \
   "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
 ```
 
-`--effort` chooses how deep the shop goes: ✨ Spark, 🔥 Forge, or 🗺️ Quest. Forge adds Invent. Quest adds Invent and Playtest:
+`--effort` chooses how deep the shop goes. 🔥 Forge adds Invent. 🗺️ Quest adds Invent and Playtest:
 
 ```bash
 uv run workshop wish \
