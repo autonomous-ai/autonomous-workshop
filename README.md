@@ -1,13 +1,13 @@
-<table>
+<table width="100%">
   <tr>
-    <td align="center" width="33%"><img src="docs/images/horn-tip.jpg" width="220" alt="Horn Tip"></td>
-    <td align="center" width="33%"><img src="docs/images/blindcap.gif" width="220" alt="Blindcap: Duel"></td>
-    <td align="center" width="33%"><img src="docs/images/alice-sf-chess.jpg" width="220" alt="2030 San Francisco Chess Set"></td>
+    <td align="center" width="33%"><img src="docs/images/horn-tip.jpg" width="100%" alt="Horn Tip"></td>
+    <td align="center" width="33%"><img src="docs/images/blindcap.gif" width="100%" alt="Blindcap: Duel"></td>
+    <td align="center" width="33%"><img src="docs/images/alice-sf-chess.jpg" width="100%" alt="2030 San Francisco Chess Set"></td>
   </tr>
   <tr>
-    <td align="center" width="33%"><img src="docs/images/trotter.gif" width="220" alt="Trotter"></td>
-    <td align="center" width="33%"><img src="docs/images/ivy-solar-system.jpg" width="220" alt="Solar system with engraved orbits"></td>
-    <td align="center" width="33%"><img src="docs/images/eve-f1-car.jpg" width="220" alt="1:16 Formula 1 car"></td>
+    <td align="center" width="33%"><img src="docs/images/trotter.gif" width="100%" alt="Trotter"></td>
+    <td align="center" width="33%"><img src="docs/images/ivy-solar-system.jpg" width="100%" alt="Solar system with engraved orbits"></td>
+    <td align="center" width="33%"><img src="docs/images/eve-f1-car.jpg" width="100%" alt="1:16 Formula 1 car"></td>
   </tr>
 </table>
 
