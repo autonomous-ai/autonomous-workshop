@@ -1,15 +1,19 @@
 # Autonomous Workshop
 
-You wish for a toy that doesn't exist. Workshop turns that Wish into a public Release: exact print-ready CAD and the in-box `MANUAL.pdf`. Operations then prints, packs, and delivers.
+You imagine it. We make it.
 
-Codex is the default Manager. Spark (the default effort) and Forge omit Playtest; Quest runs it.
+You wish for a toy that doesn't exist. Inventors in this Workshop make it, and a public Release leaves the bench: exact print-ready CAD and the in-box `MANUAL.pdf`. A magical box can then turn up at the door.
 
-- [Quickstart](#quickstart)
-- [Workshop Managers](#workshop-managers)
-- [Inventors](#inventors)
-- [Toys](#toys)
-- [Architecture](#architecture)
-- [Contributing](#contributing)
+[Make a Wish on autonomous.ai](https://www.autonomous.ai/wish) · this repo is the shop floor.
+
+Codex is the default Manager. ✨ Spark (the default effort) and 🔥 Forge omit Playtest; 🗺️ Quest runs it.
+
+- [✨ Quickstart](#quickstart)
+- [🧭 Workshop Managers](#workshop-managers)
+- [🎨 Inventors](#inventors)
+- [🎁 Toys](#toys)
+- [🏗️ Architecture](#architecture)
+- [🛠️ Contributing](#contributing)
 
 ## Quickstart
 
@@ -26,14 +30,14 @@ uv run workshop doctor
 
 `workshop doctor` checks the Inventor catalog, Codex version and sign-in, packaged agent assets, and host-only Factory credentials without printing secrets. Factory credentials belong to one Workshop-owned service account and are required only when Release publishes; see [credential setup](docs/PUBLISH_SEALED_PRODUCT.md#credentials). Starting `workshop wish` authorizes that public Factory publication. If credentials are missing, Release waits for `workshop resume` instead of claiming completion.
 
-Copy a Wish. The first command is the default: Codex Manager, Spark effort (`Wish -> Make -> Release`). No extra flags.
+Speak a Wish. The first command is the default: Codex Manager, ✨ Spark (`Wish -> Make -> Release`). No extra flags.
 
 ```bash
 uv run workshop wish \
   "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
 ```
 
-Choose an effort (`spark`, `forge`, or `quest`). Forge adds Invent:
+Choose how deep the shop goes (`spark`, `forge`, or `quest`). 🔥 Forge adds Invent:
 
 ```bash
 uv run workshop wish \
@@ -41,7 +45,7 @@ uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-Choose both effort and Manager. This is the Grok Spark path that produced [Horn Tip](toys/pico-press-horn-tip/):
+Choose both effort and Manager. This ✨ Spark on Grok produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
@@ -66,7 +70,7 @@ uv run workshop check inventors
 
 ## Workshop Managers
 
-One Wish is one native coding-agent session. That session is the Workshop Manager: it does the product work with its own tools and subagents. The Python host still owns lifecycle order, gates, budgets, and Factory publication. Resume cannot switch Managers.
+One Wish is one native coding-agent session. That session is the Workshop Manager: the shop lead who does the product work with its own tools and subagents. The Python host still owns lifecycle order, gates, budgets, and Factory publication. Resume cannot switch Managers.
 
 ```bash
 uv run workshop wish --manager codex --effort spark "I wish for …"   # default
@@ -155,16 +159,16 @@ Your dog, your bike, your desk, your homelab — turned into a small world you c
 
 ## Toys
 
-After Factory publication, Workshop can project a sanitized snapshot into [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.
+Toys that already left the Workshop. After Factory publication, a sanitized snapshot lands in [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.
 
 ![Horn Tip](docs/images/horn-tip.jpg)
 
 | Toy | Inventor | Effort | Snapshot | Factory |
 |---|---|---|---|---|
-| Horn Tip | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/factory/product/horn-tip) |
-| Lunar Relay | [Bob](inventors/bob/) | Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/factory/product/lunar-relay) |
-| Orbit Gobbler | [Bob](inventors/bob/) | Forge | [`toys/bob-orbit-gobbler/`](toys/bob-orbit-gobbler/) | [orbit-gobbler](https://www.autonomous.ai/factory/product/orbit-gobbler) |
-| Comet Heist | [Leo](inventors/leo/) | Quest | [`toys/leo-comet-heist-twin-pulse-vault-run/`](toys/leo-comet-heist-twin-pulse-vault-run/) | [comet-heist-twin-pulse-vault-run](https://www.autonomous.ai/factory/product/comet-heist-twin-pulse-vault-run) |
+| Horn Tip | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/factory/product/horn-tip) |
+| Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/factory/product/lunar-relay) |
+| Orbit Gobbler | [Bob](inventors/bob/) | 🔥 Forge | [`toys/bob-orbit-gobbler/`](toys/bob-orbit-gobbler/) | [orbit-gobbler](https://www.autonomous.ai/factory/product/orbit-gobbler) |
+| Comet Heist | [Leo](inventors/leo/) | 🗺️ Quest | [`toys/leo-comet-heist-twin-pulse-vault-run/`](toys/leo-comet-heist-twin-pulse-vault-run/) | [comet-heist-twin-pulse-vault-run](https://www.autonomous.ai/factory/product/comet-heist-twin-pulse-vault-run) |
 | Cradle Crescent | [Bob](inventors/bob/) | — | [`toys/bob-cradle-crescent/`](toys/bob-cradle-crescent/) | [cradle-crescent](https://www.autonomous.ai/factory/product/cradle-crescent) |
 | False Lantern | [Leo](inventors/leo/) | — | [`toys/leo-false-lantern/`](toys/leo-false-lantern/) | [false-lantern](https://www.autonomous.ai/factory/product/false-lantern) |
 
@@ -174,12 +178,14 @@ Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. See 
 
 ## Architecture
 
+The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
+
 [![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=effort-routes-v1)](docs/images/workshop-floorplan.svg)
 
 ```text
-Spark: Wish -> Make -> Release                 (default)
-Forge: Wish -> Invent -> Make -> Release
-Quest: Wish -> Invent -> Make -> Playtest -> Release
+✨ Spark: Wish -> Make -> Release                 (default)
+🔥 Forge: Wish -> Invent -> Make -> Release
+🗺️ Quest: Wish -> Invent -> Make -> Playtest -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
@@ -218,7 +224,7 @@ See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md), [Workshop archi
 
 ## Contributing
 
-This repository is the Workshop host and Inventor sources. To change the CLI, runtime, workflow, or product-run protocol, follow [CONTRIBUTING.md](CONTRIBUTING.md). To add a specialist, start from [Build an Inventor](docs/BUILD_AN_INVENTOR.md).
+This is the shop floor for Workshop code and Inventor sources. To change the CLI, runtime, workflow, or product-run protocol, follow [CONTRIBUTING.md](CONTRIBUTING.md). To add a specialist, start from [Build an Inventor](docs/BUILD_AN_INVENTOR.md).
 
 ```bash
 uv run workshop doctor
