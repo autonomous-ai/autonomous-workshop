@@ -76,8 +76,10 @@ one works the same whether there are five of them or a thousand.
 
 ## Quick start
 
-Requires Python 3.11 or newer, `uv`, and Codex CLI 0.145.0 or newer. Workshop
-uses one signed-in Codex session for all reasoning and tool use.
+Requires Python 3.11 or newer, `uv`, and a signed-in Manager CLI. Codex CLI
+0.145.0 or newer is the default production path. Grok Build CLI `grok` 1.0.5
+or newer is the experimental `--manager grok` path. Workshop uses one signed-in
+session of the selected Manager for all reasoning and tool use.
 
 ### 1. Sign in to Codex
 
@@ -208,6 +210,32 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
+### Reproduce the Grok Spark example
+
+[Horn Tip](https://www.autonomous.ai/factory/product/horn-tip) is a Pico Press
+one-piece crescent desk rocker. It was created on Spark
+(`Wish -> Make -> Release`) by the experimental Grok Build Manager. The
+sanitized snapshot is
+[`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/).
+
+The native CLI is Grok Build TUI `grok` 1.0.5 or newer. The live run used
+`grok 1.0.5 (5115b46bc909)` and model `grok-4.6`. Sign in, then:
+
+```bash
+grok login
+grok --version
+
+uv run workshop doctor
+uv run workshop wish --manager grok --effort spark \
+  "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
+```
+
+`--effort spark` is already the default; pass it so the route is explicit.
+Omit `--manager` and Workshop stays on Codex. If the first native turn stops
+before Release, continue the same Wish with `uv run workshop resume <wish-id>`.
+A later run of this Wish is the same Manager and Spark route, not a replay of
+the exact Horn Tip CAD bytes.
+
 While `wish` or `resume` is active, the foreground command prints only coarse,
 content-free activity such as reasoning, tool use, and a throttled liveness
 heartbeat. With `--json`, that live activity goes to stderr and stdout remains
@@ -239,7 +267,7 @@ evidence-linked Release facts. Manager runtime support is deliberately pluggable
 |---|---|
 | Codex | Implemented default (`--manager codex`) |
 | Claude Code | Experimental adapter (`--manager claude`) |
-| Grok Build | Experimental adapter (`--manager grok`) |
+| Grok Build | Experimental adapter (`--manager grok`); Spark E2E: [Horn Tip](toys/pico-press-horn-tip/) |
 
 Every adapter must preserve the same toy-project, stage-objective, checkpoint,
 gate, and effect boundaries.
@@ -318,7 +346,7 @@ I love mechanisms whose motion tells the story. I reject decoration without play
 - [Ivy](inventors/ivy/TASTE.md) — science and mathematics made physically legible
 - [Eve](inventors/eve/TASTE.md) — real people, spaces, and objects made into little epics
 - [Mira Fold](inventors/mira-fold/TASTE.md) — compact tactile transformations with one hidden mechanical reveal
-- [Pico Press](inventors/pico-press/TASTE.md) — tiny support-free toys built around one crisp repeatable motion
+- [Pico Press](inventors/pico-press/TASTE.md) — tiny support-free toys built around one crisp repeatable motion ([Horn Tip](https://www.autonomous.ai/factory/product/horn-tip), Spark on Grok Build)
 - [Tess Loop](inventors/tess-loop/TASTE.md) — flat-print modular systems that bloom into patterns and negative space
 
 Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the specialist contract.
@@ -331,7 +359,9 @@ The installed distribution is `autonomous-workshop`. Python code imports the
 imported accidentally.
 
 - [`toys/`](toys/) contains only sanitized released examples under
-  `<inventor>-<product-slug>/`. Private runtime projects are outside Git at
+  `<inventor>-<product-slug>/`, including
+  [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) from a Grok Spark
+  run. Private runtime projects are outside Git at
   `$WORKSHOP_HOME/runs/<wish-id>/workspace` and contain the product-run
   `AGENTS.md`, custom Inventors, skills, exact roster, and Wish-to-Release
   artifacts.
