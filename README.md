@@ -12,14 +12,14 @@ codex login
 uv run workshop doctor
 ```
 
-Default Wish — Codex, ✨ Spark, no extra flags:
+A default Wish uses Codex as the Workshop Manager and ✨ Spark as the effort (`Wish -> Make -> Release`). No extra flags:
 
 ```bash
 uv run workshop wish \
   "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
 ```
 
-Choose how deep the shop goes (`spark`, `forge`, or `quest`). 🔥 Forge adds Invent:
+`--effort` chooses how deep the shop goes: ✨ Spark, 🔥 Forge, or 🗺️ Quest. Forge adds Invent. Quest adds Invent and Playtest:
 
 ```bash
 uv run workshop wish \
@@ -27,7 +27,7 @@ uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-Choose both effort and Manager. This ✨ Spark on Grok produced [Horn Tip](toys/pico-press-horn-tip/):
+`--manager` chooses the Workshop Manager. This ✨ Spark Wish on Grok produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
