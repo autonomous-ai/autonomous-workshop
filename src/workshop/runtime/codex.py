@@ -63,6 +63,7 @@ _TRANSIENT_DIAGNOSTIC_HEADS = frozenset(
         "provider stream disconnected",
     )
 )
+_MAX_NATIVE_FAILURE_MESSAGE_CHARS = 4 * 1024
 
 _IMMUTABLE_PRODUCT_RUN_PATHS = (
     ".agents",
@@ -2119,6 +2120,10 @@ class CodexNativeSessionLauncher:
                 if activity is not None:
                     activity_reporter.observe(activity)
                 if event_type in ("turn.failed", "error"):
+                    if _is_explicit_transient_event_failure(event):
+                        raise CodexRecoverableInvocationError(
+                            "Codex native provider transport was interrupted"
+                        )
                     raise CodexInvocationError(
                         "Codex native session reported a failed turn"
                     )
@@ -2700,12 +2705,42 @@ def _diagnostic_tail(value: str) -> str:
     return value[-_MAX_TRANSIENT_DIAGNOSTIC_CHARS:].casefold()
 
 
+def _has_explicit_transient_head(value: Any) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    if len(value) > _MAX_NATIVE_FAILURE_MESSAGE_CHARS:
+        return False
+    message = value.strip().casefold()
+    return any(
+        message == head or message.startswith(f"{head}: ")
+        for head in _TRANSIENT_DIAGNOSTIC_HEADS
+    )
+
+
+def _is_explicit_transient_event_failure(event: Mapping[str, Any]) -> bool:
+    """Recognize only Codex-owned, anchored transport failure payloads.
+
+    The JSONL schema puts a failed turn's diagnostic at ``error.message`` and
+    an unrecoverable stream diagnostic at top-level ``message``. The bytes are
+    used only to select this narrow typed category and are never persisted or
+    attached to the public exception.
+    """
+
+    event_type = event.get("type")
+    if event_type == "turn.failed":
+        error = event.get("error")
+        if not isinstance(error, Mapping):
+            return False
+        return _has_explicit_transient_head(error.get("message"))
+    if event_type == "error":
+        return _has_explicit_transient_head(event.get("message"))
+    return False
+
+
 def _is_explicit_transient_failure(stderr: str) -> bool:
-    # Only the launcher's diagnostic channel participates in this category.
-    # Native event bytes can contain model-authored text and must never select
-    # a host retry policy. Require an anchored, adapter-recognized diagnostic
-    # line as well: generic OS errors such as ``temporarily unavailable`` are
-    # deliberately not transport evidence and fail closed.
+    # Require an anchored, adapter-recognized diagnostic line: generic OS
+    # errors such as ``temporarily unavailable`` are deliberately not
+    # transport evidence and fail closed.
     for raw_line in _diagnostic_tail(stderr).splitlines():
         line = raw_line.strip()
         head, separator, detail = line.partition(": ")

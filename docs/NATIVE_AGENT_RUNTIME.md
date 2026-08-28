@@ -111,7 +111,9 @@ files disagree, the files win.
 
 A native turn timeout or explicitly recognized provider-transport disconnect
 does not require a person to rerun the command after the session UUID has been
-checkpointed. The launcher reports only those two cases through the typed
+checkpointed. The disconnect may arrive either on the private launcher
+diagnostic channel or in Codex's documented `turn.failed` / top-level `error`
+JSONL shape. The launcher reports only those two cases through the typed
 `CodexRecoverableInvocationError` boundary, and only after proving that the
 previous launcher's dedicated POSIX process session is empty. This includes
 Codex's built-in code-mode host even though that helper creates a separate
@@ -138,14 +140,17 @@ downgrades, major-version migrations, and malformed checkpoints still fail
 closed.
 
 An interruption before the exact session identity is bound fails closed rather
-than automatically creating a second root session. Failed-turn events, unknown
-or malformed event streams, unsafe process termination, wrong session identity,
+than automatically creating a second root session. Failed-turn events that do
+not begin with an exact allowlisted provider-transport diagnostic, unknown or
+malformed event streams, unsafe process termination, wrong session identity,
 contracts, gates, authorization, credentials, and external effects are not
 recoverable native-turn categories. If the interrupted turn already wrote a
 checkpoint-bound `agent-outcome.json`, the host evaluates that proposal once
 through the normal gate before considering any continuation. Provider
-transport classification uses only exact anchored diagnostics on the private,
-bounded launcher channel; generic or unrecognized stderr fails closed.
+transport classification uses only exact anchored diagnostics on private,
+bounded native channels. Diagnostic bytes select the typed category and are
+then discarded; they are never persisted, returned, or treated as model
+output. Generic or unrecognized diagnostics fail closed.
 
 The launched process session is owned by an idempotent guard outside the event
 parser's ordinary `Exception` classification. A graceful host unwind such as

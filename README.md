@@ -58,6 +58,8 @@ uv run workshop resume <wish-id>
 Long turns remain attached to the same session if the locally installed Codex
 CLI receives a supported in-place update. Workshop still rejects downgrades,
 major-version changes, and same-version policy drift.
+Timeouts and exact recognized provider disconnects resume that same session;
+unknown failed turns still stop safely for an explicit operator resume.
 
 ## Workshop Managers
 

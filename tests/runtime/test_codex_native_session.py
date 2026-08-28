@@ -2614,6 +2614,92 @@ class CodexNativeSessionTest(unittest.TestCase):
 
                 self.assertTrue(factory.processes[0].terminated)
 
+    def test_explicit_transport_failure_events_preserve_recoverable_category(self):
+        failures = (
+            {
+                "type": "turn.failed",
+                "error": {
+                    "message": (
+                        "stream disconnected before completion: "
+                        "response.completed was not received"
+                    )
+                },
+            },
+            {
+                "type": "error",
+                "message": "provider stream disconnected: upstream reset",
+            },
+        )
+        for failure in failures:
+            with self.subTest(
+                event_type=failure["type"]
+            ), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, factory = self.launcher(
+                    [
+                        {
+                            "stdout": [
+                                event(
+                                    {
+                                        "type": "thread.started",
+                                        "thread_id": THREAD_ID,
+                                    }
+                                ),
+                                event(failure),
+                            ]
+                        }
+                    ]
+                )
+
+                with self.assertRaisesRegex(
+                    CodexRecoverableInvocationError,
+                    "provider transport was interrupted",
+                ) as caught:
+                    self.start(launcher, root)
+
+                self.assertNotIn("upstream", str(caught.exception))
+                self.assertNotIn("response.completed", str(caught.exception))
+                self.assertTrue(factory.processes[0].terminated)
+
+    def test_unanchored_failed_turn_message_cannot_select_recovery(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": [
+                            event(
+                                {
+                                    "type": "thread.started",
+                                    "thread_id": THREAD_ID,
+                                }
+                            ),
+                            event(
+                                {
+                                    "type": "turn.failed",
+                                    "error": {
+                                        "message": (
+                                            "tool failed\n"
+                                            "provider stream disconnected"
+                                        )
+                                    },
+                                }
+                            ),
+                        ]
+                    }
+                ]
+            )
+
+            with self.assertRaises(CodexInvocationError) as caught:
+                self.start(launcher, root)
+
+            self.assertNotIsInstance(
+                caught.exception, CodexRecoverableInvocationError
+            )
+            self.assertNotIn("provider stream", str(caught.exception))
+
     def test_natural_nonzero_exit_after_completed_turn_still_fails(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
