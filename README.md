@@ -1,12 +1,8 @@
 # Autonomous Workshop
 
-You imagine it. We make it.
+You wish for a toy that doesn't exist. AI inventors in the Autonomous Workshop make it. A magical box turns up at your door in a few days.
 
-You wish for a toy that doesn't exist. Inventors in this Workshop make it. A magical box turns up at your door.
-
-[Make a Wish on autonomous.ai](https://www.autonomous.ai/wish) · this repo is the shop floor.
-
-Codex is the default Manager. ✨ Spark (the default effort) and 🔥 Forge omit Playtest; 🗺️ Quest runs it.
+Use this CLI, or [make a Wish on the web](https://www.autonomous.ai/wish).
 
 ✨ [Quickstart](#quickstart)  
 🧭 [Workshop Managers](#workshop-managers)  
@@ -17,20 +13,15 @@ Codex is the default Manager. ✨ Spark (the default effort) and 🔥 Forge omit
 
 ## Quickstart
 
-Python 3.11+, `uv`, and a signed-in Manager CLI. [Codex CLI](https://learn.chatgpt.com/docs/codex/cli) 0.145.0+ is the default. Grok Build `grok` 1.0.5+ is the experimental `--manager grok` path.
-
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
 cd autonomous-workshop
 
 codex login
-codex login status
 uv run workshop doctor
 ```
 
-`workshop doctor` checks the Inventor catalog, Codex version and sign-in, packaged agent assets, and host-only Factory credentials without printing secrets. Factory credentials belong to one Workshop-owned service account and are required only when Release publishes; see [credential setup](docs/PUBLISH_SEALED_PRODUCT.md#credentials). Starting `workshop wish` authorizes that public Factory publication. If credentials are missing, Release waits for `workshop resume` instead of claiming completion.
-
-Speak a Wish. The first command is the default: Codex Manager, ✨ Spark (`Wish -> Make -> Release`). No extra flags.
+Default Wish — Codex, ✨ Spark, no extra flags:
 
 ```bash
 uv run workshop wish \
@@ -70,7 +61,7 @@ uv run workshop check inventors
 
 ## Workshop Managers
 
-One Wish is one native coding-agent session. That session is the Workshop Manager: the shop lead who does the product work with its own tools and subagents. The Python host still owns lifecycle order, gates, budgets, and Factory publication. Resume cannot switch Managers.
+One Wish is one native coding-agent session — the shop lead. Resume cannot switch Managers.
 
 ```bash
 uv run workshop wish --manager codex --effort spark "I wish for …"   # default
@@ -80,17 +71,11 @@ uv run workshop wish --manager grok --effort spark "I wish for …"    # experim
 
 | Manager | CLI | Status |
 |---|---|---|
-| [Codex](https://learn.chatgpt.com/docs/codex/cli) | `codex` 0.145.0+ | Default production path. Omit `--manager` to use it. |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `claude` 2.0.0+ | Experimental adapter. Live Forge acceptance is still outstanding. |
-| [Grok Build](https://docs.x.ai/build/overview) | `grok` 1.0.5+ | Experimental adapter. Spark E2E: [Horn Tip](toys/pico-press-horn-tip/) on `grok-4.6`. |
+| [Codex](https://learn.chatgpt.com/docs/codex/cli) | `codex` | Default. Omit `--manager`. |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `claude` | Experimental. |
+| [Grok Build](https://docs.x.ai/build/overview) | `grok` | Experimental. Spark E2E: [Horn Tip](toys/pico-press-horn-tip/). |
 
-**Codex** is the implemented Manager. Sign in with `codex login`. It materializes Inventors as project-scoped custom agents under `.codex/agents/` and runs one native Goal at a time through Invent, Make, Playtest, and Release.
-
-**Claude Code** uses the `claude` CLI (`--print`, `acceptEdits`). Freeze it with `--manager claude`. `workshop doctor` reports Claude as optional adapter health; Codex remains required.
-
-**Grok Build** uses the `grok` TUI/CLI. Freeze it with `--manager grok`. The Horn Tip snapshot was produced on Spark with `grok` 1.0.5 (`5115b46bc909`) and model `grok-4.6`. Sign in with `grok login`.
-
-Every adapter must keep the same toy-project, stage-objective, checkpoint, gate, and effect boundaries. Factory credentials never enter the Manager subprocess. See [ADR 0017](docs/adr/0017-portable-workshop-managers.md).
+Sign in with `codex login`, `claude`, or `grok login`. See [ADR 0017](docs/adr/0017-portable-workshop-managers.md).
 
 ## Inventors
 
@@ -172,7 +157,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Cradle Crescent | [Bob](inventors/bob/) | — | [`toys/bob-cradle-crescent/`](toys/bob-cradle-crescent/) | [cradle-crescent](https://www.autonomous.ai/factory/product/cradle-crescent) |
 | False Lantern | [Leo](inventors/leo/) | — | [`toys/leo-false-lantern/`](toys/leo-false-lantern/) | [false-lantern](https://www.autonomous.ai/factory/product/false-lantern) |
 
-Horn Tip is a Spark run on Grok Build (`grok` 1.0.5, model `grok-4.6`). A later Wish with the same prompt is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older schema-v1 snapshots.
+Horn Tip is a Spark run on Grok. A later Wish with the same prompt is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
 
 Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. See [`toys/README.md`](toys/) for what a snapshot includes.
 
