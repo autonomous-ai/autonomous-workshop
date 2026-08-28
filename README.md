@@ -2,7 +2,7 @@
 
 You wish for a toy that doesn't exist. AI inventors in the Autonomous Workshop make it. A magical box turns up at your door in a few days.
 
-Use this CLI, or [make a Wish on the web](https://www.autonomous.ai/wish).
+Use the [Workshop CLI](#quickstart) or [make a Wish on the web](https://www.autonomous.ai/wish).
 
 ✨ [Quickstart](#quickstart)  
 🧭 [Workshop Managers](#workshop-managers)  
