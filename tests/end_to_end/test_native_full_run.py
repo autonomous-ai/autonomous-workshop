@@ -2185,6 +2185,12 @@ class NativeFullRunTest(unittest.TestCase):
         )
         first_invent_packet = launcher.stage_packets[1]
         reinvent_packet = launcher.stage_packets[4]
+        # The repair round is written against the very leads Make refused on.
+        self.assertEqual(
+            reinvent_packet["inputs"]["vault_leads"],
+            launcher.stage_packets[2]["inputs"]["vault_leads"],
+        )
+        self.assertTrue(reinvent_packet["inputs"]["vault_leads"])
         self.assertIsNone(first_invent_packet["round"])
         self.assertIsNone(reinvent_packet["round"])
         self.assertNotEqual(
@@ -3212,6 +3218,9 @@ class NativeFullRunTest(unittest.TestCase):
             leads = by_stage["make"]["inputs"]["vault_leads"]
             self.assertTrue(leads)
             self.assertTrue(all(lead["kind"] == "risk" for lead in leads))
+            # Round one: the Wish names no vault mechanism, so Invent gets the
+            # constraint-only findings (a list, never absent while the vault is up).
+            self.assertIsInstance(by_stage["invent"]["inputs"]["vault_leads"], list)
             self.assertEqual(
                 invent_gate["evidence"]["checks"]["vault_leads"], len(leads)
             )

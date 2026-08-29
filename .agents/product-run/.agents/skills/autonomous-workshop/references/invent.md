@@ -107,7 +107,12 @@ The finalizer rejects, naming the rule in parentheses:
   every `constraints/*` node declare `conflicts-with`, or leave a `requires`
   unmet. Run `vault_tools.py check <nodes> --with-constraints` before
   finalizing. Risks reported there are not refusals; the host turns them into
-  `vault_leads` for Make and Playtest.
+  `vault_leads` for Make and Playtest. `STAGE.json` may already carry
+  `inputs.vault_leads` for Invent itself: on round one they are the findings
+  for every mechanism the Wish names outright (plus the constraints), on a
+  repair round the findings Make or Playtest saw against the sealed concept
+  being revised. Read them before drafting and answer each one in the
+  concept's `vault_lead_responses` (`lead_id`, `status`, `response`).
 
 Then run:
 

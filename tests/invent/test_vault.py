@@ -236,6 +236,19 @@ class VaultGraphTest(unittest.TestCase):
         self.assertIsNone(self.vault.resolve("   "))
         self.assertEqual(self.vault.resolve("fdm only", folder="constraints"), "constraints/fdm-only")
 
+    def test_mechanisms_named_in_matches_slug_name_alias_as_whole_words(self):
+        text = "Build a relay: players pass the baton, then a Single-Token moves; no tokens otherwise."
+        self.assertEqual(
+            self.vault.mechanisms_named_in(text), ("hand-off", "single-token")
+        )
+        self.assertEqual(self.vault.mechanisms_named_in("a baton-pass race"), ("hand-off",))
+        self.assertEqual(self.vault.mechanisms_named_in("hand offs and tokens"), ())
+        self.assertEqual(self.vault.mechanisms_named_in(""), ())
+        leads = self.vault.leads_for_concept(
+            {"mechanisms": list(self.vault.mechanisms_named_in("pass the baton"))}
+        )
+        self.assertEqual({lead["kind"] for lead in leads}, {"risk", "unmet-requirement"})
+
     def test_resolve_refuses_a_close_string_with_a_different_meaning(self):
         nodes = {
             "mechanisms/role-playing": node("mechanism", "Role Playing"),

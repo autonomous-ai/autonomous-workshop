@@ -3252,6 +3252,21 @@ def _prepare_effort_stage_input(
                         "feedback_sha256": failing_playtested.feedback_sha256,
                     }
                 )
+        # Vault leads reach Invent too (2026-08-29): round one answers for the
+        # mechanisms the Wish itself names, a repair round for the sealed
+        # concept Make or Playtest just refused -- the same findings Make sees,
+        # so the revision is written against them instead of discovering them
+        # one stage later.
+        if vault is not None:
+            if prior_paths:
+                lead_concept: Mapping[str, Any] = prior_invented.concept
+            else:
+                lead_concept = {
+                    "mechanisms": list(
+                        vault.mechanisms_named_in(_load_wish(run.run_root).objective)
+                    )
+                }
+            inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
         subject = _stage_subject("invent", subject_inputs)
         context.update(
             {
@@ -3809,6 +3824,21 @@ def _prepare_stage_input(
                     "contract_path": "artifacts/invent/invented.json",
                 }
                 context["invent_contract_path"] = inputs["contract_path"]
+            # Vault leads reach Invent too (2026-08-29): round one for the
+            # mechanisms the Wish names outright, a repair round for the
+            # sealed concept Playtest just refused -- the findings Make saw.
+            if vault is not None:
+                if prior_invented_paths:
+                    lead_concept: Mapping[str, Any] = prior_invented.concept
+                else:
+                    lead_concept = {
+                        "mechanisms": list(
+                            vault.mechanisms_named_in(
+                                _load_wish(run.run_root).objective
+                            )
+                        )
+                    }
+                inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
         else:
             invented_artifact = _stage_primary(checkpoint, "invent")
             invented = _read_contract(

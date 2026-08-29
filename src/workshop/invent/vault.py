@@ -654,6 +654,30 @@ class Vault:
             raise VaultError("concept mechanisms must be a list")
         return {str(item): self.resolve(str(item)) for item in declared}
 
+    def mechanisms_named_in(self, text: str) -> tuple[str, ...]:
+        """Mechanism slugs whose slug, name, or declared alias appears in ``text``.
+
+        Whole words, case-insensitive, hyphens and spaces interchangeable,
+        never fuzzy: a Wish that names no mechanism yields nothing rather than
+        a guess.  Sorted by path so the result is stable across hosts.
+        """
+
+        haystack = " %s " % " ".join(re.sub(r"[^a-z0-9]+", " ", text.lower()).split())
+        found: list[str] = []
+        for path in self.paths("mechanisms"):
+            slug = path.split("/", 1)[1]
+            node = self.nodes[path]
+            phrases = [slug, node["name"]]
+            aliases = node["frontmatter"].get("aliases") or ()
+            if isinstance(aliases, (list, tuple)):
+                phrases.extend(alias for alias in aliases if isinstance(alias, str))
+            for phrase in phrases:
+                words = " ".join(re.sub(r"[^a-z0-9]+", " ", phrase.lower()).split())
+                if words and " %s " % words in haystack:
+                    found.append(slug)
+                    break
+        return tuple(found)
+
     def leads_for_concept(self, concept: Mapping[str, Any]) -> list[dict[str, Any]]:
         """Compatibility findings for a concept's mechanisms plus every constraint.
 
