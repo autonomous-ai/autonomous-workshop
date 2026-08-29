@@ -112,7 +112,7 @@ The three evidence tiers are intentionally distinct:
 - ordinary unit/integration CI is offline and tests focused contracts;
 - the required deterministic E2E proves production-host fidelity against
   deterministic Codex and Factory boundary doubles;
-- this scheduled/manual real-Codex tier proves persistent-session context use
+- this operator-run real-Codex tier proves persistent-session context use
   and current workflow integration.
 
 None of them proves creative or research quality, exhaustive agent behavior,

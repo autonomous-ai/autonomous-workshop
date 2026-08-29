@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "invented_artifact_file_sha256": "7086e9e65c4735eb80f70cc1ed20e518bc74943c758c1ab3f36710df6e0f3c0f",
+  "invented_identity_sha256": "b2212258fce3635dae8b679fe8b2d24732eb0043dee782c951251769d90f665e",
+  "calculation": {
+    "rotor_radius_mm": 34.0,
+    "sector_outer_radius_mm": 31.5,
+    "sector_angular_span_deg": [
+      35.0,
+      145.0
+    ],
+    "notch_angle_deg": 75.0,
+    "notch_inside_sector": true,
+    "notch_depth_mm": 0.55,
+    "notch_root_radius_mm": 33.45,
+    "local_web_mm": 1.95,
+    "required_minimum_web_mm": 2.5,
+    "shortfall_mm": 0.55
+  },
+  "conclusion": "block: exact sealed geometry yields 1.95 mm web at +75 degrees, below the sealed 2.50 mm minimum"
+}

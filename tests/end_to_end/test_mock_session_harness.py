@@ -536,19 +536,17 @@ class MockSessionArchitectureTest(unittest.TestCase):
             ):
                 _terminal_evidence_mode(changed, effort="spark", stage="make")
 
-    def test_optional_workflow_and_documentation_match_current_routes(self):
+    def test_operator_runner_and_documentation_match_current_routes(self):
         repository = Path(__file__).resolve().parents[2]
-        workflow = (repository / ".github/workflows/mock-session-e2e.yml").read_text(
+        workflows = repository / ".github/workflows"
+        self.assertEqual(list(workflows.glob("*.yml")), [])
+        runner = (repository / "tools/run_mock_session_e2e.py").read_text(
             encoding="utf-8"
         )
-        self.assertIn("workflow_dispatch:", workflow)
-        self.assertIn("schedule:", workflow)
-        self.assertNotIn("pull_request:", workflow)
-        self.assertNotIn("\n  push:", workflow)
-        self.assertIn("effort: [spark, forge, quest]", workflow)
-        self.assertIn("--preflight-only", workflow)
-        self.assertIn("--report", workflow)
-        self.assertEqual(workflow.count("actions/upload-artifact"), 1)
+        for effort in ("spark", "forge", "quest"):
+            self.assertIn('"%s"' % effort, runner)
+        self.assertIn("--preflight-only", runner)
+        self.assertIn("--report", runner)
         readme = (repository / "tests/end_to_end/README.md").read_text(
             encoding="utf-8"
         )

@@ -20,9 +20,9 @@ included MIT notice.
 
 The pinned upstream `design-reference`, `electromechanical-integration`, and
 `image-to-cad` trees do not contain standalone license files. Their inclusion does not imply that the MIT license
-above applies to them. `design-reference` can explicitly download a separately
-licensed dataset restricted to non-commercial research; fetched references
-retain their own license and provenance records.
+above applies to them. `design-reference` bundles no dataset and downloads
+nothing; it directs Internet research whose results are cited by URL, revision
+and license in the build spec rather than fetched into the repository.
 
 ## Repository-authored work
 

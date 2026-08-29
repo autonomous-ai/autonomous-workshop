@@ -19,7 +19,7 @@ from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any, Mapping, Optional, Sequence
 
-from workshop.artifacts import assert_packable_content
+from workshop.artifacts import MAX_FILE_BYTES, assert_packable_content
 from workshop.contributors.extensions import (
     fingerprint_extension_skill,
     load_inventor_extension_bundles,
@@ -32,6 +32,7 @@ from workshop.errors import (
     StateConflict,
     TransitionError,
 )
+from workshop.make.revision import MAKE_INVENT_REVISION_CAPABILITY_PATH
 from workshop._validation import require_sha256
 from workshop.runtime.agent_assets import (
     InventorSkillBinding,
@@ -72,11 +73,11 @@ MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
 MAX_AGENT_INPUT_BYTES = 4 * 1024 * 1024
 MAX_AGENT_INPUT_FILES = 256
-MAX_AGENT_ARTIFACT_BYTES = 16 * 1024 * 1024
+MAX_AGENT_ARTIFACT_BYTES = MAX_FILE_BYTES
 # A four-round physical-product run may retain several immutable CAD, mesh,
 # slicer, and Playtest revisions. Keep a cumulative host budget while allowing
-# those bounded revisions to coexist; individual artifacts remain capped at
-# 16 MiB and each gate remains capped at 512 sealed files.
+# those bounded revisions to coexist; individual artifacts share the 95 MiB
+# product-package limit and each gate remains capped at 512 sealed files.
 MAX_AGENT_REFERENCED_BYTES = 128 * 1024 * 1024
 MAX_AGENT_ARTIFACTS_PER_OUTCOME = 16
 MAX_HOST_SEALED_ARTIFACTS_PER_GATE = 512
@@ -134,6 +135,18 @@ def _uses_effort_routes(payload: Mapping[str, Any]) -> bool:
     return (
         payload.get("schema_version") == 4
         and EFFORT_ROUTE_CAPABILITY_PATH
+        in {item["path"] for item in payload["inputs"]}
+    )
+
+
+def _allows_make_invent_revision(payload: Mapping[str, Any]) -> bool:
+    """Return whether this exact frozen run includes the repair capability."""
+
+    effort = _run_effort(payload)
+    return bool(
+        effort is not None
+        and effort.includes("invent")
+        and MAKE_INVENT_REVISION_CAPABILITY_PATH
         in {item["path"] for item in payload["inputs"]}
     )
 
@@ -630,6 +643,7 @@ class AgentRunCheckpoint:
     invalidated_stages: tuple[str, ...]
     effort: Optional[str] = None
     manager_id: str = DEFAULT_MANAGER_ID
+    needs: tuple[str, ...] = ()
 
     @property
     def complete(self) -> bool:
@@ -1021,6 +1035,7 @@ class AgentRun:
             "invalidated_stages": [],
             "history": [],
             "last_outcome_sha256": None,
+            "needs": [],
             "previous_checkpoint_sha256": None,
             "manager_id": selected_manager.manager_id,
         }
@@ -1167,6 +1182,8 @@ class AgentRun:
             expected_fields.add("effort")
         if "manager_id" in payload:
             expected_fields.add("manager_id")
+        if "needs" in payload:
+            expected_fields.add("needs")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
@@ -1202,6 +1219,25 @@ class AgentRun:
                 manager_spec(payload["manager_id"])
             except ContractError as exc:
                 raise StateConflict("agent run Manager is invalid") from exc
+        if "needs" in payload:
+            needs = payload["needs"]
+            if (
+                not isinstance(needs, list)
+                or len(needs) > MAX_AGENT_NEEDS
+                or len(needs) != len(set(needs))
+                or any(
+                    not isinstance(need, str)
+                    or not need.strip()
+                    or len(need) > MAX_AGENT_NEED_CHARS
+                    or any(
+                        ord(character) < 32 or ord(character) == 127
+                        for character in need
+                    )
+                    for need in needs
+                )
+                or (payload["status"] in ("waiting", "failed")) != bool(needs)
+            ):
+                raise StateConflict("agent run current needs are invalid")
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -1450,6 +1486,7 @@ class AgentRun:
             invalidated_stages=tuple(payload["invalidated_stages"]),
             effort=payload.get("effort"),
             manager_id=payload.get("manager_id", DEFAULT_MANAGER_ID),
+            needs=tuple(payload.get("needs", ())),
         )
 
     def expected_gate_subject_sha256(self) -> str:
@@ -1555,6 +1592,11 @@ class AgentRun:
                     raise TransitionError(
                         "Playtest may advance or return explicit feedback to Make or Invent"
                     )
+            elif outcome.stage == "make" and outcome.proposed_transition == "invent":
+                if not _allows_make_invent_revision(payload):
+                    raise TransitionError(
+                        "Make may return to Invent only for a frozen capable Forge or Quest run"
+                    )
             elif outcome.stage == "release":
                 frozen_inputs = {
                     item["path"] for item in payload["inputs"]
@@ -1632,6 +1674,7 @@ class AgentRun:
             updated = dict(payload)
             updated["sealed_artifacts"] = payload["sealed_artifacts"] + additions
             updated["status"] = outcome.status
+            updated["needs"] = list(outcome.needs)
             updated["last_outcome_sha256"] = outcome.sha256
             updated["history"] = payload["history"] + [
                 {
@@ -1660,12 +1703,19 @@ class AgentRun:
             or gate.subject_sha256 != subject
         ):
             raise TransitionError("deterministic gate is not bound to this exact outcome")
-        if (
+        backward_revision = (
             outcome.stage == "playtest"
             and outcome.proposed_transition in ("make", "invent")
-        ):
+        ) or (
+            outcome.stage == "make"
+            and outcome.proposed_transition == "invent"
+            and _allows_make_invent_revision(payload)
+        )
+        if backward_revision:
             if gate.passed:
-                raise TransitionError("passing Playtest must advance to Release")
+                if outcome.stage == "playtest":
+                    raise TransitionError("passing Playtest must advance to Release")
+                raise TransitionError("passing Make must advance to its next stage")
             if payload["round_index"] >= payload["max_rounds"]:
                 raise TransitionError("Invent-Make-Playtest round budget is exhausted")
         elif not gate.passed:
@@ -1710,7 +1760,9 @@ class AgentRun:
             and round_index == 0
         ):
             round_index = 1
-        elif outcome.stage == "playtest" and transition in ("make", "invent"):
+        elif (
+            outcome.stage == "playtest" and transition in ("make", "invent")
+        ) or (outcome.stage == "make" and transition == "invent"):
             round_index += 1
             invalidation = (
                 ("invent", *_DOWNSTREAM_OF_INVENT)
@@ -1726,6 +1778,7 @@ class AgentRun:
 
         updated["stage"] = next_stage
         updated["status"] = status
+        updated["needs"] = []
         updated["round_index"] = round_index
         updated["stage_artifacts"] = stage_artifacts
         updated["invalidated_stages"] = [
@@ -1771,6 +1824,7 @@ class AgentRun:
         updated = dict(payload)
         updated["stage"] = "release"
         updated["status"] = "complete"
+        updated["needs"] = []
         updated["invalidated_stages"] = [
             stage
             for stage in AGENT_RUN_STAGES
@@ -1795,6 +1849,7 @@ class AgentRun:
             raise TransitionError("only a waiting agent run can be resumed")
         updated = dict(payload)
         updated["status"] = "active"
+        updated["needs"] = []
         updated["history"] = payload["history"] + [
             {
                 "stage": payload["stage"],

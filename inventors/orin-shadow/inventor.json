@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "8c6a45c81aa72c275a1c25cf0a6ef7c6d6c8135d2ff9f4ec88830e621f79daf7",
+      "kind": "codex-skill",
+      "name": "orin-shadow-inventor",
+      "path": "skills/orin-shadow-inventor"
+    }
+  ],
+  "id": "orin-shadow",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

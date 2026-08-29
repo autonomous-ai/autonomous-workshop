@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "check_id": "printability-check",
+  "passed": true,
+  "observed_at": "2026-08-28T06:03:05Z",
+  "native_review": {
+    "path": "reviews/printability-check-review.md",
+    "sha256": "d7e45f0de08ffe9c44f54aefcfa72b57361d83f8fe3f980f0c1b20fe4b25b82e"
+  },
+  "independent_rerun": {
+    "bed_mm": [220, 220, 250],
+    "nozzle_mm": 0.4,
+    "minimum_wall_gate_mm": 0.8,
+    "parts": [
+      {
+        "id": "front_garden_mask",
+        "envelope_mm": [84.0, 76.0, 2.2],
+        "triangles": 7680,
+        "connected_shells": 1,
+        "volume_cm3": 9.89,
+        "thickness_samples": 396467,
+        "thickness_failing_samples": 0,
+        "median_thickness_mm": 1.6
+      },
+      {
+        "id": "rear_chassis",
+        "envelope_mm": [84.0, 76.0, 6.0],
+        "triangles": 13816,
+        "connected_shells": 1,
+        "volume_cm3": 6.53,
+        "thickness_samples": 326436,
+        "thickness_failing_samples": 0,
+        "median_thickness_mm": 1.78,
+        "measurement_uncertainty_note": "One additional surface sample is within the checker's plus/minus 0.08 mm measurement uncertainty; it is not a failing sample."
+      },
+      {
+        "id": "sector_rotor",
+        "envelope_mm": [69.9, 69.9, 1.2],
+        "triangles": 1404,
+        "connected_shells": 1,
+        "volume_cm3": 3.51,
+        "thickness_samples": 353760,
+        "thickness_failing_samples": 0,
+        "median_thickness_mm": 1.2
+      }
+    ],
+    "all_parts_watertight": true,
+    "all_parts_manifold": true,
+    "all_parts_consistently_wound": true,
+    "all_parts_positive_volume": true,
+    "all_parts_single_shell": true,
+    "all_parts_fit_bed": true
+  },
+  "limitations": [
+    "Digital mesh, thickness, stance, and source-form checks do not prove a successful physical print or support-free outcome.",
+    "PETG shrinkage, snap/detent force and survival, retention, fatigue, wear, and final assembly fit remain physically unobserved."
+  ]
+}

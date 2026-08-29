@@ -117,10 +117,14 @@ class build_py(_build_py):
             "bob",
             "eve",
             "ivy",
+            "kestrel-knot",
             "leo",
+            "luma-vale",
             "mira-fold",
             "pico-press",
+            "sonora-reed",
             "tess-loop",
+            "vela-bloom",
         ):
             source = project / "inventors" / inventor_id
             target = destination / inventor_id

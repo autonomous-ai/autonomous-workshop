@@ -336,6 +336,7 @@ def _wish(args: argparse.Namespace) -> int:
         wish,
         effort=effort.name,
         manager_id=manager.manager_id,
+        github_publish_requested=args.github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -882,6 +883,14 @@ def parser() -> argparse.ArgumentParser:
         help=(
             "native Manager runtime: codex (default), claude, or grok; "
             "frozen for the run and cannot be changed on resume"
+        ),
+    )
+    wish.add_argument(
+        "--github",
+        action="store_true",
+        help=(
+            "commit and push the generated toy folder after Release "
+            "(default: disabled)"
         ),
     )
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")

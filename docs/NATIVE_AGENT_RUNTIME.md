@@ -32,8 +32,8 @@ and tool-using work through Release:
 
 ```text
 Spark: Wish -> Make -> Release
-Forge: Wish -> Invent -> Make -> Release
-Quest: Wish -> Invent -> Make -> Playtest -> Release
+Forge: Wish -> Invent <-> Make -> Release
+Quest: Wish -> Invent <-> Make <-> Playtest -> Release
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
@@ -111,7 +111,9 @@ files disagree, the files win.
 
 A native turn timeout or explicitly recognized provider-transport disconnect
 does not require a person to rerun the command after the session UUID has been
-checkpointed. The launcher reports only those two cases through the typed
+checkpointed. The disconnect may arrive either on the private launcher
+diagnostic channel or in Codex's documented `turn.failed` / top-level `error`
+JSONL shape. The launcher reports only those two cases through the typed
 `CodexRecoverableInvocationError` boundary, and only after proving that the
 previous launcher's dedicated POSIX process session is empty. This includes
 Codex's built-in code-mode host even though that helper creates a separate
@@ -122,20 +124,39 @@ cannot prove quiescence for a process that deliberately escapes it. While
 retaining the same exclusive run lock, the host counts the
 failed attempt, preserves the unchanged stage packet, waits a bounded
 exponential delay with deterministic per-run jitter, and resumes that exact
-session for another turn. This continuation consumes the existing
-32-turn command budget; it does not
-create a separate retry budget. The delay is capped at 30 seconds and prevents
-a persistent provider outage from becoming a reconnect storm.
+session for another turn. Two consecutive recoverable turn failures stop the
+current command early with the same session checkpointed; an explicit
+`workshop resume` starts a fresh two-failure recovery window. Every such turn
+also consumes the existing 32-turn command budget. The delay is capped at 30
+seconds and prevents a persistent provider outage or repeated one-hour timeout
+from becoming an unattended reconnect storm.
+The one automatic recovery turn receives a fixed, non-cognitive instruction to
+inspect and reuse existing bytes, keep the root Manager on the critical path,
+avoid restarting broad exploration or depending on a child agent, run the
+remaining essential deterministic checks, and prioritize the stage finalizer.
+
+The private session checkpoint also binds the Codex CLI version and exact
+runtime-policy hash. A package manager may replace the installed CLI while a
+long native turn is running. Resume accepts that drift only when the saved
+checkpoint is intact, every Wish, constitution, path, permission-profile,
+feature, and thread binding is unchanged, and the installed CLI is a strictly
+newer supported version in the same major line. The resumed process receives
+the newly computed current sandbox policy. Same-version policy drift, CLI
+downgrades, major-version migrations, and malformed checkpoints still fail
+closed.
 
 An interruption before the exact session identity is bound fails closed rather
-than automatically creating a second root session. Failed-turn events, unknown
-or malformed event streams, unsafe process termination, wrong session identity,
+than automatically creating a second root session. Failed-turn events that do
+not begin with an exact allowlisted provider-transport diagnostic, unknown or
+malformed event streams, unsafe process termination, wrong session identity,
 contracts, gates, authorization, credentials, and external effects are not
 recoverable native-turn categories. If the interrupted turn already wrote a
 checkpoint-bound `agent-outcome.json`, the host evaluates that proposal once
 through the normal gate before considering any continuation. Provider
-transport classification uses only exact anchored diagnostics on the private,
-bounded launcher channel; generic or unrecognized stderr fails closed.
+transport classification uses only exact anchored diagnostics on private,
+bounded native channels. Diagnostic bytes select the typed category and are
+then discarded; they are never persisted, returned, or treated as model
+output. Generic or unrecognized diagnostics fail closed.
 
 Codex has a suspected terminal-event compatibility issue that is not reproduced
 by the currently retained mock-session rollouts. As a temporary fail-open, a
@@ -219,6 +240,12 @@ current stage-attempt number exactly like any other native turn. A separate
 private generation floor makes those counters monotonic: a callback abandoned
 by an earlier launcher may finish late, but its older record is no longer
 trusted and cannot roll status backward.
+
+When a Manager's terminal event includes usage, Workshop also keeps one small
+host-private aggregate of input-plus-output tokens by stage. The receipt and
+new public toy snapshot expose only those totals and whether coverage is
+measured, partial, or unavailable. This best-effort telemetry stores no prices,
+prompts, transcripts, or reasoning and cannot block or advance the lifecycle.
 
 ## Native subagents and Inventors
 
@@ -322,6 +349,10 @@ runs that deterministic tool for exactly one stage:
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . release \
   --package-root artifacts/release/package
+
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . need --stage <current-stage> --status waiting \
+  --reason "<one concrete condition required to continue>"
 ```
 
 The standalone Match command is frozen-run compatibility. Effort-aware Invent
@@ -336,13 +367,79 @@ Codex completes the active Goal and returns control. The host rereads the
 proposal and artifact tree independently, reruns its trusted gates, seals all
 accepted bytes, and alone decides the transition.
 
+The `need` command is the non-ready exception: it writes one checkpoint-bound
+`waiting` or `failed` reason with no artifact or transition, and the host stops
+without treating chat prose as state. The bounded reason remains in private
+checkpoint state and is printed by both the immediate command receipt and
+later `workshop status`; a resume clears the satisfied waiting condition before
+reactivating the same stage. Product-run instructions reserve this path for a
+concrete operator or environment condition that prevents safe progress;
+ordinary unfinished work and repairable validation or finalizer failures stay
+inside the active Goal.
+
+If a normal native turn returns before the Goal writes `agent-outcome.json`,
+the host does not invent a result or require an immediate operator command. An
+already checkpointed exact session is resumed automatically with the unchanged
+stage subject and receives a fixed instruction that its finalizer has not yet
+written the required proposal. Three consecutive normally returned turns
+without a proposal stop the invocation early, mark progress failed, and report
+the exact `workshop resume <wish-id>` command while preserving the checkpoint.
+An explicit resume starts a fresh three-turn unfinished-work window in that
+same root session. The independent 32-turn invocation budget still bounds all
+native turns, including gate repairs and provider-transport continuations.
+This unfinished-work continuation is not a lifecycle stage attempt. Missing
+session identity and either bound exhaustion still fail closed.
+
+Provider timeouts and recognized transport interruptions also stop an
+invocation after two consecutive recoverable failures; an explicit resume
+starts a fresh two-failure window.
+
+For current Make and Playtest checkpoints, an otherwise bound proposal whose
+agent-authored contract or artifact tree cannot be safely reopened is not
+accepted and does not terminate the run. The host quarantines the exact
+proposal in private state, records one of a fixed set of failure classes,
+includes the rejection hash and actionable feedback in the next stage subject,
+and resumes the same native session. Each checkpoint has an independent
+32-rejection ceiling. A host-state conflict still fails closed. Current
+Playtest finalizers also reopen and bind every canonical config before writing
+`agent-outcome.json`, reducing the chance that an invalid proposal reaches the
+host gate. Make applies the same bounded rejection path if a tool materializes
+files after the finalizer inventories the product tree but before the host
+performs its independent exact-file readback. Before that inventory, the Make
+finalizer prunes empty directories when permitted and safely removes regular
+files from `__cadgen__` runtime-cache trees inside the declared CAD project.
+The independent `--fresh` verifier intentionally deletes and rebuilds those
+cache bytes; sealing cache, lock, progress, or temporary files would guarantee
+drift even when stable geometry reproduces. Some native sandboxes allow file
+unlink but deny directory unlink. A remaining empty directory contains no
+content-addressable bytes, so the finalizer and trusted host both ignore it
+instead of blocking Make. STEP/STL/GLB exports, source, measurements, product
+renders, every other file, symlinks, special nodes, and unsafe cache content
+remain exact and fail-closed.
+Frozen older finalizers may still require every empty directory to disappear.
+Before their next Make resume, the trusted host holds the exclusive run lock
+and prunes only real empty directories beneath the canonical current product
+root. No native process is active; files and links are never removed or
+followed. This compatibility cleanup does not rematerialize or mutate frozen
+instructions.
+The current Make finalizer additionally requires a valid chromatic RGB/RGBA
+presentation PNG at `<cad-project>/snap/iso.png`, at least 800 px per side.
+That explicit path is archived under `make/verification/renders/` and is the
+only render family eligible for automatic README hero selection. Diagnostic
+silhouettes elsewhere remain evidence and cannot be promoted accidentally.
+
+Host-selected product artifacts share the package contract's 95 MiB per-file
+limit while the durable run retains its 128 MiB cumulative referenced-artifact
+budget. This allows real CAD and render files larger than the former 16 MiB
+contract mismatch without making storage unbounded.
+
 For Invent, the finalizer also preserves the exact authored source bytes as
 `source.json` beside the assignment and Invented contracts. The host requires
 that artifact and independently proves that its selection, ranking, concept,
 and research derive the two sealed contracts, so a post-finalizer source edit
 cannot hide behind unchanged contract prose.
 
-For Quest and frozen pre-ADR-0015 runs, Playtest owns the backward transitions. A
+For Quest and frozen pre-ADR-0015 runs, Playtest owns its backward transitions. A
 verdict of `improve` or `block`
 preserves exact evidence and uses each feedback record's explicit invalidation
 boundary to propose Make or Invent. `["playtest", "release"]` is an
@@ -351,10 +448,22 @@ fundamental concept revision. If actionable findings use both, the broader
 Invent revision wins. The host follows these authored markers without judging
 their prose and applies one shared bounded round budget to both routes.
 
+New Forge and Quest runs also freeze the Make-to-Invent revision capability.
+When Make proves that the exact sealed concept prevents any conforming build,
+the active Make Goal preserves a canonical evidence tree and proposes an exact
+`NativeMakeInventRevision` contract. The host rehashes that evidence, binds the
+Wish, assignment, and Invented identities, records a failed Make gate, consumes
+the same shared round budget, invalidates Invent and every downstream stage,
+and starts a new Invent Goal with the request. This route is block-only: normal
+CAD defects remain Make's responsibility. Spark has no standalone Invent stage,
+and older frozen runs without the capability marker cannot acquire the edge on
+resume.
+
 A Make repair keeps the sealed Invent result authoritative. A concept revision
-receives the exact prior Invented and failing Playtested/feedback bytes with
-independent hashes, then invalidates every downstream product revision. New
-Make or Invent bytes invalidate their old downstream evidence.
+receives the exact prior Invented plus either failing Playtested/feedback bytes
+or the Make revision request, with independent hashes, then invalidates every
+downstream product revision. New Make or Invent bytes invalidate their old
+downstream evidence.
 
 ## Creative handoff and compound selection
 
@@ -547,8 +656,12 @@ private Wish demonstrate that:
    passing evidence; every exact `MANUAL.pdf` passes structural validation;
 7. no credential reaches the native subprocess or its readable filesystem;
 8. terminal Release requires exact full-tier print-ready CAD, validated
-   `MANUAL.pdf`, and authenticated public readback bound to those hashes; and
-9. the executable Workshop run ends at Release and makes no claim of physical
+   `MANUAL.pdf`, and authenticated public readback bound to those hashes;
+9. an optional Git snapshot can be retried after terminal Release and preserves
+   every sealed Invent/Make/Playtest attempt, Make product render, revision
+   request, and evidence tree without copying native-session or credential
+   state; and
+10. the executable Workshop run ends at Release and makes no claim of physical
    printing, delivery, or review.
 
 ## Engine portability

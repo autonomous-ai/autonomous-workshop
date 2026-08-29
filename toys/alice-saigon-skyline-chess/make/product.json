@@ -1,0 +1,73 @@
+{
+  "title": "Saigon Skyline Chess",
+  "summary": "An orthodox chess set designed for upright, support-free slicing whose full piece hierarchy is shaped by six architectural icons of Ho Chi Minh City and remains legible in one filament.",
+  "edition": "Spark Make r0001",
+  "rules": {
+    "ruleset": "orthodox over-the-board chess",
+    "changes": "none",
+    "board": "8 × 8 equal-square grid; near-right corner is the low-relief square",
+    "reference": "https://rcc.fide.com/fide-laws-of-chess_fulltexthtml/"
+  },
+  "piece_mapping": {
+    "king": "Landmark 81 — bundled setbacks and highest spire",
+    "queen": "Bitexco Financial Tower — tapered tower and projecting sky deck",
+    "bishop": "Notre-Dame Cathedral Basilica of Saigon — paired towers and twin spires",
+    "knight": "Independence Palace — directional modernist slab and entry canopy",
+    "rook": "Bến Thành Market — broad hall, clock tower, and roof finial",
+    "pawn": "Saigon Central Post Office — long hall, arched roof, and clock cupola"
+  },
+  "side_language": {
+    "river": "round two-step plinth",
+    "grid": "square two-step plinth",
+    "color_dependency": "none; geometry carries side identity"
+  },
+  "dimensions_mm": {
+    "board": [208, 208, 4],
+    "square": 25,
+    "piece_base_envelope": [18, 18],
+    "pawn_height": 28,
+    "rook_height": 34,
+    "knight_height": 38,
+    "bishop_height": 43,
+    "queen_height": 49,
+    "king_height": 55
+  },
+  "materials_and_process": {
+    "assumed_material": "PLA",
+    "nozzle_mm": 0.4,
+    "layer_height_mm": 0.2,
+    "supports_intended": false,
+    "printer_bed_mm": [220, 220, 220]
+  },
+  "inventory": {
+    "board": 1,
+    "pieces": 32,
+    "unique_print_files": 13
+  },
+  "limitations": [
+    "The landmarks are original low-detail silhouette interpretations, not measured architectural replicas.",
+    "Fine façade ornament, text, and clock numerals are intentionally omitted at chess-piece scale.",
+    "Digital checks do not prove a successful physical print, durability, or human handling response.",
+    "No storage case is included in this Make revision; pieces require a separate padded container for transport."
+  ],
+  "source_notes": [
+    {
+      "claim": "FIDE defines an 8 × 8 board, sixteen pieces per side, and the orthodox initial position.",
+      "url": "https://rcc.fide.com/fide-laws-of-chess_fulltexthtml/"
+    },
+    {
+      "claim": "Official HCMC tourism materials identify Bến Thành Market's clock tower and list the Central Post Office, Opera House, Cathedral, Independence Palace, and Bến Thành Market as city landmarks.",
+      "url": "https://visithcmc.net/en/news/kham-pha-cho-ben-thanh-diem-den-khong-the-bo-qua-o-tp-ho-chi-minh"
+    },
+    {
+      "claim": "Official HCMC tourism describes Landmark 81 as a bamboo-bundle-inspired city icon.",
+      "url": "https://visithcmc.net/en/news/thanh-pho-ho-chi-minh-va-nhung-bieu-tuong-thoi-dai-moi"
+    },
+    {
+      "claim": "Bitexco's project material identifies the tower as a Ho Chi Minh City landmark; its projecting helipad is the distinguishing silhouette used here.",
+      "url": "https://bitexco.com.vn/en/project/bitexco-financial-tower/"
+    }
+  ],
+  "rights_and_attribution": "Orthodox chess rules are preserved and attributed to FIDE as the current rules reference. Geometry is original parametric work inspired by publicly visible architectural silhouettes; no logos, marks, façade artwork, or copied commercial chess-piece designs are included.",
+  "playtest_status": "not-run"
+}

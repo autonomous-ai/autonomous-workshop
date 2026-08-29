@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "check_id": "printability-check",
+  "subject_sha256": "315ed802ae675a75367c0b9be4dc6bfc6ff8859885366227a81a009b0fe003c7",
+  "made_file_sha256": "c19c13c6c9d71d2e38e95e4c56b380ba524b9466faf05ec223922c469b49d827",
+  "product_artifact_sha256": "d31e05cf5a70714e41d2f26cf2bc7e4ef25a2cbd63545cda651a527c3f76874a",
+  "evaluator": "Codex independent printability audit",
+  "evaluator_version": "1.0.0",
+  "bed_mm": [220, 220, 250],
+  "nozzle_mm": 0.4,
+  "minimum_wall_gate_mm": 0.8,
+  "method": [
+    "Rerun the canonical mesh and thickness checkers on copied bytes of each of the three sealed slicer-facing STL targets.",
+    "Audit bed stance, envelope, watertightness, manifold topology, winding, positive volume, connected-shell count, and sampled wall thickness.",
+    "Review source-level broad-face-down support rationale and claim boundaries without claiming a physical print or support-free outcome."
+  ],
+  "inputs": {
+    "part_front_garden_mask.stl": "33362fc1afb6f473ba6da19a375742068ad9df88a0b2927f8111e2c34daad835",
+    "part_rear_chassis.stl": "3c34737691d268a24b99363955a3cca099f82ec1301a4c1a32ed6317a378d9f1",
+    "part_sector_rotor.stl": "21cc3acf381a978083e76565999a2b24fc78a7e83c898c7ff8dc9bdf7a7c347e",
+    "measure/thickness-front_garden_mask.md": "eb08de513996ea87cd668f357b9f10706821e0ab75af2f124d419a1430e7b20c",
+    "measure/thickness-rear_chassis.md": "889fb37a48507a81c9536b9ac4bea242fb70cc6415bcf1ed32424f5081b143ed",
+    "measure/thickness-sector_rotor.md": "ec1e8b322980db161460f343f4f513d88824f7e2741cc479dacfcdbe7aeff298",
+    "measure/verification-pipeline.md": "e691dcd7340c782586c486476bd19b7ccc95e9ce057fc0a7c8d118093c53dc8b"
+  }
+}

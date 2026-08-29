@@ -12,6 +12,7 @@ from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
     NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_VERIFIER_MODE,
+    NativeMadeTreeGateError,
 )
 from workshop.wish import Wish
 from workshop.workflow import AgentRun
@@ -508,6 +509,62 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
 
             self.assertTrue((paths.workspace / "agent-outcome.json").is_file())
             self.assertFalse((paths.host_state / "make-proposal-rejections").exists())
+
+    def test_post_finalizer_make_tree_drift_returns_to_same_checkpoint(self):
+        launcher = _ChangedArtifactAgent(rejected_attempt_limit=0)
+        effects = _FactoryEffects()
+        cad_calls = 0
+
+        def tree_drift_once(made, **arguments):
+            nonlocal cad_calls
+            cad_calls += 1
+            if cad_calls == 1:
+                raise NativeMadeTreeGateError(
+                    "native Made product tree changed after proposal finalization"
+                )
+            return _verified_cad(made, **arguments)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            wish = Wish.create(
+                "make-tree-drift-is-repaired",
+                "Build a toy whose CAD cache appears after finalization.",
+            )
+            patches = self._base_patches(home, launcher, effects)
+            with (
+                patches[0],
+                patches[1],
+                patches[2],
+                patches[3],
+                mock.patch(
+                    "workshop.workflow.native_run.verify_native_made_cad",
+                    side_effect=tree_drift_once,
+                ),
+                patches[5],
+                patches[6],
+                patches[7],
+                patches[8],
+            ):
+                receipt = start_native_run(wish)
+                paths = native_run_paths(wish.product_id)
+
+            self.assertEqual(
+                (receipt["stage"], receipt["status"]), ("playtest", "waiting")
+            )
+            self.assertEqual(cad_calls, 2)
+            self.assertEqual(
+                [packet["stage"] for packet in launcher.stage_packets],
+                ["match", "invent", "make", "make", "playtest"],
+            )
+            initial_make = launcher.stage_packets[2]
+            retry_make = launcher.stage_packets[3]
+            self.assertEqual(
+                retry_make["checkpoint_sha256"],
+                initial_make["checkpoint_sha256"],
+            )
+            rejection = retry_make["inputs"]["host_make_proposal_rejection"]
+            self.assertEqual(rejection["failure_code"], "make-artifact-invalid")
+            self.assertFalse((paths.workspace / "agent-outcome.json").exists())
 
     def test_trusted_cad_integrity_error_is_not_an_agent_repair(self):
         launcher = _OneSessionProductAgent()

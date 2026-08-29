@@ -64,7 +64,7 @@ The record proves byte discovery and linkage, not the truth of the model's expla
 
 **Alternative considered:** treat a successful finalizer as sufficient evidence of context use. Rejected because a static lucky fixture can finalize without revealing that an upstream input or instruction was ignored.
 
-### 4. Run an explicit effort route, and schedule the complete route matrix
+### 4. Run an explicit effort route and support an operator-managed route matrix
 
 The local entry point will require or default an explicit `--effort` value and execute one fresh fixed Wish per invocation. Route expectations come from the frozen current effort definition and are cross-checked against QA-1's authoritative topology constants rather than restated in the overlay:
 
@@ -74,7 +74,7 @@ The local entry point will require or default an explicit `--effort` value and e
 | Forge | Invent -> Make -> Release | Invent folds assignment; Release records `not-run` |
 | Quest | Invent -> Make -> Playtest -> Release | Invent folds assignment; Release binds passing Playtest |
 
-The scheduled/manual workflow will run a three-entry matrix so every current route gets model/context acceptance. Each Wish gets its own persistent session; session identity is never shared across routes. The local command may run a single selected route for faster diagnosis. Route reports remain independent so one failure does not hide the others.
+Operators can invoke the local command once per effort to form a three-entry matrix so every current route gets model/context acceptance. Each Wish gets its own persistent session; session identity is never shared across routes. The local command runs a single selected route for faster diagnosis, and its independent reports let one failure remain visible without hiding the others. Any periodic scheduling stays outside repository automation.
 
 The fixed Wish will deliberately admit simple valid geometry and a concise manual, but it will remain ordinary product intent rather than a hidden stage recipe. Codex must use production Make and Release resources to create valid bytes.
 
@@ -100,11 +100,11 @@ Per-turn limits are enforced by the production launcher configuration used for t
 
 **Alternative considered:** add real Codex directly to the deterministic E2E job. Rejected because it would make required CI authenticated and nondeterministic while weakening the distinct offline guarantee.
 
-### 7. Add a separate non-required manual/scheduled workflow
+### 7. Keep credentialed execution outside repository automation
 
-A dedicated workflow, separate from `.github/workflows/ci.yml`, will expose manual dispatch and a schedule. It will target the repository's configured credentialed runner/environment and execute a Spark/Forge/Quest matrix using the documented tool command. No credential value will be committed, echoed, placed in the run workspace, or forwarded through the native environment. Each matrix result will upload only the bounded redacted report; retained workspaces stay on the controlled runner and are not uploaded automatically.
+The repository exposes only the documented bounded local command. An operator may execute Spark, Forge, and Quest independently on a controlled credentialed environment or arrange periodic execution outside repository automation. No credential value is committed, echoed, placed in the run workspace, or forwarded through the native environment. Only bounded redacted reports are safe to retain or transfer; raw workspaces stay local and are never uploaded automatically.
 
-The workflow's exact runner label and authentication provisioning remain deployment configuration, not an application contract. If no credentialed runner is configured, the job must fail preflight or remain disabled rather than silently substitute deterministic Codex.
+Runner selection, authentication provisioning, and any external schedule remain deployment configuration, not an application contract. If an authenticated runtime is unavailable, preflight fails rather than silently substituting deterministic Codex.
 
 **Alternative considered:** add the matrix to the required push/pull-request workflow. Rejected because forks and normal CI must remain credential-free, and model availability is not deterministic enough for a merge gate.
 
@@ -125,7 +125,7 @@ The acceptance wrapper snapshots each exact packet by checkpoint plus subject be
 - **[Risk] Model-authored context explanations can be plausible but false.** -> Trust only independently checked paths, packet membership, digests, final source bytes, accepted manifests, and production gate results; label semantic inference narrowly.
 - **[Risk] A wrapper can alter native protocol behavior.** -> Test exact argument/event/status/signal forwarding, preserve real session identifiers, and require the production session checkpoint to bind the actual model and effort.
 - **[Risk] The loopback Factory fixture can drift from production transport contracts.** -> Reuse current integration-test response builders where possible, assert all calls and exact returned bytes, and keep live Factory conformance outside this acceptance claim.
-- **[Risk] Credentialed scheduled infrastructure may be unavailable or compromised.** -> Keep scheduling non-required, use an isolated least-privilege runner/environment, run preflight before creating state, and never upload raw workspaces or credentials.
+- **[Risk] Credentialed operator infrastructure may be unavailable or compromised.** -> Keep execution non-required, use an isolated least-privilege environment, run preflight before creating state, and never transfer raw workspaces or credentials.
 - **[Risk] Test helpers could become a production shortcut.** -> Keep them outside distributable source, add dependency/static-policy guards, and make activation possible only through the test tool and explicit environment switch.
 
 ## Migration Plan
@@ -134,7 +134,7 @@ The acceptance wrapper snapshots each exact packet by checkpoint plus subject be
 2. Add the current Factory loopback protocol and exact publication/readback assertions.
 3. Implement Spark live acceptance first because its two-turn path validates compound Make selection and terminal Release with the smallest runtime.
 4. Add Forge and Quest using the same harness, then enforce route absence/ordering and per-route session continuity.
-5. Document the local command and evidence limits; add the separate manual/scheduled route matrix only after all offline harness tests pass.
+5. Document the local command and evidence limits; run the operator-managed route matrix only after all offline harness tests pass.
 6. Run the complete live matrix once on a controlled authenticated environment and record only sanitized timing and pass/fail evidence.
 
-Rollback removes the test-only runner, wrapper, fixtures, live workflow, and documentation. It does not rewrite run formats, product-run assets, production lifecycle state, or historical evidence.
+Rollback removes the test-only runner, wrapper, fixtures, and documentation. It does not rewrite run formats, product-run assets, production lifecycle state, or historical evidence.

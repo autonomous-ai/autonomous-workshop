@@ -1,0 +1,19 @@
+{
+  "source": "artifacts/make/r0001/product/cad/part_grid_rook.step.py",
+  "size": 420,
+  "tolerance": 0.1,
+  "poses": {
+    "front": {
+      "az": -90.0,
+      "el": 0.0,
+      "roll": 0.0,
+      "fov": 0.0
+    },
+    "iso": {
+      "az": -45.0,
+      "el": 35.264,
+      "roll": 0.0,
+      "fov": 0.0
+    }
+  }
+}

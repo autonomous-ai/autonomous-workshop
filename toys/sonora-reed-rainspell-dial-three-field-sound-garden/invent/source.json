@@ -1,0 +1,324 @@
+{
+  "selected_inventor_id": "sonora-reed",
+  "ranking": [
+    {
+      "inventor_id": "sonora-reed",
+      "rationale": "Exact fit: the Wish is a mouth-free passive acoustic toy whose three voices must arise visibly from printed rib geometry, which is Sonora Reed's declared specialty."
+    },
+    {
+      "inventor_id": "bob",
+      "rationale": "Strong secondary fit for the exposed rotary mechanism and repeatable spectacle, but Bob's mechanism-first Taste is less specific than Sonora's geometry-to-sound discipline."
+    },
+    {
+      "inventor_id": "pico-press",
+      "rationale": "The palm-size single-turn gesture and gravity follower suit Pico Press, but its three-part ceiling and motion-first remit constrain the separated acoustic chambers and serviceable wheel stack."
+    },
+    {
+      "inventor_id": "kestrel-knot",
+      "rationale": "Captive motion and a continuous circular path are relevant, but the Wish does not call for topology, loops, crossings, or braided motion as its central idea."
+    },
+    {
+      "inventor_id": "ivy",
+      "rationale": "The visible causal link between rib pattern and strike cadence could be educational, but the requested outcome is a listening experience rather than a science demonstration."
+    },
+    {
+      "inventor_id": "mira-fold",
+      "rationale": "Compactness, tactility, and a small robust part family fit, while Mira Fold's reveal-puzzle craft does not address continuous acoustic sequencing."
+    },
+    {
+      "inventor_id": "luma-vale",
+      "rationale": "Luma Vale's hand-powered transformation craft could make a beautiful dial, but its light-and-shadow medium is absent from this explicitly acoustic Wish."
+    },
+    {
+      "inventor_id": "vela-bloom",
+      "rationale": "A broad turning control and deliberate end-state geometry are adjacent strengths, but the Wish asks for endless acoustic cycling rather than deployment between two forms."
+    },
+    {
+      "inventor_id": "tess-loop",
+      "rationale": "Patterned fields and visible repetition are relevant visual language, but there is no modular arrangement or user-composed tessellation."
+    },
+    {
+      "inventor_id": "leo",
+      "rationale": "The sequence has playful structure, yet there are no rules, players, or simulation-worthy game decisions."
+    },
+    {
+      "inventor_id": "abo",
+      "rationale": "The Wish specifies a tactile sound object rather than an abstract strategy system, board, or combinatorial contest."
+    },
+    {
+      "inventor_id": "alice",
+      "rationale": "No known tabletop classic or personal customization subject is present, so Alice's preservation-and-personalization craft is out of scope."
+    },
+    {
+      "inventor_id": "eve",
+      "rationale": "The natural sound progression is atmospheric but is not a reference-bound person, pet, place, or cinematic miniature world."
+    }
+  ],
+  "concept": {
+    "title": "Rainspell Dial: Three-Field Sound Garden",
+    "summary": "A 120 mm desktop dial with a broad open-spoke hand wheel. Turning the wheel clockwise carries one visibly bobbing, gravity-loaded, round-tipped printed plectrum around a stationary annular deck. It crosses three unmistakably different 113-degree rib fields in order: irregular fine rain, three broad clustered frog calls, and four dense cricket chirps. Three 7-degree quiet transition lanes complete the circle, so the sequence returns to rain continuously with no reversal or reset gesture. The rib deck closes three separately ported sector chambers in the base; their volume and port geometry are deliberate acoustic variables, but the dry service seam means no tuned-cavity frequency is claimed, and exact tone remains unknown until an exact print is measured and heard.",
+    "signature_decision": "The wheel carries the plectrum rather than hiding a cam under a decorative dial. The user can watch the single white-space-like follower cage orbit over countably different rib patterns, making cadence, transition, and automatic reset legible from above.",
+    "object_and_category": "Palm-size, hand-powered passive acoustic desktop toy; a rotary scrape idiophone made only from ordinary rigid-filament printed geometry.",
+    "envelope_mm": {
+      "length_mm": 120,
+      "width_mm": 120,
+      "height_mm": 52
+    },
+    "material_and_print_plan": {
+      "material": "One ordinary rigid FDM filament such as PLA or PETG; no flexible filament or non-printed hardware is required.",
+      "nominal_nozzle_mm": 0.4,
+      "nominal_layer_height_mm": 0.2,
+      "minimum_structural_wall_mm": 2.0,
+      "soundboard_thickness_mm": 1.6,
+      "print_stances": "Base bowl prints bottom-down and open at the top; its open channels are closed only when the separate deck is installed. Rib deck prints flat underside-down with ribs growing upward. Wheel prints with its in-use flat top face on the bed, so the in-use downward skirt, U-guide lands, dovetail rails, and cage walls grow upward using 45-degree transitions. Follower keeper prints flat. Plectrum prints inverted on its broad mass head with the rounded contact bulb uppermost. Bayonet cap prints with its in-use flat top face on the bed and its internal J-slots open upward. No nominal functional face requires support material.",
+      "assembly_policy": "Six printed parts, dry assembled with an inspectable deck bayonet, rigid follower keeper, and service cap. No glue, beads, batteries, magnets, string, metal, purchased reeds, fatigue flexure, or sacrificial trapped support."
+    },
+    "intended_interaction": "Set the low base on a desk, place fingertips on the 12 mm-wide rounded outer ring, and turn clockwise at roughly one revolution per four to six seconds. The guarded plectrum visibly rises and falls as it orbits: sparse irregular taps suggest rain, three groups of three broader taps suggest frog calls, and four dense regular packets suggest crickets. Continuing the same turn crosses a quiet transition lane and begins rain again. Speed changes pulse density but no exact pitch, species imitation, or loudness is promised. Reverse movement is reserved for clearing a stall and must be retention-tested, not presented as the named sequence.",
+    "resting_form_and_surface_language": "The resting silhouette is a low two-terrace circle: a 120 mm stationary plinth, a narrow shadow seam, and a 108 mm wheel whose flat top annulus recalls a turntable platter without copying a branded product. Two concentric 0.35 mm-deep grooves at radii 46 and 50 mm articulate the broad grip; all other face texture is functional rib geometry. The Ø24 plectrum head and an opposed Ø24 shallow counterbalance boss form a restrained tonearm-like diagonal across the open wheel. Outer guard and base terraces use tangent curves rather than ornamental waves. Droplet, paired-ripple, and hatch relief keys are recessed 0.4 mm beside their actual ports. Geometry carries the composition in one filament; optional color contrast is secondary. The result is deliberately quiet, graphic, and record-player-adjacent rather than cute, figurative, or decorated with fake notes/speaker grilles.",
+    "layout_and_sequence": {
+      "working_radius_mm": 39,
+      "field_arc_degrees_each": 113,
+      "transition_arc_degrees_each": 7,
+      "field_arc_length_mm": 76.9,
+      "sequence_clockwise": [
+        "rain",
+        "frog-song",
+        "crickets"
+      ],
+      "visual_indexing": "Each sector begins with a recessed 0.4 mm rounded relief symbol outside the contact path: three droplets, three low ripple arcs, or four short hatch groups. Meaning is carried by relief and rib geometry, not color.",
+      "continuous_reset": "The 360-degree path has no stop. Each 7-degree transition provides 4.8 mm of calculated rib-free deck, and every adjacent rib begins and ends with a 30-degree tangent ramp. This geometry gives the follower room to descend before the next pattern, but actual settling without skip or chatter is a physical-test hypothesis. The cricket-to-rain boundary is geometrically no different from the other boundaries."
+    },
+    "rib_fields": [
+      {
+        "key": "rain",
+        "purpose": "Produce a fine, irregular shower of low-energy taps.",
+        "geometry": "Seventeen rounded transverse ribs spanning radii 34 to 44 mm. Measured along the r=39 mm path from the 0-degree field boundary, center arc positions are [1.8, 5.8, 10.6, 14.9, 20.0, 24.1, 29.0, 33.4, 38.6, 42.8, 47.5, 52.5, 56.8, 61.6, 65.7, 70.8, 75.1] mm, equivalent to absolute center angles [2.64, 8.52, 15.57, 21.89, 29.38, 35.41, 42.60, 49.07, 56.71, 62.88, 69.78, 77.13, 83.45, 90.50, 96.52, 104.01, 110.33] degrees. Heights are [0.40, 0.52, 0.65, 0.40, 0.52, 0.65, 0.40, 0.52, 0.65, 0.40, 0.52, 0.65, 0.40, 0.52, 0.65, 0.40, 0.52] mm. Each has a 0.8 mm tangent crest, 0.3 mm crest radius, symmetric 30-degree ramps, and resulting 2.2 to 3.1 mm root footprint.",
+        "cadence_at_10_to_15_rpm": "Sector-average rate including its entry/exit margins is 9.0 to 13.5 contacts/s. Local cadence from the 4.0 to 5.2 mm center pitches spans approximately 7.9 to 15.3 contacts/s across the declared speed and spacing extremes. These are calculated event rates, not audible pitch.",
+        "acoustic_status": "The irregular low-amplitude texture is intended to evoke rain; timbre and perceptual success require exact-print listening evidence."
+      },
+      {
+        "key": "frog-song",
+        "purpose": "Produce three separated, low, grouped pulses rather than a continuous buzz.",
+        "geometry": "Three packets of three broad ribs spanning radii 33 to 45 mm. Measured along r=39 mm from the 120-degree field boundary, center arc positions are [7, 12, 17, 32, 37, 42, 57, 62, 67] mm, equivalent to absolute angles [130.28, 137.63, 144.98, 167.01, 174.36, 181.70, 203.74, 211.09, 218.43] degrees. Each packet repeats heights [0.65, 1.15, 0.80] mm. All use 0.8 mm tangent crests, at least 0.3 mm crest radius, and symmetric 30-degree ramps, giving root footprints about 3.1, 4.8, and 3.6 mm. Packet-to-packet center travel is exactly 15 mm, leaving at least 10.2 mm root-to-root quiet travel.",
+        "cadence_at_10_to_15_rpm": "Sector-average rate including packet gaps is 4.8 to 7.2 contacts/s. Local cadence inside each 5.0 mm-pitch packet is 8.2 to 12.3 contacts/s, with three conspicuous quiet groups per pass. These are calculated event rates, not audible pitch.",
+        "acoustic_status": "The grouped pulse contour is intended to recall frog-song without imitating a species or claiming a tuned croak; physical listening must decide whether the cavity and broad ribs separate it enough from rain."
+      },
+      {
+        "key": "crickets",
+        "purpose": "Produce four short, even chirp-like packets with the densest texture of the cycle.",
+        "geometry": "Four packets of five narrow rounded ribs spanning radii 35 to 43 mm. Measured along r=39 mm from the 240-degree field boundary, center arc positions are [1.5, 4.5, 7.5, 10.5, 13.5, 21.2, 24.2, 27.2, 30.2, 33.2, 40.9, 43.9, 46.9, 49.9, 52.9, 60.6, 63.6, 66.6, 69.6, 72.6] mm, equivalent to absolute angles [242.20, 246.61, 251.02, 255.43, 259.83, 271.15, 275.55, 279.96, 284.37, 288.77, 300.09, 304.49, 308.90, 313.31, 317.72, 329.03, 333.44, 337.84, 342.25, 346.66] degrees. Each is 0.55 mm high with a 0.8 mm tangent crest, 0.3 mm crest radius, symmetric 30-degree ramps, and about 2.7 mm root footprint. Packet starts alternate 0.4 mm radially inward and outward while the full ribs remain under the 12.5 mm contact shoe. Center pitch is exactly 3.0 mm within packets and 7.7 mm between packets, leaving 5.0 mm root-to-root quiet travel. Root edges retain at least 0.15 mm entry margin and 2.9 mm exit margin within the 76.9 mm field arc.",
+        "cadence_at_10_to_15_rpm": "Sector-average rate including packet gaps is 10.6 to 15.9 contacts/s. Local cadence inside each 3.0 mm-pitch packet is 13.6 to 20.4 contacts/s. This is strike cadence rather than tonal frequency.",
+        "acoustic_status": "Regular dense packets are intended to evoke crickets. Recognition, pleasantness, and relative volume are unresolved until tested on the exact print."
+      }
+    ],
+    "components": [
+      {
+        "key": "base",
+        "name": "Three-chamber resonator bowl and spindle",
+        "purpose": "Stabilize the toy, support the wheel, and provide three separated air/structure volumes beneath the rib fields.",
+        "form": "A low circular bowl with a 3.2 mm floor, 2.4 mm rounded perimeter wall, three 2.2 mm radial partition walls, and a 4 mm-wide annular desk-contact land projecting 1.0 mm below the floor near radius 56 mm. A concentric pedestal passes through the deck: Ø26 mm through z=21.0 mm, a Ø14.0 mm two-land journal from z=21.0 to 36.0 mm, then a Ø10 mm bayonet neck from z=36.0 to 42.0 mm. Two opposed ears centered at 0 and 180 degrees occupy z=39.0-41.0 mm, extend radially from r=5.0 to 7.0 mm, have 4.0 mm tangential chord width, and use R0.5 leading edges. A fixed guard lip occupies radii 54.8 to 57.0 mm from z=20.0 to 33.0 mm, with a rounded/sloped terrace continuing to the 60 mm base radius. Its Ø109.6 mm clear opening passes the Ø108 mm deck with 0.8 mm radial assembly clearance. Net air-volume targets are 8000 +/- 200 mm3 rain, 12000 +/- 200 mm3 frog-song, and 6000 +/- 200 mm3 crickets. All port center planes are horizontal at z=10.5 mm and all edges are R0.8. Rain exits the outer wall at 56.5 degrees through a nominal 6 x 3 mm bounding opening adjusted to 18 mm2 net area; its straight radial neck runs from r=49 to r=53 mm on that angle for 4 mm centerline length. Frog exits at 176.5 degrees through a nominal 5 x 3 mm bounding opening adjusted to 15 mm2 net area; its curved tangential neck follows r=50 mm clockwise from 155.87 to 176.5 degrees for exactly 18.0 mm arc-centerline length and terminates flush into the frog chamber at 155.87 degrees. Cricket exits at 296.5 degrees through a nominal 8 x 3 mm bounding opening adjusted to 24 mm2 net area; its straight radial neck runs from r=50 to r=53 mm for 3 mm centerline length.",
+        "dimensions_mm": {
+          "length_mm": 120,
+          "width_mm": 120,
+          "height_mm": 42
+        },
+        "placement": "Stationary lowest part; spindle is concentric, chamber partitions align with transition-lane centers, and the 1 mm-deep underside concavity inside the projecting annular land tolerates first-layer elephant foot while leaving 2.2 mm minimum floor thickness.",
+        "interfaces": "A 108.6 mm circular ledge receives the 108.0 mm deck with 0.30 mm radial clearance. Three 8.0 x 3.0 x 1.8 mm bayonet ledges accept deck tabs with 0.30 mm axial and 0.25 mm lateral starting clearance. The deck's Ø28.6 mm center bore passes over the Ø26 pedestal. A 20 mm-diameter thrust land ends at z=21.0; the Ø14 journal and Ø14-maximum bayonet ears both pass through the wheel's Ø14.5 bore."
+      },
+      {
+        "key": "rib-deck",
+        "name": "Indexed annular sound deck",
+        "purpose": "Carry the three visible contact patterns and close the three resonator sectors.",
+        "form": "A 108 mm diameter, 1.6 mm thick circular plate with a Ø28.6 mm central bore, the substantially free working annulus from radius 31 to 47 mm, three patterned 113-degree sectors, three smooth 7-degree transition lanes, relief symbols outside the contact path, and three underside bayonet tabs. Inner, outer, and radial double-overlap labyrinth lands match the bowl partitions while leaving the contact annulus free to vibrate.",
+        "dimensions_mm": {
+          "length_mm": 108,
+          "width_mm": 108,
+          "height_mm": 2.75
+        },
+        "placement": "Locks onto the open base bowl; its field boundaries align with chamber partitions and its top surface sits 18.0 mm above the desk plane.",
+        "interfaces": "Central clearance bore passes over the spindle. Three tabs insert vertically into base keyways and lock with a 12-degree turn; molded hard stops prevent over-rotation. The stated bayonet gaps are starting values to be coupon-checked."
+      },
+      {
+        "key": "wheel",
+        "name": "Broad hand wheel with guarded follower carriage",
+        "purpose": "Provide the single obvious control and physically carry the plectrum around the field sequence.",
+        "form": "A 108 mm diameter wheel with a continuous 12 mm radial-width grip ring occupying radii 42 to 54 mm and z=25 to 32 mm, two 0.35 mm-deep top grip grooves at radii 46 and 50 mm, three spokes, a Ø26 mm hub with Ø14.5 mm bore, a carriage centered at radius 39 mm, and an opposed Ø24 mm shallow counterbalance boss. A 1.6 mm-thick skirt occupies radii 52.4 to 54.0 mm and descends to z=23.0 mm inside the fixed base guard. The 15.4 mm-long hub seats from z=21.0 to 36.4 and uses 4 mm bearing lands at z=21.0-25.0 and z=32.0-36.0, with a 7.0 mm relieved center and 0.4 mm top relief at Ø14.8 mm. The carriage has C-shaped upper and lower U-guide lands at z=34.25-37.25 and z=28.0-31.0, separated by a z=31.0-34.25 debris relief, plus a rounded Ø28 mm lower cage skirt ending at z=19.8 mm. Maximum cage view-slot width is 4.0 mm; the cage bottom clears the tallest nominal rib by 0.65 mm. All wheel, cage, and follower z datums are the seated position; Make's tolerance sweep must also translate the rotating assembly through the full 0.35 mm cap end play.",
+        "dimensions_mm": {
+          "length_mm": 108,
+          "width_mm": 108,
+          "height_mm": 32
+        },
+        "placement": "Concentric above the rib deck, with the plectrum carriage directly over the 39 mm working radius. The follower head deliberately overhangs the grip ring in plan at one spoke but remains above it: ring top z=32 and head bottom z=37.25 at a valley. The rest of the broad ring stays physically continuous and unobstructed. The descending skirt overlaps the stationary guard by 9.0 mm axially with 0.8 mm radial clearance. The cage reaches only r=53.0 mm, leaving 1.8 mm nominal radial clearance to the guard at r=54.8 mm before tolerance analysis.",
+        "interfaces": "The Ø14.5 two-land hub bore runs on the Ø14.0 spindle for 0.50 mm diametral clearance; 14.4, 14.5, and 14.6 mm bore coupons are required. The seated hub bears on the 20 mm thrust land at z=21.0 and occupies z=21.0-36.4. The cap underside locks at z=36.75, giving exactly 0.35 mm axial end play. The U-guides and keeper together close two Ø8.5 guide lands around the follower stem."
+      },
+      {
+        "key": "plectrum",
+        "name": "Captive gravity follower",
+        "purpose": "Turn rib height into gentle, visible vertical motion and indirect taps without a spring, flexible reed, or loose weight.",
+        "form": "A solid printed plunger built bottom-up from a Ø7 mm hemispherical R3.5 contact boss at local z=0-3.5; a Ø12.5 mm by 1.5 mm retention flange at z=3.5-5.0; a support-free 45-degree conical shoulder reducing from Ø12.5 to Ø8 over z=5.0-7.25; a Ø8.0 mm straight guide stem at z=7.25-19.25; and a Ø24 mm by 12 mm mass head at z=19.25-31.25. The stem-to-head R1 blend stays inside the head zone, preserving straight stem through both guide lands. At 100% infill the CAD target is 7 to 9 g in a PLA-like density; exact modeled volume and printed mass must be recorded.",
+        "dimensions_mm": {
+          "length_mm": 24,
+          "width_mm": 24,
+          "height_mm": 31.25
+        },
+        "placement": "Placed laterally into the wheel carriage's two open C-shaped U-guides before the rigid keeper closes their open radial side. At a deck valley the contact tip is global z=18, retention flange spans z=21.5-23.0, straight stem z=25.25-37.25, and head z=37.25-49.25. At the 1.15 mm tallest nominal rib the head top is z=50.40; the 2.4 mm design-travel extreme reaches z=51.65 inside the 52 mm envelope.",
+        "interfaces": "The Ø8.0 stem runs in two completed Ø8.5 guide lands at z=28.0-31.0 and z=34.25-37.25, giving 0.50 mm diametral clearance. At the 2.4 mm upper travel limit the 45-degree shoulder ends 0.35 mm below the lower land and both lands retain full 3.0 mm straight-stem engagement; at the valley the upper land ends exactly at the head underside. The Ø12.5 retention flange and Ø24 head each overlap the Ø8.5 completed guides by at least 2.0 mm radially, so neither can escape vertically. Only the Ø7 R3.5 boss contacts ribs; the larger flange remains at least 2.35 mm above the tallest nominal rib at the valley datum."
+      },
+      {
+        "key": "follower-keeper",
+        "name": "Rigid sliding follower keeper",
+        "purpose": "Close the lower plectrum guide without a snap tongue, living hinge, print-in-place bridge, or reliance on gravity for captivity.",
+        "form": "A radial strip with a flat 3 mm base, two upright closing half-land faces rather than a closed hole, shallow dovetail edges, a 1.2 mm tangential debris slot, and a broad inner service tab. The lower and upper closing faces occupy z=28.0-31.0 and z=34.25-37.25 in assembly and grow upward from the print-flat strip with 45-degree roots. At its stop they complete the wheel's open C-shaped lands into two Ø8.5 guides around the already-loaded Ø8 stem.",
+        "dimensions_mm": {
+          "length_mm": 44,
+          "width_mm": 14,
+          "height_mm": 12
+        },
+        "placement": "After the plectrum is placed laterally into both open U-guides, the keeper slides outward from the hub end of the spoke without crossing the stem; its closing faces approach the stem radially and stop at the completed-bore position. Its outer end meets a hard stop and the installed spindle cap overlaps its inner service tab.",
+        "interfaces": "Dovetail starting clearance is 0.25 mm per side and 0.20 mm vertically. The keeper's inner tab has an inner radial edge at r=15.5 mm. The locked cap's stationary annular blocking skirt occupies r=14.0-15.0 mm and descends to z=31.5, leaving 0.5 mm radial swept clearance yet physically stopping any inward keeper withdrawal. The keeper is removable only after deliberate cap and wheel removal."
+      },
+      {
+        "key": "cap",
+        "name": "Press-lift quarter-turn spindle cap",
+        "purpose": "Retain the wheel and block the follower keeper while allowing deliberate tool-free service.",
+        "form": "A Ø32 mm flat-topped, edge-rounded cap with a Ø10.5 mm internal bore, two diametrically opposed support-free J-slots, and an annular keeper-blocking skirt at radii 14.0-15.0 mm. Each slot has a 4.5 mm tangential throat for the 4.0 mm ear, a 2.5 mm-high locked pocket for the 2.0 mm-thick ear, R0.6 entry leads around the ear's R0.5 edge, a 22.5-degree 45-degree ramp that raises the cap, and a 1.0 mm gravity drop into the closed end. Both slots are generated by exact 180-degree rotation so the ears traverse simultaneously with 0.25 mm nominal clearance on each tangential and axial face. A recessed rain-swirl preserves the face-down print stance.",
+        "dimensions_mm": {
+          "length_mm": 32,
+          "width_mm": 32,
+          "height_mm": 15.25
+        },
+        "placement": "Centered above the wheel hub with its blocking skirt bottom at z=31.5, locking shoulder underside at z=36.75, and top at z=46.75, below the 52 mm envelope. The skirt stays outside the r=13 mm wheel hub with 1.0 mm radial clearance and inside the keeper tab's r=15.5 mm inner edge with 0.5 mm swept clearance.",
+        "interfaces": "Presses over the Ø10 neck/Ø14-maximum ears, rotates 22.5 degrees up the ramps, then drops 1.0 mm under its own weight into closed-end pockets. Pure forward or reverse torque meets rigid pocket walls; unlocking requires the deliberate combination of lifting the cap 1.0 mm and counter-rotating 22.5 degrees. The locked shoulder at z=36.75 sets 0.35 mm hub end play, while the skirt blocks keeper withdrawal without touching rotating parts. Pull-off, inversion, shake, and bidirectional torque tests remain required physical evidence."
+      }
+    ],
+    "assembly_sequence": [
+      "Insert the rib deck over the base spindle, align its three tabs with the base keyways, press to the ledge, and turn 12 degrees to the molded stops.",
+      "Load the plectrum into the wheel carriage, slide the rigid follower keeper radially outward along its dovetails to the hard stop, and confirm 2.4 mm of free vertical travel.",
+      "Seat the wheel hub on the spindle thrust land, press the cap over the two spindle ears, rotate 22.5 degrees up the J-slot ramps, and release it downward 1.0 mm into both rigid end pockets. Confirm the cap skirt blocks keeper withdrawal while clearing the rotating hub/tab throughout a full sweep.",
+      "Confirm the wheel makes a full clockwise story revolution and a reverse clearing revolution, the follower rises freely over a 1.15 mm gauge rib, and neither deck, keeper, nor cap moves toward release. Invert and shake the unpowered assembly to prove rigid captivity."
+    ],
+    "safety_and_handling": {
+      "exposed_edge_policy": "Grip edges have at least 3 mm radius; spoke and base edges at least 1.5 mm radius; relief and rib crests use domed profiles; the plectrum contact dome radius is 3.5 mm. No sharp tine is exposed.",
+      "pinch_policy": "The fixed guard at r=54.8-57.0 mm and z=20-33 overlaps the wheel skirt at r=52.4-54.0 mm and z=23-32 by 9.0 mm axially, leaving a 0.8 mm radial seam. Around the plectrum, a moving Ø28 mm rounded lower cage ends at z=19.8, only 0.65 mm over the tallest rib, has 1.8 mm nominal radial clearance to the fixed guard, and uses maximum 4.0 mm view slots; it encloses the contact point while the visible head bobs above. Make must inspect the entire revolution and tolerance extremes so no accessible moving/fixed gap lands in an intermediate fingertip-trap range.",
+      "stability": "The 120 mm base is wider than the 108 mm control and rests on a continuous 4 mm-wide annular land near radius 56 mm. The user pushes tangentially; Make must test walking and tipping on representative hard surfaces because rigid filament supplies limited friction.",
+      "sound_limit": "The geometry is intended for close desktop listening. No loudness or hearing-safety threshold is claimed from CAD; exact-print testing must check for unpleasant impulses before Release.",
+      "cavity_seam_boundary": "The rigid deck bayonet is serviceable rather than airtight. Inner, outer, and radial chamber lands form a double-overlap labyrinth with 0.20 mm nominal and 0.35 mm maximum lateral seam clearance over at least 3 mm path length, limiting direct line-of-sight leakage and rattle. This does not justify a sealed Helmholtz model: Make must report the actual seam geometry and may compare port-covered/open behavior physically, but no cavity tuning is claimed."
+    },
+    "make_stage_acceptance_checks": [
+      "Generate STEP-first parametric CAD and product-derived top, underside, exploded, and assembled renders; verify the 120 x 120 x 52 mm envelope and every named interface from exact geometry.",
+      "Run full-tier solid, mesh, wall-thickness, cavity-volume, and support-free print checks on all six parts; specifically prove continuous slicer toolpaths on the 2.2 mm minimum rib roots, 0.8 mm crests, 1.6 mm sounding deck, wheel U-guides/keeper rails, and open-upward cap J-slots.",
+      "Compute collision and minimum-clearance results for a full 360-degree wheel sweep at minimum, nominal, and maximum axial/radial positions. Include journal tilt/runout, 2.4 mm follower stroke, at least 0.6 mm remaining stroke reserve, skirt/guard overlap, cap/deck locks, keeper overlap, all 46 exact event centers/heights/root footprints, and both turn directions.",
+      "Print rain, frog, and cricket field coupons plus 14.4/14.5/14.6 mm hub bores, 8.4/8.5/8.6 mm follower guides, three dovetail gaps, and 6/9/12 g wholly printed follower variants. Check clean formation, free fall, rib traversal force, bearing coast noise, and wear before freezing values.",
+      "From the exact B-rep, write a deterministic event/cavity report listing all 46 centers, pitches, heights, ramp/root dimensions, net chamber volumes, port net areas after fillets, port exit angles, z=10.5 mm center planes, neck routes/terminations/centerline lengths, and service-seam paths; recompute sector-average and local packet cadence without presenting a cavity frequency.",
+      "On the exact assembled print, record one slow full revolution and one faster revolution with fixed microphone position if available. Count event groups and compare relative voice distinctness, port-open versus port-covered contrast, jams, impulse harshness, desk coupling, and cricket-rib wear. Such evidence is physical only when bound to that exact print.",
+      "Perform at least a bounded early 1000-revolution bidirectional wear screen plus retention, inversion/shake, slow-stall, tip-access, sharp-edge, pinch-gap, walking, table-scratch, and tip-over checks. Do not convert that screen into a lifetime or safe-sound claim."
+    ],
+    "assumptions": [
+      "A 7 to 9 g wholly printed rigid-filament plunger has enough gravity preload to create audible but gentle taps without skipping; this is a design hypothesis until mass, free-fall, coupon, and exact-assembly tests.",
+      "Starting clearances of 0.25 mm radial at the journal/guide, 0.20 to 0.25 mm at the keeper, and 0.25 to 0.30 mm at bayonets are plausible FDM starting points but must be calibrated to the actual printer/material pair.",
+      "Users interpret the contrast primarily through cadence and grouping rather than exact pitch, which keeps the concept truthful without a tuned reed or measured resonant mode.",
+      "A one-revolution period of four to six seconds is slow enough for the three scenes to read separately and fast enough for each cricket packet to cohere; human listening remains unverified.",
+      "The 1.6 mm rib deck can transfer enough structure-borne energy to the three separately ported sectors; the dry labyrinth seam, material, and desk coupling make cavity response a wholly physical-test question rather than a tuning calculation."
+    ],
+    "unresolved_risks": [
+      "The three fields may sound too similar in one filament; Make should tune rib height/spacing on coupons before changing the assembled acoustic geometry or making evocative claims.",
+      "Gravity preload may chatter, skip, or become orientation-sensitive if the desktop is not level; the wholly printed 6/9/12 g follower variants and guide relief must be tested, and no loose ballast may be introduced.",
+      "The 3.0 mm cricket pitch and rounded Ø7 contact boss may bridge successive ribs rather than fall fully; coupon tests must confirm separation before density is increased or decreased.",
+      "Wheel tilt is magnified at the 39 mm follower radius and may turn gentle lifts into jams; the two-land 15 mm journal and full tolerance sweep must meet provisional 0.30 mm radial and 0.25 mm axial runout targets at the follower.",
+      "The gravity-seated bayonet pockets may disengage under inversion plus vibration; Make must validate the specified lift-and-turn lock under pull-off, shake, and bidirectional torque, and return to Invent if rigid retention cannot be achieved without changing the six-part architecture.",
+      "Bayonet clearances may rattle and blur sector differences, while tighter fits may seize; exact printer coupons must set the final values.",
+      "Rigid contact may polish the plectrum or rib crests over many cycles; only exact-print repeated-cycle inspection can establish a service interval or durability claim.",
+      "The chamber-depth differences may color the sound weakly or unpredictably because printed material stiffness, infill, layer direction, and desk coupling vary. They must not be described as tuned voices without measurement."
+    ]
+  },
+  "research": {
+    "method": "Sonora Reed's method was applied by starting from the turn gesture and the visible variables it changes: rib spacing, rib grouping, rib height, and chamber geometry. Three materially different architectures were compared, then the selected architecture was refined around literal plectrum travel, continuous reset, support-free construction, and honest acoustic claims.",
+    "directions_compared": [
+      {
+        "direction": "Moving plectrum over a stationary annular sound garden",
+        "form": "A broad horizontal wheel carries a gravity follower around three stationary rib sectors and three under-deck chambers.",
+        "strengths": "Most literal match to a plectrum traveling across visible fields; one continuous gesture; all three patterns remain visible; gravity replaces a fatigue-critical spring; field deck and follower are serviceable.",
+        "weaknesses": "Requires a six-part retained stack and careful journal, guide, dovetail, and bayonet tolerances; gravity preload and cavity contribution require physical verification.",
+        "decision": "Selected because it makes cause, order, and reset simultaneously legible while keeping all sound energy hand-powered and printed."
+      },
+      {
+        "direction": "Stationary rocker against a three-sector ribbed wheel",
+        "form": "The hand wheel itself carries the three perimeter patterns under one fixed rounded rocker mounted to the base.",
+        "strengths": "Mechanically simpler and likely louder because the ribbed rotor is directly driven.",
+        "weaknesses": "The plectrum does not itself travel around the fields in the ordinary visual reading of the Wish; the hand obscures rib sectors; a rigid rocker needs a flexure, pivot, or gravity orientation that is harder to guard.",
+        "decision": "Rejected despite feasibility because the visible causal story is weaker and less Wish-specific."
+      },
+      {
+        "direction": "Helical barrel with an axially translating plectrum",
+        "form": "A side wheel rotates a ribbed drum while a printed lead-screw track moves the follower through rain, frog, and cricket bands before a return groove resets it.",
+        "strengths": "The plectrum visibly traverses three distinct fields and a barrel could amplify scraping.",
+        "weaknesses": "The return crossover is a jam-prone discontinuity, axial lead geometry adds friction and supports, the broad-wheel request becomes secondary, and pinch guarding hides the cause.",
+        "decision": "Rejected because continuous reset and ordinary-FDM reliability are substantially worse."
+      },
+      {
+        "direction": "Spiral record deck with radial shuttle",
+        "form": "A wheel drives a plectrum down three concentric rib zones and a long return cam moves it outward once per cycle.",
+        "strengths": "Strong visual metaphor and large field area.",
+        "weaknesses": "The reset is a separate high-speed radial event, direction reversal is not natural, and the shuttle/cam adds hidden interfaces and possible pinch points.",
+        "decision": "Rejected because reset is no longer mechanically identical to continued play."
+      }
+    ],
+    "derived_geometry_and_cadence": {
+      "working_circumference_mm": 245.0,
+      "field_arc_length_mm": 76.9,
+      "transition_arc_length_mm": 4.8,
+      "calculation": "At 39 mm radius, circumference is 2*pi*39 = 245.0 mm. A 113-degree field occupies 76.9 mm and a 7-degree lane 4.8 mm. At 10 to 15 rpm, time in one field is 1.88 to 1.26 seconds; dividing the specified counts of 17, 9, and 20 by those times gives the stated event-rate ranges.",
+      "claim_boundary": "Cadence arithmetic constrains visible/contact timing only. Because the serviceable rigid deck seam is not airtight, no lumped cavity frequency is reported. Geometry does not establish acoustic pitch, loudness, perceived timbre, or resemblance to real animals/weather."
+    },
+    "sources": [
+      {
+        "id": "grinnell-ratchet",
+        "title": "Ratchet, Grinnell College Musical Instrument Collection",
+        "url": "https://omeka-s.grinnell.edu/s/MusicalInstruments/item/975",
+        "publisher": "Grinnell College Libraries",
+        "accessed": "2026-08-28",
+        "supports": "Documents the established scrape-idiophone mechanism: a rotating cogged surface successively releases a contacting tongue, and the performer varies click rate by varying rotation speed. This supports the broad mechanism family, not Rainspell Dial's specific geometry or performance."
+      },
+      {
+        "id": "zhong-fff-vibroacoustic-2023",
+        "title": "Estimation of fused-filament-fabrication structural vibro-acoustic performance by modal impact sound",
+        "url": "https://doi.org/10.1016/j.cag.2023.07.010",
+        "publisher": "Computers & Graphics 115 (2023), Zhong, Punpongsanon, Iwai, and Sato",
+        "accessed": "2026-08-28",
+        "supports": "The reported numerical-experimental method estimates printed material elasticity from measured impact sound and demonstrates an FFF xylophone; it supports treating filament, infill, and printed elasticity as measurement-dependent rather than promising tone from nominal CAD alone."
+      },
+      {
+        "id": "nist-tn1994",
+        "title": "Calibration of Dynamic Pressure in a Tubing System and Optimized Design of Tube Configuration: A Numerical and Experimental Study",
+        "url": "https://doi.org/10.6028/NIST.TN.1994",
+        "publisher": "National Institute of Standards and Technology",
+        "accessed": "2026-08-28",
+        "supports": "Section 2.2.3 describes Helmholtz resonance as air-volume motion near an opening and shows resonance depends on tube/volume geometry. It supports treating cavity and port dimensions as acoustic variables, while its sealed/tubed relation is deliberately not used for Rainspell Dial's dry service-seam chambers."
+      }
+    ],
+    "evidence_status": {
+      "calculated": [
+        "Working circumference, sector arc lengths, field occupancy time, sector-average contact rates, and local within-packet rates from specified dimensions and turn speed."
+      ],
+      "design_decisions": [
+        "Six-part annular architecture, exact rib counts and starting dimensions, three port/cavity targets, gravity plunger, rigid keeper, two-land journal, bayonet serviceability, and labyrinth guarding geometry."
+      ],
+      "hypotheses_requiring_make": [
+        "Rain/frog/cricket perceptual distinction, pleasantness, loudness, chamber coloration, gravity contact reliability, wear, printer-specific clearance, and durability."
+      ],
+      "physical_evidence": "None at Invent. No print, microphone measurement, cycle test, human listening result, safety test, or manufacturing receipt is claimed."
+    },
+    "native_review_evidence": {
+      "selected_inventor_report": {
+        "path": "work/sonora-invent-report.md",
+        "sha256": "7b511ff2a2f6c6aa16ea30850b4386afacc693a62b8e8c1be8aeaf9f9a7c49d9",
+        "finding": "The exact Sonora specialist selected the orbital rain garden because only its 360-degree orbit provides literal visible plectrum travel and a quiet continuous reset without a crossover cam, reversing lead, spring, or hidden mechanism."
+      },
+      "independent_mechanical_report": {
+        "path": "work/mechanical-review.md",
+        "sha256": "65831553ac85ad0ba60ff3f600413b5931d10653d42b84a847da4c166da41905",
+        "finding": "Independent review agreed on the rotating carrier but required a heavier wholly printed follower, a long two-land journal, rigid keeper, guarded sub-1 mm outer seam, coarser cricket pitch, explicit runout/tolerance sweeps, and honest physical evidence boundaries; those changes were synthesized into this source."
+      }
+    }
+  }
+}

@@ -34,6 +34,26 @@ Digital validation covered all six exact STLs, rules replay, mechanical
 envelopes, and generic-profile OrcaSlicer jobs. It did not prove a physical
 print, Bambu-specific settings, calibrated fit, durability, or human response.
 
+## How this toy was created
+
+This is a legacy snapshot, so it preserves the finished public bytes but not the original Wish, Match, Invent, or full Make/Playtest trees. The missing inputs below are marked unavailable rather than reconstructed as fact.
+
+1. **Wish.** Input: unavailable in this public snapshot. Output: the final public direction can only be inferred from `product.json`: a compact exactly-two-player firefly signaling duel.
+2. **Invent.** Input: the unarchived Wish and roster. Output: Leo was the bound Inventor and the finished concept uses secret Flight and Reply selectors to turn claims into one-spark Echo or two-spark Mimic signals, but the accepted Invent contract was not preserved here.
+3. **Make.** Input: the unarchived concept. Output: six exact printable [game-part STLs](print/), one [clearance coupon](calibration/clearance-coupon.stl), assembly/production guidance in [MANUAL.md](MANUAL.md), and their public hashes in [PUBLICATION.json](PUBLICATION.json). The CAD source and product renders were not included in this legacy projection.
+4. **Playtest.** Input: the sealed design, rules, and digital evidence. Output: passed agent-playtest, mechanical-check, and printability-check assessments recorded in [product.json](product.json); no physical print or human play is claimed.
+5. **Release.** Input: the digitally checked product and game rules. Output: the sealed public facts, accessible production reference, and printable [customer manual](MANUAL.pdf).
+6. **Publication.** Input: the exact Release package plus host-held Factory authorization. Output: the verified [Factory product](https://www.autonomous.ai/factory/product/false-lantern) and sanitized [publication readback](PUBLICATION.json).
+
+## Run cost
+
+| Measure | Value |
+|---|---|
+| Native Manager tokens | unavailable — this run predates token telemetry |
+| Wish to verified publication | unavailable — the archived snapshot has no trustworthy Wish-start timestamp |
+
+No dollar cost is inferred.
+
 ## Snapshot contents
 
 - `product.json` — the exact public Release page contract.

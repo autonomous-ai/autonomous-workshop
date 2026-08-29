@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "kind": "moonwake-garden.fresh-output-reproducibility",
+  "host_rejection_sha256": "0cdb1e25a2ac2a939c61649c7a8d46902cfe6e5a4aea26532e0e515a99af6dee",
+  "host_failure_code": "declared-cad-output-changed",
+  "isolated_project_has_workshop_run_root_dependency": false,
+  "isolated_full_gate": {
+    "command": "verify_project project --fresh --exports --strict-fit",
+    "exit_code": 0,
+    "custom_fit_audit": "pass",
+    "custom_spec_audit": "pass"
+  },
+  "comparison": {
+    "method": "Two separately copied project directories were generated in independent Python processes; all four declared STEP outputs were compared byte-for-byte.",
+    "all_declared_step_outputs_identical": true,
+    "all_exported_mesh_outputs_identical": true,
+    "outputs": {
+      "moonwake_garden.step": "7d5f4f1f0f88c1bf236a80370b02ca7048e7917efbf5d231706c90d9f5e7682f",
+      "part_front_garden_mask.step": "d7169bb232ec64b012342561a1c495460e5019c9d3e288f1f7d511a6ec3276dd",
+      "part_rear_chassis.step": "9298787557eda744ce323b4e41a5654b495b9984f81ff8664ee55d4345b2f9a9",
+      "part_sector_rotor.step": "b15efcb1ac92fe89dfdeaeda19ae353bc30cd0fecfa2384374e2b906b809c054",
+      "moonwake_garden.glb": "3f12e2cd6f9582bd6ba16b832b5d936ea0ba086e4d71021e487c12b42c1b3425",
+      "part_front_garden_mask.stl": "33362fc1afb6f473ba6da19a375742068ad9df88a0b2927f8111e2c34daad835",
+      "part_rear_chassis.stl": "3c34737691d268a24b99363955a3cca099f82ec1301a4c1a32ed6317a378d9f1",
+      "part_sector_rotor.stl": "21cc3acf381a978083e76565999a2b24fc78a7e83c898c7ff8dc9bdf7a7c347e"
+    }
+  },
+  "repair": [
+    "Project-local audits derive the project path from their own file and use a relocation-safe fit fallback instead of searching for .workshop-product-run-root.",
+    "Review-only per-part color metadata was removed from the single-color combined assembly because its presentation-style ordering changed otherwise identical STEP bytes between fresh processes."
+  ],
+  "geometry_changed": false,
+  "evidence_limit": "Byte reproducibility and digital CAD checks do not prove printer-process fit, a successful physical print, elastic force, fatigue, wear, or human response."
+}

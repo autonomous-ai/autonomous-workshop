@@ -14,10 +14,12 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import stat
 import tempfile
 import urllib.parse
+from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Optional
 
@@ -36,11 +38,21 @@ from workshop.release.native import (
 )
 from workshop.release.public_archive import write_public_workflow_archive
 from workshop.runtime import Receipt
+from workshop.runtime.managers import (
+    DEFAULT_MANAGER_ID,
+    manager_spec,
+)
 
 
 _PUBLIC_SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _PUBLIC_INVENTOR = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _MAX_PUBLIC_NAME = 100
+_TOKEN_SUMMARY_KIND = "autonomous-workshop.native-token-summary"
+_TOKEN_STAGES = ("match", "invent", "make", "playtest", "release")
+_TIMING_SUMMARY_KIND = "autonomous-workshop.run-timing"
+_CLI_WISH_ID = re.compile(
+    r"^wish-(?P<date>[0-9]{8})-(?P<time>[0-9]{6})-[0-9a-f]{8}$"
+)
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -373,12 +385,16 @@ def _workflow_overview_markdown(staging: Path) -> str:
         None if assignment is None else assignment.get("selected_inventor_id")
     )
     match_count, match_outcome = (
-        ("1", "accepted") if match_payload is None else _attempt_count_and_outcome(match_payload)
+        ("1", "accepted")
+        if match_payload is None
+        else _attempt_count_and_outcome(match_payload)
     )
     if inventor is not None and "accepted" in match_outcome:
         match_outcome = "%s (%s)" % (match_outcome, inventor)
     make_count, make_outcome = (
-        ("1", "accepted") if make_payload is None else _attempt_count_and_outcome(make_payload)
+        ("1", "accepted")
+        if make_payload is None
+        else _attempt_count_and_outcome(make_payload)
     )
     release_count, release_outcome = (
         ("1", "accepted")
@@ -432,6 +448,484 @@ def _workflow_overview_markdown(staging: Path) -> str:
     )
 
 
+def _markdown_text(value: Any, fallback: str = "unavailable") -> str:
+    """Render one public contract value as inert, single-paragraph Markdown."""
+
+    if not isinstance(value, str) or not value.strip():
+        return fallback
+    text = " ".join(value.split())
+    for source, replacement in (
+        ("\\", "\\\\"),
+        ("`", "\\`"),
+        ("*", "\\*"),
+        ("_", "\\_"),
+        ("[", "\\["),
+        ("]", "\\]"),
+        ("<", "&lt;"),
+        (">", "&gt;"),
+    ):
+        text = text.replace(source, replacement)
+    return text
+
+
+def _concept_component_names(concept: Mapping[str, Any]) -> tuple[str, ...]:
+    components = concept.get("components")
+    if isinstance(components, Mapping):
+        return tuple(
+            _markdown_text(name)
+            for name in components
+            if isinstance(name, str) and name.strip()
+        )
+    if not isinstance(components, list):
+        return ()
+    names = []
+    for component in components:
+        if isinstance(component, str) and component.strip():
+            names.append(_markdown_text(component))
+            continue
+        if not isinstance(component, Mapping):
+            continue
+        name = next(
+            (
+                component.get(key)
+                for key in ("name", "id", "key")
+                if isinstance(component.get(key), str)
+                and component.get(key).strip()
+            ),
+            None,
+        )
+        if name is not None:
+            names.append(_markdown_text(name))
+    return tuple(names)
+
+
+def _suffix_count(root: Path, suffix: str) -> int:
+    if not root.is_dir() or root.is_symlink():
+        return 0
+    return sum(
+        1
+        for path in root.rglob("*")
+        if path.is_file() and not path.is_symlink() and path.suffix.lower() == suffix
+    )
+
+
+def _creation_story_markdown(staging: Path) -> str:
+    """Explain the exact public input and output of every lifecycle boundary."""
+
+    wish = _read_json_object(staging / "wish" / "wish.json") or {}
+    assignment = _read_json_object(staging / "match" / "assignment.json") or {}
+    explicit_invent = (staging / "invent").is_dir()
+    invented_relative = (
+        "invent/invented.json" if explicit_invent else "make/invented.json"
+    )
+    invented = _read_json_object(staging / invented_relative) or {}
+    concept_value = invented.get("concept")
+    concept = concept_value if isinstance(concept_value, Mapping) else {}
+    product = _read_json_object(staging / "make" / "product.json") or {}
+    playtested = _read_json_object(staging / "playtest" / "playtested.json")
+    release = _read_json_object(staging / "release" / "release.json") or {}
+    publication = _read_json_object(
+        staging / "publication" / "PUBLICATION.json"
+    ) or {}
+
+    objective = wish.get("objective")
+    exact_wish = isinstance(objective, str) and bool(objective.strip())
+    if exact_wish:
+        wish_text = _markdown_text(objective)
+        wish_note = (
+            "The exact wording was explicitly disclosed in "
+            "[the Wish binding](wish/wish.json)."
+        )
+    else:
+        wish_text = _markdown_text(wish.get("public_summary"))
+        wish_note = (
+            "The exact wording is withheld; this is the sanitized public summary "
+            "in [the Wish binding](wish/wish.json)."
+        )
+
+    inventor_id = assignment.get("selected_inventor_id")
+    inventor = _display_inventor_id(inventor_id) or "unavailable"
+    concept_title = _markdown_text(
+        concept.get("title"), _markdown_text(product.get("title"))
+    )
+    concept_summary = _markdown_text(
+        concept.get("summary"), _markdown_text(product.get("summary"))
+    )
+    component_names = _concept_component_names(concept)
+    component_text = (
+        " **Concept parts:** %s." % ", ".join(component_names)
+        if component_names
+        else ""
+    )
+    invent_mode = (
+        "Invent was a separate native Goal."
+        if explicit_invent
+        else (
+            "Spark has no separate Invent Goal; selection and this compact "
+            "concept were folded into Make."
+        )
+    )
+
+    models_root = staging / "make" / "models"
+    model_counts = [
+        "%s %s" % (count, label)
+        for count, label in (
+            (_suffix_count(models_root, ".step"), "STEP"),
+            (_suffix_count(models_root, ".stl"), "STL"),
+            (_suffix_count(models_root, ".glb"), "GLB"),
+        )
+        if count
+    ]
+    model_text = (
+        ", ".join(model_counts) if model_counts else "no model counts available"
+    )
+    render_count = _suffix_count(
+        staging / "make" / "verification" / "renders", ".png"
+    )
+    if render_count:
+        render_text = "%d product render PNG%s" % (
+            render_count,
+            "" if render_count == 1 else "s",
+        )
+    else:
+        legacy_render_count = _suffix_count(staging / "make", ".png")
+        render_text = (
+            "%d Make evidence PNG%s in a legacy layout "
+            "(no standardized product-render directory)"
+            % (legacy_render_count, "" if legacy_render_count == 1 else "s")
+            if legacy_render_count
+            else "no archived Make render PNG"
+        )
+    make_summary = _markdown_text(product.get("summary"), concept_summary)
+
+    if playtested is None:
+        playtest_output = (
+            "not run on this effort route; Release preserves the explicit "
+            "[omission record](release/PLAYTEST-NOT-RUN.json)"
+        )
+    else:
+        checks = playtested.get("checks")
+        check_ids = []
+        if isinstance(checks, list):
+            check_ids = [
+                _markdown_text(check.get("check_id"))
+                for check in checks
+                if isinstance(check, Mapping)
+                and isinstance(check.get("check_id"), str)
+                and check.get("check_id").strip()
+            ]
+        playtest_output = "verdict **%s**" % _markdown_text(
+            playtested.get("verdict")
+        )
+        if check_ids:
+            playtest_output += " from %d checks (%s)" % (
+                len(check_ids),
+                ", ".join(check_ids),
+            )
+        playtest_output += (
+            "; see [the sealed Playtest result](playtest/playtested.json)"
+        )
+
+    manual_path = release.get("manual_path")
+    if not isinstance(manual_path, str) or not manual_path.strip():
+        manual_path = "MANUAL.pdf"
+    manual_link = "release/%s" % urllib.parse.quote(manual_path, safe="/")
+    nested_publication = publication.get("publication")
+    page_url = (
+        nested_publication.get("page_url")
+        if isinstance(nested_publication, Mapping)
+        else None
+    )
+    public_page = _https_public_url(page_url, "public Factory page URL")
+
+    return (
+        "## How this toy was created\n\n"
+        "### 1. Wish — freeze the request\n\n"
+        "**Input:** the creator's request. **This toy's input:** %s\n\n"
+        "**Output:** an immutable, hash-bound Wish plus its frozen effort route. %s\n\n"
+        "### 2. Invent — choose an Inventor and define the concept\n\n"
+        "**Input:** the frozen Wish, eligible Inventor roster with each bound "
+        "Taste/skill bundle, and the product blueprint. "
+        "**Output:** **%s** was selected and produced **%s** — %s%s "
+        "The complete compact concept is in [%s](%s). %s\n\n"
+        "### 3. Make — turn the concept into exact product bytes\n\n"
+        "**Input:** the accepted concept, selected Inventor identity/Taste, "
+        "blueprint, and any bounded revision evidence. "
+        "**Output:** %s The sealed snapshot contains %s and %s, together with "
+        "[CAD source](make/source/), [models](make/models/), and "
+        "[deterministic verification](make/verification/). "
+        "[The Made contract](make/made.json) binds those exact bytes.\n\n"
+        "### 4. Playtest — challenge the made product\n\n"
+        "**Input:** the sealed Made product, blueprint-required checks, and "
+        "exact evidence. "
+        "**Output:** %s.\n\n"
+        "### 5. Release — make the customer package\n\n"
+        "**Input:** the sealed product and the passed Playtest evidence or "
+        "truthful not-run record. "
+        "**Output:** the hash-bound Release package, product facts, and printable "
+        "[customer manual](%s); see [the Release contract](release/release.json).\n\n"
+        "### 6. Publication — perform and verify the external effect\n\n"
+        "**Input:** the exact sealed Release package plus host-held Factory "
+        "authorization; credentials never enter the native session. "
+        "**Output:** [the public Factory product](%s) and a sanitized, hash-verified "
+        "[publication readback](publication/PUBLICATION.json).\n"
+        % (
+            wish_text,
+            wish_note,
+            inventor,
+            concept_title,
+            concept_summary,
+            component_text,
+            invented_relative,
+            invented_relative,
+            invent_mode,
+            make_summary,
+            model_text,
+            render_text,
+            playtest_output,
+            manual_link,
+            public_page,
+        )
+    )
+
+
+def _public_token_summary(value: Any) -> dict[str, Any]:
+    unavailable = {
+        "schema_version": 1,
+        "kind": _TOKEN_SUMMARY_KIND,
+        "status": "unavailable",
+    }
+    if value is None or (
+        isinstance(value, Mapping) and value.get("status") == "unavailable"
+    ):
+        return unavailable
+    if (
+        not isinstance(value, Mapping)
+        or value.get("schema_version") != 1
+        or value.get("kind") != _TOKEN_SUMMARY_KIND
+        or value.get("status") not in ("measured", "partial")
+        or not isinstance(value.get("turns"), Mapping)
+        or not isinstance(value.get("stages"), Mapping)
+        or set(value["stages"]) != set(_TOKEN_STAGES)
+    ):
+        raise ContractError("public native token summary is invalid")
+    turns = value["turns"]
+    if (
+        set(turns) != {"total", "measured", "unmeasured"}
+        or any(
+            type(count) is not int or not 0 <= count <= 100_000
+            for count in turns.values()
+        )
+        or turns["measured"] + turns["unmeasured"] != turns["total"]
+    ):
+        raise ContractError("public native token turn counts are invalid")
+    total_tokens = value.get("total_tokens")
+    if type(total_tokens) is not int or not 0 <= total_tokens <= 10**18:
+        raise ContractError("public native token total is invalid")
+    rebuilt_stages = {}
+    for name in _TOKEN_STAGES:
+        stage = value["stages"][name]
+        if not isinstance(stage, Mapping):
+            raise ContractError("public native token stage is invalid")
+        status = stage.get("status")
+        stage_turns = stage.get("turns")
+        tokens = stage.get("tokens")
+        if status not in {
+            "measured", "partial", "pending", "folded", "skipped", "not-run"
+        } or type(stage_turns) is not int or not 0 <= stage_turns <= 100_000:
+            raise ContractError("public native token stage status is invalid")
+        if type(tokens) is not int or not 0 <= tokens <= 10**18:
+            raise ContractError("public native token stage total is invalid")
+        rebuilt_stages[name] = {
+            "status": status,
+            "turns": stage_turns,
+            "tokens": tokens,
+        }
+    return {
+        "schema_version": 1,
+        "kind": _TOKEN_SUMMARY_KIND,
+        "status": value["status"],
+        "turns": dict(turns),
+        "total_tokens": total_tokens,
+        "stages": rebuilt_stages,
+    }
+
+
+def _public_timing_summary(wish_id: Optional[str], completed_at: str) -> dict[str, Any]:
+    """Derive CLI Wish-to-publication time without adding private host state.
+
+    The generated CLI Wish id contains its UTC intake second. The completion
+    boundary is the authenticated Factory public-readback receipt, not the
+    native agent's prose or its final turn. Programmatic and historical ids do
+    not necessarily carry time, so they remain explicitly unavailable.
+    """
+
+    unavailable = {
+        "schema_version": 1,
+        "kind": _TIMING_SUMMARY_KIND,
+        "status": "unavailable",
+        "reason": "Wish intake time is unavailable for this run.",
+    }
+    match = _CLI_WISH_ID.fullmatch(wish_id) if isinstance(wish_id, str) else None
+    if match is None:
+        return unavailable
+    try:
+        started = datetime.strptime(
+            match.group("date") + match.group("time"), "%Y%m%d%H%M%S"
+        ).replace(tzinfo=timezone.utc)
+        completed = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return unavailable
+    if (
+        completed.tzinfo is None
+        or completed.utcoffset() != timezone.utc.utcoffset(completed)
+    ):
+        return unavailable
+    elapsed_seconds = int((completed - started).total_seconds())
+    if elapsed_seconds < 0:
+        return unavailable
+    return {
+        "schema_version": 1,
+        "kind": _TIMING_SUMMARY_KIND,
+        "status": "measured",
+        "started_at": started.isoformat().replace("+00:00", "Z"),
+        "completed_at": completed_at,
+        "elapsed_seconds": elapsed_seconds,
+        "completion_boundary": "authenticated Factory public readback",
+    }
+
+
+def _format_elapsed_seconds(value: int) -> str:
+    days, remainder = divmod(value, 86_400)
+    hours, remainder = divmod(remainder, 3_600)
+    minutes, seconds = divmod(remainder, 60)
+    parts = []
+    if days:
+        parts.append("%dd" % days)
+    if hours or days:
+        parts.append("%dh" % hours)
+    if minutes or hours or days:
+        parts.append("%dm" % minutes)
+    parts.append("%ds" % seconds)
+    return " ".join(parts)
+
+
+def _run_cost_markdown(
+    token_summary: Mapping[str, Any], timing_summary: Mapping[str, Any]
+) -> str:
+    token_status = token_summary["status"]
+    if token_status in ("measured", "partial"):
+        turns = token_summary["turns"]
+        token_value = "%s (%s; %s/%s turns measured)" % (
+            format(token_summary["total_tokens"], ",d"),
+            token_status,
+            turns["measured"],
+            turns["total"],
+        )
+        stage_rows = [
+            "| %s | %s | %s | %s |"
+            % (
+                name.capitalize(),
+                format(stage["tokens"], ",d"),
+                stage["turns"],
+                stage["status"],
+            )
+            for name, stage in token_summary["stages"].items()
+        ]
+        stage_table = (
+            "\n\n| Stage | Tokens | Turns | Coverage |\n"
+            "|---|---:|---:|---|\n"
+            + "\n".join(stage_rows)
+        )
+    else:
+        token_value = "unavailable (the Manager did not report token usage)"
+        stage_table = ""
+    if timing_summary["status"] == "measured":
+        elapsed_value = "%s (%s to %s)" % (
+            _format_elapsed_seconds(timing_summary["elapsed_seconds"]),
+            timing_summary["started_at"],
+            timing_summary["completed_at"],
+        )
+    else:
+        elapsed_value = "unavailable (Wish intake time was not recorded)"
+    return (
+        "## Run cost\n\n"
+        "| Measure | Value |\n"
+        "|---|---|\n"
+        "| Native Manager tokens | %s |\n"
+        "| Wish to verified publication | %s |"
+        "%s\n\n"
+        "Tokens are best-effort input-plus-output counts reported by the native "
+        "Manager; no dollar cost is inferred. Elapsed time ends only after "
+        "authenticated Factory public readback.\n"
+        % (token_value, elapsed_value, stage_table)
+    )
+
+
+def _snapshot_effort(staging: Path) -> str:
+    if (staging / "playtest").is_dir():
+        return "quest"
+    if (staging / "invent").is_dir():
+        return "forge"
+    return "spark"
+
+
+def _public_hero_path(staging: Path) -> Optional[str]:
+    candidates = (
+        "make/verification/renders/iso.png",
+        "make/verification/renders/isometric.png",
+        "make/verification/renders/hero.png",
+        "make/verification/renders/front.png",
+        "make/verification/renders/top.png",
+        "make/verification/renders/right.png",
+    )
+    for relative in candidates:
+        if (staging / relative).is_file():
+            return relative
+    return None
+
+
+def _reproduce_markdown(
+    staging: Path,
+    *,
+    summary: str,
+    manager_id: str,
+    effort: str,
+    github_requested: bool,
+) -> str:
+    wish = _read_json_object(staging / "wish" / "wish.json") or {}
+    exact = wish.get("objective")
+    objective = exact if isinstance(exact, str) and exact.strip() else summary
+    disclosure = "exact original Wish" if exact else "public product summary"
+    arguments = [
+        "uv",
+        "run",
+        "workshop",
+        "wish",
+        "--manager",
+        manager_id,
+        "--effort",
+        effort,
+    ]
+    if github_requested:
+        arguments.append("--github")
+    arguments.append(objective)
+    command = " ".join(shlex.quote(part) for part in arguments)
+    return (
+        "## Reproduce\n\n"
+        "From a checkout of this repository, verify the host and run the same "
+        "Manager and effort route. This command uses the %s; a later run follows "
+        "the same route but does not replay these exact CAD bytes.\n\n"
+        "```bash\n"
+        "uv run workshop doctor\n"
+        "%s\n"
+        "```\n\n"
+        "If a native turn stops before Release, continue the same Wish with "
+        "`uv run workshop resume <wish-id>`.\n"
+        % (disclosure, command)
+    )
+
+
 def _copy_model(
     *,
     product_root: Path,
@@ -463,6 +957,11 @@ def materialize_public_example(
     inventor_id: str,
     receipt: Receipt,
     disclose_exact_wish: bool = False,
+    manager_id: str = DEFAULT_MANAGER_ID,
+    effort: Optional[str] = None,
+    github_requested: bool = False,
+    token_summary: Optional[Mapping[str, Any]] = None,
+    wish_id: Optional[str] = None,
 ) -> Path:
     """Create ``toys/<inventor>-<slug>`` from exact public Release bytes.
 
@@ -471,10 +970,21 @@ def materialize_public_example(
     public example is overwritten or merged.
     """
 
+    # Imported at effect-composition time so the Release component does not
+    # create a module-load cycle through workflow -> integrations -> release.
+    from workshop.workflow.effort import workshop_effort
+
     if not isinstance(release, NativeRelease) or not isinstance(made, NativeMade):
         raise ContractError("public example requires typed Made and Release inputs")
     if type(disclose_exact_wish) is not bool:
         raise ContractError("public example Wish disclosure must be boolean")
+    manager = manager_spec(manager_id)
+    if effort is not None:
+        selected_effort = workshop_effort(effort)
+    else:
+        selected_effort = None
+    if type(github_requested) is not bool:
+        raise ContractError("public example GitHub request must be boolean")
     if not isinstance(receipt, Receipt) or not receipt.is_verified_public:
         raise StateConflict("public example requires verified public Factory readback")
     if (
@@ -695,6 +1205,18 @@ def materialize_public_example(
             "primary_model": primary_model,
             "print_files": print_files,
         }
+        public_token_summary = _public_token_summary(token_summary)
+        public_timing_summary = _public_timing_summary(wish_id, receipt.observed_at)
+        _write_public_file(
+            staging,
+            "TOKENS.json",
+            _canonical_json(public_token_summary),
+        )
+        _write_public_file(
+            staging,
+            "TIMING.json",
+            _canonical_json(public_timing_summary),
+        )
         write_public_workflow_archive(
             staging,
             run,
@@ -710,6 +1232,12 @@ def materialize_public_example(
             ),
             disclose_exact_wish=disclose_exact_wish,
         )
+        resolved_effort = (
+            selected_effort.name
+            if selected_effort is not None
+            else _snapshot_effort(staging)
+        )
+        hero_path = _public_hero_path(staging)
         heading = " ".join(title.split())
         product_description = (
             "the exact sealed Release facts"
@@ -722,29 +1250,64 @@ def materialize_public_example(
             else "the exact sealed public manual"
         )
         readme = (
-            "# %s\n\n%s\n\n"
+            "# %s\n\n"
+            "%s"
+            "%s\n\n"
             "[View the verified public product page](%s)\n\n"
+            "| Frozen on this run | Value |\n"
+            "|---|---|\n"
+            "| Manager | %s (`--manager %s`) |\n"
+            "| Effort | %s (`--effort %s`) |\n"
+            "| Inventor | [%s](../../inventors/%s/) |\n"
+            "| Factory | %s |\n\n"
+            "%s\n"
+            "%s\n"
+            "%s\n"
             "%s\n"
             "## Snapshot contents\n\n"
             "- `wish/` — sanitized Wish binding (exact text only with explicit consent).\n"
             "- `match/` — accepted Match assignment.\n"
             "%s"
-            "- `make/` — %s, exact CAD source, models, and verification.\n"
+            "- `make/` — %s, exact CAD source, models, product renders, verification, and sealed prior attempts.\n"
             "- `release/%s` — %s.\n"
             "- `release/` — accepted Release contract and exact package bytes.\n"
             "- `publication/PUBLICATION.json` — sanitized public readback identities.\n"
+            "- `TOKENS.json` — Manager-reported total tokens by stage; no dollar estimate.\n"
+            "- `TIMING.json` — Wish intake to authenticated public-readback elapsed time.\n"
             "- `MANIFEST.json` — hashes every workflow file except itself and this README.\n"
+            "%s"
             "%s\n"
             "This archive contains no agent session, prompt, transcript, chain of "
             "thought, host state, credentials, or raw effect receipt. Publication is "
             "not proof of physical manufacture, fit, durability, or delivery.\n"
         ) % (
             heading,
+            (
+                "![%s](%s)\n\n" % (heading, hero_path)
+                if hero_path is not None
+                else ""
+            ),
             summary,
             page_url,
+            manager.display_name,
+            manager.manager_id,
+            workshop_effort(resolved_effort).title,
+            resolved_effort,
+            _display_inventor_id(inventor_id) or inventor_id,
+            inventor_id,
+            page_url,
             _workflow_overview_markdown(staging),
+            _creation_story_markdown(staging),
+            _run_cost_markdown(public_token_summary, public_timing_summary),
+            _reproduce_markdown(
+                staging,
+                summary=summary,
+                manager_id=manager.manager_id,
+                effort=resolved_effort,
+                github_requested=github_requested,
+            ),
             (
-                "- `invent/` — accepted Invent contract.\n"
+                "- `invent/` — accepted Invent contract/source and sealed superseded attempts.\n"
                 if (staging / "invent").is_dir()
                 else "- Invent was skipped by this effort route; its sealed compact concept is under `make/`.\n"
             ),
@@ -752,7 +1315,12 @@ def materialize_public_example(
             release.manual_path,
             manual_description,
             (
-                "- `playtest/` — accepted Playtest contract and exact evidence.\n"
+                "- `SANITIZATION.json` — source/public hashes for host-local path prefixes replaced by stable placeholders.\n"
+                if (staging / "SANITIZATION.json").is_file()
+                else ""
+            ),
+            (
+                "- `playtest/` — accepted Playtest contract/evidence and sealed superseded attempts.\n"
                 if release.schema_version != 3
                 else "- Playtest was not run; Release records that omission explicitly.\n"
             ),
@@ -815,6 +1383,11 @@ def materialize_public_example_if_source_checkout(
     inventor_id: str,
     receipt: Receipt,
     disclose_exact_wish: bool = False,
+    manager_id: str = DEFAULT_MANAGER_ID,
+    effort: Optional[str] = None,
+    github_requested: bool = False,
+    token_summary: Optional[Mapping[str, Any]] = None,
+    wish_id: Optional[str] = None,
 ) -> Optional[Path]:
     """Materialize a public example when the host is running from a checkout."""
 
@@ -828,6 +1401,11 @@ def materialize_public_example_if_source_checkout(
         inventor_id=inventor_id,
         receipt=receipt,
         disclose_exact_wish=disclose_exact_wish,
+        manager_id=manager_id,
+        effort=effort,
+        github_requested=github_requested,
+        token_summary=token_summary,
+        wish_id=wish_id,
     )
 
 

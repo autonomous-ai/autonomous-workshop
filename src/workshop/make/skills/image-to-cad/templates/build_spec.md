@@ -173,6 +173,11 @@ still exist at delivery:
 
 ## 6. Decomposition
 
+<This section also owns design selection. Describe and decompose first, run the
+research logs in 6c–6f, then fill 6g. Do not select an exact mechanism,
+electrical topology, lamp/emitter, actuator, socket/contact system or other
+bought device before its search evidence exists.>
+
 ### 6a. Printed parts
 
 <Default is ONE. If one part, say so and give the reason the split test failed.
@@ -228,12 +233,15 @@ the reason beside it.
 
 <Use this for construction patterns, not bought parts. Run the design-reference
 search only when a mechanical/product feature has a real construction question.
-Write `N/A — no applicable construction analogy` for a unique organic subject.
-Never copy dimensions, scale, placement, or silhouette from this table.>
+Research Internet sources with a focused query. Write `N/A — no applicable
+construction analogy` for a unique organic subject. Numerical specifications
+must come from a manufacturer, standard or official technical source; an
+analogous design may supply a construction lesson but never the user's scale,
+placement or silhouette.>
 
-| Query | Catalog id, MISS, or N/A | Relevant feature | Construction lesson used | Local provenance | License/use |
-|---|---|---|---|---|---|
-| <> | <> | <> | <> | `<project>/ref/external/.../provenance.json` | <> |
+| Query | Status | Source authority/type | Stable URL + revision/commit | Relevant feature | Specification/constraint taken | Construction lesson used | License/use |
+|---|---|---|---|---|---|---|---|
+| <> | <used / rejected / MISS / unavailable / N/A> | <manufacturer / standard / official docs / licensed source CAD> | <> | <> | <exact claim, value + units + applicability, or N/A> | <> | <> |
 
 ### 6e. Mount declarations — becomes `measure/mounts.json`
 
@@ -297,9 +305,38 @@ receiver, insertion mouth/channel, swept locking path or thread, end stop and
 capture shoulder, connector/terminal access, wire channel and removal access.
 Do not reduce the interface to a nominal drilled hole.
 
+### 6g. Research-backed analysis design selection
+
+<The `image-to-cad` analysis leaves one selected design for every active domain
+below; CAD implements these rows and does not choose among candidates. Use
+`N/A — inactive` only when the domain truly does not apply.
+
+Exterior construction may be selected directly when the visible form forces
+the construction family. Mechanical mechanisms, electrical topologies,
+lighting systems and bought devices are research-first: write the selection
+contract, run Internet/catalog searches, compare viable candidates, then make
+the selection. An exact user-required part is still researched for ratings,
+geometry and interfaces.>
+
+| Domain | Selection contract written before search | Internet research performed | Viable candidates compared | Selected design | Nearest rejected alternative + reason | Evidence / provenance | Remaining assumption |
+|---|---|---|---|---|---|---|---|
+| Exterior construction | <silhouette, section change, landmarks, manufacturing constraints> | <image evidence; design-reference query when useful> | <1–3 construction families, or one forced by evidence> | <exact construction family and part strategy> | <> | <reference measurements / 6d provenance> | <> |
+| Mechanical mechanism | <input/output motion, travel, load, speed/duty, envelope, datums, assembly/service path> | <Internet mechanism research + 6d when useful> | <> | <exact archetype, parameters owned by §8, and driven parts> | <> | <cited URLs / provenance> | <> |
+| Electrical topology | <power boundary, source range, load demand, protection/control, connectors, service access> | <electromechanical Phase A evidence> | <> | <source → protection → control → load → return topology> | <> | <manufacturer/standard URLs + power evidence> | <> |
+| Lighting | <function, colour, behavior, luminous surface, optical direction, envelope, installation/removability> | <GitHub → step.parts → manufacturer/public-CAD research> | <> | <exact emitter/module, driver, optic and socket/contact interface> | <> | <6c/6f rows + authoritative URLs> | <> |
+| Other bought devices | <function, governing dimensions/ratings, mount and service constraints> | <step.parts + manufacturer/public-CAD research> | <> | <exact MPN/STEP or documented envelope after a confirmed miss> | <> | <6c local STEP + sha256> | <> |
+
+**Selection status:** <complete — CAD can implement without choosing among
+alternatives | incomplete — name the unresolved domain and repeat it in Open
+question>
+
 ---
 
 ## 7. Feature detail + build123d operation
+
+<Implement the selected design in 6g. If an operation exposes a contradiction,
+return to the relevant research contract and update 6g; do not silently choose
+a different mechanism, topology, lamp/interface or bought device here.>
 
 Part: **<name>** — executed in this order inside `gen_step()`.
 
@@ -497,9 +534,13 @@ Each item pairs a SANITY check with a VISUAL check, per `cad`'s build loop.
 
 **Per design reference**
 
-- [ ] every used analogy names the construction lesson and supplies no dimensions
-- [ ] every fetched reference passes `design_refs.py verify <project-dir>`
-- [ ] every fetched reference retains its local license and provenance
+- [ ] every used source records a stable URL, revision/commit when available,
+      source authority, license/use and the exact claim or lesson taken
+- [ ] every numerical specification comes from a manufacturer, standard or
+      official technical source and states units plus applicability
+- [ ] every analogy names only the construction lesson; it does not supply the
+      user's scale, placement or substitute silhouette
+- [ ] `measure/check_spec.py` covers every selected 6d evidence row used by 6g
 
 **Per interface**
 

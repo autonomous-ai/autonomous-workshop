@@ -3,14 +3,30 @@
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
-  `5d1e24a6dcdac2626ddef8f74b55130f20094cee` (2026-08-27), resynced from
-  `0403039457603002739359f620f8c780a2c829dc` (2026-08-26).
+  `4800bbe89c92366995960f73650e994e96e52756` (2026-08-28), resynced from
+  `5d1e24a6dcdac2626ddef8f74b55130f20094cee` (2026-08-27).
 - The reviewed snapshot includes the complete upstream trees for all five
   skills. `cad` includes the vendored `cadgen` 0.4.19 source, bought-part mount
   tooling, run-cost guidance, and the strengthened image-derived verification
   runner. The image workflow includes clipped-reference rejection, reference
   silhouette preparation, and stored-camera replay for lower-cost iteration.
-- The 2026-08-27 resync takes upstream's hardened gates: `verify_project` grows
+- The 2026-08-28 resync takes upstream's research-first turn.
+  `design-reference` stops shipping an offline client: `scripts/design_refs.py`,
+  `scripts/catalog_build.py`, `data/sources.json`,
+  `references/catalog-schema.md` and `tests/test_design_refs.py` are removed,
+  and the skill is now Internet research guidance whose used, rejected, missed
+  and unavailable results are cited by URL, revision and license in build-spec
+  section 6d. `verify_project` drops its `design_refs verify` gate and the
+  `ref/external/` carve-out, so every STEP under `ref/` is bought or foreign
+  geometry the mount preflight must see; `check_power` drops the same carve-out
+  from `_outside_ref`, its manifest errors, and its self-check. `image-to-cad`
+  reorders Step 5 into decompose, research, then select, and adds build-spec
+  section 6g — the frozen per-domain design selection that `cad` implements
+  without reopening candidate choice. `electromechanical-integration` gains
+  `references/component-selection.md` for that research. `step-parts` is
+  byte-identical to the previous snapshot; `cadgen` stays at 0.4.19 and both
+  `requirements.txt` files are unchanged.
+- The 2026-08-27 resync took upstream's hardened gates: `verify_project` grows
   its own `--self-check` fixture suite over the refusals that decide whether a
   gate runs at all, plus an explicit `--powered`/`--unpowered` classification
   that `--image-derived` final runs must now declare; `check_thickness` steps
@@ -41,19 +57,23 @@
   compact portable byte-bounded socket path inside the private temp root; and
   the CAD skill documents the now-present sibling image workflow and no longer
   points at the removed repository-authored `product-to-cad` skill.
-  Re-applied on 2026-08-27 to the command examples the resync introduced: the
-  `meshlib.py` and `design_refs.py` self-checks, the `design-reference` test
-  path, and the `step-parts` download, `verify_project` and `check_motion`
-  calls the image workflow now makes. `image-to-cad/SKILL.md` declares the
-  sibling `cad` and `step-parts` roots it resolves alongside the two it
-  already had; the two cross-skill calls that the previous snapshot left
-  unadapted are corrected with them. `electromechanical-integration`
+  Re-applied on 2026-08-27 to the command examples that resync introduced: the
+  `meshlib.py` self-check, and the `step-parts` download, `verify_project` and
+  `check_motion` calls the image workflow now makes. `image-to-cad/SKILL.md`
+  declares the sibling `cad` and `step-parts` roots it resolves alongside the
+  ones it already had; the two cross-skill calls that the previous snapshot
+  left unadapted are corrected with them. `electromechanical-integration`
   resolves its own `check_power` through `workshop skills path` and points
   at the materialized CAD runner rather than a checkout path, and the CAD
   skill's own `check_power` pointer is resolved the same way.
-  One trailing blank line in `generation_runner.py` and one in
-  `catalog-schema.md` are normalized for repository whitespace checks.
-  Geometry, measurement, catalog, inspection, validation, export, and `cadgen`
+  The 2026-08-28 resync retires the adaptations whose files upstream deleted —
+  the design-reference cache root, its HTTP user agent, its client and test
+  command examples, and the `catalog-schema.md` whitespace normalization — and
+  drops the now-unused `DESIGN_REFERENCE_SKILL_ROOT` declaration from
+  `image-to-cad/SKILL.md`. No new adaptation is required: the resync introduces
+  no further checkout-relative command path. One trailing blank line in
+  `generation_runner.py` is still normalized for repository whitespace checks.
+  Geometry, measurement, inspection, validation, export, and `cadgen`
   algorithms are otherwise the reviewed upstream bytes.
 - Adapted locally on 2026-08-27 in the canonical `cadgen` STEP writer to apply
   the STEP header only after Open CASCADE transfer and to set its `FILE_NAME`
@@ -66,9 +86,9 @@
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do
   not contain standalone license files in the pinned upstream snapshot. They
   were migrated at the repository owner's direction; this ledger does not
-  infer an MIT grant for those three trees. The external Fusion 360 Gallery dataset indexed by
-  `design-reference` is separately restricted to non-commercial research and
-  is downloaded only on explicit skill use with its own license and provenance.
+  infer an MIT grant for those three trees. `design-reference` no longer
+  bundles or downloads a dataset; the sources it directs research at keep their
+  own licenses, recorded per result in the build spec.
 - Update by importing and reviewing a new pinned upstream tree, running CAD
   characterization fixtures, and updating this ledger plus [`LOCK.json`](LOCK.json).
   CI verifies the exact canonical tree fingerprints. Never edit a vendored skill

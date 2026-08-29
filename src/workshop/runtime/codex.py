@@ -63,6 +63,7 @@ _TRANSIENT_DIAGNOSTIC_HEADS = frozenset(
         "provider stream disconnected",
     )
 )
+_MAX_NATIVE_FAILURE_MESSAGE_CHARS = 4 * 1024
 
 _IMMUTABLE_PRODUCT_RUN_PATHS = (
     ".agents",
@@ -521,16 +522,34 @@ def _run_policy_before_venv_launcher_directory(
     )
 
 
+def _codex_native_version_tuple(version: Any) -> Optional[tuple[int, int, int]]:
+    if not isinstance(version, str):
+        return None
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:[-+][A-Za-z0-9.-]+)?", version)
+    if match is None:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
 def codex_supports_native_workshop(version: str) -> bool:
     """Return whether Codex supports Workshop goals, agents, and profiles."""
 
-    if not isinstance(version, str):
-        return False
-    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:[-+][A-Za-z0-9.-]+)?", version)
-    if match is None:
-        return False
-    return tuple(int(part) for part in match.groups()) >= (
-        MINIMUM_CODEX_NATIVE_RUNTIME_VERSION
+    parsed = _codex_native_version_tuple(version)
+    return parsed is not None and parsed >= MINIMUM_CODEX_NATIVE_RUNTIME_VERSION
+
+
+def _is_supported_in_place_cli_upgrade(previous: Any, current: Any) -> bool:
+    """Allow only a monotonic supported Codex upgrade within one major line."""
+
+    previous_tuple = _codex_native_version_tuple(previous)
+    current_tuple = _codex_native_version_tuple(current)
+    return bool(
+        previous_tuple is not None
+        and current_tuple is not None
+        and previous_tuple >= MINIMUM_CODEX_NATIVE_RUNTIME_VERSION
+        and current_tuple >= MINIMUM_CODEX_NATIVE_RUNTIME_VERSION
+        and previous_tuple[0] == current_tuple[0]
+        and current_tuple > previous_tuple
     )
 
 
@@ -936,6 +955,7 @@ class CodexNativeSessionOutcome:
     binding: CodexNativeSessionBinding
     used_web_search: bool
     status: str = "completed"
+    token_count: Optional[int] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.binding, CodexNativeSessionBinding):
@@ -944,13 +964,21 @@ class CodexNativeSessionOutcome:
             raise ContractError("Codex native session outcome status is invalid")
         if type(self.used_web_search) is not bool:
             raise ContractError("Codex native session search status must be boolean")
+        if self.token_count is not None and (
+            type(self.token_count) is not int
+            or not 0 <= self.token_count <= 2_000_000_000_000
+        ):
+            raise ContractError("Codex native session token count is invalid")
 
     def to_dict(self) -> Mapping[str, Any]:
-        return {
+        value = {
             "status": self.status,
             "session": self.binding.to_dict(),
             "used_web_search": self.used_web_search,
         }
+        if self.token_count is not None:
+            value["token_count"] = self.token_count
+        return value
 
 
 def _validate_agent_message(value: Any) -> str:
@@ -1225,6 +1253,19 @@ class _NativeProcessGuard:
             if reaped:
                 self._reaped = True
             return reaped
+
+
+def _close_process_streams(process: Any) -> None:
+    """Close every host-owned pipe after the dedicated session is reaped."""
+
+    for name in ("stdin", "stdout", "stderr"):
+        stream = getattr(process, name, None)
+        close = getattr(stream, "close", None)
+        if callable(close):
+            try:
+                close()
+            except (OSError, ValueError):
+                pass
 
 
 class _FinalizationMarkerWatch:
@@ -1535,7 +1576,7 @@ class CodexNativeSessionLauncher:
                 {**identity, "checkpoint_sha256": persisted_sha256},
             )
 
-        used_web_search, observed_thread_id = self._stream(
+        used_web_search, observed_thread_id, token_count = self._stream(
             command=self._start_command(root, run_policy),
             prompt=prompt,
             run_root=root,
@@ -1560,6 +1601,7 @@ class CodexNativeSessionLauncher:
                 checkpoint_sha256=persisted_sha256,
             ),
             used_web_search,
+            token_count=token_count,
         )
 
     def resume(
@@ -1648,7 +1690,7 @@ class CodexNativeSessionLauncher:
             runtime_config_sha256=runtime_config_sha256,
             predecessor_runtime_config_sha256s=predecessor_runtime_config_sha256s,
         )
-        used_web_search, unused_observed_thread_id = self._stream(
+        used_web_search, unused_observed_thread_id, token_count = self._stream(
             command=self._resume_command(thread_id, root, run_policy),
             prompt=prompt,
             run_root=root,
@@ -1669,6 +1711,7 @@ class CodexNativeSessionLauncher:
                 checkpoint_sha256=checkpoint_sha256,
             ),
             used_web_search,
+            token_count=token_count,
         )
 
     def _binding_paths(
@@ -1787,9 +1830,38 @@ class CodexNativeSessionLauncher:
             )
         )
         if identity != expected and identity not in predecessors:
-            raise ContractError(
-                "Codex native session checkpoint binding is invalid"
-            )
+            # A package manager may atomically replace the installed Codex CLI
+            # while one native turn is running. The session checkpoint lives in
+            # the host-private 0700 state tree, is itself hash-bound, and still
+            # has to match every Wish, constitution, path, permission-profile,
+            # feature, and thread field below. Permit only a monotonic supported
+            # upgrade within the same major line. Same-version policy drift,
+            # downgrades, major migrations, and arbitrary checkpoint changes
+            # continue to fail closed. The resumed process runs under the newly
+            # recomputed current sandbox policy.
+            static_fields = expected_fields - {
+                "checkpoint_sha256",
+                "cli_version",
+                "runtime_config_sha256",
+            }
+            try:
+                _require_sha256(
+                    identity["runtime_config_sha256"],
+                    "Codex native session runtime-config sha256",
+                )
+            except ContractError as exc:
+                raise ContractError(
+                    "Codex native session checkpoint binding is invalid"
+                ) from exc
+            if not (
+                all(identity[key] == expected[key] for key in static_fields)
+                and _is_supported_in_place_cli_upgrade(
+                    identity["cli_version"], expected["cli_version"]
+                )
+            ):
+                raise ContractError(
+                    "Codex native session checkpoint binding is invalid"
+                )
         return thread_id, checkpoint_sha256
 
     def _public_binding(
@@ -1890,7 +1962,7 @@ class CodexNativeSessionLauncher:
         _process_guard: Optional[_NativeProcessGuard] = None,
         _finalization_watch: Optional[_FinalizationMarkerWatch] = None,
         _deadline: Optional[float] = None,
-    ) -> tuple[bool, Optional[str]]:
+    ) -> tuple[bool, Optional[str], Optional[int]]:
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
         deadline = (
@@ -1972,6 +2044,7 @@ class CodexNativeSessionLauncher:
                 if finalization_watch is not None:
                     finalization_watch.close()
                 process_guard.reap()
+                _close_process_streams(process_guard.process)
 
         process_guard = _process_guard
         finalization_watch = _finalization_watch
@@ -2027,6 +2100,7 @@ class CodexNativeSessionLauncher:
 
         used_web_search = False
         observed_thread_id: Optional[str] = None
+        token_count: Optional[int] = None
         turn_completed = False
         stream_failure: Optional[BaseException] = None
         try:
@@ -2046,6 +2120,10 @@ class CodexNativeSessionLauncher:
                 if activity is not None:
                     activity_reporter.observe(activity)
                 if event_type in ("turn.failed", "error"):
+                    if _is_explicit_transient_event_failure(event):
+                        raise CodexRecoverableInvocationError(
+                            "Codex native provider transport was interrupted"
+                        )
                     raise CodexInvocationError(
                         "Codex native session reported a failed turn"
                     )
@@ -2086,6 +2164,7 @@ class CodexNativeSessionLauncher:
                 ):
                     _validate_agent_message(item.get("text"))
                 if event_type == "turn.completed":
+                    token_count = _native_token_count(event.get("usage"))
                     turn_completed = True
                     if finalization_watch is not None:
                         finalization_watch.observe_turn_completed()
@@ -2237,7 +2316,7 @@ class CodexNativeSessionLauncher:
         if finalized_without_terminal:
             activity_reporter.observe("completed")
         activity_reporter.close()
-        return used_web_search, observed_thread_id
+        return used_web_search, observed_thread_id, token_count
 
 
 def _stream_text(value: Any) -> str:
@@ -2322,6 +2401,21 @@ def _decode_native_event(line: str) -> Mapping[str, Any]:
     if not isinstance(event, Mapping):
         raise CodexInvocationError("Codex native session event stream was invalid")
     return event
+
+
+def _native_token_count(value: Any) -> Optional[int]:
+    """Return input plus output for one completed turn, or unavailable."""
+
+    if not isinstance(value, Mapping):
+        return None
+    input_tokens = value.get("input_tokens")
+    output_tokens = value.get("output_tokens")
+    if any(
+        type(count) is not int or not 0 <= count <= 1_000_000_000_000
+        for count in (input_tokens, output_tokens)
+    ):
+        return None
+    return input_tokens + output_tokens
 
 
 def _dedicated_process_group_id(process: Any) -> Optional[int]:
@@ -2632,12 +2726,42 @@ def _diagnostic_tail(value: str) -> str:
     return value[-_MAX_TRANSIENT_DIAGNOSTIC_CHARS:].casefold()
 
 
+def _has_explicit_transient_head(value: Any) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    if len(value) > _MAX_NATIVE_FAILURE_MESSAGE_CHARS:
+        return False
+    message = value.strip().casefold()
+    return any(
+        message == head or message.startswith(f"{head}: ")
+        for head in _TRANSIENT_DIAGNOSTIC_HEADS
+    )
+
+
+def _is_explicit_transient_event_failure(event: Mapping[str, Any]) -> bool:
+    """Recognize only Codex-owned, anchored transport failure payloads.
+
+    The JSONL schema puts a failed turn's diagnostic at ``error.message`` and
+    an unrecoverable stream diagnostic at top-level ``message``. The bytes are
+    used only to select this narrow typed category and are never persisted or
+    attached to the public exception.
+    """
+
+    event_type = event.get("type")
+    if event_type == "turn.failed":
+        error = event.get("error")
+        if not isinstance(error, Mapping):
+            return False
+        return _has_explicit_transient_head(error.get("message"))
+    if event_type == "error":
+        return _has_explicit_transient_head(event.get("message"))
+    return False
+
+
 def _is_explicit_transient_failure(stderr: str) -> bool:
-    # Only the launcher's diagnostic channel participates in this category.
-    # Native event bytes can contain model-authored text and must never select
-    # a host retry policy. Require an anchored, adapter-recognized diagnostic
-    # line as well: generic OS errors such as ``temporarily unavailable`` are
-    # deliberately not transport evidence and fail closed.
+    # Require an anchored, adapter-recognized diagnostic line: generic OS
+    # errors such as ``temporarily unavailable`` are deliberately not
+    # transport evidence and fail closed.
     for raw_line in _diagnostic_tail(stderr).splitlines():
         line = raw_line.strip()
         head, separator, detail = line.partition(": ")

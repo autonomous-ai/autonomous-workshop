@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.assembled-step-evidence",
+  "step_path": "assembled.step",
+  "step_sha256": "7d5f4f1f0f88c1bf236a80370b02ca7048e7917efbf5d231706c90d9f5e7682f",
+  "stl_path": "assembled.stl",
+  "stl_sha256": "e0b6763645f5525050b045e1a972fa01c3e88bd3db5ecba83907cf1c2d5d8d46",
+  "source_entry": "cad/moonwake_garden/moonwake_garden.step.py",
+  "facts": {
+    "model_kind": "assembly",
+    "occurrence_count": 4,
+    "leaf_occurrence_count": 3,
+    "shape_count": 3,
+    "bounds_mm": {
+      "min": [-42.0, -38.0, 0.0],
+      "max": [42.0, 38.0, 6.0]
+    },
+    "size_mm": [84.0, 76.0, 6.0],
+    "part_occurrences": [
+      "rear_chassis",
+      "sector_rotor",
+      "front_garden_mask"
+    ],
+    "assembled_stl_connected_shells": 3
+  },
+  "inspection": {
+    "references_resolved": true,
+    "kernel_valid": true,
+    "interference_count": 0,
+    "assembled_mesh_watertight": true,
+    "assembled_mesh_manifold": true
+  },
+  "evidence_limits": [
+    "The assembled STL intentionally contains three connected shells because the product has three separately printable moving parts.",
+    "Digital geometry does not prove printer-process fit, elastic force, fatigue, brightness, durability, or human response."
+  ]
+}

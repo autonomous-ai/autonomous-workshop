@@ -54,7 +54,7 @@ The Goal must state:
 - the upstream files and evidence to inspect first;
 - the proof artifacts, deterministic checks, and independent reviews that
   evaluate progress;
-- the stopping condition: the stage finalizer succeeds for the current
+- the stopping condition: the ready-stage finalizer succeeds for the current
   checkpoint and writes `agent-outcome.json`.
 
 While pursuing that Goal, work in an eval-driven observe -> act -> evaluate ->
@@ -63,12 +63,15 @@ checks, inspect the generated artifact directly, record the important finding
 in workspace evidence, and continue. This loop is native-runtime behavior inside the
 Goal, not another program or runtime. Native subagents may supply specialist
 work or independent judgment, but the root Manager synthesizes the result.
+Keep the root Manager on the critical path: establish a conforming artifact
+and its deterministic checks early, delegate only bounded concrete work, and
+never make successful finalization depend on a child agent.
 
-Complete the Goal only after the finalizer succeeds, then return control to the
-host immediately. Do not begin the next stage. If work is truthfully blocked,
-report one concrete need without claiming completion. Native Goals guide Codex
-work; they never advance host stages or replace durable checkpoints, gates,
-round budgets, or invalidation.
+Complete the Goal only after the ready-stage finalizer succeeds, then return
+control to the host immediately. Do not begin the next stage. If work is
+truthfully blocked, use the `need` finalizer below and return without claiming
+Goal completion. Native Goals guide Codex work; they never advance host stages
+or replace durable checkpoints, gates, round budgets, or invalidation.
 
 Wish is a host-created input, so it is not an agent Goal. Publication is the
 host-owned effect portion of Release. This design follows Codex's official patterns for
@@ -135,9 +138,9 @@ run the materialized finalizer:
   --run-root . <current-stage> <stage-specific-arguments>
 ```
 
-Use `--help` for exact arguments. The active commands are `invent`, `make`,
-`playtest`, and `release`; the stage references describe their inputs. Frozen
-historical runs may still receive Match. The
+Use `--help` for exact arguments. The active ready commands are `invent`,
+`make`, `make-revision`, `playtest`, and `release`; the stage references
+describe their inputs. Frozen historical runs may still receive Match. The
 finalizer validates and hashes exact bytes, writes the canonical contract under
 `artifacts/`, and atomically writes `agent-outcome.json` bound to the current
 checkpoint and gate subject. It does no reasoning, runs no improvement loop,
@@ -148,9 +151,23 @@ successful finalizer, mark the active native Goal complete and return control
 to the host. The host rereads the full artifact tree, reruns trusted checks,
 seals accepted bytes, and alone advances the checkpoint.
 
-If you cannot produce a valid proposal, leave prior sealed artifacts untouched
-and report one concrete need. Never substitute chat prose, a self-score, or a
-large pasted JSON object for run-local evidence.
+If a concrete operator or environment condition prevents safe progress, leave
+prior sealed artifacts untouched and durably return exactly one need:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . need --stage <current-stage> --status waiting \
+  --reason "<one concrete condition required to continue>"
+```
+
+Use `failed` instead of `waiting` only when safe continuation is impossible,
+not merely difficult. Do not use `need` for ordinary unfinished work, a
+repairable artifact, a failed deterministic check, or a fixable ready-finalizer
+error; continue the active Goal and repair those. A successful `need` command
+writes a checkpoint-bound non-ready `agent-outcome.json` with no artifact or
+transition, after which you return control without claiming Goal completion.
+Never substitute chat prose, a self-score, or a large pasted JSON object for
+the durable need or run-local evidence.
 
 ## Preserve lifecycle and effects
 
@@ -161,6 +178,12 @@ Spark: Wish -> Make -> Release
 Forge: Wish -> Invent -> Make -> Release
 Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
+
+Quest Playtest may return implementation evidence to Make or
+concept-invalidating evidence directly to Invent. A capable Forge or Quest
+Make stage may return exact build-blocking evidence to Invent. Every backward
+edge consumes the shared lifecycle round budget and is authorized only by a
+host-verified contract; Make never edits sealed Invent bytes.
 
 Host rejection feedback remains bound to the exact current-stage proposal.
 Repair Make or Release in place and finalize changed bytes. Reviews after

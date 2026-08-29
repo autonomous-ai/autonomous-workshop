@@ -8,7 +8,7 @@ The required deterministic E2E proves Workshop host mechanics, but it cannot pro
 - Adapt the historical pass-through, context-proof, bounded-runner, diagnostics, secret-audit, and write-ownership methods to Spark, Forge, and Quest: no Match turn; folded Inventor selection in Spark Make or Forge/Quest Invent; no Concept turn; truthful Playtest omission for Spark/Forge; active Playtest only for Quest; and authenticated published Release as the terminal state.
 - Require Codex to author minimal context-derived outputs and invoke the materialized production finalizer while production contracts, gates, CAD/PDF verification, sealing, checkpoints, invalidation, Factory effect coordination, reconciliation, and public hash readback remain active.
 - Keep Factory calls deterministic and local only at the outbound transport boundary, with fixture credentials excluded from the native process and agent-readable workspace.
-- Provide focused offline tests for the acceptance harness and wrapper, a documented local runner, and manual/scheduled credentialed execution that covers all three frozen effort routes without adding the live tier to ordinary required CI.
+- Provide focused offline tests for the acceptance harness and wrapper, a documented local runner, and operator-run credentialed execution that covers all three frozen effort routes without adding the live tier to ordinary required CI or repository automation.
 - Explicitly label success as context-and-integration acceptance, not evidence of creative quality, physical printing, manufacture, delivery, or human response.
 
 ## Capabilities
@@ -23,7 +23,7 @@ None.
 
 ## Impact
 
-- Adds test-only tooling and fixtures under `tests/end_to_end/` and `tools/`, plus contributor documentation and a non-required manual/scheduled workflow.
+- Adds test-only tooling and fixtures under `tests/end_to_end/` and `tools/`, plus contributor documentation for an operator-run route matrix; it adds no repository workflow.
 - Temporarily lets the Codex launcher return control after a new exact regular finalization marker is safely reaped, or boundedly resume an already checkpointed exact session that emitted a valid identity when no proposal exists, if `turn.completed` is absent; normal proposal parsing and host gates remain authoritative, and the unconfirmed compatibility issue is tracked in `docs/backlog/`.
 - Exercises the production `CodexNativeSessionLauncher`, immutable product-run assets, effort-aware stage packets, run-local finalizer, native workflow gates, deterministic CAD/PDF verifiers, Factory publication adapters, durable effect state, and checkpoint transitions.
 - Requires a supported installed and authenticated Codex CLI for the live scenario; ordinary CI remains offline and credential-free.

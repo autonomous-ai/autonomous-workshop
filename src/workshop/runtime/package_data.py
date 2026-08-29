@@ -28,10 +28,15 @@ BUNDLED_INVENTOR_IDS = (
     "bob",
     "eve",
     "ivy",
+    "kestrel-knot",
     "leo",
+    "luma-vale",
     "mira-fold",
+    "orin-shadow",
     "pico-press",
+    "sonora-reed",
     "tess-loop",
+    "vela-bloom",
 )
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
 _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (

@@ -1,0 +1,36 @@
+{
+  "title": "Moonwake Garden",
+  "summary": "A pocket-sized, three-part ambient-light garden whose hidden 70 mm sector dial reveals one fixed petal constellation at each of three tactile positions.",
+  "category": "hand-powered ambient-light optical transformation toy",
+  "intended_material": "opaque single-color PETG",
+  "part_count": 3,
+  "assembled_envelope_mm": [84, 76, 6],
+  "interaction": "Hold the face toward a brighter background and roll the exposed right-side rotor grip through the three 120-degree indexed positions to reveal Cassiopeia, Cygnus, and an Ursa Minor Little Dipper reading.",
+  "cad_status": "isolated fresh full-tier verification passed; custom audits are relocation-safe and two independent builds produced byte-identical declared STEP outputs",
+  "creative_binding": {
+    "inventor_id": "luma-vale",
+    "invented_artifact_sha256": "5586d08aff1c1916dc9d78ff6864e0022343f43a1d48ec07c9771a5a55aa5e34",
+    "repair": "70.0 mm rotor, 70.8 mm guide ID, 74.8 mm guide OD, radially translated annular detent, printable blended grip trench, and knife-edge-free relief/snap construction"
+  },
+  "digital_verification": {
+    "pipeline": "cad/moonwake_garden/measure/verification-pipeline.md",
+    "result": "pass",
+    "checks": [
+      "fresh source-to-STEP generation",
+      "two-process byte reproducibility for the combined and three part STEP outputs",
+      "strict three-part bed and fit audit",
+      "exact 5/6/7 optical-state and full-turn leakage audit",
+      "360-degree rotor motion and axial capture proxies",
+      "kernel reference, validation, and assembly interference checks",
+      "watertight manifold meshes",
+      "0.4 mm-nozzle wall-thickness gates with zero failing samples on all three parts"
+    ]
+  },
+  "expected_root_outputs": ["assembled.step", "assembled.step.json", "assembled.stl"],
+  "physical_limits": [
+    "No physical print, printer-process fit, or support-free outcome has been observed.",
+    "Snap insertion force, retention, service removal, whitening, fracture, and fatigue remain unverified.",
+    "Detent force, feel, wear, and bidirectional cycle life remain unverified.",
+    "Optical brightness, off-axis appearance beyond the checked geometric rays, pocket comfort, recognition, discovery, and human response remain unverified."
+  ]
+}

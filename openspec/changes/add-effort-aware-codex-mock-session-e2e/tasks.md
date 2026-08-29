@@ -27,10 +27,10 @@
 - [ ] 4.4 Implement the Quest live scenario using the same harness; verify its trace is exactly Invent -> Make -> Playtest -> Release, Playtest is bound to the accepted Made revision, Release is bound to passing evidence, full-tier CAD replay occurs at all applicable gates, and one session identity persists across all four turns.
 - [x] 4.5 Add shared topology, passed-through-stage absence, final checkpoint, gate/evidence, publication receipt, credential-isolation, prohibited-activity, context-proof count, and evidence-label assertions for every route; verify targeted mutations name the effort and owning stage rather than producing a generic failure.
 
-## 5. Runner, Scheduling, and Documentation
+## 5. Runner, Execution, and Documentation
 
 - [x] 5.1 Document the route-selectable local command, prerequisites, budgets, diagnostic retention, expected report fields, and the distinction among deterministic CI, real-Codex context acceptance, and full product validation; verify all documented commands support `--help` or preflight without starting a Wish.
-- [x] 5.2 Add a separate non-required manual/scheduled credentialed workflow with independent Spark, Forge, and Quest matrix results, preflight, bounded execution, and sanitized report upload only; verify its triggers and job dependencies do not alter `.github/workflows/ci.yml` or any required pull-request check.
+- [x] 5.2 Keep credentialed execution outside repository automation and support independent operator-run Spark, Forge, and Quest results through the bounded local command; verify no workflow or required pull-request check is added.
 - [x] 5.3 Add `changes/effort-aware-codex-mock-session-e2e.added.md` and update the Concept integration disposition for `1853cfd`, `69afa5c`, `e4eb604`, and `9a979e0`; verify documentation describes published Release, no Match/Concept turns, and the exact current effort routes.
 - [x] 5.4 Run the offline mock-session harness/policy suite, required deterministic E2E, relevant runtime/workflow/integration tests, secret scan, and `git diff --check`; record exact commands and ensure ordinary tests require neither Codex authentication nor Factory credentials.
 - [ ] 5.5 Run the authenticated Spark/Forge/Quest matrix once on a controlled credentialed environment, verify every sanitized report reaches terminal published Release with the expected turn counts and narrow evidence label, and retain no raw workspace or credential in committed or uploaded artifacts.
@@ -40,7 +40,8 @@
 - `PYTHONWARNINGS=error /Users/macbookpro/.grid/bin/uv run --frozen python -m unittest tests.runtime.test_codex_native_session tests.workflow.test_native_host -v` — 85 tests passed, including exact-proposal handoff, missing-terminal recovery, same-session bounded retry, unsafe cleanup, identity, and native-turn exhaustion boundaries.
 - `PYTHONWARNINGS=error /Users/macbookpro/.grid/bin/uv run --frozen python -m unittest tests.end_to_end.test_mock_session_harness tests.workflow.test_stage_proposal_tool -v` — 41 tests passed; the ordinary harness/finalizer tests used no Codex authentication or Factory credentials.
 - `PYTHONWARNINGS=error /Users/macbookpro/.grid/bin/uv run --frozen python -m unittest tests.end_to_end.test_mock_session_harness tests.runtime.test_codex_native_session tests.workflow.test_native_host -v` — 113 tests passed after adding same-checkpoint/different-subject packet coverage and pre-identity fail-closed coverage.
-- `WORKSHOP_RUN_DETERMINISTIC_E2E=1 /Users/macbookpro/.grid/bin/uv run --frozen python -m unittest tests.end_to_end.test_deterministic_native_fidelity -v` — 15 required deterministic E2E tests passed.
+- `PYTHONWARNINGS=error /Users/macbookpro/.grid/bin/uv run --frozen python -m unittest discover -s tests -t . -p 'test_*.py' -v` — 590 tests passed after upstream reconciliation; 18 explicit opt-in scenarios were skipped.
+- `WORKSHOP_RUN_DETERMINISTIC_E2E=1 PYTHONWARNINGS=error /Users/macbookpro/.grid/bin/uv run --frozen python -m unittest tests.end_to_end.test_deterministic_native_fidelity -v` — all 17 required deterministic E2E tests passed after the boundary fixture was updated to author the new required chromatic Make render.
 - `rg -n --hidden --glob '!mock_session_evidence.py' --glob '!test_mock_session_harness.py' 'mock-session-(factory-password|access-token)-canary|sk-[A-Za-z0-9_-]{20,}' .github changes docs openspec tests tools` — no unexpected fixture canary or API-key-shaped bytes found.
 - `git diff --check` — passed.
 - `openspec validate add-effort-aware-codex-mock-session-e2e --strict` — passed.

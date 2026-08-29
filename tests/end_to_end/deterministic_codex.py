@@ -21,6 +21,7 @@ import stat
 from pathlib import Path
 
 import reportlab
+from PIL import Image, ImageDraw
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
@@ -414,6 +415,13 @@ def author_make(root: Path, stage) -> None:
         b"ISO-10303-21;\nHEADER;ENDSEC;\nDATA;ENDSEC;\nEND-ISO-10303-21;\n"
     )
     (product_root / "assembled.stl").write_bytes(tetrahedron_stl())
+    render_path = project / "snap/iso.png"
+    render_path.parent.mkdir(parents=True, exist_ok=True)
+    render = Image.new("RGB", (900, 900), "#fff4df")
+    pen = ImageDraw.Draw(render)
+    pen.ellipse((150, 130, 750, 730), fill="#35aeb8")
+    pen.polygon(((450, 190), (730, 720), (180, 720)), fill="#ff9f43")
+    render.save(render_path, format="PNG")
     write_json(
         product_root / "assembled.step.json",
         {
@@ -473,19 +481,34 @@ def author_playtest(root: Path, stage) -> None:
     for check_id in inputs["required_check_ids"]:
         config_ref = "configs/%s.json" % check_id
         evidence_ref = "results/%s.json" % check_id
-        write_json(
-            evidence_root / config_ref,
-            {
+        product_artifact_sha256 = (
+            "0" * 64
+            if "playtest-stale-made" in stage["product_id"]
+            else inputs["made"]["product_manifest"]["artifact_sha256"]
+        )
+        config = {
+            "schema_version": 1,
+            "check_id": check_id,
+            "seed": 2718,
+            "artifact_sha256": product_artifact_sha256,
+        }
+        if "playtest-conflicting-binding" in stage["product_id"]:
+            config["product_artifact_sha256"] = "f" * 64
+        if "playtest-rich-config" in stage["product_id"]:
+            config = {
                 "schema_version": 1,
                 "check_id": check_id,
-                "seed": 2718,
-                "artifact_sha256": (
-                    "0" * 64
-                    if "playtest-stale-made" in stage["product_id"]
-                    else inputs["made"]["product_manifest"]["artifact_sha256"]
-                ),
-            },
-        )
+                "product_artifact_sha256": product_artifact_sha256,
+                "subject_sha256": stage["subject_sha256"],
+                "method": [
+                    "Inspect the exact sealed Made bytes.",
+                    "Preserve the deterministic configuration and result.",
+                ],
+                "inputs": {
+                    "product.json": inputs["made"]["product_json_sha256"]
+                },
+            }
+        write_json(evidence_root / config_ref, config)
         write_json(
             evidence_root / evidence_ref,
             {

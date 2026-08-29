@@ -1,0 +1,400 @@
+{
+  "selected_inventor_id": "luma-vale",
+  "ranking": [
+    {
+      "inventor_id": "luma-vale",
+      "rationale": "Exact fit remains after repair: the Wish asks for one hand-powered celestial transformation, and Luma Vale's bound craft centers on ambient-light apertures, layered shutters, constellation reveals, few broad support-free parts, and inspectable light paths. Her method also directly diagnosed the rejected web overlap and selected the 70.0 mm rotor repair that preserves the optical reveal without asking Make to redesign it."
+    },
+    {
+      "inventor_id": "bob",
+      "rationale": "A strong mechanism runner-up because the dial and changing motion can be a Wish-specific kinetic spectacle, but Bob's larger-machine emphasis adds complexity where the decisive magic is optical isolation rather than exposed gears or linkages."
+    },
+    {
+      "inventor_id": "pico-press",
+      "rationale": "Excellent fit for a tiny repeatable spinner with no hardware and at most three parts. It ranks below Luma because crisp motion alone does not resolve the light path, occlusion, and multiple constellation readings that define this Wish."
+    },
+    {
+      "inventor_id": "mira-fold",
+      "rationale": "Her compact two- or three-part transformation discipline suits the pocket envelope and clean reveal, but this object is a repeatable optical dial rather than a tactile puzzle or interlock discovery."
+    },
+    {
+      "inventor_id": "ivy",
+      "rationale": "Ivy could make an astronomically rigorous object, but the Wish prioritizes magical transformation rather than a testable scientific relationship. The selected concept truthfully labels its patterns as graphic interpretations instead of implying sky-chart precision."
+    },
+    {
+      "inventor_id": "tess-loop",
+      "rationale": "Negative space and monochrome pattern are relevant, yet Tess Loop's loose modular arrangements do not answer the required single dial or captive mechanical transformation."
+    },
+    {
+      "inventor_id": "eve",
+      "rationale": "Eve's cinematic little-world composition could make a striking garden, but the Wish provides no personal reference world and explicitly centers a mechanism-first transformation, which her identity excludes."
+    },
+    {
+      "inventor_id": "leo",
+      "rationale": "Leo's original printable games are unnecessary because the Wish asks for an evocative mechanical object, not rules, strategy, players, or a simulation-driven table game."
+    },
+    {
+      "inventor_id": "abo",
+      "rationale": "ABO's abstract combinatorial-game craft has no useful match to a one-action optical keepsake and would introduce game structure absent from the Wish."
+    },
+    {
+      "inventor_id": "alice",
+      "rationale": "Alice preserves known tabletop classics and personalizes their physical sets; there is neither a classic game nor a person-specific reference here, so her hard scope is not applicable."
+    }
+  ],
+  "concept": {
+    "title": "Moonwake Garden",
+    "summary": "A credit-card-width, single-color moon garden with one exposed dial. Three fixed beds of petal apertures look like quiet vines until a hidden 110-degree moonlight sector rotates behind them. At each tactile 120-degree detent, exactly one bed becomes a bright view-through constellation while the other two remain dark; between detents, petals wake and fade in sequence.",
+    "object_and_category": "Pocket-sized hand-powered ambient-light optical transformation toy; a three-part rotary sector shutter, not an electronic lamp, projector, sky chart, or rule-based game.",
+    "signature_decision": "Keep the botanical constellation beds fixed in the face and rotate one broad hidden light sector behind them. Selection, occlusion, and the blooming action are therefore the same inspectable geometry: the selected petals are true openings, nonselected petals are backed by the solid rotor, and no union-of-stars mask can create ghost constellations. Repair round 2 keeps the optical window and original detent phase exact, enlarging only the rotor/guide radial stack enough to preserve a measured minimum web at the in-sector notch.",
+    "revision_resolution": {
+      "feedback_code": "sealed-rotor-web-contradiction",
+      "governing_decision": "Increase the rotor from 68.0 to 70.0 mm diameter and the guide ID from 68.8 to 70.8 mm while retaining 0.40 mm radial running clearance, a 2.0 mm guide wall, the exact R9.0–R31.5 by 110-degree sector, the original local notch angles -45/+75/+195 degrees, 2.4 mm chord mouths, 0.55 mm depth, and the unchanged 2.50 mm minimum web. Translate the complete fixed detent geometry radially outward 1.00 mm at world -45 degrees, including its tooth tip from R33.75 to R34.75.",
+      "state_alignment": "At rotor poses 0, -120, and -240 degrees, local notches -45, +75, and +195 degrees respectively land at the fixed world -45-degree tooth.",
+      "clearance_proof": "The revised rotor radius is 35.0 mm and each notch's deepest point is R34.45. At the in-sector +75-degree notch the exact radial web to the unchanged R31.5 optical boundary is therefore 34.45 - 31.5 = 2.95 mm, exceeding the 2.50 mm minimum by 0.45 mm; away from notches the outer annulus is 3.50 mm. The translated tooth tip at R34.75 retains 0.30 mm radial clearance from the notch root. The prior 1.95 mm web no longer exists.",
+      "mechanism_dimensions_mm": {
+        "rotor_diameter": 70.0,
+        "rotor_radius": 35.0,
+        "guide_id": 70.8,
+        "guide_od": 74.8,
+        "guide_wall_radial": 2.0,
+        "guide_clearance_radial_per_side": 0.4,
+        "sector_outer_radius": 31.5,
+        "notch_depth": 0.55,
+        "notch_root_radius": 34.45,
+        "normal_outer_web": 3.5,
+        "minimum_notch_root_web": 2.95,
+        "required_minimum_web": 2.5,
+        "tooth_tip_radius": 34.75,
+        "tooth_to_notch_root_clearance": 0.3,
+        "frame_half_height": 38.0,
+        "guide_id_to_envelope_plan_allowance": 2.6,
+        "guide_outer_edge_setback": 0.6
+      },
+      "thumb_portal": {
+        "world_angle_span_deg": [-12.0, 12.0],
+        "inner_radius_mm": 32.0,
+        "outer_radius_mm": 34.0,
+        "sector_outer_radius_mm": 31.5,
+        "deepest_rotor_cut_radius_mm": 34.45,
+        "rotor_radius_mm": 35.0,
+        "inner_opaque_margin_mm": 0.5,
+        "outer_opaque_margin_mm": 0.45,
+        "front_to_rotor_gap_mm": 0.3,
+        "twenty_degree_lateral_shift_mm": 0.109191
+      },
+      "home_grip_patch": {
+        "groove_count": 7,
+        "center_radius_mm": 33.35,
+        "center_angles_local_deg": [-9, -6, -3, 0, 3, 6, 9],
+        "tangential_length_mm": 1.4,
+        "radial_width_mm": 0.8,
+        "recess_depth_mm": 0.3,
+        "remaining_floor_mm": 0.9
+      }
+    },
+    "intended_interaction": "Hold the rounded frame by its left edge with the garden face toward the viewer and any brighter room surface or window behind it. Roll the exposed right rim clockwise until the printed detent settles: Cassiopeia's top bed opens. Roll another 120 degrees for Cygnus at lower right and another 120 degrees for Ursa Minor's Little Dipper reading at lower left; a full turn returns to the first state. The transition intentionally brightens and darkens individual petals. No dark room, phone, battery, loose token, or second control is required.",
+    "envelope_mm": {
+      "length_mm": 84,
+      "width_mm": 76,
+      "height_mm": 6
+    },
+    "coordinate_system": "Front-view origin is the rotor axis; +X is right, +Y is up, and +Z points toward the viewer. World angles are measured counter-clockwise from +X. Rotor state angles are 0, -120, and -240 degrees clockwise as seen from the front. Z=0 is the rear chassis back. All dimensions are nominal design authority and require exact Make verification.",
+    "layer_order": [
+      "bright wall, window, or ordinary ambient background",
+      "open rear chassis field with three structural garden stems",
+      "rotating opaque sector-shutter dial",
+      "fixed front mask with botanical petal apertures",
+      "viewer"
+    ],
+    "optical_path": "Primary use is view-through contrast, not projection. Light/background travels through the open rear field, the rotor's single annular-sector window, and only the front petals lying inside that sector. The rotor sits 0.30 mm behind the front mask, so petals outside the sector are backed by opaque material and read as dark garden marks. Normal viewing at roughly 100–400 mm with a brighter background is a design target, not a proven performance claim.",
+    "components": [
+      {
+        "key": "rear_chassis",
+        "name": "Moon-garden chassis, spindle, detent, and snap frame",
+        "purpose": "Provides the open rear light field, central bearing, outer rotor guide, axial thrust pads, three structural garden stems, three-state detent flexure, thumb bay, and all front-mask retention features as one support-free part.",
+        "form": "An 84 by 76 mm rounded rectangle with 10 mm corner radii and 1.8 mm rear frame thickness. Its central optical field is 64 mm diameter. A 9 mm hub is joined to the outer frame by three 2.4 mm-wide radial stems centered at world angles 30, 150, and 270 degrees, between the three constellation beds. A 6.0 mm spindle rises from the hub with a 1.0 mm root fillet. The revised circular rotor guide has 70.8 mm inside diameter and 2.0 mm radial wall, giving 74.8 mm OD. A right thumb bay centered at y=0 is 19.0 mm tall and opens from x=31.0 mm to the exterior; at the guide ID it interrupts about 31.1 degrees, leaving more than 328 degrees of gross guide circumference before the detent slot. Four split snap posts stand at (±34,±27) mm outside the rotor.",
+        "dimensions_mm": {
+          "length_mm": 84,
+          "width_mm": 76,
+          "height_mm": 6
+        },
+        "placement": "Stationary rear layer centered at the origin, back face at z=0. Rear frame top datum is z=1.8. Three 2 by 4 by 0.3 mm thrust pads at radius 31.5 mm and angles 30, 150, and 270 degrees support the rotor at z=2.1. The matching front mask seats on four spacer collars at z=3.6.",
+        "interfaces": "The 6.0 mm spindle runs in the rotor's 6.6 mm bore for 0.30 mm radial clearance per side. The revised 70.8 mm guide ID clears the 70.0 mm rotor by 0.40 mm per side. The complete detent is fixed at world -45 degrees and moves radially outward 1.00 mm with the guide. It is one curved annular cantilever with centerline R36.00, radial band R35.40–R36.60, z=0–3.6, and 12.0 mm clockwise centerline arc length from the free tooth at -45 degrees to the sole root at -64.0986 degrees. A through isolation slot occupies R36.60–R37.40 across the full free arc plus a 0.8 mm free-end cap; only the root attaches to the frame, with a 1.0 mm root fillet. A 1.30 mm-diameter rounded tooth lobe is centered at R35.40 and world -45 degrees so its inward tip is R34.75, leaving 0.30 mm radial root clearance inside each R34.45 notch root. Four retention posts each have a 5.0 mm spacer collar to z=3.6, 3.2 mm split stem, 0.8 mm split, and 3.8 mm maximum conical head with 45-degree lead; they mate with the front holes only, never the rotor.",
+        "print_stance": "Print the broad rear face flat on the bed with spindle, guide, flexure, collars, and snap posts rising in +Z. Snap leads use 45-degree cones; openings are vertical; no designed bridge exceeds 2.4 mm and no support is intended."
+      },
+      {
+        "key": "sector_rotor",
+        "name": "Moonlight sector dial",
+        "purpose": "Acts as both the one user dial and the opaque shutter that selects a single constellation bed; its three edge notches create tactile registration.",
+        "form": "A revised 70.0 mm diameter by 1.2 mm thick opaque disk with a 6.6 mm center bore. Its only optical opening remains the annular sector from radius 9.0 to 31.5 mm, 110 degrees total width (local 35 to 145 degrees, centered on rotor-local +Y); its four 2.0 mm-radius corner fillets are contained inside that exact radial and angular envelope. The normal outer annulus is 3.50 mm. Three rounded V-notches remain at rotor-local angles -45, +75, and +195 degrees; each removed area is contained inside a triangle with a 2.4 mm chord mouth on R35 and a deepest rounded point at R34.45, exactly 0.55 mm radial depth. The minimum web at the in-sector +75-degree notch is 2.95 mm, above the unchanged 2.50 mm requirement. Seven tangential 1.4 by 0.8 mm capsule grip grooves are centered at R33.35 and rotor-local angles -9,-6,-3,0,+3,+6,+9 degrees; each is a 0.3 mm-deep recess with rounded ends, shifted outward with the enlarged rim and fully exposed through the front thumb portal at the 0-degree home pose.",
+        "dimensions_mm": {
+          "length_mm": 70,
+          "width_mm": 70,
+          "height_mm": 1.2
+        },
+        "placement": "Captured on the common Z axis between the rear thrust pads and the front mask. With its sector centered on local +Y, the three stable orientations are 0, -120, and -240 degrees, aligning the sector with the top, lower-right, and lower-left garden beds.",
+        "interfaces": "The 6.6 mm bore runs on the 6.0 mm spindle. The 70.0 mm outer edge runs within the 70.8 mm guide ID, which remains present around more than 300 degrees of circumference despite the thumb bay and detent slot. Rotor bottom rests at z=2.1, top is z=3.3, and the fixed front underside is z=3.6, leaving 0.30 mm total axial running clearance. At poses 0, -120, and -240 degrees, local notches -45, +75, and +195 degrees respectively receive the fixed world -45-degree tooth. The notch root is R34.45 and the tooth inward tip is R34.75, preserving 0.30 mm root clearance. Flexure force, whitening, wear, and cycle life remain physically unverified.",
+        "print_stance": "Print either broad face flat. The sector, bearing bore, and detent notches are vertical through-features and all grip marks are shallow upward recesses; no support is intended."
+      },
+      {
+        "key": "front_garden_mask",
+        "name": "Constellation garden face",
+        "purpose": "Carries the exact fixed petal apertures and connecting vine relief, hides the shutter mechanism, axially captures the rotor, and closes the three-part assembly without separate hardware.",
+        "form": "An 84 by 76 mm rounded mask with 10 mm corner radii and 1.6 mm structural thickness. A 15 mm central moon medallion is raised 0.6 mm and broad connecting vines are 1.2 mm wide by 0.4 mm high. Every bright node is one radially oriented pointed-lens petal through-aperture 2.2 mm minimum width by 4.8 mm long, with a 0.3 mm-deep 45-degree rear-entry chamfer. The right-side control opening is a through annular portal spanning world angles -12 to +12 degrees and R32.0 to R34.0; four R0.8 corner fillets are contained inside that exact polar envelope. It lies 0.50 mm outside the R31.5 optical boundary and 0.45 mm inside the deepest possible R34.45 rotating notch cut, so opaque rotor material backs it at every angle. Four 3.4 mm snap holes at (±34,±27) mm have 3.9 mm diameter by 0.5 mm-deep top reliefs.",
+        "dimensions_mm": {
+          "length_mm": 84,
+          "width_mm": 76,
+          "height_mm": 2.2
+        },
+        "placement": "Stationary front layer centered at the origin, underside at z=3.6, structural front at z=5.2, and maximum garden relief at z=5.8 beneath the 6.0 mm snap-head envelope. Its R32.0–R34.0 by ±12-degree annular thumb portal nests inside the chassis's wider 19.0 mm rear guide bay; the surrounding front material is the fixed baffle, exposing the textured opaque rotor annulus without opening the outer frame directly to background light.",
+        "interfaces": "The four holes press over the chassis's split conical heads in +Z until the mask underside seats on all four spacer collars. The heads expand into the top reliefs to block axial withdrawal. The mask does not touch the rotor: the collar height fixes 0.30 mm clearance. Head squeeze permits intentional service removal, but assembly force, retention, releasability, fatigue, and resistance to accidental prying require same-material physical coupons before any claim.",
+        "print_stance": "Print the broad rear face flat with moon and vine relief upward. All petal and snap openings are vertical and rear entries use 45-degree chamfers; no support is intended."
+      }
+    ],
+    "state_geometry": {
+      "petal_rule": "Coordinates are (x,y) mm in the fixed face. Each petal's 4.8 mm long axis points radially from the origin and has 2.2 mm minimum transverse width. The layouts are simplified graphic readings, not angular-scale sky charts. Make must preserve exact counts and coordinates and measure actual local ligament, targeting at least 1.8 mm.",
+      "states": [
+        {
+          "rotor_angle_deg": 0,
+          "bed": "top",
+          "name": "Cassiopeia",
+          "petal_centers_xy_mm": [[-16, 15], [-8, 23], [0, 15], [8, 23], [16, 15]],
+          "intended_read": "Five bright petals form an upright W; all Cygnus and Ursa Minor petals remain backed by the rotor."
+        },
+        {
+          "rotor_angle_deg": -120,
+          "bed": "lower-right",
+          "name": "Cygnus",
+          "petal_centers_xy_mm": [[8, -23], [12, -15], [16, -7], [20, 1], [8, -9], [24, -13]],
+          "intended_read": "Six bright petals form a long cross; all Cassiopeia and Ursa Minor petals remain backed by the rotor."
+        },
+        {
+          "rotor_angle_deg": -240,
+          "bed": "lower-left",
+          "name": "Ursa Minor — Little Dipper reading",
+          "petal_centers_xy_mm": [[-24, -16], [-18, -21], [-11, -20], [-12, -13], [-17, -8], [-20, -2], [-14, 3]],
+          "intended_read": "Seven bright petals form the familiar Little Dipper asterism within Ursa Minor; all Cassiopeia and Cygnus petals remain backed by the rotor."
+        }
+      ],
+      "detent_indexing": {
+        "fixed_tooth_world_angle_deg": -45,
+        "rotor_notch_local_angles_deg": [-45, 75, 195],
+        "sector_local_span_deg": [35, 145],
+        "rotor_radius_mm": 35.0,
+        "notch_root_radius_mm": 34.45,
+        "tooth_tip_radius_mm": 34.75,
+        "minimum_notch_root_web_mm": 2.95,
+        "alignments": [
+          {"rotor_angle_deg": 0, "engaged_local_notch_deg": -45, "resulting_world_angle_deg": -45},
+          {"rotor_angle_deg": -120, "engaged_local_notch_deg": 75, "resulting_world_angle_deg": -45},
+          {"rotor_angle_deg": -240, "engaged_local_notch_deg": 195, "resulting_world_angle_deg": -45}
+        ]
+      },
+      "calculated_bounds": "Conservative oriented-rectangle envelopes around every 4.8 by 2.2 mm radial petal remain wholly inside the unchanged sector at their indexed state: Cassiopeia's five span local 39.929–140.071 degrees and R12.648–26.774; Cygnus's six span 46.310–126.434 degrees and R9.704–29.715; Ursa Minor's seven span 42.632–124.272 degrees and R11.968–31.264. Thus the normal-view counts remain exactly 5, 6, and 7, the tightest selected margins are 4.929 degrees angular, 0.704 mm inner-radial, and 0.236 mm outer-radial, and every nonselected conservative envelope remains at least 14.929 degrees beyond a sector edge. The enlarged rim opens no new optical path. Exact pointed-lens, 2.0 mm sector-corner fillet, rear-chamfer, ligament, and oblique-ray booleans remain Make checks."
+    },
+    "visual_states": [
+      "Resting view: three fixed vine beds and a raised central moon form a coherent monochrome garden; unlit petals are meaningful dark negative space, not decoration pasted onto a dial.",
+      "Selected view: one complete named pattern becomes a true view-through opening while the two nonselected beds stay dark and tactile.",
+      "Transition view: the moving 110-degree boundary causes individual petals to wake and fade in sequence; simultaneous partial beds are intentional, but only the three detents are complete named states.",
+      "Bright-background and ordinary front-lit dark-point readings are both intended. Dark-room performance and projected images are optional experiments, never requirements or claims."
+    ],
+    "assembly": [
+      "Place the rear chassis flat with spindle and snap posts upward.",
+      "Lower the rotor over the spindle with its sector roughly toward Cassiopeia; at the 0-degree pose the local -45-degree notch must face the fixed world -45-degree tooth, and a hand sweep must bring local +75 and +195 degrees to that tooth at -120 and -240 degrees.",
+      "Align the front mask's four keyed snap holes so its smaller annular thumb portal nests concentrically inside the wider rear guide bay, then press only above the four collars until all heads expand into their reliefs and the mask seats evenly.",
+      "Verify 360-degree rotation, three positive detents, axial capture, no rotor escape through the bay, and zero front-mask contact before use."
+    ],
+    "materials_and_finish": "Design baseline is opaque single-color PETG on calibrated FFF with a 0.4 mm nozzle and 0.20 mm layers; PETG is chosen as a design assumption for the integral flexure and snaps, not as durability proof. Matte texture is preferred for contrast. PLA may be evaluated only through separate same-geometry coupons. No glue, screws, magnets, metal bearings, purchased hardware, paint, or multi-material distinction is permitted.",
+    "minimum_geometry_mm": {
+      "front_structural_plate": 1.6,
+      "rear_frame_or_stem": 1.8,
+      "rear_structural_stem_width": 2.4,
+      "nominal_rotor_plate_thickness": 1.2,
+      "minimum_local_grip_recess_floor": 0.9,
+      "rotor_outer_web": 2.5,
+      "petal_aperture_width": 2.2,
+      "target_local_petal_ligament": 1.8,
+      "spindle_radial_clearance_per_side": 0.3,
+      "outer_guide_radial_clearance_per_side": 0.4,
+      "axial_running_clearance_total": 0.3,
+      "edge_radius_or_chamfer": 0.8
+    },
+    "assumptions": [
+      "A calibrated 0.4 mm-nozzle FFF printer can preserve 2.2 mm petal widths, 1.8 mm ligaments, the 1.2 mm nominal rotor plate and explicitly authorized 0.9 mm grip-recess floor, 0.30–0.40 mm moving clearances, split snap heads, and the detent flexure; exact coupons must test this.",
+      "The 74.8 mm guide OD can fit the 84 by 76 mm rounded chassis: in plan at top and bottom, R35.4 guide ID to the R38.0 envelope is 2.6 mm. At z=1.8–3.6 the raised guide itself occupies R35.4–37.4 with a full 2.0 mm wall and its outside edge is set 0.6 mm inside the envelope; that 0.6 mm is air/setback, not a claimed lip. At z=0–1.8 the base frame runs continuously from the R32 optical field to the R38 edge. Exact CAD must verify the wall, setback, base union, and thumb-bay interruption.",
+      "Opaque one-color material gives adequate light/dark contrast when viewed against a brighter background. Optical brightness, off-axis tolerance, and discovery are not yet observed.",
+      "An 84 by 76 by 6 mm rounded object is pocket-sized for an adult keepsake; pocket comfort and snagging have not been physically tested.",
+      "Cassiopeia and Cygnus use simplified constellation readings. The Little Dipper is truthfully identified as an asterism within Ursa Minor. No state claims celestial coordinates, scale, season, hemisphere, or an official IAU stick figure."
+    ],
+    "unresolved_risks": [
+      "The radially translated world -45-degree curved annular detent flexure and its R36.60–R37.40 outer through-slot plus free-end cap are now geometrically explicit, but the beam may still be too stiff, too soft, fatigue, whiten, or fracture in PETG or PLA. Force and repeated bidirectional cycling need physical coupons; CAD motion alone cannot pass it.",
+      "The four split snap posts may break, relax, require excessive assembly force, or allow prying at the thumb bay. Same-material post/hole coupons must precede the full face, and the released manual must not instruct routine disassembly unless verified.",
+      "0.30 mm axial, 0.30 mm spindle-radial, and 0.40 mm outer-guide clearances are starting decisions. First-layer swell, shrinkage, and roughness could cause drag, wobble, or rotor contact.",
+      "The rear structural stems could occlude a selected petal on direct or oblique sight lines. The nested R32.0–R34.0 by ±12-degree front thumb portal is nominally backed by opaque rotor material with 0.45 mm margin to the deepest rotating notch cut and 0.50 mm to the optical sector; the ±20-degree lateral shift across the 0.30 mm face/rotor gap is only 0.109 mm. Exact ray/boolean inspection must still prove every state and oblique direction without thumb-bay leakage.",
+      "The guide OD reaches R37.4 inside the 38.0 mm half-height and merges with the outer frame; CAD must rule out a sliver, self-intersection, or sub-1.8 mm cavity-to-edge section, especially around the 19 mm thumb bay. The larger rim may also alter grip access and escape resistance.",
+      "The smallest oriented-petal ligament may be below the 1.9 mm conservative bound because the petals rotate radially. Exact CAD must measure every local web and preserve at least the 1.8 mm target.",
+      "The seven 0.3 mm-deep grip recesses leave an authorized 0.9 mm local floor rather than the 1.2 mm nominal rotor plate. Exact mesh/thickness checks must prove that floor is continuous and printable; grip comfort and wear remain physical questions.",
+      "Thin petal ends or snap splits could create sharp or brittle edges. Make must round tips, run thickness and mesh checks, and inspect accessible edges and the bay throughout rotation.",
+      "No physical print, fit, optical observation, durability cycle, ten-second discovery test, constellation-recognition result, or adult grin has been produced in Invent; those remain Make and Quest Playtest gates."
+    ],
+    "make_stage_checks": [
+      "Build the exact three parametric STEP-first solids and verify the 84 by 76 by 6 mm envelope, 70.0 mm rotor, 70.8 mm guide ID, 74.8 mm guide OD, R34.75 tooth tip, component count, state coordinates, part interfaces, layer order, and support-free stances before export.",
+      "At rotor angles 0, -120, and -240 degrees, boolean/ray-audit the complete pointed-lens and rear-chamfer footprints so exactly 5, 6, and 7 intended petals are open and every nonselected petal is backed by solid rotor; confirm or improve upon the conservative 0.236 mm outer-radial, 0.704 mm inner-radial, 4.929-degree selected angular, and 14.929-degree nonselected margins. Inspect a one-degree intermediate sweep for accidental complete false patterns and inspect ±20-degree oblique sight lines and thumb-bay leakage.",
+      "Run a stepped 0-to-360-degree motion check: spindle and 70.8 mm guide clear the 70.0 mm rotor, the rotor cannot escape axially or through the bay, the front mask does not touch, local notches -45, +75, and +195 degrees align to the fixed world -45-degree tooth at poses 0, -120, and -240 degrees, and no selected state collides with rear stems.",
+      "Measure every named clearance, 3.50 mm normal rotor web, 2.95 mm in-sector notch-root web, unchanged 2.50 mm acceptance minimum, 2.6 mm plan guide-ID-to-envelope allowance, 2.0 mm raised guide wall, 0.6 mm guide-OD edge setback, rear stem, front plate and R0.8 portal corners, exact R35.40–R36.60 annular flexure band/R36.00 centerline/-64.0986-degree sole root/R36.60–R37.40 through-slot/free-end cap, snap split/root, 1.2 mm nominal rotor plate, 0.9 mm local grip floor, petal width, widest rear-chamfer footprint, oriented petal ligament, and the R32.0–R34.0 by ±12-degree portal relationship. Prove all seven R33.35 grip-groove footprints project wholly inside the portal at the 0-degree home pose, the portal intersects solid bare annulus at the other registered poses, and the portal stays at least 0.45 mm inside every rotating notch cut throughout 360 degrees. CAD establishes overlap only; human reach and touch quality remain physical Playtest questions. Run exact interference, fit, thickness, mesh, and support-free printability checks on fresh exports.",
+      "Generate product-derived isolated-layer, exploded, rear optical-path, all-three-state, intermediate-bloom, and monochrome front views. Renders may prove geometry and visibility only, never physical brightness or delight.",
+      "Print bounded coupons for spindle/bore clearances 0.20, 0.30, and 0.40 mm per side; rotor/guide clearances 0.30, 0.40, and 0.50 mm per side at the revised radii; snap post/hole diametral gaps 0.10, 0.20, and 0.30 mm; and the exact translated detent beam/notch. Record actual printer, material, stance, force, retention, bidirectional cycles, whitening, cracks, and looseness before any physical-performance claim.",
+      "If exact geometry cannot keep all three states optically truthful, captive, support-free, and robust within the sealed three-part architecture, preserve the blocking evidence and use the bounded Make-to-Invent route rather than silently replacing the mechanism."
+    ]
+  },
+  "research": {
+    "method": "Repair round 2 preserves the selected Luma Vale sector-shutter architecture but treats the host-accepted Make revision as authoritative failure evidence. The work rechecked the prior primary sources, compared four original optical mechanisms plus three concept-level detent repairs, performed deterministic angle/chord/distance calculations, and commissioned independent native-agent review of indexing, sector isolation, support-free construction, and evidence limits. Sources establish design starts, not artifact proof.",
+    "sources": [
+      {
+        "id": "prusa-modeling-guidance",
+        "title": "Modeling with 3D printing in mind",
+        "publisher": "Prusa Research",
+        "url": "https://help.prusa3d.com/article/modeling-with-3d-printing-in-mind_164135",
+        "accessed_on": "2026-08-27",
+        "claims_supported": [
+          "FFF overhang capability commonly begins around 45–60 degrees depending on nozzle and settings, and short horizontal bridges can be printable.",
+          "A 0.4 mm nozzle is a common desktop baseline and walls thinner than one perimeter are not printable.",
+          "There is no universal fit tolerance; Prusa gives at least 0.3 mm as an initial value for movable parts and recommends test-print iteration."
+        ],
+        "application": "The concept uses flat print stances, 45-degree snap leads, 0.30–0.40 mm moving-clearance starts, multi-perimeter structural features, and mandatory physical fit/flexure coupons."
+      },
+      {
+        "id": "ultimaker-fff-design",
+        "title": "How to design for FFF 3D printing",
+        "publisher": "UltiMaker",
+        "url": "https://ultimaker.com/wp-content/uploads/2024/06/How-to-design-for-FFF-1.pdf",
+        "accessed_on": "2026-08-27",
+        "claims_supported": [
+          "Minimum wall thickness should be at least the nozzle diameter.",
+          "The common 45-degree rule is a starting point for support-free FFF geometry, and long bridges should be avoided.",
+          "Dimension-critical designs should use printed calibration pieces measured against CAD."
+        ],
+        "application": "The three broad flat-print parts avoid fine grilles and long bridges, while all fit, snap, and detent claims are deferred to measured coupons."
+      },
+      {
+        "id": "iau-constellations",
+        "title": "The Constellations",
+        "publisher": "International Astronomical Union",
+        "url": "https://iauarchive.eso.org/public/themes/constellations/",
+        "accessed_on": "2026-08-27",
+        "claims_supported": [
+          "The IAU recognizes 88 constellations as bounded sky regions.",
+          "The IAU does not formally define constellation stick figures, and graphic representations can vary.",
+          "Asterisms are distinct from constellation regions; the Little Dipper is a familiar asterism within Ursa Minor."
+        ],
+        "application": "The product calls its patterns simplified graphic readings and labels the Little Dipper relationship truthfully rather than claiming official figures or a scale sky chart."
+      }
+    ],
+    "candidate_comparison": [
+      {
+        "candidate": "Moonwake rotary sector shutter",
+        "finding": "One broad annular-sector window selects three spatially separated fixed petal beds. It gives the strongest botanical double reading, largest apertures, clean 120-degree motion, and a three-part support-free path. Selected."
+      },
+      {
+        "candidate": "Crossed-petal coincidence masks",
+        "finding": "Fixed and rotating slots could bloom points in one shared sky, but cross-talk, tight phase tolerance, fine webs, and off-axis ambiguity make it materially less feasible. Rejected."
+      },
+      {
+        "candidate": "Dial-cam linear root shutter",
+        "finding": "An eccentric dial could slide a shutter behind one bed, but it needs a follower interface or fourth part, duplicates positions over a revolution, and reads like a picture changer rather than moonlight. Rejected."
+      },
+      {
+        "candidate": "Radial moire pollen field",
+        "finding": "Fine overlapping lines offer mesmerizing travel but cannot guarantee recognizable distinct constellations, depend on printer aliasing, and violate Luma Vale's rejection of fragile grille work. Rejected."
+      }
+    ],
+    "repair_comparison": [
+      {
+        "candidate": "Increase rotor and guide diameter while preserving optical and detent phases",
+        "finding": "Selected. A 70.0 mm rotor gives an R34.45 notch root and 2.95 mm web to the unchanged R31.5 sector; a 70.8 mm guide ID preserves 0.40 mm radial clearance, and its 74.8 mm OD still leaves 2.6 mm continuous material from guide ID to the 76 mm envelope at top and bottom. The original -45/+75/+195-degree notches, fixed -45-degree tooth, 5/6/7 states, sector, petals, interaction, and 2.50 mm minimum remain intact."
+      },
+      {
+        "candidate": "Re-phase all three edge notches outside the optical sector",
+        "finding": "Feasible but rejected. A 31.5/151.5/271.5-degree sharp-V phase yields 2.613663 mm exact web and preserves indexing, but relocates the tooth beside the 150-degree rear stem/thrust-pad corridor and requires a newly integrated flexure slot. A proposed 32/152/272-degree variant was independently falsified at 2.488728 mm."
+      },
+      {
+        "candidate": "Locally dike the optical sector around the old +75-degree notch",
+        "finding": "Feasible but rejected. Pulling the boundary inward to R30.90 around 72.5–77.5 degrees can yield 2.55 mm local web without clipping named finite-aperture envelopes, but the window ceases to be a simple annular sector and gains a transition pause and additional boundary blends."
+      }
+    ],
+    "repair_evidence": [
+      {
+        "id": "host-make-revision-request",
+        "kind": "host-accepted-upstream-contract",
+        "path": "artifacts/make/r0001/invent-revision-request.json",
+        "sha256": "53816da32535dcc16fc777e81b4381cf729853dfc06f6378509039812b8ac9b8",
+        "claims_supported": [
+          "The prior 68.0 mm rotor left only 1.95 mm web at its in-sector +75-degree notch.",
+          "Invent must explicitly reconcile sector, detent placement, notch dimensions, and the 2.50 mm minimum before Make resumes."
+        ]
+      },
+      {
+        "id": "repair-geometry-audit",
+        "kind": "run-local-deterministic-evidence",
+        "path": "artifacts/invent/r0002/evidence/repaired-geometry.json",
+        "sha256": "d44bf6126356631f8560411b50b494509d0b7ee1039fb2865603e8be0ebccf27",
+        "checker_path": "artifacts/invent/r0002/evidence/check_repaired_geometry.py",
+        "checker_sha256": "169bc58b1105a078d31a7e49af536369ec1450764f7c783da1eb7f0a372477b2",
+        "claims_supported": [
+          "The revised 70.0/70.8/74.8 mm radial stack yields 2.95 mm minimum notch-root web, 0.40 mm guide clearance, 0.30 mm tooth/root clearance, and 2.6 mm guide-ID-to-envelope plan allowance.",
+          "Conservative finite-aperture envelopes give exact 5/6/7 selected counts and zero nonselected intersections at the three indexed poses."
+        ]
+      },
+      {
+        "id": "luma-repair-review",
+        "kind": "selected-inventor-review",
+        "path": "artifacts/invent/r0002/reviews/luma-repair.md",
+        "sha256": "f88bdec664097d70d78227b2c3d8b6275b81a5ef9e57314e9e7be03d0e472796",
+        "claims_supported": [
+          "Three concept-level repairs were compared through Luma Vale's exact optical method.",
+          "The 70.0 mm rotor repair preserves the annular-sector reveal and original indexing with fewer optical changes than a local dike or notch re-phase."
+        ]
+      },
+      {
+        "id": "repair-c-falsification",
+        "kind": "independent-native-agent-review",
+        "path": "artifacts/invent/r0002/reviews/repair-c-falsification.md",
+        "sha256": "32d8161d93013bbd99102956309103a2371e01bac82dbbb64db31ebb8b865d92",
+        "claims_supported": [
+          "No nominal geometry blocker was found for the enlarged rotor/guide repair.",
+          "The guide fits the rounded frame and retains nominal separation from the snap collars and thumb-bay detent region."
+        ]
+      },
+      {
+        "id": "phase-falsification",
+        "kind": "independent-native-agent-review",
+        "path": "artifacts/invent/r0002/reviews/detent-falsification.md",
+        "sha256": "46531411e681c56b0618090783a9a27a95569f22d878187ace2614a22d08ba1f",
+        "claims_supported": [
+          "A superficially plausible 32/152/272-degree phase was rejected because its exact sloped V side leaves only 2.488728 mm web.",
+          "The comparison prevented sealing a second geometry contradiction."
+        ]
+      }
+    ],
+    "independent_review": {
+      "scope": "Independent native-agent review in repair round 2 challenged the host-proven 1.95 mm web, three concept-level repairs, full V-notch footprint, detent isolation/root construction, enlarged guide/frame/bay fit, exact 5/6/7 finite-aperture states, chamfer ligaments, and evidence claims.",
+      "changes_adopted": [
+        "The rejected 68.0/68.8 mm rotor/guide stack is replaced by exact 70.0/70.8 mm diameters; the in-sector +75-degree notch now retains 2.95 mm web without changing the light window or detent phase.",
+        "The complete detent translates radially outward 1.00 mm, with an R34.75 tooth tip, R34.45 notch root, 0.30 mm root clearance, and all three transformed alignments enumerated.",
+        "The curved annular cantilever's centerline/radial band/arc endpoints, R36.60–R37.40 outer through-slot plus free-end cap, single rounded root, tooth diameter/center/tip, and z span are explicit so Make does not invent a flexure topology.",
+        "A center-only optical claim is replaced by conservative finite-aperture envelopes and explicit radial/angular margins for all 5/6/7 states.",
+        "The cross-section specifies both central and broad outer guidance, three thrust pads, exact axial capture, explicit per-side clearances, and an open-sided thumb bay.",
+        "The optical plan declares partial transitions intentional while requiring zero nonselected openings at each detent and explicit oblique/light-leak audit.",
+        "Physical snap, flexure, fit, force, cycle, and optical behavior remain required evidence rather than inferred success."
+      ],
+      "remaining_tradeoff": "The geometry-level contradiction is removed with 0.45 mm nominal margin, but the 74.8 mm guide OD runs close to the 76 mm envelope and the larger rim changes bay exposure, leverage, and shrinkage sensitivity. The translated detent and snap posts retain cyclic-flexure risk. Positive tactile registration is worth testing because it makes all three optical states repeatable, but Make must reject it with bounded evidence if exact CAD fit or physical coupons show collision, fatigue, unsafe force, or escape."
+    },
+    "evidence_limits": [
+      "Manufacturer guidance is a starting point and does not prove this exact geometry will print, assemble, rotate, detent, survive, or look bright.",
+      "Native-agent review is design critique, not a physical receipt or human response.",
+      "The host packet authoritatively records the prior Make failure: the 68.0 mm rotor's +75-degree notch overlapped the local 35–145-degree sector and left only 1.95 mm web. This repair source changes those rejected bytes to a 70.0 mm rotor, 70.8 mm guide ID, 74.8 mm guide OD, and R34.75 tooth tip, yielding 2.95 mm local web while preserving the original notch/sector phase; host acceptance is still pending.",
+      "No physical artifact or human participant was available during Invent, so print success, mechanical feel, durability, recognition, discovery, and delight are not claimed."
+    ]
+  }
+}

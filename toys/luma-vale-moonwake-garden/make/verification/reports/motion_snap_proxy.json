@@ -1,0 +1,19 @@
+{
+  "assembly": "snap_proxy.proxy.py",
+  "conditions": [
+    {
+      "id": "front-seats-over-compressed-heads-proxy",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "A compressed-head envelope must pass through the four derived snap holes along the reverse seating direction; force and elastic strain are outside this proxy.",
+      "inputs": {
+        "moving_part": "front_garden_mask",
+        "obstacle_parts": ["rear_chassis_compressed_heads_proxy"],
+        "translation": [0, 0, 6],
+        "steps": 16,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    }
+  ]
+}

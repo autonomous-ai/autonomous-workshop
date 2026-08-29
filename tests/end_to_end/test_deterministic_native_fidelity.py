@@ -605,6 +605,7 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
     def test_playtest_rejects_stale_missing_mismatched_and_tampered_evidence(self):
         scenarios = (
             "playtest-stale-made",
+            "playtest-conflicting-binding",
             "playtest-missing-evidence",
             "playtest-mismatched-verdict",
             "playtest-over-budget",
@@ -623,6 +624,53 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
                 self.assertEqual(checkpoint.stage, "playtest")
                 self.assertNotIn("release", checkpoint.stage_artifacts)
                 self.assertEqual(transport.calls, [])
+
+    def test_quest_accepts_rich_playtest_configs_bound_to_current_made(self):
+        product_id = "deterministic-playtest-rich-config"
+        transport = _DeterministicFactoryTransport(product_id)
+
+        receipt = self._run(product_id, transport, effort="quest")
+
+        self.assertEqual(receipt["status"], "complete")
+        checkpoint = AgentRun.open(
+            self._paths(product_id).workspace,
+            host_state_root=self._paths(product_id).host_state,
+        ).snapshot()
+        self.assertEqual((checkpoint.stage, checkpoint.status), ("release", "complete"))
+        self.assertIn("playtest", checkpoint.stage_artifacts)
+
+    def test_completed_resume_retries_failed_public_example_projection(self):
+        product_id = "deterministic-public-example-retry"
+        transport = _DeterministicFactoryTransport(product_id)
+        target = Path(__file__).resolve().parents[2] / (
+            "toys/alice-%s" % product_id
+        )
+
+        target.mkdir(parents=True)
+        (target / "collision.txt").write_text(
+            "pre-existing public example collision\n",
+            encoding="utf-8",
+        )
+        completed = self._run(product_id, transport, effort="forge")
+
+        self.assertEqual(completed["status"], "complete")
+        self.assertEqual(completed["publication"]["public_example"]["status"], "error")
+        self.assertTrue((target / "collision.txt").is_file())
+
+        shutil.rmtree(target)
+
+        reconciled = self._resume(product_id, transport)
+
+        self.assertEqual(reconciled["status"], "complete")
+        self.assertEqual(reconciled["action"], "reconciled-public-example")
+        self.assertEqual(
+            reconciled["publication"]["public_example"],
+            {
+                "status": "materialized",
+                "path": "toys/alice-%s" % product_id,
+            },
+        )
+        self.assertTrue(target.is_dir())
 
     def test_quest_rejection_invalidates_and_repairs_through_the_same_session(self):
         product_id = "deterministic-quest-repair"

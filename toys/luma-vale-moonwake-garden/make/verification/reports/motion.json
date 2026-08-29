@@ -1,0 +1,64 @@
+{
+  "assembly": "motion_proxy.proxy.py",
+  "conditions": [
+    {
+      "id": "rotor-full-turn-with-flexed-tooth-proxy",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "With only the elastic tooth suppressed, the rotor must sweep 360 degrees without striking the guide, spindle, or fixed front mask.",
+      "inputs": {
+        "moving_part": "sector_rotor:cassiopeia_pose",
+        "obstacle_parts": ["rear_chassis_flexed_tooth_proxy", "front_garden_mask"],
+        "axis_point": [0, 0, 2.1],
+        "axis_direction": [0, 0, 1],
+        "start_deg": 0,
+        "end_deg": 360,
+        "steps": 37,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "rotor-loads-over-spindle",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Before the front is installed, the home-indexed rotor must lift clear along the spindle axis in reverse assembly order.",
+      "inputs": {
+        "moving_part": "sector_rotor:cassiopeia_pose",
+        "obstacle_parts": ["rear_chassis_flexed_tooth_proxy"],
+        "translation": [0, 0, 6],
+        "steps": 16,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "rotor-captured-by-front",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "With the front installed, axial withdrawal of the rotor must be blocked by the front baffle.",
+      "inputs": {
+        "moving_part": "sector_rotor:cassiopeia_pose",
+        "obstacle_parts": ["front_garden_mask"],
+        "translation": [0, 0, 3],
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "front-retained-by-expanded-snap-heads",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Without elastic head compression, direct axial withdrawal of the seated front must be blocked by the four expanded snap heads.",
+      "inputs": {
+        "moving_part": "front_garden_mask",
+        "obstacle_parts": ["rear_chassis_flexed_tooth_proxy"],
+        "translation": [0, 0, 6],
+        "steps": 16,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    }
+  ]
+}

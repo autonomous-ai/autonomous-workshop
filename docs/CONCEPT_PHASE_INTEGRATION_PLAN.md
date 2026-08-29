@@ -32,7 +32,7 @@ current main
     |
     +-- QA-1: deterministic E2E fidelity (required CI)
     |
-    +-- QA-2: real-Codex mock-session acceptance (scheduled/manual)
+    +-- QA-2: real-Codex mock-session acceptance (operator-run)
     |
     `-- incremental production changes
             +-- runtime fixes
@@ -98,8 +98,9 @@ persistent Codex session can:
   activity.
 
 This test belongs in `main`, but it is not a required check for every pull
-request. Run it manually before high-risk workflow merges and on a scheduled
-credentialed runner. Ordinary CI must remain offline and deterministic.
+request. Run it manually before high-risk workflow merges and, when desired,
+from operator-managed scheduling outside repository automation. Ordinary CI
+must remain offline and deterministic.
 
 ## Phase 2: Integrate independent fixes
 

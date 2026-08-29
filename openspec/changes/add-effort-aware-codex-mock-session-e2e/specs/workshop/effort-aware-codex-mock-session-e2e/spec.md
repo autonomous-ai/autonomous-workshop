@@ -107,15 +107,15 @@ The mock-session E2E MUST NOT call a live Factory, provider, publication, manufa
 - **THEN** the run stops before the request and reports the destination class without exposing credentials
 
 ### Requirement: Execution is opt-in, bounded, diagnostic, and non-required
-The repository SHALL provide a documented local command with preflight checks, explicit effort selection, isolated private state, per-turn and whole-run budgets, safe owned-process termination, redacted retained failure diagnostics, and a concise stage report. The live scenario SHALL remain excluded from ordinary credential-free CI. Manual and scheduled credentialed execution SHALL cover Spark, Forge, and Quest, while offline harness and policy tests remain eligible for ordinary CI.
+The repository SHALL provide a documented local command with preflight checks, explicit effort selection, isolated private state, per-turn and whole-run budgets, safe owned-process termination, redacted retained failure diagnostics, and a concise stage report. The live scenario SHALL remain excluded from ordinary credential-free CI and repository automation. Operator-run credentialed execution SHALL support Spark, Forge, and Quest, while offline harness and policy tests remain eligible for ordinary CI.
 
 #### Scenario: Local route succeeds
 - **WHEN** an authenticated contributor explicitly runs one effort route within its budgets
 - **THEN** the report includes the frozen effort, Codex model and reasoning effort, stage trace and durations, one start plus expected resumes, context-proof count, terminal checkpoint, publication result, and total elapsed time
 
-#### Scenario: Scheduled route matrix runs
-- **WHEN** the credentialed scheduled workflow is enabled
-- **THEN** it executes independently reported Spark, Forge, and Quest scenarios without making the live tier a required pull-request check
+#### Scenario: Operator runs the route matrix
+- **WHEN** an operator invokes the credentialed command independently for Spark, Forge, and Quest
+- **THEN** it produces independently reported scenarios without adding repository automation or making the live tier a required pull-request check
 
 #### Scenario: Prerequisite is unavailable
 - **WHEN** Codex is missing, unsupported, or unauthenticated, or the loopback fixture cannot start

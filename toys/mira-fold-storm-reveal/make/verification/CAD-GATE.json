@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "status": "passed",
+  "product_id": "wish-20260829-021101-4b47cae5",
+  "round": 1,
+  "cad_project_path": "cad_project",
+  "assembly": {
+    "step_path": "assembled.step",
+    "step_sha256": "2cb2c5f02ec499a421bd7c97028c6dabed40b9e46d663dbd45a851c7df7c2a6a",
+    "stl_path": "assembled.stl",
+    "stl_sha256": "38d9ff1110a47083584f00eb7eb794e74f6a49ea778f357d988f7ad194b936c0",
+    "stl_mesh_report": "cad_project/measure/assembled-mesh.md",
+    "stl_mesh_report_sha256": "ba9ee10bca800a0887b911d7ac316199a63bb9345935e6ba21126e23d9133485",
+    "bounds_mm": [86.983016, 64.999673, 12.8],
+    "occurrence_count": 5,
+    "leaf_occurrence_count": 3,
+    "shape_count": 3,
+    "labels": ["sleepy_cloud", "rainbow_drive", "lightning_guide"]
+  },
+  "print_targets": [
+    {
+      "part": "sleepy_cloud",
+      "step_path": "cad_project/part_cloud.step",
+      "stl_path": "cad_project/part_cloud.stl",
+      "footprint_mm": [87.0, 65.0],
+      "height_mm": 6.0,
+      "solid_count": 1,
+      "mesh_status": "passed",
+      "thickness_status": "passed",
+      "thickness_report": "cad_project/measure/thickness-cloud.md"
+    },
+    {
+      "part": "lightning_guide",
+      "step_path": "cad_project/part_lightning.step",
+      "stl_path": "cad_project/part_lightning.stl",
+      "footprint_mm": [46.6, 20.0],
+      "height_mm": 6.8,
+      "solid_count": 1,
+      "mesh_status": "passed",
+      "thickness_status": "passed",
+      "thickness_report": "cad_project/measure/thickness-lightning.md"
+    },
+    {
+      "part": "rainbow_drive",
+      "step_path": "cad_project/part_rainbow.step",
+      "stl_path": "cad_project/part_rainbow.stl",
+      "footprint_mm": [18.0, 49.0],
+      "height_mm": 11.0,
+      "solid_count": 1,
+      "mesh_status": "passed",
+      "thickness_status": "passed",
+      "thickness_report": "cad_project/measure/thickness-rainbow.md"
+    }
+  ],
+  "final_pipeline": {
+    "status": "passed",
+    "print_ready_claim": true,
+    "report_path": "cad_project/measure/verification-host-equivalent.md",
+    "report_sha256": "823dda615b7a5a27c538db0f9c10b63c8b029bbcb34882cefec36bf7bf977810",
+    "bed_mm": [220, 220, 220],
+    "nozzle_mm": 0.4,
+    "layout": "passed",
+    "generation": "passed",
+    "fit": "passed",
+    "local_fit_audit": "passed",
+    "motion": "passed",
+    "kernel_validation": "passed",
+    "assembly_interference": "passed",
+    "mesh": "passed",
+    "wall_thickness": "passed"
+  },
+  "motion": {
+    "manifest_path": "cad_project/measure/motion.json",
+    "manifest_sha256": "deb185128e3f16fa7b6d5161ec4ef1cdc878b0ee34c2164d4e0e2886f491978a",
+    "conditions": 6,
+    "clear_sweeps": 4,
+    "blocked_overtravel_stops": 2,
+    "status": "passed"
+  },
+  "thickness_reports": {
+    "cloud_sha256": "8b3e9e2ca101b465d95dde1e87582e73c5be4b88e223a31a820688527ea12f2f",
+    "lightning_sha256": "569ea75a1f259ead3dd136162141d7c2bcaa137a21e404cebc420274e50f955e",
+    "rainbow_sha256": "c3fb848763a32d177ffa224503ffd68e8bb0a97b6406757c82a2de755c0d77ed"
+  },
+  "render_review": {
+    "closed_silhouette": "passed after repair",
+    "source_step_iou": {
+      "front": 1.0,
+      "right": 1.0,
+      "top": 1.0
+    },
+    "record_path": "cad_project/measure/visual-review.md"
+  },
+  "manufacturing": {
+    "printed_part_count": 3,
+    "supports_required": false,
+    "hardware_required": false,
+    "glue_required": false,
+    "baseline_material": "rigid PLA or PETG"
+  },
+  "host_rejection_repairs": [
+    {
+      "rejection_sha256": "50793f7323fb2cb517aeb807ff0cfebae712fd96687a9ef3f1be35f66e79b6b6",
+      "failure_code": "verifier-nonzero",
+      "rejected_entry_set": ["assembled.step.py", "closed.step.py"],
+      "repaired_combined_entry_set": ["assembled.step.py"],
+      "removed_entry_sha256": "359a093b21cc08d7f361d848122384dca65714bd134a6930cebd8b10f8e118d2",
+      "verification_status": "passed"
+    },
+    {
+      "rejection_sha256": "dfa40734d06bd5bcbdae36d8a0609e4b6e9dce45bb0fde9b3e69a554c5a41670",
+      "failure_code": "declared-cad-output-changed",
+      "isolated_audit_failure": "ModuleNotFoundError: cadfits",
+      "vendored_cadfits_sha256": "f69cb9f34a6c78714827a7276e005dae0bf2f7a01dd30cbbce49541fb524f3fb",
+      "portable_fit_audit_sha256": "ada2c194f2e6a98a49c4c4d5780f4ce335340714b915c65d84c6ad7fa4fd778a",
+      "rejected_assembly_step_sha256": "20792bc0c257650988f18ad461b7761cb597ea8c992892336d3b237962c7c19f",
+      "pre_repair_fresh_step_sha256s": [
+        "20792bc0c257650988f18ad461b7761cb597ea8c992892336d3b237962c7c19f",
+        "9c535517e3d83661ad5e17fabb675e4a68b29147d818c11de3883013902c425e"
+      ],
+      "repaired_assembly_step_sha256": "2cb2c5f02ec499a421bd7c97028c6dabed40b9e46d663dbd45a851c7df7c2a6a",
+      "fresh_builds_compared": 2,
+      "declared_outputs_byte_stable": true,
+      "reproducibility_evidence": "cad_project/measure/reproducibility.md",
+      "reproducibility_evidence_sha256": "7d25f9e782e7eeba04caa2b69748eca9d349c89e86ec18b511012203ede0cb28",
+      "verification_mode": "fresh-exports-strict-fit-without-explicit-assembly",
+      "verification_status": "passed",
+      "verification_report": "cad_project/measure/verification-host-equivalent.md"
+    },
+    {
+      "rejection_sha256": "45887357248b2c13877263d64dfd6b1cb306bbcea3a64fc7ad409cf8921ccb55",
+      "failure_code": "declared-cad-output-changed",
+      "host_verifier_returncode": 0,
+      "diagnosis": "The three declared thickness reports stored artifacts/... invocation paths and were rewritten by the host's canonical project/... invocation despite identical geometry.",
+      "rejected_thickness_report_sha256s": {
+        "cloud": "73cb114808104bd2a3b6d9fd45af84cd9ba4db8f42ecd0af24695c2627305f45",
+        "lightning": "84aefd97bc8a87da8b6310fb8f7bad7368ad16e9a1ed4a73b316cfe0df794c7c",
+        "rainbow": "841adfcc719d7637eb297e634ed8f0a73e3f97595110e109947d8b598bee0538"
+      },
+      "repaired_thickness_report_sha256s": {
+        "cloud": "8b3e9e2ca101b465d95dde1e87582e73c5be4b88e223a31a820688527ea12f2f",
+        "lightning": "569ea75a1f259ead3dd136162141d7c2bcaa137a21e404cebc420274e50f955e",
+        "rainbow": "c3fb848763a32d177ffa224503ffd68e8bb0a97b6406757c82a2de755c0d77ed"
+      },
+      "host_layout": "temporary parent with CAD directory named project",
+      "generation_processes_compared": 5,
+      "python_hash_seeds_compared": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "geometry_outputs_byte_stable": true,
+      "declared_outputs_byte_stable": true,
+      "reproducibility_evidence": "cad_project/measure/reproducibility.md",
+      "reproducibility_evidence_sha256": "7d25f9e782e7eeba04caa2b69748eca9d349c89e86ec18b511012203ede0cb28",
+      "verification_mode": "fresh-exports-strict-fit-from-parent-targeting-project",
+      "verification_status": "passed",
+      "verification_report": "cad_project/measure/verification-host-equivalent.md"
+    },
+    {
+      "rejection_sha256": "379d74028fa4f964c4cd90e5ce03f2b0dc02ef66e2969eff66e7d2920ffac65a",
+      "failure_code": "declared-cad-output-changed",
+      "host_verifier_returncode": 0,
+      "diagnosis": "The rejected CAD project still declared the runtime-specific verification-pipeline.md and twelve __cadgen__ cache tombstones; a complete pre/post inventory found those volatile files beyond the previously compared stable output subset.",
+      "rejected_cad_project_path": "cad",
+      "repaired_cad_project_path": "cad_project",
+      "removed_volatile_declared_outputs": {
+        "pipeline_report": "measure/verification-pipeline.md",
+        "pipeline_report_sha256": "921b475a984101a13d4ae3d0020abfea4a391f36fe7cc13be07ebee1e4ef2d3c",
+        "cache_tombstone_count": 12,
+        "cache_tombstone_sha256": "ef4ac8a3c8e1a4f2b023ccc90ee53978a3a93e0bb8e14bfcbeb8126f8fbce074"
+      },
+      "complete_tree_inventory": {
+        "common_files": 32,
+        "changed_common_files": 1,
+        "only_rejected_files": 12,
+        "only_rebuilt_files": 48,
+        "noncache_only_rejected_files": 0,
+        "noncache_only_rebuilt_files": 0
+      },
+      "persistent_outputs_byte_stable": true,
+      "reproducibility_evidence": "cad_project/measure/reproducibility.md",
+      "reproducibility_evidence_sha256": "7d25f9e782e7eeba04caa2b69748eca9d349c89e86ec18b511012203ede0cb28",
+      "verification_mode": "fresh-exports-strict-fit-clean-declared-project",
+      "verification_status": "passed",
+      "verification_report": "cad_project/measure/verification-host-equivalent.md"
+    }
+  ],
+  "limitations": [
+    "The assembled STL is a three-shell review export; the three cad_project/part_*.stl files are the actual print targets.",
+    "No successful print, physical fit, retention, torque, durability, safety certification, or human response is claimed.",
+    "Printer-specific square-socket tuning may be needed after a physical fit coupon."
+  ]
+}
