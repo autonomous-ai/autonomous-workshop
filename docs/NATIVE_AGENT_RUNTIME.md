@@ -124,10 +124,12 @@ cannot prove quiescence for a process that deliberately escapes it. While
 retaining the same exclusive run lock, the host counts the
 failed attempt, preserves the unchanged stage packet, waits a bounded
 exponential delay with deterministic per-run jitter, and resumes that exact
-session for another turn. This continuation consumes the existing
-32-turn command budget; it does not
-create a separate retry budget. The delay is capped at 30 seconds and prevents
-a persistent provider outage from becoming a reconnect storm.
+session for another turn. Two consecutive recoverable turn failures stop the
+current command early with the same session checkpointed; an explicit
+`workshop resume` starts a fresh two-failure recovery window. Every such turn
+also consumes the existing 32-turn command budget. The delay is capped at 30
+seconds and prevents a persistent provider outage or repeated one-hour timeout
+from becoming an unattended reconnect storm.
 
 The private session checkpoint also binds the Codex CLI version and exact
 runtime-policy hash. A package manager may replace the installed CLI while a
@@ -350,8 +352,12 @@ the exact `workshop resume <wish-id>` command while preserving the checkpoint.
 An explicit resume starts a fresh three-turn unfinished-work window in that
 same root session. The independent 32-turn invocation budget still bounds all
 native turns, including gate repairs and provider-transport continuations.
-This continuation is not a lifecycle stage attempt. Missing session identity
-and either bound exhaustion still fail closed.
+This unfinished-work continuation is not a lifecycle stage attempt. Missing
+session identity and either bound exhaustion still fail closed.
+
+Provider timeouts and recognized transport interruptions also stop an
+invocation after two consecutive recoverable failures; an explicit resume
+starts a fresh two-failure window.
 
 For current Make and Playtest checkpoints, an otherwise bound proposal whose
 agent-authored contract or artifact tree cannot be safely reopened is not

@@ -18,8 +18,8 @@ from workshop.match.native import (
 )
 from workshop.product import ToyBlueprint
 from workshop.workflow.native_run import (
+    _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
     _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
-    _MAX_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
     _current_make_proposal_rejection,
     _materialized_release_contract,
@@ -939,6 +939,11 @@ class NativeHostTest(unittest.TestCase):
 
             workspace = home / "runs" / product_id / "workspace"
             self.assertTrue((workspace / "agent-outcome.json").is_file())
+            with mock.patch.dict(os.environ, environment, clear=True):
+                interrupted_status = native_run_status(product_id)
+            self.assertEqual(
+                interrupted_status["progress"]["activity"], "failed"
+            )
 
             resumed = _FakeLauncher()
             timing_events = []
@@ -1115,7 +1120,7 @@ class NativeHostTest(unittest.TestCase):
                 2 * _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
             )
 
-    def test_recoverable_interruptions_exhaust_existing_turn_budget(self):
+    def test_recoverable_interruptions_stop_early_and_remain_resumable(self):
         launcher = _AlwaysInterruptedLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -1131,7 +1136,8 @@ class NativeHostTest(unittest.TestCase):
             ), mock.patch(
                 "workshop.workflow.native_run.time.sleep"
             ) as backoff, self.assertRaisesRegex(
-                WorkshopError, "exhausted its bounded native-turn budget"
+                WorkshopError,
+                "did not complete for 2 consecutive recoverable turns",
             ):
                 start_native_run(
                     Wish.create(
@@ -1143,9 +1149,12 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(len(launcher.starts), 1)
             self.assertEqual(
                 len(launcher.starts) + len(launcher.resumes),
-                _MAX_NATIVE_TURNS,
+                _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
             )
-            self.assertEqual(backoff.call_count, _MAX_NATIVE_TURNS - 1)
+            self.assertEqual(
+                backoff.call_count,
+                _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS - 1,
+            )
             delays = [call.args[0] for call in backoff.call_args_list]
             self.assertTrue(
                 all(0 < delay <= _RECOVERABLE_BACKOFF_MAX_SECONDS for delay in delays)
@@ -1165,17 +1174,51 @@ class NativeHostTest(unittest.TestCase):
                 delays,
                 [
                     _recoverable_native_turn_backoff_seconds(checkpoint, turn)
-                    for turn in range(1, _MAX_NATIVE_TURNS)
+                    for turn in range(
+                        1, _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS
+                    )
                 ],
             )
             self.assertEqual(status["stage"], "match")
             self.assertEqual(status["status"], "active")
-            self.assertEqual(status["native_turns"], _MAX_NATIVE_TURNS)
+            self.assertEqual(
+                status["native_turns"],
+                _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
+            )
             self.assertEqual(
                 status["progress"]["stage_attempt"],
-                {"stage": "match", "number": _MAX_NATIVE_TURNS},
+                {
+                    "stage": "match",
+                    "number": _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
+                },
             )
             self.assertEqual(status["progress"]["activity"], "failed")
+
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.time.sleep"
+            ) as resumed_backoff, self.assertRaisesRegex(
+                WorkshopError,
+                "resumable with `workshop resume %s`" % product_id,
+            ):
+                resume_native_run(product_id)
+
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(
+                len(launcher.starts) + len(launcher.resumes),
+                2 * _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
+            )
+            self.assertEqual(
+                resumed_backoff.call_count,
+                _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS - 1,
+            )
 
     def test_nonrecoverable_checkpointed_failure_is_not_continued(self):
         launcher = _AlwaysInterruptedLauncher(recoverable=False)

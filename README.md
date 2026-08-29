@@ -231,6 +231,11 @@ without a proposal stop that command early with the exact session still
 resumable; this prevents one stuck Goal from silently consuming the shared
 32-turn command budget. An explicit `workshop resume` starts a fresh bounded
 continuation window without creating a second root session.
+A native timeout or recognized provider disconnect follows a separate, smaller
+window: two consecutive recoverable turn failures stop the command with the
+same session checkpointed. An explicit `workshop resume` starts a fresh
+two-failure window. This prevents one-hour native timeouts from silently
+rolling through the full 32-turn command budget.
 
 [![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
 

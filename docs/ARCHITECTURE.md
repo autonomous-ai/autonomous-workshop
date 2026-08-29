@@ -176,6 +176,13 @@ independent 32-turn invocation budget still applies across every continuation.
 No proposal, lifecycle attempt, or evidence is fabricated. An unbound session
 or exhausted budget still fails closed.
 
+A native timeout or explicitly recognized provider-transport interruption has
+a smaller automatic recovery window. Two consecutive recoverable turn failures
+stop the command with failed progress and the exact session checkpointed. An
+explicit `workshop resume` starts a fresh two-failure window. These turns still
+consume the shared 32-turn command budget; the smaller cap prevents repeated
+one-hour timeouts from becoming an unattended multi-hour retry chain.
+
 ## Trust boundary
 
 ### Native Codex owns

@@ -52,10 +52,13 @@ only after the launcher's dedicated POSIX process session is proven empty, and
 only when the exact session UUID is already durably checkpointed. It keeps the
 exclusive run lock, applies bounded deterministic-jitter backoff, resumes that
 same UUID against the unchanged stage subject, and charges the attempt to the
-existing bounded native-turn budget. An unbound interruption, unrecognized
-failed-turn event, unknown exit, unsafe termination, contract/gate failure, or
-authorization/effect failure remains terminal for that command. This recovery
-is transport control, not a Python reasoning or improvement loop.
+existing bounded native-turn budget. At most two consecutive recoverable turn
+failures continue automatically in one command; an explicit operator resume
+starts a fresh two-failure window against the same checkpoint. An unbound
+interruption, unrecognized failed-turn event, unknown exit, unsafe termination,
+contract/gate failure, or authorization/effect failure remains terminal for
+that command. This recovery is transport control, not a Python reasoning or
+improvement loop.
 
 The portable cleanup guarantee covers every process group inside the launcher's
 dedicated POSIX process session, including Codex's built-in code-mode helper.
