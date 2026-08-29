@@ -1,0 +1,23 @@
+{
+  "feedback": [
+    {
+      "code": "sealed-raised-plane-roof-collision",
+      "area": "assembly capture and motion path",
+      "severity": "block",
+      "finding": "The sealed assembly rotates both wing/gear roots to 0 degrees while raised at Z=5.7-8.7 mm, but fixed guards, entry lips, and moon-skin bridges begin at Z=8.0 mm. The sealed safety strategy places a moving edge at least 5 mm under an entry lip during the last 18 degrees. The resulting [8.0, 8.7] mm intersection is 0.7 mm of unavoidable solid overlap before the permitted drop at 0 degrees, so no truthful rigid-body assembly path can satisfy the sealed Invent.",
+      "change": "Revise Invent to seal a collision-free service-to-operating transition: either make the paired 1.2 mm descent before entering the final 18-degree fixed-roof coverage and complete closing seated, or raise/reconfigure every guard, lip, and bridge along the raised corridor to clear Z=8.7 mm with explicit tolerance. Restate the exact drop angle/path, transition geometry, clearances, and retention while preserving exactly three printable parts, positive geared symmetry, guarded seated motion, and tool-free assembly.",
+      "evidence_refs": [
+        "check_raised_plane.py",
+        "interval-check.json",
+        "raised-plane-conflict.md",
+        "sealed-z-stack.json"
+      ],
+      "invalidates": [
+        "invent",
+        "make",
+        "playtest",
+        "release"
+      ]
+    }
+  ]
+}

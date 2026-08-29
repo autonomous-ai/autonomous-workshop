@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "kind": "moon-moth-bloom.cad-verification",
+  "result": "pass",
+  "forge_print_ready": true,
+  "canonical_artifacts": {
+    "assembled.step": "be142d23ae216485b818b3db99b35c826ccab593541a65e5a32fee42b54f137f",
+    "assembled.stl": "aaf92e27de16d793350c7916406c6b4f88186a4e3968e91bbed049a3bc08b6a4"
+  },
+  "evidence": {
+    "final_pipeline": {
+      "path": "measure/verification-pipeline.md",
+      "sha256": "efcf0e36aed11a81db69e23bf4aef49dbaf115d5cb2880210caf727d2587a23e",
+      "result": "pass"
+    },
+    "project_fit_audit": {
+      "path": "measure/check_fit.py",
+      "sha256": "27026fd69f7b048227a19d8bec6de8401521d8c0aaac16a78c323348ea9b9b76",
+      "result": "pass",
+      "schema_version": 2,
+      "isolation": "stdlib-only; reads only files inside the CAD project",
+      "base_axis_spacing_mm": 18.0,
+      "base_pitch_diameter_mm": 18.0,
+      "journal_clearance_per_side_mm": 0.3,
+      "flange_lobe_clearance_per_side_mm": 0.2,
+      "post_throat_clearance_per_side_mm": 0.5,
+      "connector_count": 5,
+      "assembly_step_count": 5
+    },
+    "sealed_pose_audit": {
+      "path": "measure/design-audit.json",
+      "sha256": "f093bd6128d1e23528caf3fc1bad28e0b49503a68f5ef741889d0b6300170276",
+      "result": "pass",
+      "max_unintended_overlap_mm3": 0.0
+    },
+    "motion": {
+      "path": "measure/motion.json",
+      "sha256": "4f68848206fa2233b066c452d55433307b80180406fb47def62164a4f8a5fcac",
+      "result": "pass"
+    },
+    "thickness": {
+      "chassis_sha256": "56440333e8d5481ef9b283707bf48cb0a350502c4be41e842c54214d50a66d96",
+      "left_wing_sha256": "2076f63128710d78cbb2bedc25abbe2655205ae70b2e9fa6ddae2800e3ca1708",
+      "right_wing_sha256": "a37cb1c76515321ef9354556d4ee664a3d8f9bc9a1decafed94789c951e08a4c",
+      "minimum_wall_mm": 0.8,
+      "result": "pass"
+    },
+    "output_determinism": {
+      "path": "measure/determinism-audit.json",
+      "sha256": "50f547af3bf10d46ca92d5d9be0a8e22826b323902f2550eeb16c633d46853b1",
+      "result": "pass",
+      "python_hash_seeds": [1, 2, 731],
+      "all_declared_outputs_byte_identical": true,
+      "assembled_step_sha256": "be142d23ae216485b818b3db99b35c826ccab593541a65e5a32fee42b54f137f"
+    },
+    "hero": {
+      "path": "snap/iso.png",
+      "sha256": "6f77cf626782ae3c27de09033deb0471c7eb09f70e82ecd83c0c73c17860fa82",
+      "state": "seated_open_q82",
+      "width_px": 1024,
+      "height_px": 1024,
+      "mode": "RGB",
+      "geometry_validation": "pass",
+      "interference": "pass"
+    }
+  },
+  "host_rejection_repairs": [
+    {
+      "code": "sealed-raised-plane-roof-collision",
+      "addressed": true,
+      "proof": "Raised q=118,94,88,84,82 and backlash-edge q=78 samples have zero chassis overlap; the moving top is 8.7 mm below the 9.2 mm hood, both wings drop 1.2 mm at q=78, and every lower-roof capture sample occurs only in the seated 4.5-7.5 mm plane."
+    },
+    {
+      "code": "declared-cad-output-changed",
+      "host_gate_receipt_sha256": "5f0c5a73f8c11cdebab9156b684e5fac6602093cb2af04c4168f818275f3be80",
+      "rejection_sha256": "990a3dcbb8868d8d797e21c9f1be87a8701a24ef371c229f2ad4b011d247d4e4",
+      "addressed": true,
+      "proof": "A changed project-native measure/check_fit.py now executes inside final-fresh-exports-strict-fit and passes. It checks the exact three-part inventory, shared 18.0 mm gear base dimension, cadfits-derived journal/keyhole clearances, five stable connector IDs, two 0.5 mm roof gaps, and the ordered five-step service path; the complete isolated verifier then exited 0."
+    },
+    {
+      "code": "declared-cad-output-changed",
+      "host_gate_receipt_sha256": "d790c49fa50ae398c4d77ecaf1aa251c603c64aa1522910fa4ceb254a52b388e",
+      "rejection_sha256": "e1f62bd923bcf59c3dcdcf1aaec0794efe8e0888464d0e15d3d71734360005e8",
+      "prior_subject_sha256": "1aeed6757b02fac3a40099509356c3786cae2578fae2d45199c18db0fa85a128",
+      "addressed": true,
+      "proof": "The project fit audit no longer searches for .agents or imports cadfits at runtime. A project-only copy passed under an empty environment, and final-fresh-exports-strict-fit then executed the stdlib-only AST audit and completed all 18 pipeline commands with exit 0. The audit still requires canonical cadfits.slot_for calls in source and independently recomputes the resulting dimensions and clearance bands."
+    },
+    {
+      "code": "declared-cad-output-changed",
+      "host_gate_receipt_sha256": "599e34f86bd3fbdedeeb49fdcd191d2bc9895508b70ff70b56ef01f358d590b6",
+      "rejection_sha256": "cac3666cac7f8862c29583179252fda02dc93fc0af4ab5ab0df5460e55d75471",
+      "prior_subject_sha256": "c4fa7c8ac091645c4d0da1e3eaa7f1ebe6aacd1b40e89224f886c9c44ee067ca",
+      "addressed": true,
+      "proof": "The hash-seed-dependent child-color presentation records were removed at source. Clean builds under PYTHONHASHSEED 1, 2, and 731 produced byte-identical declared STEP, STL, and GLB outputs; cad inspect diff reports no topology, geometry, bounding-box, or kind change; and the seed-731 final-fresh-exports-strict-fit workflow exited 0."
+    }
+  ],
+  "checks": [
+    "layout",
+    "exact_three_part_fit",
+    "project_fit_base_dimensions",
+    "derived_mating_clearances",
+    "connector_naming",
+    "assembly_service_order",
+    "brep_validity",
+    "assembly_interference",
+    "motion_clear_and_capture_blocked",
+    "mesh_watertightness",
+    "positive_volume",
+    "bed_fit",
+    "wall_thickness",
+    "sealed_pose_and_backlash_sweep",
+    "three_seed_declared_output_determinism"
+  ],
+  "limitations": [
+    "No successful physical print is claimed.",
+    "Physical fit, force, friction, wear, cycle life, safety certification, and human response are unverified.",
+    "The step.parts gear search was inconclusive because the frozen sandbox could not resolve api.step.parts."
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "title": "Moon-Moth Bloom",
+  "summary": "A three-part hand-powered reveal toy whose paired geared wings bloom from a low moon-pebble chassis and uncover six star apertures.",
+  "schema_version": 1,
+  "part_count": 3,
+  "parts": [
+    "chassis",
+    "left wing/control",
+    "right wing"
+  ],
+  "normal_operation": "Rotate the left wing in the XY plane from 0 to 82 degrees; the equal complete gear pair counter-rotates the right wing.",
+  "service_sequence": "At 118 degrees load both keyholes over the chassis posts, keep both wings raised, cross 82 degrees beneath the 9.2 mm hood, lower both 1.2 mm at 78 degrees, then continue seated beneath the low capture buttons.",
+  "digital_envelope_mm": {
+    "closed": [54.0, 78.0, 10.8],
+    "open": [110.6516, 78.0, 10.8]
+  },
+  "fabrication_intent": "FDM, 0.4 mm nozzle, three separate flat bed poses, no purchased hardware.",
+  "playtest_status": "not-run",
+  "evidence_boundary": "CAD and mesh checks passed; successful printing, physical fit, force, friction, wear, cycle life, safety certification, and human response remain unverified."
+}

@@ -1,0 +1,302 @@
+{
+  "capture": {
+    "bore_diameter_mm": 5.6,
+    "captured_q41_lift_overlap_mm3": 3.11242,
+    "drop_q_deg": 78.0,
+    "flange_diameter_mm": 7.4,
+    "low_roof_clearance_mm": 0.5,
+    "post_diameter_mm": 5.0,
+    "raised_top_mm": 8.7,
+    "seated_top_mm": 7.5,
+    "service_hood_clearance_mm": 0.5,
+    "service_q_deg": 118.0
+  },
+  "envelopes": {
+    "closed_bounds_mm": [
+      -27.0,
+      -39.0,
+      0.0,
+      27.0,
+      39.0,
+      10.8
+    ],
+    "open_bounds_mm": [
+      -55.3258,
+      -39.0,
+      0.0,
+      55.3258,
+      39.0,
+      10.8
+    ]
+  },
+  "gear": {
+    "axis_spacing_mm": 18.0,
+    "module_mm": 1.0,
+    "pair_backlash_mm": 0.4,
+    "pitch_radius_mm": 9.0,
+    "sampled_phase_edges_deg": 1.27324,
+    "teeth_each": 18
+  },
+  "kind": "moon-moth-bloom.geometry-audit",
+  "limitations": [
+    "No successful print or physical fit is claimed.",
+    "CAD does not establish force, friction, wear, cycle life, or human response.",
+    "Backlash poses are rigid geometric phase samples, not measured tooth play."
+  ],
+  "max_unintended_overlap_mm3": 0.0,
+  "part_inventory": {
+    "chassis": {
+      "bounds_mm": [
+        -27.0,
+        -39.0,
+        0.0,
+        27.0,
+        39.0,
+        10.8
+      ],
+      "solid_count": 1
+    },
+    "left_wing_control": {
+      "bounds_mm": [
+        -12.5,
+        -9.0747,
+        0.0,
+        9.2,
+        46.5,
+        3.0
+      ],
+      "solid_count": 1
+    },
+    "right_wing": {
+      "bounds_mm": [
+        -9.0747,
+        -9.2,
+        0.0,
+        12.5,
+        46.5,
+        3.0
+      ],
+      "solid_count": 1
+    }
+  },
+  "passed": true,
+  "poses": [
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 118,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 118,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 94,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 94,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 88,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 88,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 84,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 84,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 82,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 82,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 78,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "raised_service",
+      "q_deg": 78,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 5.7
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 82,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 82,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 62,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 62,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 41,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 41,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 20,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 20,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 18,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 18,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": -1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 0,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    },
+    {
+      "backlash_edge_deg": 1.27324,
+      "chassis_left_overlap_mm3": 0.0,
+      "chassis_right_overlap_mm3": 0.0,
+      "mode": "seated_operating",
+      "q_deg": 0,
+      "wing_pair_overlap_mm3": 0.0,
+      "z_mm": 4.5
+    }
+  ],
+  "schema_version": 1
+}

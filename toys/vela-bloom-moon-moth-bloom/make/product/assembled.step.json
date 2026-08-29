@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "moon-moth-bloom.assembled-step-metadata",
+  "units": "mm",
+  "assembly_state": {
+    "mode": "seated_operating",
+    "q_deg": 41.0,
+    "wing_z_min": 4.5,
+    "wing_z_max": 7.5
+  },
+  "occurrences": [
+    "chassis",
+    "left_wing_control",
+    "right_wing"
+  ],
+  "source": "cad/moon_moth_bloom/moon_moth_bloom.step.py",
+  "source_sha256": "4459b808b95e96f472b9f8259318dfb4d9ca712aa7bd910258cea56322011566",
+  "shared_source": "cad/moon_moth_bloom/moon_moth_bloom_lib.py",
+  "shared_source_sha256": "dc447005e1bdfc009d61f100114d7f1362e4bb92d46a0a6869b23e3c9d782f9b",
+  "step_sha256": "be142d23ae216485b818b3db99b35c826ccab593541a65e5a32fee42b54f137f",
+  "stl_sha256": "aaf92e27de16d793350c7916406c6b4f88186a4e3968e91bbed049a3bc08b6a4"
+}
