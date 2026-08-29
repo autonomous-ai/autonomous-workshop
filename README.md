@@ -157,6 +157,12 @@ legible, collision-aware transformation with deliberate end states.
 Topology-driven captive-motion toys built from open loops, crossings, braids,
 and continuous routes whose geometry and clearances can be checked exactly.
 
+### Orin Shadow — make geometry tell a second story ([TASTE.md](inventors/orin-shadow/TASTE.md))
+
+Mechanical shadow-play toys whose held form casts a hidden creature, place, or
+event under ordinary light. Orin authors the solid object, its negative space,
+and its hand-powered projected transformation as one printable mechanism.
+
 ## Toys
 
 Toys that already left the Workshop. After Factory publication, a sanitized snapshot lands in [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.
