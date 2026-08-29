@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "artifact_path": "assembled.step",
+  "artifact_sha256": "827fa6d9a06bf48e4f2986ba0991313069c7d9e0aad2535e7175284466bf4cb2",
+  "display_mesh_path": "assembled.stl",
+  "display_mesh_sha256": "5b7165cb3272017b90d0e3d624b058e93f6ee04bd40925fc4b29fc0ffa6a6d0a",
+  "cad_project_path": "cad",
+  "generator_path": "cad/night_sky_weave.step.py",
+  "generator_sha256": "fa2713572ea0ddc856891506515f36dce26bc3cb801227b8ae1be217958ab4dc",
+  "shared_source_path": "cad/night_sky_weave_lib.py",
+  "shared_source_sha256": "01b84015a9f0591d0562cfcab6bc16b0c6791f7ab95fbb61e2e1b27ff888904b",
+  "measurements": {
+    "units": "mm",
+    "bounding_box": [98.5, 98.5, 5.6],
+    "tile_count": 9,
+    "solid_count": 9,
+    "tile_envelope": [31.5, 31.5, 5.6],
+    "minimum_tile_gap": 2.0,
+    "minimum_continuous_core": 3.2,
+    "edge_gate_width": 1.8
+  },
+  "final_pipeline": {
+    "status": "passed",
+    "print_ready_claim": true,
+    "command": "XDG_CACHE_HOME=$PWD/.cache CADGEN_WARM=0 $WORKSHOP_PYTHON .agents/skills/cad/scripts/verify_project _verification/make-r0001-7fbab280/project --fresh --exports --strict-fit --bed 220x220x220",
+    "report_path": "cad/measure/verification-pipeline.md",
+    "report_sha256": "11c8d87ed327034714dc46ee980d4dcbc1b1df9c5b2a5bd792aa4c949144f7b5",
+    "checks": {
+      "layout": "passed",
+      "bed_fit": "passed-strict-for-three-single-body-family-print-targets",
+      "project_spec": "passed",
+      "kernel_validation": "passed-for-assembly-and-three-family-entries",
+      "assembly_interference": "passed-zero-clashes",
+      "mesh": "passed-watertight-manifold-positive-volume-for-three-print-targets",
+      "wall_thickness": "passed-for-three-print-targets"
+    }
+  },
+  "print_targets": {
+    "cad/part_crescent.stl": 3,
+    "cad/part_comet.stl": 3,
+    "cad/part_star.stl": 3
+  },
+  "combined_entry_printable": false,
+  "thickness_evidence": [
+    {"path": "cad/measure/thickness-comet.md", "sha256": "76edc56181399d956fc95d70c549dc3148fc09b5a9eeffce49760be98e474508"},
+    {"path": "cad/measure/thickness-crescent.md", "sha256": "870aff44ec1ccc6332c2058e65edaa400eb27a03618f6c8344f8fab6c9882958"},
+    {"path": "cad/measure/thickness-star.md", "sha256": "f96b48f4eb89d5908baa8969447a33c9e82aed74fc37d54abd648358df3101bd"}
+  ],
+  "render": {
+    "path": "cad/snap/iso.png",
+    "sha256": "c55d2595eca67e4ee17b5dea098e98028695a8dccdb9582db7aa4469ed6ba4b0",
+    "width_px": 1200,
+    "height_px": 1200,
+    "mode": "RGB",
+    "inspected": true
+  },
+  "limitations": [
+    "Digital checks do not prove a successful physical print, durability, or tactile response.",
+    "The combined STEP and assembled STL are review/storage-layout evidence only and are not print targets; print three copies of each single-body family STL."
+  ]
+}
