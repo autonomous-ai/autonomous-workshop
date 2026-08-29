@@ -155,8 +155,11 @@ still fail closed. This includes a Make tree that changes between the run-local
 finalizer inventory and the host's independent readback; the stale proposal is
 rejected rather than weakening exact-tree verification. The Make finalizer
 removes empty directory-only build residue before inventory because it has no
-content-addressable bytes; non-empty and unsafe nodes remain exact and
-fail-closed.
+content-addressable bytes. It also removes safe regular `__cadgen__` runtime
+caches inside the declared CAD project: the independent `--fresh` verifier
+deletes and rebuilds them, so they are never stable product evidence. Exported
+CAD, source, measurements, renders, other non-empty nodes, and unsafe nodes
+remain exact and fail-closed.
 
 A normally completed native turn that has not written `agent-outcome.json` is
 unfinished work, not a failed gate. When the exact native session checkpoint is

@@ -722,6 +722,90 @@ def _prune_empty_directories(tree_root: Path, label: str) -> None:
                 )
 
 
+def _prune_derived_cad_caches(project_root: Path, label: str) -> None:
+    """Remove only cadgen's reproducible runtime cache before sealing Make.
+
+    ``verify_project --fresh`` deletes and rebuilds every ``__cadgen__`` tree.
+    Sealing one therefore guarantees a byte-drift rejection even when all
+    stable geometry passes. Stable exported STEP/STL/GLB and render files live
+    outside this cache and remain in the exact product manifest.
+    """
+
+    caches: list[Path] = []
+    for directory, dirnames, _ in os.walk(
+        str(project_root), topdown=True, followlinks=False
+    ):
+        base = Path(directory)
+        kept = []
+        for dirname in sorted(dirnames):
+            candidate = base / dirname
+            try:
+                identity = candidate.lstat()
+            except OSError as exc:
+                raise ProposalError(
+                    "%s changed while derived CAD caches were inspected" % label
+                ) from exc
+            if candidate.is_symlink() or not stat.S_ISDIR(identity.st_mode):
+                raise ProposalError(
+                    "%s contains a symlink or special directory" % label
+                )
+            if dirname.casefold() == "__cadgen__":
+                caches.append(candidate)
+            else:
+                kept.append(dirname)
+        dirnames[:] = kept
+
+    for cache in sorted(caches, key=lambda item: len(item.parts), reverse=True):
+        for directory, dirnames, filenames in os.walk(
+            str(cache), topdown=False, followlinks=False
+        ):
+            base = Path(directory)
+            for filename in filenames:
+                candidate = base / filename
+                try:
+                    identity = candidate.lstat()
+                except OSError as exc:
+                    raise ProposalError(
+                        "%s changed while a derived CAD cache was removed" % label
+                    ) from exc
+                if candidate.is_symlink() or not stat.S_ISREG(identity.st_mode):
+                    raise ProposalError(
+                        "%s derived CAD cache contains a linked or special file"
+                        % label
+                    )
+                try:
+                    candidate.unlink()
+                except OSError as exc:
+                    raise ProposalError(
+                        "%s derived CAD cache could not be removed" % label
+                    ) from exc
+            for dirname in dirnames:
+                candidate = base / dirname
+                try:
+                    identity = candidate.lstat()
+                except OSError as exc:
+                    raise ProposalError(
+                        "%s changed while a derived CAD cache was removed" % label
+                    ) from exc
+                if candidate.is_symlink() or not stat.S_ISDIR(identity.st_mode):
+                    raise ProposalError(
+                        "%s derived CAD cache contains a linked or special directory"
+                        % label
+                    )
+                try:
+                    candidate.rmdir()
+                except OSError as exc:
+                    raise ProposalError(
+                        "%s derived CAD cache could not be removed" % label
+                    ) from exc
+        try:
+            cache.rmdir()
+        except OSError as exc:
+            raise ProposalError(
+                "%s derived CAD cache could not be removed" % label
+            ) from exc
+
+
 def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict[str, Any]:
     tree_relative, tree_root = _existing_directory(
         run_root, tree_relative_value, label
@@ -1320,6 +1404,7 @@ def _make_contract(
         or not stat.S_ISDIR(project_identity.st_mode)
     ):
         raise ProposalError("CAD project path must be a real in-product directory")
+    _prune_derived_cad_caches(project, "Make CAD project")
     verification_relative = _safe_relative(
         cad_verification_path, "CAD verification path"
     )

@@ -22,6 +22,12 @@ fresh generations of the same geometry with the same toolchain produce the
 same bytes and hash. Record the actual build time in the Workshop run evidence
 or verification report, never by rewriting the generated STEP header.
 
+`__cadgen__` is a derived runtime cache, not a deliverable. Keep stable STEP,
+STL, GLB, render, source, and measurement files outside it. An Autonomous
+Workshop Make finalizer removes safe regular `__cadgen__` trees before sealing
+because the independent `--fresh` host gate intentionally deletes and rebuilds
+that cache; sealing it would make byte stability impossible.
+
 ## Quick iteration versus final generation
 
 Do not pay the full project pipeline after every cosmetic or proportion edit.

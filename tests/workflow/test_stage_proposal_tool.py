@@ -819,6 +819,75 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertTrue((self.run_root / "agent-outcome.json").is_file())
 
+    def test_make_prunes_derived_cad_cache_before_writing_a_proposal(self):
+        product_root, _, _, _ = self.create_product()
+        cache = product_root / "cad/project/__cadgen__/models/part.step.py"
+        cache.mkdir(parents=True)
+        (cache / "topology.glb").write_bytes(b"derived cache\n")
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+
+        self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+        )
+
+        self.assertFalse((product_root / "cad/project/__cadgen__").exists())
+        made, _ = self.assert_canonical_file(
+            "artifacts/make/r0001/made.json"
+        )
+        self.assertFalse(
+            any(
+                "__cadgen__" in entry["path"].split("/")
+                for entry in made["product_manifest"]["entries"]
+            )
+        )
+
+    def test_make_rejects_linked_derived_cad_cache(self):
+        product_root, _, _, _ = self.create_product()
+        outside = self.run_root / "outside-cache"
+        outside.mkdir()
+        (outside / "keep.txt").write_text("keep\n", encoding="utf-8")
+        (product_root / "cad/project/__cadgen__").symlink_to(
+            outside, target_is_directory=True
+        )
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+
+        rejected = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("symlink or special directory", rejected.stderr)
+        self.assertEqual((outside / "keep.txt").read_text(), "keep\n")
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_make_revision_seals_exact_contradiction_evidence_for_invent(self):
         evidence_root = self.run_root / "artifacts/make/r0001/revision-evidence"
         evidence_root.mkdir(parents=True)

@@ -96,6 +96,13 @@ outputs, and deterministic CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions.
 
+Keep stable exported STEP/STL/GLB files, product PNG renders, source, and
+measurements in the product tree. Do not preserve `__cadgen__` runtime caches,
+generation locks/progress files, `__pycache__`, or temporary work trees there:
+the host's `--fresh` verifier intentionally rebuilds those bytes. The Make
+finalizer removes safe regular `__cadgen__` cache trees before hashing and
+fails closed on linked or special cache nodes.
+
 The root `product.json` must be a JSON object containing at least these exact
 metadata keys (additional product-specific fields are allowed):
 

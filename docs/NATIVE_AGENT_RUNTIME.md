@@ -362,8 +362,13 @@ files or empty cache directories after the finalizer inventories the product
 tree but before the host performs its independent exact-tree readback. Before
 that inventory, the Make finalizer deterministically removes empty directories:
 they contain no bytes, cannot be represented by the content-addressed manifest,
-and are commonly left by CAD and Python caches. Symlinks, special nodes,
-excluded files, and every non-empty directory remain fail-closed.
+and are commonly left by CAD and Python caches. It also safely removes regular
+`__cadgen__` runtime-cache trees inside the declared CAD project because the
+independent `--fresh` verifier intentionally deletes and rebuilds them; sealing
+those cache, lock, progress, and temporary bytes would guarantee drift even
+when stable geometry reproduces. STEP/STL/GLB exports, source, measurements,
+product renders, symlinks, special nodes, excluded files, and every other
+non-empty directory remain exact and fail-closed.
 
 Host-selected product artifacts share the package contract's 95 MiB per-file
 limit while the durable run retains its 128 MiB cumulative referenced-artifact

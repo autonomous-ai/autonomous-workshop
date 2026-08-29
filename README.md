@@ -209,8 +209,10 @@ artifacts, and consumes the run's shared revision budget.
 If a Make or Playtest proposal cannot be safely reopened, Workshop quarantines
 its exact bytes and returns bounded, hash-bound repair feedback to that same
 stage instead of losing the run or weakening the gate.
-The Make finalizer also removes empty CAD/cache directories before sealing;
-non-empty files and directories remain exact manifest-bound product evidence.
+The Make finalizer removes empty directories and safe derived `__cadgen__`
+runtime caches before sealing. Stable CAD exports, source, measurements,
+renders, and every other non-empty file remain exact manifest-bound product
+evidence.
 If a native turn simply returns before writing a proposal, Workshop continues
 the same checkpointed Goal automatically within the shared 32-turn command
 budget, explicitly reminding the session that its finalizer has not run; it
