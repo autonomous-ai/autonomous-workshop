@@ -232,7 +232,14 @@ class NativeReleaseTest(unittest.TestCase):
             assignment_sha256=self.assignment.assignment_sha256,
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
-            concept={"title": "Moon Nook", "summary": "A tiny lunar observatory."},
+            concept={
+                "title": "Moon Nook",
+                "summary": "A tiny lunar observatory.",
+                "components": [
+                    {"name": "observatory shell"},
+                    {"name": "moon rover"},
+                ],
+            },
             research={
                 "sources": [{"url": "https://example.test/moon", "claim": "scale"}]
             },
@@ -1390,6 +1397,25 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(timing["elapsed_seconds"], 1)
         self.assertEqual(timing["completion_boundary"], "authenticated Factory public readback")
         readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn("## How this toy was created", readme)
+        self.assertIn(
+            "**This toy's input:** A tiny lunar observatory.",
+            readme,
+        )
+        self.assertIn(
+            "produced **Moon Nook** — A tiny lunar observatory.",
+            readme,
+        )
+        self.assertIn(
+            "**Concept parts:** observatory shell, moon rover.",
+            readme,
+        )
+        self.assertIn("1 STEP, 3 STL and 1 product render PNG", readme)
+        self.assertIn(
+            "verdict **pass** from 3 checks (agent-playtest, mechanical-check, printability-check)",
+            readme,
+        )
+        self.assertIn("[customer manual](release/MANUAL.md)", readme)
         self.assertIn("## Run cost", readme)
         self.assertIn("| Native Manager tokens | 125 (measured; 1/1 turns measured) |", readme)
         self.assertIn("| Wish to verified publication | 1s", readme)
@@ -1542,6 +1568,9 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(public_wish["objective"], self.wish["objective"])
         self.assertEqual(public_wish["constraints"], self.wish["constraints"])
         self.assertEqual(public_wish["context"], self.wish["context"])
+        disclosed_readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn(self.wish["objective"], disclosed_readme)
+        self.assertIn("The exact wording was explicitly disclosed", disclosed_readme)
 
         assignment_path = self.run_root / "artifacts/invent/assignment.json"
         assignment_path.write_bytes(b'{"schema_version":1,"schema_version":1}')
@@ -1634,6 +1663,14 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertTrue((target / "make/invented.json").is_file())
         readme = (target / "README.md").read_text(encoding="utf-8")
         self.assertIn("Invent was skipped", readme)
+        self.assertIn(
+            "Spark has no separate Invent Goal; selection and this compact concept were folded into Make.",
+            readme,
+        )
+        self.assertIn(
+            "[make/invented.json](make/invented.json)",
+            readme,
+        )
         self.assertIn("Spark: `Wish -> Make -> Release`", readme)
         self.assertIn("| Match | 1 | accepted (Eve) |", readme)
         self.assertIn("| Invent | skipped | Spark pass-through |", readme)

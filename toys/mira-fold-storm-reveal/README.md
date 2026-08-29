@@ -29,6 +29,15 @@ Spark: `Wish -> Make -> Release`. Inventor selection is folded into Make.
 
 Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no turn, artifact, or gate. Private host rejections and native session resumes are not public.
 
+## How this toy was created
+
+1. **Wish.** Input: a pocket-size three-piece sleepy-cloud puzzle whose quarter-turn reveals a rainbow-and-lightning scene and reverses to reset. Output: the immutable [sanitized Wish binding](wish/wish.json); its exact wording is withheld.
+2. **Invent.** Input: that Wish, the eligible Inventor roster, Taste, and blueprint. Output: Mira Fold was selected and defined *Storm Reveal*: a sleepy-cloud receiver, rainbow drive rotor, and lightning guide rotor coupled by a square drive and constrained to a 90-degree reveal. Spark folded this compact concept into Make; see [the concept](make/invented.json).
+3. **Make.** Input: the accepted concept and Mira Fold's bound craft context. Output: the sealed three-piece twist puzzle, with 4 STEP, 4 STL, 1 GLB, 10 legacy-layout Make evidence PNGs, exact [CAD source](make/source/), [models](make/models/), and [verification](make/verification/), all bound by [made.json](make/made.json). This older run predates the standardized product-render directory.
+4. **Playtest.** Input: the sealed Made product. Output: not run on the Spark route, recorded explicitly in [PLAYTEST-NOT-RUN.json](release/PLAYTEST-NOT-RUN.json).
+5. **Release.** Input: the sealed product plus the truthful Playtest omission. Output: the hash-bound package and printable [customer manual](release/MANUAL.pdf), bound by [release.json](release/release.json).
+6. **Publication.** Input: the exact Release package plus host-held Factory authorization. Output: the verified [Factory product](https://www.autonomous.ai/factory/product/storm-reveal) and sanitized [publication readback](publication/PUBLICATION.json).
+
 ## Run cost
 
 | Measure | Value |

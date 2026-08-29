@@ -36,6 +36,15 @@ Spark: `Wish -> Make -> Release`. Inventor selection is folded into Make.
 
 Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no turn, artifact, or gate. Private host rejections and native session resumes are not public.
 
+## How this toy was created
+
+1. **Wish.** Input: “I wish for a tiny one-piece crescent desk rocker that tips with a fingertip.” Output: the immutable, exact [Wish binding](wish/wish.json).
+2. **Invent.** Input: that Wish, the eligible Inventor roster, Taste, and blueprint. Output: Pico Press was selected and defined *Horn Tip*: one crescent rocker whose rounded horn accepts the press and whose outer curve lets gravity walk it back to rest. Spark folded this one-part compact concept into Make; see [the concept](make/invented.json).
+3. **Make.** Input: the accepted concept and Pico Press's bound craft context. Output: the sealed one-piece rocker, with 1 STEP, 2 STL, 1 GLB, no archived render PNG, exact [CAD source](make/source/), [models](make/models/), and [verification](make/verification/), all bound by [made.json](make/made.json). This historical run is exactly why current Make now requires and archives a standardized product render.
+4. **Playtest.** Input: the sealed Made product. Output: not run on the Spark route, recorded explicitly in [PLAYTEST-NOT-RUN.json](release/PLAYTEST-NOT-RUN.json).
+5. **Release.** Input: the sealed product plus the truthful Playtest omission. Output: the hash-bound package and printable [customer manual](release/MANUAL.pdf), bound by [release.json](release/release.json).
+6. **Publication.** Input: the exact Release package plus host-held Factory authorization. Output: the verified [Factory product](https://www.autonomous.ai/factory/product/horn-tip) and sanitized [publication readback](publication/PUBLICATION.json).
+
 ## Run cost
 
 | Measure | Value |

@@ -13,6 +13,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 import reportlab
+from PIL import Image, ImageDraw
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
@@ -583,6 +584,18 @@ class _OneSessionProductAgent:
             "def build():\n    return 'orbit-dog-draughts'\n",
             encoding="utf-8",
         )
+        render_path = product_root / "cad" / "project" / "snap" / "iso.png"
+        render_path.parent.mkdir(parents=True, exist_ok=True)
+        render = Image.new("RGB", (800, 800), (244, 238, 224))
+        drawing = ImageDraw.Draw(render)
+        for index in range(32):
+            inset = 80 + index * 6
+            drawing.ellipse(
+                (inset, inset, 800 - inset, 800 - inset),
+                outline=(40 + index * 3, 90 + index * 2, 170 - index * 2),
+                width=5,
+            )
+        render.save(render_path, format="PNG", optimize=False)
         _write_json(
             product_root / "validation" / "cad-verification.json",
             {
