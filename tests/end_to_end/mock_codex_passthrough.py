@@ -27,11 +27,13 @@ Those production bytes remain the only source of stage-specific schemas,
 commands, transitions, routing, and ownership rules.
 
 Do the smallest valid, clearly acceptance-labelled work that genuinely passes
-the unchanged production checks. Complete this fixed acceptance task in the
-root session only; do not create or invoke a child agent. Do not browse the web,
-contact a live or non-loopback service, request credentials, or perform broad
-exploration. "Minimal" may reduce optional depth; it may not use placeholder
-bytes, skip a required tool or check, or fabricate evidence.
+the unchanged production checks. Keep stage authority and final synthesis in
+the root session. Use a bounded native child agent only where the production
+instructions require an Inventor or independent review; do not delegate the
+whole stage or create child agents for optional exploration. Do not browse the
+web, contact a live or non-loopback service, request credentials, or perform
+broad exploration. "Minimal" may reduce optional depth; it may not use
+placeholder bytes, skip a required tool or check, or fabricate evidence.
 Keep agent artifacts free of credential-shaped field names or values. Express
 physical-production limits as plain descriptive prose instead of access,
 authorization, password, token, key, or bearer metadata.
@@ -56,8 +58,10 @@ contain exactly these fields:
 
 All paths are canonical and relative to the run root. Exclude this context
 record, STAGE.json, generated contracts, agent-outcome.json, verifier output,
-and host-owned files from outputs. Do not modify a listed output after hashing
-it. If a source repair changes bytes, refresh the record before retrying.
+and host-owned files from outputs. No outputs path may contain an evidence,
+configs, results, gates, or receipts directory; those are derived or finalizer
+files even when this turn wrote them. Do not modify a listed output after
+hashing it. If a source repair changes bytes, refresh the record before retrying.
 
 Context record path: {context_record_path}
 
@@ -72,11 +76,6 @@ TRACE_KIND = "autonomous-workshop.mock-session-turn"
 _PROHIBITED_ITEM_TYPES = frozenset(
     {
         "web_search",
-        "agent_tool_call",
-        "collab_tool_call",
-        "collaboration_tool_call",
-        "subagent_tool_call",
-        "subagent",
     }
 )
 _CREDENTIAL_NAMES = (
