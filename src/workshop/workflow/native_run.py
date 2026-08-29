@@ -212,6 +212,8 @@ _MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES = 256 * 1024
 _MAX_PLAYTEST_PROPOSAL_REJECTIONS = 32
 _MAX_LEGACY_CAD_GATE_EVIDENCE_BYTES = 3 * 1024 * 1024
 _MAX_NATIVE_TURNS = 32
+_MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS = 3
+_MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS = 2
 _RECOVERABLE_BACKOFF_BASE_SECONDS = 1.0
 _RECOVERABLE_BACKOFF_MAX_SECONDS = 30.0
 _RECOVERABLE_BACKOFF_JITTER_MIN = 0.75
@@ -4103,6 +4105,7 @@ def _launcher_call(
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
     unfinished_continuation: bool = False,
+    recoverable_continuation: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
@@ -4114,6 +4117,19 @@ def _launcher_call(
             "the same Goal from the exact current files and STAGE.json, run "
             "the required stage finalizer, and return only after it writes "
             "agent-outcome.json."
+        )
+    if recoverable_continuation:
+        prompt += (
+            "\n\nThe immediately previous native turn ended at the host's "
+            "timeout or provider-transport recovery boundary. Continue the "
+            "same active Goal from the exact existing files and STAGE.json; "
+            "do not restart broad exploration. Inspect and reuse completed "
+            "work before launching anything new. Keep the root Manager on "
+            "the critical path and do not make finalization depend on a "
+            "child agent. Run only the remaining essential deterministic "
+            "checks, repair concrete failures, invoke the current stage "
+            "finalizer as soon as its contract is satisfied, and return "
+            "after it writes agent-outcome.json."
         )
     arguments = {
         "product_id": checkpoint.product_id,
@@ -6076,6 +6092,9 @@ def _run_native_session(
     )
     action = "resumed" if first_method == "resume" else "started"
     unfinished_continuation = False
+    consecutive_unfinished_turns = 0
+    consecutive_recoverable_turns = 0
+    recoverable_continuation = False
     while turns < _MAX_NATIVE_TURNS:
         checkpoint = run.snapshot()
         if checkpoint.status in ("waiting", "failed", "complete"):
@@ -6116,6 +6135,9 @@ def _run_native_session(
                 raise
             else:
                 unfinished_continuation = False
+                consecutive_unfinished_turns = 0
+                consecutive_recoverable_turns = 0
+                recoverable_continuation = False
                 _rebind_existing_progress(
                     paths, checkpoint, updated, activity="completed"
                 )
@@ -6148,6 +6170,7 @@ def _run_native_session(
                     checkpoint=checkpoint,
                     paths=paths,
                     unfinished_continuation=unfinished_continuation,
+                    recoverable_continuation=recoverable_continuation,
                     activity_observer=turn_activity_observer,
                 )
         except WorkshopError as exc:
@@ -6160,6 +6183,13 @@ def _run_native_session(
             # status is treated as gate evidence.
             launcher_failure = exc
             progress.observe("failed")
+        except (KeyboardInterrupt, SystemExit):
+            # The launcher has already terminated and reaped its dedicated
+            # process session. Preserve truthful host telemetry before the
+            # operator interruption propagates; a later explicit resume owns
+            # any continuation.
+            progress.observe("failed")
+            raise
         else:
             progress.observe("finalizing")
         try:
@@ -6186,8 +6216,27 @@ def _run_native_session(
                 launcher_failure is None
                 and _session_status(paths, checkpoint.manager_id) == "checkpointed"
             ):
+                consecutive_recoverable_turns = 0
+                recoverable_continuation = False
+                consecutive_unfinished_turns += 1
+                if (
+                    consecutive_unfinished_turns
+                    >= _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS
+                ):
+                    progress.observe("failed")
+                    raise WorkshopError(
+                        "native %s session returned without agent-outcome.json "
+                        "for %d consecutive turns; the exact session remains "
+                        "checkpointed and resumable with `workshop resume %s`"
+                        % (
+                            manager_spec(checkpoint.manager_id).display_name,
+                            _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
+                            checkpoint.product_id,
+                        )
+                    )
                 unfinished_continuation = True
                 continue
+            consecutive_unfinished_turns = 0
             progress.observe("failed")
             if isinstance(launcher_failure, _RecoverableNativeTurn):
                 # A timeout or recognized provider disconnect is safe to
@@ -6197,6 +6246,24 @@ def _run_native_session(
                 # force.  An interruption before thread binding fails closed
                 # rather than creating a second root session automatically.
                 if _session_status(paths, checkpoint.manager_id) == "checkpointed":
+                    consecutive_recoverable_turns += 1
+                    if (
+                        consecutive_recoverable_turns
+                        >= _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS
+                    ):
+                        raise WorkshopError(
+                            "native %s session did not complete for %d "
+                            "consecutive recoverable turns; the exact session "
+                            "remains checkpointed and resumable with "
+                            "`workshop resume %s`"
+                            % (
+                                manager_spec(
+                                    checkpoint.manager_id
+                                ).display_name,
+                                _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
+                                checkpoint.product_id,
+                            )
+                        )
                     if turns < _MAX_NATIVE_TURNS:
                         time.sleep(
                             _recoverable_native_turn_backoff_seconds(
@@ -6204,6 +6271,7 @@ def _run_native_session(
                                 turns,
                             )
                         )
+                    recoverable_continuation = True
                     continue
             if launcher_failure is not None:
                 raise launcher_failure
@@ -6223,6 +6291,9 @@ def _run_native_session(
             progress.observe("failed")
             raise
         unfinished_continuation = False
+        consecutive_unfinished_turns = 0
+        consecutive_recoverable_turns = 0
+        recoverable_continuation = False
         progress.rebind(updated, activity="completed")
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action
@@ -6336,7 +6407,7 @@ def _native_receipt(
             "public readback. Credentials remain outside the native session."
         ),
     }
-    needs: list[str] = []
+    needs: list[str] = list(checkpoint.needs)
     rounds = _playtest_score_history(paths.host_state) if paths is not None else []
     if paths is not None:
         if checkpoint.stage == "release" and checkpoint.status == "waiting":
@@ -6524,6 +6595,72 @@ def _native_receipt(
     if session is not None:
         receipt["session"] = session.to_dict()
     return receipt
+
+
+def _prune_empty_make_product_directories(
+    run_root: Path, checkpoint: AgentRunCheckpoint
+) -> None:
+    """Remove only byte-free Make residue while no native session is running.
+
+    Older materialized finalizers require every empty directory to be removed
+    but may run in a sandbox that permits file unlink and denies directory
+    unlink.  The trusted host owns the run lock here, follows no links, and
+    never removes files or the product root itself.
+    """
+
+    if checkpoint.stage != "make" or checkpoint.round_index < 1:
+        return
+    root = Path(run_root)
+    product_root = (
+        root
+        / "artifacts"
+        / "make"
+        / ("r%04d" % checkpoint.round_index)
+        / "product"
+    )
+    try:
+        root_identity = root.lstat()
+        product_identity = product_root.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise StateConflict("Make product tree is unavailable for host cleanup") from exc
+    if (
+        not root.is_absolute()
+        or root.is_symlink()
+        or not stat.S_ISDIR(root_identity.st_mode)
+        or product_root.is_symlink()
+        or not stat.S_ISDIR(product_identity.st_mode)
+    ):
+        raise StateConflict("Make product tree is unsafe for host cleanup")
+    try:
+        if product_root.resolve(strict=True) != product_root:
+            raise StateConflict("Make product tree is unsafe for host cleanup")
+    except OSError as exc:
+        raise StateConflict("Make product tree is unavailable for host cleanup") from exc
+
+    for directory, _, _ in os.walk(
+        str(product_root), topdown=False, followlinks=False
+    ):
+        candidate = Path(directory)
+        if candidate == product_root:
+            continue
+        try:
+            identity = candidate.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            raise StateConflict(
+                "Make product tree changed during host cleanup"
+            ) from exc
+        if candidate.is_symlink() or not stat.S_ISDIR(identity.st_mode):
+            continue
+        try:
+            candidate.rmdir()
+        except OSError:
+            # Non-empty, protected, or concurrently changed directories stay
+            # untouched for the finalizer and exact-file gate to inspect.
+            continue
 
 
 def start_native_run(
@@ -6790,6 +6927,7 @@ def _resume_native_run_locked(
             paths=paths,
             action="inspected-terminal",
         )
+    _prune_empty_make_product_directories(paths.workspace, checkpoint)
     launcher = _native_launcher(checkpoint.manager_id)
     checkpoint, session, turns, action = _run_native_session(
         run,

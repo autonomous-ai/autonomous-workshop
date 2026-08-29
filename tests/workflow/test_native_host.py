@@ -23,7 +23,8 @@ from tests.invent.fake_gamevault import FakeGameVaultTransport, fake_client, ins
 from tests.invent.test_vault import write_vault
 from types import SimpleNamespace
 from workshop.workflow.native_run import (
-    _MAX_NATIVE_TURNS,
+    _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
+    _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
     _current_make_proposal_rejection,
     _materialized_release_contract,
@@ -36,6 +37,7 @@ from workshop.workflow.native_run import (
     _repair_base,
     _score_trend,
     _native_run_mutation_lock,
+    _prune_empty_make_product_directories,
     _recoverable_native_turn_backoff_seconds,
     canonical_wish_bytes,
     native_run_exists,
@@ -284,6 +286,19 @@ class _AlwaysInterruptedLauncher(_FakeLauncher):
         self._raise()
 
 
+class _AlwaysUnfinishedLauncher(_FakeLauncher):
+    """Return normally without proposing while preserving one session."""
+
+    def start(self, **arguments):
+        self.starts.append(dict(arguments))
+        self._checkpoint(arguments)
+        return _FakeOutcome(arguments)
+
+    def resume(self, **arguments):
+        self.resumes.append(dict(arguments))
+        return _FakeOutcome(arguments)
+
+
 class _UnboundRecoverableLauncher(_FakeLauncher):
     def start(self, **arguments):
         self.starts.append(dict(arguments))
@@ -437,6 +452,44 @@ class NativeHostTest(unittest.TestCase):
             StateConflict, "materialized stage finalizer"
         ):
             _materialized_release_contract(checkpoint)
+
+    def test_host_prunes_only_empty_make_directories_before_native_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            run_root = Path(temporary).resolve() / "run"
+            product = run_root / "artifacts/make/r0001/product"
+            empty_leaf = product / "cad/__cadgen__/empty-cache"
+            empty_leaf.mkdir(parents=True)
+            nonempty = product / "cad/project"
+            nonempty.mkdir()
+            source = nonempty / "toy.step.py"
+            source.write_text("pass\n", encoding="utf-8")
+            linked = product / "cad/linked-cache"
+            linked.symlink_to(nonempty, target_is_directory=True)
+            checkpoint = AgentRunCheckpoint(
+                product_id="host-empty-cleanup",
+                stage="make",
+                status="active",
+                revision=3,
+                round_index=1,
+                max_rounds=4,
+                wish_sha256="a" * 64,
+                run_root_sha256="b" * 64,
+                host_state_root_sha256="c" * 64,
+                checkpoint_sha256="d" * 64,
+                input_sha256s={},
+                inventor_roster=(),
+                stage_artifacts={},
+                invalidated_stages=(),
+            )
+
+            _prune_empty_make_product_directories(run_root, checkpoint)
+
+            self.assertTrue(product.is_dir())
+            self.assertFalse(empty_leaf.exists())
+            self.assertFalse((product / "cad/__cadgen__").exists())
+            self.assertTrue(nonempty.is_dir())
+            self.assertEqual(source.read_text(encoding="utf-8"), "pass\n")
+            self.assertTrue(linked.is_symlink())
 
     def test_second_mutating_host_fails_while_run_lock_is_held(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1240,6 +1293,11 @@ class NativeHostTest(unittest.TestCase):
 
             workspace = home / "runs" / product_id / "workspace"
             self.assertTrue((workspace / "agent-outcome.json").is_file())
+            with mock.patch.dict(os.environ, environment, clear=True):
+                interrupted_status = native_run_status(product_id)
+            self.assertEqual(
+                interrupted_status["progress"]["activity"], "failed"
+            )
 
             resumed = _FakeLauncher()
             timing_events = []
@@ -1323,6 +1381,18 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(receipt["native_turns"], 3)
             self.assertEqual(len(launcher.starts), 1)
             self.assertEqual(len(launcher.resumes), 2)
+            self.assertIn(
+                "previous native turn ended at the host's timeout",
+                launcher.resumes[0]["prompt"],
+            )
+            self.assertIn(
+                "do not make finalization depend on a child agent",
+                launcher.resumes[0]["prompt"],
+            )
+            self.assertNotIn(
+                "previous native turn ended at the host's timeout",
+                launcher.resumes[1]["prompt"],
+            )
             backoff.assert_called_once()
             self.assertTrue(
                 0
@@ -1347,7 +1417,80 @@ class NativeHostTest(unittest.TestCase):
                 )
             )
 
-    def test_recoverable_interruptions_exhaust_existing_turn_budget(self):
+    def test_normal_unfinished_turns_stop_early_and_remain_resumable(self):
+        launcher = _AlwaysUnfinishedLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "bounded-normal-unfinished-continuation"
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(
+                WorkshopError,
+                "returned without agent-outcome.json for 3 consecutive turns",
+            ):
+                start_native_run(
+                    Wish.create(
+                        product_id,
+                        "a toy whose Goal repeatedly returns before finalization",
+                    )
+                )
+
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(
+                len(launcher.starts) + len(launcher.resumes),
+                _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
+            )
+            self.assertIn(
+                "previous native turn returned without agent-outcome.json",
+                launcher.resumes[0]["prompt"],
+            )
+            self.assertNotIn(
+                "previous native turn ended at the host's timeout",
+                launcher.resumes[0]["prompt"],
+            )
+            with mock.patch.dict(os.environ, environment, clear=True):
+                status = native_run_status(product_id)
+            self.assertEqual(status["status"], "active")
+            self.assertEqual(status["session_status"], "checkpointed")
+            self.assertEqual(
+                status["native_turns"],
+                _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
+            )
+            self.assertEqual(status["progress"]["activity"], "failed")
+
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(
+                WorkshopError,
+                "resumable with `workshop resume %s`" % product_id,
+            ):
+                resume_native_run(product_id)
+
+            with mock.patch.dict(os.environ, environment, clear=True):
+                resumed_status = native_run_status(product_id)
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(len(launcher.resumes), 5)
+            self.assertEqual(resumed_status["status"], "active")
+            self.assertEqual(resumed_status["session_status"], "checkpointed")
+            self.assertEqual(
+                resumed_status["native_turns"],
+                2 * _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
+            )
+
+    def test_recoverable_interruptions_stop_early_and_remain_resumable(self):
         launcher = _AlwaysInterruptedLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -1363,7 +1506,8 @@ class NativeHostTest(unittest.TestCase):
             ), mock.patch(
                 "workshop.workflow.native_run.time.sleep"
             ) as backoff, self.assertRaisesRegex(
-                WorkshopError, "exhausted its bounded native-turn budget"
+                WorkshopError,
+                "did not complete for 2 consecutive recoverable turns",
             ):
                 start_native_run(
                     Wish.create(
@@ -1375,9 +1519,12 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(len(launcher.starts), 1)
             self.assertEqual(
                 len(launcher.starts) + len(launcher.resumes),
-                _MAX_NATIVE_TURNS,
+                _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
             )
-            self.assertEqual(backoff.call_count, _MAX_NATIVE_TURNS - 1)
+            self.assertEqual(
+                backoff.call_count,
+                _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS - 1,
+            )
             delays = [call.args[0] for call in backoff.call_args_list]
             self.assertTrue(
                 all(0 < delay <= _RECOVERABLE_BACKOFF_MAX_SECONDS for delay in delays)
@@ -1397,17 +1544,51 @@ class NativeHostTest(unittest.TestCase):
                 delays,
                 [
                     _recoverable_native_turn_backoff_seconds(checkpoint, turn)
-                    for turn in range(1, _MAX_NATIVE_TURNS)
+                    for turn in range(
+                        1, _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS
+                    )
                 ],
             )
             self.assertEqual(status["stage"], "match")
             self.assertEqual(status["status"], "active")
-            self.assertEqual(status["native_turns"], _MAX_NATIVE_TURNS)
+            self.assertEqual(
+                status["native_turns"],
+                _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
+            )
             self.assertEqual(
                 status["progress"]["stage_attempt"],
-                {"stage": "match", "number": _MAX_NATIVE_TURNS},
+                {
+                    "stage": "match",
+                    "number": _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
+                },
             )
             self.assertEqual(status["progress"]["activity"], "failed")
+
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.time.sleep"
+            ) as resumed_backoff, self.assertRaisesRegex(
+                WorkshopError,
+                "resumable with `workshop resume %s`" % product_id,
+            ):
+                resume_native_run(product_id)
+
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(
+                len(launcher.starts) + len(launcher.resumes),
+                2 * _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
+            )
+            self.assertEqual(
+                resumed_backoff.call_count,
+                _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS - 1,
+            )
 
     def test_nonrecoverable_checkpointed_failure_is_not_continued(self):
         launcher = _AlwaysInterruptedLauncher(recoverable=False)
@@ -1546,7 +1727,13 @@ class NativeHostTest(unittest.TestCase):
                 inspected_again = native_run_status(product_id)
 
             self.assertEqual(started["native_turns"], 1)
+            self.assertEqual(
+                started["needs"], ["fixture stops after one native turn"]
+            )
             self.assertEqual(inspected["native_turns"], 1)
+            self.assertEqual(
+                inspected["needs"], ["fixture stops after one native turn"]
+            )
             self.assertEqual(inspected["progress"]["status"], "available")
             self.assertEqual(
                 inspected["progress"]["stage_attempt"],
@@ -1559,7 +1746,14 @@ class NativeHostTest(unittest.TestCase):
                 r"Z$",
             )
             self.assertEqual(resumed["native_turns"], 2)
+            self.assertEqual(
+                resumed["needs"], ["fixture stops after one native turn"]
+            )
             self.assertEqual(inspected_again["native_turns"], 2)
+            self.assertEqual(
+                inspected_again["needs"],
+                ["fixture stops after one native turn"],
+            )
             self.assertEqual(
                 inspected_again["progress"]["stage_attempt"],
                 {"stage": "match", "number": 2},

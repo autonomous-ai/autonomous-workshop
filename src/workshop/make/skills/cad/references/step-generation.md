@@ -24,9 +24,11 @@ or verification report, never by rewriting the generated STEP header.
 
 `__cadgen__` is a derived runtime cache, not a deliverable. Keep stable STEP,
 STL, GLB, render, source, and measurement files outside it. An Autonomous
-Workshop Make finalizer removes safe regular `__cadgen__` trees before sealing
+Workshop Make finalizer removes safe regular `__cadgen__` files before sealing
 because the independent `--fresh` host gate intentionally deletes and rebuilds
-that cache; sealing it would make byte stability impossible.
+that cache; sealing it would make byte stability impossible. A sandbox-protected
+empty cache directory is harmless and may remain because Workshop inventories
+exact files rather than byte-free directory entries.
 
 ## Quick iteration versus final generation
 

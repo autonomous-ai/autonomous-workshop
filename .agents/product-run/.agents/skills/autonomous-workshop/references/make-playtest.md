@@ -75,6 +75,23 @@ Codex owns the build/check/inspect/repair loop. Python tools may generate CAD,
 measure exact geometry, or validate a contract; they do not plan repairs,
 score Taste, route agents, or control the loop.
 
+Keep Make finishable within the native turn boundary. The root Manager owns the
+critical path and must establish an actual conforming CAD baseline plus its
+deterministic verifier early. Delegate only concrete bounded mechanism, CAD, or
+review tasks; never delegate the whole build or wait indefinitely for a child
+before progressing. Once required checks and direct inspection pass, prioritize
+the finalizer over optional additional exploration. A recovery turn after a
+host timeout must inspect and reuse existing product bytes rather than restart
+the design or repeat completed subagent work.
+
+If a concrete operator or environment condition makes safe Make progress
+impossible, use the main skill's `need` finalizer for the current `make` stage
+and return control without claiming Goal completion. Use `waiting` for a
+resolvable condition and `failed` only when safe continuation is impossible.
+Do not use that path for ordinary CAD difficulty, a repairable verifier or
+finalizer error, or a sealed Invent contradiction eligible for the
+evidence-bound `make-revision` route below.
+
 ### Build one group at a time
 
 The sealed concept's `build_plan` orders its components into groups. Inside
@@ -145,8 +162,12 @@ Keep stable exported STEP/STL/GLB files, product PNG renders, source, and
 measurements in the product tree. Do not preserve `__cadgen__` runtime caches,
 generation locks/progress files, `__pycache__`, or temporary work trees there:
 the host's `--fresh` verifier intentionally rebuilds those bytes. The Make
-finalizer removes safe regular `__cadgen__` cache trees before hashing and
-fails closed on linked or special cache nodes.
+finalizer removes safe regular cache files before hashing and fails closed on
+linked, special, or unremovable cache content. If the sandbox protects a now
+empty cache directory from unlink, leave it in place: byte-free directories
+are ignored by both the finalizer and the host's exact-file gate. Frozen older
+finalizers may rely on the trusted host to prune that empty residue before a
+later resume; do not treat the directory itself as product evidence.
 
 Create and inspect an actual presentation render at
 `<cad-project>/snap/iso.png` before finalizing. Use the CAD skill's
@@ -212,8 +233,10 @@ cite a canonical configuration and static evidence file, and stay bound to the
 sealed Made artifact. Digital assessment never proves successful printing,
 physical fit, durability, or human play.
 
-Each canonical config is a strict JSON object with `schema_version: 1`, the
-exact `check_id`, and the current Made product-manifest hash under
+For every required check id `<check-id>`, write its canonical configuration to
+the exact path `<evidence_root>/configs/<check-id>.json`. Each canonical config
+is a strict JSON object with `schema_version: 1`, the exact `check_id`, and the
+current Made product-manifest hash under
 `product_artifact_sha256` (preferred) or the legacy `artifact_sha256` key. If
 both binding keys are present, they must agree. A config may preserve any
 additional finite JSON needed to reproduce or audit that check; when `seed` is

@@ -437,6 +437,13 @@ def author_make(root: Path, stage) -> None:
         b"ISO-10303-21;\nHEADER;ENDSEC;\nDATA;ENDSEC;\nEND-ISO-10303-21;\n"
     )
     (product_root / "assembled.stl").write_bytes(tetrahedron_stl())
+    render_path = project / "snap/iso.png"
+    render_path.parent.mkdir(parents=True, exist_ok=True)
+    render = Image.new("RGB", (900, 900), "#fff4df")
+    pen = ImageDraw.Draw(render)
+    pen.ellipse((150, 130, 750, 730), fill="#35aeb8")
+    pen.polygon(((450, 190), (730, 720), (180, 720)), fill="#ff9f43")
+    render.save(render_path, format="PNG")
     write_json(
         product_root / "assembled.step.json",
         {

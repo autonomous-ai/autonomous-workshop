@@ -89,6 +89,7 @@ MAX_FILE_BYTES = 95 * 1024 * 1024
 MAX_TREE_BYTES = 512 * 1024 * 1024
 MAX_TREE_ENTRIES = 4096
 MAX_INVENTORS = 256
+MAX_AGENT_NEED_CHARS = 1_024
 
 EXCLUDED_DIRS = frozenset(
     (
@@ -96,6 +97,7 @@ EXCLUDED_DIRS = frozenset(
         ".claude",
         ".idea",
         ".vscode",
+        "__cadgen__",
         "__macosx",
         "__pycache__",
         "inputs",
@@ -385,6 +387,17 @@ def _bounded_text(value: Any, label: str, maximum: int = 10_000) -> str:
         or any(ord(character) == 127 for character in value)
     ):
         raise ProposalError("%s must be bounded non-empty text" % label)
+    return value
+
+
+def _agent_need(value: Any, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or len(value) > MAX_AGENT_NEED_CHARS
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        raise ProposalError("%s must be bounded single-line text" % label)
     return value
 
 
@@ -834,16 +847,33 @@ def _prune_derived_cad_caches(project_root: Path, label: str) -> None:
                     )
                 try:
                     candidate.rmdir()
-                except OSError as exc:
-                    raise ProposalError(
-                        "%s derived CAD cache could not be removed" % label
-                    ) from exc
+                except OSError:
+                    try:
+                        current = candidate.lstat()
+                    except OSError as exc:
+                        raise ProposalError(
+                            "%s changed while a derived CAD cache was removed"
+                            % label
+                        ) from exc
+                    if candidate.is_symlink() or not stat.S_ISDIR(current.st_mode):
+                        raise ProposalError(
+                            "%s derived CAD cache contains a linked or special directory"
+                            % label
+                        )
         try:
             cache.rmdir()
-        except OSError as exc:
-            raise ProposalError(
-                "%s derived CAD cache could not be removed" % label
-            ) from exc
+        except OSError:
+            try:
+                current = cache.lstat()
+            except OSError as exc:
+                raise ProposalError(
+                    "%s changed while a derived CAD cache was removed" % label
+                ) from exc
+            if cache.is_symlink() or not stat.S_ISDIR(current.st_mode):
+                raise ProposalError(
+                    "%s derived CAD cache contains a linked or special directory"
+                    % label
+                )
 
 
 def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict[str, Any]:
@@ -866,8 +896,6 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
                 raise ProposalError("%s contains a symlink or special directory" % label)
             if _path_has_artifact_debris(relative):
                 raise ProposalError("%s contains editor, backup, or patch debris" % label)
-            if dirname.casefold() in EXCLUDED_DIRS or _path_is_excluded(relative):
-                raise ProposalError("%s contains a path excluded by manifest policy" % label)
             kept.append(dirname)
             actual_directories.add(relative.as_posix())
         dirnames[:] = kept
@@ -902,12 +930,10 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
         while parent.as_posix() != ".":
             declared_directories.add(parent.as_posix())
             parent = parent.parent
-    if actual_directories != declared_directories:
-        unexpected = sorted(actual_directories - declared_directories)
+    if not declared_directories <= actual_directories:
         missing = sorted(declared_directories - actual_directories)
         raise ProposalError(
-            "%s has empty, undeclared, or missing directories: actual-only=%s, "
-            "file-derived-only=%s" % (label, unexpected, missing)
+            "%s has missing file-derived directories: %s" % (label, missing)
         )
     total = sum(item["bytes"] for item in entries)
     if total > MAX_TREE_BYTES:
@@ -3313,6 +3339,42 @@ def _seal(
     }
 
 
+def _seal_need(
+    run_root: Path,
+    stage: Mapping[str, Any],
+    *,
+    status: str,
+    reason: str,
+) -> dict[str, Any]:
+    if status not in ("waiting", "failed"):
+        raise ProposalError("need status must be waiting or failed")
+    need = _agent_need(reason, "need reason")
+    outcome = {
+        "schema_version": 1,
+        "stage": stage["stage"],
+        "status": status,
+        "artifacts": [],
+        "needs": [need],
+        "proposed_transition": None,
+    }
+    proposal = {
+        "schema_version": 1,
+        "kind": OUTCOME_KIND,
+        "checkpoint_sha256": stage["checkpoint_sha256"],
+        "subject_sha256": stage["subject_sha256"],
+        "outcome": outcome,
+    }
+    proposal_bytes = canonical_json(proposal)
+    if len(proposal_bytes) > MAX_OUTCOME_BYTES:
+        raise ProposalError("agent outcome proposal exceeds its byte limit")
+    _atomic_write(run_root, "agent-outcome.json", proposal_bytes)
+    return {
+        "outcome_path": "agent-outcome.json",
+        "status": status,
+        "needs": 1,
+    }
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Seal one authored Workshop stage proposal without model calls."
@@ -3323,6 +3385,13 @@ def _parser() -> argparse.ArgumentParser:
         help="Canonical product-run workspace containing immutable STAGE.json.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    need = subparsers.add_parser(
+        "need", help="Seal one truthful waiting or failed stage need."
+    )
+    need.add_argument("--stage", required=True, choices=STAGES)
+    need.add_argument("--status", required=True, choices=("waiting", "failed"))
+    need.add_argument("--reason", required=True, help="One concrete single-line need.")
 
     match = subparsers.add_parser("match", help="Seal ranking and selected inventor.")
     match.add_argument("--source", required=True, help="Run-local Match authored JSON.")
@@ -3414,8 +3483,20 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             assignment_value=assignment,
             invented_value=invented,
         )
-    expected_stage = "make" if args.command == "make-revision" else args.command
+    if args.command == "need":
+        expected_stage = args.stage
+    elif args.command == "make-revision":
+        expected_stage = "make"
+    else:
+        expected_stage = args.command
     stage = _load_stage(run_root, expected_stage)
+    if args.command == "need":
+        return _seal_need(
+            run_root,
+            stage,
+            status=args.status,
+            reason=args.reason,
+        )
     additional_contracts: list[tuple[str, Mapping[str, Any]]] = []
     additional_files: list[tuple[str, bytes]] = []
     contract_path_value = None

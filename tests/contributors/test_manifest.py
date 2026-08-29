@@ -53,6 +53,7 @@ class RegistryTest(unittest.TestCase):
                 "leo",
                 "luma-vale",
                 "mira-fold",
+                "orin-shadow",
                 "pico-press",
                 "sonora-reed",
                 "tess-loop",

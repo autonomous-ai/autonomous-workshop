@@ -157,6 +157,12 @@ legible, collision-aware transformation with deliberate end states.
 Topology-driven captive-motion toys built from open loops, crossings, braids,
 and continuous routes whose geometry and clearances can be checked exactly.
 
+### Orin Shadow — make geometry tell a second story ([TASTE.md](inventors/orin-shadow/TASTE.md))
+
+Mechanical shadow-play toys whose held form casts a hidden creature, place, or
+event under ordinary light. Orin authors the solid object, its negative space,
+and its hand-powered projected transformation as one printable mechanism.
+
 ## Toys
 
 Toys that already left the Workshop. After Factory publication, a sanitized snapshot lands in [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.
@@ -210,18 +216,41 @@ artifacts, and consumes the run's shared revision budget.
 If a Make or Playtest proposal cannot be safely reopened, Workshop quarantines
 its exact bytes and returns bounded, hash-bound repair feedback to that same
 stage instead of losing the run or weakening the gate.
-The Make finalizer removes empty directories and safe derived `__cadgen__`
-runtime caches before sealing. Stable CAD exports, source, measurements,
-renders, and every other non-empty file remain exact manifest-bound product
-evidence.
+The Make finalizer removes safe derived `__cadgen__` cache files and prunes
+empty directories when its sandbox permits. Byte-free directories that the
+sandbox protects from unlink are ignored by both finalizer and host inventory;
+every file, symlink, special node, stable CAD export, source, measurement, and
+render remains exact and fail-closed. Before resuming a frozen Make protocol
+that still requires directory deletion, the trusted host also prunes only
+empty product directories while holding the run lock; it never removes files
+or follows links.
 For new runs it also requires an inspected chromatic product render at
 `<cad-project>/snap/iso.png`. The public toy README may use only this explicit
 presentation-render family as its local hero; arbitrary diagnostic images and
 black/white likeness masks are never promoted.
 If a native turn simply returns before writing a proposal, Workshop continues
-the same checkpointed Goal automatically within the shared 32-turn command
-budget, explicitly reminding the session that its finalizer has not run; it
-does not create a stage attempt or require an operator resume.
+the same checkpointed Goal automatically, explicitly reminding the session
+that its finalizer has not run. Three consecutive normally returned turns
+without a proposal stop that command early with the exact session still
+resumable; this prevents one stuck Goal from silently consuming the shared
+32-turn command budget. An explicit `workshop resume` starts a fresh bounded
+continuation window without creating a second root session.
+A native timeout or recognized provider disconnect follows a separate, smaller
+window: two consecutive recoverable turn failures stop the command with the
+same session checkpointed. An explicit `workshop resume` starts a fresh
+two-failure window. This prevents one-hour native timeouts from silently
+rolling through the full 32-turn command budget.
+The one automatic recovery turn also receives a fixed critical-path reminder:
+reuse existing bytes, avoid restarting exploration, do not make finalization
+depend on a child agent, and prioritize remaining deterministic checks plus the
+stage finalizer.
+When a concrete operator or environment condition truly blocks a stage, the
+same run-local finalizer can write one checkpoint-bound `waiting` or `failed`
+need with no artifact or transition. The host stops immediately and preserves
+that reason in its private checkpoint; both the immediate command receipt and
+later `workshop status` calls print it as `Need:`. Chat prose is never treated
+as a durable need, and agents are explicitly forbidden from using this path
+for ordinary unfinished or repairable work.
 
 [![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
 

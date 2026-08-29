@@ -448,6 +448,247 @@ def _workflow_overview_markdown(staging: Path) -> str:
     )
 
 
+def _markdown_text(value: Any, fallback: str = "unavailable") -> str:
+    """Render one public contract value as inert, single-paragraph Markdown."""
+
+    if not isinstance(value, str) or not value.strip():
+        return fallback
+    text = " ".join(value.split())
+    for source, replacement in (
+        ("\\", "\\\\"),
+        ("`", "\\`"),
+        ("*", "\\*"),
+        ("_", "\\_"),
+        ("[", "\\["),
+        ("]", "\\]"),
+        ("<", "&lt;"),
+        (">", "&gt;"),
+    ):
+        text = text.replace(source, replacement)
+    return text
+
+
+def _concept_component_names(concept: Mapping[str, Any]) -> tuple[str, ...]:
+    components = concept.get("components")
+    if isinstance(components, Mapping):
+        return tuple(
+            _markdown_text(name)
+            for name in components
+            if isinstance(name, str) and name.strip()
+        )
+    if not isinstance(components, list):
+        return ()
+    names = []
+    for component in components:
+        if isinstance(component, str) and component.strip():
+            names.append(_markdown_text(component))
+            continue
+        if not isinstance(component, Mapping):
+            continue
+        name = next(
+            (
+                component.get(key)
+                for key in ("name", "id", "key")
+                if isinstance(component.get(key), str)
+                and component.get(key).strip()
+            ),
+            None,
+        )
+        if name is not None:
+            names.append(_markdown_text(name))
+    return tuple(names)
+
+
+def _suffix_count(root: Path, suffix: str) -> int:
+    if not root.is_dir() or root.is_symlink():
+        return 0
+    return sum(
+        1
+        for path in root.rglob("*")
+        if path.is_file() and not path.is_symlink() and path.suffix.lower() == suffix
+    )
+
+
+def _creation_story_markdown(staging: Path) -> str:
+    """Explain the exact public input and output of every lifecycle boundary."""
+
+    wish = _read_json_object(staging / "wish" / "wish.json") or {}
+    assignment = _read_json_object(staging / "match" / "assignment.json") or {}
+    explicit_invent = (staging / "invent").is_dir()
+    invented_relative = (
+        "invent/invented.json" if explicit_invent else "make/invented.json"
+    )
+    invented = _read_json_object(staging / invented_relative) or {}
+    concept_value = invented.get("concept")
+    concept = concept_value if isinstance(concept_value, Mapping) else {}
+    product = _read_json_object(staging / "make" / "product.json") or {}
+    playtested = _read_json_object(staging / "playtest" / "playtested.json")
+    release = _read_json_object(staging / "release" / "release.json") or {}
+    publication = _read_json_object(
+        staging / "publication" / "PUBLICATION.json"
+    ) or {}
+
+    objective = wish.get("objective")
+    exact_wish = isinstance(objective, str) and bool(objective.strip())
+    if exact_wish:
+        wish_text = _markdown_text(objective)
+        wish_note = (
+            "The exact wording was explicitly disclosed in "
+            "[the Wish binding](wish/wish.json)."
+        )
+    else:
+        wish_text = _markdown_text(wish.get("public_summary"))
+        wish_note = (
+            "The exact wording is withheld; this is the sanitized public summary "
+            "in [the Wish binding](wish/wish.json)."
+        )
+
+    inventor_id = assignment.get("selected_inventor_id")
+    inventor = _display_inventor_id(inventor_id) or "unavailable"
+    concept_title = _markdown_text(
+        concept.get("title"), _markdown_text(product.get("title"))
+    )
+    concept_summary = _markdown_text(
+        concept.get("summary"), _markdown_text(product.get("summary"))
+    )
+    component_names = _concept_component_names(concept)
+    component_text = (
+        " **Concept parts:** %s." % ", ".join(component_names)
+        if component_names
+        else ""
+    )
+    invent_mode = (
+        "Invent was a separate native Goal."
+        if explicit_invent
+        else (
+            "Spark has no separate Invent Goal; selection and this compact "
+            "concept were folded into Make."
+        )
+    )
+
+    models_root = staging / "make" / "models"
+    model_counts = [
+        "%s %s" % (count, label)
+        for count, label in (
+            (_suffix_count(models_root, ".step"), "STEP"),
+            (_suffix_count(models_root, ".stl"), "STL"),
+            (_suffix_count(models_root, ".glb"), "GLB"),
+        )
+        if count
+    ]
+    model_text = (
+        ", ".join(model_counts) if model_counts else "no model counts available"
+    )
+    render_count = _suffix_count(
+        staging / "make" / "verification" / "renders", ".png"
+    )
+    if render_count:
+        render_text = "%d product render PNG%s" % (
+            render_count,
+            "" if render_count == 1 else "s",
+        )
+    else:
+        legacy_render_count = _suffix_count(staging / "make", ".png")
+        render_text = (
+            "%d Make evidence PNG%s in a legacy layout "
+            "(no standardized product-render directory)"
+            % (legacy_render_count, "" if legacy_render_count == 1 else "s")
+            if legacy_render_count
+            else "no archived Make render PNG"
+        )
+    make_summary = _markdown_text(product.get("summary"), concept_summary)
+
+    if playtested is None:
+        playtest_output = (
+            "not run on this effort route; Release preserves the explicit "
+            "[omission record](release/PLAYTEST-NOT-RUN.json)"
+        )
+    else:
+        checks = playtested.get("checks")
+        check_ids = []
+        if isinstance(checks, list):
+            check_ids = [
+                _markdown_text(check.get("check_id"))
+                for check in checks
+                if isinstance(check, Mapping)
+                and isinstance(check.get("check_id"), str)
+                and check.get("check_id").strip()
+            ]
+        playtest_output = "verdict **%s**" % _markdown_text(
+            playtested.get("verdict")
+        )
+        if check_ids:
+            playtest_output += " from %d checks (%s)" % (
+                len(check_ids),
+                ", ".join(check_ids),
+            )
+        playtest_output += (
+            "; see [the sealed Playtest result](playtest/playtested.json)"
+        )
+
+    manual_path = release.get("manual_path")
+    if not isinstance(manual_path, str) or not manual_path.strip():
+        manual_path = "MANUAL.pdf"
+    manual_link = "release/%s" % urllib.parse.quote(manual_path, safe="/")
+    nested_publication = publication.get("publication")
+    page_url = (
+        nested_publication.get("page_url")
+        if isinstance(nested_publication, Mapping)
+        else None
+    )
+    public_page = _https_public_url(page_url, "public Factory page URL")
+
+    return (
+        "## How this toy was created\n\n"
+        "### 1. Wish — freeze the request\n\n"
+        "**Input:** the creator's request. **This toy's input:** %s\n\n"
+        "**Output:** an immutable, hash-bound Wish plus its frozen effort route. %s\n\n"
+        "### 2. Invent — choose an Inventor and define the concept\n\n"
+        "**Input:** the frozen Wish, eligible Inventor roster with each bound "
+        "Taste/skill bundle, and the product blueprint. "
+        "**Output:** **%s** was selected and produced **%s** — %s%s "
+        "The complete compact concept is in [%s](%s). %s\n\n"
+        "### 3. Make — turn the concept into exact product bytes\n\n"
+        "**Input:** the accepted concept, selected Inventor identity/Taste, "
+        "blueprint, and any bounded revision evidence. "
+        "**Output:** %s The sealed snapshot contains %s and %s, together with "
+        "[CAD source](make/source/), [models](make/models/), and "
+        "[deterministic verification](make/verification/). "
+        "[The Made contract](make/made.json) binds those exact bytes.\n\n"
+        "### 4. Playtest — challenge the made product\n\n"
+        "**Input:** the sealed Made product, blueprint-required checks, and "
+        "exact evidence. "
+        "**Output:** %s.\n\n"
+        "### 5. Release — make the customer package\n\n"
+        "**Input:** the sealed product and the passed Playtest evidence or "
+        "truthful not-run record. "
+        "**Output:** the hash-bound Release package, product facts, and printable "
+        "[customer manual](%s); see [the Release contract](release/release.json).\n\n"
+        "### 6. Publication — perform and verify the external effect\n\n"
+        "**Input:** the exact sealed Release package plus host-held Factory "
+        "authorization; credentials never enter the native session. "
+        "**Output:** [the public Factory product](%s) and a sanitized, hash-verified "
+        "[publication readback](publication/PUBLICATION.json).\n"
+        % (
+            wish_text,
+            wish_note,
+            inventor,
+            concept_title,
+            concept_summary,
+            component_text,
+            invented_relative,
+            invented_relative,
+            invent_mode,
+            make_summary,
+            model_text,
+            render_text,
+            playtest_output,
+            manual_link,
+            public_page,
+        )
+    )
+
+
 def _public_token_summary(value: Any) -> dict[str, Any]:
     unavailable = {
         "schema_version": 1,
@@ -1022,6 +1263,7 @@ def materialize_public_example(
             "%s\n"
             "%s\n"
             "%s\n"
+            "%s\n"
             "## Snapshot contents\n\n"
             "- `wish/` — sanitized Wish binding (exact text only with explicit consent).\n"
             "- `match/` — accepted Match assignment.\n"
@@ -1055,6 +1297,7 @@ def materialize_public_example(
             inventor_id,
             page_url,
             _workflow_overview_markdown(staging),
+            _creation_story_markdown(staging),
             _run_cost_markdown(public_token_summary, public_timing_summary),
             _reproduce_markdown(
                 staging,

@@ -124,10 +124,16 @@ cannot prove quiescence for a process that deliberately escapes it. While
 retaining the same exclusive run lock, the host counts the
 failed attempt, preserves the unchanged stage packet, waits a bounded
 exponential delay with deterministic per-run jitter, and resumes that exact
-session for another turn. This continuation consumes the existing
-32-turn command budget; it does not
-create a separate retry budget. The delay is capped at 30 seconds and prevents
-a persistent provider outage from becoming a reconnect storm.
+session for another turn. Two consecutive recoverable turn failures stop the
+current command early with the same session checkpointed; an explicit
+`workshop resume` starts a fresh two-failure recovery window. Every such turn
+also consumes the existing 32-turn command budget. The delay is capped at 30
+seconds and prevents a persistent provider outage or repeated one-hour timeout
+from becoming an unattended reconnect storm.
+The one automatic recovery turn receives a fixed, non-cognitive instruction to
+inspect and reuse existing bytes, keep the root Manager on the critical path,
+avoid restarting broad exploration or depending on a child agent, run the
+remaining essential deterministic checks, and prioritize the stage finalizer.
 
 The private session checkpoint also binds the Codex CLI version and exact
 runtime-policy hash. A package manager may replace the installed CLI while a
@@ -151,6 +157,23 @@ transport classification uses only exact anchored diagnostics on private,
 bounded native channels. Diagnostic bytes select the typed category and are
 then discarded; they are never persisted, returned, or treated as model
 output. Generic or unrecognized diagnostics fail closed.
+
+Codex has a suspected terminal-event compatibility issue that is not reproduced
+by the currently retained mock-session rollouts. As a temporary fail-open, a
+new exact regular in-run finalization marker that survives the bounded grace
+period releases control only after the launcher safely reaps the complete
+process session and has a valid bound session identity. The marker is not turn
+or gate evidence. The host still parses the checkpoint/subject-bound proposal,
+rehashes every cited artifact, runs the normal deterministic gate, and rejects
+malformed, stale, or invalid bytes. If no proposal exists, an otherwise clean
+missing-terminal outcome is temporarily recoverable only if that invocation
+observed the valid native thread identity: the already checkpointed exact
+session may resume under the unchanged checkpoint, subject, Goal, lock, and
+bounded native-turn budget. Pre-identity wrapper or preflight failures, unsafe
+reaping, malformed events, explicit failed turns, and other failures remain
+fail-closed. The retained Quest failure was a test-wrapper packet-snapshot
+collision, not evidence of an omitted terminal event. See
+[`docs/backlog/codex-missing-turn-completed-after-subagents.md`](backlog/codex-missing-turn-completed-after-subagents.md).
 
 The launched process session is owned by an idempotent guard outside the event
 parser's ordinary `Exception` classification. A graceful host unwind such as
@@ -326,6 +349,10 @@ runs that deterministic tool for exactly one stage:
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . release \
   --package-root artifacts/release/package
+
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . need --stage <current-stage> --status waiting \
+  --reason "<one concrete condition required to continue>"
 ```
 
 The standalone Match command is frozen-run compatibility. Effort-aware Invent
@@ -340,13 +367,32 @@ Codex completes the active Goal and returns control. The host rereads the
 proposal and artifact tree independently, reruns its trusted gates, seals all
 accepted bytes, and alone decides the transition.
 
+The `need` command is the non-ready exception: it writes one checkpoint-bound
+`waiting` or `failed` reason with no artifact or transition, and the host stops
+without treating chat prose as state. The bounded reason remains in private
+checkpoint state and is printed by both the immediate command receipt and
+later `workshop status`; a resume clears the satisfied waiting condition before
+reactivating the same stage. Product-run instructions reserve this path for a
+concrete operator or environment condition that prevents safe progress;
+ordinary unfinished work and repairable validation or finalizer failures stay
+inside the active Goal.
+
 If a normal native turn returns before the Goal writes `agent-outcome.json`,
 the host does not invent a result or require an immediate operator command. An
 already checkpointed exact session is resumed automatically with the unchanged
-stage subject under the same 32-turn invocation budget and receives a fixed
-instruction that its finalizer has not yet written the required proposal. This
-continuation is not a stage attempt. Missing session identity and budget
-exhaustion still fail closed.
+stage subject and receives a fixed instruction that its finalizer has not yet
+written the required proposal. Three consecutive normally returned turns
+without a proposal stop the invocation early, mark progress failed, and report
+the exact `workshop resume <wish-id>` command while preserving the checkpoint.
+An explicit resume starts a fresh three-turn unfinished-work window in that
+same root session. The independent 32-turn invocation budget still bounds all
+native turns, including gate repairs and provider-transport continuations.
+This unfinished-work continuation is not a lifecycle stage attempt. Missing
+session identity and either bound exhaustion still fail closed.
+
+Provider timeouts and recognized transport interruptions also stop an
+invocation after two consecutive recoverable failures; an explicit resume
+starts a fresh two-failure window.
 
 For current Make and Playtest checkpoints, an otherwise bound proposal whose
 agent-authored contract or artifact tree cannot be safely reopened is not
@@ -358,17 +404,24 @@ and resumes the same native session. Each checkpoint has an independent
 Playtest finalizers also reopen and bind every canonical config before writing
 `agent-outcome.json`, reducing the chance that an invalid proposal reaches the
 host gate. Make applies the same bounded rejection path if a tool materializes
-files or empty cache directories after the finalizer inventories the product
-tree but before the host performs its independent exact-tree readback. Before
-that inventory, the Make finalizer deterministically removes empty directories:
-they contain no bytes, cannot be represented by the content-addressed manifest,
-and are commonly left by CAD and Python caches. It also safely removes regular
-`__cadgen__` runtime-cache trees inside the declared CAD project because the
-independent `--fresh` verifier intentionally deletes and rebuilds them; sealing
-those cache, lock, progress, and temporary bytes would guarantee drift even
-when stable geometry reproduces. STEP/STL/GLB exports, source, measurements,
-product renders, symlinks, special nodes, excluded files, and every other
-non-empty directory remain exact and fail-closed.
+files after the finalizer inventories the product tree but before the host
+performs its independent exact-file readback. Before that inventory, the Make
+finalizer prunes empty directories when permitted and safely removes regular
+files from `__cadgen__` runtime-cache trees inside the declared CAD project.
+The independent `--fresh` verifier intentionally deletes and rebuilds those
+cache bytes; sealing cache, lock, progress, or temporary files would guarantee
+drift even when stable geometry reproduces. Some native sandboxes allow file
+unlink but deny directory unlink. A remaining empty directory contains no
+content-addressable bytes, so the finalizer and trusted host both ignore it
+instead of blocking Make. STEP/STL/GLB exports, source, measurements, product
+renders, every other file, symlinks, special nodes, and unsafe cache content
+remain exact and fail-closed.
+Frozen older finalizers may still require every empty directory to disappear.
+Before their next Make resume, the trusted host holds the exclusive run lock
+and prunes only real empty directories beneath the canonical current product
+root. No native process is active; files and links are never removed or
+followed. This compatibility cleanup does not rematerialize or mutate frozen
+instructions.
 The current Make finalizer additionally requires a valid chromatic RGB/RGBA
 presentation PNG at `<cad-project>/snap/iso.png`, at least 800 px per side.
 That explicit path is archived under `make/verification/renders/` and is the

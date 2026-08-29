@@ -45,8 +45,10 @@ feedback loop in Python.
   with a workspace file, prompt chain, or Python controller.
 - Give the Goal one concrete objective, the immutable inputs it must read, the
   proof artifacts or checks that demonstrate success, and the exact stopping
-  condition: the current stage finalizer succeeds and writes the bounded
-  proposal for the current `STAGE.json`.
+  condition: the current ready-stage finalizer succeeds and writes the bounded
+  proposal for the current `STAGE.json`. If progress is truthfully blocked,
+  the separate `need` finalizer records that non-ready outcome; it is not Goal
+  completion.
 - While pursuing the Goal, work as an observe -> act -> evaluate -> improve
   loop. Inspect the current artifact and evidence, make a focused change, run
   deterministic checks and independent native-agent review where useful,
@@ -88,6 +90,10 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   responsible for reading `STAGE.json`, reviewing child work, and returning
   the single proposal. A child cannot advance a stage, change authority, or
   perform an external effect.
+- Keep the root Manager on the stage's critical path. Delegate only bounded
+  work with a concrete deliverable; do not delegate the whole stage or make
+  finalization depend on a child. Build and verify a conforming baseline early,
+  then use remaining capacity for focused quality improvements.
 
 ## Product work
 
@@ -127,9 +133,16 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
 - A rejected Make or Release proposal remains bound to its exact host feedback.
   Repair the artifact in the same stage and finalize changed bytes; never
   resubmit an unchanged rejected proposal.
+- After a host-classified native timeout or provider disconnect, inspect and
+  reuse the exact existing files before starting new work. Do not restart broad
+  research or repeat completed delegation. Keep the root Manager on the
+  critical path, run the remaining essential checks, and invoke the current
+  finalizer as soon as its contract is satisfied.
 - Stop truthfully when authorization or a required tool is missing, bounded
   repair is exhausted, deterministic evidence fails, or an external result is
-  unknown. Never turn a wait, failure, or ambiguity into success.
+  unknown. Use the run-local `need` finalizer so the host receives that exact
+  waiting or failed reason; never substitute chat prose or turn a wait,
+  failure, or ambiguity into success.
 
 ## Effects and people
 

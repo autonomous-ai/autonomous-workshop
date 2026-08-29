@@ -1,0 +1,26 @@
+{
+  "check": "sealed-raised-service-plane-versus-fixed-roof",
+  "checkpoint_sha256": "aec70d44f8c0d316f558881db5665e54fdc41697e3e27cb739e33a4255507cab",
+  "drop_occurs_after_conflicting_interval": true,
+  "fixed_roof_interval_mm": [
+    8.0,
+    10.4
+  ],
+  "horizontal_overlap_proven_by": {
+    "closing_interval_degrees": 18,
+    "minimum_depth_under_entry_lip_mm": 5.0
+  },
+  "intersection_interval_mm": [
+    8.0,
+    8.7
+  ],
+  "intersection_thickness_mm": 0.7,
+  "invented_sha256": "315a186e801ff81438458835be00c71b49ab150453bfea5f8faa8ed1e3cfcc22",
+  "moving_service_interval_mm": [
+    5.7,
+    8.7
+  ],
+  "schema_version": 1,
+  "subject_sha256": "8ed107c158e33e3527dfd10c03b347b4341057302f19ec1e0180ebe7fe52055e",
+  "verdict": "block"
+}

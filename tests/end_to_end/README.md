@@ -60,3 +60,61 @@ OS filesystem cache. No production check or CAD result is cached, patched, or
 skipped. The required `deterministic-e2e` CI job has a 30-minute ceiling and
 writes its exact runner elapsed time to the GitHub job summary on every run so
 CI performance remains visible.
+
+## Authenticated real-Codex mock session
+
+`tools/run_mock_session_e2e.py` is the opt-in context-and-integration tier. It
+delegates to the installed, authenticated Codex executable and drives the
+production Workshop session launcher, finalizers, gates, CAD and PDF checks,
+sealing, release writer, effect ledger, reconciliation, publication, and
+terminal checkpoint. A loopback Factory server replaces only the two outbound
+HTTP transports. The wrapper adds one generic context-proof request; it does
+not contain stage schemas, lifecycle recipes, or artifact-writing recipes.
+
+Prerequisites are a supported `codex` on `PATH`, an active `codex login`, the
+locked Python environment (including `build123d` and `cadgen`), permission to
+bind a loopback port, and enough time for real model turns. Check prerequisites
+without creating a Wish:
+
+```bash
+uv run --frozen python tools/run_mock_session_e2e.py --preflight-only
+uv run --frozen python tools/run_mock_session_e2e.py --help
+```
+
+Run one selectable route explicitly:
+
+```bash
+uv run --frozen python tools/run_mock_session_e2e.py \
+  --effort spark --turn-timeout 1800 --timeout 7200 \
+  --report /tmp/workshop-mock-session-spark.json
+```
+
+The exact expected traces are Spark `Make -> Release`, Forge
+`Invent -> Make -> Release`, and Quest
+`Invent -> Make -> Playtest -> Release`; every route ends at terminal
+published Release. The defaults are 1800 seconds per
+Codex turn and 7200 seconds for the whole route; both are bounded CLI options.
+Successful isolated state is removed unless `--keep` is supplied. Failures and
+timeouts retain their private temporary state and print its location after
+redacting recognizable credentials. Use retained state only for local
+diagnosis; never upload or commit it.
+
+`--report` writes the only upload-safe artifact. It contains the effort,
+model/reasoning binding, exact stage trace and durations, one persistent
+session identity with start/resume counts, verified context-proof count, the
+number of temporary marker-based missing-terminal fallbacks, final checkpoint
+hash/status, publication status, loopback protocol calls, and the fixed
+`context-and-integration-only` evidence label. It excludes workspace and
+host-state paths, prompts, transcripts, authored product bytes, and credentials.
+
+The three evidence tiers are intentionally distinct:
+
+- ordinary unit/integration CI is offline and tests focused contracts;
+- the required deterministic E2E proves production-host fidelity against
+  deterministic Codex and Factory boundary doubles;
+- this operator-run real-Codex tier proves persistent-session context use
+  and current workflow integration.
+
+None of them proves creative or research quality, exhaustive agent behavior,
+physical printing, fit, durability, manufacture, shipment, delivery, or human
+response. Full product validation remains separate.

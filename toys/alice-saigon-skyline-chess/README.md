@@ -29,6 +29,15 @@ Spark: `Wish -> Make -> Release`. Inventor selection is folded into Make.
 
 Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no turn, artifact, or gate. Private host rejections and native session resumes are not public.
 
+## How this toy was created
+
+1. **Wish.** Input: a geometry-readable orthodox chess set built from six Ho Chi Minh City landmarks. Output: the immutable [sanitized Wish binding](wish/wish.json); its exact wording is withheld.
+2. **Invent.** Input: that Wish, the eligible Inventor roster, Taste, and blueprint. Output: Alice was selected and defined *Saigon Skyline Chess*: a relief board plus Landmark 81 king, Bitexco queen, Notre-Dame bishop, Independence Palace knight, Bến Thành Market rook, and Central Post Office pawn. Spark folded this compact concept into Make; see [the concept](make/invented.json).
+3. **Make.** Input: the accepted concept and Alice's bound craft context. Output: the sealed one-filament landmark chess set, with 14 STEP, 15 STL, 1 GLB, 20 legacy-layout Make evidence PNGs, exact [CAD source](make/source/), [models](make/models/), and [verification](make/verification/), all bound by [made.json](make/made.json).
+4. **Playtest.** Input: the sealed Made product. Output: not run on the Spark route, recorded explicitly in [PLAYTEST-NOT-RUN.json](release/PLAYTEST-NOT-RUN.json).
+5. **Release.** Input: the sealed product plus the truthful Playtest omission. Output: the hash-bound package and printable [customer manual](release/MANUAL.pdf), bound by [release.json](release/release.json).
+6. **Publication.** Input: the exact Release package plus host-held Factory authorization. Output: the verified [Factory product](https://www.autonomous.ai/factory/product/saigon-skyline-chess) and sanitized [publication readback](publication/PUBLICATION.json).
+
 ## Run cost
 
 | Measure | Value |

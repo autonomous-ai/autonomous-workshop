@@ -117,11 +117,11 @@ class CodexRecoverableInvocationError(CodexInvocationError):
 
 
 class CodexFinalizedWithoutTerminalError(CodexInvocationError):
-    """The run finalizer wrote its marker but Codex emitted no terminal event.
+    """Legacy adapter signal for finalization without a terminal event.
 
-    The marker is only a bounded-liveness signal.  Callers must still read and
-    gate the exact proposal through the normal checkpoint-bound workflow; this
-    exception never represents a successful native turn.
+    Codex currently releases control through a temporary marker-based
+    fail-open instead of raising this type.  It remains public for compatible
+    adapters and callers; no marker can replace normal host proposal gates.
     """
 
 
@@ -2260,20 +2260,18 @@ class CodexNativeSessionLauncher:
             raise CodexInvocationError(
                 "Codex native session event stream was invalid"
             ) from None
-        if finalization_watch is not None and finalization_watch.triggered:
-            activity_reporter.observe("failed")
-            activity_reporter.close()
-            raise CodexFinalizedWithoutTerminalError(
-                "Codex native session finalized without a terminal event"
-            )
+        finalized_without_terminal = bool(
+            finalization_watch is not None and finalization_watch.triggered
+        )
         if intentionally_terminated and returncode is None:
             activity_reporter.observe("failed")
             activity_reporter.close()
             raise CodexInvocationError(
                 "Codex native session could not be terminated safely"
             )
-        if not turn_completed or (
-            returncode != 0 and not intentionally_terminated
+        if not finalized_without_terminal and (
+            not turn_completed
+            or (returncode != 0 and not intentionally_terminated)
         ):
             # Diagnostics are intentionally used only for a safe category and
             # are never attached to the public exception.
@@ -2286,6 +2284,21 @@ class CodexNativeSessionLauncher:
                 raise CodexRecoverableInvocationError(
                     "Codex native provider transport was interrupted"
                 )
+            if not turn_completed:
+                # Temporary fail-open for the upstream missing-terminal bug.
+                # The workflow may resume only an already checkpointed exact
+                # session, under its unchanged subject and bounded turn limit.
+                # A proposal, if one exists, is still parsed and gated before
+                # this category matters. Require an identity event from this
+                # invocation so a wrapper/preflight failure before Codex starts
+                # cannot masquerade as a recoverable native turn.
+                if observed_thread_id is not None:
+                    activity_reporter.observe("failed")
+                    activity_reporter.close()
+                    raise CodexRecoverableInvocationError(
+                        "Codex native session did not complete "
+                        "(terminal event missing)"
+                    )
             activity_reporter.observe("failed")
             activity_reporter.close()
             raise CodexInvocationError("Codex native session did not complete")
@@ -2295,6 +2308,14 @@ class CodexNativeSessionLauncher:
             raise CodexInvocationError(
                 "Codex native session returned no valid session identity"
             )
+        # Temporary fail-open liveness behavior: Codex can finish a native
+        # subagent, atomically finalize the exact proposal, and then omit the
+        # documented turn.completed event.  The marker proves no lifecycle
+        # result; it only lets control return after the dedicated process
+        # session was safely reaped.  The workflow host still parses, binds,
+        # rehashes, gates, and either accepts or rejects agent-outcome.json.
+        if finalized_without_terminal:
+            activity_reporter.observe("completed")
         activity_reporter.close()
         return used_web_search, observed_thread_id, token_count
 

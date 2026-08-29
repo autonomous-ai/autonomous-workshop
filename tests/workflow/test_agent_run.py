@@ -782,7 +782,10 @@ class AgentRunTest(unittest.TestCase):
         )
         checkpoint = waiting_run.apply_outcome(waiting)
         self.assertEqual((checkpoint.stage, checkpoint.status), ("wish", "waiting"))
-        self.assertEqual(waiting_run.resume().status, "active")
+        self.assertEqual(checkpoint.needs, ("customer-choice-required",))
+        resumed = waiting_run.resume()
+        self.assertEqual(resumed.status, "active")
+        self.assertEqual(resumed.needs, ())
         self.advance(waiting_run, "wish", "match")
 
         failed_run = AgentRun.create(
@@ -798,6 +801,7 @@ class AgentRunTest(unittest.TestCase):
         )
         checkpoint = failed_run.apply_outcome(failed)
         self.assertEqual((checkpoint.stage, checkpoint.status), ("wish", "failed"))
+        self.assertEqual(checkpoint.needs, ("contract-invalid",))
         with self.assertRaises(TransitionError):
             failed_run.resume()
         with self.assertRaises(TransitionError):

@@ -16,7 +16,12 @@ sanitized, workflow-shaped, content-addressed projection here under
 [`pico-press-horn-tip/`](pico-press-horn-tip/) is a Spark example produced by
 `--manager grok`; its README has the exact CLI used to create it.
 Workflow-shaped snapshots include a README table of public stage attempts
-from each `ATTEMPTS.json`.
+from each `ATTEMPTS.json` plus a step-by-step account of each stage's input
+and output. That account names the actual Wish or sanitized public summary,
+selected Inventor, accepted concept and concept parts, sealed CAD/model/render
+counts, Playtest verdict or explicit omission, Release manual, and verified
+Factory page. It is generated from the archived contracts and files rather
+than from agent recollection.
 
 ## Production acceptance runs
 

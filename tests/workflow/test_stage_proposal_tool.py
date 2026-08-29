@@ -374,6 +374,79 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertEqual(proposal.checkpoint_sha256, "1" * 64)
         self.assertEqual(proposal.subject_sha256, "2" * 64)
 
+    def test_need_finalizer_writes_bound_nonready_outcome_without_artifacts(self):
+        for status in ("waiting", "failed"):
+            with self.subTest(status=status):
+                self.write_stage(
+                    "make",
+                    {"wish_sha256": "e" * 64},
+                    round_index=1,
+                )
+                result = self.run_tool(
+                    "need",
+                    "--stage",
+                    "make",
+                    "--status",
+                    status,
+                    "--reason",
+                    "The required CAD runtime is unavailable.",
+                )
+
+                self.assertEqual(
+                    json.loads(result.stdout),
+                    {
+                        "needs": 1,
+                        "outcome_path": "agent-outcome.json",
+                        "status": status,
+                    },
+                )
+                document, _ = self.assert_canonical_file("agent-outcome.json")
+                proposal = AgentOutcomeProposal.from_mapping(document)
+                self.assertEqual(proposal.checkpoint_sha256, "1" * 64)
+                self.assertEqual(proposal.subject_sha256, "2" * 64)
+                self.assertEqual(proposal.outcome.stage, "make")
+                self.assertEqual(proposal.outcome.status, status)
+                self.assertEqual(proposal.outcome.artifacts, ())
+                self.assertEqual(
+                    proposal.outcome.needs,
+                    ("The required CAD runtime is unavailable.",),
+                )
+                self.assertIsNone(proposal.outcome.proposed_transition)
+                (self.run_root / "agent-outcome.json").unlink()
+
+    def test_need_finalizer_rejects_stage_mismatch_and_control_text(self):
+        self.write_stage(
+            "make",
+            {"wish_sha256": "e" * 64},
+            round_index=1,
+        )
+
+        mismatch = self.run_tool(
+            "need",
+            "--stage",
+            "invent",
+            "--status",
+            "waiting",
+            "--reason",
+            "A concrete operator action is required.",
+            expected=2,
+        )
+        self.assertIn("describes another stage", mismatch.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        invalid = self.run_tool(
+            "need",
+            "--stage",
+            "make",
+            "--status",
+            "waiting",
+            "--reason",
+            "A concrete operator action is required.\nRetry later.",
+            expected=2,
+        )
+        self.assertIn("bounded single-line text", invalid.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def match_inputs(self):
         return {
             "wish_sha256": self.assignment.wish_sha256,
@@ -1188,6 +1261,47 @@ class StageProposalToolTest(unittest.TestCase):
         )
 
         self.assertFalse((product_root / "cad/project/__cadgen__").exists())
+        made, _ = self.assert_canonical_file(
+            "artifacts/make/r0001/made.json"
+        )
+        self.assertFalse(
+            any(
+                "__cadgen__" in entry["path"].split("/")
+                for entry in made["product_manifest"]["entries"]
+            )
+        )
+
+    def test_make_tolerates_a_sandbox_protected_empty_cad_cache(self):
+        if os.geteuid() == 0:
+            self.skipTest("root ignores directory write bits, so the cache is never protected")
+        product_root, _, _, _ = self.create_product()
+        project = product_root / "cad/project"
+        cache = project / "__cadgen__"
+        cache.mkdir()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        project.chmod(0o500)
+        try:
+            self.run_tool(
+                "make",
+                "--product-root",
+                "artifacts/make/r0001/product",
+                "--cad-project-path",
+                "cad/project",
+                "--cad-verification-path",
+                "validation/cad-build.json",
+            )
+        finally:
+            project.chmod(0o700)
+
+        self.assertTrue(cache.is_dir())
         made, _ = self.assert_canonical_file(
             "artifacts/make/r0001/made.json"
         )

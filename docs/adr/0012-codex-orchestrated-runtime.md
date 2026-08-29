@@ -52,10 +52,16 @@ only after the launcher's dedicated POSIX process session is proven empty, and
 only when the exact session UUID is already durably checkpointed. It keeps the
 exclusive run lock, applies bounded deterministic-jitter backoff, resumes that
 same UUID against the unchanged stage subject, and charges the attempt to the
-existing bounded native-turn budget. An unbound interruption, unrecognized
-failed-turn event, unknown exit, unsafe termination, contract/gate failure, or
-authorization/effect failure remains terminal for that command. This recovery
-is transport control, not a Python reasoning or improvement loop.
+existing bounded native-turn budget. At most two consecutive recoverable turn
+failures continue automatically in one command; an explicit operator resume
+starts a fresh two-failure window against the same checkpoint. An unbound
+interruption, unrecognized failed-turn event, unknown exit, unsafe termination,
+contract/gate failure, or authorization/effect failure remains terminal for
+that command. This recovery is transport control, not a Python reasoning or
+improvement loop. The automatic recovery turn receives only fixed critical-path
+control: reuse existing bytes, avoid restarting broad exploration, do not make
+finalization depend on a child agent, and prioritize the remaining checks and
+stage finalizer.
 
 The portable cleanup guarantee covers every process group inside the launcher's
 dedicated POSIX process session, including Codex's built-in code-mode helper.
@@ -83,6 +89,21 @@ After authoring one stage, Codex invokes the materialized deterministic
 canonical stage contract, and produces a checkpoint-bound
 `agent-outcome.json`. The host independently rereads all cited bytes, reruns
 trusted checks, seals accepted artifacts, and alone advances the checkpoint.
+Make manifests and host gates bind every exact file and reject links or special
+nodes. Byte-free directories are not artifacts; the finalizer prunes them when
+permitted but does not fail merely because the native sandbox denies directory
+unlink after derived cache files have been safely removed.
+For frozen older protocols, the trusted host performs a compatibility prune of
+only real empty directories beneath the current Make product root before
+resume, while holding the run lock and before launching the native process. It
+never removes files, follows links, or rewrites immutable run instructions.
+For a concrete operator or environment blocker, the same finalizer may instead
+write one checkpoint-bound `waiting` or `failed` need with no artifact or
+transition. The host applies that typed non-ready result, persists its bounded
+reason in private checkpoint state, exposes it in immediate and later status
+receipts, and stops. Resume clears a satisfied wait before reactivating the
+same stage. Chat prose is not workflow state, and ordinary unfinished or
+repairable work cannot use this exception.
 
 ### Host ownership
 

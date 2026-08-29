@@ -1,0 +1,14 @@
+{
+  "title": "Night-Sky Weave",
+  "summary": "Nine chunky reversible constellation tiles whose centered starlight gates flow into snowflakes, dragons, crowns, and imaginary night-sky patterns, then return to a pocket-size three-by-three mosaic.",
+  "status": "digitally-verified-print-ready",
+  "inventory": {"crescent_tiles": 3, "comet_tiles": 3, "star_tiles": 3},
+  "print_plan": {"part_crescent.stl": 3, "part_comet.stl": 3, "part_star.stl": 3, "assembled.stl": 0},
+  "units": "millimetres",
+  "material_assumption": "Common rigid FDM filament such as PLA or PETG; no purchased hardware.",
+  "print_assumption": "0.4 mm nozzle, 0.20 mm layers, flat on the broad face, no supports; slice three copies of each single-body family STL. The assembled STL is a review/storage layout, not a print target.",
+  "limitations": [
+    "No successful physical print, durability test, or human playtest is claimed.",
+    "Tiles register by loose edge placement and do not lock together."
+  ]
+}

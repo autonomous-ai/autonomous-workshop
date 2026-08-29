@@ -32,7 +32,7 @@ current main
     |
     +-- QA-1: deterministic E2E fidelity (required CI)
     |
-    +-- QA-2: real-Codex mock-session acceptance (scheduled/manual)
+    +-- QA-2: real-Codex mock-session acceptance (operator-run)
     |
     `-- incremental production changes
             +-- runtime fixes
@@ -98,8 +98,9 @@ persistent Codex session can:
   activity.
 
 This test belongs in `main`, but it is not a required check for every pull
-request. Run it manually before high-risk workflow merges and on a scheduled
-credentialed runner. Ordinary CI must remain offline and deterministic.
+request. Run it manually before high-risk workflow merges and, when desired,
+from operator-managed scheduling outside repository automation. Ordinary CI
+must remain offline and deterministic.
 
 ## Phase 2: Integrate independent fixes
 
@@ -212,7 +213,7 @@ documentation, checkpoint invalidation, and wait/resume scenarios together.
 | `c2873bd` | Fix native completion and Concept brief validation | Keep validation; drop obsolete completion fallback |
 | `ea34822` | Reject stale Concept contracts across repair rounds | Port with Concept contracts |
 | `febb478` | Backlog Concept image-effect hardening | Preserve and complete before activation |
-| `1853cfd` | Add real-Codex mock-session acceptance | Rewrite against current-main topology |
+| `1853cfd` | Add real-Codex mock-session acceptance | Rewritten and merged as effort-aware published-Release acceptance |
 | `b2e5b9b` | Preserve the Workshop Python environment | Port early against current sandbox policy |
 | `50fff85` | Close native Codex process streams | Reassess and port as focused cleanup |
 | `948a34d` | Enforce exact routed Wish context | Port with Concept contracts |
@@ -220,9 +221,9 @@ documentation, checkpoint invalidation, and wait/resume scenarios together.
 | `27d5950` | Require source-clean replayable CAD | Preserve invariant; do not transplant old policy |
 | `d8b48d3` | Accept canonical Make metadata handoff | Superseded by `main` |
 | `1a19157` | Select sealed nested assembled output | Adapt to current Factory inventory |
-| `69afa5c` | Bind E2E context proof to final source bytes | Port with rewritten mock-session tier |
-| `e4eb604` | Audit only run-root stage bindings | Port with rewritten mock-session tier |
-| `9a979e0` | Complete old mock-session OpenSpec tasks | Reconcile after rewrite; do not port alone |
+| `69afa5c` | Bind E2E context proof to final source bytes | Rewritten and merged into the effort-aware mock-session tier |
+| `e4eb604` | Audit only run-root stage bindings | Rewritten and merged into the effort-aware mock-session tier |
+| `9a979e0` | Complete old mock-session OpenSpec tasks | Reconciled and superseded by the current-route rewrite |
 | `e189bcb` | Harden Concept rendering and native CAD verification | Split provider/Concept work from obsolete CAD workarounds |
 
 ## Per-change merge discipline
