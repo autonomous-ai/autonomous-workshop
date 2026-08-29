@@ -75,18 +75,20 @@ def _sha(value):
 
 def _token_summary():
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "autonomous-workshop.native-token-summary",
         "status": "measured",
         "turns": {"total": 1, "measured": 1, "unmeasured": 0},
-        "total_tokens": 125,
+        "input_tokens": 100,
+        "output_tokens": 25,
         "stages": {
             name: {
                 "status": "measured" if name == "make" else "pending",
                 "turns": 1 if name == "make" else 0,
                 "measured_turns": 1 if name == "make" else 0,
                 "unmeasured_turns": 0,
-                "tokens": 125 if name == "make" else 0,
+                "input_tokens": 100 if name == "make" else 0,
+                "output_tokens": 25 if name == "make" else 0,
             }
             for name in ("match", "invent", "make", "playtest", "release")
         },
@@ -1391,7 +1393,8 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertTrue((target / "MANIFEST.json").is_file())
         tokens = json.loads((target / "TOKENS.json").read_text(encoding="utf-8"))
         self.assertEqual(tokens["status"], "measured")
-        self.assertEqual(tokens["stages"]["make"]["tokens"], 125)
+        self.assertEqual(tokens["stages"]["make"]["input_tokens"], 100)
+        self.assertEqual(tokens["stages"]["make"]["output_tokens"], 25)
         timing = json.loads((target / "TIMING.json").read_text(encoding="utf-8"))
         self.assertEqual(timing["status"], "measured")
         self.assertEqual(timing["elapsed_seconds"], 1)
@@ -1417,9 +1420,10 @@ class NativeReleaseTest(unittest.TestCase):
         )
         self.assertIn("[customer manual](release/MANUAL.md)", readme)
         self.assertIn("## Run cost", readme)
-        self.assertIn("| Native Manager tokens | 125 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Native Manager input tokens | 100 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Native Manager output tokens | 25 (measured; 1/1 turns measured) |", readme)
         self.assertIn("| Wish to verified publication | 1s", readme)
-        self.assertIn("| Make | 125 | 1 | measured |", readme)
+        self.assertIn("| Make | 100 | 25 | 1 | measured |", readme)
         public_manifest = json.loads(
             (target / "MANIFEST.json").read_text(encoding="utf-8")
         )

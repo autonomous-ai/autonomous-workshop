@@ -691,7 +691,7 @@ def _creation_story_markdown(staging: Path) -> str:
 
 def _public_token_summary(value: Any) -> dict[str, Any]:
     unavailable = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": _TOKEN_SUMMARY_KIND,
         "status": "unavailable",
     }
@@ -701,7 +701,7 @@ def _public_token_summary(value: Any) -> dict[str, Any]:
         return unavailable
     if (
         not isinstance(value, Mapping)
-        or value.get("schema_version") != 1
+        or value.get("schema_version") != 2
         or value.get("kind") != _TOKEN_SUMMARY_KIND
         or value.get("status") not in ("measured", "partial")
         or not isinstance(value.get("turns"), Mapping)
@@ -719,9 +719,11 @@ def _public_token_summary(value: Any) -> dict[str, Any]:
         or turns["measured"] + turns["unmeasured"] != turns["total"]
     ):
         raise ContractError("public native token turn counts are invalid")
-    total_tokens = value.get("total_tokens")
-    if type(total_tokens) is not int or not 0 <= total_tokens <= 10**18:
-        raise ContractError("public native token total is invalid")
+    if any(
+        type(value.get(name)) is not int or not 0 <= value[name] <= 10**18
+        for name in ("input_tokens", "output_tokens")
+    ):
+        raise ContractError("public native token counters are invalid")
     rebuilt_stages = {}
     for name in _TOKEN_STAGES:
         stage = value["stages"][name]
@@ -729,24 +731,30 @@ def _public_token_summary(value: Any) -> dict[str, Any]:
             raise ContractError("public native token stage is invalid")
         status = stage.get("status")
         stage_turns = stage.get("turns")
-        tokens = stage.get("tokens")
+        input_tokens = stage.get("input_tokens")
+        output_tokens = stage.get("output_tokens")
         if status not in {
             "measured", "partial", "pending", "folded", "skipped", "not-run"
         } or type(stage_turns) is not int or not 0 <= stage_turns <= 100_000:
             raise ContractError("public native token stage status is invalid")
-        if type(tokens) is not int or not 0 <= tokens <= 10**18:
-            raise ContractError("public native token stage total is invalid")
+        if any(
+            type(count) is not int or not 0 <= count <= 10**18
+            for count in (input_tokens, output_tokens)
+        ):
+            raise ContractError("public native token stage counters are invalid")
         rebuilt_stages[name] = {
             "status": status,
             "turns": stage_turns,
-            "tokens": tokens,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
         }
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": _TOKEN_SUMMARY_KIND,
         "status": value["status"],
         "turns": dict(turns),
-        "total_tokens": total_tokens,
+        "input_tokens": value["input_tokens"],
+        "output_tokens": value["output_tokens"],
         "stages": rebuilt_stages,
     }
 
@@ -816,29 +824,38 @@ def _run_cost_markdown(
     token_status = token_summary["status"]
     if token_status in ("measured", "partial"):
         turns = token_summary["turns"]
-        token_value = "%s (%s; %s/%s turns measured)" % (
-            format(token_summary["total_tokens"], ",d"),
+        coverage = "%s; %s/%s turns measured" % (
             token_status,
             turns["measured"],
             turns["total"],
         )
+        input_value = "%s (%s)" % (
+            format(token_summary["input_tokens"], ",d"),
+            coverage,
+        )
+        output_value = "%s (%s)" % (
+            format(token_summary["output_tokens"], ",d"),
+            coverage,
+        )
         stage_rows = [
-            "| %s | %s | %s | %s |"
+            "| %s | %s | %s | %s | %s |"
             % (
                 name.capitalize(),
-                format(stage["tokens"], ",d"),
+                format(stage["input_tokens"], ",d"),
+                format(stage["output_tokens"], ",d"),
                 stage["turns"],
                 stage["status"],
             )
             for name, stage in token_summary["stages"].items()
         ]
         stage_table = (
-            "\n\n| Stage | Tokens | Turns | Coverage |\n"
-            "|---|---:|---:|---|\n"
+            "\n\n| Stage | Input tokens | Output tokens | Turns | Coverage |\n"
+            "|---|---:|---:|---:|---|\n"
             + "\n".join(stage_rows)
         )
     else:
-        token_value = "unavailable (the Manager did not report token usage)"
+        input_value = "unavailable (the Manager did not report input usage)"
+        output_value = "unavailable (the Manager did not report output usage)"
         stage_table = ""
     if timing_summary["status"] == "measured":
         elapsed_value = "%s (%s to %s)" % (
@@ -852,13 +869,15 @@ def _run_cost_markdown(
         "## Run cost\n\n"
         "| Measure | Value |\n"
         "|---|---|\n"
-        "| Native Manager tokens | %s |\n"
+        "| Native Manager input tokens | %s |\n"
+        "| Native Manager output tokens | %s |\n"
         "| Wish to verified publication | %s |"
         "%s\n\n"
-        "Tokens are best-effort input-plus-output counts reported by the native "
-        "Manager; no dollar cost is inferred. Elapsed time ends only after "
+        "Input and output tokens are best-effort separate counts reported by "
+        "the native Manager; they are not added together and no dollar cost is "
+        "inferred. Elapsed time ends only after "
         "authenticated Factory public readback.\n"
-        % (token_value, elapsed_value, stage_table)
+        % (input_value, output_value, elapsed_value, stage_table)
     )
 
 
@@ -1272,7 +1291,7 @@ def materialize_public_example(
             "- `release/%s` — %s.\n"
             "- `release/` — accepted Release contract and exact package bytes.\n"
             "- `publication/PUBLICATION.json` — sanitized public readback identities.\n"
-            "- `TOKENS.json` — Manager-reported total tokens by stage; no dollar estimate.\n"
+            "- `TOKENS.json` — separate Manager-reported input and output tokens by stage; no combined total or dollar estimate.\n"
             "- `TIMING.json` — Wish intake to authenticated public-readback elapsed time.\n"
             "- `MANIFEST.json` — hashes every workflow file except itself and this README.\n"
             "%s"

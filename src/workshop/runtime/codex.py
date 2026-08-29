@@ -955,7 +955,8 @@ class CodexNativeSessionOutcome:
     binding: CodexNativeSessionBinding
     used_web_search: bool
     status: str = "completed"
-    token_count: Optional[int] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.binding, CodexNativeSessionBinding):
@@ -964,11 +965,14 @@ class CodexNativeSessionOutcome:
             raise ContractError("Codex native session outcome status is invalid")
         if type(self.used_web_search) is not bool:
             raise ContractError("Codex native session search status must be boolean")
-        if self.token_count is not None and (
-            type(self.token_count) is not int
-            or not 0 <= self.token_count <= 2_000_000_000_000
+        if (self.input_tokens is None) != (self.output_tokens is None):
+            raise ContractError("Codex native session token usage is incomplete")
+        if any(
+            count is not None
+            and (type(count) is not int or not 0 <= count <= 1_000_000_000_000)
+            for count in (self.input_tokens, self.output_tokens)
         ):
-            raise ContractError("Codex native session token count is invalid")
+            raise ContractError("Codex native session token usage is invalid")
 
     def to_dict(self) -> Mapping[str, Any]:
         value = {
@@ -976,8 +980,9 @@ class CodexNativeSessionOutcome:
             "session": self.binding.to_dict(),
             "used_web_search": self.used_web_search,
         }
-        if self.token_count is not None:
-            value["token_count"] = self.token_count
+        if self.input_tokens is not None:
+            value["input_tokens"] = self.input_tokens
+            value["output_tokens"] = self.output_tokens
         return value
 
 
@@ -1576,7 +1581,7 @@ class CodexNativeSessionLauncher:
                 {**identity, "checkpoint_sha256": persisted_sha256},
             )
 
-        used_web_search, observed_thread_id, token_count = self._stream(
+        used_web_search, observed_thread_id, token_usage = self._stream(
             command=self._start_command(root, run_policy),
             prompt=prompt,
             run_root=root,
@@ -1601,7 +1606,8 @@ class CodexNativeSessionLauncher:
                 checkpoint_sha256=persisted_sha256,
             ),
             used_web_search,
-            token_count=token_count,
+            input_tokens=None if token_usage is None else token_usage[0],
+            output_tokens=None if token_usage is None else token_usage[1],
         )
 
     def resume(
@@ -1690,7 +1696,7 @@ class CodexNativeSessionLauncher:
             runtime_config_sha256=runtime_config_sha256,
             predecessor_runtime_config_sha256s=predecessor_runtime_config_sha256s,
         )
-        used_web_search, unused_observed_thread_id, token_count = self._stream(
+        used_web_search, unused_observed_thread_id, token_usage = self._stream(
             command=self._resume_command(thread_id, root, run_policy),
             prompt=prompt,
             run_root=root,
@@ -1711,7 +1717,8 @@ class CodexNativeSessionLauncher:
                 checkpoint_sha256=checkpoint_sha256,
             ),
             used_web_search,
-            token_count=token_count,
+            input_tokens=None if token_usage is None else token_usage[0],
+            output_tokens=None if token_usage is None else token_usage[1],
         )
 
     def _binding_paths(
@@ -1962,7 +1969,7 @@ class CodexNativeSessionLauncher:
         _process_guard: Optional[_NativeProcessGuard] = None,
         _finalization_watch: Optional[_FinalizationMarkerWatch] = None,
         _deadline: Optional[float] = None,
-    ) -> tuple[bool, Optional[str], Optional[int]]:
+    ) -> tuple[bool, Optional[str], Optional[tuple[int, int]]]:
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
         deadline = (
@@ -2100,7 +2107,7 @@ class CodexNativeSessionLauncher:
 
         used_web_search = False
         observed_thread_id: Optional[str] = None
-        token_count: Optional[int] = None
+        token_usage: Optional[tuple[int, int]] = None
         turn_completed = False
         stream_failure: Optional[BaseException] = None
         try:
@@ -2164,7 +2171,7 @@ class CodexNativeSessionLauncher:
                 ):
                     _validate_agent_message(item.get("text"))
                 if event_type == "turn.completed":
-                    token_count = _native_token_count(event.get("usage"))
+                    token_usage = _native_token_usage(event.get("usage"))
                     turn_completed = True
                     if finalization_watch is not None:
                         finalization_watch.observe_turn_completed()
@@ -2316,7 +2323,7 @@ class CodexNativeSessionLauncher:
         if finalized_without_terminal:
             activity_reporter.observe("completed")
         activity_reporter.close()
-        return used_web_search, observed_thread_id, token_count
+        return used_web_search, observed_thread_id, token_usage
 
 
 def _stream_text(value: Any) -> str:
@@ -2403,8 +2410,8 @@ def _decode_native_event(line: str) -> Mapping[str, Any]:
     return event
 
 
-def _native_token_count(value: Any) -> Optional[int]:
-    """Return input plus output for one completed turn, or unavailable."""
+def _native_token_usage(value: Any) -> Optional[tuple[int, int]]:
+    """Return separate input and output counts, or unavailable."""
 
     if not isinstance(value, Mapping):
         return None
@@ -2415,7 +2422,7 @@ def _native_token_count(value: Any) -> Optional[int]:
         for count in (input_tokens, output_tokens)
     ):
         return None
-    return input_tokens + output_tokens
+    return input_tokens, output_tokens
 
 
 def _dedicated_process_group_id(process: Any) -> Optional[int]:
