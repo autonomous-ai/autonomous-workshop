@@ -137,6 +137,23 @@ through the normal gate before considering any continuation. Provider
 transport classification uses only exact anchored diagnostics on the private,
 bounded launcher channel; generic or unrecognized stderr fails closed.
 
+Codex has a suspected terminal-event compatibility issue that is not reproduced
+by the currently retained mock-session rollouts. As a temporary fail-open, a
+new exact regular in-run finalization marker that survives the bounded grace
+period releases control only after the launcher safely reaps the complete
+process session and has a valid bound session identity. The marker is not turn
+or gate evidence. The host still parses the checkpoint/subject-bound proposal,
+rehashes every cited artifact, runs the normal deterministic gate, and rejects
+malformed, stale, or invalid bytes. If no proposal exists, an otherwise clean
+missing-terminal outcome is temporarily recoverable only if that invocation
+observed the valid native thread identity: the already checkpointed exact
+session may resume under the unchanged checkpoint, subject, Goal, lock, and
+bounded native-turn budget. Pre-identity wrapper or preflight failures, unsafe
+reaping, malformed events, explicit failed turns, and other failures remain
+fail-closed. The retained Quest failure was a test-wrapper packet-snapshot
+collision, not evidence of an omitted terminal event. See
+[`docs/backlog/codex-missing-turn-completed-after-subagents.md`](backlog/codex-missing-turn-completed-after-subagents.md).
+
 The launched process session is owned by an idempotent guard outside the event
 parser's ordinary `Exception` classification. A graceful host unwind such as
 Ctrl-C (`KeyboardInterrupt`) or `SystemExit` therefore terminates and reaps the

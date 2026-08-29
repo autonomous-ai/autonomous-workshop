@@ -113,6 +113,15 @@ cite a canonical configuration and static evidence file, and stay bound to the
 sealed Made artifact. Digital assessment never proves successful printing,
 physical fit, durability, or human play.
 
+For every required check id `<check-id>`, write its canonical configuration to
+the exact path `<evidence_root>/configs/<check-id>.json`. Each configuration
+must contain exactly `schema_version`, `check_id`, `seed`, and
+`artifact_sha256`: use schema version `1`, the exact required check id, an
+integer deterministic seed, and the current Made product manifest's
+`artifact_sha256`. The Playtested check's `config_sha256` must hash those exact
+bytes. Keep final static results elsewhere under the same `evidence_root` and
+cite them with `evidence_ref`.
+
 While pursuing the Goal:
 
 1. **Observe:** Inspect the exact Made tree, manifest, required checks, rules,

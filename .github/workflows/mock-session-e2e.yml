@@ -1,0 +1,45 @@
+# Optional authenticated acceptance. This workflow is deliberately absent from
+# push and pull_request triggers and is not a required repository check.
+name: authenticated-codex-mock-session
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: authenticated-codex-mock-session-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  route:
+    name: ${{ matrix.effort }} context acceptance
+    runs-on: [self-hosted, macOS, workshop-codex]
+    timeout-minutes: 210
+    strategy:
+      fail-fast: false
+      matrix:
+        effort: [spark, forge, quest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: install the locked dependency tool
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: verify authenticated Codex and local prerequisites
+        run: uv run --frozen python tools/run_mock_session_e2e.py --preflight-only
+      - name: run bounded authenticated route
+        run: |
+          uv run --frozen python tools/run_mock_session_e2e.py \
+            --effort "${{ matrix.effort }}" \
+            --turn-timeout 2400 \
+            --timeout 10800 \
+            --report "$RUNNER_TEMP/mock-session-${{ matrix.effort }}.json"
+      - name: upload sanitized report only
+        uses: actions/upload-artifact@v4
+        with:
+          name: mock-session-${{ matrix.effort }}-report
+          path: ${{ runner.temp }}/mock-session-${{ matrix.effort }}.json
+          if-no-files-found: error
+          retention-days: 14

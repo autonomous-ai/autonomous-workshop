@@ -1764,7 +1764,7 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             self.assertTrue(factory.processes[0].terminated)
 
-    def test_new_finalization_marker_reaps_missing_terminal_without_success(self):
+    def test_new_finalization_marker_reaps_missing_terminal_and_returns_to_host(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
@@ -1792,23 +1792,18 @@ class CodexNativeSessionTest(unittest.TestCase):
                 codex_runtime,
                 "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
                 0.005,
-            ), self.assertRaisesRegex(
-                CodexFinalizedWithoutTerminalError,
-                "finalized without a terminal event",
-            ) as caught:
-                self.start(
+            ):
+                outcome = self.start(
                     launcher,
                     root,
                     finalization_marker=marker,
                 )
 
-            self.assertNotIsInstance(
-                caught.exception,
-                CodexRecoverableInvocationError,
-            )
+            self.assertEqual(outcome.status, "completed")
+            self.assertTrue(marker.is_file())
             self.assertTrue(factory.processes[0].terminated)
 
-    def test_finalization_marker_grace_cannot_extend_turn_timeout(self):
+    def test_finalization_marker_fail_open_cannot_extend_turn_timeout(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
@@ -1837,14 +1832,15 @@ class CodexNativeSessionTest(unittest.TestCase):
                 codex_runtime,
                 "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
                 0.005,
-            ), self.assertRaises(CodexFinalizedWithoutTerminalError):
-                self.start(
+            ):
+                outcome = self.start(
                     launcher,
                     root,
                     finalization_marker=marker,
                 )
             elapsed = time.monotonic() - started_at
 
+            self.assertEqual(outcome.status, "completed")
             self.assertLess(elapsed, 1.5)
             self.assertTrue(factory.processes[0].terminated)
 
@@ -2050,7 +2046,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 )
             self.assertEqual(factory.calls, [])
 
-    def test_clean_process_exit_without_turn_completed_fails_closed(self):
+    def test_clean_process_exit_without_turn_completed_is_recoverable(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
@@ -2064,7 +2060,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
 
             with self.assertRaisesRegex(
-                CodexInvocationError, "did not complete"
+                CodexRecoverableInvocationError, "did not complete"
             ):
                 self.start(launcher, root)
 
@@ -2088,7 +2084,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             ):
                 self.start(launcher, root)
 
-    def test_unrelated_private_stderr_cannot_select_transport_recovery(self):
+    def test_unrelated_private_stderr_uses_only_missing_terminal_recovery(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
@@ -2108,9 +2104,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             with self.assertRaises(CodexInvocationError) as caught:
                 self.start(launcher, root)
 
-            self.assertNotIsInstance(
+            self.assertIsInstance(
                 caught.exception, CodexRecoverableInvocationError
             )
+            self.assertNotIn("provider transport", str(caught.exception))
 
     def test_timeout_is_typed_and_preserves_the_exact_session_for_resume(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -2379,7 +2376,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 caught.exception, CodexRecoverableInvocationError
             )
 
-    def test_unknown_incomplete_exit_is_not_recoverable(self):
+    def test_unknown_incomplete_exit_is_boundedly_recoverable(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
@@ -2395,11 +2392,41 @@ class CodexNativeSessionTest(unittest.TestCase):
             with self.assertRaises(CodexInvocationError) as caught:
                 self.start(launcher, root)
 
+            self.assertIsInstance(
+                caught.exception, CodexRecoverableInvocationError
+            )
+
+    def test_incomplete_exit_before_thread_identity_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": [
+                            event(
+                                {
+                                    "type": "item.completed",
+                                    "item": {
+                                        "type": "agent_message",
+                                        "text": "wrapper stopped before Codex",
+                                    },
+                                }
+                            )
+                        ],
+                        "returncode": 125,
+                    }
+                ]
+            )
+
+            with self.assertRaises(CodexInvocationError) as caught:
+                self.start(launcher, root)
+
             self.assertNotIsInstance(
                 caught.exception, CodexRecoverableInvocationError
             )
 
-    def test_agent_message_cannot_select_the_recoverable_transport_category(self):
+    def test_agent_message_cannot_select_provider_transport_recovery(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
@@ -2418,9 +2445,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             with self.assertRaises(CodexInvocationError) as caught:
                 self.start(launcher, root)
 
-            self.assertNotIsInstance(
+            self.assertIsInstance(
                 caught.exception, CodexRecoverableInvocationError
             )
+            self.assertNotIn("provider transport", str(caught.exception))
 
     def test_completed_turn_does_not_weaken_resume_thread_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
