@@ -573,10 +573,14 @@ class CodexNativeSessionTest(unittest.TestCase):
             started = self.start(launcher, root)
             resumed = self.resume(launcher, root)
 
-            self.assertEqual(started.token_count, 11_554)
-            self.assertEqual(started.to_dict()["token_count"], 11_554)
-            self.assertIsNone(resumed.token_count)
-            self.assertNotIn("token_count", resumed.to_dict())
+            self.assertEqual(started.input_tokens, 11_288)
+            self.assertEqual(started.output_tokens, 266)
+            self.assertEqual(started.to_dict()["input_tokens"], 11_288)
+            self.assertEqual(started.to_dict()["output_tokens"], 266)
+            self.assertIsNone(resumed.input_tokens)
+            self.assertIsNone(resumed.output_tokens)
+            self.assertNotIn("input_tokens", resumed.to_dict())
+            self.assertNotIn("output_tokens", resumed.to_dict())
 
     def test_permission_profile_trusts_only_the_exact_codex_helper_executable(self):
         with tempfile.TemporaryDirectory() as temporary:

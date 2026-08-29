@@ -4098,7 +4098,7 @@ def _native_token_aggregate(
     if (
         set(value)
         != {"schema_version", "kind", "product_id", "wish_sha256", "stages"}
-        or value.get("schema_version") != 1
+        or value.get("schema_version") not in (1, 2)
         or value.get("kind") != _NATIVE_TOKEN_USAGE_KIND
         or value.get("product_id") != checkpoint.product_id
         or value.get("wish_sha256") != checkpoint.wish_sha256
@@ -4108,20 +4108,45 @@ def _native_token_aggregate(
         raise StateConflict("native token usage binding is invalid")
     stages: dict[str, Any] = {}
     for stage_name, stage in value["stages"].items():
-        if (
-            not isinstance(stage, Mapping)
-            or set(stage) != {"turns", "measured_turns", "tokens"}
-            or type(stage.get("turns")) is not int
-            or type(stage.get("measured_turns")) is not int
-            or not 0 <= stage["measured_turns"] <= stage["turns"] <= 100_000
-        ):
+        if not isinstance(stage, Mapping):
             raise StateConflict("native token stage aggregate is invalid")
-        if type(stage.get("tokens")) is not int or not 0 <= stage["tokens"] <= 10**18:
-            raise StateConflict("native token stage counter is invalid")
+        if value["schema_version"] == 1:
+            if (
+                set(stage) != {"turns", "measured_turns", "tokens"}
+                or type(stage.get("turns")) is not int
+                or type(stage.get("measured_turns")) is not int
+                or not 0 <= stage["measured_turns"] <= stage["turns"] <= 100_000
+                or type(stage.get("tokens")) is not int
+                or not 0 <= stage["tokens"] <= 10**18
+            ):
+                raise StateConflict("native token stage aggregate is invalid")
+            # Schema v1 collapsed input and output. Preserve its turn coverage,
+            # but never guess how the historical total should be split.
+            measured_turns = 0
+            input_tokens = 0
+            output_tokens = 0
+        else:
+            if (
+                set(stage)
+                != {"turns", "measured_turns", "input_tokens", "output_tokens"}
+                or type(stage.get("turns")) is not int
+                or type(stage.get("measured_turns")) is not int
+                or not 0 <= stage["measured_turns"] <= stage["turns"] <= 100_000
+                or any(
+                    type(stage.get(name)) is not int
+                    or not 0 <= stage[name] <= 10**18
+                    for name in ("input_tokens", "output_tokens")
+                )
+            ):
+                raise StateConflict("native token stage aggregate is invalid")
+            measured_turns = stage["measured_turns"]
+            input_tokens = stage["input_tokens"]
+            output_tokens = stage["output_tokens"]
         stages[stage_name] = {
             "turns": stage["turns"],
-            "measured_turns": stage["measured_turns"],
-            "tokens": stage["tokens"],
+            "measured_turns": measured_turns,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
         }
     return stages
 
@@ -4135,7 +4160,13 @@ def _record_native_token_usage(
 
     if checkpoint.stage not in _NATIVE_TOKEN_STAGES:
         return
-    measured = usage if type(usage) is int and usage >= 0 else None
+    measured = (
+        usage
+        if isinstance(usage, tuple)
+        and len(usage) == 2
+        and all(type(count) is int and 0 <= count <= 10**18 for count in usage)
+        else None
+    )
     stages = _native_token_aggregate(paths, checkpoint)
     previous = stages.get(checkpoint.stage)
     stages[checkpoint.stage] = {
@@ -4144,13 +4175,15 @@ def _record_native_token_usage(
             (0 if previous is None else previous["measured_turns"])
             + (1 if measured is not None else 0)
         ),
-        "tokens": (0 if previous is None else previous["tokens"])
-        + (0 if measured is None else measured),
+        "input_tokens": (0 if previous is None else previous["input_tokens"])
+        + (0 if measured is None else measured[0]),
+        "output_tokens": (0 if previous is None else previous["output_tokens"])
+        + (0 if measured is None else measured[1]),
     }
     _write_private_json(
         paths.host_state / _NATIVE_TOKEN_USAGE_NAME,
         {
-            "schema_version": 1,
+            "schema_version": 2,
             "kind": _NATIVE_TOKEN_USAGE_KIND,
             "product_id": checkpoint.product_id,
             "wish_sha256": checkpoint.wish_sha256,
@@ -4161,7 +4194,7 @@ def _record_native_token_usage(
 
 def _unavailable_native_token_summary() -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": _NATIVE_TOKEN_SUMMARY_KIND,
         "status": "unavailable",
         "reason": "Native token usage was not reported for this run.",
@@ -4178,7 +4211,8 @@ def _native_token_summary(
     if not observed_stages:
         return _unavailable_native_token_summary()
 
-    total_tokens = 0
+    input_tokens = 0
+    output_tokens = 0
     recorded_turns = 0
     measured_turns = 0
     stages: dict[str, Any] = {}
@@ -4186,10 +4220,12 @@ def _native_token_summary(
         observed = observed_stages.get(stage_name)
         turns = 0 if observed is None else observed["turns"]
         measured = 0 if observed is None else observed["measured_turns"]
-        tokens = 0 if observed is None else observed["tokens"]
+        stage_input_tokens = 0 if observed is None else observed["input_tokens"]
+        stage_output_tokens = 0 if observed is None else observed["output_tokens"]
         recorded_turns += turns
         measured_turns += measured
-        total_tokens += tokens
+        input_tokens += stage_input_tokens
+        output_tokens += stage_output_tokens
         status = "pending"
         if checkpoint.effort is not None and stage_name == "match":
             status = "folded"
@@ -4204,7 +4240,8 @@ def _native_token_summary(
             "turns": turns,
             "measured_turns": measured,
             "unmeasured_turns": turns - measured,
-            "tokens": tokens,
+            "input_tokens": stage_input_tokens,
+            "output_tokens": stage_output_tokens,
         }
     try:
         durable_turns = native_progress_turn_floor(
@@ -4215,7 +4252,7 @@ def _native_token_summary(
     missing_turns = max(0, durable_turns - recorded_turns)
     unmeasured_turns = recorded_turns - measured_turns + missing_turns
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": _NATIVE_TOKEN_SUMMARY_KIND,
         "status": (
             "unavailable"
@@ -4227,7 +4264,8 @@ def _native_token_summary(
             "measured": measured_turns,
             "unmeasured": unmeasured_turns,
         },
-        "total_tokens": total_tokens,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
         "stages": stages,
     }
 
@@ -5635,7 +5673,10 @@ def _run_native_session(
                 paths,
                 checkpoint,
                 (
-                    getattr(last_session, "token_count", None)
+                    (
+                        getattr(last_session, "input_tokens", None),
+                        getattr(last_session, "output_tokens", None),
+                    )
                     if launcher_failure is None
                     else None
                 ),
@@ -6016,7 +6057,7 @@ def _native_receipt(
             _native_token_summary(paths, checkpoint)
             if paths is not None
             else {
-                "schema_version": 1,
+                "schema_version": 2,
                 "kind": "autonomous-workshop.native-token-summary",
                 "status": "unavailable",
                 "reason": "Host token state was not provided.",

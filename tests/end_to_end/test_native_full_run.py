@@ -291,7 +291,8 @@ class _SessionOutcome:
             "playtest": 300,
             "release": 400,
         }[stage]
-        self.token_count = stage_input + stage_input // 10
+        self.input_tokens = stage_input
+        self.output_tokens = stage_input // 10
 
     def to_dict(self):
         return {
@@ -1459,10 +1460,15 @@ class NativeFullRunTest(unittest.TestCase):
                 receipt["tokens"]["turns"],
                 {"total": 4, "measured": 4, "unmeasured": 0},
             )
-            self.assertEqual(receipt["tokens"]["total_tokens"], 825)
+            self.assertEqual(receipt["tokens"]["input_tokens"], 750)
+            self.assertEqual(receipt["tokens"]["output_tokens"], 75)
             self.assertEqual(
-                receipt["tokens"]["stages"]["make"]["tokens"],
-                220,
+                receipt["tokens"]["stages"]["make"]["input_tokens"],
+                200,
+            )
+            self.assertEqual(
+                receipt["tokens"]["stages"]["make"]["output_tokens"],
+                20,
             )
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])

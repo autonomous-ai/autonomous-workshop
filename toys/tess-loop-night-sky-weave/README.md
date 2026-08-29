@@ -61,18 +61,11 @@ Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no 
 
 | Measure | Value |
 |---|---|
-| Native Manager tokens | 12,890,910 (partial; 4/5 turns measured) |
+| Native Manager input tokens | unavailable — this run recorded only a combined legacy count |
+| Native Manager output tokens | unavailable — this run recorded only a combined legacy count |
 | Wish to verified publication | 58m 2s (2026-08-29T10:35:15Z to 2026-08-29T11:33:17.663459+00:00) |
 
-| Stage | Tokens | Turns | Coverage |
-|---|---:|---:|---|
-| Match | 0 | 0 | folded |
-| Invent | 0 | 0 | skipped |
-| Make | 8,550,539 | 4 | partial |
-| Playtest | 0 | 0 | not-run |
-| Release | 4,340,371 | 1 | measured |
-
-Tokens are best-effort input-plus-output counts reported by the native Manager; no dollar cost is inferred. Elapsed time ends only after authenticated Factory public readback.
+This run's schema-v1 `TOKENS.json` preserves a combined legacy counter, so its input/output split cannot be reported truthfully. No dollar cost is inferred. Elapsed time ends only after authenticated Factory public readback.
 
 ## Reproduce
 
@@ -94,7 +87,7 @@ If a native turn stops before Release, continue the same Wish with `uv run works
 - `release/MANUAL.pdf` — the exact sealed printable in-box manual.
 - `release/` — accepted Release contract and exact package bytes.
 - `publication/PUBLICATION.json` — sanitized public readback identities.
-- `TOKENS.json` — Manager-reported total tokens by stage; no dollar estimate.
+- `TOKENS.json` — legacy combined token evidence; the input/output split is unavailable.
 - `TIMING.json` — Wish intake to authenticated public-readback elapsed time.
 - `MANIFEST.json` — hashes every workflow file except itself and this README.
 - `SANITIZATION.json` — source/public hashes for host-local path prefixes replaced by stable placeholders.

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "stage": "make",
+  "round": 1,
+  "checkpoint_sha256": "aec70d44f8c0d316f558881db5665e54fdc41697e3e27cb739e33a4255507cab",
+  "subject_sha256": "8ed107c158e33e3527dfd10c03b347b4341057302f19ec1e0180ebe7fe52055e",
+  "assignment_sha256": "0b8ea02ac308cfd41517df793ae3624ecf26d602e9292c3d256311131beddaac",
+  "invented_sha256": "315a186e801ff81438458835be00c71b49ab150453bfea5f8faa8ed1e3cfcc22",
+  "sealed_dimensions_mm": {
+    "operating_moving_z_min": 4.5,
+    "operating_moving_z_max": 7.5,
+    "service_raise": 1.2,
+    "service_moving_z_min": 5.7,
+    "service_moving_z_max": 8.7,
+    "fixed_guard_lip_bridge_z_min": 8.0,
+    "fixed_guard_lip_bridge_z_max": 10.4,
+    "flange_underside_z": 9.2
+  },
+  "sealed_sequence": {
+    "service_rotation_start_degrees": 118,
+    "service_rotation_end_degrees": 0,
+    "drop_at_degrees": 0,
+    "drop_mm": 1.2,
+    "raised_during_rotation": true
+  },
+  "sealed_horizontal_overlap": {
+    "closing_interval_degrees": 18,
+    "minimum_depth_under_entry_lip_mm": 5.0
+  },
+  "source_fields": [
+    "STAGE.json inputs.invented.concept.z_stack_and_assembly",
+    "STAGE.json inputs.invented.concept.safety_strategy"
+  ]
+}

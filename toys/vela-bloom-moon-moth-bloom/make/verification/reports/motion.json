@@ -1,0 +1,67 @@
+{
+  "assembly": "moon_moth_bloom.step.py",
+  "conditions": [
+    {
+      "id": "left-operating-rotation-clear",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The seated left control wing can move ten degrees within its normal operating channel.",
+      "inputs": {
+        "moving_part": "left_wing_control",
+        "obstacle_parts": ["chassis"],
+        "axis_point": [-9.0, -7.5, 4.5],
+        "axis_direction": [0.0, 0.0, 1.0],
+        "start_deg": 0.0,
+        "end_deg": 10.0,
+        "steps": 8,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "right-operating-rotation-clear",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The seated right wing can counter-rotate ten degrees within its normal operating channel.",
+      "inputs": {
+        "moving_part": "right_wing",
+        "obstacle_parts": ["chassis"],
+        "axis_point": [9.0, -7.5, 4.5],
+        "axis_direction": [0.0, 0.0, 1.0],
+        "start_deg": 0.0,
+        "end_deg": -10.0,
+        "steps": 8,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "left-capture-blocks-normal-lift",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "At the q=41 combined pose, the low operating lip blocks a 1.2 mm upward lift.",
+      "inputs": {
+        "moving_part": "left_wing_control",
+        "obstacle_parts": ["chassis"],
+        "translation": [0.0, 0.0, 1.2],
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "right-capture-blocks-normal-lift",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "At the q=41 combined pose, the low operating lip blocks a 1.2 mm upward lift.",
+      "inputs": {
+        "moving_part": "right_wing",
+        "obstacle_parts": ["chassis"],
+        "translation": [0.0, 0.0, 1.2],
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    }
+  ]
+}

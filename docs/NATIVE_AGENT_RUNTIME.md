@@ -242,10 +242,13 @@ by an earlier launcher may finish late, but its older record is no longer
 trusted and cannot roll status backward.
 
 When a Manager's terminal event includes usage, Workshop also keeps one small
-host-private aggregate of input-plus-output tokens by stage. The receipt and
-new public toy snapshot expose only those totals and whether coverage is
-measured, partial, or unavailable. This best-effort telemetry stores no prices,
-prompts, transcripts, or reasoning and cannot block or advance the lifecycle.
+host-private aggregate with input and output tokens stored separately by stage.
+The receipt and new public toy snapshot expose those two counters without
+adding them together, plus whether coverage is measured, partial, or
+unavailable. Schema-v1 aggregates that collapsed both directions remain
+readable, but their split is reported as unavailable rather than guessed. This
+best-effort telemetry stores no prices, prompts, transcripts, or reasoning and
+cannot block or advance the lifecycle.
 
 ## Native subagents and Inventors
 

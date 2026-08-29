@@ -25,6 +25,8 @@ from workshop.workflow.native_run import (
     _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
+    _native_token_summary,
+    _record_native_token_usage,
     _native_run_mutation_lock,
     _prune_empty_make_product_directories,
     _recoverable_native_turn_backoff_seconds,
@@ -49,6 +51,72 @@ from workshop.workflow.agent_run import (
     AgentRunCheckpoint,
 )
 from workshop.workflow.proposals import AgentOutcomeProposal
+
+
+class NativeTokenTelemetryCompatibilityTest(unittest.TestCase):
+    def test_legacy_combined_counter_is_not_guessed_when_split_usage_arrives(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            workspace = root / "workspace"
+            host_state = root / "host"
+            workspace.mkdir()
+            host_state.mkdir()
+            checkpoint = AgentRunCheckpoint(
+                product_id="legacy-token-run",
+                stage="make",
+                status="active",
+                revision=0,
+                round_index=1,
+                max_rounds=4,
+                wish_sha256="a" * 64,
+                run_root_sha256="b" * 64,
+                host_state_root_sha256="c" * 64,
+                checkpoint_sha256="d" * 64,
+                input_sha256s={},
+                inventor_roster=(),
+                stage_artifacts={},
+                invalidated_stages=(),
+                effort="spark",
+            )
+            path = host_state / "native-token-usage.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.native-token-usage",
+                        "product_id": checkpoint.product_id,
+                        "wish_sha256": checkpoint.wish_sha256,
+                        "stages": {
+                            "make": {
+                                "turns": 2,
+                                "measured_turns": 2,
+                                "tokens": 999,
+                            }
+                        },
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(path, 0o600)
+            paths = NativeRunPaths(workspace=workspace, host_state=host_state)
+
+            legacy = _native_token_summary(paths, checkpoint)
+            self.assertEqual(legacy["status"], "unavailable")
+            self.assertEqual(legacy["turns"], {"total": 2, "measured": 0, "unmeasured": 2})
+            self.assertEqual(legacy["input_tokens"], 0)
+            self.assertEqual(legacy["output_tokens"], 0)
+
+            _record_native_token_usage(paths, checkpoint, (100, 25))
+            migrated = _native_token_summary(paths, checkpoint)
+            self.assertEqual(migrated["schema_version"], 2)
+            self.assertEqual(migrated["status"], "partial")
+            self.assertEqual(migrated["turns"], {"total": 3, "measured": 1, "unmeasured": 2})
+            self.assertEqual(migrated["input_tokens"], 100)
+            self.assertEqual(migrated["output_tokens"], 25)
+            self.assertNotIn("total_tokens", migrated)
 
 
 class _FakeOutcome:

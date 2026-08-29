@@ -19,7 +19,8 @@ This is a legacy snapshot, so it preserves the finished public bytes but not the
 
 | Measure | Value |
 |---|---|
-| Native Manager tokens | unavailable — this run predates token telemetry |
+| Native Manager input tokens | unavailable — this run predates split token telemetry |
+| Native Manager output tokens | unavailable — this run predates split token telemetry |
 | Wish to verified publication | unavailable — the archived snapshot has no trustworthy Wish-start timestamp |
 
 No dollar cost is inferred.
