@@ -369,6 +369,11 @@ those cache, lock, progress, and temporary bytes would guarantee drift even
 when stable geometry reproduces. STEP/STL/GLB exports, source, measurements,
 product renders, symlinks, special nodes, excluded files, and every other
 non-empty directory remain exact and fail-closed.
+The current Make finalizer additionally requires a valid chromatic RGB/RGBA
+presentation PNG at `<cad-project>/snap/iso.png`, at least 800 px per side.
+That explicit path is archived under `make/verification/renders/` and is the
+only render family eligible for automatic README hero selection. Diagnostic
+silhouettes elsewhere remain evidence and cannot be promoted accidentally.
 
 Host-selected product artifacts share the package contract's 95 MiB per-file
 limit while the durable run retains its 128 MiB cumulative referenced-artifact

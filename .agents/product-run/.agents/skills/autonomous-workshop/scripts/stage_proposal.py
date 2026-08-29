@@ -1365,6 +1365,54 @@ def _invent_contract_for_assignment(
     return result
 
 
+def _validate_make_product_render(project: Path) -> None:
+    """Require one explicit, inspectable presentation render from Make.
+
+    Geometry comparison masks are intentionally grayscale.  Requiring a
+    chromatic RGB/RGBA image at the exact ``snap/iso.png`` path keeps those
+    diagnostic images from silently becoming the public product hero while
+    leaving creative composition and palette choices with the native agent.
+    """
+    render = project / "snap" / "iso.png"
+    try:
+        identity = render.lstat()
+        resolved = render.resolve(strict=True)
+    except OSError as exc:
+        raise ProposalError(
+            "Make requires a product render at <cad-project>/snap/iso.png"
+        ) from exc
+    if render != resolved or render.is_symlink() or not stat.S_ISREG(identity.st_mode):
+        raise ProposalError("Make product render must be a real in-project file")
+    try:
+        from PIL import Image
+
+        with Image.open(render) as image:
+            image.verify()
+        with Image.open(render) as image:
+            if image.format != "PNG":
+                raise ProposalError("Make product render must be a PNG")
+            width, height = image.size
+            if not (800 <= width <= 4096 and 800 <= height <= 4096):
+                raise ProposalError(
+                    "Make product render must be between 800 and 4096 pixels per side"
+                )
+            if image.mode not in ("RGB", "RGBA"):
+                raise ProposalError(
+                    "Make product render must be RGB/RGBA, not a diagnostic grayscale image"
+                )
+            sampled = image.convert("RGB").resize((64, 64))
+            pixels = tuple(sampled.getdata())
+    except ProposalError:
+        raise
+    except Exception as exc:
+        raise ProposalError("Make product render is not a valid PNG") from exc
+    chromatic = sum(max(pixel) - min(pixel) >= 10 for pixel in pixels)
+    if chromatic < 32 or len(set(pixels)) < 16:
+        raise ProposalError(
+            "Make product render must be a chromatic presentation image with useful tonal variation"
+        )
+
+
 def _make_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -1405,6 +1453,7 @@ def _make_contract(
     ):
         raise ProposalError("CAD project path must be a real in-product directory")
     _prune_derived_cad_caches(project, "Make CAD project")
+    _validate_make_product_render(project)
     verification_relative = _safe_relative(
         cad_verification_path, "CAD verification path"
     )

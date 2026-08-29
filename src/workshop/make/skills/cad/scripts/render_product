@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""Render a deterministic, shaded product view from a printable STL.
+
+This is a presentation renderer, not a geometry gate.  It intentionally reads
+the exact STL that Make already verified and writes a chromatic RGB PNG suitable
+for human review and the public toy snapshot.  `image-to-cad/render_views.py`
+remains the binary-silhouette tool for likeness measurement; its output must not
+be used as product photography.
+
+Examples:
+
+    render_product assembled.stl -o snap/iso.png --view iso \
+        --base '#53C5C8' --accent '#FFB84A' --background '#FFF6E5'
+    render_product assembled.stl -o snap/front.png --view front
+    render_product --self-check
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import tempfile
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFilter
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+
+def _load_meshlib():
+    path = SCRIPT_DIR / "meshlib.py"
+    spec = importlib.util.spec_from_file_location("workshop_cad_meshlib", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("could not load meshlib.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _hex_color(value: str) -> tuple[int, int, int]:
+    text = value.strip().lstrip("#")
+    if len(text) != 6:
+        raise argparse.ArgumentTypeError("colors must be six-digit hex values")
+    try:
+        return tuple(int(text[index : index + 2], 16) for index in (0, 2, 4))
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "colors must be six-digit hex values"
+        ) from exc
+
+
+def _normal(value: np.ndarray) -> np.ndarray:
+    length = float(np.linalg.norm(value))
+    if length <= 1e-12:
+        raise ValueError("camera vector has no length")
+    return value / length
+
+
+def _camera(view: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    toward_camera = {
+        "iso": np.array([1.35, -1.65, 1.15], dtype=np.float64),
+        "front": np.array([0.0, -1.0, 0.18], dtype=np.float64),
+        "right": np.array([1.0, 0.0, 0.18], dtype=np.float64),
+        "top": np.array([0.35, -0.45, 1.0], dtype=np.float64),
+    }[view]
+    forward = _normal(toward_camera)
+    up_hint = (
+        np.array([0.0, 1.0, 0.0], dtype=np.float64)
+        if view == "top"
+        else np.array([0.0, 0.0, 1.0], dtype=np.float64)
+    )
+    right = _normal(np.cross(up_hint, forward))
+    up = _normal(np.cross(forward, right))
+    return right, up, forward
+
+
+def _blend(left: tuple[int, int, int], right: tuple[int, int, int], amount: float):
+    amount = min(1.0, max(0.0, amount))
+    return tuple(
+        int(round(left[index] * (1.0 - amount) + right[index] * amount))
+        for index in range(3)
+    )
+
+
+def _shade(color: tuple[int, int, int], light: float) -> tuple[int, int, int]:
+    light = min(1.18, max(0.35, light))
+    if light <= 1.0:
+        return tuple(int(round(channel * light)) for channel in color)
+    return tuple(
+        int(round(channel + (255 - channel) * (light - 1.0)))
+        for channel in color
+    )
+
+
+def _gradient(size: int, top: tuple[int, int, int], bottom: tuple[int, int, int]):
+    rows = np.empty((size, size, 3), dtype=np.uint8)
+    for row in range(size):
+        amount = row / max(1, size - 1)
+        rows[row, :, :] = _blend(top, bottom, amount)
+    return Image.fromarray(rows, mode="RGB")
+
+
+def render(
+    triangles: np.ndarray,
+    *,
+    size: int,
+    view: str,
+    base: tuple[int, int, int],
+    accent: tuple[int, int, int],
+    background: tuple[int, int, int],
+) -> Image.Image:
+    if triangles.ndim != 3 or triangles.shape[1:] != (3, 3) or not len(triangles):
+        raise ValueError("STL contains no renderable triangles")
+    if not np.isfinite(triangles).all():
+        raise ValueError("STL contains non-finite vertices")
+
+    # Bound presentation cost without changing the STL or its geometry gates.
+    if len(triangles) > 75_000:
+        indices = np.linspace(0, len(triangles) - 1, 75_000, dtype=np.int64)
+        triangles = triangles[indices]
+
+    scale_factor = 2
+    canvas_size = size * scale_factor
+    right, up, forward = _camera(view)
+    center = (triangles.min(axis=(0, 1)) + triangles.max(axis=(0, 1))) / 2.0
+    centered = triangles - center
+    px = np.einsum("tvi,i->tv", centered, right)
+    py = -np.einsum("tvi,i->tv", centered, up)
+    depth = np.einsum("tvi,i->tv", centered, forward)
+    span_x = float(px.max() - px.min())
+    span_y = float(py.max() - py.min())
+    span = max(span_x, span_y)
+    if span <= 1e-9:
+        raise ValueError("STL projection has no area")
+    fit = canvas_size * 0.72 / span
+    x_mid = float((px.min() + px.max()) / 2.0)
+    y_mid = float((py.min() + py.max()) / 2.0)
+    screen_x = (px - x_mid) * fit + canvas_size / 2.0
+    screen_y = (py - y_mid) * fit + canvas_size * 0.46
+
+    bg_top = _blend(background, (255, 255, 255), 0.34)
+    bg_bottom = _blend(background, accent, 0.08)
+    image = _gradient(canvas_size, bg_top, bg_bottom)
+
+    # A soft grounding shadow makes the view read as an object rather than a
+    # verification mask. It is decorative and never used as geometry evidence.
+    shadow = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    shadow_pen = ImageDraw.Draw(shadow)
+    shadow_width = max(canvas_size * 0.20, span_x * fit * 0.42)
+    shadow_height = max(canvas_size * 0.025, span_y * fit * 0.055)
+    cx = canvas_size / 2.0
+    cy = min(canvas_size * 0.82, float(screen_y.max()) + canvas_size * 0.025)
+    shadow_pen.ellipse(
+        (cx - shadow_width, cy - shadow_height, cx + shadow_width, cy + shadow_height),
+        fill=(34, 38, 55, 62),
+    )
+    shadow = shadow.filter(ImageFilter.GaussianBlur(canvas_size * 0.018))
+    image = Image.alpha_composite(image.convert("RGBA"), shadow).convert("RGB")
+
+    vectors_a = centered[:, 1] - centered[:, 0]
+    vectors_b = centered[:, 2] - centered[:, 0]
+    normals = np.cross(vectors_a, vectors_b)
+    lengths = np.linalg.norm(normals, axis=1)
+    valid = lengths > 1e-12
+    normals[valid] /= lengths[valid, None]
+    light_direction = _normal(np.array([-0.55, -0.75, 1.6], dtype=np.float64))
+    diffuse = np.abs(normals @ light_direction)
+    # Horizontal display faces take the accent while vertical walls retain the
+    # base color. This is stable across the model height and avoids arbitrary
+    # triangle-shaped color bands on broad planar faces.
+    color_mix = np.abs(normals[:, 2]) ** 4
+    facing_camera = (normals @ forward) > 1e-8
+    order = np.argsort(depth.mean(axis=1), kind="stable")
+    pen = ImageDraw.Draw(image)
+    for index in order:
+        if not valid[index] or not facing_camera[index]:
+            continue
+        material = _blend(base, accent, 0.12 + 0.70 * float(color_mix[index]))
+        color = _shade(material, 0.52 + 0.63 * float(diffuse[index]))
+        points = [
+            (int(round(screen_x[index, corner])), int(round(screen_y[index, corner])))
+            for corner in range(3)
+        ]
+        pen.polygon(points, fill=color)
+
+    # A restrained outline restores silhouette clarity after flat triangle
+    # shading, especially for pale palettes.
+    outline = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    mask = Image.new("L", (canvas_size, canvas_size), 0)
+    mask_pen = ImageDraw.Draw(mask)
+    for index in order:
+        if valid[index]:
+            mask_pen.polygon(
+                [
+                    (int(round(screen_x[index, corner])), int(round(screen_y[index, corner])))
+                    for corner in range(3)
+                ],
+                fill=255,
+            )
+    edge_mask = mask.filter(ImageFilter.FIND_EDGES).filter(
+        ImageFilter.GaussianBlur(scale_factor * 0.35)
+    )
+    outline.paste((31, 38, 57, 100), mask=edge_mask)
+    image = Image.alpha_composite(image.convert("RGBA"), outline).convert("RGB")
+    return image.resize((size, size), Image.Resampling.LANCZOS)
+
+
+def _cube_triangles() -> np.ndarray:
+    vertices = np.array(
+        [
+            [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+            [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],
+        ],
+        dtype=np.float64,
+    )
+    faces = np.array(
+        [
+            [0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7],
+            [0, 1, 5], [0, 5, 4], [1, 2, 6], [1, 6, 5],
+            [2, 3, 7], [2, 7, 6], [3, 0, 4], [3, 4, 7],
+        ],
+        dtype=np.int64,
+    )
+    return vertices[faces]
+
+
+def _self_check() -> None:
+    with tempfile.TemporaryDirectory() as temporary:
+        path = Path(temporary) / "iso.png"
+        image = render(
+            _cube_triangles(),
+            size=900,
+            view="iso",
+            base=(44, 183, 190),
+            accent=(255, 178, 66),
+            background=(255, 246, 229),
+        )
+        image.save(path, format="PNG", optimize=True)
+        with Image.open(path) as observed:
+            observed.verify()
+        with Image.open(path) as observed:
+            colors = observed.convert("RGB").getcolors(maxcolors=900 * 900)
+            if observed.size != (900, 900) or observed.mode != "RGB":
+                raise RuntimeError("self-check wrote the wrong PNG contract")
+            if colors is None or len(colors) < 32:
+                raise RuntimeError("self-check render lacks useful tonal variation")
+    print("render_product self-check passed")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("stl", nargs="?", type=Path)
+    parser.add_argument("-o", "--output", type=Path)
+    parser.add_argument("--view", choices=("iso", "front", "right", "top"), default="iso")
+    parser.add_argument("--size", type=int, default=900)
+    parser.add_argument("--base", type=_hex_color, default=_hex_color("#35AEB8"))
+    parser.add_argument("--accent", type=_hex_color, default=_hex_color("#FFB445"))
+    parser.add_argument("--background", type=_hex_color, default=_hex_color("#FFF5E6"))
+    parser.add_argument("--self-check", action="store_true")
+    args = parser.parse_args()
+    if args.self_check:
+        _self_check()
+        return
+    if args.stl is None or args.output is None:
+        parser.error("STL and --output are required unless --self-check is used")
+    if not 800 <= args.size <= 2048:
+        parser.error("--size must be between 800 and 2048 pixels")
+    triangles = _load_meshlib().load_stl(args.stl)
+    product = render(
+        triangles,
+        size=args.size,
+        view=args.view,
+        base=args.base,
+        accent=args.accent,
+        background=args.background,
+    )
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    product.save(args.output, format="PNG", optimize=True)
+    print(f"wrote {args.output} ({args.size}x{args.size} RGB, {len(triangles)} triangles)")
+
+
+if __name__ == "__main__":
+    main()

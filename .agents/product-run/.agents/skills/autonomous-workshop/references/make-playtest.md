@@ -103,6 +103,17 @@ the host's `--fresh` verifier intentionally rebuilds those bytes. The Make
 finalizer removes safe regular `__cadgen__` cache trees before hashing and
 fails closed on linked or special cache nodes.
 
+Create and inspect an actual presentation render at
+`<cad-project>/snap/iso.png` before finalizing. Use the CAD skill's
+`scripts/render_product` on an exact verified STL, or another deterministic
+renderer that writes the same path. The image must be a valid chromatic
+RGB/RGBA PNG at least 800 px on each side. Choose a palette and view that make
+the product's form and play affordance legible. Binary silhouettes from
+`image-to-cad/render_views.py` are measurement evidence, not product renders;
+keep them in a clearly named review/evidence directory. The finalizer rejects
+a missing, grayscale, flat, or undersized presentation image, and the public
+snapshot promotes only this explicit `snap/` render family as its local hero.
+
 The root `product.json` must be a JSON object containing at least these exact
 metadata keys (additional product-specific fields are allowed):
 

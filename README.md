@@ -214,6 +214,10 @@ The Make finalizer removes empty directories and safe derived `__cadgen__`
 runtime caches before sealing. Stable CAD exports, source, measurements,
 renders, and every other non-empty file remain exact manifest-bound product
 evidence.
+For new runs it also requires an inspected chromatic product render at
+`<cad-project>/snap/iso.png`. The public toy README may use only this explicit
+presentation-render family as its local hero; arbitrary diagnostic images and
+black/white likeness masks are never promoted.
 If a native turn simply returns before writing a proposal, Workshop continues
 the same checkpointed Goal automatically within the shared 32-turn command
 budget, explicitly reminding the session that its finalizer has not run; it

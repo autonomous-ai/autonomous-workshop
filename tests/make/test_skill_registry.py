@@ -1,5 +1,7 @@
 import importlib.util
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -97,6 +99,17 @@ class SkillFingerprintTest(unittest.TestCase):
                 self.assertNotIn("python skills/cad/", text)
                 self.assertNotIn("python scripts/", text)
         self.assertIn('CAD_SKILL_ROOT="$(workshop skills path)/cad"', checked[0].read_text(encoding="utf-8"))
+
+    def test_cad_product_renderer_self_check(self):
+        renderer = resolve_skills_root() / "cad" / "scripts" / "render_product"
+        result = subprocess.run(
+            [sys.executable, str(renderer), "--self-check"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("self-check passed", result.stdout)
 
     def test_step_parts_command_guidance_uses_the_installed_skill_root(self):
         skill_text = (resolve_skills_root() / "step-parts" / "SKILL.md").read_text(

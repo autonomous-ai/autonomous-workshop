@@ -8,6 +8,8 @@ import unittest
 import zlib
 from pathlib import Path
 
+from PIL import Image, ImageDraw
+
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ContractError
 from workshop.invent.native import NativeInvented
@@ -382,6 +384,7 @@ class StageProposalToolTest(unittest.TestCase):
     def create_product(self):
         product_root = self.run_root / "artifacts/make/r0001/product"
         (product_root / "cad/project").mkdir(parents=True)
+        (product_root / "cad/project/snap").mkdir()
         (product_root / "exports/stl").mkdir(parents=True)
         (product_root / "validation").mkdir()
         product = {
@@ -403,6 +406,11 @@ class StageProposalToolTest(unittest.TestCase):
         (product_root / "assembled.stl").write_bytes(assembled_stl)
         (product_root / "exports/stl/assembled.stl").write_bytes(assembled_stl)
         (product_root / "validation/cad-build.json").write_bytes(verification)
+        render = Image.new("RGB", (900, 900), "#fff4df")
+        pen = ImageDraw.Draw(render)
+        pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
+        pen.polygon(((450, 230), (700, 690), (200, 690)), fill="#ffb445")
+        render.save(product_root / "cad/project/snap/iso.png", format="PNG")
         return product_root, product, product_bytes, verification
 
     def create_made(self):
@@ -662,6 +670,48 @@ class StageProposalToolTest(unittest.TestCase):
             made_bytes,
             "playtest",
         )
+
+    def test_make_requires_explicit_chromatic_product_render(self):
+        product_root, _, _, _ = self.create_product()
+        render = product_root / "cad/project/snap/iso.png"
+        render.unlink()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+
+        missing = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("requires a product render", missing.stderr)
+
+        grayscale = Image.new("L", (900, 900), 255)
+        ImageDraw.Draw(grayscale).ellipse((180, 160, 720, 700), fill=0)
+        grayscale.save(render, format="PNG")
+        rejected = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("diagnostic grayscale image", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_make_rejects_invalid_required_product_metadata_before_outputs(self):
         product_root, _, _, _ = self.create_product()

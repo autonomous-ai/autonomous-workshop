@@ -160,6 +160,10 @@ caches inside the declared CAD project: the independent `--fresh` verifier
 deletes and rebuilds them, so they are never stable product evidence. Exported
 CAD, source, measurements, renders, other non-empty nodes, and unsafe nodes
 remain exact and fail-closed.
+Newly materialized protocols require one visually inspected chromatic product
+render at `<cad-project>/snap/iso.png`. Public hero selection is allowlisted to
+the archived `snap/` render family; diagnostic and likeness images elsewhere
+in the Made tree remain evidence only.
 
 A normally completed native turn that has not written `agent-outcome.json` is
 unfinished work, not a failed gate. When the exact native session checkpoint is

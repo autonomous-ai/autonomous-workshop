@@ -52,6 +52,7 @@ python "$CAD_SKILL_ROOT/scripts/export" ...          # STL/3MF/GLB mesh files fr
 python "$CAD_SKILL_ROOT/scripts/inspect" ...         # refs, measure, align, frame, diff
 python "$CAD_SKILL_ROOT/scripts/artifact" ...        # debug one on-demand render-package build (imported STEP)
 python "$CAD_SKILL_ROOT/scripts/verify_project" ...  # sequential quick/final project pipeline
+python "$CAD_SKILL_ROOT/scripts/render_product" ... # shaded RGB product PNG from an exact STL
 ```
 
 If the host supplies the materialized skill directory directly, use that exact
@@ -126,6 +127,13 @@ gate.
 8. **Validate geometrically.** Run `scripts/inspect refs <step-or-cad-target> --facts --planes --positioning` as the baseline, then verify the dimensions and relationships the user's spec calls out with targeted `measure`, `align`, `frame`, or `diff` checks. Put several independent requests through one `scripts/inspect batch` process; do not parallelize warm `inspect` calls. Run `scripts/inspect validate <step-or-cad-target>` for geometry soundness: `refs --facts` reports counts and bounds, and its `ok` field covers ref resolution only — an open shell and an inverted solid both pass it. For an assembly, also run `scripts/inspect interfere <step-or-cad-target>`: nothing else in the toolchain answers whether two parts occupy the same space, and no render can establish the *absence* of a clash — least of all one hidden inside the assembly.
 9. **Reconcile image-derived work.** When the project came from an image/spec, every source repair that changes a parameter, landmark, part count, or construction family must be reconciled back into the approved `*_spec.md`. Give every landmark a local geometry target, render the orthogonal set plus every usable reference viewpoint, compare source against STEP, and run the likeness gate. `references/image-derived-verification.md` defines the two local audits and the integrated `verify_project --image-derived` command.
 10. **Repair and rerun.** If a check fails, change the smallest responsible source section, regenerate, and rerun the failed validation.
+11. **Render the product handoff.** After the exact STL passes its gates, use
+    `scripts/render_product <assembled-or-primary.stl> -o <project>/snap/iso.png`
+    and inspect the PNG at full size. Choose `--base`, `--accent`, and
+    `--background` colors appropriate to the product. This presentation render
+    explains the product to people; it does not replace any geometry check.
+    Keep binary silhouettes from the image-to-CAD likeness tool under a named
+    review/evidence path, never at `snap/iso.png`.
 
 ## Handoff
 
@@ -146,6 +154,10 @@ reference-image reconstruction and its required likeness evidence.
 ## Non-negotiables
 
 - Keep STEP as the primary validated CAD artifact. Generated STEP/STP, STL, 3MF, GLB/topology outputs, and render sidecars are derived artifacts; STL/3MF are secondary unless the user explicitly says otherwise.
+- Keep presentation and measurement imagery distinct. `snap/iso.png` is a
+  visually inspected, chromatic product view made from an exact verified STL;
+  a black/white likeness silhouette is diagnostic evidence and cannot replace
+  it.
 - Use named parameters, closed solids, verbose native build123d labels, and source-controlled geometry intent.
 - Author assembly positioning in source. `references/positioning.md` is authoritative for `AssemblyHelper`, build123d joints, explicit `Location` transforms, and alignment validation.
 - Do not use `git status`, `git diff`, or file-size churn as CAD comparison for large exported STEP/STP, GLB/topology, STL, or 3MF artifacts. Compare source changes, `scripts/inspect` summaries, or generated topology output instead; use path-limited git status only for bookkeeping.

@@ -632,6 +632,8 @@ def _snapshot_effort(staging: Path) -> str:
 def _public_hero_path(staging: Path) -> Optional[str]:
     candidates = (
         "make/verification/renders/iso.png",
+        "make/verification/renders/isometric.png",
+        "make/verification/renders/hero.png",
         "make/verification/renders/front.png",
         "make/verification/renders/top.png",
         "make/verification/renders/right.png",
@@ -639,11 +641,6 @@ def _public_hero_path(staging: Path) -> Optional[str]:
     for relative in candidates:
         if (staging / relative).is_file():
             return relative
-    product = staging / "make" / "product"
-    if product.is_dir():
-        for image in sorted(product.rglob("*")):
-            if image.is_file() and image.suffix.casefold() in (".png", ".jpg", ".jpeg"):
-                return image.relative_to(staging).as_posix()
     return None
 
 

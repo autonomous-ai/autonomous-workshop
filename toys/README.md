@@ -30,9 +30,12 @@ public readback. They are not mocked fixtures.
 | [Rainspell Dial](sonora-reed-rainspell-dial-three-field-sound-garden/) | [Sonora Reed](../inventors/sonora-reed/) | Forge | [Factory page](https://www.autonomous.ai/factory/product/rainspell-dial-three-field-sound-garden), CDN manual bytes verified |
 | [Eclipse Braid](kestrel-knot-eclipse-braid/) | [Kestrel Knot](../inventors/kestrel-knot/) | Spark via the CLI default | [Factory page](https://www.autonomous.ai/factory/product/eclipse-braid), CDN manual bytes verified |
 
-When Make seals a raster product render, the generated snapshot README embeds
-one exact local image—preferring `iso`/`isometric`, then `hero`, then `front`—so GitHub shows
-the product without depending on a mutable Factory CDN thumbnail.
+For new runs, Make must seal and visually inspect a chromatic presentation
+render at `<cad-project>/snap/iso.png`. The public archive maps that explicit
+render family into `make/verification/renders/`, and the generated snapshot
+README embeds one exact local image—preferring `iso`/`isometric`, then `hero`,
+then `front`. Arbitrary images elsewhere in the product tree, including
+black/white geometry-comparison masks, are not eligible as the hero.
 
 A current public snapshot follows the real lifecycle:
 

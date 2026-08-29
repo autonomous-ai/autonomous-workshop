@@ -42,7 +42,7 @@ from workshop.release.native import (
     read_native_release,
     validate_release_product,
 )
-from workshop.release.public_example import materialize_public_example
+from workshop.release.public_example import _public_hero_path, materialize_public_example
 from workshop.release.public_archive import (
     _redact_public_local_paths,
     build_public_archive_manifest,
@@ -278,6 +278,7 @@ class NativeReleaseTest(unittest.TestCase):
     def _make_product(self):
         root = self.run_root / "artifacts/make/r0001/product"
         (root / "cad/project").mkdir(parents=True)
+        (root / "cad/project/snap").mkdir()
         (root / "validation").mkdir()
         (root / "validation/renders").mkdir()
         assembled = b"solid assembled\nendsolid assembled\n"
@@ -321,7 +322,7 @@ class NativeReleaseTest(unittest.TestCase):
         (root / "assembled.stl").write_bytes(assembled)
         (root / "cad/project/moon-body.stl").write_bytes(printable)
         (root / "validation/cad-build.json").write_bytes(receipt)
-        (root / "validation/renders/iso.png").write_bytes(
+        (root / "cad/project/snap/iso.png").write_bytes(
             bytes.fromhex(
                 "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
                 "0000000d49444154789c6360f8cfc000000301010018dd8db10000000049454e44"
@@ -1586,8 +1587,24 @@ class NativeReleaseTest(unittest.TestCase):
             (target / "README.md").read_text(encoding="utf-8"),
         )
         self.assertIn(
-            "![Moon Nook](make/product/validation/renders/iso.png)",
+            "![Moon Nook](make/verification/renders/iso.png)",
             (target / "README.md").read_text(encoding="utf-8"),
+        )
+
+    def test_public_hero_ignores_arbitrary_diagnostic_images(self):
+        staging = self.run_root / "hero-selection"
+        diagnostic = staging / "make/product/cad/review/closed-top.png"
+        diagnostic.parent.mkdir(parents=True)
+        diagnostic.write_bytes(b"diagnostic silhouette")
+
+        self.assertIsNone(_public_hero_path(staging))
+
+        approved = staging / "make/verification/renders/isometric.png"
+        approved.parent.mkdir(parents=True)
+        approved.write_bytes(b"approved presentation render")
+        self.assertEqual(
+            _public_hero_path(staging),
+            "make/verification/renders/isometric.png",
         )
 
     def test_public_archive_does_not_invent_an_invent_stage_for_spark(self):
