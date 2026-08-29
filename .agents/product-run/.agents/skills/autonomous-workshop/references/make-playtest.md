@@ -120,7 +120,9 @@ the host's `--fresh` verifier intentionally rebuilds those bytes. The Make
 finalizer removes safe regular cache files before hashing and fails closed on
 linked, special, or unremovable cache content. If the sandbox protects a now
 empty cache directory from unlink, leave it in place: byte-free directories
-are ignored by both the finalizer and the host's exact-file gate.
+are ignored by both the finalizer and the host's exact-file gate. Frozen older
+finalizers may rely on the trusted host to prune that empty residue before a
+later resume; do not treat the directory itself as product evidence.
 
 Create and inspect an actual presentation render at
 `<cad-project>/snap/iso.png` before finalizing. Use the CAD skill's

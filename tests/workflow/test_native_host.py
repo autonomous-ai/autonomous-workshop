@@ -26,6 +26,7 @@ from workshop.workflow.native_run import (
     NativeRunPaths,
     _NativeProgressTracker,
     _native_run_mutation_lock,
+    _prune_empty_make_product_directories,
     _recoverable_native_turn_backoff_seconds,
     canonical_wish_bytes,
     native_run_exists,
@@ -437,6 +438,44 @@ class NativeHostTest(unittest.TestCase):
             StateConflict, "materialized stage finalizer"
         ):
             _materialized_release_contract(checkpoint)
+
+    def test_host_prunes_only_empty_make_directories_before_native_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            run_root = Path(temporary).resolve() / "run"
+            product = run_root / "artifacts/make/r0001/product"
+            empty_leaf = product / "cad/__cadgen__/empty-cache"
+            empty_leaf.mkdir(parents=True)
+            nonempty = product / "cad/project"
+            nonempty.mkdir()
+            source = nonempty / "toy.step.py"
+            source.write_text("pass\n", encoding="utf-8")
+            linked = product / "cad/linked-cache"
+            linked.symlink_to(nonempty, target_is_directory=True)
+            checkpoint = AgentRunCheckpoint(
+                product_id="host-empty-cleanup",
+                stage="make",
+                status="active",
+                revision=3,
+                round_index=1,
+                max_rounds=4,
+                wish_sha256="a" * 64,
+                run_root_sha256="b" * 64,
+                host_state_root_sha256="c" * 64,
+                checkpoint_sha256="d" * 64,
+                input_sha256s={},
+                inventor_roster=(),
+                stage_artifacts={},
+                invalidated_stages=(),
+            )
+
+            _prune_empty_make_product_directories(run_root, checkpoint)
+
+            self.assertTrue(product.is_dir())
+            self.assertFalse(empty_leaf.exists())
+            self.assertFalse((product / "cad/__cadgen__").exists())
+            self.assertTrue(nonempty.is_dir())
+            self.assertEqual(source.read_text(encoding="utf-8"), "pass\n")
+            self.assertTrue(linked.is_symlink())
 
     def test_second_mutating_host_fails_while_run_lock_is_held(self):
         with tempfile.TemporaryDirectory() as temporary:

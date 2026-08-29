@@ -6033,6 +6033,72 @@ def _native_receipt(
     return receipt
 
 
+def _prune_empty_make_product_directories(
+    run_root: Path, checkpoint: AgentRunCheckpoint
+) -> None:
+    """Remove only byte-free Make residue while no native session is running.
+
+    Older materialized finalizers require every empty directory to be removed
+    but may run in a sandbox that permits file unlink and denies directory
+    unlink.  The trusted host owns the run lock here, follows no links, and
+    never removes files or the product root itself.
+    """
+
+    if checkpoint.stage != "make" or checkpoint.round_index < 1:
+        return
+    root = Path(run_root)
+    product_root = (
+        root
+        / "artifacts"
+        / "make"
+        / ("r%04d" % checkpoint.round_index)
+        / "product"
+    )
+    try:
+        root_identity = root.lstat()
+        product_identity = product_root.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise StateConflict("Make product tree is unavailable for host cleanup") from exc
+    if (
+        not root.is_absolute()
+        or root.is_symlink()
+        or not stat.S_ISDIR(root_identity.st_mode)
+        or product_root.is_symlink()
+        or not stat.S_ISDIR(product_identity.st_mode)
+    ):
+        raise StateConflict("Make product tree is unsafe for host cleanup")
+    try:
+        if product_root.resolve(strict=True) != product_root:
+            raise StateConflict("Make product tree is unsafe for host cleanup")
+    except OSError as exc:
+        raise StateConflict("Make product tree is unavailable for host cleanup") from exc
+
+    for directory, _, _ in os.walk(
+        str(product_root), topdown=False, followlinks=False
+    ):
+        candidate = Path(directory)
+        if candidate == product_root:
+            continue
+        try:
+            identity = candidate.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            raise StateConflict(
+                "Make product tree changed during host cleanup"
+            ) from exc
+        if candidate.is_symlink() or not stat.S_ISDIR(identity.st_mode):
+            continue
+        try:
+            candidate.rmdir()
+        except OSError:
+            # Non-empty, protected, or concurrently changed directories stay
+            # untouched for the finalizer and exact-file gate to inspect.
+            continue
+
+
 def start_native_run(
     wish: Wish,
     *,
@@ -6297,6 +6363,7 @@ def _resume_native_run_locked(
             paths=paths,
             action="inspected-terminal",
         )
+    _prune_empty_make_product_directories(paths.workspace, checkpoint)
     launcher = _native_launcher(checkpoint.manager_id)
     checkpoint, session, turns, action = _run_native_session(
         run,

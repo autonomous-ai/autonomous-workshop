@@ -93,6 +93,10 @@ Make manifests and host gates bind every exact file and reject links or special
 nodes. Byte-free directories are not artifacts; the finalizer prunes them when
 permitted but does not fail merely because the native sandbox denies directory
 unlink after derived cache files have been safely removed.
+For frozen older protocols, the trusted host performs a compatibility prune of
+only real empty directories beneath the current Make product root before
+resume, while holding the run lock and before launching the native process. It
+never removes files, follows links, or rewrites immutable run instructions.
 For a concrete operator or environment blocker, the same finalizer may instead
 write one checkpoint-bound `waiting` or `failed` need with no artifact or
 transition. The host applies that typed non-ready result, persists its bounded

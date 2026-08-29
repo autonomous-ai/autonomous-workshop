@@ -171,6 +171,11 @@ so they are never stable product evidence. A sandbox-protected empty directory
 has no content-addressable bytes and is ignored by both finalizer and host
 inventory. Exported CAD, source, measurements, renders, every other file,
 symlinks, special nodes, and unsafe cache content remain exact and fail-closed.
+For a frozen protocol whose older finalizer still requires byte-free directory
+deletion, resume performs the same narrow cleanup in the trusted host while
+the exclusive run lock is held and no native session is running. It removes
+only real empty directories beneath the current Make product root, never files
+or links.
 Newly materialized protocols require one visually inspected chromatic product
 render at `<cad-project>/snap/iso.png`. Public hero selection is allowlisted to
 the archived `snap/` render family; diagnostic and likeness images elsewhere

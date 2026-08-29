@@ -399,6 +399,12 @@ content-addressable bytes, so the finalizer and trusted host both ignore it
 instead of blocking Make. STEP/STL/GLB exports, source, measurements, product
 renders, every other file, symlinks, special nodes, and unsafe cache content
 remain exact and fail-closed.
+Frozen older finalizers may still require every empty directory to disappear.
+Before their next Make resume, the trusted host holds the exclusive run lock
+and prunes only real empty directories beneath the canonical current product
+root. No native process is active; files and links are never removed or
+followed. This compatibility cleanup does not rematerialize or mutate frozen
+instructions.
 The current Make finalizer additionally requires a valid chromatic RGB/RGBA
 presentation PNG at `<cad-project>/snap/iso.png`, at least 800 px per side.
 That explicit path is archived under `make/verification/renders/` and is the

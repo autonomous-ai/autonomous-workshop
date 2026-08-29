@@ -220,7 +220,10 @@ The Make finalizer removes safe derived `__cadgen__` cache files and prunes
 empty directories when its sandbox permits. Byte-free directories that the
 sandbox protects from unlink are ignored by both finalizer and host inventory;
 every file, symlink, special node, stable CAD export, source, measurement, and
-render remains exact and fail-closed.
+render remains exact and fail-closed. Before resuming a frozen Make protocol
+that still requires directory deletion, the trusted host also prunes only
+empty product directories while holding the run lock; it never removes files
+or follows links.
 For new runs it also requires an inspected chromatic product render at
 `<cad-project>/snap/iso.png`. The public toy README may use only this explicit
 presentation-render family as its local hero; arbitrary diagnostic images and
