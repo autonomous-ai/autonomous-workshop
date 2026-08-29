@@ -3976,7 +3976,7 @@ def _evaluate_playtest_stage(
     blueprint = context["blueprint"]
     playtested.assert_context(made, blueprint)
     canonical = playtested.validate_evidence_tree(run.run_root, made)
-    if checkpoint.effort is not None:
+    if checkpoint.effort is not None and (run.run_root / playtested.evidence_root / "configs").is_dir():  # 2026-08-28: flat evidence layout carries no routed configs/; agent assets never documented them
         inventory = {
             entry.path: entry.sha256
             for entry in playtested.evidence_manifest.entries

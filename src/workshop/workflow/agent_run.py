@@ -72,7 +72,7 @@ MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
 MAX_AGENT_INPUT_BYTES = 4 * 1024 * 1024
 MAX_AGENT_INPUT_FILES = 256
-MAX_AGENT_ARTIFACT_BYTES = 16 * 1024 * 1024
+MAX_AGENT_ARTIFACT_BYTES = 64 * 1024 * 1024  # 2026-08-28: 16 MB choked on a 17.9 MB assembled.step (hcmc-chess)
 # A four-round physical-product run may retain several immutable CAD, mesh,
 # slicer, and Playtest revisions. Keep a cumulative host budget while allowing
 # those bounded revisions to coexist; individual artifacts remain capped at
