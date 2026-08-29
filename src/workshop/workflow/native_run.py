@@ -2142,6 +2142,7 @@ def _record_public_example_projection(
                     NativeRunPaths(run.run_root, run.host_state_root),
                     checkpoint,
                 ),
+                wish_id=checkpoint.product_id,
             )
             target_relative = (
                 target.relative_to(repository).as_posix()

@@ -51,6 +51,9 @@ A current public snapshot follows the real lifecycle:
 - `TOKENS.json` records best-effort Manager-reported input-plus-output token
   totals by stage for new runs. It says `partial` or `unavailable` when the
   Manager did not report every turn and never invents a dollar estimate;
+- `TIMING.json` records elapsed wall time from the timestamp in a CLI-generated
+  Wish id through authenticated Factory public readback. The generated toy
+  README shows both that duration and the total/per-stage token counts;
 - `MANIFEST.json` hashes every public workflow file except
   itself and the generated root README. `SANITIZATION.json`, when present,
   records source/public hashes for host-local path prefixes replaced by stable

@@ -178,7 +178,11 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 
 Horn Tip is a Spark run on Grok. A later Wish with the same prompt is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
 
-Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. New runs also report a best-effort total-token count by stage; it is telemetry, never a gate, and no dollar estimate is inferred. See [`toys/README.md`](toys/) for what a snapshot includes.
+Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. New
+toy READMEs report best-effort total/per-stage native tokens and elapsed time
+from Wish intake through authenticated Factory public readback. This is
+telemetry, never a gate, and no dollar estimate is inferred. See
+[`toys/README.md`](toys/) for what a snapshot includes.
 
 ## Architecture
 

@@ -19,6 +19,7 @@ import shutil
 import stat
 import tempfile
 import urllib.parse
+from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Optional
 
@@ -48,6 +49,10 @@ _PUBLIC_INVENTOR = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _MAX_PUBLIC_NAME = 100
 _TOKEN_SUMMARY_KIND = "autonomous-workshop.native-token-summary"
 _TOKEN_STAGES = ("match", "invent", "make", "playtest", "release")
+_TIMING_SUMMARY_KIND = "autonomous-workshop.run-timing"
+_CLI_WISH_ID = re.compile(
+    r"^wish-(?P<date>[0-9]{8})-(?P<time>[0-9]{6})-[0-9a-f]{8}$"
+)
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -505,6 +510,117 @@ def _public_token_summary(value: Any) -> dict[str, Any]:
     }
 
 
+def _public_timing_summary(wish_id: Optional[str], completed_at: str) -> dict[str, Any]:
+    """Derive CLI Wish-to-publication time without adding private host state.
+
+    The generated CLI Wish id contains its UTC intake second. The completion
+    boundary is the authenticated Factory public-readback receipt, not the
+    native agent's prose or its final turn. Programmatic and historical ids do
+    not necessarily carry time, so they remain explicitly unavailable.
+    """
+
+    unavailable = {
+        "schema_version": 1,
+        "kind": _TIMING_SUMMARY_KIND,
+        "status": "unavailable",
+        "reason": "Wish intake time is unavailable for this run.",
+    }
+    match = _CLI_WISH_ID.fullmatch(wish_id) if isinstance(wish_id, str) else None
+    if match is None:
+        return unavailable
+    try:
+        started = datetime.strptime(
+            match.group("date") + match.group("time"), "%Y%m%d%H%M%S"
+        ).replace(tzinfo=timezone.utc)
+        completed = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return unavailable
+    if (
+        completed.tzinfo is None
+        or completed.utcoffset() != timezone.utc.utcoffset(completed)
+    ):
+        return unavailable
+    elapsed_seconds = int((completed - started).total_seconds())
+    if elapsed_seconds < 0:
+        return unavailable
+    return {
+        "schema_version": 1,
+        "kind": _TIMING_SUMMARY_KIND,
+        "status": "measured",
+        "started_at": started.isoformat().replace("+00:00", "Z"),
+        "completed_at": completed_at,
+        "elapsed_seconds": elapsed_seconds,
+        "completion_boundary": "authenticated Factory public readback",
+    }
+
+
+def _format_elapsed_seconds(value: int) -> str:
+    days, remainder = divmod(value, 86_400)
+    hours, remainder = divmod(remainder, 3_600)
+    minutes, seconds = divmod(remainder, 60)
+    parts = []
+    if days:
+        parts.append("%dd" % days)
+    if hours or days:
+        parts.append("%dh" % hours)
+    if minutes or hours or days:
+        parts.append("%dm" % minutes)
+    parts.append("%ds" % seconds)
+    return " ".join(parts)
+
+
+def _run_cost_markdown(
+    token_summary: Mapping[str, Any], timing_summary: Mapping[str, Any]
+) -> str:
+    token_status = token_summary["status"]
+    if token_status in ("measured", "partial"):
+        turns = token_summary["turns"]
+        token_value = "%s (%s; %s/%s turns measured)" % (
+            format(token_summary["total_tokens"], ",d"),
+            token_status,
+            turns["measured"],
+            turns["total"],
+        )
+        stage_rows = [
+            "| %s | %s | %s | %s |"
+            % (
+                name.capitalize(),
+                format(stage["tokens"], ",d"),
+                stage["turns"],
+                stage["status"],
+            )
+            for name, stage in token_summary["stages"].items()
+        ]
+        stage_table = (
+            "\n\n| Stage | Tokens | Turns | Coverage |\n"
+            "|---|---:|---:|---|\n"
+            + "\n".join(stage_rows)
+        )
+    else:
+        token_value = "unavailable (the Manager did not report token usage)"
+        stage_table = ""
+    if timing_summary["status"] == "measured":
+        elapsed_value = "%s (%s to %s)" % (
+            _format_elapsed_seconds(timing_summary["elapsed_seconds"]),
+            timing_summary["started_at"],
+            timing_summary["completed_at"],
+        )
+    else:
+        elapsed_value = "unavailable (Wish intake time was not recorded)"
+    return (
+        "## Run cost\n\n"
+        "| Measure | Value |\n"
+        "|---|---|\n"
+        "| Native Manager tokens | %s |\n"
+        "| Wish to verified publication | %s |"
+        "%s\n\n"
+        "Tokens are best-effort input-plus-output counts reported by the native "
+        "Manager; no dollar cost is inferred. Elapsed time ends only after "
+        "authenticated Factory public readback.\n"
+        % (token_value, elapsed_value, stage_table)
+    )
+
+
 def _snapshot_effort(staging: Path) -> str:
     if (staging / "playtest").is_dir():
         return "quest"
@@ -607,6 +723,7 @@ def materialize_public_example(
     effort: Optional[str] = None,
     github_requested: bool = False,
     token_summary: Optional[Mapping[str, Any]] = None,
+    wish_id: Optional[str] = None,
 ) -> Path:
     """Create ``toys/<inventor>-<slug>`` from exact public Release bytes.
 
@@ -851,10 +968,16 @@ def materialize_public_example(
             "print_files": print_files,
         }
         public_token_summary = _public_token_summary(token_summary)
+        public_timing_summary = _public_timing_summary(wish_id, receipt.observed_at)
         _write_public_file(
             staging,
             "TOKENS.json",
             _canonical_json(public_token_summary),
+        )
+        _write_public_file(
+            staging,
+            "TIMING.json",
+            _canonical_json(public_timing_summary),
         )
         write_public_workflow_archive(
             staging,
@@ -901,6 +1024,7 @@ def materialize_public_example(
             "| Factory | %s |\n\n"
             "%s\n"
             "%s\n"
+            "%s\n"
             "## Snapshot contents\n\n"
             "- `wish/` — sanitized Wish binding (exact text only with explicit consent).\n"
             "- `match/` — accepted Match assignment.\n"
@@ -910,6 +1034,7 @@ def materialize_public_example(
             "- `release/` — accepted Release contract and exact package bytes.\n"
             "- `publication/PUBLICATION.json` — sanitized public readback identities.\n"
             "- `TOKENS.json` — Manager-reported total tokens by stage; no dollar estimate.\n"
+            "- `TIMING.json` — Wish intake to authenticated public-readback elapsed time.\n"
             "- `MANIFEST.json` — hashes every workflow file except itself and this README.\n"
             "%s"
             "%s\n"
@@ -933,6 +1058,7 @@ def materialize_public_example(
             inventor_id,
             page_url,
             _workflow_overview_markdown(staging),
+            _run_cost_markdown(public_token_summary, public_timing_summary),
             _reproduce_markdown(
                 staging,
                 summary=summary,
@@ -1021,6 +1147,7 @@ def materialize_public_example_if_source_checkout(
     effort: Optional[str] = None,
     github_requested: bool = False,
     token_summary: Optional[Mapping[str, Any]] = None,
+    wish_id: Optional[str] = None,
 ) -> Optional[Path]:
     """Materialize a public example when the host is running from a checkout."""
 
@@ -1038,6 +1165,7 @@ def materialize_public_example_if_source_checkout(
         effort=effort,
         github_requested=github_requested,
         token_summary=token_summary,
+        wish_id=wish_id,
     )
 
 

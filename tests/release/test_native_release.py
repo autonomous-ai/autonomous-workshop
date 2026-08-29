@@ -1345,6 +1345,7 @@ class NativeReleaseTest(unittest.TestCase):
             inventor_id="eve",
             receipt=receipt,
             token_summary=_token_summary(),
+            wish_id="wish-20260825-235959-deadbeef",
         )
         self.assertEqual(target, repository / "toys/eve-moon-nook")
         self.assertEqual(
@@ -1383,6 +1384,15 @@ class NativeReleaseTest(unittest.TestCase):
         tokens = json.loads((target / "TOKENS.json").read_text(encoding="utf-8"))
         self.assertEqual(tokens["status"], "measured")
         self.assertEqual(tokens["stages"]["make"]["tokens"], 125)
+        timing = json.loads((target / "TIMING.json").read_text(encoding="utf-8"))
+        self.assertEqual(timing["status"], "measured")
+        self.assertEqual(timing["elapsed_seconds"], 1)
+        self.assertEqual(timing["completion_boundary"], "authenticated Factory public readback")
+        readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn("## Run cost", readme)
+        self.assertIn("| Native Manager tokens | 125 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Wish to verified publication | 1s", readme)
+        self.assertIn("| Make | 125 | 1 | measured |", readme)
         public_manifest = json.loads(
             (target / "MANIFEST.json").read_text(encoding="utf-8")
         )
@@ -1407,6 +1417,7 @@ class NativeReleaseTest(unittest.TestCase):
                 inventor_id="eve",
                 receipt=receipt,
                 token_summary=_token_summary(),
+                wish_id="wish-20260825-235959-deadbeef",
             ),
             target,
         )
@@ -1420,6 +1431,7 @@ class NativeReleaseTest(unittest.TestCase):
                 inventor_id="eve",
                 receipt=receipt,
                 token_summary=_token_summary(),
+                wish_id="wish-20260825-235959-deadbeef",
             )
 
     def test_public_example_copies_exact_pdf_manual_without_cover_or_rich_page_identity(self):
