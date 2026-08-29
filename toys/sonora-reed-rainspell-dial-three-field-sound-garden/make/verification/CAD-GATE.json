@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "status": "pass",
+  "cad_project_path": "cad_project",
+  "assembly": {
+    "step_path": "assembled.step",
+    "step_sha256": "e3cac07ad09704df2357d89a11abf92bb919f41aea6ab877d08b88d11380d43e",
+    "stl_path": "assembled.stl",
+    "stl_sha256": "8e0630042b6f711d4d5b5aaa6211b0988b45615d8b96e2ba1c94876d95077d10",
+    "source_entry": "cad_project/rainspell_dial.step.py",
+    "source_step": "cad_project/rainspell_dial.step",
+    "printable_part_count": 6,
+    "envelope_mm": [
+      120.0,
+      120.0,
+      51.65
+    ]
+  },
+  "final_pipeline": {
+    "status": "pass",
+    "print_ready_claim": true,
+    "report_path": "CAD-VERIFICATION.md",
+    "report_sha256": "17dfbe158512c15014e39be568b5caa45c64e85217b833d03a0a831c17b3039f",
+    "nozzle_mm": 0.4,
+    "minimum_wall_mm": 0.8,
+    "strict_fit": true,
+    "generator_rebuild": true,
+    "post_repaired_meshes": false
+  },
+  "checks": [
+    {
+      "id": "layout-and-generation",
+      "status": "pass",
+      "evidence": "The combined entry and all six printable entries regenerated from parametric source with the project split rule satisfied."
+    },
+    {
+      "id": "declared-output-reproducibility",
+      "status": "pass",
+      "evidence": "Clean generations produced identical assembly STEP and GLB hashes after optional one-filament presentation colors were removed. Exact-path full replays matched all 15 STEP/STL/GLB files and six repaired `project/...` thickness reports. A final clean-project replay left all 56 pre-existing project files byte-identical and created only the deliberately absent cache and pipeline record; geometric diff against the originally rejected assembly found no topology, geometry, or bounding-box change.",
+      "path": "cad_project/measure/reproducibility.md",
+      "sha256": "728ce849200cea609e7ef4b94ef51872b9fb5759453044004d0ea3b9d11aa263"
+    },
+    {
+      "id": "fit-and-print-stance",
+      "status": "pass",
+      "evidence": "All six one-body parts sit at z=0, fit a 220×220×220 mm bed, and passed strict project fit plus the local clearance audit."
+    },
+    {
+      "id": "kernel-validity-and-static-interference",
+      "status": "pass",
+      "evidence": "All combined and per-part STEP references and B-reps validated; the named assembly interference inspection passed."
+    },
+    {
+      "id": "declared-motion",
+      "status": "pass",
+      "evidence": "All eight conditions passed: deck service lift, 360-degree wheel sweep, 2.4 mm plectrum lift, downward captivity, keeper service slide, cap keeper block, cap lift, and direct-pull retention."
+    },
+    {
+      "id": "mesh-and-wall-thickness",
+      "status": "pass",
+      "evidence": "Every generated part STL is watertight, manifold, consistently wound, positive-volume, one-shell, bed-fitting, and has zero sampled surface below the 0.8 mm wall threshold."
+    },
+    {
+      "id": "wish-specific-geometry",
+      "status": "pass",
+      "evidence": "The exact B-rep-bound audit records 46 source-matched ribs, three target chamber volumes, three port section areas, declared neck routes, cadence arithmetic, and explicit claim boundaries.",
+      "path": "cad_project/measure/acoustic_geometry.json",
+      "sha256": "0ceb8c49fa901c7711df73ae51e168cf513dc2968622a23e94aa3246d1a204d8"
+    },
+    {
+      "id": "render-inspection",
+      "status": "pass",
+      "evidence": "Top, front, and isometric renders were regenerated from the exact assembled STL and inspected for the low circular silhouette, visible rib fields, guarded ring, spokes, cap, follower, and counterweight."
+    }
+  ],
+  "limitations": [
+    "No exact physical print, slicer study, fit coupon, or assembly trial has been performed.",
+    "No physical sound, gravity, retention, walking, tipping, wear, durability, or human-response result is claimed.",
+    "Print-ready is a deterministic digital eligibility result for the declared geometry and nozzle, not proof of manufacture."
+  ]
+}

@@ -168,6 +168,10 @@ class ScriptedStream:
         self._index = 0
         self._remainder = None
         self._started = False
+        self.closed = False
+
+    def close(self):
+        self.closed = True
 
     def __iter__(self):
         while True:
@@ -528,6 +532,52 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(
                 private["constitution_sha256"], CONSTITUTION_SHA256
             )
+
+    def test_terminal_usage_is_reduced_to_exact_bounded_token_counters(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            completed = self.start_events(terminal=False)
+            completed.append(
+                event(
+                    {
+                        "type": "turn.completed",
+                        "usage": {
+                            "input_tokens": 11_288,
+                            "cached_input_tokens": 8_960,
+                            "cache_write_input_tokens": 0,
+                            "output_tokens": 266,
+                            "reasoning_output_tokens": 255,
+                        },
+                    }
+                )
+            )
+            malformed = self.start_events(terminal=False)
+            malformed.append(
+                event(
+                    {
+                        "type": "turn.completed",
+                        "usage": {
+                            "input_tokens": 10,
+                            "cached_input_tokens": 0,
+                            "cache_write_input_tokens": 0,
+                            "output_tokens": -1,
+                            "reasoning_output_tokens": 3,
+                        },
+                    }
+                )
+            )
+            launcher, unused_factory = self.launcher(
+                [{"stdout": completed}, {"stdout": malformed}]
+            )
+
+            started = self.start(launcher, root)
+            resumed = self.resume(launcher, root)
+
+            self.assertEqual(started.token_count, 11_554)
+            self.assertEqual(started.to_dict()["token_count"], 11_554)
+            self.assertIsNone(resumed.token_count)
+            self.assertNotIn("token_count", resumed.to_dict())
 
     def test_permission_profile_trusts_only_the_exact_codex_helper_executable(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1640,6 +1690,80 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertNotIn("rotated-secret-one", checkpoint_text)
             self.assertNotIn("rotated-secret-two", checkpoint_text)
 
+    def test_resume_accepts_supported_in_place_cli_upgrade(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            factory = FakePopenFactory(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed after upgrade")},
+                ]
+            )
+            original = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.145.0",
+            )
+            upgraded = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.1",
+            )
+
+            started = self.start(original, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            checkpoint_before = checkpoint.read_bytes()
+            resumed = self.resume(upgraded, root)
+
+            self.assertEqual(resumed.status, "completed")
+            self.assertEqual(len(factory.calls), 2)
+            self.assertIn("resume", factory.calls[1][0])
+            self.assertIn(THREAD_ID, factory.calls[1][0])
+            self.assertEqual(checkpoint.read_bytes(), checkpoint_before)
+            self.assertEqual(
+                resumed.binding.checkpoint_sha256,
+                started.binding.checkpoint_sha256,
+            )
+            self.assertNotEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+
+    def test_resume_rejects_cli_downgrade_and_major_upgrade(self):
+        for original_version, resumed_version in (
+            ("0.150.1", "0.145.0"),
+            ("0.150.1", "1.0.0"),
+        ):
+            with self.subTest(
+                original_version=original_version,
+                resumed_version=resumed_version,
+            ), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                factory = FakePopenFactory(
+                    [
+                        {"stdout": self.start_events()},
+                        {"stdout": self.start_events(message="must not launch")},
+                    ]
+                )
+                original = CodexNativeSessionLauncher(
+                    binary=TEST_CODEX_BINARY,
+                    popen_factory=factory,
+                    cli_version=original_version,
+                )
+                changed = CodexNativeSessionLauncher(
+                    binary=TEST_CODEX_BINARY,
+                    popen_factory=factory,
+                    cli_version=resumed_version,
+                )
+
+                self.start(original, root)
+                with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                    self.resume(changed, root)
+
+                self.assertEqual(len(factory.calls), 1)
+
     def test_native_runtime_version_requires_goals_and_subagents(self):
         self.assertEqual(MINIMUM_CODEX_NATIVE_RUNTIME_VERSION, (0, 145, 0))
         self.assertFalse(codex_supports_native_workshop("0.144.9"))
@@ -1689,6 +1813,9 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertTrue(process.terminated)
             self.assertFalse(process.killed)
             self.assertLessEqual(process.wait_timeouts[0], 0.25)
+            self.assertTrue(process.stdin.closed)
+            self.assertTrue(process.stdout.closed)
+            self.assertTrue(process.stderr.closed)
 
     def test_keyboard_interrupt_reaps_process_and_preserves_exact_resume(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -2129,6 +2256,11 @@ class CodexNativeSessionTest(unittest.TestCase):
             ), self.assertRaises(CodexRecoverableInvocationError):
                 self.start(launcher, root)
 
+            timed_out_process = factory.processes[0]
+            self.assertTrue(timed_out_process.stdin.closed)
+            self.assertTrue(timed_out_process.stdout.closed)
+            self.assertTrue(timed_out_process.stderr.closed)
+
             outcome = self.resume(launcher, root)
 
             self.assertEqual(outcome.status, "completed")
@@ -2482,6 +2614,92 @@ class CodexNativeSessionTest(unittest.TestCase):
                     self.start(launcher, root)
 
                 self.assertTrue(factory.processes[0].terminated)
+
+    def test_explicit_transport_failure_events_preserve_recoverable_category(self):
+        failures = (
+            {
+                "type": "turn.failed",
+                "error": {
+                    "message": (
+                        "stream disconnected before completion: "
+                        "response.completed was not received"
+                    )
+                },
+            },
+            {
+                "type": "error",
+                "message": "provider stream disconnected: upstream reset",
+            },
+        )
+        for failure in failures:
+            with self.subTest(
+                event_type=failure["type"]
+            ), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, factory = self.launcher(
+                    [
+                        {
+                            "stdout": [
+                                event(
+                                    {
+                                        "type": "thread.started",
+                                        "thread_id": THREAD_ID,
+                                    }
+                                ),
+                                event(failure),
+                            ]
+                        }
+                    ]
+                )
+
+                with self.assertRaisesRegex(
+                    CodexRecoverableInvocationError,
+                    "provider transport was interrupted",
+                ) as caught:
+                    self.start(launcher, root)
+
+                self.assertNotIn("upstream", str(caught.exception))
+                self.assertNotIn("response.completed", str(caught.exception))
+                self.assertTrue(factory.processes[0].terminated)
+
+    def test_unanchored_failed_turn_message_cannot_select_recovery(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": [
+                            event(
+                                {
+                                    "type": "thread.started",
+                                    "thread_id": THREAD_ID,
+                                }
+                            ),
+                            event(
+                                {
+                                    "type": "turn.failed",
+                                    "error": {
+                                        "message": (
+                                            "tool failed\n"
+                                            "provider stream disconnected"
+                                        )
+                                    },
+                                }
+                            ),
+                        ]
+                    }
+                ]
+            )
+
+            with self.assertRaises(CodexInvocationError) as caught:
+                self.start(launcher, root)
+
+            self.assertNotIsInstance(
+                caught.exception, CodexRecoverableInvocationError
+            )
+            self.assertNotIn("provider stream", str(caught.exception))
 
     def test_natural_nonzero_exit_after_completed_turn_still_fails(self):
         with tempfile.TemporaryDirectory() as temporary:

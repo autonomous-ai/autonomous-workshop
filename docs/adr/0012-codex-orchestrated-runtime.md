@@ -46,13 +46,14 @@ project-scoped custom agents; Workshop does not launch separate OS-level Codex
 processes or schedule a parallel agent system in Python.
 
 The host may automatically continue a native stage turn only for a typed
-launcher timeout or explicitly recognized provider-transport interruption,
+launcher timeout or explicitly recognized provider-transport interruption
+from the private launcher channel or Codex's documented terminal-error event,
 only after the launcher's dedicated POSIX process session is proven empty, and
 only when the exact session UUID is already durably checkpointed. It keeps the
 exclusive run lock, applies bounded deterministic-jitter backoff, resumes that
 same UUID against the unchanged stage subject, and charges the attempt to the
-existing bounded native-turn budget. An unbound interruption, failed-turn
-event, unknown exit, unsafe termination, contract/gate failure, or
+existing bounded native-turn budget. An unbound interruption, unrecognized
+failed-turn event, unknown exit, unsafe termination, contract/gate failure, or
 authorization/effect failure remains terminal for that command. This recovery
 is transport control, not a Python reasoning or improvement loop.
 
@@ -61,8 +62,9 @@ dedicated POSIX process session, including Codex's built-in code-mode helper.
 Product-run instructions therefore forbid custom tools from daemonizing,
 detaching, creating a new process session, or intentionally leaving background
 work behind. The Codex adapter accepts only anchored recognized provider
-diagnostics from its private launcher channel; generic stderr remains an
-unknown failure and fails closed.
+diagnostics from private, bounded launcher or native-event fields. Those bytes
+select a typed category and are immediately discarded. Generic diagnostics
+remain an unknown failure and fail closed.
 
 Codex uses native inspection, editing, shell, search, rendering, applicable
 skills, and specialist delegation to perform Match reasoning, research,

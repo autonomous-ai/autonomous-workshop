@@ -1,120 +1,83 @@
 ---
 name: design-reference
-description: Search a local index of existing parametric CAD designs and fetch selected build123d examples with source, license, provenance, and checksums. Use when image-to-CAD or CAD work benefits from analogous construction patterns or prior designs. Do not use it for purchasable standard components; use step-parts for those.
+description: Research Internet sources for analogous parametric CAD construction patterns and authoritative design specifications, recording URLs, revisions, licenses, claims, and evidence. Use when image-to-CAD or CAD work benefits from prior designs or sourced design facts. Do not use it for purchasable component geometry; use step-parts for that.
 ---
 
 # Design references
 
-Use analogous designs to learn a construction pattern, never to replace the
-user's reference image, dimensions, or requested exterior. The bundled client
-indexes the 7,683-model Fusion 360 Gallery build123d conversion without
-vendoring the dataset into this repository.
+Research the Internet before selecting a construction design. Use authoritative
+sources for specifications and licensed analogous designs for construction
+patterns; never replace the user's reference image, dimensions or requested
+exterior with the nearest-looking result.
 
 ## Boundary
 
-- Use this skill for shape archetypes, feature-order examples, and build123d
-  idioms from existing designs.
-- Use `step-parts` instead for a bought motor, bearing, fastener, board, or
-  other standard component that the new model must physically fit. That path
-  does not end at the search: download the STEP into `<project-dir>/ref/`,
-  derive the cavity and the screw pattern from that file with `$cad`'s
-  `scripts/cadmount.py`, declare the component in `measure/mounts.json`, and
-  gate it with `scripts/check_mount`. Nothing in this index carries a bought
-  part's dimensions, so a dimension taken from here is a number typed by hand.
-- Use `$electromechanical-integration` instead when the question is how a
-  functional motor, servo, solenoid, LED or lamp is powered, controlled, wired
-  and packaged, including the exact socket/contact system and removable-fit
-  verification. This skill's Fusion Gallery index supplies sketch/extrude
-  construction examples only: it carries no electrical ratings, exact
-  component identity, mating-interface evidence or physical-fit proof, and it
-  does not search GitHub open-hardware repositories or component libraries.
-- A design reference is not a scale anchor, dimensional authority, or proof of
-  likeness. Measure the user's own images and validate the resulting model.
-- The indexed Fusion 360 Gallery Modified Set is licensed for
-  **non-commercial research only**. Do not use or fetch its source for a
-  commercial task. Every search result and fetched provenance record repeats
-  this restriction.
+- Use this skill for shape archetypes, feature ordering, parametric CAD idioms,
+  mechanism construction examples, and sourced design constraints.
+- Use manufacturer documentation, standards, or an official technical source
+  for numerical specifications. A third-party analogous model is not authority
+  for the user's dimensions, ratings or scale.
+- Use `step-parts` for a bought motor, bearing, fastener, board, connector or
+  other standard component the model must physically fit. Download its canonical
+  STEP into `<project-dir>/ref/`, derive the seat with `$cad`'s `cadmount`,
+  declare it in `measure/mounts.json`, and run `check_mount`.
+- Use `$electromechanical-integration` when the question includes power,
+  control, wiring, electrical ratings, exact lamp/socket contacts or removable
+  powered interfaces. A design repository is not electrical authority.
+- A design reference is not proof of likeness, manufacturability, assembly or
+  physical fit. Those claims remain with the project gates.
 
-## Client
+## Internet research workflow
 
-Resolve the materialized skill once, then run from the product workspace with
-its active interpreter:
+1. Read and measure the user's evidence first. Name the one or two exact design
+   questions research must answer; do not browse with only a product-category
+   query.
+2. Write a research contract for each question: required facts, acceptable
+   source authority, geometry or operation uncertainty, packaging constraints,
+   license needs, and the condition that would reject a candidate.
+3. Search the Internet with form, feature and operation terms. For example,
+   search `tapered shell vent slots parametric CAD`, not merely `enclosure`.
+4. Review no more than five strong candidates. Prefer, in order:
+   - manufacturer documents, standards and official technical pages for
+     dimensions, ratings and compatibility facts;
+   - repositories with source CAD or build123d/CadQuery/OpenSCAD code, an
+     explicit license, and an immutable commit or release for construction
+     patterns;
+   - authoritative CAD/kernel documentation for operation-specific questions.
+5. Record every used result and meaningful rejection: query, stable URL,
+   repository plus commit/release when available, license/use, exact claim or
+   specification taken, relevant feature, construction lesson, and status
+   (`used`, `rejected`, `miss`, or `unavailable`).
+6. Compare the evidence against the research contract, select the design, and
+   re-measure every user-specific dimension from the user's image/spec. Do not
+   copy an analogous model's placement, scale or silhouette.
 
-```bash
-DESIGN_REFERENCE_SKILL_ROOT="$(workshop skills path)/design-reference"
+A login wall or network failure is `unavailable`, never a miss. A page with no
+explicit permission may support a factual citation or visual comparison, but
+its code or geometry may not be copied. If no useful source exists, record the
+query as a miss and author the design from the user's evidence plus official CAD
+operation documentation. A weak analogy is worse than no analogy.
 
-# First use, or when the pinned source revision changes (~40 MB download)
-python "$DESIGN_REFERENCE_SKILL_ROOT/scripts/design_refs.py" sync
+## Build-spec record
 
-# Search offline after sync. Translate non-English requests into a short
-# English feature query because the source descriptions are English.
-python "$DESIGN_REFERENCE_SKILL_ROOT/scripts/design_refs.py" search \
-    "rounded enclosure mounting holes" --limit 8
+Add each used or outcome-defining result to build-spec section **6d** with:
 
-# Inspect one exact result
-python "$DESIGN_REFERENCE_SKILL_ROOT/scripts/design_refs.py" show \
-    fusion360-gallery-build123d/model_100221_4d7b66c4_0003
+- research query and status;
+- source authority/type;
+- stable URL and revision/commit/release when available;
+- relevant feature;
+- exact specification or constraint taken, with units and applicability;
+- construction lesson used;
+- license/use.
 
-# Fetch only the selected reference into an existing CAD project
-python "$DESIGN_REFERENCE_SKILL_ROOT/scripts/design_refs.py" fetch \
-    fusion360-gallery-build123d/model_100221_4d7b66c4_0003 \
-    --project-dir output/<project>
-
-# Recheck downloaded artifacts later
-python "$DESIGN_REFERENCE_SKILL_ROOT/scripts/design_refs.py" verify output/<project>
-```
-
-All ordinary commands print JSON. `search --format text` is available for a
-compact human-readable list.
-
-## Workflow
-
-1. Read and measure the user's actual reference first. Name the construction
-   family and the one or two features for which an analogy would reduce
-   uncertainty.
-2. Search with form and operation words, not the product name alone: for
-   example `tapered shell vent slots`, `rounded bracket mounting holes`, or
-   `revolved knob recessed grip`.
-3. Review at most five strong candidates. Prefer a candidate because a named
-   feature uses a relevant construction pattern, not because its title sounds
-   similar.
-4. Fetch only candidates that will inform the build. The client writes under
-   `<project>/ref/external/<source>/<model>/`:
-   - `reference.build123d.txt` — a non-executable excerpt; the `.txt` suffix is
-     deliberate because cadgen scans the worktree for Python generators;
-   - `contact-sheet.png` — the source batch's visual sheet;
-   - `LICENSE.md`;
-   - `provenance.json` — immutable revision, URLs, catalog record, and SHA-256
-     for every downloaded artifact.
-5. Record the selected id, local path, relevant feature, and the precise idea
-   taken from it. Re-measure every dimension from the user's reference or spec.
-6. Run `verify` before handing off a project that contains fetched references.
-   The CAD final runner does this automatically whenever `ref/external/`
-   exists, and records a skipped row when no design reference was fetched.
-
-If no candidate is relevant, record the query as a miss and continue from the
-user's evidence. A weak analogy is worse than no analogy because it silently
-pulls the build toward another object's silhouette.
+Section 6g then compares the evidence and records the selected construction
+design. Project-local `measure/check_spec.py` checks that every selected design
+has the required source URL, claim/specification and license record; final CAD
+verification does not re-fetch the Internet.
 
 ## Integration with image-to-cad
 
-For image-derived work, search after the overall read and before writing the
-feature-operation table. Add every used result to the build spec's **Design
-references** table. The operation table may borrow a construction idiom; its
-numbers, placements, and silhouette still come from the reference-image
-measurement ledger.
-
-## Maintenance
-
-The source registry is `data/sources.json`. The client is
-`scripts/design_refs.py`; the adapter that turns a fetched archive into the
-searchable index — batch parsing, function extraction, duplicate rejection —
-is `scripts/catalog_build.py`, which `design_refs.py` imports and which the
-tests exercise directly. Read `references/catalog-schema.md` only when changing
-a source adapter, the index format, or provenance layout. Re-run `sync --force`
-after changing the pinned revision, then:
-
-```bash
-python "$DESIGN_REFERENCE_SKILL_ROOT/scripts/design_refs.py" self-check
-python -m pytest "$DESIGN_REFERENCE_SKILL_ROOT/tests" -q
-```
+Research after the overall read and feature tree have named the construction
+question, and before section 6g selects the design or the feature-operation
+table is written. The research must leave enough sourced specifications and
+construction evidence for CAD to build without choosing among alternatives.

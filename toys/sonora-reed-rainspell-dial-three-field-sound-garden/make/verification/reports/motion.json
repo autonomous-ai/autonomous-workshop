@@ -1,0 +1,69 @@
+{
+  "assembly": "rainspell_dial.step.py",
+  "conditions": [
+    {
+      "id": "deck-seats-vertically",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "The aligned deck can lift away from its seated datum for service.",
+      "inputs": {"moving_part": "rainspell_dial.rib_deck", "obstacle_parts": ["rainspell_dial.base"], "translation": [0, 0, 8], "steps": 8, "allow_seated_contact": true},
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "wheel-rotates-clear",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The wheel, cage, and follower carrier clear the fixed base and deck for a full story sweep.",
+      "inputs": {"moving_part": "rainspell_dial.wheel", "obstacle_parts": ["rainspell_dial.base", "rainspell_dial.rib_deck"], "axis_point": [0, 0, 0], "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": 360, "steps": 36, "allow_seated_contact": true},
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "plectrum-lifts-clear",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "The captive plectrum has the sealed 2.4 mm vertical design travel.",
+      "inputs": {"moving_part": "rainspell_dial.plectrum", "obstacle_parts": ["rainspell_dial.wheel", "rainspell_dial.follower_keeper", "rainspell_dial.cap"], "translation": [0, 0, 2.4], "steps": 12, "allow_seated_contact": true},
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "plectrum-downward-captured",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "The follower flange is blocked from escaping downward through the completed guide.",
+      "inputs": {"moving_part": "rainspell_dial.plectrum", "obstacle_parts": ["rainspell_dial.wheel", "rainspell_dial.follower_keeper"], "translation": [0, 0, -8], "steps": 16, "allow_seated_contact": true},
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "keeper-service-slide-clear",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "With cap omitted as an obstacle, the keeper has an outward service direction.",
+      "inputs": {"moving_part": "rainspell_dial.follower_keeper", "obstacle_parts": ["rainspell_dial.wheel", "rainspell_dial.plectrum"], "translation": [3.574, -7.158, 0], "steps": 8, "allow_seated_contact": true},
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "keeper-inward-blocked-by-cap",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "The installed cap skirt blocks inward keeper withdrawal.",
+      "inputs": {"moving_part": "rainspell_dial.follower_keeper", "obstacle_parts": ["rainspell_dial.cap"], "translation": [3.574, -7.158, 0], "steps": 16, "allow_seated_contact": true},
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "cap-lift-clear",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "The cap can lift 1 mm out of its gravity pockets before counter-rotation.",
+      "inputs": {"moving_part": "rainspell_dial.cap", "obstacle_parts": ["rainspell_dial.base", "rainspell_dial.wheel", "rainspell_dial.follower_keeper"], "translation": [0, 0, 1], "steps": 8, "allow_seated_contact": true},
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "cap-direct-pull-blocked",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Without the deliberate lift-and-turn sequence, the spindle ears block direct pull-off.",
+      "inputs": {"moving_part": "rainspell_dial.cap", "obstacle_parts": ["rainspell_dial.base"], "translation": [0, 0, 8], "steps": 16, "allow_seated_contact": true},
+      "thresholds": {"maxOverlapMm3": 0.001}
+    }
+  ]
+}

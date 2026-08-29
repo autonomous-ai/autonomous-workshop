@@ -1,0 +1,22 @@
+{
+  "feedback": [
+    {
+      "code": "sealed-rotor-web-contradiction",
+      "area": "rotor optical window and detent interface",
+      "severity": "block",
+      "finding": "The sealed 68.0 mm rotor has a 31.5 mm-radius optical sector spanning local 35 to 145 degrees and a 0.55 mm-deep notch at local +75 degrees. Because that notch lies inside the sector, its 33.45 mm root leaves only 1.95 mm of local web, contradicting the sealed 2.50 mm minimum. Exact Make geometry cannot satisfy all of those requirements simultaneously.",
+      "change": "Revise Invent to reconcile the optical-sector boundary, detent notch/tooth placement, notch depth, and minimum web as one explicit geometry decision, then recompute all three indexed 5/6/7 optical states. Do not leave Make to choose silently among relocating the detent, reshaping the sector, or changing a minimum.",
+      "evidence_refs": [
+        "check_rotor_web.py",
+        "independent-luma-audit.md",
+        "rotor-web-contradiction.json"
+      ],
+      "invalidates": [
+        "invent",
+        "make",
+        "playtest",
+        "release"
+      ]
+    }
+  ]
+}

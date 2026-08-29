@@ -4,6 +4,15 @@ Cradle Crescent is a palm-sized, one-piece crescent desk rocker with two choose-
 
 [View the verified public product page](https://www.autonomous.ai/factory/product/cradle-crescent)
 
+## Run cost
+
+| Measure | Value |
+|---|---|
+| Native Manager tokens | unavailable — this run predates token telemetry |
+| Wish to verified publication | unavailable — the archived snapshot has no trustworthy Wish-start timestamp |
+
+No dollar cost is inferred.
+
 ## Snapshot contents
 
 - `product.json` — the exact sealed Release facts.

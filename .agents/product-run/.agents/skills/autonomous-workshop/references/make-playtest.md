@@ -29,7 +29,8 @@ judging; a lead is a lead, not a verdict.
 Create one native Codex Goal for the current Make attempt. Its objective is to
 produce the exact ready-to-print, inspectable product artifact required by the
 current effort. Its stopping condition is a successful `make` finalizer for
-the current checkpoint.
+the current checkpoint, or—only for a build-blocking contradiction in a sealed
+Forge/Quest Invent contract—a successful `make-revision` finalizer.
 
 For Forge and Quest, the sealed Invent result is the primary reference for
 form, proportion, construction, component breakdown, and intended interaction.
@@ -99,11 +100,64 @@ parts changed after their group was sealed; re-run `make-group` for that
 group after any change to its parts. Concepts sealed before build plans
 existed (Invented schema 3 or 4) need no groups.
 
+## Return an unbuildable sealed concept to Invent
+
+For Forge and Quest, `STAGE.json` may set `invent_revision_allowed: true` and
+provide canonical revision contract and evidence paths. Use that path only
+when exact inspection proves that the sealed Invent concept is internally
+contradictory, omits a decision required for every conforming implementation,
+or otherwise makes truthful Make completion impossible. A difficult build,
+ordinary CAD mistake, aesthetic preference, or repair that can preserve the
+concept stays inside the current Make Goal.
+
+Do not edit sealed Invent bytes or silently depart from them. Preserve exact
+deterministic or independently inspected findings under
+`invent_revision_evidence_root`. Write one source JSON with exactly `feedback`.
+Every feedback item must use severity `block`, cite at least one file from that
+evidence tree, state the contradiction and required design change, and use:
+
+```json
+{"invalidates":["invent","make","playtest","release"]}
+```
+
+Then run:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . make-revision \
+  --source <make-revision-source.json> \
+  --evidence-root <STAGE invent_revision_evidence_root>
+```
+
+The finalizer succeeds by sealing a truthful failed-Make proposal, not a Made
+artifact. Return control immediately. The host rehashes the evidence, verifies
+its exact assignment/Invented bindings and shared round budget, then alone may
+invalidate Invent and downstream stages and start a new Invent Goal. The
+revised Invent packet receives the prior concept and exact Make feedback.
+
 Leave the product tree at the exact `product_root` in `STAGE.json`. It must
 include the required root product metadata, CAD project, assembled STEP/STL
 outputs, and deterministic CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions.
+
+Keep stable exported STEP/STL/GLB files, product PNG renders, source, and
+measurements in the product tree. Do not preserve `__cadgen__` runtime caches,
+generation locks/progress files, `__pycache__`, or temporary work trees there:
+the host's `--fresh` verifier intentionally rebuilds those bytes. The Make
+finalizer removes safe regular `__cadgen__` cache trees before hashing and
+fails closed on linked or special cache nodes.
+
+Create and inspect an actual presentation render at
+`<cad-project>/snap/iso.png` before finalizing. Use the CAD skill's
+`scripts/render_product` on an exact verified STL, or another deterministic
+renderer that writes the same path. The image must be a valid chromatic
+RGB/RGBA PNG at least 800 px on each side. Choose a palette and view that make
+the product's form and play affordance legible. Binary silhouettes from
+`image-to-cad/render_views.py` are measurement evidence, not product renders;
+keep them in a clearly named review/evidence directory. The finalizer rejects
+a missing, grayscale, flat, or undersized presentation image, and the public
+snapshot promotes only this explicit `snap/` render family as its local hero.
 
 The root `product.json` must be a JSON object containing at least these exact
 metadata keys (additional product-specific fields are allowed):
@@ -158,6 +212,14 @@ cite a canonical configuration and static evidence file, and stay bound to the
 sealed Made artifact. Digital assessment never proves successful printing,
 physical fit, durability, or human play.
 
+Each canonical config is a strict JSON object with `schema_version: 1`, the
+exact `check_id`, and the current Made product-manifest hash under
+`product_artifact_sha256` (preferred) or the legacy `artifact_sha256` key. If
+both binding keys are present, they must agree. A config may preserve any
+additional finite JSON needed to reproduce or audit that check; when `seed` is
+present it must be an integer. The finalizer seals every config byte, and the
+host independently rehashes it and verifies the current Made binding.
+
 While pursuing the Goal:
 
 1. **Observe:** Inspect the exact Made tree, manifest, required checks, rules,
@@ -206,11 +268,20 @@ spread of 3 or more is a finding about the artifact — readers cannot tell
 whether it has that property — not noise to average away. Never invent
 physical trials, human players, measurements, or results.
 
+If `STAGE.json` contains `host_playtest_proposal_rejection`, read its exact
+failure code and feedback before repairing the evidence. The host quarantined
+the rejected proposal because its config, evidence, or contract could not be
+safely reopened or rebound. Replace linked, missing, special, or changed files
+with stable regular files and regenerate the proposal; never weaken the check.
+
 Choose each actionable feedback boundary explicitly:
 
 - implementation repair: `["playtest", "release"]`, returning to Make;
 - concept revision: `["invent", "make", "playtest", "release"]`,
   returning to Invent with the exact prior design and evidence.
+
+Route concept-invalidating Playtest evidence directly to Invent. Do not spend
+an intermediate Make Goal merely forwarding evidence that Make cannot resolve.
 
 Then run:
 

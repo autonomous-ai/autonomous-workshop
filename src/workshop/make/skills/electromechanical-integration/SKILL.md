@@ -35,7 +35,11 @@ CAD artifacts. Keep those moments explicit:
   physical integration strategy in step 5, and write the evidence and decisions
   into build-spec sections 6c, 6e, 6f and 8a. Mount labels, project-local STEP
   files and motion conditions may only be planned at this point. Do not claim
-  that `check_power`, `check_mount` or `check_motion` ran.
+  that `check_power`, `check_mount` or `check_motion` ran. Phase A owns the
+  electrical, actuator and lighting selection: start with a measurable contract,
+  research and compare, then write the selected topology, exact devices and
+  rejected alternatives into build-spec section 6g. Do not arrive with an
+  agent-guessed topology or MPN already locked.
 - **Phase B — powered CAD handoff:** after `$cad` has materialized the selected
   component STEP/envelope files, assembly labels, seats, routes and motion
   conditions, write the three manifests and run their gates. A pre-CAD research
@@ -47,22 +51,33 @@ CAD artifacts. Keep those moments explicit:
    and inventory every functional electrical load. Name the source, protection,
    switching/control, connectors, conductors and return path crossing that
    boundary. An external supply still needs a modeled inlet or lead.
-2. **Classify and source each load.** For an actuator, record accepted voltage,
-   running current, stall/start current and control method. For a light, read
+2. **Classify and source each load.** When selecting or replacing hardware,
+   first read
+   [references/component-selection.md](references/component-selection.md) and
+   write a measurable selection contract before searching. Reject candidates
+   on hard functional, electrical, physical and evidence gates before ranking
+   the survivors; a high preference score cannot compensate for a failed gate.
+   For an actuator, record accepted voltage, running current, stall/start
+   current and control method. For a light, also read
    [references/lighting-discovery.md](references/lighting-discovery.md), then
    inventory its function, position, colour, behavior, optical direction,
    emitter/module, driver and visible optic. If the lamp is removable, select
    its exact mating socket and contacts in the same pass. Do not identify an
-   MPN or mating geometry from appearance alone.
-3. **Research automatically.** Do not wait for a separate request to search.
-   Search GitHub for analogous powered products and search purchasable parts by
-   exact MPN and form. Start component geometry at `step.parts`; on a confirmed
-   miss continue through the manufacturer and the public CAD services routed by
-   the lighting reference. Review no more than five strong GitHub candidates.
-   Prefer repositories with source CAD or KiCad, BOM, schematic or wiring,
-   assembly instructions and an explicit license. Record used results,
-   meaningful rejections and misses. A login wall or network failure is
-   `unavailable`, not a catalog miss.
+   MPN or mating geometry from appearance alone. Only hardware explicitly
+   required by the user begins as a fixed candidate, and it still has to pass
+   the same ratings, geometry, interface and evidence gates before selection.
+3. **Research and compare automatically.** Do not wait for a separate request
+   to search. Search GitHub for analogous powered products and search
+   purchasable parts by exact MPN and form. Start component geometry at
+   `step.parts`; on a confirmed miss continue through the manufacturer and the
+   public CAD services routed by the lighting reference. Build an
+   evidence-backed candidate comparison rather than accepting the first catalog
+   hit. If only one candidate remains, record why the alternatives failed or
+   were unavailable. Review no more than five strong GitHub candidates. Prefer
+   repositories with source CAD or KiCad, BOM, schematic or wiring, assembly
+   instructions and an explicit license. Record used results, meaningful
+   rejections and misses. A login wall or network failure is `unavailable`, not
+   a catalog miss.
 4. **Specify one complete path per independently rated branch.** Each path
    begins and returns at its source and contains protection or a sourced
    justification, switching/control, interconnects, conductors and exactly one
@@ -116,15 +131,16 @@ CAD artifacts. Keep those moments explicit:
 
 ## Handoff
 
-In Phase A, report the selected GitHub analogy and exact idea borrowed, every
-public component-search result, authoritative evidence, chosen paths, planned
-component files/mount ids/routes and every removable-interface contract; mark
-artifact-dependent checks as pending. In Phase B, report every result used,
-rejected, missed or unavailable, authoritative
-component evidence, the source range and load demand, each complete path,
-modeled mounts/routes, each removable light's exact receiver, mating-motion and
-coupon status, and the actual `check_power`, `check_mount` and `check_motion`
-results. Treat a missing rating,
+In Phase A, report the selection contract, candidate comparison, selected MPN
+and nearest rejected alternative; then report the selected GitHub analogy and
+exact idea borrowed, every public component-search result, authoritative
+evidence, chosen paths, planned component files/mount ids/routes and every
+removable-interface contract. Mark artifact-dependent checks as pending. In
+Phase B, report every result used, rejected, missed or unavailable,
+authoritative component evidence, the source range and load demand, each
+complete path, modeled mounts/routes, each removable light's exact receiver,
+mating-motion and coupon status, and the actual `check_power`, `check_mount` and
+`check_motion` results. Treat a missing rating,
 unresolved protection decision, absent carried mount, unmodeled wire route,
 unidentified visible optic, unresolved removable mate or unrecorded catalog
 search as incomplete powered-product work. Never report “physically fits” from

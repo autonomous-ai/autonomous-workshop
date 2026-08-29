@@ -246,6 +246,11 @@ class StageGateDecision:
                 raise ContractError(
                     "failed Playtest gate must return explicit feedback to Make or Invent"
                 )
+        elif self.evidence.stage == "make" and not self.evidence.passed:
+            if self.transition != "invent":
+                raise ContractError(
+                    "failed Make revision gate must return explicit feedback to Invent"
+                )
         elif self.evidence.passed:
             if self.evidence.stage == "make" and self.transition in (
                 "playtest",

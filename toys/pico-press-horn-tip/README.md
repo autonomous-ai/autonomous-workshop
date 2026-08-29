@@ -36,6 +36,15 @@ Spark: `Wish -> Make -> Release`. Inventor selection is folded into Make.
 
 Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no turn, artifact, or gate. Private host rejections and native session resumes are not public.
 
+## Run cost
+
+| Measure | Value |
+|---|---|
+| Native Manager tokens | unavailable — this run predates token telemetry |
+| Wish to verified publication | unavailable — the archived snapshot has no trustworthy Wish-start timestamp |
+
+No dollar cost is inferred.
+
 ## Reproduce
 
 Install Grok Build TUI `grok` 1.0.5 or newer, sign in, and run the same

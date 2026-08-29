@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.assembled-step-metadata",
+  "title": "Saigon Skyline Chess",
+  "units": "mm",
+  "step": {
+    "path": "assembled.step",
+    "sha256": "d7bf1d573c57bf466104b84ec25d509637e6f963482a2eb2ac83c7c0769f7de5"
+  },
+  "print_mesh": {
+    "path": "assembled.stl",
+    "sha256": "327149e24c7b97b667cc5780e797ed5f44a0743bf1cb73015030e3642901bc0e",
+    "connected_shells": 33,
+    "watertight": true,
+    "manifold": true,
+    "winding_consistent": true
+  },
+  "assembly": {
+    "configuration": "orthodox opening position",
+    "occurrence_count": 33,
+    "board_count": 1,
+    "piece_count": 32,
+    "distinct_printable_part_variants": 13,
+    "bounding_box_mm": {
+      "x": 208.0,
+      "y": 208.0,
+      "z": 58.6
+    }
+  },
+  "source": {
+    "cad_project_path": "cad",
+    "assembly_entry": "cad/saigon_chess.step.py",
+    "assembly_step": "cad/saigon_chess.step",
+    "verification_report": "cad/measure/verification-pipeline.md"
+  },
+  "scope_note": "This self-contained metadata file references only paths present in the product package. Digital validation does not claim a successful physical print, durability, or human playtest."
+}

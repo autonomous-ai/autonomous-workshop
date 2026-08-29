@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "title": "Eclipse Braid",
+  "summary": "A one-handed print-in-place desk toy whose captive squared-crescent runner follows one fully visible braided figure-eight route through two separated alternating bridges, reverses travel orientation at the far lobe, and returns home by continued thumb motion.",
+  "status": "digitally-verified-print-ready",
+  "selected_inventor_id": "kestrel-knot",
+  "interaction": {
+    "hands": 1,
+    "motion": "Guide the crescent continuously around the visible rail with the thumb in either direction.",
+    "reset": "Continue around the same closed route; shaking is not required.",
+    "orientation_event": "The route tangent reverses at the far lobe and returns to its home direction after one full circuit."
+  },
+  "construction": {
+    "manufacturing": "single print-in-place output",
+    "printed_solids": 2,
+    "post_print_assembly": false,
+    "support_removal": false,
+    "hardware": [],
+    "adhesives": [],
+    "magnets": false,
+    "string": false
+  },
+  "printing": {
+    "units": "mm",
+    "material_assumption": "PLA or PETG",
+    "nozzle_mm": 0.4,
+    "layer_height_mm": 0.2,
+    "supports": "none",
+    "orientation": "frame flat on the build plate"
+  },
+  "digital_verification": {
+    "canonical_cad_project": "cad-source",
+    "final_pipeline": "evidence/final-verification.md",
+    "fresh_gate_stability": "evidence/fresh-gate-stability.json",
+    "route_proof": "evidence/route-traversal.json",
+    "native_step": "assembled.step",
+    "print_mesh": "assembled.stl",
+    "direct_views": [
+      "renders/top.png",
+      "renders/front.png",
+      "renders/right.png",
+      "renders/iso.png"
+    ]
+  },
+  "limitations": [
+    "Digitally validated geometry is not evidence of a successful physical print.",
+    "Friction, wear, comfort, and meditative feel require later physical evaluation.",
+    "Small moving gaps depend on printer calibration and material behaviour."
+  ]
+}

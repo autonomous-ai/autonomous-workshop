@@ -38,6 +38,7 @@ INVENTOR_ROSTER_KIND = "autonomous-workshop.inventor-roster"
 MATCH_KIND = "autonomous-workshop.match-assignment"
 INVENTED_KIND = "autonomous-workshop.invented"
 MADE_KIND = "autonomous-workshop.made"
+MAKE_INVENT_REVISION_KIND = "autonomous-workshop.make-invent-revision"
 PLAYTESTED_KIND = "autonomous-workshop.playtested"
 RELEASE_KIND = "autonomous-workshop.release"
 
@@ -51,6 +52,7 @@ PLAYTEST_INVENT_INVALIDATES = (
     "release",
 )
 PLAYTEST_FEEDBACK_INVALIDATES = frozenset(PLAYTEST_INVENT_INVALIDATES)
+MAKE_INVENT_REVISION_INVALIDATES = PLAYTEST_INVENT_INVALIDATES
 FORWARD = {
     "match": "invent",
     "invent": "make",
@@ -730,6 +732,118 @@ def _path_has_artifact_debris(relative: PurePosixPath) -> bool:
         ):
             return True
     return False
+
+
+def _prune_empty_directories(tree_root: Path, label: str) -> None:
+    """Remove directory-only build residue that cannot be content-addressed."""
+
+    for directory, _, _ in os.walk(str(tree_root), topdown=False, followlinks=False):
+        candidate = Path(directory)
+        if candidate == tree_root:
+            continue
+        try:
+            identity = candidate.lstat()
+        except OSError as exc:
+            raise ProposalError("%s changed while empty directories were pruned" % label) from exc
+        if candidate.is_symlink() or not stat.S_ISDIR(identity.st_mode):
+            raise ProposalError("%s contains a symlink or special directory" % label)
+        try:
+            candidate.rmdir()
+        except OSError:
+            try:
+                current = candidate.lstat()
+            except OSError as exc:
+                raise ProposalError(
+                    "%s changed while empty directories were pruned" % label
+                ) from exc
+            if candidate.is_symlink() or not stat.S_ISDIR(current.st_mode):
+                raise ProposalError(
+                    "%s changed while empty directories were pruned" % label
+                )
+
+
+def _prune_derived_cad_caches(project_root: Path, label: str) -> None:
+    """Remove only cadgen's reproducible runtime cache before sealing Make.
+
+    ``verify_project --fresh`` deletes and rebuilds every ``__cadgen__`` tree.
+    Sealing one therefore guarantees a byte-drift rejection even when all
+    stable geometry passes. Stable exported STEP/STL/GLB and render files live
+    outside this cache and remain in the exact product manifest.
+    """
+
+    caches: list[Path] = []
+    for directory, dirnames, _ in os.walk(
+        str(project_root), topdown=True, followlinks=False
+    ):
+        base = Path(directory)
+        kept = []
+        for dirname in sorted(dirnames):
+            candidate = base / dirname
+            try:
+                identity = candidate.lstat()
+            except OSError as exc:
+                raise ProposalError(
+                    "%s changed while derived CAD caches were inspected" % label
+                ) from exc
+            if candidate.is_symlink() or not stat.S_ISDIR(identity.st_mode):
+                raise ProposalError(
+                    "%s contains a symlink or special directory" % label
+                )
+            if dirname.casefold() == "__cadgen__":
+                caches.append(candidate)
+            else:
+                kept.append(dirname)
+        dirnames[:] = kept
+
+    for cache in sorted(caches, key=lambda item: len(item.parts), reverse=True):
+        for directory, dirnames, filenames in os.walk(
+            str(cache), topdown=False, followlinks=False
+        ):
+            base = Path(directory)
+            for filename in filenames:
+                candidate = base / filename
+                try:
+                    identity = candidate.lstat()
+                except OSError as exc:
+                    raise ProposalError(
+                        "%s changed while a derived CAD cache was removed" % label
+                    ) from exc
+                if candidate.is_symlink() or not stat.S_ISREG(identity.st_mode):
+                    raise ProposalError(
+                        "%s derived CAD cache contains a linked or special file"
+                        % label
+                    )
+                try:
+                    candidate.unlink()
+                except OSError as exc:
+                    raise ProposalError(
+                        "%s derived CAD cache could not be removed" % label
+                    ) from exc
+            for dirname in dirnames:
+                candidate = base / dirname
+                try:
+                    identity = candidate.lstat()
+                except OSError as exc:
+                    raise ProposalError(
+                        "%s changed while a derived CAD cache was removed" % label
+                    ) from exc
+                if candidate.is_symlink() or not stat.S_ISDIR(identity.st_mode):
+                    raise ProposalError(
+                        "%s derived CAD cache contains a linked or special directory"
+                        % label
+                    )
+                try:
+                    candidate.rmdir()
+                except OSError as exc:
+                    raise ProposalError(
+                        "%s derived CAD cache could not be removed" % label
+                    ) from exc
+        try:
+            cache.rmdir()
+        except OSError as exc:
+            raise ProposalError(
+                "%s derived CAD cache could not be removed" % label
+            ) from exc
 
 
 def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict[str, Any]:
@@ -1598,6 +1712,53 @@ def _make_group(
         "exit_criteria": group["exit_criteria"],
     }
 
+def _validate_make_product_render(project: Path) -> None:
+    """Require one explicit, inspectable presentation render from Make.
+
+    Geometry comparison masks are intentionally grayscale.  Requiring a
+    chromatic RGB/RGBA image at the exact ``snap/iso.png`` path keeps those
+    diagnostic images from silently becoming the public product hero while
+    leaving creative composition and palette choices with the native agent.
+    """
+    render = project / "snap" / "iso.png"
+    try:
+        identity = render.lstat()
+        resolved = render.resolve(strict=True)
+    except OSError as exc:
+        raise ProposalError(
+            "Make requires a product render at <cad-project>/snap/iso.png"
+        ) from exc
+    if render != resolved or render.is_symlink() or not stat.S_ISREG(identity.st_mode):
+        raise ProposalError("Make product render must be a real in-project file")
+    try:
+        from PIL import Image
+
+        with Image.open(render) as image:
+            image.verify()
+        with Image.open(render) as image:
+            if image.format != "PNG":
+                raise ProposalError("Make product render must be a PNG")
+            width, height = image.size
+            if not (800 <= width <= 4096 and 800 <= height <= 4096):
+                raise ProposalError(
+                    "Make product render must be between 800 and 4096 pixels per side"
+                )
+            if image.mode not in ("RGB", "RGBA"):
+                raise ProposalError(
+                    "Make product render must be RGB/RGBA, not a diagnostic grayscale image"
+                )
+            sampled = image.convert("RGB").resize((64, 64))
+            pixels = tuple(sampled.getdata())
+    except ProposalError:
+        raise
+    except Exception as exc:
+        raise ProposalError("Make product render is not a valid PNG") from exc
+    chromatic = sum(max(pixel) - min(pixel) >= 10 for pixel in pixels)
+    if chromatic < 32 or len(set(pixels)) < 16:
+        raise ProposalError(
+            "Make product render must be a chromatic presentation image with useful tonal variation"
+        )
+
 
 def _make_contract(
     run_root: Path,
@@ -1638,6 +1799,8 @@ def _make_contract(
         or not stat.S_ISDIR(project_identity.st_mode)
     ):
         raise ProposalError("CAD project path must be a real in-product directory")
+    _prune_derived_cad_caches(project, "Make CAD project")
+    _validate_make_product_render(project)
     verification_relative = _safe_relative(
         cad_verification_path, "CAD verification path"
     )
@@ -1654,6 +1817,7 @@ def _make_contract(
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
         "CAD verification",
     )
+    _prune_empty_directories(product_root, "Make product tree")
     manifest = _tree_manifest(run_root, product_root_value, "Make product tree")
     paths = {entry["path"] for entry in manifest["entries"]}
     if "product.json" not in paths:
@@ -1772,6 +1936,110 @@ def _playtest_transition(playtested: Mapping[str, Any]) -> str:
     ):
         return "invent"
     return "make"
+
+
+def _make_invent_revision_feedback(value: Any) -> dict[str, Any]:
+    item = _feedback(value)
+    if item["severity"] != "block":
+        raise ProposalError(
+            "Make may return to Invent only for build-blocking feedback"
+        )
+    if tuple(item["invalidates"]) != MAKE_INVENT_REVISION_INVALIDATES:
+        raise ProposalError(
+            "Make Invent revision must invalidate Invent and every downstream stage"
+        )
+    if not item["evidence_refs"]:
+        raise ProposalError(
+            "Make Invent-revision feedback requires exact evidence_refs"
+        )
+    refs = [
+        _safe_relative(ref, "Make Invent-revision evidence_ref").as_posix()
+        for ref in item["evidence_refs"]
+    ]
+    if len(refs) != len(set(refs)):
+        raise ProposalError(
+            "Make Invent-revision feedback evidence_refs must be unique"
+        )
+    item["evidence_refs"] = refs
+    return item
+
+
+def _make_invent_revision_contract(
+    run_root: Path,
+    stage: Mapping[str, Any],
+    source: Mapping[str, Any],
+    *,
+    evidence_root_value: str,
+) -> dict[str, Any]:
+    inputs = _required_fields(
+        stage["inputs"],
+        {
+            "assignment",
+            "invented",
+            "invent_revision_allowed",
+            "invent_revision_contract_path",
+            "invent_revision_evidence_root",
+        },
+        "Make STAGE inputs",
+    )
+    if inputs["invent_revision_allowed"] is not True:
+        raise ProposalError("this Make stage cannot return to Invent")
+    assignment = _validate_assignment(inputs["assignment"])
+    invented = _validate_invented(inputs["invented"], assignment)
+    round_index = stage["round"]
+    expected_contract = (
+        "artifacts/make/r%04d/invent-revision-request.json" % round_index
+    )
+    if inputs["invent_revision_contract_path"] != expected_contract:
+        raise ProposalError("Make Invent-revision contract path is not canonical")
+    expected_root = "artifacts/make/r%04d/revision-evidence" % round_index
+    if (
+        inputs["invent_revision_evidence_root"] != expected_root
+        or evidence_root_value != expected_root
+    ):
+        raise ProposalError(
+            "Make Invent-revision evidence root must be %s" % expected_root
+        )
+    authored = _fields(source, {"feedback"}, "Make Invent-revision authored source")
+    feedback = [
+        _make_invent_revision_feedback(item)
+        for item in _array(
+            authored["feedback"],
+            "Make Invent-revision feedback",
+            nonempty=True,
+        )
+    ]
+    codes = [item["code"] for item in feedback]
+    if len(codes) != len(set(codes)):
+        raise ProposalError("Make Invent-revision feedback codes must be unique")
+    manifest = _tree_manifest(
+        run_root, evidence_root_value, "Make Invent-revision evidence tree"
+    )
+    inventory = {entry["path"]: entry["sha256"] for entry in manifest["entries"]}
+    for item in feedback:
+        for ref in item["evidence_refs"]:
+            if ref not in inventory:
+                raise ProposalError(
+                    "Make Invent-revision feedback references absent evidence: %s"
+                    % ref
+                )
+    feedback_sha256 = json_sha256(feedback)
+    identity = {
+        "schema_version": 1,
+        "kind": MAKE_INVENT_REVISION_KIND,
+        "round": round_index,
+        "wish_sha256": assignment["wish_sha256"],
+        "assignment_sha256": assignment["assignment_sha256"],
+        "invented_sha256": invented["invented_sha256"],
+        "evidence_root": evidence_root_value,
+        "evidence_manifest": manifest,
+        "feedback": feedback,
+        "feedback_sha256": feedback_sha256,
+    }
+    return {
+        **identity,
+        "revision_request_sha256": json_sha256(identity),
+    }
 
 
 def _validate_playtested(
@@ -2571,6 +2839,40 @@ def _playtest_contract(
         ).as_posix()
         if config_ref not in inventory or evidence_ref not in inventory:
             raise ProposalError("Playtest check references a file outside its evidence tree")
+        if "effort" in inputs:
+            expected_config_ref = "configs/%s.json" % check_id
+            if config_ref != expected_config_ref:
+                raise ProposalError(
+                    "Playtest check config_ref must be %s" % expected_config_ref
+                )
+            config, config_content, _ = _read_json(
+                run_root,
+                "%s/%s" % (evidence_root_value, config_ref),
+                "Playtest %s config" % check_id,
+            )
+            binding_keys = tuple(
+                key
+                for key in ("artifact_sha256", "product_artifact_sha256")
+                if key in config
+            )
+            expected_artifact_sha256 = made["product_manifest"]["artifact_sha256"]
+            if (
+                hashlib.sha256(config_content).hexdigest()
+                != inventory[config_ref]
+                or config.get("schema_version") != 1
+                or config.get("check_id") != check_id
+                or ("seed" in config and type(config["seed"]) is not int)
+                or not binding_keys
+                or any(
+                    not isinstance(config[key], str)
+                    or config[key] != expected_artifact_sha256
+                    for key in binding_keys
+                )
+            ):
+                raise ProposalError(
+                    "Playtest config is not bound to the current Made revision: %s"
+                    % check_id
+                )
         observations = _mapping(
             check["observations"], "Playtest observations", nonempty=True
         )
@@ -2934,8 +3236,16 @@ def _seal(
     transition: str,
     additional_contracts: Sequence[tuple[str, Mapping[str, Any]]] = (),
     additional_files: Sequence[tuple[str, bytes]] = (),
+    contract_path_value: str | None = None,
+    identity_field_value: str | None = None,
 ) -> dict[str, Any]:
-    contract_path = _stage_contract_path(stage)
+    contract_path = (
+        _safe_relative(contract_path_value, "stage contract path").as_posix()
+        if contract_path_value is not None
+        else _stage_contract_path(stage)
+    )
+    if not contract_path.startswith("artifacts/%s/" % stage["stage"]):
+        raise ProposalError("stage contract must stay under the current stage")
     contract_bytes = canonical_json(contract)
     if len(contract_bytes) > MAX_CONTRACT_BYTES:
         raise ProposalError("stage contract exceeds the native artifact limit")
@@ -2986,13 +3296,15 @@ def _seal(
     if len(proposal_bytes) > MAX_OUTCOME_BYTES:
         raise ProposalError("agent outcome proposal exceeds its byte limit")
     _atomic_write(run_root, "agent-outcome.json", proposal_bytes)
-    identity_field = {
+    identity_field = identity_field_value or {
         "match": "assignment_sha256",
         "invent": "invented_sha256",
         "make": "made_sha256",
         "playtest": "playtested_sha256",
         "release": "release_sha256",
     }[stage["stage"]]
+    if identity_field not in contract:
+        raise ProposalError("stage contract identity field is absent")
     return {
         "artifact_path": contract_path,
         "artifact_sha256": artifact_sha256,
@@ -3050,6 +3362,19 @@ def _parser() -> argparse.ArgumentParser:
     playtest = subparsers.add_parser(
         "playtest", help="Seal authored checks and exact evidence tree."
     )
+
+    make_revision = subparsers.add_parser(
+        "make-revision",
+        help="Seal exact evidence that the upstream Invent concept is unbuildable.",
+    )
+    make_revision.add_argument(
+        "--source", required=True, help="Run-local Make revision feedback JSON."
+    )
+    make_revision.add_argument(
+        "--evidence-root",
+        required=True,
+        help="Canonical tree containing exact contradiction evidence.",
+    )
     playtest.add_argument(
         "--source", required=True, help="Run-local Playtest authored JSON."
     )
@@ -3089,9 +3414,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             assignment_value=assignment,
             invented_value=invented,
         )
-    stage = _load_stage(run_root, args.command)
+    expected_stage = "make" if args.command == "make-revision" else args.command
+    stage = _load_stage(run_root, expected_stage)
     additional_contracts: list[tuple[str, Mapping[str, Any]]] = []
     additional_files: list[tuple[str, bytes]] = []
+    contract_path_value = None
+    identity_field_value = None
     if args.command == "match":
         source, _, _ = _read_json(run_root, args.source, "Match authored source")
         contract = _match_contract(stage, source)
@@ -3163,6 +3491,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             invented_value=invented,
         )
         transition = stage["next_transition"]
+    elif args.command == "make-revision":
+        source, source_content, _ = _read_json(
+            run_root, args.source, "Make Invent-revision authored source"
+        )
+        contract = _make_invent_revision_contract(
+            run_root,
+            stage,
+            source,
+            evidence_root_value=args.evidence_root,
+        )
+        contract_path_value = stage["inputs"]["invent_revision_contract_path"]
+        source_path = (
+            "artifacts/make/r%04d/invent-revision-source.json" % stage["round"]
+        )
+        additional_files.append((source_path, source_content))
+        identity_field_value = "revision_request_sha256"
+        transition = "invent"
     elif args.command == "playtest":
         source, _, _ = _read_json(run_root, args.source, "Playtest authored source")
         contract = _playtest_contract(
@@ -3188,6 +3533,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         transition=transition,
         additional_contracts=additional_contracts,
         additional_files=additional_files,
+        contract_path_value=contract_path_value,
+        identity_field_value=identity_field_value,
     )
 
 

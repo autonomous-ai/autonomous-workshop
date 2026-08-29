@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "72a32cef0a8839bb2c29eea29ca658b766c8939a6056f9c36abf2f248b64acd2",
+      "kind": "codex-skill",
+      "name": "sonora-reed-inventor",
+      "path": "skills/sonora-reed-inventor"
+    }
+  ],
+  "id": "sonora-reed",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

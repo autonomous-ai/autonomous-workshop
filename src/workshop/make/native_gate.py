@@ -45,6 +45,10 @@ MAX_NATIVE_CAD_VERIFIER_BYTES = 4 * 1024 * 1024
 MAX_NATIVE_CAD_VOLATILE_REPORT_BYTES = 2 * 1024 * 1024
 
 
+class NativeMadeTreeGateError(ArtifactError):
+    """The agent-authored Made tree changed across the finalizer handoff."""
+
+
 def _canonical_json(value: Any) -> bytes:
     try:
         return json.dumps(
@@ -222,16 +226,28 @@ def _declared_directories(paths: set[str]) -> set[str]:
 def _validate_exact_product_tree(made: NativeMade, run_root: Path) -> Path:
     """Rehash NativeMade and reject even manifest-excluded extra nodes."""
 
-    made.validate_product_tree(run_root)
-    relative = _safe_relative(made.product_root, "native Made product root")
-    product_root = _checked_directory(run_root, relative, "native Made product tree")
-    actual_files, actual_directories = _inventory_exact_tree(product_root)
-    declared_files = {entry.path for entry in made.product_manifest.entries}
-    if actual_files != declared_files:
-        raise ArtifactError("native Made product tree has undeclared or missing files")
-    if actual_directories != _declared_directories(declared_files):
-        raise ArtifactError("native Made product tree has undeclared or missing directories")
-    return product_root
+    try:
+        made.validate_product_tree(run_root)
+        relative = _safe_relative(made.product_root, "native Made product root")
+        product_root = _checked_directory(
+            run_root, relative, "native Made product tree"
+        )
+        actual_files, actual_directories = _inventory_exact_tree(product_root)
+        declared_files = {entry.path for entry in made.product_manifest.entries}
+        if actual_files != declared_files:
+            raise ArtifactError(
+                "native Made product tree has undeclared or missing files"
+            )
+        if actual_directories != _declared_directories(declared_files):
+            raise ArtifactError(
+                "native Made product tree has undeclared or missing directories"
+            )
+        return product_root
+    except ArtifactError as error:
+        raise NativeMadeTreeGateError(
+            "native Made product tree changed after proposal finalization: %s"
+            % error
+        ) from error
 
 
 def _cad_entries(made: NativeMade) -> tuple[ArtifactEntry, ...]:
@@ -922,7 +938,9 @@ def verify_native_made_cad(
         project_files != declared_project_files
         or project_directories != _declared_directories(declared_project_files)
     ):
-        raise ArtifactError("native Made CAD project differs from its declared inventory")
+        raise NativeMadeTreeGateError(
+            "native Made CAD project changed after proposal finalization"
+        )
     project_sha256 = _entries_sha256(entries)
 
     verifier_relative = _safe_relative(NATIVE_CAD_VERIFIER_PATH, "native CAD verifier")

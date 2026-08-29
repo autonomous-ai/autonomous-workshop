@@ -13,6 +13,8 @@ from unittest import mock
 import zlib
 from pathlib import Path
 
+from PIL import Image, ImageDraw
+
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ContractError
 from workshop.invent.native import NativeInvented
@@ -23,6 +25,7 @@ from tests.playtest.test_native_playtested import DIMS, LEAD_ANSWER_CASES, SCORE
 from workshop.invent.vault import Vault
 from workshop.make.contracts import Made
 from workshop.make.native import NativeMade
+from workshop.make.revision import NativeMakeInventRevision
 from workshop.match.native import (
     InventorRoster,
     InventorRosterEntry,
@@ -381,6 +384,7 @@ class StageProposalToolTest(unittest.TestCase):
     def create_product(self):
         product_root = self.run_root / "artifacts/make/r0001/product"
         (product_root / "cad/project").mkdir(parents=True)
+        (product_root / "cad/project/snap").mkdir()
         (product_root / "exports/stl").mkdir(parents=True)
         (product_root / "validation").mkdir()
         product = {
@@ -405,6 +409,11 @@ class StageProposalToolTest(unittest.TestCase):
         write_parts(product_root, self.invented.to_dict()["concept"])
         for group in self.invented.to_dict()["concept"]["build_plan"]:
             seal_group(product_root, self.invented.to_dict()["concept"], group["group"])
+        render = Image.new("RGB", (900, 900), "#fff4df")
+        pen = ImageDraw.Draw(render)
+        pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
+        pen.polygon(((450, 230), (700, 690), (200, 690)), fill="#ffb445")
+        render.save(product_root / "cad/project/snap/iso.png", format="PNG")
         return product_root, product, product_bytes, verification
 
     def create_made(self):
@@ -955,6 +964,48 @@ class StageProposalToolTest(unittest.TestCase):
             "playtest",
         )
 
+    def test_make_requires_explicit_chromatic_product_render(self):
+        product_root, _, _, _ = self.create_product()
+        render = product_root / "cad/project/snap/iso.png"
+        render.unlink()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+
+        missing = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("requires a product render", missing.stderr)
+
+        grayscale = Image.new("L", (900, 900), 255)
+        ImageDraw.Draw(grayscale).ellipse((180, 160, 720, 700), fill=0)
+        grayscale.save(render, format="PNG")
+        rejected = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("diagnostic grayscale image", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_make_rejects_invalid_required_product_metadata_before_outputs(self):
         product_root, _, _, _ = self.create_product()
         self.write_stage(
@@ -1080,10 +1131,10 @@ class StageProposalToolTest(unittest.TestCase):
             "validation/cad-build.json",
         )
 
-    def test_make_rejects_empty_directories_before_writing_a_proposal(self):
+    def test_make_prunes_empty_directories_before_writing_a_proposal(self):
         product_root, _, _, _ = self.create_product()
         (product_root / "cad/spec").mkdir()
-        (product_root / "cad/exports").mkdir()
+        (product_root / "cad/exports/nested").mkdir(parents=True)
         self.write_stage(
             "make",
             {
@@ -1094,7 +1145,78 @@ class StageProposalToolTest(unittest.TestCase):
             round_index=1,
         )
 
-        result = self.run_tool(
+        self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+        )
+
+        self.assertFalse((product_root / "cad/spec").exists())
+        self.assertFalse((product_root / "cad/exports").exists())
+        self.assertTrue(
+            (self.run_root / "artifacts/make/r0001/made.json").is_file()
+        )
+        self.assertTrue((self.run_root / "agent-outcome.json").is_file())
+
+    def test_make_prunes_derived_cad_cache_before_writing_a_proposal(self):
+        product_root, _, _, _ = self.create_product()
+        cache = product_root / "cad/project/__cadgen__/models/part.step.py"
+        cache.mkdir(parents=True)
+        (cache / "topology.glb").write_bytes(b"derived cache\n")
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+
+        self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+        )
+
+        self.assertFalse((product_root / "cad/project/__cadgen__").exists())
+        made, _ = self.assert_canonical_file(
+            "artifacts/make/r0001/made.json"
+        )
+        self.assertFalse(
+            any(
+                "__cadgen__" in entry["path"].split("/")
+                for entry in made["product_manifest"]["entries"]
+            )
+        )
+
+    def test_make_rejects_linked_derived_cad_cache(self):
+        product_root, _, _, _ = self.create_product()
+        outside = self.run_root / "outside-cache"
+        outside.mkdir()
+        (outside / "keep.txt").write_text("keep\n", encoding="utf-8")
+        (product_root / "cad/project/__cadgen__").symlink_to(
+            outside, target_is_directory=True
+        )
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+
+        rejected = self.run_tool(
             "make",
             "--product-root",
             "artifacts/make/r0001/product",
@@ -1105,10 +1227,8 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
 
-        self.assertIn("empty, undeclared, or missing directories", result.stderr)
-        self.assertFalse(
-            (self.run_root / "artifacts/make/r0001/made.json").exists()
-        )
+        self.assertIn("symlink or special directory", rejected.stderr)
+        self.assertEqual((outside / "keep.txt").read_text(), "keep\n")
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_vault_lead_answer_rules_match_the_host_mirror(self):
@@ -1280,6 +1400,83 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertEqual(result["outcome_path"], "agent-outcome.json")
         again, _ = self.assert_canonical_file("artifacts/playtest/r0001/playtested.json")
         self.assertEqual(again, document)
+
+    def test_make_revision_seals_exact_contradiction_evidence_for_invent(self):
+        evidence_root = self.run_root / "artifacts/make/r0001/revision-evidence"
+        evidence_root.mkdir(parents=True)
+        evidence = b'{"clearance_mm":-0.3,"passed":false}\n'
+        (evidence_root / "geometry-check.json").write_bytes(evidence)
+        contract_path = "artifacts/make/r0001/invent-revision-request.json"
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "invent_revision_allowed": True,
+                "invent_revision_contract_path": contract_path,
+                "invent_revision_evidence_root": (
+                    "artifacts/make/r0001/revision-evidence"
+                ),
+            },
+            round_index=1,
+        )
+        source = {
+            "feedback": [
+                {
+                    "code": "forced-overlap",
+                    "area": "keel-index-interface",
+                    "severity": "block",
+                    "finding": "The sealed dimensions force a 0.3 mm overlap.",
+                    "change": "Move the index capsule or revise its dimensions.",
+                    "evidence_refs": ["missing.json"],
+                    "invalidates": ["invent", "make", "playtest", "release"],
+                }
+            ]
+        }
+        self.write_json("drafts/make-revision.json", source)
+
+        rejected = self.run_tool(
+            "make-revision",
+            "--source",
+            "drafts/make-revision.json",
+            "--evidence-root",
+            "artifacts/make/r0001/revision-evidence",
+            expected=2,
+        )
+        self.assertIn("references absent evidence", rejected.stderr)
+        self.assertFalse((self.run_root / contract_path).exists())
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        source["feedback"][0]["evidence_refs"] = ["geometry-check.json"]
+        source_path = self.write_json("drafts/make-revision.json", source)
+        source_bytes = source_path.read_bytes()
+        self.run_tool(
+            "make-revision",
+            "--source",
+            "drafts/make-revision.json",
+            "--evidence-root",
+            "artifacts/make/r0001/revision-evidence",
+        )
+
+        document, contract_bytes = self.assert_canonical_file(contract_path)
+        request = NativeMakeInventRevision.from_mapping(document)
+        request.assert_context(
+            self.assignment, self.invented, expected_round=1
+        )
+        request.validate_evidence_tree(self.run_root)
+        archived_source_path = (
+            "artifacts/make/r0001/invent-revision-source.json"
+        )
+        self.assertEqual(
+            (self.run_root / archived_source_path).read_bytes(), source_bytes
+        )
+        self.assert_outcome(
+            "make",
+            contract_path,
+            contract_bytes,
+            "invent",
+            ((archived_source_path, sha256(source_bytes)),),
+        )
 
     def test_playtest_derives_file_hashes_and_loop_transition(self):
         made = self.create_made()
@@ -1488,6 +1685,86 @@ class StageProposalToolTest(unittest.TestCase):
             (self.run_root / "artifacts/playtest/r0001/playtested.json").exists()
         )
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_quest_playtest_accepts_two_matching_artifact_binding_keys(self):
+        made = self.create_made()
+        evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
+        (evidence_root / "configs").mkdir(parents=True)
+        checks = []
+        check_ids = self.blueprint.required_playtest_checks()
+        product_sha256 = made.product_manifest.artifact_sha256
+        for index, check_id in enumerate(check_ids):
+            config_ref = "configs/%s.json" % check_id
+            evidence_ref = "%s.json" % check_id
+            self.write_json(
+                "artifacts/playtest/r0001/evidence/%s" % config_ref,
+                {
+                    "schema_version": 1,
+                    "check_id": check_id,
+                    "artifact_sha256": product_sha256,
+                    "product_artifact_sha256": (
+                        "0" * 64 if index == 0 else product_sha256
+                    ),
+                    "seed": 42,
+                },
+            )
+            (evidence_root / evidence_ref).write_bytes(
+                canonical_json({"check": check_id, "ok": True}) + b"\n"
+            )
+            checks.append(
+                {
+                    "check_id": check_id,
+                    "passed": True,
+                    "evaluator": "workshop-host",
+                    "evaluator_version": "1.0.0",
+                    "config_ref": config_ref,
+                    "evidence_ref": evidence_ref,
+                    "observed_at": "2026-08-26T00:00:00Z",
+                    "observations": {"ok": True},
+                }
+            )
+        self.write_stage(
+            "playtest",
+            {
+                "effort": "quest",
+                "made": made.to_dict(),
+                "required_check_ids": list(check_ids),
+            },
+            round_index=1,
+        )
+        self.write_json(
+            "drafts/playtest.json",
+            {"checks": checks, "feedback": [], "verdict": "pass"},
+        )
+
+        rejected = self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+            expected=2,
+        )
+        self.assertIn("not bound to the current Made revision", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        self.write_json(
+            "artifacts/playtest/r0001/evidence/configs/%s.json" % check_ids[0],
+            {
+                "schema_version": 1,
+                "check_id": check_ids[0],
+                "artifact_sha256": product_sha256,
+                "product_artifact_sha256": product_sha256,
+                "seed": 42,
+            },
+        )
+        self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+        )
 
     def test_release_seals_exact_codex_authored_page_and_matches_native_release(self):
         made = self.create_made()
@@ -1964,7 +2241,7 @@ class StageProposalToolTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertIn("match,invent,make,make-group,playtest,release", completed.stdout)
+        self.assertIn("match,invent,make,make-group,playtest,make-revision,release", completed.stdout)
 
 
 if __name__ == "__main__":

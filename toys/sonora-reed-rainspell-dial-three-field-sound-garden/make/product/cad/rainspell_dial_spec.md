@@ -1,0 +1,9 @@
+# Rainspell Dial CAD brief
+
+Origin is the spindle axis at the desk plane; +Z is upward. The six separately printable rigid-filament parts preserve the sealed Invent architecture. The stationary Ø108 deck top is z=18 and carries 46 source-parameterized transverse contact events at r=39: 17 rain, 9 frog-song, and 20 cricket events in three 113° fields separated by 7° lanes. The base contains three separately ported annular-sector cavities and a fixed guard. The broad wheel carries the gravity plectrum, open cage, rigid keeper interface, and guarded skirt. A gravity-drop bayonet cap retains the wheel and blocks keeper service.
+
+The CAD proves B-rep geometry, nominal clearances, event placement, calculated cadence, printable meshes, and declared rigid-body sweeps. It does not prove sound, loudness, pleasantness, listening recognition, gravity reliability, walking/tipping, physical retention, wear, or hearing safety; those require exact physical prototypes and human/instrumented tests.
+
+Dimension provenance is the sealed `artifacts/invent/invented.json` concept. Derived chamber depths preserve the nominal target volumes before subtractive port unions; derived rib root widths use `0.8 + 2h/tan(30°)`. The frog neck centerline is the sealed r=50 arc from 155.87° to 176.5°.
+
+The wheel hub contains one documented Make-stage manufacturability refinement. The exact Ø14.5 running bore and z=21–25 lower land are preserved, while the upper hub is a rounded 210° C-profile from z=25–36.4. This replaces the Invent sketch's 0.15 mm radial center/top relief, which is smaller than one declared nozzle width, and opens the deliberate keeper service route after cap removal. Deterministic mesh/thickness and rigid-motion gates evaluate this revised geometry; no physical coast, wear, retention, or removal claim is inferred.

@@ -14,6 +14,10 @@ from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
+from workshop.make.revision import (
+    MakeInventRevisionFeedback,
+    NativeMakeInventRevision,
+)
 from workshop.match.native import (
     MatchRankingEntry,
     NativeMatchAssignment,
@@ -38,8 +42,11 @@ from workshop.release.native import (
     read_native_release,
     validate_release_product,
 )
-from workshop.release.public_example import materialize_public_example
-from workshop.release.public_archive import build_public_archive_manifest
+from workshop.release.public_example import _public_hero_path, materialize_public_example
+from workshop.release.public_archive import (
+    _redact_public_local_paths,
+    build_public_archive_manifest,
+)
 from workshop.release.verification import (
     DIGITALLY_VERIFIED,
     PHYSICALLY_VERIFIED,
@@ -64,6 +71,26 @@ def _canonical(value):
 
 def _sha(value):
     return hashlib.sha256(value).hexdigest()
+
+
+def _token_summary():
+    return {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.native-token-summary",
+        "status": "measured",
+        "turns": {"total": 1, "measured": 1, "unmeasured": 0},
+        "total_tokens": 125,
+        "stages": {
+            name: {
+                "status": "measured" if name == "make" else "pending",
+                "turns": 1 if name == "make" else 0,
+                "measured_turns": 1 if name == "make" else 0,
+                "unmeasured_turns": 0,
+                "tokens": 125 if name == "make" else 0,
+            }
+            for name in ("match", "invent", "make", "playtest", "release")
+        },
+    }
 
 
 def _manual_pdf(
@@ -228,10 +255,32 @@ class NativeReleaseTest(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
 
+    def test_public_archive_redacts_host_local_path_prefixes(self):
+        source = (
+            "run=%s/artifacts/make home=%s/code/workshop relative=make/source\n"
+            % (self.run_root, Path.home())
+        ).encode("utf-8")
+
+        public, redactions = _redact_public_local_paths(
+            source,
+            run_root=self.run_root,
+        )
+
+        self.assertNotIn(str(self.run_root).encode("utf-8"), public)
+        self.assertNotIn(str(Path.home()).encode("utf-8"), public)
+        self.assertIn(b"<WORKSHOP_RUN>/artifacts/make", public)
+        self.assertIn(b"<HOME>/code/workshop", public)
+        self.assertEqual(
+            redactions,
+            ("workshop-run-root", "home-directory"),
+        )
+
     def _make_product(self):
         root = self.run_root / "artifacts/make/r0001/product"
         (root / "cad/project").mkdir(parents=True)
+        (root / "cad/project/snap").mkdir()
         (root / "validation").mkdir()
+        (root / "validation/renders").mkdir()
         assembled = b"solid assembled\nendsolid assembled\n"
         printable = b"solid moon-body\nendsolid moon-body\n"
         product = {
@@ -273,6 +322,13 @@ class NativeReleaseTest(unittest.TestCase):
         (root / "assembled.stl").write_bytes(assembled)
         (root / "cad/project/moon-body.stl").write_bytes(printable)
         (root / "validation/cad-build.json").write_bytes(receipt)
+        (root / "cad/project/snap/iso.png").write_bytes(
+            bytes.fromhex(
+                "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+                "0000000d49444154789c6360f8cfc000000301010018dd8db10000000049454e44"
+                "ae426082"
+            )
+        )
         return NativeMade(
             round=1,
             wish_sha256=self.assignment.wish_sha256,
@@ -1289,6 +1345,8 @@ class NativeReleaseTest(unittest.TestCase):
             made=self.made,
             inventor_id="eve",
             receipt=receipt,
+            token_summary=_token_summary(),
+            wish_id="wish-20260825-235959-deadbeef",
         )
         self.assertEqual(target, repository / "toys/eve-moon-nook")
         self.assertEqual(
@@ -1324,6 +1382,18 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertTrue((target / "playtest/playtested.json").is_file())
         self.assertTrue((target / "release/release.json").is_file())
         self.assertTrue((target / "MANIFEST.json").is_file())
+        tokens = json.loads((target / "TOKENS.json").read_text(encoding="utf-8"))
+        self.assertEqual(tokens["status"], "measured")
+        self.assertEqual(tokens["stages"]["make"]["tokens"], 125)
+        timing = json.loads((target / "TIMING.json").read_text(encoding="utf-8"))
+        self.assertEqual(timing["status"], "measured")
+        self.assertEqual(timing["elapsed_seconds"], 1)
+        self.assertEqual(timing["completion_boundary"], "authenticated Factory public readback")
+        readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn("## Run cost", readme)
+        self.assertIn("| Native Manager tokens | 125 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Wish to verified publication | 1s", readme)
+        self.assertIn("| Make | 125 | 1 | measured |", readme)
         public_manifest = json.loads(
             (target / "MANIFEST.json").read_text(encoding="utf-8")
         )
@@ -1347,6 +1417,8 @@ class NativeReleaseTest(unittest.TestCase):
                 made=self.made,
                 inventor_id="eve",
                 receipt=receipt,
+                token_summary=_token_summary(),
+                wish_id="wish-20260825-235959-deadbeef",
             ),
             target,
         )
@@ -1359,6 +1431,8 @@ class NativeReleaseTest(unittest.TestCase):
                 made=self.made,
                 inventor_id="eve",
                 receipt=receipt,
+                token_summary=_token_summary(),
+                wish_id="wish-20260825-235959-deadbeef",
             )
 
     def test_public_example_copies_exact_pdf_manual_without_cover_or_rich_page_identity(self):
@@ -1422,7 +1496,27 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(publication["identities"]["manual_path"], "MANUAL.pdf")
         self.assertNotIn("factory_content_sha256", publication["identities"])
         self.assertNotIn("cover_url", publication["publication"])
-        self.assertIn("`release/MANUAL.pdf`", (target / "README.md").read_text())
+        readme = (target / "README.md").read_text()
+        self.assertIn("`release/MANUAL.pdf`", readme)
+        self.assertIn("## Reproduce", readme)
+        self.assertIn("--manager codex --effort quest", readme)
+        self.assertNotIn("--github", readme)
+
+        github_repository = self.run_root / "github-readme-repository"
+        (github_repository / "toys").mkdir(parents=True)
+        github_target = materialize_public_example(
+            github_repository,
+            self.run_root,
+            release=release,
+            made=self.made,
+            inventor_id="eve",
+            receipt=self._public_receipt(release, slug="moon-nook-github"),
+            github_requested=True,
+        )
+        self.assertIn(
+            "--manager codex --effort quest --github",
+            (github_target / "README.md").read_text(),
+        )
 
     def test_public_archive_requires_explicit_exact_wish_disclosure_and_strict_contracts(self):
         release = self._release(schema_version=1)
@@ -1491,6 +1585,26 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertIn(
             "Playtest was not run",
             (target / "README.md").read_text(encoding="utf-8"),
+        )
+        self.assertIn(
+            "![Moon Nook](make/verification/renders/iso.png)",
+            (target / "README.md").read_text(encoding="utf-8"),
+        )
+
+    def test_public_hero_ignores_arbitrary_diagnostic_images(self):
+        staging = self.run_root / "hero-selection"
+        diagnostic = staging / "make/product/cad/review/closed-top.png"
+        diagnostic.parent.mkdir(parents=True)
+        diagnostic.write_bytes(b"diagnostic silhouette")
+
+        self.assertIsNone(_public_hero_path(staging))
+
+        approved = staging / "make/verification/renders/isometric.png"
+        approved.parent.mkdir(parents=True)
+        approved.write_bytes(b"approved presentation render")
+        self.assertEqual(
+            _public_hero_path(staging),
+            "make/verification/renders/isometric.png",
         )
 
     def test_public_archive_does_not_invent_an_invent_stage_for_spark(self):
@@ -1653,6 +1767,181 @@ class NativeReleaseTest(unittest.TestCase):
             readme,
         )
         self.assertIn("| Release | 1 | round 2 accepted |", readme)
+
+    def test_public_archive_preserves_make_to_invent_revision_history(self):
+        original_playtest_evidence = {
+            entry.path: (
+                self.run_root
+                / self.playtested.evidence_root
+                / entry.path
+            ).read_bytes()
+            for entry in self.playtested.evidence_manifest.entries
+        }
+        (self.run_root / "artifacts/make/r0001/made.json").unlink()
+        shutil.rmtree(self.run_root / "artifacts/playtest/r0001")
+        evidence_root = self.run_root / "artifacts/make/r0001/revision-evidence"
+        evidence_root.mkdir(parents=True)
+        contradiction = _canonical(
+            {
+                "check": "rotor-web",
+                "passed": False,
+                "finding": "The sealed web is thinner than its own minimum.",
+            }
+        )
+        (evidence_root / "rotor-web.json").write_bytes(contradiction)
+        request = NativeMakeInventRevision(
+            round=1,
+            wish_sha256=self.assignment.wish_sha256,
+            assignment_sha256=self.assignment.assignment_sha256,
+            invented_sha256=self.invented.invented_sha256,
+            evidence_root="artifacts/make/r0001/revision-evidence",
+            evidence_manifest=build_artifact_manifest(
+                evidence_root,
+                created_at="content-addressed",
+            ),
+            feedback=(
+                MakeInventRevisionFeedback(
+                    code="rotor-web-contradiction",
+                    area="detent geometry",
+                    severity="block",
+                    finding="The sealed web is thinner than its own minimum.",
+                    change="Increase the rotor diameter while preserving phase.",
+                    evidence_refs=("rotor-web.json",),
+                ),
+            ),
+        )
+        request_path = (
+            self.run_root
+            / "artifacts/make/r0001/invent-revision-request.json"
+        )
+        request_path.write_bytes(_canonical(request.to_dict()))
+        authored_source = _canonical(
+            {"feedback": [item.to_dict() for item in request.feedback]}
+        )
+        (
+            self.run_root
+            / "artifacts/make/r0001/invent-revision-source.json"
+        ).write_bytes(authored_source)
+
+        revised_root = self.run_root / "artifacts/invent/r0002"
+        revised_root.mkdir(parents=True)
+        revised_invented = NativeInvented(
+            wish_sha256=self.assignment.wish_sha256,
+            assignment_sha256=self.assignment.assignment_sha256,
+            taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.assignment.blueprint_sha256,
+            concept={
+                "title": "Moon Nook",
+                "summary": "A repaired tiny lunar observatory.",
+            },
+            research=self.invented.to_dict()["research"],
+        )
+        (revised_root / "assignment.json").write_bytes(
+            _canonical(self.assignment.to_dict())
+        )
+        (revised_root / "invented.json").write_bytes(
+            _canonical(revised_invented.to_dict())
+        )
+
+        second_product = self.run_root / "artifacts/make/r0002/product"
+        shutil.copytree(self.run_root / self.made.product_root, second_product)
+        second_made = NativeMade(
+            round=2,
+            wish_sha256=self.made.wish_sha256,
+            assignment_sha256=self.assignment.assignment_sha256,
+            taste_sha256=self.made.taste_sha256,
+            blueprint_sha256=self.made.blueprint_sha256,
+            invented_sha256=revised_invented.invented_sha256,
+            product_root="artifacts/make/r0002/product",
+            cad_project_path=self.made.cad_project_path,
+            product_manifest=self.made.product_manifest,
+            product=self.made.to_dict()["product"],
+            product_json_sha256=self.made.product_json_sha256,
+            cad_verification_path=self.made.cad_verification_path,
+            cad_verification_sha256=self.made.cad_verification_sha256,
+        )
+        (self.run_root / "artifacts/make/r0002/made.json").write_bytes(
+            _canonical(second_made.to_dict())
+        )
+
+        second_evidence = self.run_root / "artifacts/playtest/r0002/evidence"
+        second_evidence.mkdir(parents=True)
+        for relative, content in original_playtest_evidence.items():
+            path = second_evidence.joinpath(*relative.split("/"))
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+        second_playtest = NativePlaytested(
+            round=2,
+            made_sha256=second_made.made_sha256,
+            product_artifact_sha256=second_made.product_manifest.artifact_sha256,
+            blueprint_sha256=self.blueprint.sha256,
+            evidence_root="artifacts/playtest/r0002/evidence",
+            evidence_manifest=build_artifact_manifest(
+                second_evidence,
+                created_at="content-addressed",
+            ),
+            checks=self.playtested.checks,
+            feedback=(),
+            verdict="pass",
+        )
+        playtested_path = self.run_root / "artifacts/playtest/r0002/playtested.json"
+        playtested_path.write_bytes(_canonical(second_playtest.to_dict()))
+        release = self._rebuild_release(
+            self._release(),
+            round=2,
+            made_sha256=second_made.made_sha256,
+            playtested_sha256=second_playtest.playtested_sha256,
+        )
+        self._write_contract(release)
+        receipt = self._public_receipt(release, slug="moon-nook-invent-revised")
+        repository = self.run_root / "invent-revision-repository"
+        (repository / "toys").mkdir(parents=True)
+
+        target = materialize_public_example(
+            repository,
+            self.run_root,
+            release=release,
+            made=second_made,
+            inventor_id="eve",
+            receipt=receipt,
+        )
+
+        self.assertEqual(
+            (target / "invent/invented.json").read_bytes(),
+            _canonical(revised_invented.to_dict()),
+        )
+        self.assertEqual(
+            (target / "invent/attempts/r0001/invented.json").read_bytes(),
+            _canonical(self.invented.to_dict()),
+        )
+        self.assertEqual(
+            (
+                target
+                / "make/attempts/r0001/invent-revision-request.json"
+            ).read_bytes(),
+            request_path.read_bytes(),
+        )
+        self.assertEqual(
+            (
+                target
+                / "make/attempts/r0001/revision-evidence/rotor-web.json"
+            ).read_bytes(),
+            contradiction,
+        )
+        make_attempts = json.loads(
+            (target / "make/ATTEMPTS.json").read_text(encoding="utf-8")
+        )["attempts"]
+        self.assertEqual(
+            [attempt["outcome"] for attempt in make_attempts],
+            ["invent-revision-requested", "accepted"],
+        )
+        self.assertFalse((target / "playtest/attempts/r0001").exists())
+        self.assertEqual(
+            json.loads(
+                (target / "MANIFEST.json").read_text(encoding="utf-8")
+            )["artifact_manifest"],
+            build_public_archive_manifest(target).to_dict(),
+        )
 
 
 if __name__ == "__main__":

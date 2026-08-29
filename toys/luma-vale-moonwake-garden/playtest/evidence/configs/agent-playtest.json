@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "check_id": "agent-playtest",
+  "subject_sha256": "315ed802ae675a75367c0b9be4dc6bfc6ff8859885366227a81a009b0fe003c7",
+  "made_file_sha256": "c19c13c6c9d71d2e38e95e4c56b380ba524b9466faf05ec223922c469b49d827",
+  "made_identity_sha256": "f02f4e2ee6273ecc7007ddea9fe772886615a9d4b97387213d4aeb1e0a707f8a",
+  "product_artifact_sha256": "d31e05cf5a70714e41d2f26cf2bc7e4ef25a2cbd63545cda651a527c3f76874a",
+  "evaluator": "Luma Vale selected-Inventor native review",
+  "evaluator_version": "1.0.0+f3e3c718",
+  "method": [
+    "Inspect the sealed product metadata, exact Luma Vale Taste, endpoint silhouettes, intermediate silhouette, portal/trench view, exploded view, and hash-bound CAD summary.",
+    "Evaluate one-motion transformation, endpoint distinction, monochrome optical grammar, control cue, and selected-Inventor alignment.",
+    "Exclude physical brightness, fit, feel, discovery time, recognition, delight, durability, and every other human-response claim."
+  ],
+  "inputs": {
+    "product.json": "e1a9b7ff2302aae4d2ccd96066c96d16e9a811c67286fbc5497b721c955bcff5",
+    "cad-verification.json": "e75b8c456a40312a25ad224f831b43113239f0ecb044cfd7b5f0cb79e7d943dc",
+    ".codex/agents/luma-vale.toml": "a1e6359c64836406eb3adf4bfae1ab3fe15af88195e92bd10550f3b3a8f5c3d9",
+    "views/cassiopeia/top.png": "ba121fc1d5f3e30bfd670779f2b5c5ace844b100d6c0e70bdc7447f594ed4a60",
+    "views/cygnus/top.png": "3c6e778eb28573d8335a27342f80529bc38b9e772fcca9330d2cc94e2cffe9b5",
+    "views/ursa_minor/top.png": "67166cf707d6df3cb6618ac319d3ec9a22179c3224ddceb48a79c72accff4902",
+    "views/intermediate/top.png": "5ddb48f0cb86c6fcd6cd7a7d7f82e3c72442a02a04dd444331e7a3ea11466329",
+    "views/inspection/portal-and-trench.png": "8117584c5741ae0f3f3e7e73e4cf8f8792a5131a7032b4e10ced3a2d045e4345",
+    "views/inspection/exploded-stack.png": "1a984d3014fc2048180a3a3787864259f229f28d6b143d7ba9ffee161c1b66f9"
+  }
+}

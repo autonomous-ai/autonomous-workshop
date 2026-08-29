@@ -18,13 +18,14 @@ from workshop.artifacts import ArtifactEntry, ArtifactManifest, MAX_ENTRIES
 from workshop.errors import ContractError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
+from workshop.make.revision import NativeMakeInventRevision
 from workshop.match.native import NativeMatchAssignment
 from workshop.playtest.native import NativePlaytested
 from workshop.release.native import NativeRelease
 from workshop.wish.contracts import Wish
 
 
-PUBLIC_ARCHIVE_SCHEMA_VERSION = 2
+PUBLIC_ARCHIVE_SCHEMA_VERSION = 4
 _MAX_BOUND_FILE_BYTES = 128 * 1024 * 1024
 _GENERATED_DIRECTORIES = frozenset(("__cadgen__", "__pycache__"))
 _MODEL_SUFFIXES = frozenset((".3mf", ".glb", ".obj", ".step", ".stl"))
@@ -183,6 +184,34 @@ def _artifact_file(run_root: Path, relative: str, label: str) -> bytes:
     return _stable_file(run_root.joinpath(*pure.parts), label)
 
 
+def _redact_public_local_paths(
+    content: bytes,
+    *,
+    run_root: Path,
+) -> tuple[bytes, tuple[str, ...]]:
+    """Replace host-local absolute prefixes without interpreting artifact prose."""
+
+    replacements = []
+    candidates = (
+        (
+            str(Path(run_root).resolve(strict=True)).encode("utf-8"),
+            b"<WORKSHOP_RUN>",
+            "workshop-run-root",
+        ),
+        (
+            str(Path.home().resolve()).encode("utf-8"),
+            b"<HOME>",
+            "home-directory",
+        ),
+    )
+    public = content
+    for private, placeholder, label in candidates:
+        if private and private in public:
+            public = public.replace(private, placeholder)
+            replacements.append(label)
+    return public, tuple(replacements)
+
+
 def _assert_bound_entries(
     root: Path,
     entries: Sequence[ArtifactEntry],
@@ -289,6 +318,8 @@ def _copy_made_tree(
     writer: PublicWriter,
     run_root: Path,
     made: NativeMade,
+    *,
+    destination_root: str = "make",
 ) -> None:
     product_root = run_root.joinpath(*PurePosixPath(made.product_root).parts)
     entries = {entry.path: entry for entry in made.product_manifest.entries}
@@ -304,47 +335,272 @@ def _copy_made_tree(
             raise StateConflict("sealed Made file differs from its manifest")
         pure = PurePosixPath(relative)
         if relative == "product.json":
-            writer("make/product.json", content)
+            writer("%s/product.json" % destination_root, content)
             continue
         if relative == made.cad_verification_path:
-            writer("make/verification/CAD-GATE.json", content)
+            writer("%s/verification/CAD-GATE.json" % destination_root, content)
             continue
         try:
             cad_relative = pure.relative_to(cad_prefix)
         except ValueError:
             if pure.suffix.casefold() not in _MODEL_SUFFIXES:
-                writer("make/product/%s" % pure.as_posix(), content)
+                writer(
+                    "%s/product/%s" % (destination_root, pure.as_posix()),
+                    content,
+                )
             continue
         if any(part in _GENERATED_DIRECTORIES for part in cad_relative.parts):
             continue
         if not cad_relative.parts:
             continue
         if cad_relative.parts[0] == "measure":
-            destination = "make/verification/reports/%s" % PurePosixPath(
-                *cad_relative.parts[1:]
-            ).as_posix()
+            destination = "%s/verification/reports/%s" % (
+                destination_root,
+                PurePosixPath(*cad_relative.parts[1:]).as_posix(),
+            )
         elif cad_relative.parts[0] == "snap":
-            destination = "make/verification/renders/%s" % PurePosixPath(
-                *cad_relative.parts[1:]
-            ).as_posix()
+            destination = "%s/verification/renders/%s" % (
+                destination_root,
+                PurePosixPath(*cad_relative.parts[1:]).as_posix(),
+            )
         elif cad_relative.suffix.casefold() in _MODEL_SUFFIXES:
-            destination = "make/models/cad/%s" % cad_relative.as_posix()
+            destination = "%s/models/cad/%s" % (
+                destination_root,
+                cad_relative.as_posix(),
+            )
         else:
-            destination = "make/source/cad/%s" % cad_relative.as_posix()
+            destination = "%s/source/cad/%s" % (
+                destination_root,
+                cad_relative.as_posix(),
+            )
         writer(destination, content)
+
+
+def _invent_attempts(
+    writer: PublicWriter,
+    run_root: Path,
+    *,
+    made: NativeMade,
+) -> tuple[
+    dict[int, tuple[NativeMatchAssignment, NativeInvented]],
+    bytes,
+]:
+    """Validate and preserve every sealed Invent attempt through Made's round."""
+
+    attempts = []
+    proposals: dict[int, tuple[NativeMatchAssignment, NativeInvented]] = {}
+    contents: dict[int, tuple[bytes, bytes]] = {}
+    sources: dict[int, bytes] = {}
+    for round_number in range(1, made.round + 1):
+        root = (
+            "artifacts/invent"
+            if round_number == 1
+            else "artifacts/invent/r%04d" % round_number
+        )
+        assignment_path = "%s/assignment.json" % root
+        invented_path = "%s/invented.json" % root
+        assignment_file = run_root.joinpath(*PurePosixPath(assignment_path).parts)
+        invented_file = run_root.joinpath(*PurePosixPath(invented_path).parts)
+        present = (
+            assignment_file.exists()
+            or assignment_file.is_symlink()
+            or invented_file.exists()
+            or invented_file.is_symlink()
+        )
+        if not present:
+            continue
+        assignment_content = _artifact_file(
+            run_root,
+            assignment_path,
+            "Invent round %d assignment" % round_number,
+        )
+        assignment = NativeMatchAssignment.from_mapping(
+            _strict_json(
+                assignment_content,
+                "Invent round %d assignment" % round_number,
+            )
+        )
+        invented_content = _artifact_file(
+            run_root,
+            invented_path,
+            "Invent round %d contract" % round_number,
+        )
+        invented = NativeInvented.from_mapping(
+            _strict_json(
+                invented_content,
+                "Invent round %d contract" % round_number,
+            )
+        )
+        invented.assert_context(assignment)
+        if assignment.wish_sha256 != made.wish_sha256:
+            raise StateConflict("Invent history belongs to a different Wish")
+        source_path = "%s/source.json" % root
+        source_file = run_root.joinpath(*PurePosixPath(source_path).parts)
+        if source_file.exists() or source_file.is_symlink():
+            source_content = _artifact_file(
+                run_root,
+                source_path,
+                "Invent round %d authored source" % round_number,
+            )
+            source = _strict_json(
+                source_content,
+                "Invent round %d authored source" % round_number,
+            )
+            invented_document = invented.to_dict()
+            if (
+                set(source)
+                != {"selected_inventor_id", "ranking", "research", "concept"}
+                or source["selected_inventor_id"]
+                != assignment.selected_inventor_id
+                or source["ranking"]
+                != [item.to_dict() for item in assignment.ranking]
+                or source["research"] != invented_document["research"]
+                or source["concept"] != invented_document["concept"]
+            ):
+                raise StateConflict(
+                    "Invent round %d authored source differs from its contracts"
+                    % round_number
+                )
+            sources[round_number] = source_content
+        proposals[round_number] = (assignment, invented)
+        contents[round_number] = (assignment_content, invented_content)
+
+    if not proposals:
+        raise StateConflict("accepted Invent history is unavailable")
+    accepted_round = max(proposals)
+    accepted_assignment, accepted_invented = proposals[accepted_round]
+    made.assert_context(
+        accepted_assignment,
+        accepted_invented,
+        expected_round=made.round,
+    )
+    for round_number in sorted(proposals):
+        assignment, invented = proposals[round_number]
+        assignment_content, invented_content = contents[round_number]
+        outcome = "accepted" if round_number == accepted_round else "superseded"
+        attempts.append(
+            {
+                "outcome": outcome,
+                "round": round_number,
+                "assignment_sha256": assignment.assignment_sha256,
+                "subject_sha256": invented.invented_sha256,
+            }
+        )
+        if round_number != accepted_round:
+            prefix = "invent/attempts/r%04d" % round_number
+            writer("%s/assignment.json" % prefix, assignment_content)
+            writer("%s/invented.json" % prefix, invented_content)
+            if round_number in sources:
+                writer("%s/source.json" % prefix, sources[round_number])
+    assignment_content, invented_content = contents[accepted_round]
+    writer("match/assignment.json", assignment_content)
+    writer("invent/invented.json", invented_content)
+    if accepted_round in sources:
+        writer("invent/source.json", sources[accepted_round])
+    return proposals, _attempts_document("invent", attempts)
 
 
 def _made_attempts(
     run_root: Path,
     *,
+    writer: PublicWriter,
     made: NativeMade,
-    assignment: NativeMatchAssignment,
-    invented: NativeInvented,
+    invent_attempts: Mapping[
+        int, tuple[NativeMatchAssignment, NativeInvented]
+    ],
 ) -> tuple[dict[int, NativeMade], bytes]:
     attempts = []
     proposals: dict[int, NativeMade] = {}
     for round_number in range(1, made.round + 1):
+        available_invent_rounds = [
+            candidate for candidate in invent_attempts if candidate <= round_number
+        ]
+        if not available_invent_rounds:
+            raise StateConflict("Make history lacks its Invent inputs")
+        assignment, invented = invent_attempts[max(available_invent_rounds)]
         source = "artifacts/make/r%04d/made.json" % round_number
+        source_file = run_root.joinpath(*PurePosixPath(source).parts)
+        revision_source = (
+            "artifacts/make/r%04d/invent-revision-request.json" % round_number
+        )
+        revision_file = run_root.joinpath(*PurePosixPath(revision_source).parts)
+        made_present = source_file.exists() or source_file.is_symlink()
+        revision_present = revision_file.exists() or revision_file.is_symlink()
+        if made_present == revision_present:
+            raise StateConflict(
+                "Make round %d must contain exactly one sealed outcome"
+                % round_number
+            )
+        if revision_present:
+            content = _artifact_file(
+                run_root,
+                revision_source,
+                "Make round %d Invent-revision request" % round_number,
+            )
+            revision = NativeMakeInventRevision.from_mapping(
+                _strict_json(
+                    content,
+                    "Make round %d Invent-revision request" % round_number,
+                )
+            )
+            revision.assert_context(
+                assignment,
+                invented,
+                expected_round=round_number,
+            )
+            revision.validate_evidence_tree(run_root)
+            prefix = "make/attempts/r%04d" % round_number
+            writer("%s/invent-revision-request.json" % prefix, content)
+            evidence_root = run_root.joinpath(
+                *PurePosixPath(revision.evidence_root).parts
+            )
+            for entry in revision.evidence_manifest.entries:
+                evidence = _stable_file(
+                    evidence_root.joinpath(*PurePosixPath(entry.path).parts),
+                    "Make Invent-revision evidence %s" % entry.path,
+                    allow_empty=True,
+                )
+                if (
+                    len(evidence) != entry.bytes
+                    or hashlib.sha256(evidence).hexdigest() != entry.sha256
+                ):
+                    raise StateConflict(
+                        "Make Invent-revision evidence differs from its manifest"
+                    )
+                writer("%s/revision-evidence/%s" % (prefix, entry.path), evidence)
+            authored_source = (
+                "artifacts/make/r%04d/invent-revision-source.json"
+                % round_number
+            )
+            authored_file = run_root.joinpath(*PurePosixPath(authored_source).parts)
+            if authored_file.exists() or authored_file.is_symlink():
+                authored = _artifact_file(
+                    run_root,
+                    authored_source,
+                    "Make round %d Invent-revision authored source"
+                    % round_number,
+                )
+                if _strict_json(authored, "Make Invent-revision authored source") != {
+                    "feedback": [item.to_dict() for item in revision.feedback]
+                }:
+                    raise StateConflict(
+                        "Make Invent-revision authored source differs from its request"
+                    )
+                writer("%s/invent-revision-source.json" % prefix, authored)
+            attempts.append(
+                {
+                    "outcome": "invent-revision-requested",
+                    "round": round_number,
+                    "subject_sha256": revision.revision_request_sha256,
+                    "evidence_artifact_sha256": (
+                        revision.evidence_manifest.artifact_sha256
+                    ),
+                    "feedback_codes": sorted(
+                        item.code for item in revision.feedback
+                    ),
+                }
+            )
+            continue
         content = _artifact_file(
             run_root,
             source,
@@ -368,6 +624,14 @@ def _made_attempts(
                 product_root,
                 proposal.product_manifest.entries,
                 label="historical Make round %d" % round_number,
+            )
+            prefix = "make/attempts/r%04d" % round_number
+            writer("%s/made.json" % prefix, content)
+            _copy_made_tree(
+                writer,
+                run_root,
+                proposal,
+                destination_root=prefix,
             )
         proposals[round_number] = proposal
         attempts.append(
@@ -401,6 +665,9 @@ def _copy_playtest(
     content = None
     for round_number in range(1, release.round + 1):
         source = "artifacts/playtest/r%04d/playtested.json" % round_number
+        source_file = run_root.joinpath(*PurePosixPath(source).parts)
+        if not source_file.exists() and not source_file.is_symlink():
+            continue
         candidate_content = _artifact_file(
             run_root,
             source,
@@ -437,6 +704,26 @@ def _copy_playtest(
         if round_number == release.round:
             playtested = candidate
             content = candidate_content
+        else:
+            prefix = "playtest/attempts/r%04d" % round_number
+            writer("%s/playtested.json" % prefix, candidate_content)
+            evidence_root = run_root.joinpath(
+                *PurePosixPath(candidate.evidence_root).parts
+            )
+            for entry in candidate.evidence_manifest.entries:
+                evidence = _stable_file(
+                    evidence_root.joinpath(*PurePosixPath(entry.path).parts),
+                    "historical Playtest evidence %s" % entry.path,
+                    allow_empty=True,
+                )
+                if (
+                    len(evidence) != entry.bytes
+                    or hashlib.sha256(evidence).hexdigest() != entry.sha256
+                ):
+                    raise StateConflict(
+                        "historical Playtest evidence differs from its manifest"
+                    )
+                writer("%s/evidence/%s" % (prefix, entry.path), evidence)
         failed_checks = sorted(
             check.check_id for check in candidate.checks if not check.passed
         )
@@ -497,6 +784,25 @@ def write_public_workflow_archive(
 ) -> None:
     """Write every workflow-shaped file except root README and MANIFEST."""
 
+    raw_writer = writer
+    sanitizations: list[dict[str, Any]] = []
+
+    def writer(relative: str, content: bytes) -> None:
+        public, replacements = _redact_public_local_paths(
+            content,
+            run_root=run_root,
+        )
+        if replacements:
+            sanitizations.append(
+                {
+                    "path": relative,
+                    "source_sha256": hashlib.sha256(content).hexdigest(),
+                    "public_sha256": hashlib.sha256(public).hexdigest(),
+                    "redactions": list(replacements),
+                }
+            )
+        raw_writer(relative, public)
+
     wish_content = _artifact_file(
         run_root, "artifacts/wish/wish.json", "accepted Wish"
     )
@@ -520,51 +826,56 @@ def write_public_workflow_archive(
         or (invent_root / "invented.json").exists()
         or (invent_root / "invented.json").is_symlink()
     )
-    stage_root = (
-        "artifacts/invent"
-        if explicit_invent
-        else "artifacts/make/r%04d" % made.round
-    )
-    assignment_content = _artifact_file(
-        run_root,
-        "%s/assignment.json" % stage_root,
-        "accepted Match assignment",
-    )
-    assignment = NativeMatchAssignment.from_mapping(
-        _strict_json(assignment_content, "Match assignment")
-    )
-    invented_content = _artifact_file(
-        run_root,
-        "%s/invented.json" % stage_root,
-        "accepted Invented contract",
-    )
-    invented = NativeInvented.from_mapping(
-        _strict_json(invented_content, "Invented contract")
-    )
-    invented.assert_context(assignment)
-    made.assert_context(assignment, invented, expected_round=made.round)
-    writer("match/assignment.json", assignment_content)
-    writer(
-        "match/ATTEMPTS.json",
-        _accepted_attempt("match", assignment.assignment_sha256, 1),
-    )
     if explicit_invent:
-        writer("invent/invented.json", invented_content)
-        writer(
-            "invent/ATTEMPTS.json",
-            _accepted_attempt("invent", invented.invented_sha256, 1),
+        invent_attempts, invent_attempts_document = _invent_attempts(
+            writer,
+            run_root,
+            made=made,
         )
+        accepted_invent_round = max(invent_attempts)
+        assignment, invented = invent_attempts[accepted_invent_round]
+        writer("invent/ATTEMPTS.json", invent_attempts_document)
     else:
         # Spark intentionally has no Invent Goal.  Its compact concept is an
         # input sealed by the Make proposal, so preserve it under Make rather
         # than inventing a lifecycle stage that did not run.
+        stage_root = "artifacts/make/r%04d" % made.round
+        assignment_content = _artifact_file(
+            run_root,
+            "%s/assignment.json" % stage_root,
+            "accepted Match assignment",
+        )
+        assignment = NativeMatchAssignment.from_mapping(
+            _strict_json(assignment_content, "Match assignment")
+        )
+        invented_content = _artifact_file(
+            run_root,
+            "%s/invented.json" % stage_root,
+            "accepted Invented contract",
+        )
+        invented = NativeInvented.from_mapping(
+            _strict_json(invented_content, "Invented contract")
+        )
+        invented.assert_context(assignment)
+        made.assert_context(assignment, invented, expected_round=made.round)
+        writer("match/assignment.json", assignment_content)
         writer("make/invented.json", invented_content)
+        invent_attempts = {made.round: (assignment, invented)}
+
+    writer(
+        "match/ATTEMPTS.json",
+        _accepted_attempt(
+            "match",
+            assignment.assignment_sha256,
+            max(invent_attempts),
+        ),
+    )
 
     made_attempts, make_attempts_document = _made_attempts(
         run_root,
+        writer=writer,
         made=made,
-        assignment=assignment,
-        invented=invented,
+        invent_attempts=invent_attempts,
     )
     writer(
         "make/made.json",
@@ -602,11 +913,29 @@ def write_public_workflow_archive(
     )
     writer("publication/PUBLICATION.json", _canonical_json(publication))
 
+    if sanitizations:
+        raw_writer(
+            "SANITIZATION.json",
+            _canonical_json(
+                {
+                    "schema_version": 1,
+                    "kind": "autonomous-workshop.public-archive-sanitization",
+                    "files": sanitizations,
+                    "policy": (
+                        "Host-local absolute path prefixes are replaced with "
+                        "stable placeholders. Source and public hashes preserve "
+                        "an auditable one-way projection without disclosing the "
+                        "operator machine layout."
+                    ),
+                }
+            ),
+        )
+
     # The root manifest deliberately excludes itself.  Its exact scope is
     # explicit, so every other byte remains content-addressed without a
     # recursive self-hash problem.
     manifest = build_public_archive_manifest(staging)
-    writer(
+    raw_writer(
         "MANIFEST.json",
         _canonical_json(
             {

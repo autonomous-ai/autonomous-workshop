@@ -124,10 +124,19 @@ class NativeCommandTest(unittest.TestCase):
     def test_wish_calls_only_native_start_and_keeps_json_stdout_clean(self):
         observed = {}
 
-        def start(wish, *, effort, manager_id, activity_observer, timing_observer):
+        def start(
+            wish,
+            *,
+            effort,
+            manager_id,
+            github_publish_requested,
+            activity_observer,
+            timing_observer,
+        ):
             observed["wish"] = wish
             observed["effort"] = effort
             observed["manager_id"] = manager_id
+            observed["github_publish_requested"] = github_publish_requested
             timing_observer(timing_event())
             for activity in (
                 "starting",
@@ -174,6 +183,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
         self.assertEqual(observed["effort"], "spark")
+        self.assertFalse(observed["github_publish_requested"])
         self.assertIn("Effort: Spark", stderr.getvalue())
         native_start.assert_called_once()
 
@@ -187,9 +197,18 @@ class NativeCommandTest(unittest.TestCase):
         start.assert_called_once()
 
     def test_human_wish_timing_uses_stdout_and_flushes(self):
-        def start(wish, *, effort, manager_id, activity_observer, timing_observer):
+        def start(
+            wish,
+            *,
+            effort,
+            manager_id,
+            github_publish_requested,
+            activity_observer,
+            timing_observer,
+        ):
             self.assertEqual(effort, "spark")
             self.assertEqual(manager_id, "codex")
+            self.assertFalse(github_publish_requested)
             del wish, activity_observer
             timing_observer(timing_event(operation="stage.prepare"))
             timing_observer(
@@ -411,7 +430,16 @@ class NativeCommandTest(unittest.TestCase):
         ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
             self.assertEqual(main(("wish", "a moon")), 1)
 
-    def test_publication_flags_are_not_part_of_the_core_cli(self):
+    def test_github_publication_is_explicit_and_forwarded(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-one"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            self.assertEqual(main(("wish", "--github", "a moon")), 0)
+        self.assertTrue(start.call_args.kwargs["github_publish_requested"])
+
+    def test_legacy_publication_flags_are_not_part_of_the_core_cli(self):
         command = parser()
         with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
             command.parse_args(("wish", "a moon", "--publish"))

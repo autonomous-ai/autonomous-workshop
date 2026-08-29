@@ -22,6 +22,12 @@ fresh generations of the same geometry with the same toolchain produce the
 same bytes and hash. Record the actual build time in the Workshop run evidence
 or verification report, never by rewriting the generated STEP header.
 
+`__cadgen__` is a derived runtime cache, not a deliverable. Keep stable STEP,
+STL, GLB, render, source, and measurement files outside it. An Autonomous
+Workshop Make finalizer removes safe regular `__cadgen__` trees before sealing
+because the independent `--fresh` host gate intentionally deletes and rebuilds
+that cache; sealing it would make byte stability impossible.
+
 ## Quick iteration versus final generation
 
 Do not pay the full project pipeline after every cosmetic or proportion edit.
@@ -78,8 +84,7 @@ Replace `--unpowered` with `--powered` in the image-derived command when the
 product has a functional electrical load. For a non-image final command, add
 `--powered` when applicable.
 
-`verify_project` runs `check_layout`, verifies fetched design-reference
-provenance, performs one final multi-target generation,
+`verify_project` runs `check_layout`, performs one final multi-target generation,
 `check_fit`, the local `measure/check_{fit,spec,landmarks}.py` hooks that exist,
 `check_mount`, `check_power` and `check_motion` when their manifests exist, then one batched
 refs/validate/interfere pass. With `--exports`, it exports each printable STL,

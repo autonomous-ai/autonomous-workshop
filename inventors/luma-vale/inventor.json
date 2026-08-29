@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "7761305214c38b1cdd43954564ed607089871886c75ebd653fef11969aa5dd71",
+      "kind": "codex-skill",
+      "name": "luma-vale-inventor",
+      "path": "skills/luma-vale-inventor"
+    }
+  ],
+  "id": "luma-vale",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

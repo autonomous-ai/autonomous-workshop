@@ -145,6 +145,30 @@ class NativeStageGateTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "Make or Invent"):
             StageGateDecision(evidence=evidence, transition="release")
 
+    def test_failed_make_revision_gate_can_return_only_to_invent(self):
+        evidence = StageGateEvidence(
+            stage="make",
+            gate_id="make.invent-revision-v1",
+            validator_version="1.0.0",
+            passed=False,
+            checkpoint_sha256=self.checkpoint_sha256,
+            subject_sha256=digest("1"),
+            outcome_sha256=digest("2"),
+            artifact_path="artifacts/make/r0001/invent-revision-request.json",
+            artifact_sha256=digest("3"),
+            checks={"evidence_tree_rehashed": True},
+        )
+
+        self.assertEqual(
+            StageGateDecision(evidence=evidence, transition="invent").transition,
+            "invent",
+        )
+        for transition in (None, "make", "playtest", "release"):
+            with self.subTest(transition=transition), self.assertRaisesRegex(
+                ContractError, "return explicit feedback to Invent"
+            ):
+                StageGateDecision(evidence=evidence, transition=transition)
+
     def test_strict_reader_binds_checkpoint_and_full_subject(self):
         artifact = self.artifact(MATCH_ASSIGNMENT_PATH, self.assignment.to_dict())
         subject = match_gate_subject_sha256(

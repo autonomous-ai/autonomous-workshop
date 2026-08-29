@@ -229,7 +229,15 @@ class ComponentLayoutTest(unittest.TestCase):
             },
         )
         self.assertEqual(set(invent.__all__), {"NativeInvented"})
-        self.assertEqual(set(make.__all__), {"Made", "NativeMade"})
+        self.assertEqual(
+            set(make.__all__),
+            {
+                "Made",
+                "MakeInventRevisionFeedback",
+                "NativeMade",
+                "NativeMakeInventRevision",
+            },
+        )
         self.assertNotIn("Feedback", make.__all__)
         self.assertIn("Feedback", playtest.__all__)
 

@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "053ef7ecd2c34426c3fbd12840160877332cb684fff7f5efabadb0b14464b328",
+      "kind": "codex-skill",
+      "name": "kestrel-knot-inventor",
+      "path": "skills/kestrel-knot-inventor"
+    }
+  ],
+  "id": "kestrel-knot",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

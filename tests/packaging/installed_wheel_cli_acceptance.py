@@ -44,10 +44,14 @@ INVENTORS = (
     "bob",
     "eve",
     "ivy",
+    "kestrel-knot",
     "leo",
+    "luma-vale",
     "mira-fold",
     "pico-press",
+    "sonora-reed",
     "tess-loop",
+    "vela-bloom",
 )
 CODEX_THREAD_ID = "12345678-1234-5678-9234-567812345678"
 
@@ -141,7 +145,6 @@ def _build_wheel(repository: Path, root: Path) -> Path:
             "-m",
             "pip",
             "wheel",
-            "--no-build-isolation",
             "--no-deps",
             "--wheel-dir",
             wheelhouse,

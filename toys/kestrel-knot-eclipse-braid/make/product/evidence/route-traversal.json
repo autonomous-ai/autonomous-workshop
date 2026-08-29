@@ -1,0 +1,56 @@
+{
+  "check_id": "eclipse-braid-route-traversal",
+  "checks": {
+    "capture_is_topological": true,
+    "crossing_layer_clearance": true,
+    "crossing_projection_accuracy": true,
+    "orientation_flips_halfway": true,
+    "orientation_returns_home": true,
+    "runner_clears_base": true,
+    "single_periodic_route": true,
+    "two_separated_crossings": true
+  },
+  "crossings": [
+    {
+      "high_z_mm": 23.8,
+      "low_z_mm": 10.4,
+      "projected_visit_error_mm": 6.735557395310443e-16,
+      "rail_center_separation_mm": 13.4,
+      "x_mm": -17.0
+    },
+    {
+      "high_z_mm": 23.8,
+      "low_z_mm": 10.4,
+      "projected_visit_error_mm": 2.0206672185931327e-15,
+      "rail_center_separation_mm": 13.4,
+      "x_mm": 17.0
+    }
+  ],
+  "limitations": [
+    "Digital rigid geometry does not prove printed friction, wear, or human comfort.",
+    "The route check proves centerline continuity and declared clearances, not a physical print."
+  ],
+  "ok": true,
+  "orientation": {
+    "far_lobe_tangent": [
+      0.0,
+      -1.0,
+      0.0
+    ],
+    "half_turn_dot": -1.0,
+    "home_tangent": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "return_dot": 1.0
+  },
+  "route": {
+    "closed_by_periodic_spline": true,
+    "direction": "bidirectional by reversing the same ordered centerline",
+    "length_mm": 270.487,
+    "max_sample_gap_mm": 0.95,
+    "sample_count": 384
+  },
+  "schema_version": 1
+}
