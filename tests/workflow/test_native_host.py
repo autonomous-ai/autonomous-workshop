@@ -18,6 +18,7 @@ from workshop.match.native import (
 )
 from workshop.product import ToyBlueprint
 from workshop.workflow.native_run import (
+    _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
     _MAX_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
     _current_make_proposal_rejection,
@@ -271,6 +272,19 @@ class _AlwaysInterruptedLauncher(_FakeLauncher):
     def resume(self, **arguments):
         self.resumes.append(dict(arguments))
         self._raise()
+
+
+class _AlwaysUnfinishedLauncher(_FakeLauncher):
+    """Return normally without proposing while preserving one session."""
+
+    def start(self, **arguments):
+        self.starts.append(dict(arguments))
+        self._checkpoint(arguments)
+        return _FakeOutcome(arguments)
+
+    def resume(self, **arguments):
+        self.resumes.append(dict(arguments))
+        return _FakeOutcome(arguments)
 
 
 class _UnboundRecoverableLauncher(_FakeLauncher):
@@ -1030,6 +1044,75 @@ class NativeHostTest(unittest.TestCase):
                     path.name.endswith("-match.json")
                     for path in (host_state / "gates").iterdir()
                 )
+            )
+
+    def test_normal_unfinished_turns_stop_early_and_remain_resumable(self):
+        launcher = _AlwaysUnfinishedLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "bounded-normal-unfinished-continuation"
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(
+                WorkshopError,
+                "returned without agent-outcome.json for 3 consecutive turns",
+            ):
+                start_native_run(
+                    Wish.create(
+                        product_id,
+                        "a toy whose Goal repeatedly returns before finalization",
+                    )
+                )
+
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(
+                len(launcher.starts) + len(launcher.resumes),
+                _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
+            )
+            self.assertIn(
+                "previous native turn returned without agent-outcome.json",
+                launcher.resumes[0]["prompt"],
+            )
+            with mock.patch.dict(os.environ, environment, clear=True):
+                status = native_run_status(product_id)
+            self.assertEqual(status["status"], "active")
+            self.assertEqual(status["session_status"], "checkpointed")
+            self.assertEqual(
+                status["native_turns"],
+                _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
+            )
+            self.assertEqual(status["progress"]["activity"], "failed")
+
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(
+                WorkshopError,
+                "resumable with `workshop resume %s`" % product_id,
+            ):
+                resume_native_run(product_id)
+
+            with mock.patch.dict(os.environ, environment, clear=True):
+                resumed_status = native_run_status(product_id)
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(len(launcher.resumes), 5)
+            self.assertEqual(resumed_status["status"], "active")
+            self.assertEqual(resumed_status["session_status"], "checkpointed")
+            self.assertEqual(
+                resumed_status["native_turns"],
+                2 * _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
             )
 
     def test_recoverable_interruptions_exhaust_existing_turn_budget(self):

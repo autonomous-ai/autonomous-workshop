@@ -167,10 +167,14 @@ in the Made tree remain evidence only.
 
 A normally completed native turn that has not written `agent-outcome.json` is
 unfinished work, not a failed gate. When the exact native session checkpoint is
-already bound, the host resumes the same Goal and immutable stage subject under
-the command's existing 32-turn budget with a fixed reminder that the required
-finalizer has not written a proposal. No proposal, attempt, or evidence is
-fabricated. An unbound session or exhausted budget still fails closed.
+already bound, the host resumes the same Goal and immutable stage subject with
+a fixed reminder that the required finalizer has not written a proposal. Three
+consecutive normally returned turns without a proposal stop the command early;
+the run remains active, failed progress is visible, and an explicit
+`workshop resume` continues the same session with a fresh bounded window. The
+independent 32-turn invocation budget still applies across every continuation.
+No proposal, lifecycle attempt, or evidence is fabricated. An unbound session
+or exhausted budget still fails closed.
 
 ## Trust boundary
 

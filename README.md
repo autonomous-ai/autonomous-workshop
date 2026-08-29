@@ -219,9 +219,12 @@ For new runs it also requires an inspected chromatic product render at
 presentation-render family as its local hero; arbitrary diagnostic images and
 black/white likeness masks are never promoted.
 If a native turn simply returns before writing a proposal, Workshop continues
-the same checkpointed Goal automatically within the shared 32-turn command
-budget, explicitly reminding the session that its finalizer has not run; it
-does not create a stage attempt or require an operator resume.
+the same checkpointed Goal automatically, explicitly reminding the session
+that its finalizer has not run. Three consecutive normally returned turns
+without a proposal stop that command early with the exact session still
+resumable; this prevents one stuck Goal from silently consuming the shared
+32-turn command budget. An explicit `workshop resume` starts a fresh bounded
+continuation window without creating a second root session.
 
 [![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
 

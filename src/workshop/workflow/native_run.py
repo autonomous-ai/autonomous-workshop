@@ -192,6 +192,7 @@ _MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES = 256 * 1024
 _MAX_PLAYTEST_PROPOSAL_REJECTIONS = 32
 _MAX_LEGACY_CAD_GATE_EVIDENCE_BYTES = 3 * 1024 * 1024
 _MAX_NATIVE_TURNS = 32
+_MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS = 3
 _RECOVERABLE_BACKOFF_BASE_SECONDS = 1.0
 _RECOVERABLE_BACKOFF_MAX_SECONDS = 30.0
 _RECOVERABLE_BACKOFF_JITTER_MIN = 0.75
@@ -5514,6 +5515,7 @@ def _run_native_session(
     )
     action = "resumed" if first_method == "resume" else "started"
     unfinished_continuation = False
+    consecutive_unfinished_turns = 0
     while turns < _MAX_NATIVE_TURNS:
         checkpoint = run.snapshot()
         if checkpoint.status in ("waiting", "failed", "complete"):
@@ -5554,6 +5556,7 @@ def _run_native_session(
                 raise
             else:
                 unfinished_continuation = False
+                consecutive_unfinished_turns = 0
                 _rebind_existing_progress(
                     paths, checkpoint, updated, activity="completed"
                 )
@@ -5624,8 +5627,25 @@ def _run_native_session(
                 launcher_failure is None
                 and _session_status(paths, checkpoint.manager_id) == "checkpointed"
             ):
+                consecutive_unfinished_turns += 1
+                if (
+                    consecutive_unfinished_turns
+                    >= _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS
+                ):
+                    progress.observe("failed")
+                    raise WorkshopError(
+                        "native %s session returned without agent-outcome.json "
+                        "for %d consecutive turns; the exact session remains "
+                        "checkpointed and resumable with `workshop resume %s`"
+                        % (
+                            manager_spec(checkpoint.manager_id).display_name,
+                            _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
+                            checkpoint.product_id,
+                        )
+                    )
                 unfinished_continuation = True
                 continue
+            consecutive_unfinished_turns = 0
             progress.observe("failed")
             if isinstance(launcher_failure, _RecoverableNativeTurn):
                 # A timeout or recognized provider disconnect is safe to
@@ -5661,6 +5681,7 @@ def _run_native_session(
             progress.observe("failed")
             raise
         unfinished_continuation = False
+        consecutive_unfinished_turns = 0
         progress.rebind(updated, activity="completed")
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action

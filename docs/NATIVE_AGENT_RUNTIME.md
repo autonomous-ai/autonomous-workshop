@@ -343,10 +343,15 @@ accepted bytes, and alone decides the transition.
 If a normal native turn returns before the Goal writes `agent-outcome.json`,
 the host does not invent a result or require an immediate operator command. An
 already checkpointed exact session is resumed automatically with the unchanged
-stage subject under the same 32-turn invocation budget and receives a fixed
-instruction that its finalizer has not yet written the required proposal. This
-continuation is not a stage attempt. Missing session identity and budget
-exhaustion still fail closed.
+stage subject and receives a fixed instruction that its finalizer has not yet
+written the required proposal. Three consecutive normally returned turns
+without a proposal stop the invocation early, mark progress failed, and report
+the exact `workshop resume <wish-id>` command while preserving the checkpoint.
+An explicit resume starts a fresh three-turn unfinished-work window in that
+same root session. The independent 32-turn invocation budget still bounds all
+native turns, including gate repairs and provider-transport continuations.
+This continuation is not a lifecycle stage attempt. Missing session identity
+and either bound exhaustion still fail closed.
 
 For current Make and Playtest checkpoints, an otherwise bound proposal whose
 agent-authored contract or artifact tree cannot be safely reopened is not
