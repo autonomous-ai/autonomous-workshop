@@ -788,10 +788,10 @@ class StageProposalToolTest(unittest.TestCase):
             "validation/cad-build.json",
         )
 
-    def test_make_rejects_empty_directories_before_writing_a_proposal(self):
+    def test_make_prunes_empty_directories_before_writing_a_proposal(self):
         product_root, _, _, _ = self.create_product()
         (product_root / "cad/spec").mkdir()
-        (product_root / "cad/exports").mkdir()
+        (product_root / "cad/exports/nested").mkdir(parents=True)
         self.write_stage(
             "make",
             {
@@ -802,7 +802,7 @@ class StageProposalToolTest(unittest.TestCase):
             round_index=1,
         )
 
-        result = self.run_tool(
+        self.run_tool(
             "make",
             "--product-root",
             "artifacts/make/r0001/product",
@@ -810,14 +810,14 @@ class StageProposalToolTest(unittest.TestCase):
             "cad/project",
             "--cad-verification-path",
             "validation/cad-build.json",
-            expected=2,
         )
 
-        self.assertIn("empty, undeclared, or missing directories", result.stderr)
-        self.assertFalse(
-            (self.run_root / "artifacts/make/r0001/made.json").exists()
+        self.assertFalse((product_root / "cad/spec").exists())
+        self.assertFalse((product_root / "cad/exports").exists())
+        self.assertTrue(
+            (self.run_root / "artifacts/make/r0001/made.json").is_file()
         )
-        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+        self.assertTrue((self.run_root / "agent-outcome.json").is_file())
 
     def test_make_revision_seals_exact_contradiction_evidence_for_invent(self):
         evidence_root = self.run_root / "artifacts/make/r0001/revision-evidence"

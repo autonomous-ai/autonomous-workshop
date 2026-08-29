@@ -359,7 +359,11 @@ Playtest finalizers also reopen and bind every canonical config before writing
 `agent-outcome.json`, reducing the chance that an invalid proposal reaches the
 host gate. Make applies the same bounded rejection path if a tool materializes
 files or empty cache directories after the finalizer inventories the product
-tree but before the host performs its independent exact-tree readback.
+tree but before the host performs its independent exact-tree readback. Before
+that inventory, the Make finalizer deterministically removes empty directories:
+they contain no bytes, cannot be represented by the content-addressed manifest,
+and are commonly left by CAD and Python caches. Symlinks, special nodes,
+excluded files, and every non-empty directory remain fail-closed.
 
 Host-selected product artifacts share the package contract's 95 MiB per-file
 limit while the durable run retains its 128 MiB cumulative referenced-artifact

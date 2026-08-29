@@ -153,7 +153,10 @@ fixed failure class and feedback message into the next stage subject, and caps
 each checkpoint at 32 such rejections. State conflicts and host-state tampering
 still fail closed. This includes a Make tree that changes between the run-local
 finalizer inventory and the host's independent readback; the stale proposal is
-rejected rather than weakening exact-tree verification.
+rejected rather than weakening exact-tree verification. The Make finalizer
+removes empty directory-only build residue before inventory because it has no
+content-addressable bytes; non-empty and unsafe nodes remain exact and
+fail-closed.
 
 A normally completed native turn that has not written `agent-outcome.json` is
 unfinished work, not a failed gate. When the exact native session checkpoint is

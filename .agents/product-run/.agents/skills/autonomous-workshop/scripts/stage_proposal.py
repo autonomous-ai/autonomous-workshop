@@ -694,6 +694,34 @@ def _path_has_artifact_debris(relative: PurePosixPath) -> bool:
     return False
 
 
+def _prune_empty_directories(tree_root: Path, label: str) -> None:
+    """Remove directory-only build residue that cannot be content-addressed."""
+
+    for directory, _, _ in os.walk(str(tree_root), topdown=False, followlinks=False):
+        candidate = Path(directory)
+        if candidate == tree_root:
+            continue
+        try:
+            identity = candidate.lstat()
+        except OSError as exc:
+            raise ProposalError("%s changed while empty directories were pruned" % label) from exc
+        if candidate.is_symlink() or not stat.S_ISDIR(identity.st_mode):
+            raise ProposalError("%s contains a symlink or special directory" % label)
+        try:
+            candidate.rmdir()
+        except OSError:
+            try:
+                current = candidate.lstat()
+            except OSError as exc:
+                raise ProposalError(
+                    "%s changed while empty directories were pruned" % label
+                ) from exc
+            if candidate.is_symlink() or not stat.S_ISDIR(current.st_mode):
+                raise ProposalError(
+                    "%s changed while empty directories were pruned" % label
+                )
+
+
 def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict[str, Any]:
     tree_relative, tree_root = _existing_directory(
         run_root, tree_relative_value, label
@@ -1308,6 +1336,7 @@ def _make_contract(
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
         "CAD verification",
     )
+    _prune_empty_directories(product_root, "Make product tree")
     manifest = _tree_manifest(run_root, product_root_value, "Make product tree")
     paths = {entry["path"] for entry in manifest["entries"]}
     if "product.json" not in paths:
