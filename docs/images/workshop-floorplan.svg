@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 2050" role="img" aria-labelledby="title description">
   <title id="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</title>
-  <desc id="description">A journey from Wish into a pluggable agentic runtime, where one root coding-agent session acts as Workshop Manager. A durable private checkpoint resumes that exact session across stages, with per-command caps of three consecutive unfinished native turns or two consecutive recoverable native failures, explicit operator resumes, and supported in-place CLI updates. Malformed Make or Playtest proof is quarantined and returned to the same Goal with exact host feedback. Each active stage attempt receives one native Codex Goal whose stopping condition is successful stage finalization. Each new run freezes one effort route: Spark goes through Make and Release, Forge goes through Invent, Make, and Release, and Quest adds Playtest before Release. Evidence-bound failures can return Make to Invent, or Quest Playtest directly to Make or Invent, within one shared revision budget. Inventor selection happens inside the first creative stage rather than in a separate Match turn. Release hands off to the Operations team for Printing, Deliver, and customer Review.</desc>
+  <desc id="description">A journey from Wish into a pluggable agentic runtime, where one root coding-agent session acts as Workshop Manager. A durable private checkpoint resumes that exact session across stages, with per-command caps of three consecutive unfinished native turns or two consecutive recoverable native failures, explicit operator resumes, and supported in-place CLI updates. A concrete operator or environment blocker becomes a typed waiting or failed need instead of disappearing into chat. Malformed Make or Playtest proof is quarantined and returned to the same Goal with exact host feedback. Each active stage attempt receives one native Codex Goal whose stopping condition is successful stage finalization. Each new run freezes one effort route: Spark goes through Make and Release, Forge goes through Invent, Make, and Release, and Quest adds Playtest before Release. Evidence-bound failures can return Make to Invent, or Quest Playtest directly to Make or Invent, within one shared revision budget. Inventor selection happens inside the first creative stage rather than in a separate Match turn. Release hands off to the Operations team for Printing, Deliver, and customer Review.</desc>
 
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
@@ -157,7 +157,7 @@
   <text x="250" y="961" class="heading">MAKE</text>
   <text x="250" y="986" class="body">Turn the selected design into mechanical CAD.</text>
   <text x="250" y="1008" class="body">Build printable parts that fit, move, and feel right.</text>
-  <text x="250" y="1030" class="body">A proven concept block returns to Invent.</text>
+  <text x="250" y="1030" class="body">Blocked work seals a need; concept blocks return to Invent.</text>
   <text x="690" y="949" text-anchor="middle" class="goal-copy">CODEX GOAL</text>
   <text x="690" y="977" text-anchor="middle" class="body">Build + prove</text>
   <text x="690" y="999" text-anchor="middle" class="body">exact CAD</text>

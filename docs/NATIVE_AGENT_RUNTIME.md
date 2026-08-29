@@ -332,6 +332,10 @@ runs that deterministic tool for exactly one stage:
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . release \
   --package-root artifacts/release/package
+
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . need --stage <current-stage> --status waiting \
+  --reason "<one concrete condition required to continue>"
 ```
 
 The standalone Match command is frozen-run compatibility. Effort-aware Invent
@@ -345,6 +349,13 @@ the current stage packet. It performs no improvement loop. After it succeeds,
 Codex completes the active Goal and returns control. The host rereads the
 proposal and artifact tree independently, reruns its trusted gates, seals all
 accepted bytes, and alone decides the transition.
+
+The `need` command is the non-ready exception: it writes one checkpoint-bound
+`waiting` or `failed` reason with no artifact or transition, and the host stops
+without treating chat prose as state. Product-run instructions reserve it for
+a concrete operator or environment condition that prevents safe progress;
+ordinary unfinished work and repairable validation or finalizer failures stay
+inside the active Goal.
 
 If a normal native turn returns before the Goal writes `agent-outcome.json`,
 the host does not invent a result or require an immediate operator command. An

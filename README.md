@@ -240,6 +240,12 @@ The one automatic recovery turn also receives a fixed critical-path reminder:
 reuse existing bytes, avoid restarting exploration, do not make finalization
 depend on a child agent, and prioritize remaining deterministic checks plus the
 stage finalizer.
+When a concrete operator or environment condition truly blocks a stage, the
+same run-local finalizer can write one checkpoint-bound `waiting` or `failed`
+need with no artifact or transition. The host stops immediately and preserves
+that reason. Chat prose is never treated as a durable need, and agents are
+explicitly forbidden from using this path for ordinary unfinished or
+repairable work.
 
 [![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
 

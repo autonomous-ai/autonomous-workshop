@@ -64,6 +64,14 @@ the finalizer over optional additional exploration. A recovery turn after a
 host timeout must inspect and reuse existing product bytes rather than restart
 the design or repeat completed subagent work.
 
+If a concrete operator or environment condition makes safe Make progress
+impossible, use the main skill's `need` finalizer for the current `make` stage
+and return control without claiming Goal completion. Use `waiting` for a
+resolvable condition and `failed` only when safe continuation is impossible.
+Do not use that path for ordinary CAD difficulty, a repairable verifier or
+finalizer error, or a sealed Invent contradiction eligible for the
+evidence-bound `make-revision` route below.
+
 ## Return an unbuildable sealed concept to Invent
 
 For Forge and Quest, `STAGE.json` may set `invent_revision_allowed: true` and

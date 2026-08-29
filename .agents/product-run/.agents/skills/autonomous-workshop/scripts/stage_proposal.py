@@ -89,6 +89,7 @@ MAX_FILE_BYTES = 95 * 1024 * 1024
 MAX_TREE_BYTES = 512 * 1024 * 1024
 MAX_TREE_ENTRIES = 4096
 MAX_INVENTORS = 256
+MAX_AGENT_NEED_CHARS = 1_024
 
 EXCLUDED_DIRS = frozenset(
     (
@@ -345,6 +346,17 @@ def _bounded_text(value: Any, label: str, maximum: int = 10_000) -> str:
         or any(ord(character) == 127 for character in value)
     ):
         raise ProposalError("%s must be bounded non-empty text" % label)
+    return value
+
+
+def _agent_need(value: Any, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or len(value) > MAX_AGENT_NEED_CHARS
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        raise ProposalError("%s must be bounded single-line text" % label)
     return value
 
 
@@ -2810,6 +2822,42 @@ def _seal(
     }
 
 
+def _seal_need(
+    run_root: Path,
+    stage: Mapping[str, Any],
+    *,
+    status: str,
+    reason: str,
+) -> dict[str, Any]:
+    if status not in ("waiting", "failed"):
+        raise ProposalError("need status must be waiting or failed")
+    need = _agent_need(reason, "need reason")
+    outcome = {
+        "schema_version": 1,
+        "stage": stage["stage"],
+        "status": status,
+        "artifacts": [],
+        "needs": [need],
+        "proposed_transition": None,
+    }
+    proposal = {
+        "schema_version": 1,
+        "kind": OUTCOME_KIND,
+        "checkpoint_sha256": stage["checkpoint_sha256"],
+        "subject_sha256": stage["subject_sha256"],
+        "outcome": outcome,
+    }
+    proposal_bytes = canonical_json(proposal)
+    if len(proposal_bytes) > MAX_OUTCOME_BYTES:
+        raise ProposalError("agent outcome proposal exceeds its byte limit")
+    _atomic_write(run_root, "agent-outcome.json", proposal_bytes)
+    return {
+        "outcome_path": "agent-outcome.json",
+        "status": status,
+        "needs": 1,
+    }
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Seal one authored Workshop stage proposal without model calls."
@@ -2820,6 +2868,13 @@ def _parser() -> argparse.ArgumentParser:
         help="Canonical product-run workspace containing immutable STAGE.json.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    need = subparsers.add_parser(
+        "need", help="Seal one truthful waiting or failed stage need."
+    )
+    need.add_argument("--stage", required=True, choices=STAGES)
+    need.add_argument("--status", required=True, choices=("waiting", "failed"))
+    need.add_argument("--reason", required=True, help="One concrete single-line need.")
 
     match = subparsers.add_parser("match", help="Seal ranking and selected inventor.")
     match.add_argument("--source", required=True, help="Run-local Match authored JSON.")
@@ -2885,8 +2940,20 @@ def _parser() -> argparse.ArgumentParser:
 def run(args: argparse.Namespace) -> dict[str, Any]:
     _workshop_python()
     run_root = _canonical_root(args.run_root)
-    expected_stage = "make" if args.command == "make-revision" else args.command
+    if args.command == "need":
+        expected_stage = args.stage
+    elif args.command == "make-revision":
+        expected_stage = "make"
+    else:
+        expected_stage = args.command
     stage = _load_stage(run_root, expected_stage)
+    if args.command == "need":
+        return _seal_need(
+            run_root,
+            stage,
+            status=args.status,
+            reason=args.reason,
+        )
     additional_contracts: list[tuple[str, Mapping[str, Any]]] = []
     additional_files: list[tuple[str, bytes]] = []
     contract_path_value = None

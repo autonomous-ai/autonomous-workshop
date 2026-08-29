@@ -81,6 +81,9 @@ Keep the root Manager on the critical path; do not make completion depend on a
 child agent. Run only the remaining essential deterministic checks, repair
 concrete failures, invoke the current stage finalizer as soon as its contract
 is satisfied, and return after it writes `agent-outcome.json`.
+If a concrete operator or environment condition prevents safe progress, use
+the main skill's checkpoint-bound `need` finalizer instead of returning chat
+prose. Do not use a need to disguise ordinary unfinished or repairable work.
 
 ## Artifact recovery and invalidation
 
