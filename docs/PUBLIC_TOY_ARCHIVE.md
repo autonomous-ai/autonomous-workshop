@@ -76,6 +76,10 @@ host-owned authenticated effect, not agent-authored Release evidence.
   `make/product/` (or the corresponding historical Make attempt). Release's
   exact `MANUAL.pdf` and `MANUAL-DESIGN.json` preserve the approved manual and
   its visual-review findings; unsealed scratch renders remain private work.
+  A legacy projection that omitted its Make render tree may separately carry
+  a root `renders/` copy of an already-public Factory hero. Its provenance file
+  records the public source and SHA-256 and labels it as recovered presentation
+  evidence, never as sealed Make evidence.
 - The exact Wish is withheld by default. Publishing its text requires the
   caller to opt in explicitly; either form retains the exact Wish hash.
 - Agent prompts, transcripts, reasoning, session data, host state,
