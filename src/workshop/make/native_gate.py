@@ -238,9 +238,9 @@ def _validate_exact_product_tree(made: NativeMade, run_root: Path) -> Path:
             raise ArtifactError(
                 "native Made product tree has undeclared or missing files"
             )
-        if actual_directories != _declared_directories(declared_files):
+        if not _declared_directories(declared_files) <= actual_directories:
             raise ArtifactError(
-                "native Made product tree has undeclared or missing directories"
+                "native Made product tree has missing declared directories"
             )
         return product_root
     except ArtifactError as error:
@@ -936,7 +936,8 @@ def verify_native_made_cad(
     declared_project_files = {entry.path for entry in entries}
     if (
         project_files != declared_project_files
-        or project_directories != _declared_directories(declared_project_files)
+        or not _declared_directories(declared_project_files)
+        <= project_directories
     ):
         raise NativeMadeTreeGateError(
             "native Made CAD project changed after proposal finalization"

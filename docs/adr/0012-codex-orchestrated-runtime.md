@@ -89,6 +89,10 @@ After authoring one stage, Codex invokes the materialized deterministic
 canonical stage contract, and produces a checkpoint-bound
 `agent-outcome.json`. The host independently rereads all cited bytes, reruns
 trusted checks, seals accepted artifacts, and alone advances the checkpoint.
+Make manifests and host gates bind every exact file and reject links or special
+nodes. Byte-free directories are not artifacts; the finalizer prunes them when
+permitted but does not fail merely because the native sandbox denies directory
+unlink after derived cache files have been safely removed.
 For a concrete operator or environment blocker, the same finalizer may instead
 write one checkpoint-bound `waiting` or `failed` need with no artifact or
 transition. The host applies that typed non-ready result, persists its bounded

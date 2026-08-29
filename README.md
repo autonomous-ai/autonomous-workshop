@@ -216,10 +216,11 @@ artifacts, and consumes the run's shared revision budget.
 If a Make or Playtest proposal cannot be safely reopened, Workshop quarantines
 its exact bytes and returns bounded, hash-bound repair feedback to that same
 stage instead of losing the run or weakening the gate.
-The Make finalizer removes empty directories and safe derived `__cadgen__`
-runtime caches before sealing. Stable CAD exports, source, measurements,
-renders, and every other non-empty file remain exact manifest-bound product
-evidence.
+The Make finalizer removes safe derived `__cadgen__` cache files and prunes
+empty directories when its sandbox permits. Byte-free directories that the
+sandbox protects from unlink are ignored by both finalizer and host inventory;
+every file, symlink, special node, stable CAD export, source, measurement, and
+render remains exact and fail-closed.
 For new runs it also requires an inspected chromatic product render at
 `<cad-project>/snap/iso.png`. The public toy README may use only this explicit
 presentation-render family as its local hero; arbitrary diagnostic images and

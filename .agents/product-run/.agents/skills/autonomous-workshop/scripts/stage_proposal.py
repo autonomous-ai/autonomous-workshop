@@ -97,6 +97,7 @@ EXCLUDED_DIRS = frozenset(
         ".claude",
         ".idea",
         ".vscode",
+        "__cadgen__",
         "__macosx",
         "__pycache__",
         "inputs",
@@ -806,16 +807,33 @@ def _prune_derived_cad_caches(project_root: Path, label: str) -> None:
                     )
                 try:
                     candidate.rmdir()
-                except OSError as exc:
-                    raise ProposalError(
-                        "%s derived CAD cache could not be removed" % label
-                    ) from exc
+                except OSError:
+                    try:
+                        current = candidate.lstat()
+                    except OSError as exc:
+                        raise ProposalError(
+                            "%s changed while a derived CAD cache was removed"
+                            % label
+                        ) from exc
+                    if candidate.is_symlink() or not stat.S_ISDIR(current.st_mode):
+                        raise ProposalError(
+                            "%s derived CAD cache contains a linked or special directory"
+                            % label
+                        )
         try:
             cache.rmdir()
-        except OSError as exc:
-            raise ProposalError(
-                "%s derived CAD cache could not be removed" % label
-            ) from exc
+        except OSError:
+            try:
+                current = cache.lstat()
+            except OSError as exc:
+                raise ProposalError(
+                    "%s changed while a derived CAD cache was removed" % label
+                ) from exc
+            if cache.is_symlink() or not stat.S_ISDIR(current.st_mode):
+                raise ProposalError(
+                    "%s derived CAD cache contains a linked or special directory"
+                    % label
+                )
 
 
 def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict[str, Any]:
@@ -838,8 +856,6 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
                 raise ProposalError("%s contains a symlink or special directory" % label)
             if _path_has_artifact_debris(relative):
                 raise ProposalError("%s contains editor, backup, or patch debris" % label)
-            if dirname.casefold() in EXCLUDED_DIRS or _path_is_excluded(relative):
-                raise ProposalError("%s contains a path excluded by manifest policy" % label)
             kept.append(dirname)
             actual_directories.add(relative.as_posix())
         dirnames[:] = kept
@@ -874,12 +890,10 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
         while parent.as_posix() != ".":
             declared_directories.add(parent.as_posix())
             parent = parent.parent
-    if actual_directories != declared_directories:
-        unexpected = sorted(actual_directories - declared_directories)
+    if not declared_directories <= actual_directories:
         missing = sorted(declared_directories - actual_directories)
         raise ProposalError(
-            "%s has empty, undeclared, or missing directories: actual-only=%s, "
-            "file-derived-only=%s" % (label, unexpected, missing)
+            "%s has missing file-derived directories: %s" % (label, missing)
         )
     total = sum(item["bytes"] for item in entries)
     if total > MAX_TREE_BYTES:

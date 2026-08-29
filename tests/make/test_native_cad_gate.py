@@ -225,16 +225,19 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(payload, evidence.to_dict())
         self.assertEqual(stat.S_IMODE(evidence_path.stat().st_mode), 0o600)
 
-    def test_empty_cache_directory_is_typed_as_post_finalizer_tree_drift(self):
+    def test_empty_cache_directory_is_ignored_as_non_content_residue(self):
         (self.product_root / "cad/project/__cadgen__/empty-cache").mkdir(
             parents=True
         )
 
-        with self.assertRaisesRegex(
-            NativeMadeTreeGateError,
-            "changed after proposal finalization",
-        ):
-            self._verify(lambda *unused_args, **unused_kwargs: None)
+        evidence = self._verify(
+            lambda *unused_args, **unused_kwargs: VerifierProcessResult.from_bytes(0)
+        )
+
+        self.assertTrue(evidence.passed)
+        self.assertTrue(
+            (self.product_root / "cad/project/__cadgen__/empty-cache").is_dir()
+        )
 
     def test_default_output_bound_accommodates_a_verbose_multi_part_success(self):
         output = b"verified part\n" * 6_000

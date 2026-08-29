@@ -387,17 +387,18 @@ and resumes the same native session. Each checkpoint has an independent
 Playtest finalizers also reopen and bind every canonical config before writing
 `agent-outcome.json`, reducing the chance that an invalid proposal reaches the
 host gate. Make applies the same bounded rejection path if a tool materializes
-files or empty cache directories after the finalizer inventories the product
-tree but before the host performs its independent exact-tree readback. Before
-that inventory, the Make finalizer deterministically removes empty directories:
-they contain no bytes, cannot be represented by the content-addressed manifest,
-and are commonly left by CAD and Python caches. It also safely removes regular
-`__cadgen__` runtime-cache trees inside the declared CAD project because the
-independent `--fresh` verifier intentionally deletes and rebuilds them; sealing
-those cache, lock, progress, and temporary bytes would guarantee drift even
-when stable geometry reproduces. STEP/STL/GLB exports, source, measurements,
-product renders, symlinks, special nodes, excluded files, and every other
-non-empty directory remain exact and fail-closed.
+files after the finalizer inventories the product tree but before the host
+performs its independent exact-file readback. Before that inventory, the Make
+finalizer prunes empty directories when permitted and safely removes regular
+files from `__cadgen__` runtime-cache trees inside the declared CAD project.
+The independent `--fresh` verifier intentionally deletes and rebuilds those
+cache bytes; sealing cache, lock, progress, or temporary files would guarantee
+drift even when stable geometry reproduces. Some native sandboxes allow file
+unlink but deny directory unlink. A remaining empty directory contains no
+content-addressable bytes, so the finalizer and trusted host both ignore it
+instead of blocking Make. STEP/STL/GLB exports, source, measurements, product
+renders, every other file, symlinks, special nodes, and unsafe cache content
+remain exact and fail-closed.
 The current Make finalizer additionally requires a valid chromatic RGB/RGBA
 presentation PNG at `<cad-project>/snap/iso.png`, at least 800 px per side.
 That explicit path is archived under `make/verification/renders/` and is the

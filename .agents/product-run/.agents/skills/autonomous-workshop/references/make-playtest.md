@@ -117,8 +117,10 @@ Keep stable exported STEP/STL/GLB files, product PNG renders, source, and
 measurements in the product tree. Do not preserve `__cadgen__` runtime caches,
 generation locks/progress files, `__pycache__`, or temporary work trees there:
 the host's `--fresh` verifier intentionally rebuilds those bytes. The Make
-finalizer removes safe regular `__cadgen__` cache trees before hashing and
-fails closed on linked or special cache nodes.
+finalizer removes safe regular cache files before hashing and fails closed on
+linked, special, or unremovable cache content. If the sandbox protects a now
+empty cache directory from unlink, leave it in place: byte-free directories
+are ignored by both the finalizer and the host's exact-file gate.
 
 Create and inspect an actual presentation render at
 `<cad-project>/snap/iso.png` before finalizing. Use the CAD skill's

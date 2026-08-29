@@ -978,6 +978,45 @@ class StageProposalToolTest(unittest.TestCase):
             )
         )
 
+    def test_make_tolerates_a_sandbox_protected_empty_cad_cache(self):
+        product_root, _, _, _ = self.create_product()
+        project = product_root / "cad/project"
+        cache = project / "__cadgen__"
+        cache.mkdir()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        project.chmod(0o500)
+        try:
+            self.run_tool(
+                "make",
+                "--product-root",
+                "artifacts/make/r0001/product",
+                "--cad-project-path",
+                "cad/project",
+                "--cad-verification-path",
+                "validation/cad-build.json",
+            )
+        finally:
+            project.chmod(0o700)
+
+        self.assertTrue(cache.is_dir())
+        made, _ = self.assert_canonical_file(
+            "artifacts/make/r0001/made.json"
+        )
+        self.assertFalse(
+            any(
+                "__cadgen__" in entry["path"].split("/")
+                for entry in made["product_manifest"]["entries"]
+            )
+        )
+
     def test_make_rejects_linked_derived_cad_cache(self):
         product_root, _, _, _ = self.create_product()
         outside = self.run_root / "outside-cache"

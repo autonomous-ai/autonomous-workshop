@@ -163,13 +163,14 @@ fixed failure class and feedback message into the next stage subject, and caps
 each checkpoint at 32 such rejections. State conflicts and host-state tampering
 still fail closed. This includes a Make tree that changes between the run-local
 finalizer inventory and the host's independent readback; the stale proposal is
-rejected rather than weakening exact-tree verification. The Make finalizer
-removes empty directory-only build residue before inventory because it has no
-content-addressable bytes. It also removes safe regular `__cadgen__` runtime
-caches inside the declared CAD project: the independent `--fresh` verifier
-deletes and rebuilds them, so they are never stable product evidence. Exported
-CAD, source, measurements, renders, other non-empty nodes, and unsafe nodes
-remain exact and fail-closed.
+rejected rather than weakening exact-file verification. The Make finalizer
+prunes empty directory-only build residue when its sandbox permits and removes
+safe regular files from `__cadgen__` runtime caches inside the declared CAD
+project: the independent `--fresh` verifier deletes and rebuilds those bytes,
+so they are never stable product evidence. A sandbox-protected empty directory
+has no content-addressable bytes and is ignored by both finalizer and host
+inventory. Exported CAD, source, measurements, renders, every other file,
+symlinks, special nodes, and unsafe cache content remain exact and fail-closed.
 Newly materialized protocols require one visually inspected chromatic product
 render at `<cad-project>/snap/iso.png`. Public hero selection is allowlisted to
 the archived `snap/` render family; diagnostic and likeness images elsewhere
