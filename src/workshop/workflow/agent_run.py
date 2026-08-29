@@ -643,6 +643,7 @@ class AgentRunCheckpoint:
     invalidated_stages: tuple[str, ...]
     effort: Optional[str] = None
     manager_id: str = DEFAULT_MANAGER_ID
+    needs: tuple[str, ...] = ()
 
     @property
     def complete(self) -> bool:
@@ -1034,6 +1035,7 @@ class AgentRun:
             "invalidated_stages": [],
             "history": [],
             "last_outcome_sha256": None,
+            "needs": [],
             "previous_checkpoint_sha256": None,
             "manager_id": selected_manager.manager_id,
         }
@@ -1180,6 +1182,8 @@ class AgentRun:
             expected_fields.add("effort")
         if "manager_id" in payload:
             expected_fields.add("manager_id")
+        if "needs" in payload:
+            expected_fields.add("needs")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
@@ -1215,6 +1219,25 @@ class AgentRun:
                 manager_spec(payload["manager_id"])
             except ContractError as exc:
                 raise StateConflict("agent run Manager is invalid") from exc
+        if "needs" in payload:
+            needs = payload["needs"]
+            if (
+                not isinstance(needs, list)
+                or len(needs) > MAX_AGENT_NEEDS
+                or len(needs) != len(set(needs))
+                or any(
+                    not isinstance(need, str)
+                    or not need.strip()
+                    or len(need) > MAX_AGENT_NEED_CHARS
+                    or any(
+                        ord(character) < 32 or ord(character) == 127
+                        for character in need
+                    )
+                    for need in needs
+                )
+                or (payload["status"] in ("waiting", "failed")) != bool(needs)
+            ):
+                raise StateConflict("agent run current needs are invalid")
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -1463,6 +1486,7 @@ class AgentRun:
             invalidated_stages=tuple(payload["invalidated_stages"]),
             effort=payload.get("effort"),
             manager_id=payload.get("manager_id", DEFAULT_MANAGER_ID),
+            needs=tuple(payload.get("needs", ())),
         )
 
     def expected_gate_subject_sha256(self) -> str:
@@ -1650,6 +1674,7 @@ class AgentRun:
             updated = dict(payload)
             updated["sealed_artifacts"] = payload["sealed_artifacts"] + additions
             updated["status"] = outcome.status
+            updated["needs"] = list(outcome.needs)
             updated["last_outcome_sha256"] = outcome.sha256
             updated["history"] = payload["history"] + [
                 {
@@ -1753,6 +1778,7 @@ class AgentRun:
 
         updated["stage"] = next_stage
         updated["status"] = status
+        updated["needs"] = []
         updated["round_index"] = round_index
         updated["stage_artifacts"] = stage_artifacts
         updated["invalidated_stages"] = [
@@ -1798,6 +1824,7 @@ class AgentRun:
         updated = dict(payload)
         updated["stage"] = "release"
         updated["status"] = "complete"
+        updated["needs"] = []
         updated["invalidated_stages"] = [
             stage
             for stage in AGENT_RUN_STAGES
@@ -1822,6 +1849,7 @@ class AgentRun:
             raise TransitionError("only a waiting agent run can be resumed")
         updated = dict(payload)
         updated["status"] = "active"
+        updated["needs"] = []
         updated["history"] = payload["history"] + [
             {
                 "stage": payload["stage"],

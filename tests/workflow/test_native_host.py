@@ -1373,7 +1373,13 @@ class NativeHostTest(unittest.TestCase):
                 inspected_again = native_run_status(product_id)
 
             self.assertEqual(started["native_turns"], 1)
+            self.assertEqual(
+                started["needs"], ["fixture stops after one native turn"]
+            )
             self.assertEqual(inspected["native_turns"], 1)
+            self.assertEqual(
+                inspected["needs"], ["fixture stops after one native turn"]
+            )
             self.assertEqual(inspected["progress"]["status"], "available")
             self.assertEqual(
                 inspected["progress"]["stage_attempt"],
@@ -1386,7 +1392,14 @@ class NativeHostTest(unittest.TestCase):
                 r"Z$",
             )
             self.assertEqual(resumed["native_turns"], 2)
+            self.assertEqual(
+                resumed["needs"], ["fixture stops after one native turn"]
+            )
             self.assertEqual(inspected_again["native_turns"], 2)
+            self.assertEqual(
+                inspected_again["needs"],
+                ["fixture stops after one native turn"],
+            )
             self.assertEqual(
                 inspected_again["progress"]["stage_attempt"],
                 {"stage": "match", "number": 2},

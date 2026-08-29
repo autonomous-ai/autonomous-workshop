@@ -91,9 +91,11 @@ canonical stage contract, and produces a checkpoint-bound
 trusted checks, seals accepted artifacts, and alone advances the checkpoint.
 For a concrete operator or environment blocker, the same finalizer may instead
 write one checkpoint-bound `waiting` or `failed` need with no artifact or
-transition. The host applies that typed non-ready result and stops; chat prose
-is not workflow state, and ordinary unfinished or repairable work cannot use
-this exception.
+transition. The host applies that typed non-ready result, persists its bounded
+reason in private checkpoint state, exposes it in immediate and later status
+receipts, and stops. Resume clears a satisfied wait before reactivating the
+same stage. Chat prose is not workflow state, and ordinary unfinished or
+repairable work cannot use this exception.
 
 ### Host ownership
 

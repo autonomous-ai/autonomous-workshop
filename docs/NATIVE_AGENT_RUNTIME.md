@@ -352,8 +352,11 @@ accepted bytes, and alone decides the transition.
 
 The `need` command is the non-ready exception: it writes one checkpoint-bound
 `waiting` or `failed` reason with no artifact or transition, and the host stops
-without treating chat prose as state. Product-run instructions reserve it for
-a concrete operator or environment condition that prevents safe progress;
+without treating chat prose as state. The bounded reason remains in private
+checkpoint state and is printed by both the immediate command receipt and
+later `workshop status`; a resume clears the satisfied waiting condition before
+reactivating the same stage. Product-run instructions reserve this path for a
+concrete operator or environment condition that prevents safe progress;
 ordinary unfinished work and repairable validation or finalizer failures stay
 inside the active Goal.
 

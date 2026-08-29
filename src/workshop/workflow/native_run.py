@@ -5845,7 +5845,7 @@ def _native_receipt(
             "public readback. Credentials remain outside the native session."
         ),
     }
-    needs: list[str] = []
+    needs: list[str] = list(checkpoint.needs)
     if paths is not None:
         if checkpoint.stage == "release" and checkpoint.status == "waiting":
             wait_run = AgentRun.open(

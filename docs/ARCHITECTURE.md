@@ -147,9 +147,12 @@ stage.
 If a concrete operator or environment condition truthfully prevents progress,
 the run-local finalizer can instead write one checkpoint-bound `waiting` or
 `failed` need with no artifact or transition. The host applies that typed
-non-ready outcome and stops; chat prose is not workflow state. This escape path
-is not valid for ordinary unfinished work, repairable artifacts, deterministic
-check failures, or fixable finalizer errors.
+non-ready outcome, persists the bounded reason in private checkpoint state,
+surfaces it in immediate and later status receipts, and stops; chat prose is
+not workflow state. Resume clears the satisfied waiting condition before the
+same stage becomes active again. This escape path is not valid for ordinary
+unfinished work, repairable artifacts, deterministic check failures, or
+fixable finalizer errors.
 
 Wish is sealed by the host before the first enabled stage, so it is not an agent Goal. Host gate
 rejections remain bound to the exact proposal and return to the same stage for
