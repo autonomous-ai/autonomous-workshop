@@ -6045,6 +6045,13 @@ def _process_agent_outcome_inner(
         raise TransitionError("native stage cannot consume an agent proposal")
 
     _persist_gate_decision(run, checkpoint, decision)
+    if checkpoint.stage == "playtest":
+        # Bank what Playtest found BEFORE the transition is applied: a refused
+        # transition (2026-08-29: "round budget is exhausted" on the last
+        # round) used to discard the sealed lead answers the vault exists to
+        # remember. The gate decision is already persisted, so the rows are
+        # backed by the same evidence either way.
+        _record_playtest_evidence(run, checkpoint, context)
     updated = run.apply_outcome(
         proposal.outcome,
         gate=decision.receipt,
@@ -6052,8 +6059,6 @@ def _process_agent_outcome_inner(
         additional_artifacts=additional,
     )
     _remove_agent_outcome(run.run_root)
-    if checkpoint.stage == "playtest":
-        _record_playtest_evidence(run, checkpoint, context)
     if checkpoint.stage == "release" and updated.stage == "deliver":
         # A frozen historical finalizer proposed ``deliver``. Publication has
         # already passed the new Release gate, so migrate without creating or
