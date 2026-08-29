@@ -129,6 +129,7 @@ class NativeCommandTest(unittest.TestCase):
             *,
             effort,
             manager_id,
+            max_rounds,
             github_publish_requested,
             activity_observer,
             timing_observer,
@@ -202,6 +203,7 @@ class NativeCommandTest(unittest.TestCase):
             *,
             effort,
             manager_id,
+            max_rounds,
             github_publish_requested,
             activity_observer,
             timing_observer,
@@ -261,6 +263,37 @@ class NativeCommandTest(unittest.TestCase):
             result = main(("wish", "a moon", "--manager", "grok", "--json"))
         self.assertEqual(result, 0)
         self.assertEqual(start.call_args.kwargs["manager_id"], "grok")
+
+    def test_wish_passes_round_budget_to_the_native_host(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-rounds"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--max-rounds", "8", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["max_rounds"], 8)
+
+    def test_wish_defaults_the_round_budget_to_four(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-default-rounds"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["max_rounds"], 4)
+
+    def test_wish_rejects_an_out_of_range_round_budget(self):
+        for value in ("0", "101", "four"):
+            with self.subTest(value=value), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(
+                StringIO()
+            ), self.assertRaises(SystemExit) as caught:
+                main(("wish", "a moon", "--max-rounds", value, "--json"))
+            self.assertEqual(caught.exception.code, 2)
+            start.assert_not_called()
 
     def test_live_native_activity_repeats_only_throttled_running_updates(self):
         output = StringIO()

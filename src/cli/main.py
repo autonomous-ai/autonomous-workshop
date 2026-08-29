@@ -331,6 +331,22 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
         print("Resume: %s" % _shell_command("workshop", "resume", product_id))
 
 
+DEFAULT_MAX_ROUNDS = 4
+MAX_ROUND_BUDGET = 100
+
+
+def _round_budget(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("round budget must be an integer")
+    if not 1 <= parsed <= MAX_ROUND_BUDGET:
+        raise argparse.ArgumentTypeError(
+            "round budget must be between 1 and %d" % MAX_ROUND_BUDGET
+        )
+    return parsed
+
+
 def _wish(args: argparse.Namespace) -> int:
     effort = workshop_effort(args.effort)
     wish = Wish.create(
@@ -366,6 +382,7 @@ def _wish(args: argparse.Namespace) -> int:
         wish,
         effort=effort.name,
         manager_id=manager.manager_id,
+        max_rounds=args.max_rounds,
         github_publish_requested=args.github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -949,6 +966,17 @@ def parser() -> argparse.ArgumentParser:
         help=(
             "native Manager runtime: codex (default), claude, or grok; "
             "frozen for the run and cannot be changed on resume"
+        ),
+    )
+    wish.add_argument(
+        "--max-rounds",
+        type=_round_budget,
+        default=DEFAULT_MAX_ROUNDS,
+        metavar="N",
+        help=(
+            "Invent-Make-Playtest round budget, 1-100 (default: %d); "
+            "frozen for the run and cannot be changed on resume"
+            % DEFAULT_MAX_ROUNDS
         ),
     )
     wish.add_argument(

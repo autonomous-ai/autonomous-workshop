@@ -6675,6 +6675,7 @@ def start_native_run(
     manager_id: Optional[str] = None,
     publish_requested: Optional[bool] = None,
     github_publish_requested: bool = False,
+    max_rounds: int = 4,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -6695,6 +6696,10 @@ def start_native_run(
     push the sanitized public snapshot after verified Factory readback. It is
     false by default and frozen for the run.
 
+    ``max_rounds`` freezes the Invent-Make-Playtest round budget (1-100). Every
+    Make revision request and every Playtest ``improve`` verdict spends one
+    round, so a mechanism-heavy Wish may need more than the default four.
+
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
     """
@@ -6707,6 +6712,8 @@ def start_native_run(
         raise ContractError("legacy publication option must be boolean")
     if type(github_publish_requested) is not bool:
         raise ContractError("GitHub publication option must be boolean")
+    if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
+        raise ContractError("round budget must be an integer between 1 and 100")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -6731,7 +6738,7 @@ def start_native_run(
                 skill_root=assets.skill_root,
                 domain_skill_roots=domain_skill_roots,
                 inventor_source_root=inventor_source_root,
-                max_rounds=4,
+                max_rounds=max_rounds,
                 effort=(selected_effort.name if selected_effort is not None else None),
                 manager_id=selected_manager.manager_id,
             )

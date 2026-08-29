@@ -214,6 +214,15 @@ the host. The host copies the exact tree into an isolated verifier, reruns the
 trusted CAD gate, compares bytes, and seals the accepted revision. Narrative
 or model confidence never overrides a failed or absent measurement.
 
+Two facts about that isolated rerun decide whether it can even start. The host
+invokes `verify_project` without `--assembly`, so the CAD project must contain
+exactly one combined (non-`part_*`) entry generator: a second top-level entry,
+such as a neutral-pose export, is rejected before any geometry check. And the
+isolated copy carries only the declared project tree on `PYTHONPATH`, so every
+helper that a generator or `measure/` script imports (`cadfits` included) must
+be vendored inside the project rather than imported from the skill directory.
+Each miss costs one full Make session inside the bounded rejection loop.
+
 Spark and Forge advance directly to Release and therefore require the full
 verifier, including wall thickness and print-ready eligibility, at Make. They
 must not simulate Playtest; Release records that it was not run. Quest advances

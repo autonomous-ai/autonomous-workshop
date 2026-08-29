@@ -8,6 +8,10 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Added
 
+- `workshop wish --max-rounds N` freezes the Invent-Make-Playtest round
+  budget (1-100, default 4) for a run; the Make-Playtest reference now names
+  the two host CAD gate preflight facts (one combined entry, vendored
+  helpers) that otherwise cost a Make session each.
 - Machine-readable component ownership, CODEOWNERS, maintainer governance,
   security and conduct policies, support guidance, and architecture decisions
   for the component-oriented Workshop layout.
