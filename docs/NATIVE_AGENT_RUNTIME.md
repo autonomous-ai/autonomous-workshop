@@ -357,7 +357,9 @@ and resumes the same native session. Each checkpoint has an independent
 32-rejection ceiling. A host-state conflict still fails closed. Current
 Playtest finalizers also reopen and bind every canonical config before writing
 `agent-outcome.json`, reducing the chance that an invalid proposal reaches the
-host gate.
+host gate. Make applies the same bounded rejection path if a tool materializes
+files or empty cache directories after the finalizer inventories the product
+tree but before the host performs its independent exact-tree readback.
 
 Host-selected product artifacts share the package contract's 95 MiB per-file
 limit while the durable run retains its 128 MiB cumulative referenced-artifact

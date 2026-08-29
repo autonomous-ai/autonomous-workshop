@@ -151,7 +151,9 @@ Malformed Make and Playtest candidates are also recoverable without becoming
 evidence: the host quarantines the exact proposal in private state, binds a
 fixed failure class and feedback message into the next stage subject, and caps
 each checkpoint at 32 such rejections. State conflicts and host-state tampering
-still fail closed.
+still fail closed. This includes a Make tree that changes between the run-local
+finalizer inventory and the host's independent readback; the stale proposal is
+rejected rather than weakening exact-tree verification.
 
 A normally completed native turn that has not written `agent-outcome.json` is
 unfinished work, not a failed gate. When the exact native session checkpoint is

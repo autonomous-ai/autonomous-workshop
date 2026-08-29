@@ -62,6 +62,7 @@ from workshop.make.native_gate import (
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     NativeCadGateError,
+    NativeMadeTreeGateError,
     verify_native_made_cad,
 )
 from workshop.match.native import (
@@ -4001,13 +4002,20 @@ def _evaluate_make_stage(
     verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
     if not isinstance(verifier_sha256, str):
         raise StateConflict("native run lacks its trusted CAD verifier binding")
-    cad_evidence = verify_native_made_cad(
-        made,
-        run_root=run.run_root,
-        host_state_root=run.host_state_root,
-        expected_verifier_sha256=verifier_sha256,
-        require_print_ready=transition == "release",
-    )
+    try:
+        cad_evidence = verify_native_made_cad(
+            made,
+            run_root=run.run_root,
+            host_state_root=run.host_state_root,
+            expected_verifier_sha256=verifier_sha256,
+            require_print_ready=transition == "release",
+        )
+    except NativeMadeTreeGateError as error:
+        # A tool can materialize cache directories after the run-local
+        # finalizer inventories the tree but before the host reopens it. Keep
+        # the exactness gate fail-closed, quarantine the stale proposal, and
+        # return bounded repair feedback to this same Make checkpoint.
+        raise _make_rejection_for_error(error) from error
     evidence = StageGateEvidence(
         stage="make",
         gate_id="make.sealed-revision-v1",
