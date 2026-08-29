@@ -34,6 +34,15 @@ Digital validation covered all six exact STLs, rules replay, mechanical
 envelopes, and generic-profile OrcaSlicer jobs. It did not prove a physical
 print, Bambu-specific settings, calibrated fit, durability, or human response.
 
+## Run cost
+
+| Measure | Value |
+|---|---|
+| Native Manager tokens | unavailable — this run predates token telemetry |
+| Wish to verified publication | unavailable — the archived snapshot has no trustworthy Wish-start timestamp |
+
+No dollar cost is inferred.
+
 ## Snapshot contents
 
 - `product.json` — the exact public Release page contract.

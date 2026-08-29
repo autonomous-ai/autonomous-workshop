@@ -20,6 +20,15 @@ Spark: `Wish -> Make -> Release`. Inventor selection is folded into Make.
 
 Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no turn, artifact, or gate. Private host rejections and native session resumes are not public.
 
+## Run cost
+
+| Measure | Value |
+|---|---|
+| Native Manager tokens | unavailable — this run predates token telemetry |
+| Wish to verified publication | unavailable — the archived snapshot has no trustworthy Wish-start timestamp |
+
+No dollar cost is inferred.
+
 ## Snapshot contents
 
 - `wish/` — sanitized Wish binding (exact text only with explicit consent).
