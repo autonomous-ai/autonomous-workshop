@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "check_id": "agent-playtest",
+  "product_artifact_sha256": "9ff89565b9c5aa91e7338007c641607da1c3afa0ba9a3cafe749ef9d2cc20403",
+  "seed": 20260829,
+  "method": "Independent native-agent and root visual review of the exact three indexed projections, all 12 distance corners, all 15 state/alignment cases, the 72-pose motion sheet, exact point-source metrics, assembled reset view, and exact rear-shell phone/beam cue.",
+  "inspection_targets": [
+    "evidence/shadows/state-rabbit-000.png",
+    "evidence/shadows/state-fox-120.png",
+    "evidence/shadows/state-owl-240.png",
+    "evidence/shadows/distance-corners-contact-sheet.png",
+    "evidence/shadows/alignment-sweep-contact-sheet.png",
+    "evidence/shadows/motion-contact-sheet.png",
+    "evidence/shadows/shadow-sweep.json",
+    "cad/snap/setup-wall-side.png",
+    "cad/measure/setup-wall-side.json",
+    "cad/snap/setup-phone-side.png",
+    "cad/features/profiles.py",
+    "cad/parts/shells.py"
+  ],
+  "acceptance": [
+    "Rabbit, fox, and owl must each read decisively without captions in the exact indexed projections and remain legible across the authored distance/alignment cases.",
+    "The fox must no longer present stalk-like ears; the owl must have a clear external beak and angular wings rather than the prior round bat-like lobes.",
+    "An assembled exact-mesh view must pair the fixed pointer with the home-V marks, and the phone-side exact mesh must visibly connect a phone-shaped opening to a widening beam aimed toward the portal.",
+    "The 5-degree cycle must be described only as an eclipse wipe, not continuous animal recognition.",
+    "Digital judgment must not be represented as human recognition, delight, first-use discovery, finite-emitter, room-light, physical-use, or durability evidence."
+  ]
+}

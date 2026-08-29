@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "stage": "make",
+  "checkpoint": "903f6fa5780ef9173665f3d8c3c02fd5f065dc4c4e9b4292596bbd265dc7f0f4",
+  "subject": "16aee19a31ed4427acee5149e5f45b87fcfbe013feb183d2d678ba6ba4d58226",
+  "source_project": "cad",
+  "artifacts": {
+    "step": {
+      "path": "assembled.step",
+      "sha256": "f58a818f8b91e75b6708c3bd50b0b7b0e78cfec4c027fc1c767c760ef899e04f"
+    },
+    "stl": {
+      "path": "assembled.stl",
+      "sha256": "d5b2ea82a670dac92c95e89e6a10c3d04f4ee5188e06715d310e5c7b02755154"
+    }
+  },
+  "assembly": {
+    "occurrence_count": 4,
+    "occurrences": [
+      "front_shell",
+      "shadow_reel",
+      "rear_shell",
+      "kickstand"
+    ],
+    "bounds_mm": {
+      "min": [-57.0000001, -93.99392157210987, -0.0000001],
+      "max": [57.0000001, 0.00000010000001421085471, 123.00000012250699]
+    }
+  },
+  "verification": {
+    "pipeline": {
+      "path": "cad/measure/verification-pipeline.md",
+      "sha256": "f0b263dee96f18b022dfce5d994123aae871c3c86ece07fdbc4a5b82e5051421",
+      "result": "pass"
+    },
+    "layout": "pass",
+    "source_fresh_generation": "pass",
+    "step_validation": "pass",
+    "assembly_interference_at_1_mm3": "zero_clashes",
+    "print_bed_220x220x220": "pass_for_all_four_parts",
+    "mesh_manifold_and_watertight": "pass_for_all_four_parts",
+    "minimum_wall_0_8_mm": "pass_for_all_four_parts",
+    "shared_nominal_fit_audit": "pass",
+    "sealed_dimension_audit": "pass",
+    "kickstand_motion": "29_steps_clear",
+    "reel_motion": "73_steps_clear"
+  },
+  "host_rejection_repair": {
+    "path": "cad/measure/host-rejection-repair.md",
+    "sha256": "3c7a6dbc1f4d0342b46b3485fea3a3fdee22a97354bc4ad65582118a13aee3d7",
+    "rejection_sha256": "13f513a6f2a65ef7b9677c26abe35c932040da0ceaee67b6b544274e56d55619",
+    "failure_code": "declared-cad-output-changed",
+    "isolated_direct_fit_check": "pass",
+    "isolated_full_workflow": "pass",
+    "independent_clean_builds": 2,
+    "deterministic_step_sha256": "f58a818f8b91e75b6708c3bd50b0b7b0e78cfec4c027fc1c767c760ef899e04f",
+    "project_local_cadfits_sha256": "08ea3b1f26b6e57cf9e0185c9c26d9c7bb15477e7adfea1130d937b2b77040b9"
+  },
+  "optical_evidence": {
+    "path": "evidence/shadows/shadow-sweep.json",
+    "sha256": "b1e2e7f6098f30795664cf4815481dcfdc9f9ed8efeae32d8e22ba81789c9053",
+    "method": "72-state deterministic point-source triangle projection from the four exact exported part meshes",
+    "indexed_states": {
+      "rabbit": 0,
+      "fox": 120,
+      "owl": 240
+    }
+  },
+  "render": {
+    "path": "cad/snap/iso.png",
+    "sha256": "5ba174eeb3662f78c994237c67bf73ad5902f001a50d296670c6897a4905d13c",
+    "inspected": true
+  },
+  "limitations": [
+    "All verification is digital and does not prove a successful physical print, snap strain, detent feel, strength, durability, finite-emitter shadow softness, room brightness, or human recognition.",
+    "The intentional front-leaf detent contact is represented by matched nominal pocket geometry; the rigid-body full-cycle reel sweep excludes compliant contact."
+  ]
+}

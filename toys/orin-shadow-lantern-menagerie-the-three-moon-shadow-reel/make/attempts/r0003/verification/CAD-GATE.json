@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "stage": "make",
+  "checkpoint": "1257c72104f7b75197a3f0464f9b54280343610ac58666e28fa4af7b14077f5c",
+  "subject": "9b712607dee2f587d239d7b9482d4da3cca7fc68f7326999db127404a4c6f4b1",
+  "source_project": "cad",
+  "artifacts": {
+    "step": {"path": "assembled.step", "sha256": "3e0243306c97e5b29975107e93c6f399af5f8ef9f81415dda497bfb4e60a6b0b"},
+    "stl": {"path": "assembled.stl", "sha256": "69632ce86ea4cdbbf88981ea3332c830cfa866cbeb128fbebd8a3ea5aa557bff"},
+    "glb": {"path": "cad/assembled.glb", "sha256": "c6fbd1999121176ccbd7e4908427b23e419cf024c84ffee1037225f08c231258"}
+  },
+  "assembly": {
+    "root_occurrence_count": 5,
+    "leaf_occurrence_count": 4,
+    "occurrences": ["front_shell", "shadow_reel", "rear_shell", "kickstand"],
+    "bounds_mm": {
+      "min": [-57.0, -82.844649, -4.222081],
+      "max": [57.0, 0.0, 123.0]
+    },
+    "size_mm": [114.0, 82.844649, 127.222081]
+  },
+  "verification": {
+    "pipeline": {
+      "path": "cad/measure/verification-pipeline.md",
+      "sha256": "8c27421ce349c1c0b00ad37948fd3a5d7921b83ba09e359165c96478ad28203d",
+      "result": "pass",
+      "mode": "cache_free_fresh_exports_strict_fit"
+    },
+    "layout": "pass",
+    "source_fresh_generation": "pass",
+    "step_validation": "pass_all_entries",
+    "assembly_interference_at_1_mm3": "zero_clashes",
+    "print_bed_220x220x220": "pass_for_all_four_parts",
+    "maximum_part_width_mm": 114.0,
+    "mesh_manifold_and_watertight": "pass_for_all_four_parts",
+    "minimum_wall_0_8_mm": "pass_for_all_four_parts",
+    "rear_shell_fine_wall_0_8_mm": {
+      "result": "pass",
+      "below_minimum_samples": 0,
+      "path": "cad/measure/thickness-rear_shell-fine.md",
+      "sha256": "818535d41c017053430dc2b6b21b0eea4cd14c5df343f09f14b2e45bc631b12a"
+    },
+    "shared_nominal_fit_audit": "pass_21_checks",
+    "sealed_dimension_audit": "pass_24_checks",
+    "stand_endpoint": {"rotation_deg": 112.0, "deployed_depth_mm": 82.395},
+    "motion_manifest": "pass_10_conditions",
+    "shell_latch_lead_paths": "four_clear",
+    "shell_rigid_pullout": "blocked_as_expected",
+    "kickstand_deployed_overtravel": "blocked_as_expected",
+    "kickstand_folded_overtravel": "blocked_as_expected",
+    "kickstand_motion": "57_steps_clear",
+    "reel_clockwise_motion": "73_steps_clear",
+    "reel_counterclockwise_motion": "73_steps_clear",
+    "detent_nominal_cam": "rounded_tip_and_symmetric_ramps_audited"
+  },
+  "host_cad_gate_retry": {
+    "authoritative_rejection_sha256": "c7fc2d326fc649efe10e91797dc15f0c92cf5e048601d74bad31f1a38329cd86",
+    "failure_code": "verifier-nonzero",
+    "exact_failure": "inspect batch returned 2 response(s), expected 11",
+    "repair_evidence_path": "cad/measure/host-inspection-batch-repair.md",
+    "repair_evidence_sha256": "5b524076fe6c6bbf8406dc15a18c71e487335a442a5db498f501245388faa3df",
+    "rejected_assembly_faces": 1206,
+    "repaired_assembly_faces": 954,
+    "fresh_inspection_responses": 11,
+    "fresh_pipeline_result": "pass"
+  },
+  "playtest_repair": {
+    "accepted_playtest_path": "artifacts/playtest/r0002/playtested.json",
+    "accepted_playtest_sha256": "2f5754bbc710425c18226427d49be6b77af7896a337d6b596a4ed29fed2b2349",
+    "path": "cad/measure/playtest-repair.md",
+    "sha256": "96b8fe2acd343bd6f11619bfd7273cec76a75b44171975c1c715a7a2a9c7112e",
+    "feedback_codes": {
+      "recognition-alignment-and-setup-cues-still-ambiguous": "repaired_with_angular_fox_horned_owl_all_15_alignment_cases_fixed_home_arrow_and_raised_beam_tiles",
+      "detent-closure-and-stand-paths-not-demonstrated": "repaired_with_two_way_ramped_detent_one_axis_latches_four_entry_paths_and_112deg_82_395mm_endpoint"
+    },
+    "round_2_step_sha256": "bb5108fe6a570a64e72aafd774de9cb6980392722c31ab6c0c234b0f8eadbf20",
+    "changed_from_round_2": true
+  },
+  "prior_make_gate_repair": {
+    "path": "cad/measure/host-rejection-repair.md",
+    "sha256": "3c7a6dbc1f4d0342b46b3485fea3a3fdee22a97354bc4ad65582118a13aee3d7",
+    "scope": "historical deterministic STEP repair retained as provenance"
+  },
+  "optical_evidence": {
+    "path": "evidence/shadows/shadow-sweep.json",
+    "sha256": "68ab818f44c70a941dd26ddd9e4c0d869208e61678805b890829416bf9945492",
+    "method": "exact four-mesh point-source projection",
+    "motion_samples": 72,
+    "indexed_states": {"rabbit": 0, "fox": 120, "owl": 240},
+    "distance_corners": {
+      "path": "evidence/shadows/distance-corners-contact-sheet.png",
+      "sha256": "2f458ed4f76a94bedc4aec230a61f5880787c20a799a5e0740086ba5ca969e6c",
+      "samples": 12
+    },
+    "alignment_sweep": {
+      "path": "evidence/shadows/alignment-sweep-contact-sheet.png",
+      "sha256": "009e7a0f52694b7264bfc2e5d9832c506900b0cc2cf8320612483be54d3eda06",
+      "samples": 15,
+      "range": "all three creatures centered and plus/minus 2 degrees yaw/pitch"
+    },
+    "fox": {"path": "evidence/shadows/state-fox-120.png", "sha256": "695f851c792eaa2edba6aea1c0715f4e14f1e00b244aa81f362846b39f4bf0c0"},
+    "owl": {"path": "evidence/shadows/state-owl-240.png", "sha256": "05c0f983eae76017beca0f2d5c95ab350168deab6253b459f670e68413862ab2"}
+  },
+  "renders": {
+    "product": {"path": "cad/snap/iso.png", "sha256": "50ee18bc54eb046c30307ed9578120d1b26307f2385be77d9dd46778457fc42c", "inspected": true},
+    "wall_setup": {"path": "cad/snap/setup-wall-side.png", "sha256": "f0a9bd9f4087eaa11d69ac7649656ea33754633b1b3756429b619136d1d9d343", "inspected": true},
+    "phone_setup": {"path": "cad/snap/setup-phone-side.png", "sha256": "a153913f6ed5b6602c16821fa35bd7d1cc44e988905ea85433961658796736cb", "inspected": true}
+  },
+  "limitations": [
+    "All verification is digital and does not prove a successful physical print, snap strain, detent feel, insertion or retention force, strength, durability, finite-emitter shadow softness, room brightness, or human recognition.",
+    "Rigid motion proves hard-part paths, pullout blocking, and stops; it does not simulate elastic front-leaf or latch behavior or cycle life."
+  ]
+}

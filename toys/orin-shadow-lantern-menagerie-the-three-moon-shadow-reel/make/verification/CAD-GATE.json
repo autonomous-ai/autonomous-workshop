@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "stage": "make",
+  "checkpoint": "103df05153d121be8c75f78eb9f1b2b0955e946a2497a94978c00f94ac645858",
+  "subject": "39bac1998c299cf0df4c71126be6c02917578adcf0a38d8971716d552cc0acc6",
+  "source_project": "cad",
+  "artifacts": {
+    "step": {"path": "assembled.step", "sha256": "6f087a38cf14ac5015f5040e97529b72d7306415b9fbf97a4c30a242e6a38528"},
+    "stl": {"path": "assembled.stl", "sha256": "b3c989e66a3431741882c334e32e1639e0f08a7f3bf77f6a00cb15cd86de0a79"},
+    "glb": {"path": "cad/assembled.glb", "sha256": "274724c0547b55cc8791736f5a2b22d9c1b7a1f56d8fed64100ee4976b064868"}
+  },
+  "assembly": {
+    "root_occurrence_count": 5,
+    "leaf_occurrence_count": 4,
+    "occurrences": ["front_shell", "shadow_reel", "rear_shell", "kickstand"],
+    "bounds_mm": {"min": [-57.0, -82.844649, -4.222081], "max": [57.0, 0.0, 123.0]},
+    "size_mm": [114.0, 82.844649, 127.222081]
+  },
+  "verification": {
+    "pipeline": {
+      "path": "cad/measure/verification-pipeline.md",
+      "sha256": "1f3f803227254a20c974863c75a07115584f3f52b387c69e5676e1e8e25ea574",
+      "result": "pass",
+      "mode": "cache_free_fresh_exports_strict_fit",
+      "print_ready_claim": true
+    },
+    "layout": "pass",
+    "source_fresh_generation": "pass",
+    "step_validation": "pass_all_entries",
+    "assembly_interference_at_1_mm3": "zero_clashes",
+    "print_bed_220x220x220": "pass_for_all_four_parts",
+    "mesh_manifold_and_watertight": "pass_for_all_four_parts",
+    "minimum_wall_0_8_mm": "pass_for_all_four_parts",
+    "part_stl_sha256": {
+      "front_shell": "05f5954fe1478cd30668e6bbd592ed14fcbe2b554dd3d1c6030975f66d3f4a29",
+      "kickstand": "8a68cbdcdc7571575272218d6df449a5e76af1e2de81ade354a191dce5584cfa",
+      "rear_shell": "847811e2898dc2f971d7fa2c5539efe13064bb8770b4316cdd8879b9452c1b12",
+      "shadow_reel": "2a14b2ab6030b4dd14b5378262b603927598bfecc7c57700c56a61a58103a62e"
+    },
+    "rear_shell_fine_wall_0_8_mm": {
+      "result": "pass",
+      "requested_voxel_mm": 0.16,
+      "effective_grid_mm": 0.261,
+      "surface_samples": 330865,
+      "below_minimum_samples": 0,
+      "path": "cad/measure/thickness-rear_shell-fine.md",
+      "sha256": "a9de2cf779ba3e2aea93c65d5cefdf353a7801a385a2011c9e16f3f49d416692"
+    },
+    "shared_nominal_fit_audit": "pass_21_checks",
+    "sealed_dimension_audit": "pass_24_checks",
+    "stand_endpoint": {"rotation_deg": 112.0, "deployed_depth_mm": 82.395},
+    "motion_manifest": "pass_10_conditions",
+    "shell_latch_lead_paths": "four_clear",
+    "shell_rigid_pullout": "blocked_as_expected",
+    "kickstand_deployed_overtravel": "blocked_as_expected",
+    "kickstand_folded_overtravel": "blocked_as_expected",
+    "kickstand_motion": "57_steps_clear",
+    "reel_clockwise_motion": "73_steps_clear",
+    "reel_counterclockwise_motion": "73_steps_clear"
+  },
+  "playtest_return_repair": {
+    "authoritative_playtest_path": "artifacts/playtest/r0003/playtested.json",
+    "authoritative_playtest_sha256": "6c53bd9f7693931419434477993124c1524cc4f6f1f2fefa4175bee6be213265",
+    "authoritative_playtested_identity": "b1f8d47ec0d4bdf77314b204203907fbf26f449d4104147fcf3db45a6b2d54ca",
+    "repair_evidence_path": "cad/measure/playtest-r0003-repair.md",
+    "repair_evidence_sha256": "bff29f07c6296f28023e646c4cbd7bc69ff95308a030535dc2cf2a324da0bf37",
+    "feedback_codes": {
+      "silhouettes-and-setup-cues-remain-ambiguous": "repaired_with_filleted_compact_fox_clear_external_beak_angular_owl_exact_assembled_home_pairing_and_phone_beam_opening",
+      "sealed-rear-shell-fails-fine-wall-replay": "repaired_with_rounded_8mm_bearing_land_new_rear_stl_and_zero_sample_exact_fine_replay"
+    },
+    "round_3_assembled_step_sha256": "3e0243306c97e5b29975107e93c6f399af5f8ef9f81415dda497bfb4e60a6b0b",
+    "round_4_assembled_step_sha256": "6f087a38cf14ac5015f5040e97529b72d7306415b9fbf97a4c30a242e6a38528",
+    "changed_from_round_3": true
+  },
+  "optical_evidence": {
+    "path": "evidence/shadows/shadow-sweep.json",
+    "sha256": "82b1eb86370d9c1ace647b44cb48df02e284a8ef214c0e2aa5725cbdd1b596d1",
+    "method": "exact four-mesh point-source projection",
+    "motion_samples": 72,
+    "distance_corner_samples": 12,
+    "alignment_samples": 15,
+    "indexed_states": {"rabbit": 0, "fox": 120, "owl": 240},
+    "rabbit": {"path": "evidence/shadows/state-rabbit-000.png", "sha256": "c5275513aba28735a4ec5d3754140410ce2ac4bf05b7121ffab74d11d8b18a2c"},
+    "fox": {"path": "evidence/shadows/state-fox-120.png", "sha256": "3b5a1dc564a51a63b9a52f5d0305744b54baf0c17741903748e9b7f7c27536f2"},
+    "owl": {"path": "evidence/shadows/state-owl-240.png", "sha256": "dd94f65f7a8d6af1d74e6db65f084356bacdb6868f3cc9ae67d81a01c893f1d2"}
+  },
+  "renders": {
+    "product": {"path": "cad/snap/iso.png", "sha256": "dba5a9b901fbe0c3eb57c1c7d24d8b9249bcc24d7873b5a3a5fa880c6eed0420", "inspected": true},
+    "assembled_wall_setup": {
+      "path": "cad/snap/setup-wall-side.png",
+      "sha256": "e3bbc05b5412789405b4622bd69f980881955153ec73627672d2ba01550559bf",
+      "report_path": "cad/measure/setup-wall-side.json",
+      "report_sha256": "d803f60d03486074056b45ed8a81ae1468609a2818df30190be1c04d47b6ee44",
+      "inspected": true
+    },
+    "phone_setup": {"path": "cad/snap/setup-phone-side.png", "sha256": "f553bdbe1bc479993096865bc3f526eb6a332fb09950a8faa9247873fa8cf5fb", "inspected": true}
+  },
+  "limitations": [
+    "All verification is digital and does not prove a successful physical print, snap strain, detent feel, insertion or retention force, strength, durability, finite-emitter shadow softness, room brightness, human recognition, or first-use cue discovery.",
+    "Rigid motion proves hard-part paths, pullout blocking, and stops; it does not simulate elastic front-leaf or latch behavior or cycle life."
+  ]
+}

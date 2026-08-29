@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "stage": "make",
+  "checkpoint": "f6f0b17b36edbd0276e45f4189338461fc23f4499e0b4498a3aa0f5f943f2cdc",
+  "subject": "b9b97eaaab6f532805257896d0f364628c9bd43a6435db238de051c89cc9f861",
+  "source_project": "cad",
+  "artifacts": {
+    "step": {"path": "assembled.step", "sha256": "bb5108fe6a570a64e72aafd774de9cb6980392722c31ab6c0c234b0f8eadbf20"},
+    "stl": {"path": "assembled.stl", "sha256": "57ad0c865845a370e11d191acd2d683c656717f42dd574718e63bc7a9be4bc12"},
+    "glb": {"path": "cad/assembled.glb", "sha256": "a9719951e8569be2e0d0463ca800af872bf42404a26858e8fb2fe3a3d0ba53fc"}
+  },
+  "assembly": {
+    "occurrence_count": 4,
+    "occurrences": ["front_shell", "shadow_reel", "rear_shell", "kickstand"],
+    "bounds_mm": {
+      "min": [-57.03664900685808, -94.0305704789796, -0.036649006858086176],
+      "max": [57.03664900685808, 0.03664900685809159, 123.0366490068581]
+    }
+  },
+  "verification": {
+    "pipeline": {
+      "path": "cad/measure/verification-pipeline.md",
+      "sha256": "9cdd97429e20533bbe622d745a01ad1e7bc2f0ff3015437661fbadd6dd448db0",
+      "result": "pass",
+      "mode": "isolated_cache_free_fresh_exports_strict_fit"
+    },
+    "layout": "pass",
+    "source_fresh_generation": "pass",
+    "step_validation": "pass",
+    "assembly_interference_at_1_mm3": "zero_clashes",
+    "print_bed_220x220x220": "pass_for_all_four_parts",
+    "mesh_manifold_and_watertight": "pass_for_all_four_parts",
+    "minimum_wall_0_8_mm": "pass_for_all_four_parts",
+    "rear_shell_fine_wall_0_8_mm": {
+      "result": "pass",
+      "below_minimum_samples": 0,
+      "path": "cad/measure/thickness-rear_shell-fine.md",
+      "sha256": "d27ad4410928c4fe6d85b2e634899008bd6031a6474b1cf4e7594c2c6e4fc08a"
+    },
+    "shared_nominal_fit_audit": "pass_17_checks",
+    "sealed_dimension_audit": "pass",
+    "motion_manifest": "pass_5_conditions",
+    "shell_rigid_pullout": "blocked_as_expected",
+    "kickstand_deployed_overtravel": "blocked_as_expected",
+    "kickstand_folded_overtravel": "blocked_as_expected",
+    "kickstand_motion": "29_steps_clear",
+    "reel_motion": "73_steps_clear",
+    "independent_clean_step_builds": 2,
+    "deterministic_step_sha256": "bb5108fe6a570a64e72aafd774de9cb6980392722c31ab6c0c234b0f8eadbf20"
+  },
+  "playtest_repair": {
+    "accepted_playtest_path": "artifacts/playtest/r0001/playtested.json",
+    "accepted_playtest_sha256": "f14964f1f26df117dc65d48d51e4a384d3eb1df052edf782d0149d67becf283a",
+    "path": "cad/measure/playtest-repair.md",
+    "sha256": "587180882c6c0eb13552efe84727b0efcb7e5af7c033dc1aafd494d35c709c83",
+    "feedback_codes": {
+      "owl-index-not-unmistakable": "repaired_with_broad_facial_disc_tuft_caps_and_range_alignment_matrix",
+      "reset-and-shell-closure-not-functional": "repaired_with_double_v_differential_detent_chamfered_hooks_retention_and_stops",
+      "rear-shell-rim-below-minimum-wall": "repaired_with_3_2_mm_faceted_chamfered_land_and_passing_standard_plus_fine_reports"
+    },
+    "round_1_step_sha256": "f58a818f8b91e75b6708c3bd50b0b7b0e78cfec4c027fc1c767c760ef899e04f",
+    "changed_from_round_1": true
+  },
+  "prior_make_gate_repair": {
+    "path": "cad/measure/host-rejection-repair.md",
+    "sha256": "3c7a6dbc1f4d0342b46b3485fea3a3fdee22a97354bc4ad65582118a13aee3d7",
+    "scope": "historical round-1 deterministic STEP repair retained as provenance"
+  },
+  "optical_evidence": {
+    "path": "evidence/shadows/shadow-sweep.json",
+    "sha256": "bd68c4fbc89b57868e52565cca4bec65ad637129b1898067bb54f84c7adb9535",
+    "method": "72-state exact four-mesh point-source projection plus 12 distance corners and 5 alignment cases",
+    "indexed_states": {"rabbit": 0, "fox": 120, "owl": 240},
+    "distance_corners": {
+      "path": "evidence/shadows/distance-corners-contact-sheet.png",
+      "sha256": "9e1a274382b1866e8a36d52ca0afdc9e882de440e803b963867818cf165720f6",
+      "samples": 12
+    },
+    "alignment_sweep": {
+      "path": "evidence/shadows/alignment-sweep-contact-sheet.png",
+      "sha256": "41f74a41ac169ba4c036290a0be019c9310b7c391e77c368d28b4641ff1c172b",
+      "samples": 5,
+      "range": "centered and plus/minus 2 degrees yaw/pitch"
+    }
+  },
+  "render": {
+    "path": "cad/snap/iso.png",
+    "sha256": "ef1935c9c275d0794128cecbbbaa2319fe319a03f32a95a5c9aab5a2078951a8",
+    "inspected": true
+  },
+  "limitations": [
+    "All verification is digital and does not prove a successful physical print, snap strain, detent feel, insertion or retention force, strength, durability, finite-emitter shadow softness, room brightness, or human recognition.",
+    "The compliant snap entry and front-leaf detent contact are represented by derived nominal geometry; rigid motion proves pullout blocking and hard stops, not elastic behavior or cycle life."
+  ]
+}

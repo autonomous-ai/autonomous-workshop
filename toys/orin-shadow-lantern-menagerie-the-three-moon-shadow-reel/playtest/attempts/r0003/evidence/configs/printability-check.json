@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "check_id": "printability-check",
+  "product_artifact_sha256": "7670e30199d25813d015f1b36cf8962e78a01722cff02524ee3240b938793d00",
+  "seed": 20260829,
+  "method": "Independent exact-STL hash verification, mesh/bed replay for all four parts, standard 0.4-mm-nozzle wall replay for all four parts, and explicit 0.16-mm requested-voxel replay of the exact sealed rear shell from an isolated work copy.",
+  "mesh_sha256": {
+    "front_shell": "05f5954fe1478cd30668e6bbd592ed14fcbe2b554dd3d1c6030975f66d3f4a29",
+    "kickstand": "8a68cbdcdc7571575272218d6df449a5e76af1e2de81ade354a191dce5584cfa",
+    "rear_shell": "30cc81047ada737b6dba58c53024546d84427c86c48c01b38ea45a6ad33cddcd",
+    "shadow_reel": "eaec8678bbd1bc1ae44894bfcdb7555929dc5b9c86397d804a8fe32cf79cca8e"
+  },
+  "bed_mm": [220, 220, 220],
+  "nozzle_mm": 0.4,
+  "minimum_wall_mm": 0.8,
+  "rear_requested_voxel_mm": 0.16,
+  "acceptance": [
+    "Every exact sealed STL must be one connected, watertight, manifold, consistently wound positive-volume shell that fits the declared bed.",
+    "Standard wall replay must pass all four exact parts and the explicit fine rear-shell replay must pass the 0.8-mm wall threshold on the current sealed rear STL.",
+    "A fine report naming an older candidate path cannot establish the current sealed STL result.",
+    "Support-free intent remains documentary without a slicer or physical print, and no print, fit, snap, warping, strength, or cycle claim may be inferred."
+  ]
+}

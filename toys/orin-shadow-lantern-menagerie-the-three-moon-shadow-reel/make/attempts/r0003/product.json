@@ -1,0 +1,18 @@
+{
+  "title": "Lantern Menagerie: The Three-Moon Shadow Reel",
+  "summary": "A four-part hand-powered moon gate whose captured reel casts indexed rabbit, sharp-eared fox, and horned owl shadows from an ordinary phone flashlight. Round 3 adds all-state alignment evidence, fixed wall/phone-side cues, a two-way ramped detent, one-direction shell latches, and the exact 112-degree, 82.395 mm stand endpoint.",
+  "category": "hand-powered cast-shadow theatre",
+  "part_count": 4,
+  "materials": [
+    "Common rigid FFF filament; PLA or PETG candidates are not physically qualified in Make."
+  ],
+  "setup_design_band_mm": {
+    "phone_to_mask": [400, 500],
+    "mask_to_wall": [600, 900]
+  },
+  "limitations": [
+    "Digital geometry and projection checks do not prove a successful print, snap fit, detent feel, cycle life, human recognition, phone brightness, finite-emitter edge softness, or performance in a particular room.",
+    "Only the 0, 120, and 240 degree indexed states promise rabbit, fox, and owl; the transitions are intentional eclipse wipes.",
+    "Rigid-body sweeps exclude the front leaf's intended elastic detent contact. Nominal ramps and clearances do not prove printed force, strain, retention, or durability."
+  ]
+}

@@ -1,0 +1,916 @@
+{
+  "alignment_samples": [
+    {
+      "case": "centered",
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.47333,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_x_mm": 0.0,
+      "source_z_offset_mm": 0.0,
+      "state": "rabbit"
+    },
+    {
+      "case": "yaw-left-2deg",
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.474971,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 25.794,
+      "projected_portal_center_z_mm": 90.0,
+      "source_x_mm": -15.714,
+      "source_z_offset_mm": 0.0,
+      "state": "rabbit"
+    },
+    {
+      "case": "yaw-right-2deg",
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.474759,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": -25.794,
+      "projected_portal_center_z_mm": 90.0,
+      "source_x_mm": 15.714,
+      "source_z_offset_mm": 0.0,
+      "state": "rabbit"
+    },
+    {
+      "case": "pitch-down-2deg",
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.474441,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 115.794,
+      "source_x_mm": 0.0,
+      "source_z_offset_mm": -15.714,
+      "state": "rabbit"
+    },
+    {
+      "case": "pitch-up-2deg",
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.475607,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 64.206,
+      "source_x_mm": 0.0,
+      "source_z_offset_mm": 15.714,
+      "state": "rabbit"
+    },
+    {
+      "case": "centered",
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.432519,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_x_mm": 0.0,
+      "source_z_offset_mm": 0.0,
+      "state": "fox"
+    },
+    {
+      "case": "yaw-left-2deg",
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.434643,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 25.794,
+      "projected_portal_center_z_mm": 90.0,
+      "source_x_mm": -15.714,
+      "source_z_offset_mm": 0.0,
+      "state": "fox"
+    },
+    {
+      "case": "yaw-right-2deg",
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.433742,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": -25.794,
+      "projected_portal_center_z_mm": 90.0,
+      "source_x_mm": 15.714,
+      "source_z_offset_mm": 0.0,
+      "state": "fox"
+    },
+    {
+      "case": "pitch-down-2deg",
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.434232,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 115.794,
+      "source_x_mm": 0.0,
+      "source_z_offset_mm": -15.714,
+      "state": "fox"
+    },
+    {
+      "case": "pitch-up-2deg",
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.433238,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 64.206,
+      "source_x_mm": 0.0,
+      "source_z_offset_mm": 15.714,
+      "state": "fox"
+    },
+    {
+      "case": "centered",
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.494226,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_x_mm": 0.0,
+      "source_z_offset_mm": 0.0,
+      "state": "owl"
+    },
+    {
+      "case": "yaw-left-2deg",
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.494551,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 25.794,
+      "projected_portal_center_z_mm": 90.0,
+      "source_x_mm": -15.714,
+      "source_z_offset_mm": 0.0,
+      "state": "owl"
+    },
+    {
+      "case": "yaw-right-2deg",
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.494366,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": -25.794,
+      "projected_portal_center_z_mm": 90.0,
+      "source_x_mm": 15.714,
+      "source_z_offset_mm": 0.0,
+      "state": "owl"
+    },
+    {
+      "case": "pitch-down-2deg",
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.497243,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 115.794,
+      "source_x_mm": 0.0,
+      "source_z_offset_mm": -15.714,
+      "state": "owl"
+    },
+    {
+      "case": "pitch-up-2deg",
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.494671,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 64.206,
+      "source_x_mm": 0.0,
+      "source_z_offset_mm": 15.714,
+      "state": "owl"
+    }
+  ],
+  "clockwise_angles_deg": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60,
+    65,
+    70,
+    75,
+    80,
+    85,
+    90,
+    95,
+    100,
+    105,
+    110,
+    115,
+    120,
+    125,
+    130,
+    135,
+    140,
+    145,
+    150,
+    155,
+    160,
+    165,
+    170,
+    175,
+    180,
+    185,
+    190,
+    195,
+    200,
+    205,
+    210,
+    215,
+    220,
+    225,
+    230,
+    235,
+    240,
+    245,
+    250,
+    255,
+    260,
+    265,
+    270,
+    275,
+    280,
+    285,
+    290,
+    295,
+    300,
+    305,
+    310,
+    315,
+    320,
+    325,
+    330,
+    335,
+    340,
+    345,
+    350,
+    355
+  ],
+  "distance_corner_samples": [
+    {
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.473574,
+      "front_portal_projected_diameter_mm": 108.83,
+      "mask_to_wall_mm": 600.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 400.0,
+      "state": "rabbit"
+    },
+    {
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.433235,
+      "front_portal_projected_diameter_mm": 108.83,
+      "mask_to_wall_mm": 600.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 400.0,
+      "state": "fox"
+    },
+    {
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.493932,
+      "front_portal_projected_diameter_mm": 108.83,
+      "mask_to_wall_mm": 600.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 400.0,
+      "state": "owl"
+    },
+    {
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.472216,
+      "front_portal_projected_diameter_mm": 141.479,
+      "mask_to_wall_mm": 900.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 400.0,
+      "state": "rabbit"
+    },
+    {
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.431061,
+      "front_portal_projected_diameter_mm": 141.479,
+      "mask_to_wall_mm": 900.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 400.0,
+      "state": "fox"
+    },
+    {
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.491961,
+      "front_portal_projected_diameter_mm": 141.479,
+      "mask_to_wall_mm": 900.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 400.0,
+      "state": "owl"
+    },
+    {
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.475564,
+      "front_portal_projected_diameter_mm": 95.975,
+      "mask_to_wall_mm": 600.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 500.0,
+      "state": "rabbit"
+    },
+    {
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.434511,
+      "front_portal_projected_diameter_mm": 95.975,
+      "mask_to_wall_mm": 600.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 500.0,
+      "state": "fox"
+    },
+    {
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.495167,
+      "front_portal_projected_diameter_mm": 95.975,
+      "mask_to_wall_mm": 600.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 500.0,
+      "state": "owl"
+    },
+    {
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.470705,
+      "front_portal_projected_diameter_mm": 122.15,
+      "mask_to_wall_mm": 900.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 500.0,
+      "state": "rabbit"
+    },
+    {
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.42962,
+      "front_portal_projected_diameter_mm": 122.15,
+      "mask_to_wall_mm": 900.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 500.0,
+      "state": "fox"
+    },
+    {
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.490695,
+      "front_portal_projected_diameter_mm": 122.15,
+      "mask_to_wall_mm": 900.0,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0,
+      "source_to_mask_mm": 500.0,
+      "state": "owl"
+    }
+  ],
+  "evidence_class": "deterministic point-source triangle projection from all four exact exported STL meshes; not a finite-emitter or physical room test",
+  "files": {
+    "alignment_sweep": "alignment-sweep-contact-sheet.png",
+    "distance_corners": "distance-corners-contact-sheet.png",
+    "fox": "state-fox-120.png",
+    "motion": "motion-contact-sheet.png",
+    "owl": "state-owl-240.png",
+    "rabbit": "state-rabbit-000.png"
+  },
+  "kind": "lantern-menagerie.exact-four-mesh-point-source-ray-sweep",
+  "light_geometry_mm": {
+    "front_portal_diameter": 44.0,
+    "layer_order_world_y": {
+      "front_shell_inner": -2.4,
+      "rear_shell_inner": -6.2,
+      "reel_front": -2.7,
+      "reel_rear": -5.9,
+      "source": -454.3,
+      "wall": 745.7
+    },
+    "mask_to_wall": 750.0,
+    "source_to_mask": 450.0,
+    "source_world_xyz": [
+      0.0,
+      -454.3,
+      90.0
+    ],
+    "wall_plane_world_y": 745.7
+  },
+  "limitations": [
+    "A point source cannot prove phone-emitter penumbra, brightness, room contrast, or human recognition.",
+    "The 5-degree sweep proves the authored eclipse-wipe sequence, not continuous animal recognition between detents."
+  ],
+  "mesh_sha256": {
+    "front_shell": "05f5954fe1478cd30668e6bbd592ed14fcbe2b554dd3d1c6030975f66d3f4a29",
+    "kickstand": "8a68cbdcdc7571575272218d6df449a5e76af1e2de81ade354a191dce5584cfa",
+    "rear_shell": "847811e2898dc2f971d7fa2c5539efe13064bb8770b4316cdd8879b9452c1b12",
+    "shadow_reel": "2a14b2ab6030b4dd14b5378262b603927598bfecc7c57700c56a61a58103a62e"
+  },
+  "samples": [
+    {
+      "clockwise_deg": 0,
+      "dark_fraction_in_front_portal_bound": 0.47333,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 5,
+      "dark_fraction_in_front_portal_bound": 0.467284,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 10,
+      "dark_fraction_in_front_portal_bound": 0.453097,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 15,
+      "dark_fraction_in_front_portal_bound": 0.441575,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 20,
+      "dark_fraction_in_front_portal_bound": 0.433275,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 25,
+      "dark_fraction_in_front_portal_bound": 0.417298,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 30,
+      "dark_fraction_in_front_portal_bound": 0.395115,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 35,
+      "dark_fraction_in_front_portal_bound": 0.381141,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 40,
+      "dark_fraction_in_front_portal_bound": 0.364726,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 45,
+      "dark_fraction_in_front_portal_bound": 0.349187,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 50,
+      "dark_fraction_in_front_portal_bound": 0.347702,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 55,
+      "dark_fraction_in_front_portal_bound": 0.359277,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 60,
+      "dark_fraction_in_front_portal_bound": 0.364341,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 65,
+      "dark_fraction_in_front_portal_bound": 0.381326,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 70,
+      "dark_fraction_in_front_portal_bound": 0.390117,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 75,
+      "dark_fraction_in_front_portal_bound": 0.392013,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 80,
+      "dark_fraction_in_front_portal_bound": 0.390236,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 85,
+      "dark_fraction_in_front_portal_bound": 0.395195,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 90,
+      "dark_fraction_in_front_portal_bound": 0.400339,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 95,
+      "dark_fraction_in_front_portal_bound": 0.407751,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 100,
+      "dark_fraction_in_front_portal_bound": 0.421514,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 105,
+      "dark_fraction_in_front_portal_bound": 0.413452,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 110,
+      "dark_fraction_in_front_portal_bound": 0.415905,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 115,
+      "dark_fraction_in_front_portal_bound": 0.425916,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 120,
+      "dark_fraction_in_front_portal_bound": 0.432519,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 125,
+      "dark_fraction_in_front_portal_bound": 0.42284,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 130,
+      "dark_fraction_in_front_portal_bound": 0.401215,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 135,
+      "dark_fraction_in_front_portal_bound": 0.388804,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 140,
+      "dark_fraction_in_front_portal_bound": 0.385834,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 145,
+      "dark_fraction_in_front_portal_bound": 0.381141,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 150,
+      "dark_fraction_in_front_portal_bound": 0.38301,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 155,
+      "dark_fraction_in_front_portal_bound": 0.384787,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 160,
+      "dark_fraction_in_front_portal_bound": 0.364898,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 165,
+      "dark_fraction_in_front_portal_bound": 0.344718,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 170,
+      "dark_fraction_in_front_portal_bound": 0.32597,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 175,
+      "dark_fraction_in_front_portal_bound": 0.305936,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 180,
+      "dark_fraction_in_front_portal_bound": 0.28211,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 185,
+      "dark_fraction_in_front_portal_bound": 0.286711,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 190,
+      "dark_fraction_in_front_portal_bound": 0.297026,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 195,
+      "dark_fraction_in_front_portal_bound": 0.319685,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 200,
+      "dark_fraction_in_front_portal_bound": 0.359104,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 205,
+      "dark_fraction_in_front_portal_bound": 0.39912,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 210,
+      "dark_fraction_in_front_portal_bound": 0.43175,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 215,
+      "dark_fraction_in_front_portal_bound": 0.457963,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 220,
+      "dark_fraction_in_front_portal_bound": 0.47866,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 225,
+      "dark_fraction_in_front_portal_bound": 0.489545,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 230,
+      "dark_fraction_in_front_portal_bound": 0.49587,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 235,
+      "dark_fraction_in_front_portal_bound": 0.495339,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 240,
+      "dark_fraction_in_front_portal_bound": 0.494226,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 245,
+      "dark_fraction_in_front_portal_bound": 0.495286,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 250,
+      "dark_fraction_in_front_portal_bound": 0.495989,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 255,
+      "dark_fraction_in_front_portal_bound": 0.490102,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 260,
+      "dark_fraction_in_front_portal_bound": 0.478925,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 265,
+      "dark_fraction_in_front_portal_bound": 0.45852,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 270,
+      "dark_fraction_in_front_portal_bound": 0.43228,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 275,
+      "dark_fraction_in_front_portal_bound": 0.399478,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 280,
+      "dark_fraction_in_front_portal_bound": 0.359064,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 285,
+      "dark_fraction_in_front_portal_bound": 0.319765,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 290,
+      "dark_fraction_in_front_portal_bound": 0.29688,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 295,
+      "dark_fraction_in_front_portal_bound": 0.28439,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 300,
+      "dark_fraction_in_front_portal_bound": 0.274804,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 305,
+      "dark_fraction_in_front_portal_bound": 0.288779,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 310,
+      "dark_fraction_in_front_portal_bound": 0.30815,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 315,
+      "dark_fraction_in_front_portal_bound": 0.327773,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 320,
+      "dark_fraction_in_front_portal_bound": 0.351454,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 325,
+      "dark_fraction_in_front_portal_bound": 0.385728,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 330,
+      "dark_fraction_in_front_portal_bound": 0.415481,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 335,
+      "dark_fraction_in_front_portal_bound": 0.436085,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 340,
+      "dark_fraction_in_front_portal_bound": 0.45258,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 345,
+      "dark_fraction_in_front_portal_bound": 0.45783,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 350,
+      "dark_fraction_in_front_portal_bound": 0.464075,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    },
+    {
+      "clockwise_deg": 355,
+      "dark_fraction_in_front_portal_bound": 0.471487,
+      "front_portal_projected_diameter_mm": 116.223,
+      "projected_portal_center_x_mm": 0.0,
+      "projected_portal_center_z_mm": 90.0
+    }
+  ],
+  "schema_version": 2,
+  "states": {
+    "fox": 120,
+    "owl": 240,
+    "rabbit": 0
+  }
+}

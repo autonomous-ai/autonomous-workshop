@@ -1,0 +1,1 @@
+"""Lantern Menagerie source assemblies."""

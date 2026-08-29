@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "check_id": "agent-playtest",
+  "product_artifact_sha256": "28e8a417d8ffe4e4c702c5eea1ca336dab843d950149ef768fc1f5d9da66787f",
+  "seed": 20260829,
+  "method": "Independent native visual/artifact review of the exact three indexed projections, 12 distance-corner cases, five owl alignment cases, 72-state contact sheet, product render, shadow-sweep JSON, and modeled setup cues.",
+  "inspection_targets": [
+    "evidence/shadows/state-rabbit-000.png",
+    "evidence/shadows/state-fox-120.png",
+    "evidence/shadows/state-owl-240.png",
+    "evidence/shadows/distance-corners-contact-sheet.png",
+    "evidence/shadows/alignment-sweep-contact-sheet.png",
+    "evidence/shadows/motion-contact-sheet.png",
+    "evidence/shadows/shadow-sweep.json",
+    "cad/snap/iso.png",
+    "cad/lantern_menagerie_lib.py"
+  ],
+  "acceptance": [
+    "Rabbit, fox, and owl must each be unmistakable without relying on captions in the exact indexed projections and throughout every tested distance case.",
+    "Alignment evidence must challenge all three indexed animals at centered and plus-or-minus two-degree yaw and pitch, or explicitly fail incomplete coverage.",
+    "The 5-degree cycle must truthfully expose the complete transition rather than imply an untested continuous animal morph.",
+    "A unique rabbit reset pointer and phone-facing or beam-direction cue must be visually discoverable from modeled setup cues and a setup-side view.",
+    "No human recognition, delight, room-light, finite-emitter, or physical-use claim may be inferred from digital evidence."
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "assembly": "assembled.step.py",
+  "conditions": [
+    {
+      "id": "shell-lock-rigid-pullout-blocked",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "After closure, pulling the front shell toward the wall must drive the four barb shoulders into the rear receiver; the forward chamfer clearance and elastic snap insertion are audited separately in check_fit.py because rigid motion cannot model compliance.",
+      "inputs": {
+        "moving_part": "front_shell",
+        "obstacle_parts": ["rear_shell"],
+        "translation": [0.0, 5.0, 0.0],
+        "steps": 21,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    },
+    {
+      "id": "kickstand-deployed-stop-blocks-overtravel",
+      "check": "rotation_motion_collision",
+      "expect": "blocked",
+      "description": "The deployed shoulder must contact the rear shell when pushed 10 degrees beyond its authored deployed endpoint.",
+      "inputs": {
+        "moving_part": "kickstand",
+        "obstacle_parts": ["rear_shell"],
+        "axis_point": [0.0, -14.5, 28.5],
+        "axis_direction": [1.0, 0.0, 0.0],
+        "start_deg": 0.0,
+        "end_deg": 10.0,
+        "steps": 11,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    },
+    {
+      "id": "kickstand-folded-stop-blocks-overtravel",
+      "check": "rotation_motion_collision",
+      "expect": "blocked",
+      "description": "The folded shoulder must contact the rear shell when pushed 10 degrees beyond the authored folded endpoint.",
+      "inputs": {
+        "moving_part": "kickstand",
+        "obstacle_parts": ["rear_shell"],
+        "axis_point": [0.0, -14.5, 28.5],
+        "axis_direction": [1.0, 0.0, 0.0],
+        "start_deg": -108.0,
+        "end_deg": -118.0,
+        "steps": 11,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    },
+    {
+      "id": "kickstand-deployed-to-folded-clear",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The captured kickstand must return from its deployed pose to the folded rear pose without crossing either shell or the reel.",
+      "inputs": {
+        "moving_part": "kickstand",
+        "obstacle_parts": ["front_shell", "rear_shell", "shadow_reel"],
+        "axis_point": [0.0, -14.5, 28.5],
+        "axis_direction": [1.0, 0.0, 0.0],
+        "start_deg": 0.0,
+        "end_deg": -108.0,
+        "steps": 29,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    },
+    {
+      "id": "reel-front-guard-full-cycle-clear",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The rigid reel layer must clear the rear shell and deployed stand through one complete cycle; intended front-leaf detent contact is explicitly outside this rigid-body check.",
+      "inputs": {
+        "moving_part": "shadow_reel",
+        "obstacle_parts": ["rear_shell", "kickstand"],
+        "axis_point": [0.0, -2.7, 59.0],
+        "axis_direction": [0.0, -1.0, 0.0],
+        "start_deg": 0.0,
+        "end_deg": 360.0,
+        "steps": 73,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    }
+  ]
+}
