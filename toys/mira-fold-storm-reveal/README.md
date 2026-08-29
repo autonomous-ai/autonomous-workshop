@@ -29,6 +29,25 @@ Spark: `Wish -> Make -> Release`. Inventor selection is folded into Make.
 
 Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no turn, artifact, or gate. Private host rejections and native session resumes are not public.
 
+## Run cost
+
+| Measure | Value |
+|---|---|
+| Native Manager tokens | 44,802,977 (measured; 6/6 turns measured) |
+| Wish to verified publication | 1h 34m 10s (2026-08-29T02:11:01Z to 2026-08-29T03:45:11.966018+00:00) |
+
+| Stage | Tokens | Turns | Coverage |
+|---|---:|---:|---|
+| Match | 0 | 0 | folded |
+| Invent | 0 | 0 | skipped |
+| Make | 41,265,645 | 5 | measured |
+| Playtest | 0 | 0 | not-run |
+| Release | 3,537,332 | 1 | measured |
+
+Tokens are best-effort input-plus-output counts reported by the native Manager;
+no dollar cost is inferred. Elapsed time ends only after authenticated Factory
+public readback.
+
 ## Reproduce
 
 From a checkout of this repository, verify the host and run the same Manager and effort route. This command uses the public product summary; a later run follows the same route but does not replay these exact CAD bytes.
