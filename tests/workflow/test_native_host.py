@@ -1027,6 +1027,18 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(receipt["native_turns"], 3)
             self.assertEqual(len(launcher.starts), 1)
             self.assertEqual(len(launcher.resumes), 2)
+            self.assertIn(
+                "previous native turn ended at the host's timeout",
+                launcher.resumes[0]["prompt"],
+            )
+            self.assertIn(
+                "do not make finalization depend on a child agent",
+                launcher.resumes[0]["prompt"],
+            )
+            self.assertNotIn(
+                "previous native turn ended at the host's timeout",
+                launcher.resumes[1]["prompt"],
+            )
             backoff.assert_called_once()
             self.assertTrue(
                 0
@@ -1083,6 +1095,10 @@ class NativeHostTest(unittest.TestCase):
             )
             self.assertIn(
                 "previous native turn returned without agent-outcome.json",
+                launcher.resumes[0]["prompt"],
+            )
+            self.assertNotIn(
+                "previous native turn ended at the host's timeout",
                 launcher.resumes[0]["prompt"],
             )
             with mock.patch.dict(os.environ, environment, clear=True):

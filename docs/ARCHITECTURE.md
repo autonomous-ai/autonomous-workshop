@@ -182,6 +182,10 @@ stop the command with failed progress and the exact session checkpointed. An
 explicit `workshop resume` starts a fresh two-failure window. These turns still
 consume the shared 32-turn command budget; the smaller cap prevents repeated
 one-hour timeouts from becoming an unattended multi-hour retry chain.
+The automatic recovery prompt is fixed host control, not repair reasoning: it
+tells the same session to reuse existing bytes, keep the root Manager on the
+critical path, avoid restarting exploration or depending on a child agent, and
+prioritize the remaining deterministic checks and current-stage finalizer.
 
 ## Trust boundary
 

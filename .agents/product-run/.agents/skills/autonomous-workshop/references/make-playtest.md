@@ -55,6 +55,15 @@ Codex owns the build/check/inspect/repair loop. Python tools may generate CAD,
 measure exact geometry, or validate a contract; they do not plan repairs,
 score Taste, route agents, or control the loop.
 
+Keep Make finishable within the native turn boundary. The root Manager owns the
+critical path and must establish an actual conforming CAD baseline plus its
+deterministic verifier early. Delegate only concrete bounded mechanism, CAD, or
+review tasks; never delegate the whole build or wait indefinitely for a child
+before progressing. Once required checks and direct inspection pass, prioritize
+the finalizer over optional additional exploration. A recovery turn after a
+host timeout must inspect and reuse existing product bytes rather than restart
+the design or repeat completed subagent work.
+
 ## Return an unbuildable sealed concept to Invent
 
 For Forge and Quest, `STAGE.json` may set `invent_revision_allowed: true` and

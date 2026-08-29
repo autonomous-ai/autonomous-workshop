@@ -75,6 +75,13 @@ or oversized output, schema/contract failures, deterministic gate failures, or
 unknown external effects. Never accept a partial chat response as a stage
 artifact; inspect any partial workspace writes and rerun their gates.
 
+On that bounded native recovery turn, do not restart the stage or repeat broad
+research and delegation. Inspect and reuse the exact existing files first.
+Keep the root Manager on the critical path; do not make completion depend on a
+child agent. Run only the remaining essential deterministic checks, repair
+concrete failures, invoke the current stage finalizer as soon as its contract
+is satisfied, and return after it writes `agent-outcome.json`.
+
 ## Artifact recovery and invalidation
 
 - Preserve the last sealed upstream artifact. Repair in a new revision or

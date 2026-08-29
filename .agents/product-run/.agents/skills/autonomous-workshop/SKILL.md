@@ -63,6 +63,9 @@ checks, inspect the generated artifact directly, record the important finding
 in workspace evidence, and continue. This loop is native-runtime behavior inside the
 Goal, not another program or runtime. Native subagents may supply specialist
 work or independent judgment, but the root Manager synthesizes the result.
+Keep the root Manager on the critical path: establish a conforming artifact
+and its deterministic checks early, delegate only bounded concrete work, and
+never make successful finalization depend on a child agent.
 
 Complete the Goal only after the finalizer succeeds, then return control to the
 host immediately. Do not begin the next stage. If work is truthfully blocked,

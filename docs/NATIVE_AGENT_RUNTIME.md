@@ -130,6 +130,10 @@ current command early with the same session checkpointed; an explicit
 also consumes the existing 32-turn command budget. The delay is capped at 30
 seconds and prevents a persistent provider outage or repeated one-hour timeout
 from becoming an unattended reconnect storm.
+The one automatic recovery turn receives a fixed, non-cognitive instruction to
+inspect and reuse existing bytes, keep the root Manager on the critical path,
+avoid restarting broad exploration or depending on a child agent, run the
+remaining essential deterministic checks, and prioritize the stage finalizer.
 
 The private session checkpoint also binds the Codex CLI version and exact
 runtime-policy hash. A package manager may replace the installed CLI while a

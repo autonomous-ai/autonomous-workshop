@@ -58,7 +58,10 @@ starts a fresh two-failure window against the same checkpoint. An unbound
 interruption, unrecognized failed-turn event, unknown exit, unsafe termination,
 contract/gate failure, or authorization/effect failure remains terminal for
 that command. This recovery is transport control, not a Python reasoning or
-improvement loop.
+improvement loop. The automatic recovery turn receives only fixed critical-path
+control: reuse existing bytes, avoid restarting broad exploration, do not make
+finalization depend on a child agent, and prioritize the remaining checks and
+stage finalizer.
 
 The portable cleanup guarantee covers every process group inside the launcher's
 dedicated POSIX process session, including Codex's built-in code-mode helper.

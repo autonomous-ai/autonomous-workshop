@@ -236,6 +236,10 @@ window: two consecutive recoverable turn failures stop the command with the
 same session checkpointed. An explicit `workshop resume` starts a fresh
 two-failure window. This prevents one-hour native timeouts from silently
 rolling through the full 32-turn command budget.
+The one automatic recovery turn also receives a fixed critical-path reminder:
+reuse existing bytes, avoid restarting exploration, do not make finalization
+depend on a child agent, and prioritize remaining deterministic checks plus the
+stage finalizer.
 
 [![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
 

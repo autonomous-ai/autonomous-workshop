@@ -3601,6 +3601,7 @@ def _launcher_call(
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
     unfinished_continuation: bool = False,
+    recoverable_continuation: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
@@ -3612,6 +3613,19 @@ def _launcher_call(
             "the same Goal from the exact current files and STAGE.json, run "
             "the required stage finalizer, and return only after it writes "
             "agent-outcome.json."
+        )
+    if recoverable_continuation:
+        prompt += (
+            "\n\nThe immediately previous native turn ended at the host's "
+            "timeout or provider-transport recovery boundary. Continue the "
+            "same active Goal from the exact existing files and STAGE.json; "
+            "do not restart broad exploration. Inspect and reuse completed "
+            "work before launching anything new. Keep the root Manager on "
+            "the critical path and do not make finalization depend on a "
+            "child agent. Run only the remaining essential deterministic "
+            "checks, repair concrete failures, invoke the current stage "
+            "finalizer as soon as its contract is satisfied, and return "
+            "after it writes agent-outcome.json."
         )
     arguments = {
         "product_id": checkpoint.product_id,
@@ -5518,6 +5532,7 @@ def _run_native_session(
     unfinished_continuation = False
     consecutive_unfinished_turns = 0
     consecutive_recoverable_turns = 0
+    recoverable_continuation = False
     while turns < _MAX_NATIVE_TURNS:
         checkpoint = run.snapshot()
         if checkpoint.status in ("waiting", "failed", "complete"):
@@ -5559,6 +5574,8 @@ def _run_native_session(
             else:
                 unfinished_continuation = False
                 consecutive_unfinished_turns = 0
+                consecutive_recoverable_turns = 0
+                recoverable_continuation = False
                 _rebind_existing_progress(
                     paths, checkpoint, updated, activity="completed"
                 )
@@ -5591,6 +5608,7 @@ def _run_native_session(
                     checkpoint=checkpoint,
                     paths=paths,
                     unfinished_continuation=unfinished_continuation,
+                    recoverable_continuation=recoverable_continuation,
                     activity_observer=turn_activity_observer,
                 )
         except WorkshopError as exc:
@@ -5637,6 +5655,7 @@ def _run_native_session(
                 and _session_status(paths, checkpoint.manager_id) == "checkpointed"
             ):
                 consecutive_recoverable_turns = 0
+                recoverable_continuation = False
                 consecutive_unfinished_turns += 1
                 if (
                     consecutive_unfinished_turns
@@ -5690,6 +5709,7 @@ def _run_native_session(
                                 turns,
                             )
                         )
+                    recoverable_continuation = True
                     continue
             if launcher_failure is not None:
                 raise launcher_failure
@@ -5711,6 +5731,7 @@ def _run_native_session(
         unfinished_continuation = False
         consecutive_unfinished_turns = 0
         consecutive_recoverable_turns = 0
+        recoverable_continuation = False
         progress.rebind(updated, activity="completed")
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action
