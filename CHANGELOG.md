@@ -8,6 +8,12 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Added
 
+- The host CAD gate compares declared STEP files by their entity graph
+  (`workshop.make.step_canonical`) instead of by bytes: Open CASCADE emits
+  presentation-style entities in pointer order, so a faithful fresh re-export
+  of a coloured assembly differed byte-for-byte on every run and every Make
+  proposal was rejected as `declared-cad-output-changed`. Geometry, colour,
+  wiring, header, and mode changes still fail closed.
 - `workshop wish --max-rounds N` freezes the Invent-Make-Playtest round
   budget (1-100, default 4) for a run; the Make-Playtest reference now names
   the two host CAD gate preflight facts (one combined entry, vendored
