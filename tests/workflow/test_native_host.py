@@ -877,11 +877,32 @@ class NativeHostTest(unittest.TestCase):
                 for name, label in (("queued.json", "workshop wish r1"), ("bad.json", "reject-me")):
                     (pending / name).write_text(json.dumps({**payload, "label": label}), encoding="utf-8")
                     (pending / name).chmod(0o600)
+                # a round sealed during an outage also queues its design page
+                design = {"slug": "wish", "name": "Wish", "mechanisms": [], "exhibits": [], "verdict": "pass", "scores": None}
+                (pending / "with-design.json").write_text(
+                    json.dumps({**payload, "label": "workshop wish r2", "design": design}), encoding="utf-8"
+                )
+                (pending / "with-design.json").chmod(0o600)
+                # while the vault stays down the queue waits untouched: nothing is rejected
+                transport.fail = True
+                self.assertEqual(
+                    _phase_design_vault(run, SimpleNamespace(stage="make", checkpoint_sha256="f" * 64)),
+                    (None, None),
+                )
+                self.assertEqual(
+                    sorted(path.name for path in pending.iterdir()),
+                    ["bad.json", "queued.json", "with-design.json"],
+                )
+                transport.fail = False
                 fresh, _ = _phase_design_vault(run, SimpleNamespace(stage="playtest", checkpoint_sha256="e" * 64))
                 self.assertEqual(fresh.sha256, vault.sha256)
                 self.assertTrue(snapshot.exists())
-                self.assertEqual([item["label"] for item in transport.evidence], ["workshop wish r1"])
+                self.assertEqual(
+                    [item["label"] for item in transport.evidence], ["workshop wish r1", "workshop wish r2"]
+                )
+                self.assertEqual(transport.evidence[1]["design"]["slug"], "wish")
                 self.assertFalse((pending / "queued.json").exists())
+                self.assertFalse((pending / "with-design.json").exists())
                 self.assertTrue((pending / "bad.json.rejected").exists())
                 # a tampered cache is a broken host, not a legacy run
                 cache.write_bytes(b"{not json")

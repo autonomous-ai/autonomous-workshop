@@ -2031,10 +2031,14 @@ def _flush_pending_vault_writes(run: AgentRun, client: GameVaultClient) -> int:
             label="pending vault write %s" % path.name,
             maximum_bytes=_MAX_PENDING_VAULT_WRITE_BYTES,
         )
-        if set(payload) != {"label", "rows", "dismissals"}:
+        # the same shape _record_playtest_evidence queues: the design page is optional
+        required = {"label", "rows", "dismissals"}
+        if not required <= set(payload) <= required | {"design"}:
             raise StateConflict("pending vault write %s is malformed" % path.name)
         try:
             _send_vault_writes(client, payload)
+        except GameVaultUnavailable:
+            raise  # the queue waits for the vault; the caller runs this phase without one
         except GameVaultError:
             path.rename(path.with_name(path.name + _VAULT_REJECTED_SUFFIX))
             continue

@@ -397,6 +397,8 @@ class VaultGraphTest(unittest.TestCase):
         with self.assertRaisesRegex(VaultError, "mechanisms/broken.md: node lacks frontmatter"):
             Vault.from_directory(bad)
         (bad / "mechanisms" / "broken.md").unlink()
+        if os.geteuid() == 0:
+            return  # root reads a mode-0 file, so the unreadable case cannot be exercised
         (bad / "mechanisms" / "gone.md").write_text("x", encoding="utf-8")
         os.chmod(bad / "mechanisms" / "gone.md", 0)
         try:

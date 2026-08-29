@@ -21,6 +21,7 @@ import stat
 from pathlib import Path
 
 import reportlab
+from PIL import Image, ImageDraw
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
@@ -383,6 +384,17 @@ def author_invent(root: Path, stage) -> None:
     finalizer(root, "invent", "--source", source)
 
 
+def write_render(project: Path) -> None:
+    """Make must ship one chromatic presentation render at snap/iso.png."""
+    snap = project / "snap"
+    snap.mkdir(exist_ok=True)
+    render = Image.new("RGB", (900, 900), "#fff4df")
+    pen = ImageDraw.Draw(render)
+    pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
+    pen.polygon(((450, 230), (700, 690), (200, 690)), fill="#ffb445")
+    render.save(snap / "iso.png", format="PNG")
+
+
 def author_make(root: Path, stage) -> None:
     inputs = stage["inputs"]
     creative_source = None
@@ -403,6 +415,7 @@ def author_make(root: Path, stage) -> None:
     validation = product_root / "validation"
     project.mkdir(parents=True, exist_ok=True)
     validation.mkdir(parents=True, exist_ok=True)
+    write_render(project)
     product = {
         "schema_version": 1,
         "product_id": stage["product_id"],

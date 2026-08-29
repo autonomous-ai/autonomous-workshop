@@ -3,6 +3,7 @@ import io
 import json
 import os
 import shutil
+import socket
 import stat
 import subprocess
 import sys
@@ -13,6 +14,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 import reportlab
+from PIL import Image, ImageDraw
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
@@ -25,7 +27,8 @@ from workshop.workflow.native_run import (
     start_native_run,
 )
 from workshop.errors import ArtifactError, StateConflict
-from workshop.invent.vault import Vault
+from workshop.invent.gamevault import GameVaultClient, GameVaultConfig
+from workshop.invent.vault import RUN_VAULT_PATH, Vault
 from tests.invent.fake_gamevault import E2E_NODES, FakeGameVaultTransport, install_fake_gamevault
 from workshop.errors import ArtifactError, EffectError, StateConflict
 from workshop.invent.native import NativeInvented
@@ -287,6 +290,21 @@ def _failed_cad_gate(
     return NativeCadGateError(failure_code, evidence, evidence_path)
 
 
+def _write_fixture_render(project):
+    """Make must ship one chromatic presentation render at snap/iso.png.
+
+    Mirrors the render checked by ``test_stage_proposal_tool``: a real RGB PNG
+    with tonal variation, so the finalizer's grayscale-mask guard passes.
+    """
+    snap = project / "snap"
+    snap.mkdir(exist_ok=True)
+    render = Image.new("RGB", (900, 900), "#fff4df")
+    pen = ImageDraw.Draw(render)
+    pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
+    pen.polygon(((450, 230), (700, 690), (200, 690)), fill="#ffb445")
+    render.save(snap / "iso.png", format="PNG")
+
+
 class _SessionOutcome:
     def __init__(self, arguments, stage):
         self.arguments = dict(arguments)
@@ -516,6 +534,7 @@ class _OneSessionProductAgent:
         product_root_value = inputs["product_root"]
         product_root = run_root / product_root_value
         (product_root / "cad" / "project").mkdir(parents=True, exist_ok=True)
+        _write_fixture_render(product_root / "cad" / "project")
         (product_root / "validation").mkdir(exist_ok=True)
         wish = _read_json(run_root / "WISH.json")
         invented = inputs.get("invented")
@@ -2081,7 +2100,8 @@ class NativeFullRunTest(unittest.TestCase):
         )
         self.assertEqual(
             [command[4] for command in launcher.finalizer_commands],
-            ["invent", "make-revision", "invent", "make", "playtest", "release"],
+            # the revised concept's two build groups are sealed before Make itself
+            ["invent", "make-revision", "invent", "make-group", "make-group", "make", "playtest", "release"],
         )
         self.assertEqual(
             [path for path, unused_bytes in launcher.invent_outputs],
@@ -2400,6 +2420,105 @@ class NativeFullRunTest(unittest.TestCase):
                 second_make = [p for p in second.stage_packets if p["stage"] == "make"][0]
                 self.assertTrue(second_make["inputs"]["vault_leads"])
                 self.assertEqual(receipt_a["rounds"][0]["vault_leads_confirmed"], 1)
+
+    def test_full_run_completes_and_queues_write_backs_when_the_vault_is_down(self):
+        """A dead game vault never blocks a run.
+
+        The real HTTP client is pointed at a closed local port: every phase
+        records an ``unavailable`` marker and proceeds without design
+        knowledge, and the sealed Playtest write-backs wait in the host's
+        pending queue instead of failing the round.
+        """
+        finding = {
+            "code": "idle-seat",
+            "area": "play",
+            "severity": "block",
+            "finding": "One seat idles while the other resolves captures.",
+            "change": "Resolve captures simultaneously.",
+            "evidence_refs": ["results/agent-playtest.json"],
+            "invalidates": ["playtest", "release"],
+        }
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            closed_port = probe.getsockname()[1]
+        dead_vault = GameVaultClient(
+            GameVaultConfig("http://127.0.0.1:%d" % closed_port, "fixture-token")
+        )
+        effects = _FactoryEffects()
+        launcher = _OneSessionProductAgent(playtest_plan=[("block", [finding])])
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            home.mkdir()
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root", return_value=None
+            ), mock.patch(
+                "workshop.workflow.native_run._gamevault_client", return_value=dead_vault
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad", side_effect=verify_cad
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials", side_effect=effects.credentials
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter", side_effect=effects.writer
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession", side_effect=effects.session
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition", side_effect=effects.transition
+            ):
+                wish = Wish.create(
+                    "orbit-dog-offline",
+                    "Build a pocket draughts set inspired by my orbit-loving dog.",
+                    constraints={"audience": "14+"},
+                    context={"source": "native-vault-down-test"},
+                )
+                receipt = start_native_run(wish, effort="quest")
+                paths = native_run_paths(wish.product_id)
+
+                self.assertEqual((receipt["stage"], receipt["status"]), ("release", "complete"))
+                self.assertEqual(receipt["publication"]["status"], "public")
+                self.assertEqual(len(receipt["rounds"]), 2)
+                # no phase ever received design knowledge, and none paused for it
+                self.assertFalse((paths.workspace / RUN_VAULT_PATH).exists())
+                for packet in launcher.stage_packets:
+                    self.assertNotIn("design_vault", packet["inputs"], packet["stage"])
+                    self.assertFalse(packet["inputs"].get("vault_leads"), packet["stage"])
+                self.assertEqual(
+                    [packet["stage"] for packet in launcher.stage_packets],
+                    ["invent", "make", "playtest", "make", "playtest", "release"],
+                )
+                vault_state = paths.host_state / "vault"
+                self.assertGreaterEqual(len(list(vault_state.glob("*.unavailable"))), 1)
+                self.assertEqual(list(vault_state.glob("*.json")), [])
+                # sealed Playtest findings wait for the vault instead of failing the round
+                pending = sorted((vault_state / "pending").glob("*.json"))
+                self.assertGreaterEqual(len(pending), 1)
+                # an unreachable vault is not a refusal: nothing is set aside as rejected
+                self.assertEqual(list((vault_state / "pending").glob("*.rejected")), [])
+                queued = [json.loads(path.read_text(encoding="utf-8")) for path in pending]
+                self.assertEqual(
+                    {payload["label"] for payload in queued} & {"workshop orbit-dog-offline r1"},
+                    {"workshop orbit-dog-offline r1"},
+                )
+                for payload in queued:
+                    self.assertEqual(set(payload), {"label", "rows", "dismissals", "design"})
+                    self.assertEqual(payload["dismissals"], [])
+                self.assertEqual(self.gamevault.calls, [])
 
     def test_a_worse_round_redirects_the_next_make_to_the_best_sealed_round(self):
         one = {
