@@ -1,0 +1,101 @@
+{
+  "assembly": "assembled.step.py",
+  "conditions": [
+    {
+      "id": "rainbow-drive-service-withdrawal",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "The removable rainbow drive must withdraw straight out of the lightning socket and cloud pivot pocket as the first service step; reversing this rigid path is the insertion path.",
+      "inputs": {
+        "moving_part": "storm_reveal.reveal_rotor.rainbow_drive",
+        "obstacle_parts": ["storm_reveal.reveal_rotor.lightning_guide", "storm_reveal.sleepy_cloud"],
+        "translation": [0.0, 0.0, -12.0],
+        "steps": 13,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "lightning-guide-service-withdrawal",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "After the rainbow is removed, the lightning guide pin must withdraw straight out of the blind track; reversing this rigid path is the second assembly step.",
+      "inputs": {
+        "moving_part": "storm_reveal.reveal_rotor.lightning_guide",
+        "obstacle_parts": ["storm_reveal.sleepy_cloud"],
+        "translation": [0.0, 0.0, -8.0],
+        "steps": 9,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "reset-from-scene-to-sleeping-stop",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The lightning rotor and its guide pin must rotate freely from the deployed endpoint back to the closed endpoint while seated in the cloud track.",
+      "inputs": {
+        "moving_part": "storm_reveal.reveal_rotor.lightning_guide",
+        "obstacle_parts": ["storm_reveal.sleepy_cloud"],
+        "axis_point": [0.0, 11.0, 0.0],
+        "axis_direction": [0.0, 0.0, 1.0],
+        "start_deg": 0.0,
+        "end_deg": -90.0,
+        "steps": 19,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "rainbow-drive-reset-sweep",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The outer rainbow plate and integral square drive must sweep from deployed to closed without colliding with the cloud receiver.",
+      "inputs": {
+        "moving_part": "storm_reveal.reveal_rotor.rainbow_drive",
+        "obstacle_parts": ["storm_reveal.sleepy_cloud"],
+        "axis_point": [0.0, 11.0, 0.0],
+        "axis_direction": [0.0, 0.0, 1.0],
+        "start_deg": 0.0,
+        "end_deg": -90.0,
+        "steps": 19,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "guide-track-closed-stop",
+      "check": "rotation_motion_collision",
+      "expect": "blocked",
+      "description": "From the deployed assembly, rotating 94 degrees backward attempts to travel four degrees beyond the closed endcap and must be blocked by the guide pin.",
+      "inputs": {
+        "moving_part": "storm_reveal.reveal_rotor.lightning_guide",
+        "obstacle_parts": ["storm_reveal.sleepy_cloud"],
+        "axis_point": [0.0, 11.0, 0.0],
+        "axis_direction": [0.0, 0.0, 1.0],
+        "start_deg": 0.0,
+        "end_deg": -94.0,
+        "steps": 24,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    },
+    {
+      "id": "guide-track-open-stop",
+      "check": "rotation_motion_collision",
+      "expect": "blocked",
+      "description": "The deployed endpoint must not rotate four degrees farther clockwise past the scene stop.",
+      "inputs": {
+        "moving_part": "storm_reveal.reveal_rotor.lightning_guide",
+        "obstacle_parts": ["storm_reveal.sleepy_cloud"],
+        "axis_point": [0.0, 11.0, 0.0],
+        "axis_direction": [0.0, 0.0, 1.0],
+        "start_deg": 0.0,
+        "end_deg": 4.0,
+        "steps": 8,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    }
+  ]
+}

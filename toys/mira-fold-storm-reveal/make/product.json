@@ -1,0 +1,15 @@
+{
+  "title": "Storm Reveal",
+  "summary": "A pocket-size three-piece sleepy cloud puzzle whose single guided twist turns a disguised curl and zig into a standing rainbow-and-lightning storm scene.",
+  "product_status": "digitally-verified-print-ready",
+  "part_count": 3,
+  "materials": ["rigid PLA or PETG"],
+  "requires_supports": false,
+  "requires_hardware": false,
+  "requires_glue": false,
+  "interaction": "Rotate the outer rainbow 90 degrees clockwise to reveal; reverse to reset.",
+  "limitations": [
+    "Digital geometry checks do not prove successful printing, friction feel, wear life, drop retention, or human response.",
+    "The removable square connection avoids a brittle snap and may require printer-specific fit tuning after a physical coupon."
+  ]
+}
