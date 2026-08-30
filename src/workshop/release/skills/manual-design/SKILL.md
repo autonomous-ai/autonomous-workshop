@@ -86,18 +86,21 @@ essential step or rule.
 
 ## Inspect the artifact, not just its source
 
-Render the complete PDF review packet in one command:
+Render the complete PDF review packet in one command. Use exactly two named
+packets for the complete manual: `review-v1` for the initial complete design
+and `review-final` after the one coherent revision. Do not create intermediate
+`r2`, `r3`, or extra `final` packets:
 
 ```bash
 .agents/skills/manual-design/scripts/review_manual MANUAL.pdf \
-  --output-dir <new-review-directory>
+  --output-dir review-v1
 ```
 
 It writes every page in color and grayscale, two contact sheets, and compact
 hash-bound JSON. It is deterministic review plumbing, not an aesthetic judge.
 Inspect both contact sheets first, then open individual pages only for a
-specific suspected defect. Use a new directory for each revision so stale
-pages cannot masquerade as current evidence. Check page order, cropping, bleed
+specific suspected defect. Use the two explicit directories so stale pages
+cannot masquerade as current evidence. Check page order, cropping, bleed
 and safe margins, text size, contrast, alignment, diagram accuracy, visual
 consistency, and any accidental blank, clipped, or overlapping content. Do not
 add a network service or a license-incompatible runtime dependency merely to
@@ -110,8 +113,8 @@ the headline is hidden. Do not let Release copy assert magic that Make's exact
 views fail to show.
 
 Read the guide once as a first-time owner and once as an operation or rules
-reference, as applicable. Revise the source and repeat both visual inspections
-until the result is clear, complete, accurate, and excellent. Save the final
+reference, as applicable. Resolve the complete related finding set in one
+coherent source revision and repeat both visual inspections once. Save the final
 self-contained customer file as `MANUAL.pdf`; editable sources may accompany it
 but do not replace it.
 
@@ -119,12 +122,16 @@ After the first complete render, ask one bounded independent native
 visual-editor subagent to inspect the exact color and grayscale contact sheets
 plus only the brief and sealed product facts needed for accuracy. Do not give it
 the whole workspace or ask it to redesign the manual. Resolve at least one
-concrete finding, rerun the one review command, and perform the first-time-owner
-pass again. The root Manager owns the final decision.
+concrete finding in one coherent source revision, rerun the command once with
+`--output-dir review-final`, and perform the first-time-owner pass again. The
+root Manager owns the final decision. If more than one issue is found, resolve
+the related set in that one revision rather than paying for a separate complete
+render after every edit.
 
 Write or update `MANUAL-DESIGN.json` after the final reviewed PDF is stable.
 Changing only that JSON evidence does not change the PDF and must not trigger a
-third render or another visual-review pass.
+third render or another visual-review pass. Two complete render packets is the
+Release budget: initial and final.
 
 When `STAGE.json` names `MANUAL-DESIGN.json` as required Release evidence, read
 `.agents/skills/autonomous-workshop/references/manual-design-evidence-v1.md` and

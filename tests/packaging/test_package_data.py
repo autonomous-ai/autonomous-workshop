@@ -73,6 +73,9 @@ class PackageDataTest(unittest.TestCase):
         self.assertIn("Default a simple one-piece Spark toy", manual_skill)
         self.assertIn("not fixed page-count gates", manual_skill)
         self.assertIn("keep customer text ASCII", manual_skill)
+        self.assertIn("review-v1", manual_skill)
+        self.assertIn("review-final", manual_skill)
+        self.assertIn("Two complete render packets is the", manual_skill)
         manual_review = roots["manual-design"] / "scripts" / "review_manual"
         self.assertTrue(manual_review.is_file())
         self.assertTrue(manual_review.stat().st_mode & 0o111)

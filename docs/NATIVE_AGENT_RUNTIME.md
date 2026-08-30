@@ -444,8 +444,13 @@ and `<cad-project>/snap/signature.png` (at least 1200 by 800 px). The latter
 shows exact STL poses or views chosen to make the signature experience legible
 without copy. The finalizer also requires hash-bound
 `<cad-project>/snap/SIGNATURE-REVIEW.json` from one bounded independent native
-visual critic confirming that the held object and promised outcome read in the
-final exact images. Those explicit paths are archived under
+visual critic. The critic first receives only the exact images, records its
+unprompted held-object and outcome reads, and only then learns the Wish. The
+hash-bound evidence confirms that the blind reads match an unmistakable,
+desirable final product. Make performs this review after narrow build and
+geometry checks but before one integrated final verifier, so visual repair does
+not repeatedly pay the complete CAD-gate cost. The finalizer rejects a second
+final `snap/` family outside the declared CAD project. Those explicit paths are archived under
 `make/verification/renders/`; the family is the only one eligible for automatic
 README hero selection. Diagnostic silhouettes elsewhere remain evidence and
 cannot be promoted accidentally.

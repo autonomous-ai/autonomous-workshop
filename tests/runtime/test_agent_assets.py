@@ -123,6 +123,9 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "Release records that it was not run",
             "Quest advances to the host-authored Playtest stage",
             "only for Quest",
+            "reveal the Wish",
+            "expensive integrated final verifier",
+            "one final `snap/` family",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, normalized)

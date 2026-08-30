@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-labelledby="title description">
   <title id="title">Spark effort route: Wish to Make to Release</title>
-  <desc id="description">Spark is the default and shortest Autonomous Workshop route. New Codex Spark runs freeze low reasoning effort and a 64k automatic context-compaction ceiling across one native session. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Make, where an independent critic reviews hash-bound final signature evidence. Invent and Playtest are passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
+  <desc id="description">Spark is the default and shortest Autonomous Workshop route. New Codex Spark runs freeze low reasoning effort and a 64k automatic context-compaction ceiling across one native session. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Make, where an independent critic blindly reads exact candidate images before the Wish is revealed and before one integrated final CAD verifier. Invent and Playtest are passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%">
       <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/>
@@ -53,7 +53,7 @@
   <text x="322" y="350" class="heading">MAKE</text>
   <text x="322" y="377" class="body">Choose the fitting Inventor,</text>
   <text x="322" y="399" class="body">shape the concept, build CAD,</text>
-  <text x="322" y="421" class="body">independent magic review + gate.</text>
+  <text x="322" y="421" class="body">blind image read → one final gate.</text>
 
   <g filter="url(#shadow)"><rect x="625" y="285" width="260" height="150" rx="20" class="release"/></g>
   <text x="652" y="315" class="eyebrow orange">CODEX GOAL · PACKAGE + PUBLISH</text>

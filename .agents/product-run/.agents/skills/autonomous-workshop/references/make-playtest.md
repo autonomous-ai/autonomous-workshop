@@ -77,10 +77,13 @@ the design or repeat completed subagent work.
 
 Use one deliberate verification funnel. During source edits, build the smallest
 entry that exposes the changed relationship and run only its relevant narrow
-check. After the geometry and signature interaction stabilize, batch exports,
-run the integrated final verifier once, create the presentation render, inspect
-it, fix the largest visible defect, and finalize. Do not repeatedly run a full
-fresh verifier or regenerate unchanged exports between small edits.
+check. As soon as a plausible exact draft STL exists, render the candidate and
+perform the blind signature review below **before** the expensive integrated
+final verifier. Resolve at most one largest visual defect coherently, rebuild
+and rerender the exact final candidate, then batch exports and run the
+integrated final verifier once. A full verifier must not be used as the inner
+visual-design loop. Do not repeatedly run it or regenerate unchanged exports
+between small edits.
 
 If a concrete operator or environment condition makes safe Make progress
 impossible, use the main skill's `need` finalizer for the current `make` stage
@@ -167,34 +170,52 @@ exact promised states: before/action/after for a mechanism, exact projections
 for a shadow or optical reveal, or setup/choice/result for a rules toy. Repeated
 camera angles that do not reveal the promise do not satisfy this requirement.
 
-Once the final candidate exists, give only the Wish's hardest-to-fake magic,
-the compact concept, `snap/iso.png`, and `snap/signature.png` to one bounded
-independent native visual critic. Ask whether the held object reads from across
-a room, whether the signature experience is unmistakable without its title,
-and which single geometry repair would address the largest risk. If either
-readability answer is no, repair the geometry, rerender both exact images, and
-request one focused re-review. Do not proceed to Release on copy alone.
+Once the candidate exists, give one bounded independent native visual critic
+only `snap/iso.png` and `snap/signature.png`. Do **not** reveal the Wish, title,
+concept, desired nouns, Inventor, or intended answer. First ask what physical
+object it sees, what distinct states or outcome the sheet communicates, and
+whether it looks like a desirable finished product rather than a flat cutout,
+generic primitive, technical test, or repeated turntable. Preserve those
+unprompted reads. Only then may the root Manager reveal the Wish and compare
+them with the promised held form and signature experience.
+
+If the blind read does not independently name the essential object and outcome,
+or the product does not look finished and desirable, repair the single largest
+geometry/composition defect, rerender both exact images, and request one focused
+blind re-review. Do not proceed to the integrated final verifier or Release on
+copy alone. If the first candidate passes, do not invent a repair merely to
+create activity.
 
 Preserve the final review as canonical JSON at
 `<cad-project>/snap/SIGNATURE-REVIEW.json` with exactly these fields:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "autonomous-workshop.signature-experience-review",
   "iso_sha256": "<lowercase SHA-256 of final iso.png>",
   "signature_sha256": "<lowercase SHA-256 of final signature.png>",
   "reviewer": "<bounded independent reviewer identity>",
-  "held_object_readable": true,
-  "signature_experience_readable": true,
+  "blind_held_read": "<what the reviewer saw before learning the Wish>",
+  "blind_signature_read": "<states or outcome seen before learning the Wish>",
+  "wish_revealed_after_blind_read": true,
+  "held_object_unmistakable": true,
+  "signature_experience_unmistakable": true,
+  "finished_product_desirable": true,
   "largest_risk": "<strongest concrete final finding>",
   "resolution": "<specific geometry, pose, or composition resolution>"
 }
 ```
 
-The finalizer requires both confirmations and exact final-image hashes. This is
-review evidence, not a beauty score; never claim an independent review that did
-not occur. The public toy archive keeps it beside the reviewed renders.
+The finalizer requires every confirmation, both unprompted reads, and exact
+final-image hashes. This is review evidence, not a numeric beauty score; never
+claim an independent or blind review that did not occur. The public toy archive
+keeps it beside the reviewed renders.
+
+Keep the one final `snap/` family only under the declared CAD project. Do not
+copy it to the product root or preserve identical presentation families in two
+locations. Iteration renders stay outside the sealed product tree; the public
+archive captures the one exact final family and its review.
 
 The root `product.json` must be a JSON object containing at least these exact
 metadata keys (additional product-specific fields are allowed):

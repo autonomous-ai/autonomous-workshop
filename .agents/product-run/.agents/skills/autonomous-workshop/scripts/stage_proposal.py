@@ -1499,8 +1499,12 @@ def _validate_signature_review(
             "iso_sha256",
             "signature_sha256",
             "reviewer",
-            "held_object_readable",
-            "signature_experience_readable",
+            "blind_held_read",
+            "blind_signature_read",
+            "wish_revealed_after_blind_read",
+            "held_object_unmistakable",
+            "signature_experience_unmistakable",
+            "finished_product_desirable",
             "largest_risk",
             "resolution",
         },
@@ -1508,22 +1512,31 @@ def _validate_signature_review(
     )
     if (
         type(review["schema_version"]) is not int
-        or review["schema_version"] != 1
+        or review["schema_version"] != 2
         or review["kind"] != SIGNATURE_REVIEW_KIND
     ):
         raise ProposalError("Make signature review identity is invalid")
     if content != canonical_json(review):
         raise ProposalError("Make signature review must use canonical JSON encoding")
     _bounded_text(review["reviewer"], "Make signature reviewer", 200)
+    _bounded_text(review["blind_held_read"], "Make blind held read", 1_000)
+    _bounded_text(
+        review["blind_signature_read"], "Make blind signature read", 1_000
+    )
     _bounded_text(review["largest_risk"], "Make signature largest_risk", 2_000)
     _bounded_text(review["resolution"], "Make signature resolution", 2_000)
     for field, label in (
-        ("held_object_readable", "held object"),
-        ("signature_experience_readable", "signature experience"),
+        ("wish_revealed_after_blind_read", "Wish was revealed only after the blind read"),
+        ("held_object_unmistakable", "held object is unmistakable"),
+        (
+            "signature_experience_unmistakable",
+            "signature experience is unmistakable",
+        ),
+        ("finished_product_desirable", "product looks finished and desirable"),
     ):
         if type(review[field]) is not bool or not review[field]:
             raise ProposalError(
-                "Make signature review must confirm the final %s is readable"
+                "Make signature review must confirm the final %s"
                 % label
             )
     for filename, field in (
@@ -1615,6 +1628,24 @@ def _make_contract(
         raise ProposalError("Make product manifest lacks a STEP artifact")
     if not any(path.endswith(".stl") for path in paths):
         raise ProposalError("Make product manifest lacks a printable STL")
+    canonical_snap_paths = {
+        (project_relative / "snap" / filename).as_posix()
+        for filename in ("iso.png", "signature.png", "SIGNATURE-REVIEW.json")
+    }
+    duplicate_snap_paths = sorted(
+        path
+        for path in paths
+        if any(
+            path.endswith("snap/%s" % filename)
+            for filename in ("iso.png", "signature.png", "SIGNATURE-REVIEW.json")
+        )
+        and path not in canonical_snap_paths
+    )
+    if duplicate_snap_paths:
+        raise ProposalError(
+            "Make product contains a duplicate final snap family outside the "
+            "declared CAD project: %s" % ", ".join(duplicate_snap_paths)
+        )
     identity = {
         "schema_version": 1,
         "kind": MADE_KIND,

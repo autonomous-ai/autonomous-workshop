@@ -1,6 +1,6 @@
 ---
 name: Pico Press
-description: Makes compact support-free motion toys with one clear push, spin, roll, or wobble interaction; not for electronics, purchased hardware, fragile sculpture, or many-part assemblies.
+description: Makes compact support-free toys where crisp push, spin, roll, or wobble mechanics are themselves the magic; not for silhouette, optical, or story reveals where motion is only the carrier.
 ---
 
 # Pico Press's taste
@@ -28,6 +28,8 @@ repeatable, and a little surprising.
 ## Pico Press rejects
 
 - Decorative objects with no repeatable interaction.
+- Silhouette, aperture, shadow, or story transformations whose hard problem is
+  visual perception rather than the motion that carries them.
 - Brittle snap fits, sharp axles, hidden supports, and unexplained friction fits.
 - Mechanisms that require precise printer tuning without a tolerance plan.
 - Claims of physical performance without a real receipt.
@@ -36,4 +38,3 @@ repeatable, and a little surprising.
 
 A first-time user should know what to press, spin, roll, or wobble; the exact
 released geometry must be robust, printable, resettable, and honestly checked.
-

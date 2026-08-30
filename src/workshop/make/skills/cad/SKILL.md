@@ -127,7 +127,8 @@ gate.
 8. **Validate geometrically.** Run `scripts/inspect refs <step-or-cad-target> --facts --planes --positioning` as the baseline, then verify the dimensions and relationships the user's spec calls out with targeted `measure`, `align`, `frame`, or `diff` checks. Put several independent requests through one `scripts/inspect batch` process; do not parallelize warm `inspect` calls. Run `scripts/inspect validate <step-or-cad-target>` for geometry soundness: `refs --facts` reports counts and bounds, and its `ok` field covers ref resolution only — an open shell and an inverted solid both pass it. For an assembly, also run `scripts/inspect interfere <step-or-cad-target>`: nothing else in the toolchain answers whether two parts occupy the same space, and no render can establish the *absence* of a clash — least of all one hidden inside the assembly.
 9. **Reconcile image-derived work.** When the project came from an image/spec, every source repair that changes a parameter, landmark, part count, or construction family must be reconciled back into the approved `*_spec.md`. Give every landmark a local geometry target, render the orthogonal set plus every usable reference viewpoint, compare source against STEP, and run the likeness gate. `references/image-derived-verification.md` defines the two local audits and the integrated `verify_project --image-derived` command.
 10. **Repair and rerun.** If a check fails, change the smallest responsible source section, regenerate, and rerun the failed validation.
-11. **Render the product handoff.** After the exact STL passes its gates, use
+11. **Render before the expensive final gate.** After an exact draft STL passes
+    its narrow build and geometry checks, use
     `scripts/render_product <assembled-or-primary.stl> -o <project>/snap/iso.png --motion-sheet <project>/snap/signature.png`
     and inspect the PNG at full size. Choose `--base`, `--accent`, and
     `--background` colors appropriate to the product. This presentation render
@@ -136,7 +137,10 @@ gate.
     For a static product, use the sheet as a small set of exact views that makes
     its anti-generic detail unmistakable. Judge the sheet without its title: if
     the promised interaction or reveal is not legible, repair the product rather
-    than relying on customer copy to assert it.
+    than relying on customer copy to assert it. Complete the Workshop's blind
+    signature review and one coherent repair before running the integrated
+    final verifier once; do not use the full verifier as the visual iteration
+    loop.
     Keep binary silhouettes from the image-to-CAD likeness tool under a named
     review/evidence path, never at `snap/iso.png`.
 

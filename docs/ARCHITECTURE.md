@@ -44,8 +44,10 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
   Make seals both an exact-product hero and a signature-experience sheet that
   must make the promised interaction, reveal, or anti-generic detail visually
   inspectable before prose can claim it. A bounded independent native visual
-  critic reviews the final exact images; its hash-bound finding and resolution
-  are sealed beside them before Make can pass.
+  critic receives only the exact images, records an unprompted read, and learns
+  the Wish only afterward. Make resolves at most one focused visual defect
+  before one integrated final verifier; the hash-bound finding, resolution, and
+  one canonical render family are sealed before Make can pass.
   A capable Forge or Quest Make may return to Invent only with exact preserved
   evidence that the sealed concept prevents any conforming build.
 - **Playtest** independently evaluates the sealed Made revision only in Quest,
@@ -77,6 +79,14 @@ for the first enabled creative stage. The same session
 handles discovery, research, concept
 work, CAD, inspection, repair, manual design, and bounded
 product facts. `workshop resume` continues the exact recorded session id.
+
+Make uses a cost-aware proof funnel inside its one Goal: narrow build checks,
+an independent blind read of exact candidate renders, at most one focused
+visual repair, then one integrated final CAD verification. The final sealed
+product has one canonical render family. Release similarly creates one initial
+and one final complete manual-review packet instead of rerendering after every
+small evidence edit. These are native work instructions plus deterministic
+artifact boundaries, not a Python planner or aesthetic judge.
 
 Within either command, a timed-out native turn or explicitly recognized
 provider disconnect automatically continues only after Workshop has both

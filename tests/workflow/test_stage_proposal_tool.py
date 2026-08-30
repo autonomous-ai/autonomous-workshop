@@ -494,7 +494,7 @@ class StageProposalToolTest(unittest.TestCase):
             product_root / "cad/project/snap/signature.png", format="PNG"
         )
         review = {
-            "schema_version": 1,
+            "schema_version": 2,
             "kind": "autonomous-workshop.signature-experience-review",
             "iso_sha256": sha256(
                 (product_root / "cad/project/snap/iso.png").read_bytes()
@@ -503,8 +503,12 @@ class StageProposalToolTest(unittest.TestCase):
                 (product_root / "cad/project/snap/signature.png").read_bytes()
             ),
             "reviewer": "independent-native-visual-critic",
-            "held_object_readable": True,
-            "signature_experience_readable": True,
+            "blind_held_read": "A compact moon observatory with a clear opening.",
+            "blind_signature_read": "Three exact states show the opening rotate into view.",
+            "wish_revealed_after_blind_read": True,
+            "held_object_unmistakable": True,
+            "signature_experience_unmistakable": True,
+            "finished_product_desirable": True,
             "largest_risk": "The three states need a stronger direction cue.",
             "resolution": "The final sheet uses separated contrasting states.",
         }
@@ -888,7 +892,27 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertIn("must use canonical JSON encoding", noncanonical.stderr)
 
-        review["held_object_readable"] = False
+        review["blind_held_read"] = ""
+        review_path.write_bytes(canonical_json(review))
+        no_blind_read = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn(
+            "Make blind held read must be bounded non-empty text",
+            no_blind_read.stderr,
+        )
+        review["blind_held_read"] = (
+            "A compact moon observatory with a clear opening."
+        )
+
+        review["held_object_unmistakable"] = False
         review_path.write_bytes(canonical_json(review))
         unreadable = self.run_tool(
             "make",
@@ -900,9 +924,24 @@ class StageProposalToolTest(unittest.TestCase):
             "validation/cad-build.json",
             expected=2,
         )
-        self.assertIn("final held object is readable", unreadable.stderr)
+        self.assertIn("final held object is unmistakable", unreadable.stderr)
 
-        review["held_object_readable"] = True
+        review["held_object_unmistakable"] = True
+        review["finished_product_desirable"] = False
+        review_path.write_bytes(canonical_json(review))
+        undesirable = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("product looks finished and desirable", undesirable.stderr)
+
+        review["finished_product_desirable"] = True
         review["signature_sha256"] = "f" * 64
         review_path.write_bytes(canonical_json(review))
         stale = self.run_tool(
@@ -916,6 +955,36 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn("not bound to the final signature.png", stale.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_rejects_duplicate_final_snap_family(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        duplicate = product_root / "snap"
+        duplicate.mkdir()
+        (duplicate / "iso.png").write_bytes(
+            (product_root / "cad/project/snap/iso.png").read_bytes()
+        )
+        rejected = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("duplicate final snap family", rejected.stderr)
+        self.assertIn("snap/iso.png", rejected.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_make_rejects_invalid_required_product_metadata_before_outputs(self):

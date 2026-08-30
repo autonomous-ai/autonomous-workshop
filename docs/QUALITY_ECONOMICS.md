@@ -85,6 +85,36 @@ hash-bound independent final signature review, and double-sided-card default.
 The combined quality and 0.1x economics target remains unproven until a new
 permanent production challenger passes both comparisons.
 
+Mooncoil Dragon then tested Spark v2's compaction and review policy in a real
+published run:
+
+| Measure | Whole run | Make | Release |
+|---|---:|---:|---:|
+| Gross input | 7,468,236 | 5,734,110 | 1,734,126 |
+| Cached input | 7,034,240 | 5,401,088 | 1,633,152 |
+| Uncached input | 433,996 | 333,022 | 100,974 |
+| Output | 50,674 | 35,873 | 14,801 |
+| Reasoning output | 11,186 | 8,076 | 3,110 |
+| Elapsed | 44m 43s | 32m 58s native work | 7m 50s native work |
+
+The two-sided manual was concise, clear, and visually strong. Release input
+fell about 61.5% from Pocket Eclipse Menagerie's 4,505,566, showing that the
+64k compaction ceiling and smaller manual path improved the later stage. Make
+input rose about 66%, however. Private aggregate inventory showed repeated
+rebuild, render, review, and complete-verifier cycles before the final CAD was
+sealed, plus identical final render families in two locations. The prompted
+critic even identified that the dragon's central mass competed with the
+intended crescent, then affirmed readability anyway. The finished render still
+read more as a flat dragon cutout than an unmistakable magical two-truth object.
+
+This evidence changes the next optimization from another runtime knob to a
+better work order. New Make runs conduct an unprimed visual read from only the
+candidate images before the expensive integrated verifier, allow one focused
+visual repair, then perform one stable full verification. One canonical final
+render family is sealed. Inventor selection distinguishes the Wish's defining
+creative problem from a mechanism that merely carries it. Release names exactly
+two complete review packets: initial and final. The target remains unproven.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they
@@ -119,6 +149,5 @@ notes beside the benchmark; do not turn them into lifecycle gate authority.
    stable source at every stage.
 6. Reuse deterministic CAD, render, and manual layout primitives so native
    reasoning chooses the product rather than repeatedly rebuilding plumbing.
-7. After recording the comparable Moonchase baseline, tune the frozen Spark
-   reasoning profile. A cheaper runtime configuration is not a win if blind
-   product preference falls.
+7. Tune frozen runtime policy only from comparable production evidence. A
+   cheaper configuration is not a win if blind product preference falls.

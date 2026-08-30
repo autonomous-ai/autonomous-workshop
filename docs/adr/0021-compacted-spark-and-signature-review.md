@@ -5,6 +5,7 @@
 - Owners: Runtime, Workflow, Make, Release, and product-run instruction maintainers
 - Relates to: ADR 0019 (Spark economics), ADR 0020 (signature evidence)
 - Supersedes for new runs: ADR 0019's v1 profile and ADR 0020's image-only signature proof
+- Superseded in part by: ADR 0022
 
 ## Context
 
