@@ -956,7 +956,10 @@ class CodexNativeSessionOutcome:
     used_web_search: bool
     status: str = "completed"
     input_tokens: Optional[int] = None
+    cached_input_tokens: Optional[int] = None
+    cache_write_input_tokens: Optional[int] = None
     output_tokens: Optional[int] = None
+    reasoning_output_tokens: Optional[int] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.binding, CodexNativeSessionBinding):
@@ -967,12 +970,32 @@ class CodexNativeSessionOutcome:
             raise ContractError("Codex native session search status must be boolean")
         if (self.input_tokens is None) != (self.output_tokens is None):
             raise ContractError("Codex native session token usage is incomplete")
+        details = (
+            self.cached_input_tokens,
+            self.cache_write_input_tokens,
+            self.reasoning_output_tokens,
+        )
+        if any(count is None for count in details) and not all(
+            count is None for count in details
+        ):
+            raise ContractError("Codex native session token detail is incomplete")
+        if details[0] is not None and self.input_tokens is None:
+            raise ContractError("Codex native session token detail lacks usage")
         if any(
             count is not None
             and (type(count) is not int or not 0 <= count <= 1_000_000_000_000)
-            for count in (self.input_tokens, self.output_tokens)
+            for count in (self.input_tokens, self.output_tokens, *details)
         ):
             raise ContractError("Codex native session token usage is invalid")
+        if (
+            self.cached_input_tokens is not None
+            and (
+                self.cached_input_tokens > self.input_tokens
+                or self.cache_write_input_tokens > self.input_tokens
+                or self.reasoning_output_tokens > self.output_tokens
+            )
+        ):
+            raise ContractError("Codex native session token detail is invalid")
 
     def to_dict(self) -> Mapping[str, Any]:
         value = {
@@ -983,6 +1006,10 @@ class CodexNativeSessionOutcome:
         if self.input_tokens is not None:
             value["input_tokens"] = self.input_tokens
             value["output_tokens"] = self.output_tokens
+        if self.cached_input_tokens is not None:
+            value["cached_input_tokens"] = self.cached_input_tokens
+            value["cache_write_input_tokens"] = self.cache_write_input_tokens
+            value["reasoning_output_tokens"] = self.reasoning_output_tokens
         return value
 
 
@@ -1607,7 +1634,14 @@ class CodexNativeSessionLauncher:
             ),
             used_web_search,
             input_tokens=None if token_usage is None else token_usage[0],
-            output_tokens=None if token_usage is None else token_usage[1],
+            cached_input_tokens=None if token_usage is None else token_usage[1],
+            cache_write_input_tokens=(
+                None if token_usage is None else token_usage[2]
+            ),
+            output_tokens=None if token_usage is None else token_usage[3],
+            reasoning_output_tokens=(
+                None if token_usage is None else token_usage[4]
+            ),
         )
 
     def resume(
@@ -1718,7 +1752,14 @@ class CodexNativeSessionLauncher:
             ),
             used_web_search,
             input_tokens=None if token_usage is None else token_usage[0],
-            output_tokens=None if token_usage is None else token_usage[1],
+            cached_input_tokens=None if token_usage is None else token_usage[1],
+            cache_write_input_tokens=(
+                None if token_usage is None else token_usage[2]
+            ),
+            output_tokens=None if token_usage is None else token_usage[3],
+            reasoning_output_tokens=(
+                None if token_usage is None else token_usage[4]
+            ),
         )
 
     def _binding_paths(
@@ -2410,8 +2451,10 @@ def _decode_native_event(line: str) -> Mapping[str, Any]:
     return event
 
 
-def _native_token_usage(value: Any) -> Optional[tuple[int, int]]:
-    """Return separate input and output counts, or unavailable."""
+def _native_token_usage(
+    value: Any,
+) -> Optional[tuple[int, Optional[int], Optional[int], int, Optional[int]]]:
+    """Return exact base counters plus optional economic detail."""
 
     if not isinstance(value, Mapping):
         return None
@@ -2422,7 +2465,32 @@ def _native_token_usage(value: Any) -> Optional[tuple[int, int]]:
         for count in (input_tokens, output_tokens)
     ):
         return None
-    return input_tokens, output_tokens
+    detail = (
+        value.get("cached_input_tokens"),
+        value.get("cache_write_input_tokens"),
+        value.get("reasoning_output_tokens"),
+    )
+    if all(count is None for count in detail):
+        return (input_tokens, None, None, output_tokens, None)
+    cached_input, cache_write_input, reasoning_output = detail
+    if (
+        any(
+            type(count) is not int or not 0 <= count <= 1_000_000_000_000
+            for count in detail
+        )
+        or
+        cached_input > input_tokens
+        or cache_write_input > input_tokens
+        or reasoning_output > output_tokens
+    ):
+        return (input_tokens, None, None, output_tokens, None)
+    return (
+        input_tokens,
+        cached_input,
+        cache_write_input,
+        output_tokens,
+        reasoning_output,
+    )
 
 
 def _dedicated_process_group_id(process: Any) -> Optional[int]:

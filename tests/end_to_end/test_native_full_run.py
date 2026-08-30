@@ -292,7 +292,10 @@ class _SessionOutcome:
             "release": 400,
         }[stage]
         self.input_tokens = stage_input
+        self.cached_input_tokens = stage_input * 3 // 4
+        self.cache_write_input_tokens = stage_input // 20
         self.output_tokens = stage_input // 10
+        self.reasoning_output_tokens = stage_input // 20
 
     def to_dict(self):
         return {
@@ -1462,6 +1465,12 @@ class NativeFullRunTest(unittest.TestCase):
             )
             self.assertEqual(receipt["tokens"]["input_tokens"], 750)
             self.assertEqual(receipt["tokens"]["output_tokens"], 75)
+            self.assertEqual(receipt["tokens"]["economics"]["status"], "measured")
+            self.assertEqual(receipt["tokens"]["economics"]["input_tokens"], 750)
+            self.assertEqual(receipt["tokens"]["economics"]["cached_input_tokens"], 562)
+            self.assertEqual(receipt["tokens"]["economics"]["uncached_input_tokens"], 188)
+            self.assertEqual(receipt["tokens"]["economics"]["output_tokens"], 75)
+            self.assertEqual(receipt["tokens"]["economics"]["reasoning_output_tokens"], 37)
             self.assertEqual(
                 receipt["tokens"]["stages"]["make"]["input_tokens"],
                 200,

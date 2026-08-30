@@ -57,10 +57,12 @@ A current public snapshot follows the real lifecycle:
   manual-design/review evidence, and Release contract;
 - `publication/PUBLICATION.json` records sanitized public URLs, listing facts,
   and content hashes;
-- `TOKENS.json` records best-effort Manager-reported input and output token
-  counts separately by stage for new runs. It never adds the two counters
-  together. It says `partial` or `unavailable` when the Manager did not report
-  every turn and never invents a dollar estimate;
+- `TOKENS.json` records best-effort Manager-reported gross input and output
+  separately by stage. For schema-v3 runs it also separates cached from
+  uncached input and records cache-write and reasoning-output subsets with
+  their own turn coverage. It never adds input and output or double-counts a
+  subset, says `partial` or `unavailable` when detail is missing, and never
+  invents a dollar estimate;
 - `TIMING.json` records elapsed wall time from the timestamp in a CLI-generated
   Wish id through authenticated Factory public readback. The generated toy
   README shows both that duration and the separate per-stage input/output
@@ -71,8 +73,9 @@ A current public snapshot follows the real lifecycle:
   placeholders.
 
 Historical snapshots may lack `TOKENS.json`; schema-v1 token snapshots contain
-only a combined legacy counter that cannot be truthfully split, and schema-v1
-Release snapshots may retain `MANUAL.md`. They are legacy evidence and are
+only a combined legacy counter that cannot be truthfully split, schema-v2
+snapshots lack the cache/reasoning breakdown, and schema-v1 Release snapshots
+may retain `MANUAL.md`. They are legacy evidence and are
 never rewritten or presented as a current terminal Release. When an older
 projection omitted the render tree but its exact public Factory hero is still
 available, a root `renders/` directory may preserve an archive-local copy with

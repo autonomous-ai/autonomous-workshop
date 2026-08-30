@@ -111,12 +111,40 @@ class NativeTokenTelemetryCompatibilityTest(unittest.TestCase):
 
             _record_native_token_usage(paths, checkpoint, (100, 25))
             migrated = _native_token_summary(paths, checkpoint)
-            self.assertEqual(migrated["schema_version"], 2)
+            self.assertEqual(migrated["schema_version"], 3)
             self.assertEqual(migrated["status"], "partial")
             self.assertEqual(migrated["turns"], {"total": 3, "measured": 1, "unmeasured": 2})
             self.assertEqual(migrated["input_tokens"], 100)
             self.assertEqual(migrated["output_tokens"], 25)
+            self.assertEqual(migrated["economics"]["status"], "unavailable")
+            self.assertEqual(
+                migrated["economics"]["turns"],
+                {"total": 3, "measured": 0, "unmeasured": 3},
+            )
             self.assertNotIn("total_tokens", migrated)
+
+            _record_native_token_usage(
+                paths,
+                checkpoint,
+                {
+                    "input_tokens": 80,
+                    "cached_input_tokens": 60,
+                    "cache_write_input_tokens": 5,
+                    "output_tokens": 20,
+                    "reasoning_output_tokens": 12,
+                },
+            )
+            detailed = _native_token_summary(paths, checkpoint)
+            self.assertEqual(detailed["input_tokens"], 180)
+            self.assertEqual(detailed["output_tokens"], 45)
+            self.assertEqual(detailed["economics"]["status"], "partial")
+            self.assertEqual(detailed["economics"]["input_tokens"], 80)
+            self.assertEqual(detailed["economics"]["cached_input_tokens"], 60)
+            self.assertEqual(detailed["economics"]["uncached_input_tokens"], 20)
+            self.assertEqual(detailed["economics"]["cache_write_input_tokens"], 5)
+            self.assertEqual(detailed["economics"]["output_tokens"], 20)
+            self.assertEqual(detailed["economics"]["reasoning_output_tokens"], 12)
+            self.assertEqual(detailed["economics"]["non_reasoning_output_tokens"], 8)
 
 
 class _FakeOutcome:

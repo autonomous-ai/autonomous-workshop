@@ -4098,7 +4098,7 @@ def _native_token_aggregate(
     if (
         set(value)
         != {"schema_version", "kind", "product_id", "wish_sha256", "stages"}
-        or value.get("schema_version") not in (1, 2)
+        or value.get("schema_version") not in (1, 2, 3)
         or value.get("kind") != _NATIVE_TOKEN_USAGE_KIND
         or value.get("product_id") != checkpoint.product_id
         or value.get("wish_sha256") != checkpoint.wish_sha256
@@ -4125,7 +4125,13 @@ def _native_token_aggregate(
             measured_turns = 0
             input_tokens = 0
             output_tokens = 0
-        else:
+            breakdown_turns = 0
+            breakdown_input_tokens = 0
+            cached_input_tokens = 0
+            cache_write_input_tokens = 0
+            breakdown_output_tokens = 0
+            reasoning_output_tokens = 0
+        elif value["schema_version"] == 2:
             if (
                 set(stage)
                 != {"turns", "measured_turns", "input_tokens", "output_tokens"}
@@ -4142,11 +4148,89 @@ def _native_token_aggregate(
             measured_turns = stage["measured_turns"]
             input_tokens = stage["input_tokens"]
             output_tokens = stage["output_tokens"]
+            breakdown_turns = 0
+            breakdown_input_tokens = 0
+            cached_input_tokens = 0
+            cache_write_input_tokens = 0
+            breakdown_output_tokens = 0
+            reasoning_output_tokens = 0
+        else:
+            if (
+                set(stage)
+                != {
+                    "turns",
+                    "measured_turns",
+                    "breakdown_turns",
+                    "input_tokens",
+                    "breakdown_input_tokens",
+                    "cached_input_tokens",
+                    "cache_write_input_tokens",
+                    "output_tokens",
+                    "breakdown_output_tokens",
+                    "reasoning_output_tokens",
+                }
+                or any(
+                    type(stage.get(name)) is not int
+                    for name in (
+                        "turns",
+                        "measured_turns",
+                        "breakdown_turns",
+                        "input_tokens",
+                        "breakdown_input_tokens",
+                        "cached_input_tokens",
+                        "cache_write_input_tokens",
+                        "output_tokens",
+                        "breakdown_output_tokens",
+                        "reasoning_output_tokens",
+                    )
+                )
+                or not 0
+                <= stage["breakdown_turns"]
+                <= stage["measured_turns"]
+                <= stage["turns"]
+                <= 100_000
+                or any(
+                    not 0 <= stage[name] <= 10**18
+                    for name in (
+                        "input_tokens",
+                        "breakdown_input_tokens",
+                        "cached_input_tokens",
+                        "cache_write_input_tokens",
+                        "output_tokens",
+                        "breakdown_output_tokens",
+                        "reasoning_output_tokens",
+                    )
+                )
+                or stage["breakdown_input_tokens"] > stage["input_tokens"]
+                or stage["cached_input_tokens"]
+                > stage["breakdown_input_tokens"]
+                or stage["cache_write_input_tokens"]
+                > stage["breakdown_input_tokens"]
+                or stage["breakdown_output_tokens"] > stage["output_tokens"]
+                or stage["reasoning_output_tokens"]
+                > stage["breakdown_output_tokens"]
+            ):
+                raise StateConflict("native token stage aggregate is invalid")
+            measured_turns = stage["measured_turns"]
+            breakdown_turns = stage["breakdown_turns"]
+            input_tokens = stage["input_tokens"]
+            breakdown_input_tokens = stage["breakdown_input_tokens"]
+            cached_input_tokens = stage["cached_input_tokens"]
+            cache_write_input_tokens = stage["cache_write_input_tokens"]
+            output_tokens = stage["output_tokens"]
+            breakdown_output_tokens = stage["breakdown_output_tokens"]
+            reasoning_output_tokens = stage["reasoning_output_tokens"]
         stages[stage_name] = {
             "turns": stage["turns"],
             "measured_turns": measured_turns,
+            "breakdown_turns": breakdown_turns,
             "input_tokens": input_tokens,
+            "breakdown_input_tokens": breakdown_input_tokens,
+            "cached_input_tokens": cached_input_tokens,
+            "cache_write_input_tokens": cache_write_input_tokens,
             "output_tokens": output_tokens,
+            "breakdown_output_tokens": breakdown_output_tokens,
+            "reasoning_output_tokens": reasoning_output_tokens,
         }
     return stages
 
@@ -4160,13 +4244,35 @@ def _record_native_token_usage(
 
     if checkpoint.stage not in _NATIVE_TOKEN_STAGES:
         return
-    measured = (
-        usage
-        if isinstance(usage, tuple)
+    measured = None
+    breakdown = None
+    if (
+        isinstance(usage, tuple)
         and len(usage) == 2
         and all(type(count) is int and 0 <= count <= 10**18 for count in usage)
-        else None
-    )
+    ):
+        measured = usage
+    elif isinstance(usage, Mapping):
+        base = (usage.get("input_tokens"), usage.get("output_tokens"))
+        if all(
+            type(count) is int and 0 <= count <= 10**18 for count in base
+        ):
+            measured = base
+            detail = (
+                usage.get("cached_input_tokens"),
+                usage.get("cache_write_input_tokens"),
+                usage.get("reasoning_output_tokens"),
+            )
+            if (
+                all(
+                    type(count) is int and 0 <= count <= 10**18
+                    for count in detail
+                )
+                and detail[0] <= base[0]
+                and detail[1] <= base[0]
+                and detail[2] <= base[1]
+            ):
+                breakdown = (base[0], detail[0], detail[1], base[1], detail[2])
     stages = _native_token_aggregate(paths, checkpoint)
     previous = stages.get(checkpoint.stage)
     stages[checkpoint.stage] = {
@@ -4175,15 +4281,39 @@ def _record_native_token_usage(
             (0 if previous is None else previous["measured_turns"])
             + (1 if measured is not None else 0)
         ),
+        "breakdown_turns": (
+            (0 if previous is None else previous["breakdown_turns"])
+            + (1 if breakdown is not None else 0)
+        ),
         "input_tokens": (0 if previous is None else previous["input_tokens"])
         + (0 if measured is None else measured[0]),
+        "breakdown_input_tokens": (
+            0 if previous is None else previous["breakdown_input_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[0]),
+        "cached_input_tokens": (
+            0 if previous is None else previous["cached_input_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[1]),
+        "cache_write_input_tokens": (
+            0 if previous is None else previous["cache_write_input_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[2]),
         "output_tokens": (0 if previous is None else previous["output_tokens"])
         + (0 if measured is None else measured[1]),
+        "breakdown_output_tokens": (
+            0 if previous is None else previous["breakdown_output_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[3]),
+        "reasoning_output_tokens": (
+            0 if previous is None else previous["reasoning_output_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[4]),
     }
     _write_private_json(
         paths.host_state / _NATIVE_TOKEN_USAGE_NAME,
         {
-            "schema_version": 2,
+            "schema_version": 3,
             "kind": _NATIVE_TOKEN_USAGE_KIND,
             "product_id": checkpoint.product_id,
             "wish_sha256": checkpoint.wish_sha256,
@@ -4194,7 +4324,7 @@ def _record_native_token_usage(
 
 def _unavailable_native_token_summary() -> dict[str, Any]:
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "kind": _NATIVE_TOKEN_SUMMARY_KIND,
         "status": "unavailable",
         "reason": "Native token usage was not reported for this run.",
@@ -4213,19 +4343,49 @@ def _native_token_summary(
 
     input_tokens = 0
     output_tokens = 0
+    breakdown_input_tokens = 0
+    cached_input_tokens = 0
+    cache_write_input_tokens = 0
+    breakdown_output_tokens = 0
+    reasoning_output_tokens = 0
     recorded_turns = 0
     measured_turns = 0
+    breakdown_turns = 0
     stages: dict[str, Any] = {}
     for stage_name in _NATIVE_TOKEN_STAGES:
         observed = observed_stages.get(stage_name)
         turns = 0 if observed is None else observed["turns"]
         measured = 0 if observed is None else observed["measured_turns"]
+        stage_breakdown_turns = (
+            0 if observed is None else observed["breakdown_turns"]
+        )
         stage_input_tokens = 0 if observed is None else observed["input_tokens"]
         stage_output_tokens = 0 if observed is None else observed["output_tokens"]
+        stage_breakdown_input = (
+            0 if observed is None else observed["breakdown_input_tokens"]
+        )
+        stage_cached_input = (
+            0 if observed is None else observed["cached_input_tokens"]
+        )
+        stage_cache_write_input = (
+            0 if observed is None else observed["cache_write_input_tokens"]
+        )
+        stage_breakdown_output = (
+            0 if observed is None else observed["breakdown_output_tokens"]
+        )
+        stage_reasoning_output = (
+            0 if observed is None else observed["reasoning_output_tokens"]
+        )
         recorded_turns += turns
         measured_turns += measured
+        breakdown_turns += stage_breakdown_turns
         input_tokens += stage_input_tokens
         output_tokens += stage_output_tokens
+        breakdown_input_tokens += stage_breakdown_input
+        cached_input_tokens += stage_cached_input
+        cache_write_input_tokens += stage_cache_write_input
+        breakdown_output_tokens += stage_breakdown_output
+        reasoning_output_tokens += stage_reasoning_output
         status = "pending"
         if checkpoint.effort is not None and stage_name == "match":
             status = "folded"
@@ -4242,6 +4402,37 @@ def _native_token_summary(
             "unmeasured_turns": turns - measured,
             "input_tokens": stage_input_tokens,
             "output_tokens": stage_output_tokens,
+            "economics": {
+                "status": (
+                    status
+                    if turns == 0
+                    else (
+                        "unavailable"
+                        if stage_breakdown_turns == 0
+                        else (
+                            "measured"
+                            if stage_breakdown_turns == turns
+                            else "partial"
+                        )
+                    )
+                ),
+                "turns": {
+                    "total": turns,
+                    "measured": stage_breakdown_turns,
+                    "unmeasured": turns - stage_breakdown_turns,
+                },
+                "input_tokens": stage_breakdown_input,
+                "cached_input_tokens": stage_cached_input,
+                "uncached_input_tokens": (
+                    stage_breakdown_input - stage_cached_input
+                ),
+                "cache_write_input_tokens": stage_cache_write_input,
+                "output_tokens": stage_breakdown_output,
+                "reasoning_output_tokens": stage_reasoning_output,
+                "non_reasoning_output_tokens": (
+                    stage_breakdown_output - stage_reasoning_output
+                ),
+            },
         }
     try:
         durable_turns = native_progress_turn_floor(
@@ -4251,8 +4442,10 @@ def _native_token_summary(
         durable_turns = recorded_turns
     missing_turns = max(0, durable_turns - recorded_turns)
     unmeasured_turns = recorded_turns - measured_turns + missing_turns
+    economics_total_turns = recorded_turns + missing_turns
+    economics_unmeasured_turns = economics_total_turns - breakdown_turns
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "kind": _NATIVE_TOKEN_SUMMARY_KIND,
         "status": (
             "unavailable"
@@ -4266,6 +4459,29 @@ def _native_token_summary(
         },
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
+        "economics": {
+            "status": (
+                "unavailable"
+                if breakdown_turns == 0
+                else (
+                    "partial" if economics_unmeasured_turns else "measured"
+                )
+            ),
+            "turns": {
+                "total": economics_total_turns,
+                "measured": breakdown_turns,
+                "unmeasured": economics_unmeasured_turns,
+            },
+            "input_tokens": breakdown_input_tokens,
+            "cached_input_tokens": cached_input_tokens,
+            "uncached_input_tokens": breakdown_input_tokens
+            - cached_input_tokens,
+            "cache_write_input_tokens": cache_write_input_tokens,
+            "output_tokens": breakdown_output_tokens,
+            "reasoning_output_tokens": reasoning_output_tokens,
+            "non_reasoning_output_tokens": breakdown_output_tokens
+            - reasoning_output_tokens,
+        },
         "stages": stages,
     }
 
@@ -5673,10 +5889,23 @@ def _run_native_session(
                 paths,
                 checkpoint,
                 (
-                    (
-                        getattr(last_session, "input_tokens", None),
-                        getattr(last_session, "output_tokens", None),
-                    )
+                    {
+                        "input_tokens": getattr(
+                            last_session, "input_tokens", None
+                        ),
+                        "cached_input_tokens": getattr(
+                            last_session, "cached_input_tokens", None
+                        ),
+                        "cache_write_input_tokens": getattr(
+                            last_session, "cache_write_input_tokens", None
+                        ),
+                        "output_tokens": getattr(
+                            last_session, "output_tokens", None
+                        ),
+                        "reasoning_output_tokens": getattr(
+                            last_session, "reasoning_output_tokens", None
+                        ),
+                    }
                     if launcher_failure is None
                     else None
                 ),
