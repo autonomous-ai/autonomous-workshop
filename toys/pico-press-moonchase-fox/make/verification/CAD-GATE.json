@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "status": "print-ready",
+  "primary_cad": {
+    "path": "assembled.step",
+    "sha256": "2fb772f74cea72a1dfc6cb9dfd6ee5cb463ee3daa33fc07bc95e3f59d9e58db7",
+    "bytes": 89344,
+    "source": "cad/moonchase_fox/moonchase_fox.step.py"
+  },
+  "print_mesh": {
+    "path": "assembled.stl",
+    "sha256": "3db52d469574146d6600ed64e79bfa2e8b222250388c156c4c924d3644add295",
+    "bytes": 73684,
+    "triangles": 1472,
+    "connected_shells": 1,
+    "watertight": true,
+    "manifold": true,
+    "positive_volume": true
+  },
+  "geometry": {
+    "units": "mm",
+    "bbox_mm": [93.53, 77.7875, 24.0],
+    "solid_count": 1,
+    "printable_part_count": 1,
+    "assembly_required": false,
+    "support_material_required": false,
+    "center_of_mass_mm": [-5.9946, 37.2172, 12.0],
+    "track_center_mm": [-6.0, 45.0],
+    "predicted_rest_tilt_deg": 0.0399,
+    "digital_balance_margin_mm": 7.7828
+  },
+  "final_pipeline": {
+    "passed": true,
+    "print_ready_claim": true,
+    "mode": "final",
+    "strict_fit": true,
+    "exports": true,
+    "bed_mm": [220.0, 220.0, 220.0],
+    "nozzle_mm": 0.4,
+    "report_path": "cad/moonchase_fox/measure/verification-pipeline.md",
+    "report_sha256": "216bd7b30e282e3bed3d35c2ea9bd596a6d8bddee2ec93fff17592d4fac1e61f",
+    "checks": {
+      "layout": "pass",
+      "generation": "pass",
+      "strict_fit": "pass",
+      "wish_spec": "pass",
+      "refs": "pass",
+      "topology_validation": "pass",
+      "interference": "pass",
+      "mesh": "pass",
+      "thickness": "pass"
+    }
+  },
+  "presentation_render": {
+    "path": "cad/moonchase_fox/snap/iso.png",
+    "sha256": "6364d3b28a45acca7358bddcde833830985fcb75bf76861efd71edbc9f2f6892",
+    "width_px": 1200,
+    "height_px": 1200,
+    "mode": "RGB",
+    "inspected": true
+  },
+  "evidence_boundary": "Digital checks establish exact geometry, mesh soundness, print stance, minimum wall, and static restoring intent. No successful physical print, rocking duration, damping, surface friction, durability, or human response is claimed."
+}
