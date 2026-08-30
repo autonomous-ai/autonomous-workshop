@@ -1,0 +1,9 @@
+{
+  "title": "Starling Gate",
+  "summary": "A palm-sized one-piece rocking arch whose cutout changes from a perched bird to a shooting star in motion.",
+  "interaction": "Set upright on a level desk and give one arch shoulder a light fingertip tap; the curved base is tuned for a tiny three-beat rocking hop before returning to its centered star-window-level rest.",
+  "construction": "Single support-free FDM part; no assembly, loose pieces, electronics, fasteners, or product text.",
+  "dimensions_mm": [82, 18, 96],
+  "material_assumption": "Rigid PLA or PETG, 0.4 mm nozzle; print flat on the broad back.",
+  "limitations": "Motion cadence is a geometric design intent and has not been physically printed or timed. Desk levelness, material, infill, and surface friction affect settling."
+}
