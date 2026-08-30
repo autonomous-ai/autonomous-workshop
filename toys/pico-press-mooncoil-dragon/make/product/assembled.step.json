@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-artifact",
+  "step": {
+    "path": "assembled.step",
+    "sha256": "18f9462036261fbae75b69c23a5f4c3164fd33d66d8b9eb30c3348bcb7713efc",
+    "units": "mm",
+    "source": "cad/assembled.step.py"
+  },
+  "geometry": {
+    "solid_count": 1,
+    "bounds_mm": [94.206979, 81.587352, 16.0],
+    "minimum_z_mm": 0.0
+  },
+  "manufacturing_intent": "One-piece support-free FDM, printed on either broad face",
+  "verification": {
+    "status": "digitally-verified",
+    "report": "measure/verification-pipeline.md",
+    "physical_print_or_playtest": false
+  }
+}
