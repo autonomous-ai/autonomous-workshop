@@ -47,6 +47,7 @@ from __future__ import annotations
 import argparse
 import ast
 from datetime import datetime, timezone
+import errno
 import hashlib
 import json
 import os
@@ -88,6 +89,59 @@ MATING_ACTION = re.compile(
     re.IGNORECASE,
 )
 SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
+
+
+def _remove_generation_cache(cache: Path) -> None:
+    """Delete generated cache bytes while tolerating protected empty dirs.
+
+    The product-run sandbox permits generated-file cleanup but can refuse
+    ``rmdir`` for directories it protects. Fresh verification needs byte-free
+    state, not the absence of empty directory entries. Fall back only for that
+    narrow case; an undeletable file, symlink, or special entry still fails.
+    """
+
+    try:
+        shutil.rmtree(cache)
+        return
+    except OSError as exc:
+        if exc.errno not in (errno.EACCES, errno.EPERM):
+            raise
+        original = exc
+
+    if not cache.exists():
+        return
+    for current, directories, files in os.walk(cache, topdown=False, followlinks=False):
+        root = Path(current)
+        for name in files:
+            (root / name).unlink()
+        for name in directories:
+            child = root / name
+            if child.is_symlink():
+                child.unlink()
+                continue
+            try:
+                child.rmdir()
+            except OSError as exc:
+                if exc.errno == errno.ENOENT:
+                    continue
+                if exc.errno not in (errno.EACCES, errno.EPERM):
+                    raise
+        try:
+            root.rmdir()
+        except OSError as exc:
+            if exc.errno == errno.ENOENT:
+                continue
+            if exc.errno not in (errno.EACCES, errno.EPERM):
+                raise
+
+    if not cache.exists():
+        return
+    for current, directories, files in os.walk(cache, followlinks=False):
+        if files:
+            raise original
+        root = Path(current)
+        if any((root / name).is_symlink() for name in directories):
+            raise original
 SIGNATURE_REVIEW_RELATIVE = Path("snap/SIGNATURE-REVIEW.json")
 SIGNATURE_REVIEW_FIELDS = {
     "schema_version",
@@ -1922,7 +1976,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             else:
                 cache_started = time.perf_counter()
-                shutil.rmtree(cache)
+                _remove_generation_cache(cache)
                 runner.records.append(
                     {
                         "command": f"delete cache {cache}",
@@ -2096,7 +2150,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         else:
             cache_started = time.perf_counter()
-            shutil.rmtree(cache)
+            _remove_generation_cache(cache)
             runner.records.append(
                 {
                     "command": f"delete cache {cache}",

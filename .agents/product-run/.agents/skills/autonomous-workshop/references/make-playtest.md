@@ -78,7 +78,7 @@ the design or repeat completed subagent work.
 Use one deliberate verification funnel. During source edits, build the smallest
 entry that exposes the changed relationship and run only its relevant narrow
 check. As soon as plausible exact draft geometry exists, run
-`verify_project <cad-project> --print-preflight --fresh`. This fixed cheap gate
+`verify_project <cad-project> --print-preflight`. This fixed cheap gate
 generates **every declared printable part**, runs strict bed fit, exports every
 STL, and checks every mesh and wall thickness at the same standard 0.4 mm
 nozzle profile used by the final gate. Do not substitute an assembly-only STL,
@@ -92,6 +92,15 @@ exports and run the integrated final verifier once. A full verifier must not be
 used as the inner visual-design loop. Do not repeatedly run it or regenerate
 unchanged exports between small edits.
 
+The native product-run sandbox owns source and generated files but may protect
+empty generated-cache directories from removal. Do not manually delete
+`__cadgen__` or add `--fresh` to the iterative preflight. Source-closure checks
+regenerate changed entries; the trusted host alone performs the authoritative
+isolated `--fresh --exports --strict-fit` rebuild after the proposal. Generate
+STEP with `scripts/gen <targets...> --write`; `scripts/gen` has no `--stl`
+option. Export mesh formats from the fresh STEP with
+`scripts/export <target.step> --stl`.
+
 For Forge and Quest, begin Make by proving the Invented concept's hardest
 causal or kinematic relationship with the smallest exact geometry that can
 falsify it. Do not detail every part first. If the proof fails, repair the
@@ -99,6 +108,15 @@ minimal relationship or use the evidence-bound Make-to-Invent route when the
 sealed concept itself is impossible; do not bury the failure under added parts
 or decorative geometry. Once it passes, reuse that exact source and expand only
 the parts required for the signature experience.
+
+Prove the held form just as early as the mechanism. Before detailed parts,
+create the cheapest exact volumetric blockout that shows the required held view
+and signature view, render both, and inspect their actual pixels without the
+product name or Wish. The blockout must already read as the named object and
+show the promised view-specific relationship. A blob attached to a board, a
+flat plaque standing in for a volumetric body, floating presentation pieces,
+or a silhouette recognizable only from explanatory copy fails this falsifier.
+Repair or simplify it before spending on detail, exports, or the full assembly.
 
 Keep exactly one non-part `*.step.py` combined entry in the declared CAD
 project. The isolated host verifier infers that entry and cannot accept an

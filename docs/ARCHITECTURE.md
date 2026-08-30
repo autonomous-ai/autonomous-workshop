@@ -223,6 +223,12 @@ so they are never stable product evidence. A sandbox-protected empty directory
 has no content-addressable bytes and is ignored by both finalizer and host
 inventory. Exported CAD, source, measurements, renders, every other file,
 symlinks, special nodes, and unsafe cache content remain exact and fail-closed.
+The native Make iteration therefore runs print-preflight without destructive
+`--fresh` cleanup. Source-closure checks regenerate changed targets inside the
+product sandbox; only the trusted isolated host rebuild deletes generated cache
+bytes. The shared verifier tolerates protected empty cache directories but
+still fails closed if any generated file, symlink, or special byte cannot be
+removed.
 For a frozen protocol whose older finalizer still requires byte-free directory
 deletion, resume performs the same narrow cleanup in the trusted host while
 the exclusive run lock is held and no native session is running. It removes

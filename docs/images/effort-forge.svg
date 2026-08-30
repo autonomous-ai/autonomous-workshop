@@ -54,7 +54,7 @@
   <g filter="url(#shadow)"><rect x="495" y="285" width="210" height="150" rx="20" class="active"/></g>
   <text x="520" y="315" class="eyebrow orange">CODEX GOAL · MAKE</text>
   <text x="520" y="350" class="heading">MAKE</text>
-  <text x="520" y="377" class="body">Build mechanical CAD.</text>
+  <text x="520" y="377" class="body">Prove mechanism + form.</text>
   <text x="520" y="399" class="body">All parts preflight → review.</text>
   <text x="520" y="421" class="body">No blockers → full final gate.</text>
 

@@ -26,7 +26,7 @@ New materialized runs use signature-review schema v6. Before rendering or
 coordinating the visual critic, Make runs:
 
 ```text
-verify_project <cad-project> --print-preflight --fresh
+verify_project <cad-project> --print-preflight
 ```
 
 Print-preflight is a deterministic mode, not another cognitive stage. It:
@@ -42,6 +42,14 @@ the exact passing report hash. Both the CAD verifier and run-local finalizer
 reject a missing, failing, weakened-profile, incomplete, or hash-mismatched
 preflight. The final full-tier verifier and isolated host rebuild remain
 unchanged independent gates.
+
+The native iterative command intentionally omits `--fresh`. Product-run
+sandboxes may allow generated-file cleanup while protecting empty directory
+removal. Source-closure freshness rebuilds changed entries during iteration;
+the trusted isolated host alone performs destructive `--fresh` cleanup and the
+authoritative rebuild. This clarification was added after the Comet Choir
+production run exposed an agent-side `PermissionError` on an empty generated
+cache directory.
 
 The critic must fail closed on visible presentation defects. A prototype or
 wrong-object read, dominant exposed mechanism, zoom-dependent signature, raw

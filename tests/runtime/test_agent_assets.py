@@ -141,10 +141,14 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "expensive integrated final verifier",
             "one final `snap/` family",
             "hardest causal or kinematic relationship",
+            "cheapest exact volumetric blockout",
+            "`scripts/gen` has no `--stl` option",
+            "trusted host alone performs the authoritative isolated",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, normalized)
         self.assertIn("--run-root . playtest", normalized)
+        self.assertNotIn("--print-preflight --fresh", normalized)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

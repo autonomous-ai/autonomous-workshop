@@ -199,6 +199,12 @@ a gate, and no dollar estimate is inferred. See
 [`docs/QUALITY_ECONOMICS.md`](docs/QUALITY_ECONOMICS.md) for the paired quality
 and cost benchmark.
 
+Forge and Quest now falsify both the hardest mechanism and the defining held
+form with cheap exact geometry before detailed CAD. Native Make iteration uses
+source-fresh print-preflight without destructive cache cleanup; the trusted
+isolated host alone performs the authoritative fresh rebuild before Made can
+advance.
+
 ## Architecture
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.

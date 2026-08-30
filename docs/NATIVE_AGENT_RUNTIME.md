@@ -468,7 +468,9 @@ requires no blocking visual defect. One critic performs no more than two
 rounds. Before this review, Make runs the fixed print-preflight mode: every
 declared printable is generated, strict-fit checked, exported, mesh checked,
 and thickness checked at the final 0.4 mm nozzle profile. The review binds the
-passing preflight hash. Make then performs one integrated final verifier, so a
+passing preflight hash. Native iteration relies on source-closure freshness and
+does not delete protected `__cadgen__` directories; the trusted host owns the
+authoritative isolated `--fresh` rebuild. Make then performs one integrated final verifier, so a
 printability repair cannot invalidate an already-spent visual read. The
 materialized final verifier refuses to begin final-mode geometry work until the
 canonical schema-v6 review and exact image hashes exist, then records the review

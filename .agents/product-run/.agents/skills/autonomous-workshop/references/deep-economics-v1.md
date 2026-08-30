@@ -22,6 +22,12 @@ kinematic relationship with the smallest exact geometry that can falsify it.
 Simplify a concept whose signature cannot be proven cheaply; do not spend a
 full turn polishing an unproven mechanism.
 
+The proof includes form, not only mechanics. Render a cheap exact volumetric
+blockout from the required held and signature views before detailed parts. It
+must read correctly without a title or explanatory copy. Repair or simplify a
+blob, plaque, floating-piece composition, or view-dependent silhouette at the
+blockout boundary rather than carrying it into a complete assembly.
+
 Treat exact workspace bytes, `STAGE.json`, sealed contracts, and concise review
 evidence as durable memory. Batch independent reads and deterministic checks.
 Do not regenerate unchanged artifacts, repeat completed research, or use the

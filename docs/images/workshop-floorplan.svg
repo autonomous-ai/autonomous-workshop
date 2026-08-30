@@ -155,7 +155,7 @@
   <line x1="600" y1="920" x2="600" y2="1020" stroke="#edc58a" stroke-width="1.5"/>
   <text x="250" y="927" class="eyebrow eyebrow-internal">ALL ROUTES · SPARK SELECTS HERE</text>
   <text x="250" y="961" class="heading">MAKE</text>
-  <text x="250" y="986" class="body">Turn the selected design into mechanical CAD.</text>
+  <text x="250" y="986" class="body">Prove mechanism + held form before detailed CAD.</text>
   <text x="250" y="1008" class="body">All printables: fit · mesh · 0.4 mm → blind review.</text>
   <text x="250" y="1030" class="body">No blockers · ≤2 rounds · full final gate binds proof.</text>
   <text x="690" y="949" text-anchor="middle" class="goal-copy">CODEX GOAL</text>

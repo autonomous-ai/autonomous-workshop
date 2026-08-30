@@ -66,6 +66,9 @@ motions. Complexity is justified only when removing it destroys the promised
 experience; decorative detail, duplicated mechanisms, and extra simultaneous
 motions are not depth. A concept that cannot name a cheap decisive proof is not
 ready to seal—simplify it while preserving the anti-generic signature.
+Also name the minimum held-view and signature-view blockout that would falsify
+the intended form. It must prove volumetric identity and the view-specific
+composition without labels, product copy, color, or decorative detail.
 
 Codex owns the research strategy, concept generation, judging, and iteration.
 Do not implement deep research, candidate fan-out, model judging, scoring,

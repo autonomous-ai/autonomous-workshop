@@ -129,7 +129,7 @@ gate.
 10. **Repair and rerun.** If a check fails, change the smallest responsible source section, regenerate, and rerun the failed validation.
 11. **Render before the expensive final gate.** After plausible exact draft
     geometry exists, run
-    `scripts/verify_project <project> --print-preflight --fresh`. This fixed
+    `scripts/verify_project <project> --print-preflight`. This fixed
     cheap gate generates every declared printable, runs strict bed fit, exports
     every STL, and checks each mesh and wall thickness at the final 0.4 mm
     nozzle profile. Repair and regenerate before review if it fails. Never use
@@ -161,6 +161,13 @@ gate.
     `largest_risk` is blocking even when deterministic CAD checks pass.
     Keep binary silhouettes from the image-to-CAD likeness tool under a named
     review/evidence path, never at `snap/iso.png`.
+    In a restricted product run, do not manually delete `__cadgen__` or add
+    `--fresh` to iterative preflight: source-closure freshness regenerates
+    changed entries, and the trusted Workshop host owns the authoritative
+    isolated fresh rebuild. Before detailed parts, render the cheapest exact
+    volumetric blockout from the required held and signature views. Reject a
+    blob attached to a board, flat plaque, floating presentation pieces, or a
+    silhouette that needs copy to explain it before spending on full assembly.
 
 ## Handoff
 
