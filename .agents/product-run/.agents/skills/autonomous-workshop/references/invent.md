@@ -14,6 +14,13 @@ exact Taste and method.
 Its stopping condition is a successful `invent` finalizer for the current
 checkpoint.
 
+Before exploring broadly, name the concept's **signature interaction**: the
+single physical moment that makes the Wish feel surprising, playful, or
+magical, and the **anti-generic signature** that prevents it from collapsing
+into an ordinary themed object. Spend depth on making those two ideas coherent
+with a feasible mechanism. Additional features earn their place only when they
+strengthen that core.
+
 Compare every roster entry before selecting. Use the selected project-scoped
 custom agent for specialist work. The root Workshop Manager reviews and
 synthesizes its output and remains responsible for the one stage proposal.
@@ -30,13 +37,19 @@ While pursuing the Goal:
    Before selecting, specify each viable direction deeply enough to compare
    form, envelope, component breakdown, construction, interaction,
    feasibility, assumptions, and risks.
-3. **Evaluate:** Compare concepts against the Wish, full Taste, novelty,
+3. **Evaluate:** Compare concepts against the Wish, signature interaction,
+   anti-generic signature, full Taste, novelty,
    coherent play, mechanical feasibility, printability, and inspectability.
    Ask independent native subagents to judge bounded questions when subjective
    tradeoffs matter; synthesize their evidence rather than averaging votes.
 4. **Improve:** Address the largest weakness, challenge unsupported
    assumptions, and refine or replace the concept. Repeat research or review
    only when it can resolve a concrete gap.
+
+Use bounded breadth: develop a few materially different directions far enough
+to expose their mechanisms, choose once the evidence distinguishes them, then
+stop generating alternatives. Do not browse when the remaining decisions are
+deliberate design choices rather than factual uncertainties.
 
 Codex owns the research strategy, concept generation, judging, and iteration.
 Do not implement deep research, candidate fan-out, model judging, scoring,

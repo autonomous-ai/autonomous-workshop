@@ -242,13 +242,15 @@ by an earlier launcher may finish late, but its older record is no longer
 trusted and cannot roll status backward.
 
 When a Manager's terminal event includes usage, Workshop also keeps one small
-host-private aggregate with input and output tokens stored separately by stage.
-The receipt and new public toy snapshot expose those two counters without
-adding them together, plus whether coverage is measured, partial, or
-unavailable. Schema-v1 aggregates that collapsed both directions remain
-readable, but their split is reported as unavailable rather than guessed. This
-best-effort telemetry stores no prices, prompts, transcripts, or reasoning and
-cannot block or advance the lifecycle.
+host-private aggregate by stage. Gross input and output remain separate. When
+the runtime supplies the complete detail, schema v3 additionally preserves
+cached input, cache-write input, and reasoning output; the public summary
+derives uncached input and non-reasoning output without double-counting any
+subset. Every view reports its own turn coverage as measured, partial, or
+unavailable. Schema-v1 aggregates that collapsed both directions and schema-v2
+aggregates without cache detail remain readable, but missing splits are never
+guessed. This best-effort telemetry stores no prices, prompts, transcripts, or
+reasoning content and cannot block or advance the lifecycle.
 
 ## Native subagents and Inventors
 

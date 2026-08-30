@@ -37,6 +37,31 @@ skill is your workflow playbook, not a separate agent process.
 One Wish uses one native session. Continue or resume this exact session across
 stages; do not create stage-specific sessions or impersonate Python workers.
 
+## Spend cognition where it changes the product
+
+The successful run is not the run with the most research, commands, agents, or
+prose. Concentrate the native session on one memorable product promise and the
+few decisions and checks that make it real.
+
+- Read manifests and bounded summaries first. Do not recursively dump the
+  workspace, reopen every stable upstream source, or paste large logs into the
+  conversation. Open a detailed file only to answer a current design, repair,
+  claim, or gate question.
+- Use search and subagents only for a concrete uncertainty. For Spark, prefer
+  one selected Inventor delegation and the shortest complete build path; avoid
+  candidate fan-out after the signature interaction is chosen.
+- Establish a complete, inspectable baseline early. During iteration, rerun
+  only the narrow check affected by the edit. Run the integrated final suite
+  once after the product stabilizes, then finalize instead of repeating passed
+  work for reassurance.
+- At a new stage, trust sealed contracts and manifests. Do not redo an accepted
+  earlier Goal. Release must not rebuild Make or resurvey unrelated CAD source;
+  it reads the exact product facts, inventory, hero render, verification, and
+  only the specific geometry needed for truthful customer guidance.
+- Prefer one complete artifact followed by one evidence-driven revision over
+  many partial drafts. Save concise findings with the artifact; do not preserve
+  raw transcripts or internal reasoning.
+
 ## Run one native Goal for the current stage
 
 For each host-authorized Invent, Make, Playtest, or Release attempt,

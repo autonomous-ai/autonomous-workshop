@@ -566,21 +566,58 @@ class CodexNativeSessionTest(unittest.TestCase):
                     }
                 )
             )
+            base_only = self.start_events(terminal=False)
+            base_only.append(
+                event(
+                    {
+                        "type": "turn.completed",
+                        "usage": {
+                            "input_tokens": 42,
+                            "output_tokens": 7,
+                        },
+                    }
+                )
+            )
             launcher, unused_factory = self.launcher(
-                [{"stdout": completed}, {"stdout": malformed}]
+                [
+                    {"stdout": completed},
+                    {"stdout": malformed},
+                    {"stdout": base_only},
+                ]
             )
 
             started = self.start(launcher, root)
-            resumed = self.resume(launcher, root)
+            malformed_outcome = self.resume(launcher, root)
+            base_only_outcome = self.resume(launcher, root)
 
             self.assertEqual(started.input_tokens, 11_288)
+            self.assertEqual(started.cached_input_tokens, 8_960)
+            self.assertEqual(started.cache_write_input_tokens, 0)
             self.assertEqual(started.output_tokens, 266)
+            self.assertEqual(started.reasoning_output_tokens, 255)
             self.assertEqual(started.to_dict()["input_tokens"], 11_288)
+            self.assertEqual(started.to_dict()["cached_input_tokens"], 8_960)
+            self.assertEqual(started.to_dict()["cache_write_input_tokens"], 0)
             self.assertEqual(started.to_dict()["output_tokens"], 266)
-            self.assertIsNone(resumed.input_tokens)
-            self.assertIsNone(resumed.output_tokens)
-            self.assertNotIn("input_tokens", resumed.to_dict())
-            self.assertNotIn("output_tokens", resumed.to_dict())
+            self.assertEqual(started.to_dict()["reasoning_output_tokens"], 255)
+            self.assertIsNone(malformed_outcome.input_tokens)
+            self.assertIsNone(malformed_outcome.cached_input_tokens)
+            self.assertIsNone(malformed_outcome.cache_write_input_tokens)
+            self.assertIsNone(malformed_outcome.output_tokens)
+            self.assertIsNone(malformed_outcome.reasoning_output_tokens)
+            self.assertEqual(base_only_outcome.input_tokens, 42)
+            self.assertEqual(base_only_outcome.output_tokens, 7)
+            self.assertIsNone(base_only_outcome.cached_input_tokens)
+            self.assertIsNone(base_only_outcome.cache_write_input_tokens)
+            self.assertIsNone(base_only_outcome.reasoning_output_tokens)
+            self.assertNotIn("input_tokens", malformed_outcome.to_dict())
+            self.assertNotIn("cached_input_tokens", malformed_outcome.to_dict())
+            self.assertNotIn("output_tokens", malformed_outcome.to_dict())
+            self.assertEqual(base_only_outcome.to_dict()["input_tokens"], 42)
+            self.assertEqual(base_only_outcome.to_dict()["output_tokens"], 7)
+            self.assertNotIn(
+                "cached_input_tokens", base_only_outcome.to_dict()
+            )
 
     def test_permission_profile_trusts_only_the_exact_codex_helper_executable(self):
         with tempfile.TemporaryDirectory() as temporary:

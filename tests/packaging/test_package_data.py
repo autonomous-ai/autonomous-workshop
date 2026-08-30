@@ -72,6 +72,14 @@ class PackageDataTest(unittest.TestCase):
         self.assertIn("smallest complete physical format", manual_skill)
         self.assertIn("two to four small pages", manual_skill)
         self.assertIn("not fixed page-count gates", manual_skill)
+        visual_system = (
+            roots["manual-design"]
+            / "references"
+            / "product-manual-visual-system.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("One emotional promise", visual_system)
+        self.assertIn("default A4 report styling", visual_system)
+        self.assertIn("Fast composition sequence", visual_system)
 
     def test_every_schema_is_owned_by_its_architecture_component(self):
         expected = {

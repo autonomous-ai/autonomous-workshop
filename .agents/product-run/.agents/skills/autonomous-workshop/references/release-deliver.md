@@ -12,6 +12,12 @@ in-box manual and bounded product facts traceable to the sealed product and,
 when present, the exact passing Playtest. Its stopping condition is a successful
 `release` finalizer for the current checkpoint.
 
+Release starts from the sealed Made contract, product metadata, artifact
+manifest, final verification, and exact presentation render. Read CAD source or
+additional model files only when one customer instruction or claim cannot be
+resolved from those compact authorities. Do not rebuild, redesign, or rerun
+Make's accepted verification inside Release; the host owns the final CAD guard.
+
 While pursuing the Goal:
 
 1. **Observe:** Inspect the exact Made tree, Wish, selected Taste, universal
@@ -38,6 +44,12 @@ While pursuing the Goal:
 4. **Improve:** Remove unsupported language, resolve contradictions, repair
    hierarchy or cramped layout, clarify missing actions, rerender, and continue
    until both the manual and bounded metadata are internally consistent.
+
+Produce the smallest complete manual first, render all of it in one batch, then
+make one coherent revision that resolves the required independent review and
+the largest first-owner problem together. Rerender after that revision. Avoid
+page-by-page drafting, repeated font or layout experiments, and extra review
+passes that do not answer a concrete finding.
 
 Codex owns the fact-check, design, render, review, and revise loop. Python may
 validate PDF structure, schemas, hashes, and claim bindings; it does not write
