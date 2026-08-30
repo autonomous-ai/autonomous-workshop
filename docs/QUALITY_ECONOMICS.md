@@ -115,6 +115,42 @@ render family is sealed. Inventor selection distinguishes the Wish's defining
 creative problem from a mechanism that merely carries it. Release names exactly
 two complete review packets: initial and final. The target remains unproven.
 
+Moonwake Turn tested that work order in another permanent published Spark:
+
+| Measure | Whole run | Make | Release |
+|---|---:|---:|---:|
+| Gross input | **>=4,040,564 partial** | **>=2,460,653 partial** | 1,579,911 |
+| Cached input | **>=3,823,104 partial** | **>=2,329,472 partial** | 1,493,632 |
+| Uncached input | **>=217,460 partial** | **>=131,181 partial** | 86,279 |
+| Output | **>=29,364 partial** | **>=18,292 partial** | 11,072 |
+| Reasoning output | **>=5,521 partial** | **>=3,956 partial** | 1,565 |
+| Turn coverage | 2 / 3 | 1 / 2 | 1 / 1 |
+| Elapsed | 1h 20m 45s | includes one 1h timeout | measured turn completed |
+
+Every `>=` value is a measured floor, not a total or a valid reduction claim.
+The first Make turn exhausted the historical one-hour boundary without a
+terminal usage event, so no token category exists for that turn. The recovery
+correctly resumed the same session and completed the toy, but the run cannot
+establish either the 4.04M nominal figure or a percentage improvement as its
+true economics.
+
+The in-box manual was polished and product-specific. The exact product evidence
+still exposed a semantic failure: the Wish asked for a whale leaping *through*
+a crescent, while the blind reviewer recorded a crescent *beside* a whale-like
+animal and then passed the overall signature boolean. Shared nouns had hidden a
+wrong spatial relationship. Private run inventory also showed repeated broad
+build/export/verification activity inside the one timed-out turn; a single
+stage attempt was not a meaningful inner-loop bound.
+
+Spark v3 addresses those two evidenced leaks without lowering quality gates.
+Each new native Spark turn has a frozen 20-minute boundary; one critic gets at
+most two rounds and must compare subjects, action, and relationship separately;
+and the integrated final CAD verifier refuses to begin until the exact
+hash-bound review exists. Quick checks remain available for iteration. The next
+permanent challenger must have complete turn telemetry, use no more than
+2,461,602 gross input tokens, and win the blind signature comparison. Until
+then, the combined 10x quality-and-economics target remains unproven.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

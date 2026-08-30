@@ -1500,11 +1500,17 @@ def _validate_signature_review(
             "signature_sha256",
             "reviewer",
             "blind_held_read",
-            "blind_signature_read",
+            "blind_subjects_read",
+            "blind_action_read",
+            "blind_relationship_read",
             "wish_revealed_after_blind_read",
             "held_object_unmistakable",
+            "subjects_match_wish",
+            "action_matches_wish",
+            "relationship_matches_wish",
             "signature_experience_unmistakable",
             "finished_product_desirable",
+            "review_rounds",
             "largest_risk",
             "resolution",
         },
@@ -1512,7 +1518,7 @@ def _validate_signature_review(
     )
     if (
         type(review["schema_version"]) is not int
-        or review["schema_version"] != 2
+        or review["schema_version"] != 3
         or review["kind"] != SIGNATURE_REVIEW_KIND
     ):
         raise ProposalError("Make signature review identity is invalid")
@@ -1520,14 +1526,23 @@ def _validate_signature_review(
         raise ProposalError("Make signature review must use canonical JSON encoding")
     _bounded_text(review["reviewer"], "Make signature reviewer", 200)
     _bounded_text(review["blind_held_read"], "Make blind held read", 1_000)
-    _bounded_text(
-        review["blind_signature_read"], "Make blind signature read", 1_000
-    )
+    for field, label in (
+        ("blind_subjects_read", "Make blind subjects read"),
+        ("blind_action_read", "Make blind action read"),
+        ("blind_relationship_read", "Make blind relationship read"),
+    ):
+        _bounded_text(review[field], label, 1_000)
     _bounded_text(review["largest_risk"], "Make signature largest_risk", 2_000)
     _bounded_text(review["resolution"], "Make signature resolution", 2_000)
     for field, label in (
         ("wish_revealed_after_blind_read", "Wish was revealed only after the blind read"),
         ("held_object_unmistakable", "held object is unmistakable"),
+        ("subjects_match_wish", "blind subjects match the Wish"),
+        ("action_matches_wish", "blind action matches the Wish"),
+        (
+            "relationship_matches_wish",
+            "blind spatial relationship matches the Wish",
+        ),
         (
             "signature_experience_unmistakable",
             "signature experience is unmistakable",
@@ -1539,6 +1554,11 @@ def _validate_signature_review(
                 "Make signature review must confirm the final %s"
                 % label
             )
+    if type(review["review_rounds"]) is not int or review["review_rounds"] not in (
+        1,
+        2,
+    ):
+        raise ProposalError("Make signature review must record one or two review rounds")
     for filename, field in (
         ("iso.png", "iso_sha256"),
         ("signature.png", "signature_sha256"),

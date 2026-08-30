@@ -373,6 +373,7 @@ def _runtime_config_sha256(
     run_policy: _CodexRunPolicy,
     *,
     auto_compact_token_limit: Optional[int] = None,
+    timeout_seconds: Optional[int] = None,
     include_codex_runtime_paths: bool = True,
 ) -> str:
     """Bind a checkpoint to the exact non-secret policy used to launch it."""
@@ -413,6 +414,8 @@ def _runtime_config_sha256(
         ]
     if auto_compact_token_limit is not None:
         payload["auto_compact_token_limit"] = auto_compact_token_limit
+    if timeout_seconds is not None:
+        payload["timeout_seconds"] = timeout_seconds
     return _sha256_json(payload)
 
 
@@ -1615,6 +1618,11 @@ class CodexNativeSessionLauncher:
             self.reasoning_effort,
             run_policy,
             auto_compact_token_limit=self.auto_compact_token_limit,
+            timeout_seconds=(
+                self.timeout_seconds
+                if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
+                else None
+            ),
         )
         persisted_sha256: Optional[str] = None
 
@@ -1709,6 +1717,11 @@ class CodexNativeSessionLauncher:
             self.reasoning_effort,
             run_policy,
             auto_compact_token_limit=self.auto_compact_token_limit,
+            timeout_seconds=(
+                self.timeout_seconds
+                if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
+                else None
+            ),
         )
         policy_before_venv_directory = (
             _run_policy_before_venv_launcher_directory(root, run_policy)
@@ -1748,6 +1761,11 @@ class CodexNativeSessionLauncher:
                     self.reasoning_effort,
                     policy,
                     auto_compact_token_limit=self.auto_compact_token_limit,
+                    timeout_seconds=(
+                        self.timeout_seconds
+                        if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
+                        else None
+                    ),
                     include_codex_runtime_paths=include_codex_runtime_paths,
                 )
                 for policy, include_codex_runtime_paths in predecessor_policies

@@ -139,8 +139,10 @@ gate.
     the promised interaction or reveal is not legible, repair the product rather
     than relying on customer copy to assert it. Complete the Workshop's blind
     signature review and one coherent repair before running the integrated
-    final verifier once; do not use the full verifier as the visual iteration
-    loop.
+    final verifier once. The review must separately match the exact subjects,
+    action, and spatial/causal relationship; matching only nouns is a failure.
+    Use one critic and no more than two review rounds. Do not use the full
+    verifier as the visual iteration loop.
     Keep binary silhouettes from the image-to-CAD likeness tool under a named
     review/evidence path, never at `snap/iso.png`.
 

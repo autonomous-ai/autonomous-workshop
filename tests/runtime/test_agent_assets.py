@@ -97,6 +97,13 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             (
                 assets.skill_root
                 / "references"
+                / "spark-economics-v3.md"
+            ).is_file()
+        )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
                 / "spark-economics-v2.md"
             ).is_file()
         )

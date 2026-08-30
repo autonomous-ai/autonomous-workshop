@@ -56,6 +56,8 @@ from workshop.workflow.effort import (
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+    SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
 )
 
 
@@ -403,7 +405,8 @@ class NativeHostTest(unittest.TestCase):
     def _launcher_checkpoint(*, effort, economics_capability):
         capability_paths = {
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
-            "v2": SPARK_ECONOMICS_CAPABILITY_PATH,
+            "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+            "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
         inputs = (
             {capability_paths[economics_capability]: "a" * 64}
@@ -429,9 +432,9 @@ class NativeHostTest(unittest.TestCase):
             manager_id="codex",
         )
 
-    def test_new_spark_uses_low_reasoning_and_compaction_wish_wide(self):
+    def test_v3_spark_adds_low_reasoning_compaction_and_turn_boundary(self):
         checkpoint = self._launcher_checkpoint(
-            effort="spark", economics_capability="v2"
+            effort="spark", economics_capability="v3"
         )
         with mock.patch(
             "workshop.workflow.native_run.CodexNativeSessionLauncher"
@@ -439,6 +442,21 @@ class NativeHostTest(unittest.TestCase):
             launcher = _native_launcher(checkpoint)
 
         self.assertIs(launcher, launcher_type.return_value)
+        launcher_type.assert_called_once_with(
+            reasoning_effort="low",
+            auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+            timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+        )
+
+    def test_v2_spark_retains_compaction_without_shorter_turn_boundary(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v2"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint)
+
         launcher_type.assert_called_once_with(
             reasoning_effort="low",
             auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
@@ -456,7 +474,7 @@ class NativeHostTest(unittest.TestCase):
         launcher_type.assert_called_once_with(reasoning_effort="low")
 
     def test_forge_and_unmarked_spark_retain_high_reasoning(self):
-        for effort, marker in (("forge", "v2"), ("spark", None)):
+        for effort, marker in (("forge", "v3"), ("spark", None)):
             with self.subTest(effort=effort, marker=marker), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher"
             ) as launcher_type:

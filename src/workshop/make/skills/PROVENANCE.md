@@ -81,6 +81,12 @@
   the intended model name and originating-system metadata while making fresh,
   equivalent exports byte-identical. A real build123d solid round-trip test
   covers both reproducibility and valid geometry.
+- Adapted locally on 2026-08-30 so Workshop's integrated final CAD pipeline
+  requires the canonical hash-bound blind signature review before it spends a
+  complete verification pass. Quick iteration remains available. The final
+  pipeline records the exact schema and review hash; the shared workflow and
+  CAD guidance limit the native critic to two rounds and require separate
+  agreement on the Wish's subjects, action, and spatial or causal relationship.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do

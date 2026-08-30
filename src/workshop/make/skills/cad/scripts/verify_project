@@ -45,6 +45,7 @@ import os
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -77,6 +78,30 @@ MATING_ACTION = re.compile(
     r"attach|fasten|lock|bond|glue|feed|mate)\w*\b",
     re.IGNORECASE,
 )
+SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
+SIGNATURE_REVIEW_RELATIVE = Path("snap/SIGNATURE-REVIEW.json")
+SIGNATURE_REVIEW_FIELDS = {
+    "schema_version",
+    "kind",
+    "iso_sha256",
+    "signature_sha256",
+    "reviewer",
+    "blind_held_read",
+    "blind_subjects_read",
+    "blind_action_read",
+    "blind_relationship_read",
+    "wish_revealed_after_blind_read",
+    "held_object_unmistakable",
+    "subjects_match_wish",
+    "action_matches_wish",
+    "relationship_matches_wish",
+    "signature_experience_unmistakable",
+    "finished_product_desirable",
+    "review_rounds",
+    "largest_risk",
+    "resolution",
+}
+SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _path_arg(path: Path, cwd: Path) -> str:
@@ -101,6 +126,89 @@ def _resolve_inside_project(raw: str | None, project: Path, cwd: Path) -> Path |
     except ValueError as exc:
         raise ValueError(f"path must stay inside {project}: {candidate}") from exc
     return candidate
+
+
+def _required_signature_review(project: Path) -> str:
+    """Bind the expensive final workflow to an already completed blind review."""
+
+    review_path = project / SIGNATURE_REVIEW_RELATIVE
+    try:
+        identity = review_path.lstat()
+        if review_path.is_symlink() or not stat.S_ISREG(identity.st_mode):
+            raise ValueError("signature review must be one bounded regular file")
+        if identity.st_size > 64 * 1024:
+            raise ValueError("signature review must be one bounded regular file")
+        content = review_path.read_bytes()
+    except OSError as exc:
+        raise ValueError(
+            "final verification requires snap/SIGNATURE-REVIEW.json before the "
+            "integrated CAD gate"
+        ) from exc
+    if len(content) != identity.st_size:
+        raise ValueError("signature review must be one bounded regular file")
+    try:
+        review = json.loads(content.decode("utf-8"))
+    except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError("signature review must be valid JSON") from exc
+    canonical = json.dumps(
+        review,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    if content != canonical or not isinstance(review, dict):
+        raise ValueError("signature review must use canonical JSON encoding")
+    if set(review) != SIGNATURE_REVIEW_FIELDS:
+        raise ValueError("signature review fields do not match schema 3")
+    if review.get("schema_version") != 3 or review.get("kind") != SIGNATURE_REVIEW_KIND:
+        raise ValueError("signature review identity is invalid")
+    for key in (
+        "reviewer",
+        "blind_held_read",
+        "blind_subjects_read",
+        "blind_action_read",
+        "blind_relationship_read",
+        "largest_risk",
+        "resolution",
+    ):
+        value = review.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"signature review {key} must be non-empty text")
+    for key in (
+        "wish_revealed_after_blind_read",
+        "held_object_unmistakable",
+        "subjects_match_wish",
+        "action_matches_wish",
+        "relationship_matches_wish",
+        "signature_experience_unmistakable",
+        "finished_product_desirable",
+    ):
+        if review.get(key) is not True:
+            raise ValueError(f"signature review must affirm {key}")
+    if type(review.get("review_rounds")) is not int or review.get(
+        "review_rounds"
+    ) not in (1, 2):
+        raise ValueError("signature review must record one or two review rounds")
+    for filename, field in (("iso.png", "iso_sha256"), ("signature.png", "signature_sha256")):
+        expected = review.get(field)
+        if not isinstance(expected, str) or not SHA256_TEXT.fullmatch(expected):
+            raise ValueError(f"signature review {field} is invalid")
+        image_path = review_path.parent / filename
+        try:
+            image_identity = image_path.lstat()
+            if image_path.is_symlink() or not stat.S_ISREG(image_identity.st_mode):
+                raise ValueError(
+                    f"signature review snap/{filename} must be a regular file"
+                )
+            image_bytes = image_path.read_bytes()
+        except OSError as exc:
+            raise ValueError(f"signature review requires snap/{filename}") from exc
+        if len(image_bytes) != image_identity.st_size:
+            raise ValueError(f"signature review snap/{filename} must be a regular file")
+        if hashlib.sha256(image_bytes).hexdigest() != expected:
+            raise ValueError(f"signature review is stale for snap/{filename}")
+    return hashlib.sha256(content).hexdigest()
 
 
 def _discover_entries(project: Path, assembly_arg: str | None, cwd: Path) -> tuple[Path, list[Path]]:
@@ -1007,6 +1115,36 @@ def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
     (project / "measure" / "check_spec.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
     (project / "measure" / "check_landmarks.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
     (project / "ref" / "hero.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    (project / "snap").mkdir()
+    iso = b"fixture iso"
+    signature = b"fixture signature"
+    (project / "snap" / "iso.png").write_bytes(iso)
+    (project / "snap" / "signature.png").write_bytes(signature)
+    review = {
+        "schema_version": 3,
+        "kind": SIGNATURE_REVIEW_KIND,
+        "iso_sha256": hashlib.sha256(iso).hexdigest(),
+        "signature_sha256": hashlib.sha256(signature).hexdigest(),
+        "reviewer": "fixture-critic",
+        "blind_held_read": "A fixture product.",
+        "blind_subjects_read": "A fixture and its exact parts.",
+        "blind_action_read": "The fixture changes state.",
+        "blind_relationship_read": "The parts align into the promised state.",
+        "wish_revealed_after_blind_read": True,
+        "held_object_unmistakable": True,
+        "subjects_match_wish": True,
+        "action_matches_wish": True,
+        "relationship_matches_wish": True,
+        "signature_experience_unmistakable": True,
+        "finished_product_desirable": True,
+        "review_rounds": 1,
+        "largest_risk": "Fixture risk.",
+        "resolution": "Fixture resolution.",
+    }
+    (project / SIGNATURE_REVIEW_RELATIVE).write_text(
+        json.dumps(review, sort_keys=True, separators=(",", ":")),
+        encoding="utf-8",
+    )
     for rel, body in (extra or {}).items():
         target = project / rel
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -1482,6 +1620,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--skip-thickness only applies with --exports")
     if args.report and args.no_report:
         parser.error("--report and --no-report are mutually exclusive")
+    signature_review_sha256 = None
+    if not args.quick and not args.dry_run:
+        try:
+            signature_review_sha256 = _required_signature_review(project)
+        except ValueError as exc:
+            refuse(str(exc))
     try:
         assembly, parts = _discover_entries(project, args.assembly, cwd)
         printables = _printable_entries(assembly, parts)
@@ -1628,6 +1772,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
     bed = args.bed or _declared_bed(project) or DEFAULT_BED
     runner = Runner(cwd=cwd, dry_run=bool(args.dry_run), verbose=bool(args.verbose))
+    if signature_review_sha256 is not None:
+        runner.note(
+            "signature review",
+            f"schema=3 sha256={signature_review_sha256}",
+        )
     workflow_started = time.perf_counter()
     result = runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)])
 

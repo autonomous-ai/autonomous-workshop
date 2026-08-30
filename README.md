@@ -171,6 +171,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 
 | Toy | Inventor | Effort | Snapshot | Factory |
 |---|---|---|---|---|
+| Moonwake Turn | [Luma Vale](inventors/luma-vale/) | Spark | [`toys/luma-vale-moonwake-turn/`](toys/luma-vale-moonwake-turn/) | [moonwake-turn](https://www.autonomous.ai/factory/product/moonwake-turn) |
 | Mooncoil Dragon | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-mooncoil-dragon/`](toys/pico-press-mooncoil-dragon/) | [mooncoil-dragon](https://www.autonomous.ai/factory/product/mooncoil-dragon) |
 | Pocket Eclipse Menagerie | [Orin Shadow](inventors/orin-shadow/) | Spark | [`toys/orin-shadow-pocket-eclipse-menagerie/`](toys/orin-shadow-pocket-eclipse-menagerie/) | [pocket-eclipse-menagerie](https://www.autonomous.ai/factory/product/pocket-eclipse-menagerie) |
 | Starling Gate | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-starling-gate/`](toys/pico-press-starling-gate/) | [starling-gate](https://www.autonomous.ai/factory/product/starling-gate) |
@@ -202,7 +203,7 @@ and cost benchmark.
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=blind-review-v2)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=spark-economics-v3)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -214,12 +215,14 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
 
 Passed-through stages create no turn, artifact, gate, or fabricated evidence. Spark and Forge record Playtest as `not-run`. Quest requires passing Playtest bound to the current Made revision.
 
-New Codex Spark runs freeze low reasoning plus a 64k automatic context-
-compaction ceiling for their one persistent Make-to-Release session; Forge and
-Quest retain high reasoning without that Spark ceiling. Older runs keep the
-exact profile they started with. This is an economics policy, not a quality
-waiver: every effort still passes its full deterministic product and
-publication gates.
+New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
+ceiling for their one persistent Make-to-Release session, and a 20-minute
+boundary per native turn. A timeout resumes the exact session and Goal through
+the existing bounded recovery path; it is not a 20-minute stage deadline.
+Forge and Quest retain high reasoning without that Spark ceiling or shortened
+boundary. Older runs keep the exact profile they started with. This is an
+economics policy, not a quality waiver: every effort still passes its full
+deterministic product and publication gates.
 
 The reverse arrows are evidence-bound repair routes, not free-form retries.
 Make can return a Forge or Quest run to Invent only when exact saved evidence
@@ -242,11 +245,13 @@ For new runs it also requires two inspected chromatic exact-product renders:
 `<cad-project>/snap/iso.png` is the hero, while
 `<cad-project>/snap/signature.png` shows the signature interaction, reveal, or
 anti-generic detail across exact poses or views without relying on marketing
-copy. A hash-bound `SIGNATURE-REVIEW.json` records one bounded independent
-critic's unprompted read before the Wish is revealed, final finding, and
-resolution. Make performs that blind review before one integrated final
-verifier so an unclear proposition is repaired before the most expensive CAD
-pass.
+copy. A hash-bound schema-v3 `SIGNATURE-REVIEW.json` records one bounded
+independent critic's unprompted held object, subjects, action, and spatial or
+causal relationship before the Wish is revealed. That same critic then compares
+each dimension with the exact Wish. Make permits at most two review rounds and
+performs the review before one integrated final verifier. The verifier refuses
+final-mode work until the review and exact image hashes exist, so an unclear
+proposition is repaired before the most expensive CAD pass.
 The public toy README may use only this explicit presentation-render
 family as its local hero; arbitrary diagnostic images and black/white likeness
 masks are never promoted.
@@ -260,8 +265,8 @@ continuation window without creating a second root session.
 A native timeout or recognized provider disconnect follows a separate, smaller
 window: two consecutive recoverable turn failures stop the command with the
 same session checkpointed. An explicit `workshop resume` starts a fresh
-two-failure window. This prevents one-hour native timeouts from silently
-rolling through the full 32-turn command budget.
+two-failure window. This prevents repeated profile-bound native timeouts from
+silently rolling through the full 32-turn command budget.
 The one automatic recovery turn also receives a fixed critical-path reminder:
 reuse existing bytes, avoid restarting exploration, do not make finalization
 depend on a child agent, and prioritize remaining deterministic checks plus the

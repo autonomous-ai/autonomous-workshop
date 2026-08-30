@@ -494,7 +494,7 @@ class StageProposalToolTest(unittest.TestCase):
             product_root / "cad/project/snap/signature.png", format="PNG"
         )
         review = {
-            "schema_version": 2,
+            "schema_version": 3,
             "kind": "autonomous-workshop.signature-experience-review",
             "iso_sha256": sha256(
                 (product_root / "cad/project/snap/iso.png").read_bytes()
@@ -504,11 +504,17 @@ class StageProposalToolTest(unittest.TestCase):
             ),
             "reviewer": "independent-native-visual-critic",
             "blind_held_read": "A compact moon observatory with a clear opening.",
-            "blind_signature_read": "Three exact states show the opening rotate into view.",
+            "blind_subjects_read": "A moon observatory, opening, and rotating mask.",
+            "blind_action_read": "The mask rotates through three exact states.",
+            "blind_relationship_read": "The opening aligns with the observatory window.",
             "wish_revealed_after_blind_read": True,
             "held_object_unmistakable": True,
+            "subjects_match_wish": True,
+            "action_matches_wish": True,
+            "relationship_matches_wish": True,
             "signature_experience_unmistakable": True,
             "finished_product_desirable": True,
+            "review_rounds": 1,
             "largest_risk": "The three states need a stronger direction cue.",
             "resolution": "The final sheet uses separated contrasting states.",
         }
@@ -942,6 +948,39 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("product looks finished and desirable", undesirable.stderr)
 
         review["finished_product_desirable"] = True
+        review["relationship_matches_wish"] = False
+        review_path.write_bytes(canonical_json(review))
+        wrong_relationship = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn(
+            "blind spatial relationship matches the Wish",
+            wrong_relationship.stderr,
+        )
+
+        review["relationship_matches_wish"] = True
+        review["review_rounds"] = 3
+        review_path.write_bytes(canonical_json(review))
+        unbounded_review = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("one or two review rounds", unbounded_review.stderr)
+
+        review["review_rounds"] = 1
         review["signature_sha256"] = "f" * 64
         review_path.write_bytes(canonical_json(review))
         stale = self.run_tool(

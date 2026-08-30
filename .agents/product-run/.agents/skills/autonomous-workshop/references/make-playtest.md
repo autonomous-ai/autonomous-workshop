@@ -171,44 +171,56 @@ for a shadow or optical reveal, or setup/choice/result for a rules toy. Repeated
 camera angles that do not reveal the promise do not satisfy this requirement.
 
 Once the candidate exists, give one bounded independent native visual critic
-only `snap/iso.png` and `snap/signature.png`. Do **not** reveal the Wish, title,
+only `snap/iso.png` and `snap/signature.png`. Use exactly one critic and at most
+two total review rounds: the initial blind review and, only after a failed first
+read, one focused blind rereview. Do **not** reveal the Wish, title,
 concept, desired nouns, Inventor, or intended answer. First ask what physical
-object it sees, what distinct states or outcome the sheet communicates, and
-whether it looks like a desirable finished product rather than a flat cutout,
-generic primitive, technical test, or repeated turntable. Preserve those
-unprompted reads. Only then may the root Manager reveal the Wish and compare
-them with the promised held form and signature experience.
+object it sees; which subjects it identifies; what action occurs; what spatial
+or causal relationship connects those subjects; and whether it looks like a
+desirable finished product rather than a flat cutout, generic primitive,
+technical test, or repeated turntable. Preserve those unprompted reads. Only
+then reveal the Wish to that same critic. Require the critic—not the root
+Manager—to compare the blind subjects, action, and relationship separately with
+the exact promise. Sharing nouns is not enough: `beside` does not satisfy
+`through`, a static fish does not satisfy a leaping whale, and a turntable does
+not satisfy a state change.
 
-If the blind read does not independently name the essential object and outcome,
-or the product does not look finished and desirable, repair the single largest
-geometry/composition defect, rerender both exact images, and request one focused
-blind re-review. Do not proceed to the integrated final verifier or Release on
-copy alone. If the first candidate passes, do not invent a repair merely to
-create activity.
+If any subject, action, or relationship does not match, or the product does not
+look finished and desirable, repair the single largest geometry/composition
+defect, rerender both exact images, and request the one permitted focused blind
+rereview. Do not coordinate a third critic or review round. Do not proceed to
+the integrated final verifier or Release on copy alone. If the first candidate
+passes, do not invent a repair merely to create activity.
 
 Preserve the final review as canonical JSON at
 `<cad-project>/snap/SIGNATURE-REVIEW.json` with exactly these fields:
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "kind": "autonomous-workshop.signature-experience-review",
   "iso_sha256": "<lowercase SHA-256 of final iso.png>",
   "signature_sha256": "<lowercase SHA-256 of final signature.png>",
   "reviewer": "<bounded independent reviewer identity>",
   "blind_held_read": "<what the reviewer saw before learning the Wish>",
-  "blind_signature_read": "<states or outcome seen before learning the Wish>",
+  "blind_subjects_read": "<subjects seen before learning the Wish>",
+  "blind_action_read": "<action or transformation seen before learning the Wish>",
+  "blind_relationship_read": "<spatial or causal relationship seen before learning the Wish>",
   "wish_revealed_after_blind_read": true,
   "held_object_unmistakable": true,
+  "subjects_match_wish": true,
+  "action_matches_wish": true,
+  "relationship_matches_wish": true,
   "signature_experience_unmistakable": true,
   "finished_product_desirable": true,
+  "review_rounds": 1,
   "largest_risk": "<strongest concrete final finding>",
   "resolution": "<specific geometry, pose, or composition resolution>"
 }
 ```
 
-The finalizer requires every confirmation, both unprompted reads, and exact
-final-image hashes. This is review evidence, not a numeric beauty score; never
+The finalizer requires every confirmation, all unprompted reads, one or two
+review rounds, and exact final-image hashes. This is review evidence, not a numeric beauty score; never
 claim an independent or blind review that did not occur. The public toy archive
 keeps it beside the reviewed renders.
 

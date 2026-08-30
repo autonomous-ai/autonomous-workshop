@@ -296,7 +296,7 @@ class CodexNativeSessionTest(unittest.TestCase):
         model="gpt-5.6-sol",
         effort="high",
         binary=TEST_CODEX_BINARY,
-        timeout_seconds=30,
+        timeout_seconds=DEFAULT_CODEX_TIMEOUT_SECONDS,
         auto_compact_token_limit=None,
     ):
         factory = FakePopenFactory(scripts)
@@ -1863,6 +1863,45 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
 
             self.start(original, root)
+            with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                self.resume(changed, root)
+            self.assertEqual(len(factory.calls), 1)
+
+    def test_shortened_timeout_is_bound_and_drift_fails_before_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            factory = FakePopenFactory(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="must not launch")},
+                ]
+            )
+            original = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                auto_compact_token_limit=64_000,
+                timeout_seconds=1_200,
+            )
+            changed = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                auto_compact_token_limit=64_000,
+                timeout_seconds=900,
+            )
+
+            started = self.start(original, root)
+            expected = codex_runtime._runtime_config_sha256(
+                original.cli_version,
+                original.model,
+                original.reasoning_effort,
+                codex_runtime._codex_run_policy(root, original.binary),
+                auto_compact_token_limit=64_000,
+                timeout_seconds=1_200,
+            )
+            self.assertEqual(started.binding.runtime_config_sha256, expected)
             with self.assertRaisesRegex(ContractError, "binding is invalid"):
                 self.resume(changed, root)
             self.assertEqual(len(factory.calls), 1)

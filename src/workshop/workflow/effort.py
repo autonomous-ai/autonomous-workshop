@@ -21,10 +21,14 @@ EFFORT_ROUTE_CAPABILITY_PATH = (
 SPARK_ECONOMICS_V1_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/spark-economics-v1.md"
 )
-SPARK_ECONOMICS_CAPABILITY_PATH = (
+SPARK_ECONOMICS_V2_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/spark-economics-v2.md"
 )
+SPARK_ECONOMICS_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/spark-economics-v3.md"
+)
 SPARK_AUTO_COMPACT_TOKEN_LIMIT = 64_000
+SPARK_NATIVE_TURN_TIMEOUT_SECONDS = 20 * 60
 DEFAULT_WORKSHOP_EFFORT = "spark"
 _CANONICAL_OPTIONAL_SEQUENCE = ("invent", "make", "playtest", "release")
 
@@ -133,6 +137,8 @@ __all__ = [
     "SPARK_AUTO_COMPACT_TOKEN_LIMIT",
     "SPARK_ECONOMICS_CAPABILITY_PATH",
     "SPARK_ECONOMICS_V1_CAPABILITY_PATH",
+    "SPARK_ECONOMICS_V2_CAPABILITY_PATH",
+    "SPARK_NATIVE_TURN_TIMEOUT_SECONDS",
     "WORKSHOP_EFFORTS",
     "WorkshopEffort",
     "workshop_effort",

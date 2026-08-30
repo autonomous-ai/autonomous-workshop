@@ -615,17 +615,23 @@ class _OneSessionProductAgent:
         _write_json(
             signature_path.with_name("SIGNATURE-REVIEW.json"),
             {
-                "schema_version": 2,
+                "schema_version": 3,
                 "kind": "autonomous-workshop.signature-experience-review",
                 "iso_sha256": _sha256(render_path.read_bytes()),
                 "signature_sha256": _sha256(signature_path.read_bytes()),
                 "reviewer": "independent-native-visual-critic",
                 "blind_held_read": "A compact orbital play object with a strong ring.",
-                "blind_signature_read": "Three states show the ring interaction changing clearly.",
+                "blind_subjects_read": "A ring, orbiting token, and central play field.",
+                "blind_action_read": "The token moves through three distinct ring states.",
+                "blind_relationship_read": "The token crosses and returns around the ring.",
                 "wish_revealed_after_blind_read": True,
                 "held_object_unmistakable": True,
+                "subjects_match_wish": True,
+                "action_matches_wish": True,
+                "relationship_matches_wish": True,
                 "signature_experience_unmistakable": True,
                 "finished_product_desirable": True,
+                "review_rounds": 1,
                 "largest_risk": "The three play states could read as decoration.",
                 "resolution": "Separated color and position make the state change explicit.",
             },
@@ -2078,7 +2084,13 @@ class NativeFullRunTest(unittest.TestCase):
         self.assertEqual(checkpoint.status, "complete")
         self.assertEqual(len(launcher.starts), 1)
         self.assertEqual(len(launcher.resumes), 5)
-        backoff.assert_called_once()
+        recovery_delays = [
+            call.args[0]
+            for call in backoff.call_args_list
+            if call.args and call.args[0] >= 1
+        ]
+        self.assertEqual(len(recovery_delays), 1)
+        self.assertLessEqual(recovery_delays[0], 30)
         self.assertEqual(
             [packet["stage"] for packet in launcher.stage_packets],
             ["match", "invent", "make", "playtest", "release"],

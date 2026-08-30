@@ -139,6 +139,8 @@ from workshop.workflow.effort import (
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+    SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
     workshop_effort,
 )
 from workshop.workflow.proposals import (
@@ -3599,6 +3601,15 @@ def _native_launcher(checkpoint: AgentRunCheckpoint) -> NativeSessionLauncher:
         if (
             checkpoint.effort == "spark"
             and SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                reasoning_effort="low",
+                auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+                timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+            )
+        if (
+            checkpoint.effort == "spark"
+            and SPARK_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
             return CodexNativeSessionLauncher(
                 reasoning_effort="low",

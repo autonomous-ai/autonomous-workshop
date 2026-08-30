@@ -9,7 +9,9 @@ Workshop. It is authoritative together with
 [ADR 0016](adr/0016-selectable-effort-routes.md),
 [ADR 0019](adr/0019-frozen-spark-economics-profile.md),
 [ADR 0020](adr/0020-signature-experience-evidence.md),
-[ADR 0021](adr/0021-compacted-spark-and-signature-review.md), and the repository
+[ADR 0021](adr/0021-compacted-spark-and-signature-review.md),
+[ADR 0022](adr/0022-blind-review-before-final-verification.md),
+[ADR 0023](adr/0023-bounded-spark-turn-and-semantic-review.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -50,13 +52,17 @@ The root Codex session is the Workshop Manager. Native subagents are bounded
 children it can use for parallel or specialist work; they do not create a
 second product-run session or weaken the one-session continuity rule.
 
-New Codex Spark projects freeze `spark-economics-v2.md` and run that one
+New Codex Spark projects freeze `spark-economics-v3.md` and run that one
 session at low reasoning effort with a 64k automatic context-compaction ceiling
-across Make and Release. Forge and Quest stay high without that Spark ceiling.
-A frozen v1 Spark project stays low without a Workshop-specified compaction
-setting; an older unmarked Spark project stays high. A host upgrade therefore
-cannot change checkpoint-bound runtime policy. The lower profile does not waive
-or reduce any CAD, PDF, evidence, or publication gate.
+across Make and Release plus a 20-minute boundary per native turn. A timeout
+uses the existing bounded recovery path to resume the exact session, Goal,
+stage packet, and workspace; the boundary is not a stage deadline or a gate
+waiver. Forge and Quest stay high without that Spark ceiling or shortened
+boundary. A frozen v2 Spark remains low with 64k compaction and the historical
+timeout; v1 stays low without a Workshop-specified compaction setting; an older
+unmarked Spark stays high. A host upgrade therefore cannot change
+checkpoint-bound runtime policy. The lower profile does not waive or reduce
+any CAD, PDF, evidence, or publication gate.
 
 For each active Invent, Make, Playtest, or Release attempt,
 the Manager creates one native Codex Goal. Only one Goal is active. It binds one objective,
@@ -139,8 +145,8 @@ session for another turn. Two consecutive recoverable turn failures stop the
 current command early with the same session checkpointed; an explicit
 `workshop resume` starts a fresh two-failure recovery window. Every such turn
 also consumes the existing 32-turn command budget. The delay is capped at 30
-seconds and prevents a persistent provider outage or repeated one-hour timeout
-from becoming an unattended reconnect storm.
+seconds and prevents a persistent provider outage or repeated profile-bound
+timeout from becoming an unattended reconnect storm.
 The one automatic recovery turn receives a fixed, non-cognitive instruction to
 inspect and reuse existing bytes, keep the root Manager on the critical path,
 avoid restarting broad exploration or depending on a child agent, run the
@@ -203,8 +209,9 @@ turn transcript. Each individual event has a hard byte limit and is decoded,
 validated, classified into safe progress, and then discarded; an oversized or
 malformed record still fails closed. A legitimate long turn may emit more than
 that limit in aggregate because cumulative bytes consume no growing host
-buffer. The one-hour process timeout, isolated-process cleanup, per-message
-limit, and whole-run native-turn budget remain the surrounding resource bounds.
+buffer. The frozen per-run process timeout (20 minutes per v3 Codex Spark turn;
+one hour for prior profiles), isolated-process cleanup, per-message limit, and
+whole-run native-turn budget remain the surrounding resource bounds.
 
 ### Privacy-safe progress status
 
@@ -444,12 +451,16 @@ and `<cad-project>/snap/signature.png` (at least 1200 by 800 px). The latter
 shows exact STL poses or views chosen to make the signature experience legible
 without copy. The finalizer also requires hash-bound
 `<cad-project>/snap/SIGNATURE-REVIEW.json` from one bounded independent native
-visual critic. The critic first receives only the exact images, records its
-unprompted held-object and outcome reads, and only then learns the Wish. The
-hash-bound evidence confirms that the blind reads match an unmistakable,
-desirable final product. Make performs this review after narrow build and
-geometry checks but before one integrated final verifier, so visual repair does
-not repeatedly pay the complete CAD-gate cost. The finalizer rejects a second
+visual critic. The critic first receives only the exact images and separately
+records its unprompted held-object, subject, action, and spatial or causal
+relationship reads. Only then does the same critic learn the Wish and compare
+each dimension with the promise. The hash-bound evidence confirms an
+unmistakable, desirable final product; one critic performs no more than two
+rounds. Make performs this review after narrow build and geometry checks but
+before one integrated final verifier, so visual repair does not repeatedly pay
+the complete CAD-gate cost. The materialized final verifier refuses to begin
+final-mode geometry work until the canonical schema-v3 review and exact image
+hashes exist, then records the review hash in its report. The finalizer rejects a second
 final `snap/` family outside the declared CAD project. Those explicit paths are archived under
 `make/verification/renders/`; the family is the only one eligible for automatic
 README hero selection. Diagnostic silhouettes elsewhere remain evidence and
@@ -690,9 +701,10 @@ private Wish demonstrate that:
    state; and
 10. the executable Workshop run ends at Release and makes no claim of physical
     printing, delivery, or review.
-11. a v2 Codex Spark run uses frozen low reasoning plus its 64k compaction
-    ceiling across both active stages; v1 and unmarked historical runs retain
-    their prior exact runtime-policy bindings.
+11. a v3 Codex Spark run uses frozen low reasoning, its 64k compaction ceiling,
+    and a 20-minute boundary per native turn across both active stages; v2, v1,
+    and unmarked historical runs retain their prior exact runtime-policy
+    bindings.
 
 ## Engine portability
 

@@ -17,11 +17,12 @@ and evolving artifact determine any additional specialist method or evidence.
 Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
 
-For Codex, new Spark projects freeze low reasoning plus a 64k automatic
-context-compaction ceiling across their one Make-to-Release session. Forge and
-Quest remain high reasoning without that Spark ceiling, and older Spark
-sessions remain on the profile they started with. Effort changes cognitive
-spend, never the exact-byte CAD, manual, evidence, or publication gates.
+For Codex, new Spark projects freeze low reasoning, a 64k automatic
+context-compaction ceiling across their one Make-to-Release session, and a
+20-minute boundary per native turn. Forge and Quest remain high reasoning
+without that Spark ceiling or shortened boundary, and older Spark sessions
+remain on the profile they started with. Effort changes cognitive spend, never
+the exact-byte CAD, manual, evidence, or publication gates.
 
 ## Lifecycle
 
@@ -44,10 +45,14 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
   Make seals both an exact-product hero and a signature-experience sheet that
   must make the promised interaction, reveal, or anti-generic detail visually
   inspectable before prose can claim it. A bounded independent native visual
-  critic receives only the exact images, records an unprompted read, and learns
-  the Wish only afterward. Make resolves at most one focused visual defect
-  before one integrated final verifier; the hash-bound finding, resolution, and
-  one canonical render family are sealed before Make can pass.
+  critic receives only the exact images; separately records the held object,
+  subjects, action, and spatial or causal relationship; and learns the Wish
+  only afterward. That same critic compares every semantic dimension with the
+  exact promise. Make permits at most two review rounds and resolves at most one
+  focused visual defect before one integrated final verifier. The verifier
+  refuses final-mode geometry work until the canonical review exists, then
+  records its hash; the review, resolution, and one canonical render family are
+  sealed before Make can pass.
   A capable Forge or Quest Make may return to Invent only with exact preserved
   evidence that the sealed concept prevents any conforming build.
 - **Playtest** independently evaluates the sealed Made revision only in Quest,
@@ -87,6 +92,12 @@ product has one canonical render family. Release similarly creates one initial
 and one final complete manual-review packet instead of rerendering after every
 small evidence edit. These are native work instructions plus deterministic
 artifact boundaries, not a Python planner or aesthetic judge.
+
+For a v3 Spark, each native Make or Release turn has a frozen 20-minute process
+boundary. A timeout follows the same bounded recovery mechanism below and
+continues the exact session and Goal from durable bytes. This limits one runaway
+turn; it does not promise a 20-minute stage, create a replacement session, or
+permit incomplete evidence.
 
 Within either command, a timed-out native turn or explicitly recognized
 provider disconnect automatically continues only after Workshop has both
@@ -219,7 +230,7 @@ a smaller automatic recovery window. Two consecutive recoverable turn failures
 stop the command with failed progress and the exact session checkpointed. An
 explicit `workshop resume` starts a fresh two-failure window. These turns still
 consume the shared 32-turn command budget; the smaller cap prevents repeated
-one-hour timeouts from becoming an unattended multi-hour retry chain.
+profile-bound timeouts from becoming an unattended retry chain.
 The automatic recovery prompt is fixed host control, not repair reasoning: it
 tells the same session to reuse existing bytes, keep the root Manager on the
 critical path, avoid restarting exploration or depending on a child agent, and
