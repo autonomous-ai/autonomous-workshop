@@ -7,7 +7,9 @@ Workshop. It is authoritative together with
 [ADR 0014](adr/0014-terminal-published-release.md),
 [ADR 0015](adr/0015-defer-playtest.md),
 [ADR 0016](adr/0016-selectable-effort-routes.md),
-[ADR 0019](adr/0019-frozen-spark-economics-profile.md), and the repository
+[ADR 0019](adr/0019-frozen-spark-economics-profile.md),
+[ADR 0020](adr/0020-signature-experience-evidence.md),
+[ADR 0021](adr/0021-compacted-spark-and-signature-review.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -48,11 +50,13 @@ The root Codex session is the Workshop Manager. Native subagents are bounded
 children it can use for parallel or specialist work; they do not create a
 second product-run session or weaken the one-session continuity rule.
 
-New Codex Spark projects freeze `spark-economics-v1.md` and run that one
-session at low reasoning effort across Make and Release. Forge and Quest stay
-high. An older Spark project without the marker stays high on resume, so a host
-upgrade cannot change its checkpoint-bound runtime policy. The lower profile
-does not waive or reduce any CAD, PDF, evidence, or publication gate.
+New Codex Spark projects freeze `spark-economics-v2.md` and run that one
+session at low reasoning effort with a 64k automatic context-compaction ceiling
+across Make and Release. Forge and Quest stay high without that Spark ceiling.
+A frozen v1 Spark project stays low without a Workshop-specified compaction
+setting; an older unmarked Spark project stays high. A host upgrade therefore
+cannot change checkpoint-bound runtime policy. The lower profile does not waive
+or reduce any CAD, PDF, evidence, or publication gate.
 
 For each active Invent, Make, Playtest, or Release attempt,
 the Manager creates one native Codex Goal. Only one Goal is active. It binds one objective,
@@ -438,7 +442,10 @@ The current Make finalizer additionally requires valid chromatic RGB/RGBA
 presentation PNGs at `<cad-project>/snap/iso.png` (at least 800 px per side)
 and `<cad-project>/snap/signature.png` (at least 1200 by 800 px). The latter
 shows exact STL poses or views chosen to make the signature experience legible
-without copy. Those explicit paths are archived under
+without copy. The finalizer also requires hash-bound
+`<cad-project>/snap/SIGNATURE-REVIEW.json` from one bounded independent native
+visual critic confirming that the held object and promised outcome read in the
+final exact images. Those explicit paths are archived under
 `make/verification/renders/`; the family is the only one eligible for automatic
 README hero selection. Diagnostic silhouettes elsewhere remain evidence and
 cannot be promoted accidentally.
@@ -678,9 +685,9 @@ private Wish demonstrate that:
    state; and
 10. the executable Workshop run ends at Release and makes no claim of physical
     printing, delivery, or review.
-11. a marked Codex Spark run uses its frozen low-reasoning profile across both
-    active stages, while an unmarked historical run resumes with high
-    reasoning and the same exact runtime-policy binding.
+11. a v2 Codex Spark run uses frozen low reasoning plus its 64k compaction
+    ceiling across both active stages; v1 and unmarked historical runs retain
+    their prior exact runtime-policy bindings.
 
 ## Engine portability
 

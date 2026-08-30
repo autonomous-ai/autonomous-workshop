@@ -17,11 +17,11 @@ and evolving artifact determine any additional specialist method or evidence.
 Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
 
-For Codex, new Spark projects freeze a low-reasoning economics profile across
-their one Make-to-Release session. Forge and Quest remain high reasoning, and
-older Spark sessions remain on the profile they started with. Effort changes
-cognitive spend, never the exact-byte CAD, manual, evidence, or publication
-gates.
+For Codex, new Spark projects freeze low reasoning plus a 64k automatic
+context-compaction ceiling across their one Make-to-Release session. Forge and
+Quest remain high reasoning without that Spark ceiling, and older Spark
+sessions remain on the profile they started with. Effort changes cognitive
+spend, never the exact-byte CAD, manual, evidence, or publication gates.
 
 ## Lifecycle
 
@@ -43,7 +43,9 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
   In Spark, selection and compact invention are sealed inside this same turn.
   Make seals both an exact-product hero and a signature-experience sheet that
   must make the promised interaction, reveal, or anti-generic detail visually
-  inspectable before prose can claim it.
+  inspectable before prose can claim it. A bounded independent native visual
+  critic reviews the final exact images; its hash-bound finding and resolution
+  are sealed beside them before Make can pass.
   A capable Forge or Quest Make may return to Invent only with exact preserved
   evidence that the sealed concept prevents any conforming build.
 - **Playtest** independently evaluates the sealed Made revision only in Quest,

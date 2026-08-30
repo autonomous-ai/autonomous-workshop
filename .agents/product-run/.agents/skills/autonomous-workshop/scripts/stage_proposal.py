@@ -83,6 +83,7 @@ MAX_CONTRACT_BYTES = 16 * 1024 * 1024
 MAX_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
 MAX_RELEASE_MANUAL_BYTES = 16 * 1024 * 1024
 MAX_MANUAL_DESIGN_EVIDENCE_BYTES = 64 * 1024
+MAX_SIGNATURE_REVIEW_BYTES = 64 * 1024
 MAX_RELEASE_PDF_VALIDATOR_OUTPUT_BYTES = 4 * 1024
 RELEASE_PDF_VALIDATION_TIMEOUT_SECONDS = 15
 MAX_FILE_BYTES = 95 * 1024 * 1024
@@ -171,6 +172,8 @@ CHECK_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
 MANUAL_DESIGN_EVIDENCE_PATH = "MANUAL-DESIGN.json"
 MANUAL_DESIGN_EVIDENCE_KIND = "autonomous-workshop.manual-design-evidence"
+SIGNATURE_REVIEW_PATH = "snap/SIGNATURE-REVIEW.json"
+SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
 MANUAL_VISUAL_SUFFIXES = frozenset(
     (".3mf", ".glb", ".jpeg", ".jpg", ".obj", ".png", ".step", ".stl", ".svg", ".webp")
 )
@@ -1464,6 +1467,81 @@ def _validate_make_product_render(project: Path) -> None:
             )
 
 
+def _validate_signature_review(
+    run_root: Path,
+    *,
+    product_root_value: str,
+    cad_project_path: PurePosixPath,
+) -> None:
+    review_relative = (
+        PurePosixPath(product_root_value) / cad_project_path / SIGNATURE_REVIEW_PATH
+    )
+    review_path = run_root.joinpath(*review_relative.parts)
+    try:
+        review_identity = review_path.lstat()
+    except OSError as exc:
+        raise ProposalError(
+            "Make requires a signature review at <cad-project>/snap/SIGNATURE-REVIEW.json"
+        ) from exc
+    if review_path.is_symlink() or not stat.S_ISREG(review_identity.st_mode):
+        raise ProposalError("Make signature review must be a real in-project file")
+    review, content, _ = _read_json(
+        run_root,
+        review_relative.as_posix(),
+        "Make signature review",
+        maximum=MAX_SIGNATURE_REVIEW_BYTES,
+    )
+    review = _fields(
+        review,
+        {
+            "schema_version",
+            "kind",
+            "iso_sha256",
+            "signature_sha256",
+            "reviewer",
+            "held_object_readable",
+            "signature_experience_readable",
+            "largest_risk",
+            "resolution",
+        },
+        "Make signature review",
+    )
+    if (
+        type(review["schema_version"]) is not int
+        or review["schema_version"] != 1
+        or review["kind"] != SIGNATURE_REVIEW_KIND
+    ):
+        raise ProposalError("Make signature review identity is invalid")
+    if content != canonical_json(review):
+        raise ProposalError("Make signature review must use canonical JSON encoding")
+    _bounded_text(review["reviewer"], "Make signature reviewer", 200)
+    _bounded_text(review["largest_risk"], "Make signature largest_risk", 2_000)
+    _bounded_text(review["resolution"], "Make signature resolution", 2_000)
+    for field, label in (
+        ("held_object_readable", "held object"),
+        ("signature_experience_readable", "signature experience"),
+    ):
+        if type(review[field]) is not bool or not review[field]:
+            raise ProposalError(
+                "Make signature review must confirm the final %s is readable"
+                % label
+            )
+    for filename, field in (
+        ("iso.png", "iso_sha256"),
+        ("signature.png", "signature_sha256"),
+    ):
+        expected = _sha256(review[field], "Make signature review %s" % field)
+        actual, _, _ = _hash_regular(
+            run_root,
+            (review_relative.parent / filename).as_posix(),
+            "Make reviewed %s" % filename,
+        )
+        if actual != expected:
+            raise ProposalError(
+                "Make signature review is not bound to the final %s" % filename
+            )
+
+
 def _make_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -1505,6 +1583,11 @@ def _make_contract(
         raise ProposalError("CAD project path must be a real in-product directory")
     _prune_derived_cad_caches(project, "Make CAD project")
     _validate_make_product_render(project)
+    _validate_signature_review(
+        run_root,
+        product_root_value=product_root_value,
+        cad_project_path=project_relative,
+    )
     verification_relative = _safe_relative(
         cad_verification_path, "CAD verification path"
     )

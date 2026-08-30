@@ -70,8 +70,9 @@ class PackageDataTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("smallest complete physical format", manual_skill)
-        self.assertIn("two to four small pages", manual_skill)
+        self.assertIn("Default a simple one-piece Spark toy", manual_skill)
         self.assertIn("not fixed page-count gates", manual_skill)
+        self.assertIn("keep customer text ASCII", manual_skill)
         manual_review = roots["manual-design"] / "scripts" / "review_manual"
         self.assertTrue(manual_review.is_file())
         self.assertTrue(manual_review.stat().st_mode & 0o111)

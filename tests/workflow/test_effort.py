@@ -3,7 +3,9 @@ import unittest
 from workshop.errors import ContractError
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
+    SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V1_CAPABILITY_PATH,
     WORKSHOP_EFFORTS,
     workshop_effort,
 )
@@ -14,8 +16,13 @@ class WorkshopEffortTest(unittest.TestCase):
         self.assertEqual(DEFAULT_WORKSHOP_EFFORT, "spark")
         self.assertEqual(
             SPARK_ECONOMICS_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/spark-economics-v2.md",
+        )
+        self.assertEqual(
+            SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             ".agents/skills/autonomous-workshop/references/spark-economics-v1.md",
         )
+        self.assertEqual(SPARK_AUTO_COMPACT_TOKEN_LIMIT, 64_000)
         self.assertEqual(
             {name: effort.lifecycle for name, effort in WORKSHOP_EFFORTS.items()},
             {

@@ -613,6 +613,20 @@ class _OneSessionProductAgent:
             )
         signature.save(signature_path, format="PNG", optimize=False)
         _write_json(
+            signature_path.with_name("SIGNATURE-REVIEW.json"),
+            {
+                "schema_version": 1,
+                "kind": "autonomous-workshop.signature-experience-review",
+                "iso_sha256": _sha256(render_path.read_bytes()),
+                "signature_sha256": _sha256(signature_path.read_bytes()),
+                "reviewer": "independent-native-visual-critic",
+                "held_object_readable": True,
+                "signature_experience_readable": True,
+                "largest_risk": "The three play states could read as decoration.",
+                "resolution": "Separated color and position make the state change explicit.",
+            },
+        )
+        _write_json(
             product_root / "validation" / "cad-verification.json",
             {
                 "schema_version": 1,

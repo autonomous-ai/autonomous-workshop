@@ -161,6 +161,41 @@ keep them in a clearly named review/evidence directory. The finalizer rejects
 missing, grayscale, flat, or undersized presentation images, and the public
 snapshot preserves this explicit `snap/` render family.
 
+The signature sheet is outcome evidence, not a turntable. Its first panel must
+make the held object itself readable without copy. Remaining panels show the
+exact promised states: before/action/after for a mechanism, exact projections
+for a shadow or optical reveal, or setup/choice/result for a rules toy. Repeated
+camera angles that do not reveal the promise do not satisfy this requirement.
+
+Once the final candidate exists, give only the Wish's hardest-to-fake magic,
+the compact concept, `snap/iso.png`, and `snap/signature.png` to one bounded
+independent native visual critic. Ask whether the held object reads from across
+a room, whether the signature experience is unmistakable without its title,
+and which single geometry repair would address the largest risk. If either
+readability answer is no, repair the geometry, rerender both exact images, and
+request one focused re-review. Do not proceed to Release on copy alone.
+
+Preserve the final review as canonical JSON at
+`<cad-project>/snap/SIGNATURE-REVIEW.json` with exactly these fields:
+
+```json
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.signature-experience-review",
+  "iso_sha256": "<lowercase SHA-256 of final iso.png>",
+  "signature_sha256": "<lowercase SHA-256 of final signature.png>",
+  "reviewer": "<bounded independent reviewer identity>",
+  "held_object_readable": true,
+  "signature_experience_readable": true,
+  "largest_risk": "<strongest concrete final finding>",
+  "resolution": "<specific geometry, pose, or composition resolution>"
+}
+```
+
+The finalizer requires both confirmations and exact final-image hashes. This is
+review evidence, not a beauty score; never claim an independent review that did
+not occur. The public toy archive keeps it beside the reviewed renders.
+
 The root `product.json` must be a JSON object containing at least these exact
 metadata keys (additional product-specific fields are allowed):
 

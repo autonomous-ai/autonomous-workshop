@@ -493,6 +493,24 @@ class StageProposalToolTest(unittest.TestCase):
         signature.save(
             product_root / "cad/project/snap/signature.png", format="PNG"
         )
+        review = {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.signature-experience-review",
+            "iso_sha256": sha256(
+                (product_root / "cad/project/snap/iso.png").read_bytes()
+            ),
+            "signature_sha256": sha256(
+                (product_root / "cad/project/snap/signature.png").read_bytes()
+            ),
+            "reviewer": "independent-native-visual-critic",
+            "held_object_readable": True,
+            "signature_experience_readable": True,
+            "largest_risk": "The three states need a stronger direction cue.",
+            "resolution": "The final sheet uses separated contrasting states.",
+        }
+        (product_root / "cad/project/snap/SIGNATURE-REVIEW.json").write_bytes(
+            canonical_json(review)
+        )
         return product_root, product, product_bytes, verification
 
     def create_made(self):
@@ -828,6 +846,76 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertIn("signature render", rejected_signature.stderr)
         self.assertIn("diagnostic grayscale image", rejected_signature.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_requires_review_bound_to_final_signature_images(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+
+        review_path.unlink()
+        missing = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("requires a signature review", missing.stderr)
+
+        review_path.write_text(json.dumps(review, indent=2), encoding="utf-8")
+        noncanonical = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("must use canonical JSON encoding", noncanonical.stderr)
+
+        review["held_object_readable"] = False
+        review_path.write_bytes(canonical_json(review))
+        unreadable = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("final held object is readable", unreadable.stderr)
+
+        review["held_object_readable"] = True
+        review["signature_sha256"] = "f" * 64
+        review_path.write_bytes(canonical_json(review))
+        stale = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("not bound to the final signature.png", stale.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_make_rejects_invalid_required_product_metadata_before_outputs(self):

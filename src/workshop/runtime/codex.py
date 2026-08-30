@@ -36,6 +36,7 @@ ALLOWED_WORKSHOP_MODELS = frozenset(
 )
 CODEX_PERMISSION_PROFILE = "workshop-product-run"
 MINIMUM_CODEX_NATIVE_RUNTIME_VERSION = (0, 145, 0)
+MINIMUM_CODEX_AUTO_COMPACT_VERSION = (0, 150, 0)
 DEFAULT_CODEX_TIMEOUT_SECONDS = 3_600
 # A hard bound for one JSONL event record.  Native turns can legitimately emit
 # many events while tools and subagents work; those records are reduced and
@@ -371,6 +372,7 @@ def _runtime_config_sha256(
     reasoning_effort: str,
     run_policy: _CodexRunPolicy,
     *,
+    auto_compact_token_limit: Optional[int] = None,
     include_codex_runtime_paths: bool = True,
 ) -> str:
     """Bind a checkpoint to the exact non-secret policy used to launch it."""
@@ -409,6 +411,8 @@ def _runtime_config_sha256(
             identity.to_dict()
             for identity in run_policy.trusted_codex_runtime_paths
         ]
+    if auto_compact_token_limit is not None:
+        payload["auto_compact_token_limit"] = auto_compact_token_limit
     return _sha256_json(payload)
 
 
@@ -1497,6 +1501,7 @@ class CodexNativeSessionLauncher:
         *,
         model: str = "gpt-5.6-sol",
         reasoning_effort: str = "high",
+        auto_compact_token_limit: Optional[int] = None,
         binary: Optional[str] = None,
         timeout_seconds: int = DEFAULT_CODEX_TIMEOUT_SECONDS,
         popen_factory: Any = subprocess.Popen,
@@ -1510,6 +1515,16 @@ class CodexNativeSessionLauncher:
             )
         if reasoning_effort not in ("low", "medium", "high", "xhigh"):
             raise ValueError("unsupported Codex reasoning effort")
+        if (
+            auto_compact_token_limit is not None
+            and (
+                type(auto_compact_token_limit) is not int
+                or not 16_000 <= auto_compact_token_limit <= 1_000_000
+            )
+        ):
+            raise ValueError(
+                "Codex auto_compact_token_limit must be from 16,000 to 1,000,000"
+            )
         if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600:
             raise ValueError("Codex timeout_seconds must be from 1 to 3,600")
         self.binary = _resolved_codex_binary(
@@ -1517,6 +1532,7 @@ class CodexNativeSessionLauncher:
         )
         self.model = model
         self.reasoning_effort = reasoning_effort
+        self.auto_compact_token_limit = auto_compact_token_limit
         self.timeout_seconds = timeout_seconds
         self._popen_factory = popen_factory
         self._version_runner = version_runner
@@ -1529,6 +1545,20 @@ class CodexNativeSessionLauncher:
                 "Workshop requires Codex CLI %s or newer for native goals, "
                 "subagents, and credential-isolated permission profiles" % minimum
             )
+        if self.binary and auto_compact_token_limit is not None:
+            parsed_version = _codex_native_version_tuple(self.cli_version)
+            if (
+                parsed_version is None
+                or parsed_version < MINIMUM_CODEX_AUTO_COMPACT_VERSION
+            ):
+                minimum = ".".join(
+                    str(part) for part in MINIMUM_CODEX_AUTO_COMPACT_VERSION
+                )
+                raise CodexInvocationError(
+                    "Workshop Spark compaction requires Codex CLI %s or newer"
+                    % minimum
+                )
+
     def _read_cli_version(self) -> str:
         if not self.binary:
             return "0.0.0"
@@ -1584,6 +1614,7 @@ class CodexNativeSessionLauncher:
             self.model,
             self.reasoning_effort,
             run_policy,
+            auto_compact_token_limit=self.auto_compact_token_limit,
         )
         persisted_sha256: Optional[str] = None
 
@@ -1677,6 +1708,7 @@ class CodexNativeSessionLauncher:
             self.model,
             self.reasoning_effort,
             run_policy,
+            auto_compact_token_limit=self.auto_compact_token_limit,
         )
         policy_before_venv_directory = (
             _run_policy_before_venv_launcher_directory(root, run_policy)
@@ -1715,6 +1747,7 @@ class CodexNativeSessionLauncher:
                     self.model,
                     self.reasoning_effort,
                     policy,
+                    auto_compact_token_limit=self.auto_compact_token_limit,
                     include_codex_runtime_paths=include_codex_runtime_paths,
                 )
                 for policy, include_codex_runtime_paths in predecessor_policies
@@ -1956,6 +1989,7 @@ class CodexNativeSessionLauncher:
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
+            *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
             "-C",
             str(run_root),
@@ -1989,12 +2023,22 @@ class CodexNativeSessionLauncher:
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
+            *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
             "--model",
             self.model,
             thread_id,
             "-",
         ]
+
+    def _auto_compact_config_arguments(self) -> tuple[str, ...]:
+        if self.auto_compact_token_limit is None:
+            return ()
+        return (
+            "--config",
+            "model_auto_compact_token_limit=%d"
+            % self.auto_compact_token_limit,
+        )
 
     def _stream(
         self,
@@ -2857,6 +2901,7 @@ __all__ = [
     "MAX_CODEX_PROMPT_BYTES",
     "MAX_CODEX_SESSION_CHECKPOINT_BYTES",
     "MAX_CODEX_STDERR_BYTES",
+    "MINIMUM_CODEX_AUTO_COMPACT_VERSION",
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
     "CodexFinalizedWithoutTerminalError",
     "CodexInvocationError",

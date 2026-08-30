@@ -198,7 +198,7 @@ and cost benchmark.
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=spark-economics-v1)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=spark-economics-v2)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -210,9 +210,10 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
 
 Passed-through stages create no turn, artifact, gate, or fabricated evidence. Spark and Forge record Playtest as `not-run`. Quest requires passing Playtest bound to the current Made revision.
 
-New Codex Spark runs freeze a low-reasoning profile for their one persistent
-Make-to-Release session; Forge and Quest retain high reasoning. Older runs keep
-the exact profile they started with. This is an economics policy, not a quality
+New Codex Spark runs freeze low reasoning plus a 64k automatic context-
+compaction ceiling for their one persistent Make-to-Release session; Forge and
+Quest retain high reasoning without that Spark ceiling. Older runs keep the
+exact profile they started with. This is an economics policy, not a quality
 waiver: every effort still passes its full deterministic product and
 publication gates.
 
@@ -237,7 +238,9 @@ For new runs it also requires two inspected chromatic exact-product renders:
 `<cad-project>/snap/iso.png` is the hero, while
 `<cad-project>/snap/signature.png` shows the signature interaction, reveal, or
 anti-generic detail across exact poses or views without relying on marketing
-copy. The public toy README may use only this explicit presentation-render
+copy. A hash-bound `SIGNATURE-REVIEW.json` records one bounded independent
+visual critic's final readability finding and resolution before Make passes.
+The public toy README may use only this explicit presentation-render
 family as its local hero; arbitrary diagnostic images and black/white likeness
 masks are never promoted.
 If a native turn simply returns before writing a proposal, Workshop continues

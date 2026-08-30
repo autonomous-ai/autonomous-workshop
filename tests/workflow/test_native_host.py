@@ -52,7 +52,11 @@ from workshop.workflow.agent_run import (
     AgentRunCheckpoint,
 )
 from workshop.workflow.proposals import AgentOutcomeProposal
-from workshop.workflow.effort import SPARK_ECONOMICS_CAPABILITY_PATH
+from workshop.workflow.effort import (
+    SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+    SPARK_ECONOMICS_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V1_CAPABILITY_PATH,
+)
 
 
 class NativeTokenTelemetryCompatibilityTest(unittest.TestCase):
@@ -396,10 +400,14 @@ class _UnboundRecoverableLauncher(_FakeLauncher):
 
 class NativeHostTest(unittest.TestCase):
     @staticmethod
-    def _launcher_checkpoint(*, effort, with_economics_capability):
+    def _launcher_checkpoint(*, effort, economics_capability):
+        capability_paths = {
+            "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
+            "v2": SPARK_ECONOMICS_CAPABILITY_PATH,
+        }
         inputs = (
-            {SPARK_ECONOMICS_CAPABILITY_PATH: "a" * 64}
-            if with_economics_capability
+            {capability_paths[economics_capability]: "a" * 64}
+            if economics_capability is not None
             else {}
         )
         return AgentRunCheckpoint(
@@ -421,9 +429,9 @@ class NativeHostTest(unittest.TestCase):
             manager_id="codex",
         )
 
-    def test_new_spark_uses_low_reasoning_for_the_wish_wide_session(self):
+    def test_new_spark_uses_low_reasoning_and_compaction_wish_wide(self):
         checkpoint = self._launcher_checkpoint(
-            effort="spark", with_economics_capability=True
+            effort="spark", economics_capability="v2"
         )
         with mock.patch(
             "workshop.workflow.native_run.CodexNativeSessionLauncher"
@@ -431,15 +439,29 @@ class NativeHostTest(unittest.TestCase):
             launcher = _native_launcher(checkpoint)
 
         self.assertIs(launcher, launcher_type.return_value)
+        launcher_type.assert_called_once_with(
+            reasoning_effort="low",
+            auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+        )
+
+    def test_v1_spark_retains_low_reasoning_without_compaction(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v1"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint)
+
         launcher_type.assert_called_once_with(reasoning_effort="low")
 
-    def test_forge_and_frozen_spark_retain_high_reasoning(self):
-        for effort, marker in (("forge", True), ("spark", False)):
+    def test_forge_and_unmarked_spark_retain_high_reasoning(self):
+        for effort, marker in (("forge", "v2"), ("spark", None)):
             with self.subTest(effort=effort, marker=marker), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher"
             ) as launcher_type:
                 checkpoint = self._launcher_checkpoint(
-                    effort=effort, with_economics_capability=marker
+                    effort=effort, economics_capability=marker
                 )
                 _native_launcher(checkpoint)
 

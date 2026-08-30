@@ -63,6 +63,28 @@ therefore moves signature-experience proof into Make, selects the Inventor for
 the hardest-to-fake magic rather than fabrication convenience, and batches the
 full manual review into one render command.
 
+Pocket Eclipse Menagerie tested those evidence-first instructions:
+
+| Measure | Whole run | Make | Release |
+|---|---:|---:|---:|
+| Gross input | 7,957,133 | 3,451,567 | 4,505,566 |
+| Cached input | 7,764,992 | 3,336,704 | 4,428,288 |
+| Uncached input | 192,141 | 114,863 | 77,278 |
+| Output | 32,290 | 18,962 | 13,328 |
+| Reasoning output | 5,709 | 4,220 | 1,489 |
+| Elapsed | 22m 59s | 13m 33s native work | 6m 54s native work |
+
+It selected Orin Shadow for the Wish's perceptual problem and produced a clean,
+truthful manual, but used more tokens and time than Starling Gate. Its final
+signature sheet showed object rotations rather than unmistakable shadow
+outcomes, and Release made four complete manual render rounds for a one-piece
+toy. The one persistent session entered Release with roughly 105k tokens of
+effective context and grew to roughly 161k; more than 98% of Release input was
+cached. This is the evidence behind Spark v2's 64k automatic compaction ceiling,
+hash-bound independent final signature review, and double-sided-card default.
+The combined quality and 0.1x economics target remains unproven until a new
+permanent production challenger passes both comparisons.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they
@@ -87,14 +109,16 @@ notes beside the benchmark; do not turn them into lifecycle gate authority.
 ## Optimization order
 
 1. Remove retries, timeouts, and repeated passed work.
-2. Reduce tool calls and tool-output context with bounded inspection and one
+2. Compact tool-heavy native history while keeping exact state in durable
+   workspace files, stage packets, and sealed evidence.
+3. Reduce tool calls and tool-output context with bounded inspection and one
    quick-iteration/final-verification funnel.
-3. Use the roster once, choose one Inventor, and spend depth on one signature
+4. Use the roster once, choose one Inventor, and spend depth on one signature
    interaction instead of broad candidate fan-out.
-4. Carry sealed summaries, manifests, and renders forward instead of resurveying
+5. Carry sealed summaries, manifests, and renders forward instead of resurveying
    stable source at every stage.
-5. Reuse deterministic CAD, render, and manual layout primitives so native
+6. Reuse deterministic CAD, render, and manual layout primitives so native
    reasoning chooses the product rather than repeatedly rebuilding plumbing.
-6. After recording the comparable Moonchase baseline, tune the frozen Spark
+7. After recording the comparable Moonchase baseline, tune the frozen Spark
    reasoning profile. A cheaper runtime configuration is not a win if blind
    product preference falls.

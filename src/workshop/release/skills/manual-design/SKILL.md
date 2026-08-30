@@ -31,10 +31,11 @@ play experience without a website, phone, QR code, or prior explanation.
   binding, margins, and bleed deliberately instead of defaulting every toy to
   one template.
 - Use the smallest complete physical format and never add pages merely to make
-  the guide feel substantial. A simple one-piece toy will often fit a
-  double-sided card or two to four small pages; games, assemblies, or products
-  with real rule complexity may earn a longer booklet. Treat these as design
-  heuristics, not fixed page-count gates.
+  the guide feel substantial. Default a simple one-piece Spark toy with no
+  assembly or rule system to one double-sided owner card. Add a page only when
+  one specific setup, safety, reset, or interaction need cannot remain clear on
+  that card. Games, assemblies, or products with real rule complexity may earn
+  a longer booklet. These are design heuristics, not fixed page-count gates.
 - Choose an authoring method that gives the concept the strongest print result.
   HTML/CSS-to-PDF, vector-native layout, and programmatic drawing are all valid.
   Do not force a generic visual template across products.
@@ -75,6 +76,9 @@ essential step or rule.
   for example `Path(reportlab.__file__).resolve().parent / "fonts"`; never
   hardcode a user-specific or version-specific `site-packages` path in the
   editable manual source.
+- When exact font coverage has not been verified, keep customer text ASCII and
+  draw arrows, moons, stars, and other symbols as vectors. Do not spend render
+  rounds repairing missing Unicode glyph boxes.
 - Treat a missing creative dependency as a design problem to solve with
   available vector drawing, CAD renders, or bundled fonts. Do not silently
   fall back to stock Times, an operating-system fallback font, or a generic
@@ -117,6 +121,10 @@ plus only the brief and sealed product facts needed for accuracy. Do not give it
 the whole workspace or ask it to redesign the manual. Resolve at least one
 concrete finding, rerun the one review command, and perform the first-time-owner
 pass again. The root Manager owns the final decision.
+
+Write or update `MANUAL-DESIGN.json` after the final reviewed PDF is stable.
+Changing only that JSON evidence does not change the PDF and must not trigger a
+third render or another visual-review pass.
 
 When `STAGE.json` names `MANUAL-DESIGN.json` as required Release evidence, read
 `.agents/skills/autonomous-workshop/references/manual-design-evidence-v1.md` and

@@ -18,9 +18,13 @@ from workshop.errors import ContractError
 EFFORT_ROUTE_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/effort-routes-v1.md"
 )
-SPARK_ECONOMICS_CAPABILITY_PATH = (
+SPARK_ECONOMICS_V1_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/spark-economics-v1.md"
 )
+SPARK_ECONOMICS_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/spark-economics-v2.md"
+)
+SPARK_AUTO_COMPACT_TOKEN_LIMIT = 64_000
 DEFAULT_WORKSHOP_EFFORT = "spark"
 _CANONICAL_OPTIONAL_SEQUENCE = ("invent", "make", "playtest", "release")
 
@@ -126,7 +130,9 @@ def workshop_effort(value: Any) -> WorkshopEffort:
 __all__ = [
     "DEFAULT_WORKSHOP_EFFORT",
     "EFFORT_ROUTE_CAPABILITY_PATH",
+    "SPARK_AUTO_COMPACT_TOKEN_LIMIT",
     "SPARK_ECONOMICS_CAPABILITY_PATH",
+    "SPARK_ECONOMICS_V1_CAPABILITY_PATH",
     "WORKSHOP_EFFORTS",
     "WorkshopEffort",
     "workshop_effort",

@@ -4,6 +4,7 @@
 - Date: 2026-08-30
 - Owners: Runtime, Workflow, and product-run instruction maintainers
 - Relates to: ADR 0012 (one native session), ADR 0016 (effort routes)
+- Superseded for new Spark runs by: ADR 0021
 
 ## Context
 

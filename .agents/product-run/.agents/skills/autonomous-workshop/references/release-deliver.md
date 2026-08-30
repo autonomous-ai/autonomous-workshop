@@ -51,6 +51,13 @@ the largest first-owner problem together. Rerender after that revision. Avoid
 page-by-page drafting, repeated font or layout experiments, and extra review
 passes that do not answer a concrete finding.
 
+For a simple one-piece Spark toy with no assembly or rule system, start with a
+double-sided owner card. Add pages only for a named clarity or safety need that
+cannot fit. Use ASCII customer text unless exact font coverage is already
+verified, drawing special symbols as vectors. After the final review render,
+write the hash-bound `MANUAL-DESIGN.json`; changing only that evidence file does
+not require another PDF render.
+
 Codex owns the fact-check, design, render, review, and revise loop. Python may
 validate PDF structure, schemas, hashes, and claim bindings; it does not write
 the manual, score beauty, or control the improvement loop.

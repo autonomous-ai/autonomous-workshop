@@ -22,6 +22,7 @@ from workshop.runtime.codex import (
     MAX_CODEX_EVENT_BYTES,
     MAX_CODEX_MESSAGE_BYTES,
     MAX_CODEX_STDERR_BYTES,
+    MINIMUM_CODEX_AUTO_COMPACT_VERSION,
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     CodexFinalizedWithoutTerminalError,
     CodexInvocationError,
@@ -296,16 +297,22 @@ class CodexNativeSessionTest(unittest.TestCase):
         effort="high",
         binary=TEST_CODEX_BINARY,
         timeout_seconds=30,
+        auto_compact_token_limit=None,
     ):
         factory = FakePopenFactory(scripts)
         return (
             CodexNativeSessionLauncher(
                 model=model,
                 reasoning_effort=effort,
+                auto_compact_token_limit=auto_compact_token_limit,
                 binary=binary,
                 timeout_seconds=timeout_seconds,
                 popen_factory=factory,
-                cli_version="0.145.0",
+                cli_version=(
+                    "0.150.0"
+                    if auto_compact_token_limit is not None
+                    else "0.145.0"
+                ),
             ),
             factory,
         )
@@ -1808,6 +1815,75 @@ class CodexNativeSessionTest(unittest.TestCase):
         self.assertEqual(MINIMUM_CODEX_NATIVE_RUNTIME_VERSION, (0, 145, 0))
         self.assertFalse(codex_supports_native_workshop("0.144.9"))
         self.assertTrue(codex_supports_native_workshop("0.145.0"))
+
+    def test_auto_compaction_is_bound_and_passed_to_start_and_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed compactly")},
+                ],
+                auto_compact_token_limit=64_000,
+            )
+
+            started = self.start(launcher, root)
+            resumed = self.resume(launcher, root)
+
+            expected = "model_auto_compact_token_limit=64000"
+            self.assertIn(expected, factory.calls[0][0])
+            self.assertIn(expected, factory.calls[1][0])
+            self.assertEqual(
+                started.binding.runtime_config_sha256,
+                resumed.binding.runtime_config_sha256,
+            )
+
+    def test_compaction_policy_drift_fails_closed_before_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            factory = FakePopenFactory(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="must not launch")},
+                ]
+            )
+            original = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                auto_compact_token_limit=64_000,
+            )
+            changed = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                auto_compact_token_limit=48_000,
+            )
+
+            self.start(original, root)
+            with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                self.resume(changed, root)
+            self.assertEqual(len(factory.calls), 1)
+
+    def test_auto_compaction_requires_supported_codex_and_bounded_limit(self):
+        self.assertEqual(MINIMUM_CODEX_AUTO_COMPACT_VERSION, (0, 150, 0))
+        with self.assertRaisesRegex(CodexInvocationError, "0.150.0 or newer"):
+            CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                cli_version="0.149.9",
+                auto_compact_token_limit=64_000,
+            )
+        for invalid in (True, 15_999, 1_000_001):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(
+                ValueError, "16,000 to 1,000,000"
+            ):
+                CodexNativeSessionLauncher(
+                    binary=TEST_CODEX_BINARY,
+                    cli_version="0.150.0",
+                    auto_compact_token_limit=invalid,
+                )
 
     def test_native_turn_defaults_to_the_maximum_supported_hour(self):
         self.assertEqual(DEFAULT_CODEX_TIMEOUT_SECONDS, 3_600)

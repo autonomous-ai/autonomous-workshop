@@ -56,7 +56,8 @@ and physical format.
 6. Give those two sheets—not the whole workspace—to the required independent
    visual editor.
 7. Resolve its strongest concrete finding and the largest first-owner problem
-   in one revision, then rerun the complete review command once.
+   in one revision, then rerun the complete review command once. Finalize the
+   evidence JSON afterward; an evidence-only edit does not earn another render.
 
 The visual review is evidence about an exact artifact, never an aesthetic score
 or permission to invent unsupported product behavior.

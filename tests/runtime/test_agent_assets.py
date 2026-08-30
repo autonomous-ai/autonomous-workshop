@@ -93,6 +93,13 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
                 / "spark-economics-v1.md"
             ).is_file()
         )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "spark-economics-v2.md"
+            ).is_file()
+        )
 
     def test_effort_guidance_distinguishes_direct_release_and_quest_playtest(self):
         guidance = (
