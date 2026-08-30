@@ -860,6 +860,16 @@ class NativeHostTest(unittest.TestCase):
                         / "SKILL.md"
                     ).is_file()
                 )
+            self.assertTrue(
+                (
+                    workspace
+                    / ".agents"
+                    / "skills"
+                    / "manual-design"
+                    / "references"
+                    / "product-manual-visual-system.md"
+                ).is_file()
+            )
             for inventor_id in (
                 "abo",
                 "alice",

@@ -17,6 +17,9 @@ play experience without a website, phone, QR code, or prior explanation.
   promise, physical format and rationale, product-specific visual motif,
   palette, typography, and teaching arc. Use it to make the manual feel like
   part of this toy rather than documentation wrapped around it.
+- Read [references/product-manual-visual-system.md](references/product-manual-visual-system.md)
+  before layout. It captures the reusable visual grammar observed in the
+  Workshop's strongest manuals and the report-like failure modes to reject.
 - Depict only included parts and supported interactions. Prefer renders,
   silhouettes, exploded views, and diagrams derived from the exact product
   artifacts; do not invent geometry or imply unverified physical performance.

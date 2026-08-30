@@ -32,6 +32,12 @@ with exactly `selected_inventor_id`, roster-covering `ranking`, `concept`, and
 `research`. The Make finalizer seals those bindings together with the Made
 contract, so Spark still has exact creative provenance without another turn.
 
+For Spark, scan the roster's bounded agent descriptions in one pass, rank the
+complete roster, and open the full Taste and skill bundle only for the selected
+Inventor. Define one signature interaction and one anti-generic visual or
+mechanical signature before CAD. A compact toy with one extraordinary moment
+is stronger than a feature list whose parts receive shallow treatment.
+
 While pursuing the Goal:
 
 1. **Observe:** Inspect the sealed Invent concept and research, the selected
@@ -63,6 +69,13 @@ before progressing. Once required checks and direct inspection pass, prioritize
 the finalizer over optional additional exploration. A recovery turn after a
 host timeout must inspect and reuse existing product bytes rather than restart
 the design or repeat completed subagent work.
+
+Use one deliberate verification funnel. During source edits, build the smallest
+entry that exposes the changed relationship and run only its relevant narrow
+check. After the geometry and signature interaction stabilize, batch exports,
+run the integrated final verifier once, create the presentation render, inspect
+it, fix the largest visible defect, and finalize. Do not repeatedly run a full
+fresh verifier or regenerate unchanged exports between small edits.
 
 If a concrete operator or environment condition makes safe Make progress
 impossible, use the main skill's `need` finalizer for the current `make` stage

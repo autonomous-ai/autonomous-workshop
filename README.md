@@ -190,7 +190,9 @@ toy READMEs report best-effort gross, cached, and uncached Manager input plus
 output and reasoning-output tokens by stage, alongside elapsed time from Wish
 intake through authenticated Factory public readback. This is telemetry, never
 a gate, and no dollar estimate is inferred. See
-[`toys/README.md`](toys/) for what a snapshot includes.
+[`toys/README.md`](toys/) for what a snapshot includes and
+[`docs/QUALITY_ECONOMICS.md`](docs/QUALITY_ECONOMICS.md) for the paired quality
+and cost benchmark.
 
 ## Architecture
 
