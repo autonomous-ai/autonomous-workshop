@@ -203,7 +203,7 @@ and cost benchmark.
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=form-review-v4)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=form-review-v5)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -245,14 +245,17 @@ For new runs it also requires two inspected chromatic exact-product renders:
 `<cad-project>/snap/iso.png` is the hero, while
 `<cad-project>/snap/signature.png` shows the signature interaction, reveal, or
 anti-generic detail across exact poses or views without relying on marketing
-copy. A hash-bound schema-v4 `SIGNATURE-REVIEW.json` records one bounded
+copy. A hash-bound schema-v5 `SIGNATURE-REVIEW.json` records one bounded
 independent critic's unprompted held object, volumetric form, subjects, action,
 and spatial or causal relationship before the Wish is revealed. That same
 critic then compares each dimension and the concept's anti-generic signature
-with the exact Wish and canonical concept. Make permits at most two review rounds and
-performs the review before one integrated final verifier. The verifier refuses
-final-mode work until the review and exact image hashes exist, so an unclear
-proposition is repaired before the most expensive CAD pass.
+with the exact Wish and canonical concept. It must enumerate every explicit
+positive and negative held-form constraint, cite blind visual evidence for each,
+and report no blocking visual defect. Make runs narrow mesh and wall-thickness
+checks before spending the review, permits at most two review rounds, and then
+performs one integrated final verifier. The finalizer accepts only the current
+passing full-tier report with a successful thickness row, so omitting a failed
+check cannot spend a host isolated rebuild.
 The final verification report must live inside the declared self-contained CAD
 project, catching a misplaced build entry before the host pays for an isolated
 rebuild.

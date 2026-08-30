@@ -466,7 +466,15 @@ class StageProposalToolTest(unittest.TestCase):
             "components": ["observatory"],
         }
         product_bytes = canonical_json(product) + b"\n"
-        verification = b'{"ok":true,"validator":"cad-final"}\n'
+        verification = (
+            b"# Verification pipeline record\n\n"
+            b"- Recorded: content-addressed\n"
+            b"- Mode: `final`\n"
+            b"- Result: **PASS** (exit 0)\n\n"
+            b"| # | command | result | seconds |\n"
+            b"|---:|---|---:|---:|\n"
+            b"| 1 | `check_thickness exact.stl` | rc=0 | 0.01 |\n"
+        )
         (product_root / "product.json").write_bytes(product_bytes)
         (product_root / "cad/project/moon.step.py").write_text("pass\n")
         (product_root / "assembled.step").write_bytes(b"ISO-10303-21;\n")
@@ -494,7 +502,7 @@ class StageProposalToolTest(unittest.TestCase):
             product_root / "cad/project/snap/signature.png", format="PNG"
         )
         review = {
-            "schema_version": 4,
+            "schema_version": 5,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": self.invented.concept_sha256,
             "iso_sha256": sha256(
@@ -520,6 +528,14 @@ class StageProposalToolTest(unittest.TestCase):
             "signature_experience_unmistakable": True,
             "finished_product_desirable": True,
             "review_rounds": 1,
+            "critical_form_requirements": [
+                {
+                    "requirement": "The observatory must be rounded and volumetric.",
+                    "blind_evidence": "The exact views show rounded depth.",
+                    "matches": True,
+                }
+            ],
+            "blocking_visual_defects": [],
             "largest_risk": "The three states need a stronger direction cue.",
             "resolution": "The final sheet uses separated contrasting states.",
         }
@@ -1031,6 +1047,38 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("one or two review rounds", unbounded_review.stderr)
 
         review["review_rounds"] = 1
+        review["critical_form_requirements"][0]["matches"] = False
+        review_path.write_bytes(canonical_json(review))
+        missing_form = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("critical form requirement 1 does not visibly match", missing_form.stderr)
+
+        review["critical_form_requirements"][0]["matches"] = True
+        review["blocking_visual_defects"] = [
+            "The exact view is a constant-depth relief instead of a rounded body."
+        ]
+        review_path.write_bytes(canonical_json(review))
+        blocked_form = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("still has blocking visual defects", blocked_form.stderr)
+
+        review["blocking_visual_defects"] = []
         review["signature_sha256"] = "f" * 64
         review_path.write_bytes(canonical_json(review))
         stale = self.run_tool(
@@ -1045,6 +1093,65 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertIn("not bound to the final signature.png", stale.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_requires_current_full_tier_verification_report(self):
+        product_root, _, _, _ = self.create_product()
+        report = product_root / "cad/project/validation/cad-build.json"
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        report.write_text(
+            "# Verification pipeline record\n\n"
+            "- Mode: `final`\n"
+            "- Result: **PASS** (exit 0)\n\n"
+            "| # | command | result | seconds |\n"
+            "|---:|---|---:|---:|\n"
+            "| 1 | `check_mesh exact.stl` | rc=0 | 0.01 |\n",
+            encoding="utf-8",
+        )
+        omitted = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("passing final full-tier report", omitted.stderr)
+
+        report.write_text(
+            "# Verification pipeline record\n\n"
+            "- Mode: `final`\n"
+            "- Result: **FAIL** (exit 1)\n\n"
+            "| # | command | result | seconds |\n"
+            "|---:|---|---:|---:|\n"
+            "| 1 | `check_thickness exact.stl` | rc=1 | 0.01 |\n\n"
+            "---\n\n## Previous pipeline record\n\n"
+            "# Verification pipeline record\n\n"
+            "- Mode: `final`\n"
+            "- Result: **PASS** (exit 0)\n\n"
+            "| 1 | `check_thickness old.stl` | rc=0 | 0.01 |\n",
+            encoding="utf-8",
+        )
+        failed_current = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("passing final full-tier report", failed_current.stderr)
 
     def test_make_verification_must_belong_to_declared_cad_project(self):
         product_root, _, _, verification = self.create_product()

@@ -103,6 +103,8 @@ SIGNATURE_REVIEW_FIELDS = {
     "signature_experience_unmistakable",
     "finished_product_desirable",
     "review_rounds",
+    "critical_form_requirements",
+    "blocking_visual_defects",
     "largest_risk",
     "resolution",
 }
@@ -165,8 +167,8 @@ def _required_signature_review(project: Path) -> str:
     if content != canonical or not isinstance(review, dict):
         raise ValueError("signature review must use canonical JSON encoding")
     if set(review) != SIGNATURE_REVIEW_FIELDS:
-        raise ValueError("signature review fields do not match schema 4")
-    if review.get("schema_version") != 4 or review.get("kind") != SIGNATURE_REVIEW_KIND:
+        raise ValueError("signature review fields do not match schema 5")
+    if review.get("schema_version") != 5 or review.get("kind") != SIGNATURE_REVIEW_KIND:
         raise ValueError("signature review identity is invalid")
     for key in (
         "reviewer",
@@ -204,6 +206,26 @@ def _required_signature_review(project: Path) -> str:
         "review_rounds"
     ) not in (1, 2):
         raise ValueError("signature review must record one or two review rounds")
+    requirements = review.get("critical_form_requirements")
+    if not isinstance(requirements, list) or not 1 <= len(requirements) <= 16:
+        raise ValueError("signature review must enumerate critical form requirements")
+    for requirement in requirements:
+        if not isinstance(requirement, dict) or set(requirement) != {
+            "requirement",
+            "blind_evidence",
+            "matches",
+        }:
+            raise ValueError("signature review critical form requirement is invalid")
+        for field in ("requirement", "blind_evidence"):
+            value = requirement.get(field)
+            if not isinstance(value, str) or not value.strip() or len(value) > 1000:
+                raise ValueError(
+                    f"signature review critical form requirement {field} is invalid"
+                )
+        if requirement.get("matches") is not True:
+            raise ValueError("signature review critical form requirement must match")
+    if review.get("blocking_visual_defects") != []:
+        raise ValueError("signature review still has blocking visual defects")
     for filename, field in (("iso.png", "iso_sha256"), ("signature.png", "signature_sha256")):
         expected = review.get(field)
         if not isinstance(expected, str) or not SHA256_TEXT.fullmatch(expected):
@@ -1135,7 +1157,7 @@ def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
     (project / "snap" / "iso.png").write_bytes(iso)
     (project / "snap" / "signature.png").write_bytes(signature)
     review = {
-        "schema_version": 4,
+        "schema_version": 5,
         "kind": SIGNATURE_REVIEW_KIND,
         "concept_sha256": "0" * 64,
         "iso_sha256": hashlib.sha256(iso).hexdigest(),
@@ -1157,6 +1179,14 @@ def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
         "signature_experience_unmistakable": True,
         "finished_product_desirable": True,
         "review_rounds": 1,
+        "critical_form_requirements": [
+            {
+                "requirement": "The fixture must be rounded and volumetric.",
+                "blind_evidence": "The exact views show depth and rounded faces.",
+                "matches": True,
+            }
+        ],
+        "blocking_visual_defects": [],
         "largest_risk": "Fixture risk.",
         "resolution": "Fixture resolution.",
     }
@@ -1794,7 +1824,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if signature_review_sha256 is not None:
         runner.note(
             "signature review",
-            f"schema=3 sha256={signature_review_sha256}",
+            f"schema=5 sha256={signature_review_sha256}",
         )
     workflow_started = time.perf_counter()
     result = runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)])

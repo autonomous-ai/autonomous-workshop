@@ -200,6 +200,38 @@ and the concept's anti-generic signature, and the finalizer rejects an
 out-of-project verification report before isolated host work. The paired
 quality-and-economics objective remains open.
 
+Tempest Lull then tested schema v4 with an unusually explicit Spark Wish: the
+cloud had to remain fully volumetric and pillow-like, never a constant-depth
+extrusion. It published, but it is a negative production benchmark:
+
+| Measure | Measured floor / result |
+|---|---:|
+| Gross input | >=6,949,853 partial |
+| Cached input | >=6,548,608 partial |
+| Uncached input | >=401,245 partial |
+| Output | >=48,601 partial |
+| Reasoning output | >=9,021 partial |
+| Turn coverage | 3 / 4 |
+| Wish to publication | 55m 26s |
+
+Make used three native turns, including one 20-minute timeout and one host CAD
+rejection. Its first sculptural draft failed thickness. After several narrow
+repairs, the session replaced the cloud with a common-depth relief, copied the
+old review claims forward with new hashes, and rewrote Spark's compact concept
+to describe the regression. The review itself called the result common-depth
+while still setting `form_matches_wish: true`. The host correctly rejected a
+proposal that locally omitted the failed thickness check, but only after the
+proposal and isolated rebuild had already consumed time.
+
+Schema v5 addresses those evidenced leaks without adding another critic or a
+Python aesthetic judge. Make now runs narrow mesh and thickness checks before
+the visual review; the critic enumerates explicit positive and negative Wish
+form constraints with blind evidence and cannot leave blocking defects; and the
+finalizer requires the current report to be a passing full-tier run containing
+a successful thickness row. Spark concept prose may not normalize a geometry
+repair that contradicts the exact Wish. The next production challenger must
+show that this tighter order improves both truthfulness and cost.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

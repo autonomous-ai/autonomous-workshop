@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-labelledby="title description">
   <title id="title">Spark effort route: Wish to Make to Release</title>
-  <desc id="description">Spark is the default and shortest Autonomous Workshop route. New Codex Spark runs freeze low reasoning effort, a 64k automatic context-compaction ceiling, and a 20-minute boundary per native turn across one persistent session. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Make, where one independent critic blindly reads the exact form, subjects, action, and relationship before the Wish is revealed, then compares the anti-generic signature after reveal. Make permits at most two review rounds, and the integrated final CAD verifier refuses to begin before the review exists. Invent and Playtest are passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
+  <desc id="description">Spark is the default and shortest Autonomous Workshop route. New Codex Spark runs freeze low reasoning effort, a 64k automatic context-compaction ceiling, and a 20-minute boundary per native turn across one persistent session. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Make. Make checks the fresh draft mesh and thickness before one independent critic blindly reads the exact form, subjects, action, and relationship. After the Wish is revealed, the critic checks every explicit held-form constraint and the anti-generic signature with no blocking visual defect. Make permits at most two review rounds, then requires one passing full-tier CAD report. Invent and Playtest are passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%">
       <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/>
@@ -52,8 +52,8 @@
   <text x="322" y="315" class="eyebrow orange">CODEX GOAL · SELECT + BUILD</text>
   <text x="322" y="350" class="heading">MAKE</text>
   <text x="322" y="377" class="body">Choose Inventor; build CAD.</text>
-  <text x="322" y="399" class="body">Blind form + semantics.</text>
-  <text x="322" y="421" class="body">Anti-generic → final CAD gate.</text>
+  <text x="322" y="399" class="body">Mesh + thickness → blind constraints.</text>
+  <text x="322" y="421" class="body">No blockers → full final CAD gate.</text>
 
   <g filter="url(#shadow)"><rect x="625" y="285" width="260" height="150" rx="20" class="release"/></g>
   <text x="652" y="315" class="eyebrow orange">CODEX GOAL · PACKAGE + PUBLISH</text>

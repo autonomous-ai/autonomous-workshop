@@ -1454,7 +1454,7 @@ def _validate_make_product_render(project: Path) -> None:
                         % label
                     )
                 sampled = image.convert("RGB").resize((64, 64))
-                pixels = tuple(sampled.getdata())
+                pixels = tuple(sampled.get_flattened_data())
         except ProposalError:
             raise
         except Exception as exc:
@@ -1517,6 +1517,8 @@ def _validate_signature_review(
             "signature_experience_unmistakable",
             "finished_product_desirable",
             "review_rounds",
+            "critical_form_requirements",
+            "blocking_visual_defects",
             "largest_risk",
             "resolution",
         },
@@ -1524,7 +1526,7 @@ def _validate_signature_review(
     )
     if (
         type(review["schema_version"]) is not int
-        or review["schema_version"] != 4
+        or review["schema_version"] != 5
         or review["kind"] != SIGNATURE_REVIEW_KIND
         or review["concept_sha256"] != concept_sha256
     ):
@@ -1543,6 +1545,38 @@ def _validate_signature_review(
         _bounded_text(review[field], label, 1_000)
     _bounded_text(review["largest_risk"], "Make signature largest_risk", 2_000)
     _bounded_text(review["resolution"], "Make signature resolution", 2_000)
+    requirements = _array(
+        review["critical_form_requirements"],
+        "Make critical form requirements",
+        nonempty=True,
+    )
+    if len(requirements) > 16:
+        raise ProposalError("Make critical form requirements exceed the limit")
+    for index, raw_requirement in enumerate(requirements, 1):
+        requirement = _fields(
+            raw_requirement,
+            {"requirement", "blind_evidence", "matches"},
+            "Make critical form requirement %d" % index,
+        )
+        _bounded_text(
+            requirement["requirement"],
+            "Make critical form requirement %d text" % index,
+            1_000,
+        )
+        _bounded_text(
+            requirement["blind_evidence"],
+            "Make critical form requirement %d evidence" % index,
+            1_000,
+        )
+        if requirement["matches"] is not True:
+            raise ProposalError(
+                "Make critical form requirement %d does not visibly match" % index
+            )
+    blockers = _array(
+        review["blocking_visual_defects"], "Make blocking visual defects"
+    )
+    if blockers:
+        raise ProposalError("Make signature review still has blocking visual defects")
     for field, label in (
         ("wish_revealed_after_blind_read", "Wish was revealed only after the blind read"),
         ("held_object_unmistakable", "held object is unmistakable"),
@@ -1656,6 +1690,33 @@ def _make_contract(
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
         "CAD verification",
     )
+    verification_bytes, _ = _read_regular(
+        run_root,
+        "%s/%s" % (product_root_value, verification_relative.as_posix()),
+        "CAD verification",
+        maximum=1_000_000,
+    )
+    try:
+        verification_text = verification_bytes.decode("utf-8")
+    except UnicodeError as exc:
+        raise ProposalError("CAD verification must be UTF-8 text") from exc
+    current_record = verification_text.split(
+        "\n---\n\n## Previous pipeline record", 1
+    )[0]
+    if (
+        not current_record.startswith("# Verification pipeline record\n")
+        or "- Mode: `final`\n" not in current_record
+        or "- Result: **PASS** (exit 0)\n" not in current_record
+        or not any(
+            "check_thickness" in line and "| rc=0 |" in line
+            for line in current_record.splitlines()
+        )
+        or "--skip-thickness" in current_record
+    ):
+        raise ProposalError(
+            "CAD verification must be the current passing final full-tier report "
+            "with a successful thickness check"
+        )
     _prune_empty_directories(product_root, "Make product tree")
     manifest = _tree_manifest(run_root, product_root_value, "Make product tree")
     paths = {entry["path"] for entry in manifest["entries"]}

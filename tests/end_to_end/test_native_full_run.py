@@ -615,7 +615,7 @@ class _OneSessionProductAgent:
         _write_json(
             signature_path.with_name("SIGNATURE-REVIEW.json"),
             {
-                "schema_version": 4,
+                "schema_version": 5,
                 "kind": "autonomous-workshop.signature-experience-review",
                 "concept_sha256": _sha256(_canonical_json(invented["concept"])),
                 "iso_sha256": _sha256(render_path.read_bytes()),
@@ -637,19 +637,29 @@ class _OneSessionProductAgent:
                 "signature_experience_unmistakable": True,
                 "finished_product_desirable": True,
                 "review_rounds": 1,
+                "critical_form_requirements": [
+                    {
+                        "requirement": "The play object must be rounded and volumetric.",
+                        "blind_evidence": "The exact views show a deep rounded ring.",
+                        "matches": True,
+                    }
+                ],
+                "blocking_visual_defects": [],
                 "largest_risk": "The three play states could read as decoration.",
                 "resolution": "Separated color and position make the state change explicit.",
             },
         )
-        _write_json(
-            product_root / "cad" / "project" / "validation" / "cad-verification.json",
-            {
-                "schema_version": 1,
-                "validator": "materialized-cad-final",
-                "validator_version": "1.0.0",
-                "passed": True,
-                "checks": ["fresh-export", "strict-fit", "printable-mesh"],
-            },
+        (
+            product_root / "cad" / "project" / "validation" / "cad-verification.json"
+        ).write_text(
+            "# Verification pipeline record\n\n"
+            "- Recorded: content-addressed\n"
+            "- Mode: `final`\n"
+            "- Result: **PASS** (exit 0)\n\n"
+            "| # | command | result | seconds |\n"
+            "|---:|---|---:|---:|\n"
+            "| 1 | `check_thickness exact.stl` | rc=0 | 0.01 |\n",
+            encoding="utf-8",
         )
         for required in inputs["required_root_files"]:
             if not (product_root / required).is_file():

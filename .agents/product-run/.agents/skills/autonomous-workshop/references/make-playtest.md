@@ -77,13 +77,22 @@ the design or repeat completed subagent work.
 
 Use one deliberate verification funnel. During source edits, build the smallest
 entry that exposes the changed relationship and run only its relevant narrow
-check. As soon as a plausible exact draft STL exists, render the candidate and
-perform the blind signature review below **before** the expensive integrated
-final verifier. Resolve at most one largest visual defect coherently, rebuild
-and rerender the exact final candidate, then batch exports and run the
-integrated final verifier once. A full verifier must not be used as the inner
-visual-design loop. Do not repeatedly run it or regenerate unchanged exports
-between small edits.
+check. As soon as a plausible exact draft STL exists, run `check_mesh` and
+`check_thickness` against that freshly exported STL. Repair and regenerate
+before review if either fails. Then render the candidate and perform the blind
+signature review below **before** the expensive integrated final verifier.
+Resolve at most one largest visual defect coherently, rebuild, rerun those two
+narrow artifact checks, and rerender the exact final candidate; then batch
+exports and run the integrated final verifier once. A full verifier must not be
+used as the inner visual-design loop. Do not repeatedly run it or regenerate
+unchanged exports between small edits.
+
+For Spark, the compact Invented packet is still subordinate to the exact Wish.
+Do not rewrite a Wish-critical positive or negative form constraint to describe
+whatever geometry happened to pass CAD. If a repair changes the construction
+family—for example, a fully rounded body becomes a constant-depth relief—the
+candidate no longer matches and must be repaired rather than normalized in the
+concept prose.
 
 If a concrete operator or environment condition makes safe Make progress
 impossible, use the main skill's `need` finalizer for the current `make` stage
@@ -205,12 +214,19 @@ rereview. Do not coordinate a third critic or review round. Do not proceed to
 the integrated final verifier or Release on copy alone. If the first candidate
 passes, do not invent a repair merely to create activity.
 
+After reveal, enumerate every explicit positive and negative held-form
+requirement from the Wish. Preserve its exact meaning in
+`critical_form_requirements` and cite concrete evidence visible in the blind
+images. A missing or contradicted critical requirement is a blocking visual
+defect. Do not hide it in `largest_risk`, `resolution`, or concept prose while
+setting the aggregate booleans true.
+
 Preserve the final review as canonical JSON at
 `<cad-project>/snap/SIGNATURE-REVIEW.json` with exactly these fields:
 
 ```json
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "kind": "autonomous-workshop.signature-experience-review",
   "concept_sha256": "<exact canonical Invented concept hash>",
   "iso_sha256": "<lowercase SHA-256 of final iso.png>",
@@ -232,16 +248,29 @@ Preserve the final review as canonical JSON at
   "signature_experience_unmistakable": true,
   "finished_product_desirable": true,
   "review_rounds": 1,
+  "critical_form_requirements": [
+    {
+      "requirement": "<one exact positive or negative held-form requirement from the Wish>",
+      "blind_evidence": "<what in the exact images visibly proves it>",
+      "matches": true
+    }
+  ],
+  "blocking_visual_defects": [],
   "largest_risk": "<strongest concrete final finding>",
   "resolution": "<specific geometry, pose, or composition resolution>"
 }
 ```
 
-The finalizer requires every confirmation, all unprompted reads, the exact
-Invented concept binding, one or two review rounds, and exact final-image hashes. This
-is review evidence, not a numeric beauty score; never
-claim an independent or blind review that did not occur. The public toy archive
-keeps it beside the reviewed renders.
+The finalizer requires every confirmation, all unprompted reads, at least one
+explicit critical-form check, no blocking visual defect, the exact Invented
+concept binding, one or two review rounds, and exact final-image hashes. It also
+requires the current CAD report to be a passing final full-tier run containing
+a successful thickness row; omitting a failed check cannot reach the host's
+isolated gate. This is review evidence, not a numeric beauty score; never claim
+an independent or blind review that did not occur. Any geometry change
+invalidates the review: rerender and obtain a fresh blind read instead of
+copying old prose and replacing hashes. The public toy archive keeps the review
+beside the reviewed renders.
 
 Keep the one final `snap/` family only under the declared CAD project. Do not
 copy it to the product root or preserve identical presentation families in two

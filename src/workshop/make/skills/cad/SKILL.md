@@ -128,7 +128,10 @@ gate.
 9. **Reconcile image-derived work.** When the project came from an image/spec, every source repair that changes a parameter, landmark, part count, or construction family must be reconciled back into the approved `*_spec.md`. Give every landmark a local geometry target, render the orthogonal set plus every usable reference viewpoint, compare source against STEP, and run the likeness gate. `references/image-derived-verification.md` defines the two local audits and the integrated `verify_project --image-derived` command.
 10. **Repair and rerun.** If a check fails, change the smallest responsible source section, regenerate, and rerun the failed validation.
 11. **Render before the expensive final gate.** After an exact draft STL passes
-    its narrow build and geometry checks, use
+    its narrow build and geometry checks, run `check_mesh` and `check_thickness`
+    against the freshly exported draft STL. Repair and regenerate before review
+    if either fails; never spend a visual-review round on geometry that cannot
+    pass the full print-ready gate. Then use
     `scripts/render_product <assembled-or-primary.stl> -o <project>/snap/iso.png --motion-sheet <project>/snap/signature.png`
     and inspect the PNG at full size. Choose `--base`, `--accent`, and
     `--background` colors appropriate to the product. This presentation render
@@ -141,8 +144,14 @@ gate.
     signature review and one coherent repair before running the integrated
     final verifier once. The review must separately match the exact subjects,
     action, and spatial/causal relationship; matching only nouns is a failure.
-    Use one critic and no more than two review rounds. Do not use the full
-    verifier as the visual iteration loop.
+    Enumerate every explicit positive and negative held-form requirement from
+    the Wish in the review's `critical_form_requirements`; each entry needs
+    exact blind visual evidence. Any visible departure from one of those
+    requirements belongs in `blocking_visual_defects`, not in a nonblocking
+    caveat. Use one critic and no more than two review rounds. Do not use the
+    full verifier as the visual iteration loop. Any geometry change after the
+    review invalidates it and requires a fresh blind read of the regenerated
+    images; copying old prose and replacing hashes is not a review.
     Keep binary silhouettes from the image-to-CAD likeness tool under a named
     review/evidence path, never at `snap/iso.png`.
 

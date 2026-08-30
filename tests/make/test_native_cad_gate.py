@@ -686,7 +686,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         (snap / "iso.png").write_bytes(iso)
         (snap / "signature.png").write_bytes(signature)
         review = {
-            "schema_version": 4,
+            "schema_version": 5,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": "0" * 64,
             "iso_sha256": _sha(iso),
@@ -708,6 +708,14 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             "signature_experience_unmistakable": True,
             "finished_product_desirable": True,
             "review_rounds": review_rounds,
+            "critical_form_requirements": [
+                {
+                    "requirement": "The product must be rounded and volumetric.",
+                    "blind_evidence": "The exact views show rounded depth.",
+                    "matches": True,
+                }
+            ],
+            "blocking_visual_defects": [],
             "largest_risk": "The relationship could be subtle.",
             "resolution": "The exact relationship is visible.",
         }
@@ -780,6 +788,38 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
 
         self.assertEqual(completed.returncode, 2)
         self.assertIn("one or two review rounds", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
+
+    def test_blocking_form_defect_cannot_unlock_final_geometry(self):
+        self._write_signature_review(review_rounds=1)
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["blocking_visual_defects"] = [
+            "The body is a constant-depth relief instead of the required volume."
+        ]
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--fresh",
+                "--exports",
+                "--strict-fit",
+                "--no-report",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("still has blocking visual defects", completed.stderr)
         self.assertNotIn("check_layout", completed.stdout)
 
     def test_non_print_ready_plan_retains_every_other_deterministic_gate(self):

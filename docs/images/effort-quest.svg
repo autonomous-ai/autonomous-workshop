@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title description">
   <title id="title">Quest effort route: Wish to Invent to Make to Playtest to Release</title>
-  <desc id="description">Quest is the fullest Autonomous Workshop route. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Invent, followed by Make and Playtest. In Make, one independent critic blindly reads the exact form, subjects, action, and relationship before the Wish is revealed, then compares the anti-generic signature after reveal. Make permits at most two review rounds, and the integrated final CAD verifier refuses to begin before the review exists. A proven concept block returns Make to Invent. Failed Playtest returns directly to Make for a build defect or Invent for a concept defect. All repair routes share one revision budget. Release requires passing Playtest evidence bound to the current Made revision, verifies the CAD and manual, publishes with public hash readback, and hands the product to Operations.</desc>
+  <desc id="description">Quest is the fullest Autonomous Workshop route. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Invent, followed by Make and Playtest. Make checks the fresh draft mesh and thickness before one independent critic blindly reads the exact form, subjects, action, and relationship. After the Wish is revealed, the critic checks every explicit held-form constraint and the anti-generic signature with no blocking visual defect. Make permits at most two review rounds, then requires one passing full-tier CAD report. A proven concept block returns Make to Invent. Failed Playtest returns directly to Make for a build defect or Invent for a concept defect. All repair routes share one revision budget. Release requires passing Playtest evidence bound to the current Made revision, verifies the CAD and manual, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/></filter>
     <marker id="arrow" viewBox="0 0 12 12" markerWidth="18" markerHeight="18" refX="11" refY="6" orient="auto" markerUnits="userSpaceOnUse" overflow="visible"><polygon points="0,0 12,6 0,12" fill="#525b66"/></marker>
@@ -56,8 +56,8 @@
   <text x="448" y="315" class="eyebrow orange">CODEX GOAL · MAKE</text>
   <text x="448" y="349" class="heading">MAKE</text>
   <text x="448" y="376" class="body">Build exact CAD.</text>
-  <text x="448" y="398" class="body">Blind form + semantics.</text>
-  <text x="448" y="420" class="body">Anti-generic → final gate.</text>
+  <text x="448" y="398" class="body">Blind Wish checks.</text>
+  <text x="448" y="420" class="body">No blockers → full gate.</text>
 
   <g filter="url(#shadow)"><rect x="640" y="285" width="180" height="150" rx="20" class="active"/></g>
   <text x="663" y="315" class="eyebrow orange">CODEX GOAL · PLAYTEST</text>
