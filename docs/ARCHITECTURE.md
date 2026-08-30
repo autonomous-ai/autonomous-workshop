@@ -41,6 +41,9 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
 - **Make** consumes that exact sealed Invent result and creates the actual
   product tree, CAD project, assemblies, and deterministic CAD verification.
   In Spark, selection and compact invention are sealed inside this same turn.
+  Make seals both an exact-product hero and a signature-experience sheet that
+  must make the promised interaction, reveal, or anti-generic detail visually
+  inspectable before prose can claim it.
   A capable Forge or Quest Make may return to Invent only with exact preserved
   evidence that the sealed concept prevents any conforming build.
 - **Playtest** independently evaluates the sealed Made revision only in Quest,
@@ -182,10 +185,11 @@ deletion, resume performs the same narrow cleanup in the trusted host while
 the exclusive run lock is held and no native session is running. It removes
 only real empty directories beneath the current Make product root, never files
 or links.
-Newly materialized protocols require one visually inspected chromatic product
-render at `<cad-project>/snap/iso.png`. Public hero selection is allowlisted to
-the archived `snap/` render family; diagnostic and likeness images elsewhere
-in the Made tree remain evidence only.
+Newly materialized protocols require two visually inspected chromatic
+exact-product renders: a hero at `<cad-project>/snap/iso.png` and a wider
+signature-experience sheet at `<cad-project>/snap/signature.png`. Public hero
+selection is allowlisted to the archived `snap/` render family; diagnostic and
+likeness images elsewhere in the Made tree remain evidence only.
 
 A normally completed native turn that has not written `agent-outcome.json` is
 unfinished work, not a failed gate. When the exact native session checkpoint is

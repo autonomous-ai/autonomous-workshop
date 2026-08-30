@@ -484,6 +484,15 @@ class StageProposalToolTest(unittest.TestCase):
         pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
         pen.polygon(((450, 230), (700, 690), (200, 690)), fill="#ffb445")
         render.save(product_root / "cad/project/snap/iso.png", format="PNG")
+        signature = Image.new("RGB", (1800, 900), "#fff4df")
+        signature_pen = ImageDraw.Draw(signature)
+        for offset, color in ((0, "#35aeb8"), (600, "#ffb445"), (1200, "#35aeb8")):
+            signature_pen.ellipse(
+                (offset + 110, 160, offset + 490, 700), fill=color
+            )
+        signature.save(
+            product_root / "cad/project/snap/signature.png", format="PNG"
+        )
         return product_root, product, product_bytes, verification
 
     def create_made(self):
@@ -784,6 +793,41 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn("diagnostic grayscale image", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        valid = Image.new("RGB", (900, 900), "#fff4df")
+        ImageDraw.Draw(valid).ellipse((180, 160, 720, 700), fill="#35aeb8")
+        valid.save(render, format="PNG")
+        signature = product_root / "cad/project/snap/signature.png"
+        signature.unlink()
+        missing_signature = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("requires a signature render", missing_signature.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        invalid_signature = Image.new("L", (1800, 900), 255)
+        ImageDraw.Draw(invalid_signature).rectangle((120, 120, 1680, 780), fill=0)
+        invalid_signature.save(signature, format="PNG")
+        rejected_signature = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("signature render", rejected_signature.stderr)
+        self.assertIn("diagnostic grayscale image", rejected_signature.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_make_rejects_invalid_required_product_metadata_before_outputs(self):

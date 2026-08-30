@@ -100,7 +100,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0014-terminal-published-release.md`, and
 `docs/adr/0015-defer-playtest.md`, and
 `docs/adr/0016-selectable-effort-routes.md`, and
-`docs/adr/0019-frozen-spark-economics-profile.md` before changing the CLI, runtime,
+`docs/adr/0019-frozen-spark-economics-profile.md`, and
+`docs/adr/0020-signature-experience-evidence.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -109,7 +110,8 @@ compatibility. ADR 0016 supersedes ADR 0015's fixed topology for new runs while
 preserving its truthful omission contract for Spark and Forge. The
 native-session path is the production architecture. ADR 0019 freezes a
 lower-cost Codex profile only for new marked Spark runs without changing their
-gates or upgrading older sessions.
+gates or upgrading older sessions. ADR 0020 adds exact signature-experience
+evidence and batched manual review without adding a host-side judge.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

@@ -72,6 +72,9 @@ class PackageDataTest(unittest.TestCase):
         self.assertIn("smallest complete physical format", manual_skill)
         self.assertIn("two to four small pages", manual_skill)
         self.assertIn("not fixed page-count gates", manual_skill)
+        manual_review = roots["manual-design"] / "scripts" / "review_manual"
+        self.assertTrue(manual_review.is_file())
+        self.assertTrue(manual_review.stat().st_mode & 0o111)
         visual_system = (
             roots["manual-design"]
             / "references"

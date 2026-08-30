@@ -43,6 +43,26 @@ quality while using no more than 2,461,602 gross input tokens to establish the
 0.1x economics target. Cached, uncached, and output counts remain visible so a
 nominal win cannot hide a regression in another category.
 
+The first low-reasoning challenger, Starling Gate, established that runtime
+tuning alone is insufficient:
+
+| Measure | Whole run | Make | Release |
+|---|---:|---:|---:|
+| Gross input | 7,144,631 | 3,247,116 | 3,897,515 |
+| Cached input | 6,983,552 | 3,142,784 | 3,840,768 |
+| Uncached input | 161,079 | 104,332 | 56,747 |
+| Output | 24,291 | 12,055 | 12,236 |
+| Reasoning output | 2,884 | 1,510 | 1,374 |
+| Elapsed | 19m 50s | 10m 42s native work | 6m 17s native work |
+
+This cut gross input by about 71% and reasoning output by about 91%, but missed
+the 0.1x input target. More importantly, its exact imagery did not make the
+promised bird-to-shooting-star transformation legible. Release then cost more
+input than Make while teaching that unproven promise. The next optimization
+therefore moves signature-experience proof into Make, selects the Inventor for
+the hardest-to-fake magic rather than fabrication convenience, and batches the
+full manual review into one render command.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

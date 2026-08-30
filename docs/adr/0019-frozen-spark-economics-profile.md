@@ -80,5 +80,6 @@ input inventory. Existing sessions and runs without the marker remain `high`.
 - The economics target is at most 0.1x Moonchase Fox's gross input without an
   increase hidden in uncached input or output. The quality target requires a
   blind preference over the baseline on the signature experience and most
-  other dimensions. Until that benchmark exists, the combined 10x/0.1x goal
-  remains unproven.
+  other dimensions. Starling Gate reached 0.29x gross input but failed the
+  signature-experience comparison, so the combined 10x/0.1x goal remains
+  unproven.

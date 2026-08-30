@@ -434,11 +434,14 @@ and prunes only real empty directories beneath the canonical current product
 root. No native process is active; files and links are never removed or
 followed. This compatibility cleanup does not rematerialize or mutate frozen
 instructions.
-The current Make finalizer additionally requires a valid chromatic RGB/RGBA
-presentation PNG at `<cad-project>/snap/iso.png`, at least 800 px per side.
-That explicit path is archived under `make/verification/renders/` and is the
-only render family eligible for automatic README hero selection. Diagnostic
-silhouettes elsewhere remain evidence and cannot be promoted accidentally.
+The current Make finalizer additionally requires valid chromatic RGB/RGBA
+presentation PNGs at `<cad-project>/snap/iso.png` (at least 800 px per side)
+and `<cad-project>/snap/signature.png` (at least 1200 by 800 px). The latter
+shows exact STL poses or views chosen to make the signature experience legible
+without copy. Those explicit paths are archived under
+`make/verification/renders/`; the family is the only one eligible for automatic
+README hero selection. Diagnostic silhouettes elsewhere remain evidence and
+cannot be promoted accidentally.
 
 Host-selected product artifacts share the package contract's 95 MiB per-file
 limit while the durable run retains its 128 MiB cumulative referenced-artifact

@@ -50,10 +50,13 @@ and physical format.
    badge, arrow, and footer primitives once.
 4. Build the complete smallest format with real copy and visuals—no lorem ipsum
    and no placeholder boxes.
-5. Render every page together in color and grayscale. Inspect at physical size.
-6. Give that complete first render to the required independent visual editor.
+5. Run `scripts/review_manual` once to render every page together in color and
+   grayscale. Inspect both contact sheets at physical size, including whether
+   the exact signature experience works without its headline.
+6. Give those two sheets—not the whole workspace—to the required independent
+   visual editor.
 7. Resolve its strongest concrete finding and the largest first-owner problem
-   in one revision, then rerender the complete manual once.
+   in one revision, then rerun the complete review command once.
 
 The visual review is evidence about an exact artifact, never an aesthetic score
 or permission to invent unsupported product behavior.

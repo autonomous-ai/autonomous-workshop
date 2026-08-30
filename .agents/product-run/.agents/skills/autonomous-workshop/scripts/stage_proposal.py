@@ -1392,51 +1392,76 @@ def _invent_contract_for_assignment(
 
 
 def _validate_make_product_render(project: Path) -> None:
-    """Require one explicit, inspectable presentation render from Make.
+    """Require explicit hero and signature presentation renders from Make.
 
     Geometry comparison masks are intentionally grayscale.  Requiring a
-    chromatic RGB/RGBA image at the exact ``snap/iso.png`` path keeps those
-    diagnostic images from silently becoming the public product hero while
-    leaving creative composition and palette choices with the native agent.
+    chromatic RGB/RGBA hero plus a wider exact-product signature sheet keeps
+    those diagnostic images from silently becoming public product imagery while
+    leaving creative composition, poses, and palette with the native agent.
     """
-    render = project / "snap" / "iso.png"
-    try:
-        identity = render.lstat()
-        resolved = render.resolve(strict=True)
-    except OSError as exc:
-        raise ProposalError(
-            "Make requires a product render at <cad-project>/snap/iso.png"
-        ) from exc
-    if render != resolved or render.is_symlink() or not stat.S_ISREG(identity.st_mode):
-        raise ProposalError("Make product render must be a real in-project file")
-    try:
-        from PIL import Image
+    specifications = (
+        (
+            "iso.png",
+            "product render",
+            800,
+            800,
+            "Make requires a product render at <cad-project>/snap/iso.png",
+        ),
+        (
+            "signature.png",
+            "signature render",
+            1200,
+            800,
+            "Make requires a signature render at <cad-project>/snap/signature.png",
+        ),
+    )
+    for filename, label, minimum_width, minimum_height, missing_message in specifications:
+        render = project / "snap" / filename
+        try:
+            identity = render.lstat()
+            resolved = render.resolve(strict=True)
+        except OSError as exc:
+            raise ProposalError(missing_message) from exc
+        if (
+            render != resolved
+            or render.is_symlink()
+            or not stat.S_ISREG(identity.st_mode)
+        ):
+            raise ProposalError("Make %s must be a real in-project file" % label)
+        try:
+            from PIL import Image
 
-        with Image.open(render) as image:
-            image.verify()
-        with Image.open(render) as image:
-            if image.format != "PNG":
-                raise ProposalError("Make product render must be a PNG")
-            width, height = image.size
-            if not (800 <= width <= 4096 and 800 <= height <= 4096):
-                raise ProposalError(
-                    "Make product render must be between 800 and 4096 pixels per side"
-                )
-            if image.mode not in ("RGB", "RGBA"):
-                raise ProposalError(
-                    "Make product render must be RGB/RGBA, not a diagnostic grayscale image"
-                )
-            sampled = image.convert("RGB").resize((64, 64))
-            pixels = tuple(sampled.getdata())
-    except ProposalError:
-        raise
-    except Exception as exc:
-        raise ProposalError("Make product render is not a valid PNG") from exc
-    chromatic = sum(max(pixel) - min(pixel) >= 10 for pixel in pixels)
-    if chromatic < 32 or len(set(pixels)) < 16:
-        raise ProposalError(
-            "Make product render must be a chromatic presentation image with useful tonal variation"
-        )
+            with Image.open(render) as image:
+                image.verify()
+            with Image.open(render) as image:
+                if image.format != "PNG":
+                    raise ProposalError("Make %s must be a PNG" % label)
+                width, height = image.size
+                if not (
+                    minimum_width <= width <= 4096
+                    and minimum_height <= height <= 4096
+                ):
+                    raise ProposalError(
+                        "Make %s must be between %dx%d and 4096x4096 pixels"
+                        % (label, minimum_width, minimum_height)
+                    )
+                if image.mode not in ("RGB", "RGBA"):
+                    raise ProposalError(
+                        "Make %s must be RGB/RGBA, not a diagnostic grayscale image"
+                        % label
+                    )
+                sampled = image.convert("RGB").resize((64, 64))
+                pixels = tuple(sampled.getdata())
+        except ProposalError:
+            raise
+        except Exception as exc:
+            raise ProposalError("Make %s is not a valid PNG" % label) from exc
+        chromatic = sum(max(pixel) - min(pixel) >= 10 for pixel in pixels)
+        if chromatic < 32 or len(set(pixels)) < 16:
+            raise ProposalError(
+                "Make %s must be a chromatic presentation image with useful tonal variation"
+                % label
+            )
 
 
 def _make_contract(

@@ -600,6 +600,18 @@ class _OneSessionProductAgent:
                 width=5,
             )
         render.save(render_path, format="PNG", optimize=False)
+        signature_path = render_path.with_name("signature.png")
+        signature = Image.new("RGB", (1800, 900), (244, 238, 224))
+        signature_drawing = ImageDraw.Draw(signature)
+        for offset, color in (
+            (0, (49, 129, 176)),
+            (600, (235, 160, 55)),
+            (1200, (49, 129, 176)),
+        ):
+            signature_drawing.ellipse(
+                (offset + 110, 160, offset + 490, 700), fill=color
+            )
+        signature.save(signature_path, format="PNG", optimize=False)
         _write_json(
             product_root / "validation" / "cad-verification.json",
             {

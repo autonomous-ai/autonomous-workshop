@@ -34,7 +34,12 @@ contract, so Spark still has exact creative provenance without another turn.
 
 For Spark, scan the roster's bounded agent descriptions in one pass, rank the
 complete roster, and open the full Taste and skill bundle only for the selected
-Inventor. Define one signature interaction and one anti-generic visual or
+Inventor. First name the hardest-to-fake magic: the perception, motion, rule,
+transformation, or emotional moment whose loss would make the Wish generic.
+Select the Inventor whose Taste owns that magic, not merely the specialist whose
+usual fabrication method matches one-piece, support-free, or similar
+constraints. Shared domain skills solve fabrication after creative ownership
+is correct. Define one signature interaction and one anti-generic visual or
 mechanical signature before CAD. A compact toy with one extraordinary moment
 is stronger than a feature list whose parts receive shallow treatment.
 
@@ -137,16 +142,24 @@ are ignored by both the finalizer and the host's exact-file gate. Frozen older
 finalizers may rely on the trusted host to prune that empty residue before a
 later resume; do not treat the directory itself as product evidence.
 
-Create and inspect an actual presentation render at
-`<cad-project>/snap/iso.png` before finalizing. Use the CAD skill's
-`scripts/render_product` on an exact verified STL, or another deterministic
-renderer that writes the same path. The image must be a valid chromatic
-RGB/RGBA PNG at least 800 px on each side. Choose a palette and view that make
-the product's form and play affordance legible. Binary silhouettes from
+Create and inspect both required exact-product presentation renders before
+finalizing:
+
+- `<cad-project>/snap/iso.png` is the chromatic hero, at least 800×800 px;
+- `<cad-project>/snap/signature.png` is a chromatic signature-experience sheet,
+  at least 1200×800 px, showing two to five exact STL poses or views that make
+  the promised interaction, reveal, or anti-generic detail legible without its
+  title.
+
+Use the CAD skill's `scripts/render_product` on an exact verified STL, or
+another deterministic renderer that writes those exact paths. Choose a palette,
+views, and poses that expose the form and play affordance. If a reader cannot
+identify the signature experience from the sheet alone, repair the geometry;
+copy cannot substitute for missing product magic. Binary silhouettes from
 `image-to-cad/render_views.py` are measurement evidence, not product renders;
 keep them in a clearly named review/evidence directory. The finalizer rejects
-a missing, grayscale, flat, or undersized presentation image, and the public
-snapshot promotes only this explicit `snap/` render family as its local hero.
+missing, grayscale, flat, or undersized presentation images, and the public
+snapshot preserves this explicit `snap/` render family.
 
 The root `product.json` must be a JSON object containing at least these exact
 metadata keys (additional product-specific fields are allowed):

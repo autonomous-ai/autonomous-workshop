@@ -56,7 +56,7 @@
   <text x="448" y="315" class="eyebrow orange">CODEX GOAL · MAKE</text>
   <text x="448" y="349" class="heading">MAKE</text>
   <text x="448" y="376" class="body">Build exact CAD.</text>
-  <text x="448" y="398" class="body">Inspect + improve.</text>
+  <text x="448" y="398" class="body">Prove signature magic.</text>
   <text x="448" y="420" class="body">Pass Make gate.</text>
 
   <g filter="url(#shadow)"><rect x="640" y="285" width="180" height="150" rx="20" class="active"/></g>

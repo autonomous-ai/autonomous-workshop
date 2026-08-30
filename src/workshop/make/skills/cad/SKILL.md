@@ -128,10 +128,15 @@ gate.
 9. **Reconcile image-derived work.** When the project came from an image/spec, every source repair that changes a parameter, landmark, part count, or construction family must be reconciled back into the approved `*_spec.md`. Give every landmark a local geometry target, render the orthogonal set plus every usable reference viewpoint, compare source against STEP, and run the likeness gate. `references/image-derived-verification.md` defines the two local audits and the integrated `verify_project --image-derived` command.
 10. **Repair and rerun.** If a check fails, change the smallest responsible source section, regenerate, and rerun the failed validation.
 11. **Render the product handoff.** After the exact STL passes its gates, use
-    `scripts/render_product <assembled-or-primary.stl> -o <project>/snap/iso.png`
+    `scripts/render_product <assembled-or-primary.stl> -o <project>/snap/iso.png --motion-sheet <project>/snap/signature.png`
     and inspect the PNG at full size. Choose `--base`, `--accent`, and
     `--background` colors appropriate to the product. This presentation render
-    explains the product to people; it does not replace any geometry check.
+    explains the product to people; it does not replace any geometry check. Set
+    `--motion-view` and `--motion-angles` to expose the signature interaction.
+    For a static product, use the sheet as a small set of exact views that makes
+    its anti-generic detail unmistakable. Judge the sheet without its title: if
+    the promised interaction or reveal is not legible, repair the product rather
+    than relying on customer copy to assert it.
     Keep binary silhouettes from the image-to-CAD likeness tool under a named
     review/evidence path, never at `snap/iso.png`.
 
@@ -154,8 +159,9 @@ reference-image reconstruction and its required likeness evidence.
 ## Non-negotiables
 
 - Keep STEP as the primary validated CAD artifact. Generated STEP/STP, STL, 3MF, GLB/topology outputs, and render sidecars are derived artifacts; STL/3MF are secondary unless the user explicitly says otherwise.
-- Keep presentation and measurement imagery distinct. `snap/iso.png` is a
-  visually inspected, chromatic product view made from an exact verified STL;
+- Keep presentation and measurement imagery distinct. `snap/iso.png` and
+  `snap/signature.png` are visually inspected, chromatic product views made
+  from an exact verified STL;
   a black/white likeness silhouette is diagnostic evidence and cannot replace
   it.
 - Use named parameters, closed solids, verbose native build123d labels, and source-controlled geometry intent.

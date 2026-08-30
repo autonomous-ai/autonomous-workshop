@@ -122,6 +122,13 @@ Inventor agent. Its host-materialized instructions
 bind its exact source manifest, full Taste, and skill artifacts under
 `.agents/skills/`.
 
+Name the Wish's hardest-to-fake magic before ranking the roster: the perceptual
+reveal, motion, rule, transformation, or emotional moment whose loss would make
+the toy generic. Select the Inventor whose Taste and primary method own that
+magic. Do not choose a specialist merely because its usual fabrication method
+matches constraints such as one-piece or support-free printing; the shared
+domain skills can solve fabrication after creative ownership is correct.
+
 - “Inventor” is the Workshop name for a standard project-scoped Codex custom
   subagent, not a separate agent framework.
 - Never reconstruct an Inventor from memory, consult a competing identity

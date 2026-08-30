@@ -233,10 +233,13 @@ render remains exact and fail-closed. Before resuming a frozen Make protocol
 that still requires directory deletion, the trusted host also prunes only
 empty product directories while holding the run lock; it never removes files
 or follows links.
-For new runs it also requires an inspected chromatic product render at
-`<cad-project>/snap/iso.png`. The public toy README may use only this explicit
-presentation-render family as its local hero; arbitrary diagnostic images and
-black/white likeness masks are never promoted.
+For new runs it also requires two inspected chromatic exact-product renders:
+`<cad-project>/snap/iso.png` is the hero, while
+`<cad-project>/snap/signature.png` shows the signature interaction, reveal, or
+anti-generic detail across exact poses or views without relying on marketing
+copy. The public toy README may use only this explicit presentation-render
+family as its local hero; arbitrary diagnostic images and black/white likeness
+masks are never promoted.
 If a native turn simply returns before writing a proposal, Workshop continues
 the same checkpointed Goal automatically, explicitly reminding the session
 that its finalizer has not run. Three consecutive normally returned turns

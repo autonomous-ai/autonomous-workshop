@@ -53,7 +53,7 @@
   <text x="322" y="350" class="heading">MAKE</text>
   <text x="322" y="377" class="body">Choose the fitting Inventor,</text>
   <text x="322" y="399" class="body">shape the concept, build CAD,</text>
-  <text x="322" y="421" class="body">and pass the Make gate.</text>
+  <text x="322" y="421" class="body">prove its magic + pass the gate.</text>
 
   <g filter="url(#shadow)"><rect x="625" y="285" width="260" height="150" rx="20" class="release"/></g>
   <text x="652" y="315" class="eyebrow orange">CODEX GOAL · PACKAGE + PUBLISH</text>

@@ -21,9 +21,16 @@ into an ordinary themed object. Spend depth on making those two ideas coherent
 with a feasible mechanism. Additional features earn their place only when they
 strengthen that core.
 
-Compare every roster entry before selecting. Use the selected project-scoped
-custom agent for specialist work. The root Workshop Manager reviews and
-synthesizes its output and remains responsible for the one stage proposal.
+Before ranking, also name the **hardest-to-fake magic**: the perceptual reveal,
+motion, rule, transformation, or emotional moment whose loss would make the
+Wish generic. Compare every roster entry and select the Inventor whose Taste
+and primary method own that magic. Manufacturing convenience is not creative
+ownership: one-piece, support-free, or familiar CAD constraints can be solved
+with the shared domain skills. Treat selecting only for those conveniences as
+a red flag when another Inventor owns the promised perception, movement, rules,
+or reveal. Use the selected project-scoped custom agent for specialist work.
+The root Workshop Manager reviews and synthesizes its output and remains
+responsible for the one stage proposal.
 
 While pursuing the Goal:
 
