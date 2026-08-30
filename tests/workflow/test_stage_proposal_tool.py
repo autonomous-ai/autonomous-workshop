@@ -894,6 +894,36 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("diagnostic grayscale image", rejected_signature.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
+    def test_make_requires_one_unambiguous_combined_cad_entry(self):
+        product_root, _, _, _ = self.create_product()
+        (product_root / "cad/project/presentation.step.py").write_text(
+            "pass\n", encoding="utf-8"
+        )
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+
+        rejected = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("exactly one non-part *.step.py", rejected.stderr)
+        self.assertIn("moon.step.py, presentation.step.py", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_make_requires_review_bound_to_final_signature_images(self):
         product_root, _, _, _ = self.create_product()
         self.write_stage(

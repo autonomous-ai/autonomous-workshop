@@ -58,6 +58,15 @@ to expose their mechanisms, choose once the evidence distinguishes them, then
 stop generating alternatives. Do not browse when the remaining decisions are
 deliberate design choices rather than factual uncertainties.
 
+For Forge and Quest, earn every component before sealing the concept. Identify
+the one hardest causal or kinematic relationship and describe the smallest
+exact geometry that can falsify it at the start of Make. Prefer a concept whose
+signature magic survives with fewer independent parts, contacts, and coupled
+motions. Complexity is justified only when removing it destroys the promised
+experience; decorative detail, duplicated mechanisms, and extra simultaneous
+motions are not depth. A concept that cannot name a cheap decisive proof is not
+ready to seal—simplify it while preserving the anti-generic signature.
+
 Codex owns the research strategy, concept generation, judging, and iteration.
 Do not implement deep research, candidate fan-out, model judging, scoring,
 reward, or repair loops in Python. Deterministic scripts may inspect facts or

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title description">
   <title id="title">Quest effort route: Wish to Invent to Make to Playtest to Release</title>
-  <desc id="description">Quest is the fullest Autonomous Workshop route. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Invent, followed by Make and Playtest. A fixed preflight generates every printable and requires strict fit, mesh validity, and 0.4 mm-nozzle thickness before one independent critic blindly reads the exact form, subjects, action, and relationship. The critic binds that passing report, then checks every explicit held-form constraint and the anti-generic signature with no blocking visual defect. Make permits at most two review rounds, then requires one passing full-tier CAD report. A proven concept block returns Make to Invent. Failed Playtest returns directly to Make for a build defect or Invent for a concept defect. All repair routes share one revision budget. Release requires passing Playtest evidence bound to the current Made revision, verifies the CAD and manual, publishes with public hash readback, and hands the product to Operations.</desc>
+  <desc id="description">Quest is the fullest Autonomous Workshop route. New Codex Quest runs retain high reasoning while freezing a 32k automatic compaction ceiling and 30-minute boundary per native turn. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Invent, followed by Make and Playtest. A fixed preflight generates every printable and requires strict fit, mesh validity, and 0.4 mm-nozzle thickness before one independent critic blindly reads the exact form, subjects, action, and relationship. The critic binds that passing report, then checks every explicit held-form constraint and the anti-generic signature with no blocking visual defect. Make permits at most two review rounds, then requires one passing full-tier CAD report. A proven concept block returns Make to Invent. Failed Playtest returns directly to Make for a build defect or Invent for a concept defect. All repair routes share one revision budget. Release requires passing Playtest evidence bound to the current Made revision, verifies the CAD and manual, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/></filter>
     <marker id="arrow" viewBox="0 0 12 12" markerWidth="18" markerHeight="18" refX="11" refY="6" orient="auto" markerUnits="userSpaceOnUse" overflow="visible"><polygon points="0,0 12,6 0,12" fill="#525b66"/></marker>
@@ -32,7 +32,7 @@
 
   <g filter="url(#shadow)"><rect x="55" y="185" width="1090" height="68" rx="18" class="manager"/></g>
   <text x="83" y="212" class="eyebrow" fill="#376b61">WORKSHOP MANAGER</text>
-  <text x="83" y="237" class="body">The host freezes Quest and owns gates + publication; each active attempt gets one Codex Goal.</text>
+  <text x="83" y="237" class="body">Codex Quest: high · 32k · 30m/turn · 8 turns/command; every gate and Goal stays intact.</text>
 
   <path class="route" d="M 175 355 H 210"/>
   <path class="route" d="M 390 355 H 425"/>

@@ -1723,6 +1723,17 @@ def _make_contract(
     ):
         raise ProposalError("CAD project path must be a real in-product directory")
     _prune_derived_cad_caches(project, "Make CAD project")
+    combined_entries = sorted(
+        path.name
+        for path in project.glob("*.step.py")
+        if not path.name.startswith("part_")
+    )
+    if len(combined_entries) != 1:
+        raise ProposalError(
+            "Make CAD project must contain exactly one non-part *.step.py "
+            "combined entry for the isolated host verifier; found %d (%s)"
+            % (len(combined_entries), ", ".join(combined_entries) or "none")
+        )
     _validate_make_product_render(project)
     _validate_signature_review(
         run_root,

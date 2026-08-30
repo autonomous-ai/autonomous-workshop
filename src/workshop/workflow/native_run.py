@@ -135,6 +135,10 @@ from workshop.workflow.agent_run import (
     DeterministicGateReceipt,
 )
 from workshop.workflow.effort import (
+    DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_NATIVE_TURN_LIMIT,
+    DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
@@ -3592,12 +3596,21 @@ def _native_launcher(checkpoint: AgentRunCheckpoint) -> NativeSessionLauncher:
 
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
-    Spark runs with the immutable economics capability use Codex's low
-    reasoning profile for the entire Wish-wide session. Older runs lack the
-    marker and therefore retain the historical high profile on resume.
+    Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
+    runs keep high reasoning while binding their compaction and turn limits.
+    Older runs lack those markers and retain their historical profile on resume.
     """
 
     if checkpoint.manager_id == DEFAULT_MANAGER_ID:
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                reasoning_effort="high",
+                auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+            )
         if (
             checkpoint.effort == "spark"
             and SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3623,6 +3636,18 @@ def _native_launcher(checkpoint: AgentRunCheckpoint) -> NativeSessionLauncher:
         )
         return CodexNativeSessionLauncher(reasoning_effort=reasoning_effort)
     return manager_launcher(checkpoint.manager_id)
+
+
+def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
+    """Return the per-invocation turn cap frozen into this Manager run."""
+
+    if (
+        checkpoint.manager_id == DEFAULT_MANAGER_ID
+        and checkpoint.effort in ("forge", "quest")
+        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        return DEEP_NATIVE_TURN_LIMIT
+    return _MAX_NATIVE_TURNS
 
 
 def _launcher_call(
@@ -5818,7 +5843,8 @@ def _run_native_session(
     consecutive_unfinished_turns = 0
     consecutive_recoverable_turns = 0
     recoverable_continuation = False
-    while turns < _MAX_NATIVE_TURNS:
+    native_turn_limit = _native_turn_limit(run.snapshot())
+    while turns < native_turn_limit:
         checkpoint = run.snapshot()
         if checkpoint.status in ("waiting", "failed", "complete"):
             return checkpoint, last_session, turns, action
@@ -6003,7 +6029,7 @@ def _run_native_session(
                                 checkpoint.product_id,
                             )
                         )
-                    if turns < _MAX_NATIVE_TURNS:
+                    if turns < native_turn_limit:
                         time.sleep(
                             _recoverable_native_turn_backoff_seconds(
                                 checkpoint,

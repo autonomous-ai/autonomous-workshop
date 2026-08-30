@@ -588,6 +588,10 @@ class _OneSessionProductAgent:
             "def build():\n    return 'orbit-dog-draughts'\n",
             encoding="utf-8",
         )
+        (product_root / "cad" / "project" / "assembled.step.py").write_text(
+            "from build import build\n",
+            encoding="utf-8",
+        )
         render_path = product_root / "cad" / "project" / "snap" / "iso.png"
         render_path.parent.mkdir(parents=True, exist_ok=True)
         render = Image.new("RGB", (800, 800), (244, 238, 224))

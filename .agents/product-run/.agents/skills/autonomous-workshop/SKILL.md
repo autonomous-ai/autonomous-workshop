@@ -69,6 +69,12 @@ few decisions and checks that make it real.
   a quality waiver: choose the signature interaction early, keep one complete
   build on the critical path, batch independent tool work, and spend additional
   cycles only on a concrete failing check or visible product defect.
+- For Forge and Quest, use high reasoning to make the concept simpler and more
+  inevitable, not to multiply features. Their frozen 30-minute turns and 32k
+  compaction ceiling are focus constraints, not quality waivers. Prove the
+  hardest causal or kinematic relationship with the smallest exact falsifiable
+  geometry before committing to detailed parts. If that proof is expensive or
+  ambiguous, simplify the mechanism while preserving the signature magic.
 
 ## Run one native Goal for the current stage
 

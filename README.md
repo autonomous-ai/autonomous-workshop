@@ -203,7 +203,7 @@ and cost benchmark.
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=print-preflight-v6)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v1)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -219,10 +219,13 @@ New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
 ceiling for their one persistent Make-to-Release session, and a 20-minute
 boundary per native turn. A timeout resumes the exact session and Goal through
 the existing bounded recovery path; it is not a 20-minute stage deadline.
-Forge and Quest retain high reasoning without that Spark ceiling or shortened
-boundary. Older runs keep the exact profile they started with. This is an
-economics policy, not a quality waiver: every effort still passes its full
-deterministic product and publication gates.
+New Forge and Quest runs retain high reasoning while freezing a 32k
+compaction ceiling, a 30-minute boundary per native turn, and an eight-turn cap
+per CLI invocation. Their novelty must come from one strong, early-proven
+relationship or interaction—not gratuitous parts or mechanisms. Older runs keep
+the exact profile they started with. These are economics policies, not quality
+waivers: every effort still passes its full deterministic product and
+publication gates.
 
 The reverse arrows are evidence-bound repair routes, not free-form retries.
 Make can return a Forge or Quest run to Invent only when exact saved evidence

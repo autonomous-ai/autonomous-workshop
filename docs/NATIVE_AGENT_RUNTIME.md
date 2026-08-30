@@ -57,12 +57,18 @@ session at low reasoning effort with a 64k automatic context-compaction ceiling
 across Make and Release plus a 20-minute boundary per native turn. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
-waiver. Forge and Quest stay high without that Spark ceiling or shortened
-boundary. A frozen v2 Spark remains low with 64k compaction and the historical
-timeout; v1 stays low without a Workshop-specified compaction setting; an older
-unmarked Spark stays high. A host upgrade therefore cannot change
-checkpoint-bound runtime policy. The lower profile does not waive or reduce
-any CAD, PDF, evidence, or publication gate.
+waiver. New Forge and Quest projects freeze `deep-economics-v1.md`: they retain
+high reasoning effort while adding a 32k compaction ceiling and 30-minute native
+turn boundary. One CLI invocation launches at most eight native turns across
+all stages, so gate rejections cannot silently grow an unattended deep-effort
+command toward the historical 32-turn ceiling. Their extra work earns one
+distinctive, early-proven signature experience rather than gratuitous part or
+mechanism count. Frozen older runs retain their prior profile. A frozen v2 Spark
+remains low with 64k compaction
+and the historical timeout; v1 stays low without a Workshop-specified
+compaction setting; an older unmarked Spark stays high. A host upgrade therefore
+cannot change checkpoint-bound runtime policy. These profiles do not waive or
+reduce any CAD, PDF, evidence, Playtest, or publication gate.
 
 For each active Invent, Make, Playtest, or Release attempt,
 the Manager creates one native Codex Goal. Only one Goal is active. It binds one objective,
@@ -719,7 +725,10 @@ private Wish demonstrate that:
 11. a v3 Codex Spark run uses frozen low reasoning, its 64k compaction ceiling,
     and a 20-minute boundary per native turn across both active stages; v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
-    bindings.
+    bindings; and
+12. a marked Codex Forge or Quest run retains high reasoning with a frozen 32k
+    compaction ceiling, 30-minute turn boundary, and eight-turn CLI invocation
+    cap, while older deep-effort runs retain their historical binding.
 
 ## Engine portability
 

@@ -19,10 +19,11 @@ decorated, and be represented no more strongly than its evidence permits.
 
 For Codex, new Spark projects freeze low reasoning, a 64k automatic
 context-compaction ceiling across their one Make-to-Release session, and a
-20-minute boundary per native turn. Forge and Quest remain high reasoning
-without that Spark ceiling or shortened boundary, and older Spark sessions
-remain on the profile they started with. Effort changes cognitive spend, never
-the exact-byte CAD, manual, evidence, or publication gates.
+20-minute boundary per native turn. New Forge and Quest projects retain high
+reasoning while freezing a 32k compaction ceiling and 30-minute boundary per
+turn. Older runs remain on the profile they started with. Effort changes
+cognitive spend, never the exact-byte CAD, manual, Playtest, evidence, or
+publication gates.
 
 ## Lifecycle
 
@@ -108,6 +109,15 @@ boundary. A timeout follows the same bounded recovery mechanism below and
 continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
+
+For new Forge and Quest runs, the frozen `deep-economics-v1.md` capability keeps
+Codex at high reasoning effort while applying a 32k automatic-compaction ceiling
+and a 30-minute process boundary to every native stage turn. The same recovery
+semantics apply, with no more than eight native turns across one CLI invocation.
+Invent must prefer one early-proven signature relationship over gratuitous
+mechanical complexity; the profile changes spend, not any lifecycle or evidence
+gate. Frozen older runs keep their historical one-hour boundary, 32-turn command
+cap, and unbounded Workshop compaction setting.
 
 Within either command, a timed-out native turn or explicitly recognized
 provider disconnect automatically continues only after Workshop has both

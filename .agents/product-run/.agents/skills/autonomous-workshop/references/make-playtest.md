@@ -92,6 +92,20 @@ exports and run the integrated final verifier once. A full verifier must not be
 used as the inner visual-design loop. Do not repeatedly run it or regenerate
 unchanged exports between small edits.
 
+For Forge and Quest, begin Make by proving the Invented concept's hardest
+causal or kinematic relationship with the smallest exact geometry that can
+falsify it. Do not detail every part first. If the proof fails, repair the
+minimal relationship or use the evidence-bound Make-to-Invent route when the
+sealed concept itself is impossible; do not bury the failure under added parts
+or decorative geometry. Once it passes, reuse that exact source and expand only
+the parts required for the signature experience.
+
+Keep exactly one non-part `*.step.py` combined entry in the declared CAD
+project. The isolated host verifier infers that entry and cannot accept an
+agent-only `--assembly` choice. Put presentation, signature, state, or other
+auxiliary generators in ordinary helper modules and call them from the sole
+combined entry; `part_*.step.py` remains reserved for part entries.
+
 For Spark, the compact Invented packet is still subordinate to the exact Wish.
 Do not rewrite a Wish-critical positive or negative form constraint to describe
 whatever geometry happened to pass CAD. If a repair changes the construction

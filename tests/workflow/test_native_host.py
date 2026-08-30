@@ -27,6 +27,7 @@ from workshop.workflow.native_run import (
     _NativeProgressTracker,
     _native_token_summary,
     _native_launcher,
+    _native_turn_limit,
     _record_native_token_usage,
     _native_run_mutation_lock,
     _prune_empty_make_product_directories,
@@ -53,6 +54,10 @@ from workshop.workflow.agent_run import (
 )
 from workshop.workflow.proposals import AgentOutcomeProposal
 from workshop.workflow.effort import (
+    DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_NATIVE_TURN_LIMIT,
+    DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -404,6 +409,7 @@ class NativeHostTest(unittest.TestCase):
     @staticmethod
     def _launcher_checkpoint(*, effort, economics_capability):
         capability_paths = {
+            "deep-v1": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
@@ -473,8 +479,27 @@ class NativeHostTest(unittest.TestCase):
 
         launcher_type.assert_called_once_with(reasoning_effort="low")
 
-    def test_forge_and_unmarked_spark_retain_high_reasoning(self):
-        for effort, marker in (("forge", "v3"), ("spark", None)):
+    def test_new_forge_and_quest_bound_context_and_turns_without_lowering_reasoning(self):
+        for effort in ("forge", "quest"):
+            with self.subTest(effort=effort), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher"
+            ) as launcher_type:
+                checkpoint = self._launcher_checkpoint(
+                    effort=effort, economics_capability="deep-v1"
+                )
+                _native_launcher(checkpoint)
+
+                launcher_type.assert_called_once_with(
+                    reasoning_effort="high",
+                    auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                    timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+                )
+                self.assertEqual(
+                    _native_turn_limit(checkpoint), DEEP_NATIVE_TURN_LIMIT
+                )
+
+    def test_older_forge_and_unmarked_spark_retain_historical_high_profile(self):
+        for effort, marker in (("forge", None), ("spark", None)):
             with self.subTest(effort=effort, marker=marker), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher"
             ) as launcher_type:
@@ -484,6 +509,7 @@ class NativeHostTest(unittest.TestCase):
                 _native_launcher(checkpoint)
 
                 launcher_type.assert_called_once_with(reasoning_effort="high")
+                self.assertEqual(_native_turn_limit(checkpoint), 32)
 
     def test_newer_cad_rejection_supersedes_resolved_make_proposal_feedback(self):
         proposal_rejection = {"failure_code": "make-product-metadata-invalid"}

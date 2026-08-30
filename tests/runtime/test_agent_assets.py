@@ -107,6 +107,13 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
                 / "spark-economics-v2.md"
             ).is_file()
         )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "deep-economics-v1.md"
+            ).is_file()
+        )
 
     def test_effort_guidance_distinguishes_direct_release_and_quest_playtest(self):
         guidance = (
@@ -133,6 +140,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "reveal the Wish",
             "expensive integrated final verifier",
             "one final `snap/` family",
+            "hardest causal or kinematic relationship",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, normalized)

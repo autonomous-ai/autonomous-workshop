@@ -237,13 +237,30 @@ Invent earned some of its extra work: one independent review rejected an
 overpacked barrel cam, and the same 23m23s native turn sealed a simpler side
 moon-wheel/Scotch-yoke concept. Make exposed the remaining economics failure:
 
-| Measure | Observed before operator resume |
+| Measure | Preserved production observation |
 |---|---:|
 | Invent | 1 turn, 23m23s, passed |
 | Make turn 1 | 60m00s, timed out |
 | Make turn 2 | 44m58s, failed |
-| CLI wall time | 2h08m25s |
+| Make turn 3 | 60m00s, timed out after explicit resume |
+| Make turn 4 | 39m48s, proposed; host rejected ambiguous combined entry |
+| Make turn 5 | 24m31s, proposed; host rejected changed rebuilt output |
+| Make turn 6 | operator stopped after 30s when rejection auto-continued |
+| Isolated gate after turn 5 | 19m29s, token-free; verifier passed but exact output changed |
+| Make native-turn time | 3h49m48s |
+| CLI wall time across wish + one resume | about 4h32m47s |
 | Publication | not created |
+
+| Stage telemetry | Input tokens | Output tokens | Measured turns |
+|---|---:|---:|---:|
+| Invent | 6,705,241 | 48,490 | 1 / 1 |
+| Make | 20,073,838 | 46,763 | 2 / 5 completed turns; interrupted turn omitted |
+
+These are stage rows, not a fabricated whole-run sum. Three completed Make
+turns timed out or ended without terminal usage and therefore have no token
+record. Of Make's measured input, 19,755,136 tokens were cached input; that is
+still repeated context volume and remains relevant to scale even when billing
+discounts it.
 
 Make spent its visual review before discovering that one printable base had
 0.14 mm regions and 0.7% sub-minimum surface at the normal 0.4 mm nozzle. It
@@ -260,6 +277,27 @@ instructions also make prototype/device reads, dominant exposed mechanisms,
 zoom-dependent signatures, raw faceting, unclear state changes, and visible
 `largest_risk` caveats blocking rather than cosmetically acceptable. No new
 agent, model judge, or retry loop is added.
+
+The resume exposed two more deterministic ordering failures. The first proposal
+declared four non-part `*.step.py` entries; local verification selected one with
+`--assembly`, but the isolated host has no trusted assembly choice in the Made
+contract and rejected it immediately. The next proposal passed a 19m29s
+isolated verifier, but the rebuilt exact CAD outputs differed from the proposed
+bytes. The old CLI then opened another Make turn because a host rejection resets
+the two-timeout recovery streak. The operator stopped that turn after 30s and
+preserved the session and every artifact.
+
+New Forge and Quest runs therefore freeze `deep-economics-v1.md`: high reasoning
+is retained for quality, while context compacts at 32k, each native turn stops
+at 30 minutes, and one CLI invocation stops after eight native turns. Invent
+and Make must prove the hardest causal or kinematic relationship with minimal
+exact geometry before detailing the full product, and recovery must reuse
+durable passed work. The Make finalizer now also refuses anything other than one
+unambiguous non-part combined CAD entry before spending an isolated host gate.
+Together with schema v6's all-printable preflight, these changes target the
+observed token and retry leaks without weakening any CAD, Playtest, manual, or
+publication gate. A fresh Forge and Quest production run remains required to
+measure the improvement; policy is not proof.
 
 ## Quality is comparative evidence, not a model score
 
