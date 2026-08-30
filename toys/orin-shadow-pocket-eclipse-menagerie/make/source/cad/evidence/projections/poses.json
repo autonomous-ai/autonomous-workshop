@@ -1,0 +1,31 @@
+{
+  "source": "artifacts/make/r0001/product/cad/pocket_eclipse/pocket_eclipse.step",
+  "size": 1000,
+  "tolerance": 0.1,
+  "poses": {
+    "front": {
+      "az": -90.0,
+      "el": 0.0,
+      "roll": 0.0,
+      "fov": 0.0
+    },
+    "right": {
+      "az": 0.0,
+      "el": 0.0,
+      "roll": 0.0,
+      "fov": 0.0
+    },
+    "top": {
+      "az": -90.0,
+      "el": 90.0,
+      "roll": 0.0,
+      "fov": 0.0
+    },
+    "iso": {
+      "az": -45.0,
+      "el": 35.264,
+      "roll": 0.0,
+      "fov": 0.0
+    }
+  }
+}
