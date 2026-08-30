@@ -5,6 +5,7 @@
 - Owners: Runtime, Workflow, and product-run instruction maintainers
 - Relates to: ADR 0012 (one native session), ADR 0016 (effort routes)
 - Superseded for new Spark runs by: ADR 0021
+- Economics-target interpretation superseded by: ADR 0024
 
 ## Context
 

@@ -6,6 +6,7 @@
 - Relates to: ADR 0019 (Spark economics), ADR 0020 (signature evidence), ADR 0021 (Spark compaction and review)
 - Supersedes for new runs: ADR 0021's prompted signature-review protocol
 - Superseded in part by: ADR 0023
+- Economics-target interpretation superseded by: ADR 0024
 
 ## Context
 

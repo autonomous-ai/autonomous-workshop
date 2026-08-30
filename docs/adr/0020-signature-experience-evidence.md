@@ -5,6 +5,7 @@
 - Owners: Make, Release, product-run instruction, and public archive maintainers
 - Relates to: ADR 0012 (native runtime), ADR 0013 (manual-first Release), ADR 0019 (Spark economics)
 - Superseded in part by: ADR 0021
+- Economics-target interpretation superseded by: ADR 0024
 
 ## Context
 

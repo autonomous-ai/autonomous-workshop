@@ -5,6 +5,7 @@
 - Owners: Runtime, Workflow, Make, product-run instruction, and CAD skill maintainers
 - Relates to: ADR 0019 (Spark economics), ADR 0020 (signature evidence), ADR 0021 (Spark compaction), ADR 0022 (blind review)
 - Supersedes for new runs: ADR 0022's schema-v2 signature review and Spark v2's one-hour native-turn boundary
+- Economics-target interpretation superseded by: ADR 0024
 
 ## Context
 

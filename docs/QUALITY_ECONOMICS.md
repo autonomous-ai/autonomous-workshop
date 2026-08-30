@@ -1,8 +1,10 @@
 # Product quality and token economics
 
-Autonomous Workshop's North Star is an order-of-magnitude better toy at one
-tenth the creation cost. The two requirements are conjunctive: a cheaper dull
-toy and an extravagant beautiful toy both miss the target.
+Autonomous Workshop's North Star is dramatically better toys at dramatically
+lower creation cost. “10x the quality at 0.1x the cost” is memorable shorthand
+for that direction, not a literal ratio or release threshold. The two
+requirements are conjunctive: a cheaper dull toy and an extravagant beautiful
+toy both miss the target.
 
 ## Cost is a vector, not a made-up total
 
@@ -21,8 +23,8 @@ A two-turn Codex CLI probe on 2026-08-30 confirmed the semantics:
 The resumed turn reports its whole effective context again, mostly as cached
 input. Therefore gross input is useful capacity telemetry but not a proxy for
 fresh context. Compare like-for-like runs on all reported categories and turn
-coverage. A 0.1x cost claim requires no category to hide an increase behind a
-combined total.
+coverage. A cost-improvement claim must not hide an increase in one category
+behind a combined total.
 
 ## Named production baseline
 
@@ -38,10 +40,10 @@ Moonchase Fox is the first complete schema-v3 Spark baseline:
 
 The public snapshot is `toys/pico-press-moonchase-fox/`. It passed full-tier
 CAD and publication gates; Release's visual review also found and repaired real
-manual collisions. The next comparable Spark run must beat that artifact on
-quality while using no more than 2,461,602 gross input tokens to establish the
-0.1x economics target. Cached, uncached, and output counts remain visible so a
-nominal win cannot hide a regression in another category.
+manual collisions. Comparable Spark challengers should beat that artifact on
+quality while materially reducing gross input, uncached input, output, and
+elapsed time. Cached, uncached, and output counts remain visible so a nominal
+win cannot hide a regression in another category.
 
 The first low-reasoning challenger, Starling Gate, established that runtime
 tuning alone is insufficient:
@@ -55,8 +57,8 @@ tuning alone is insufficient:
 | Reasoning output | 2,884 | 1,510 | 1,374 |
 | Elapsed | 19m 50s | 10m 42s native work | 6m 17s native work |
 
-This cut gross input by about 71% and reasoning output by about 91%, but missed
-the 0.1x input target. More importantly, its exact imagery did not make the
+This cut gross input by about 71% and reasoning output by about 91%, but did not
+complete the paired objective. More importantly, its exact imagery did not make the
 promised bird-to-shooting-star transformation legible. Release then cost more
 input than Make while teaching that unproven promise. The next optimization
 therefore moves signature-experience proof into Make, selects the Inventor for
@@ -82,7 +84,7 @@ toy. The one persistent session entered Release with roughly 105k tokens of
 effective context and grew to roughly 161k; more than 98% of Release input was
 cached. This is the evidence behind Spark v2's 64k automatic compaction ceiling,
 hash-bound independent final signature review, and double-sided-card default.
-The combined quality and 0.1x economics target remains unproven until a new
+The combined quality-and-economics objective remains unproven until a new
 permanent production challenger passes both comparisons.
 
 Mooncoil Dragon then tested Spark v2's compaction and review policy in a real
@@ -147,9 +149,30 @@ Each new native Spark turn has a frozen 20-minute boundary; one critic gets at
 most two rounds and must compare subjects, action, and relationship separately;
 and the integrated final CAD verifier refuses to begin until the exact
 hash-bound review exists. Quick checks remain available for iteration. The next
-permanent challenger must have complete turn telemetry, use no more than
-2,461,602 gross input tokens, and win the blind signature comparison. Until
-then, the combined 10x quality-and-economics target remains unproven.
+permanent challenger must have complete turn telemetry, materially improve the
+token/time vector over the named baseline and recent challengers, and win the
+blind signature comparison. Until then, the combined quality-and-economics
+objective remains unproven.
+
+Nectar After Rain was the first real Spark v3 production attempt. It truthfully
+stopped in Make instead of publishing a weak signature experience:
+
+| Measure | Failed Make attempt |
+|---|---:|
+| Gross input | 2,563,485 |
+| Cached input | 2,370,688 |
+| Uncached input | 192,797 |
+| Output | 17,098 |
+| Reasoning output | 3,857 |
+| Elapsed | 12m 51s |
+| Turn coverage | 1 / 1 |
+
+The blind critic still could not identify the trumpet flower after the one
+permitted repair, so no integrated final verification or Release work ran. The
+attempt is not an end-to-end cost win and is not a public toy. It does prove
+that the bounded funnel can spend far less than Moonchase Fox and refuse an
+unconvincing product before downstream cost. A successful challenger must keep
+that discipline while actually reaching publication.
 
 ## Quality is comparative evidence, not a model score
 
@@ -166,8 +189,8 @@ interaction/rules, printable files, and manual on these dimensions:
 - first-owner clarity and delight of the in-box manual;
 - deterministic CAD/printability evidence and truthful limitations.
 
-An order-of-magnitude quality claim means a clear experience-category leap, not
-ten times a self-assigned number: the challenger is strongly preferred on the
+The “10x quality” shorthand means a clear experience-category leap, not ten
+times a self-assigned number: the challenger is strongly preferred on the
 signature experience and most other dimensions, loses none of the deterministic
 gates, and has no new unsupported claim. Keep the raw comparison and reviewer
 notes beside the benchmark; do not turn them into lifecycle gate authority.

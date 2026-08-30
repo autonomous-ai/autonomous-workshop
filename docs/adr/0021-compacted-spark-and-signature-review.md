@@ -6,6 +6,7 @@
 - Relates to: ADR 0019 (Spark economics), ADR 0020 (signature evidence)
 - Supersedes for new runs: ADR 0019's v1 profile and ADR 0020's image-only signature proof
 - Superseded in part by: ADR 0022 and ADR 0023
+- Economics-target interpretation superseded by: ADR 0024
 
 ## Context
 
