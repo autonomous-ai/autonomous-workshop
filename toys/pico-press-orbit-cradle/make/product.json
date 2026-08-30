@@ -1,0 +1,9 @@
+{
+  "title": "Orbit Cradle",
+  "summary": "A palm-sized, one-piece crescent moon that rocks on one continuous arc while its bridged star appears to climb, crest, and return.",
+  "age_grade": "14+",
+  "manufacturing": "Support-free FDM, one printed part, no assembly",
+  "material_assumption": "Common rigid filament such as PLA or PETG",
+  "interaction": "Rock gently from -26° to +26°, then release and observe the return to -26°; these sampled poses are not mechanical detents.",
+  "limitations": "Digitally verified geometry only; no physical print, durability, or human-use claim is made."
+}
