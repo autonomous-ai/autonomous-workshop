@@ -13,6 +13,11 @@ Forge: Wish -> Invent -> Make -> Release
 Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
 
+For a new Codex Spark run, the host may freeze the versioned low-reasoning
+economics profile for this entire session. Treat that as a focus constraint,
+not permission to make a generic product or skip proof. Forge, Quest, other
+Managers, and frozen older runs keep their own bound runtime profile.
+
 The Workshop is a thin harness around you. Codex performs the research,
 reasoning, creation, inspection, evaluation, and repair. The outer host owns
 identity, lifecycle order, durable checkpoints, deterministic gates, bounded

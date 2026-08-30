@@ -3,6 +3,7 @@ import unittest
 from workshop.errors import ContractError
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
+    SPARK_ECONOMICS_CAPABILITY_PATH,
     WORKSHOP_EFFORTS,
     workshop_effort,
 )
@@ -11,6 +12,10 @@ from workshop.workflow.effort import (
 class WorkshopEffortTest(unittest.TestCase):
     def test_named_efforts_have_exact_passthrough_lifecycles(self):
         self.assertEqual(DEFAULT_WORKSHOP_EFFORT, "spark")
+        self.assertEqual(
+            SPARK_ECONOMICS_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/spark-economics-v1.md",
+        )
         self.assertEqual(
             {name: effort.lifecycle for name, effort in WORKSHOP_EFFORTS.items()},
             {

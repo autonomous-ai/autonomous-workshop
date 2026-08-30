@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-labelledby="title description">
   <title id="title">Spark effort route: Wish to Make to Release</title>
-  <desc id="description">Spark is the default and shortest Autonomous Workshop route. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Make. Invent and Playtest are passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
+  <desc id="description">Spark is the default and shortest Autonomous Workshop route. New Codex Spark runs freeze low reasoning effort across one native session. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Make. Invent and Playtest are passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%">
       <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/>
@@ -37,7 +37,7 @@
     <rect x="55" y="185" width="1090" height="68" rx="18" class="manager"/>
   </g>
   <text x="83" y="212" class="eyebrow" fill="#376b61">WORKSHOP MANAGER</text>
-  <text x="83" y="237" class="body">The host freezes Spark and owns gates + publication; each active attempt gets one Codex Goal.</text>
+  <text x="83" y="237" class="body">Codex Spark freezes low reasoning; every product gate and each stage Goal stays intact.</text>
 
   <path class="route" d="M 225 355 H 295"/>
   <path class="route" d="M 555 355 H 625"/>

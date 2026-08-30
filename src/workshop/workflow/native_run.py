@@ -136,6 +136,7 @@ from workshop.workflow.agent_run import (
 )
 from workshop.workflow.effort import (
     EFFORT_ROUTE_CAPABILITY_PATH,
+    SPARK_ECONOMICS_CAPABILITY_PATH,
     workshop_effort,
 )
 from workshop.workflow.proposals import (
@@ -3582,16 +3583,25 @@ def _prepare_stage_input(
     return subject, packet, context
 
 
-def _native_launcher(manager_id: str) -> NativeSessionLauncher:
+def _native_launcher(checkpoint: AgentRunCheckpoint) -> NativeSessionLauncher:
     """Construct the frozen Manager launcher.
 
     Codex stays constructed here so existing host tests can patch the concrete
-    class without going through the registry. Other Managers load by id.
+    class without going through the registry. Other Managers load by id. New
+    Spark runs with the immutable economics capability use Codex's low
+    reasoning profile for the entire Wish-wide session. Older runs lack the
+    marker and therefore retain the historical high profile on resume.
     """
 
-    if manager_id == DEFAULT_MANAGER_ID:
-        return CodexNativeSessionLauncher()
-    return manager_launcher(manager_id)
+    if checkpoint.manager_id == DEFAULT_MANAGER_ID:
+        reasoning_effort = (
+            "low"
+            if checkpoint.effort == "spark"
+            and SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            else "high"
+        )
+        return CodexNativeSessionLauncher(reasoning_effort=reasoning_effort)
+    return manager_launcher(checkpoint.manager_id)
 
 
 def _launcher_call(
@@ -6453,7 +6463,7 @@ def start_native_run(
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
-        launcher = _native_launcher(checkpoint.manager_id)
+        launcher = _native_launcher(checkpoint)
         checkpoint, session, turns, action = _run_native_session(
             run,
             paths,
@@ -6634,7 +6644,7 @@ def _resume_native_run_locked(
             action="inspected-terminal",
         )
     _prune_empty_make_product_directories(paths.workspace, checkpoint)
-    launcher = _native_launcher(checkpoint.manager_id)
+    launcher = _native_launcher(checkpoint)
     checkpoint, session, turns, action = _run_native_session(
         run,
         paths,

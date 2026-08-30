@@ -26,6 +26,7 @@ from workshop.workflow.native_run import (
     NativeRunPaths,
     _NativeProgressTracker,
     _native_token_summary,
+    _native_launcher,
     _record_native_token_usage,
     _native_run_mutation_lock,
     _prune_empty_make_product_directories,
@@ -51,6 +52,7 @@ from workshop.workflow.agent_run import (
     AgentRunCheckpoint,
 )
 from workshop.workflow.proposals import AgentOutcomeProposal
+from workshop.workflow.effort import SPARK_ECONOMICS_CAPABILITY_PATH
 
 
 class NativeTokenTelemetryCompatibilityTest(unittest.TestCase):
@@ -393,6 +395,56 @@ class _UnboundRecoverableLauncher(_FakeLauncher):
 
 
 class NativeHostTest(unittest.TestCase):
+    @staticmethod
+    def _launcher_checkpoint(*, effort, with_economics_capability):
+        inputs = (
+            {SPARK_ECONOMICS_CAPABILITY_PATH: "a" * 64}
+            if with_economics_capability
+            else {}
+        )
+        return AgentRunCheckpoint(
+            product_id="launcher-economics-fixture",
+            stage="make",
+            status="active",
+            revision=1,
+            round_index=1,
+            max_rounds=4,
+            wish_sha256="b" * 64,
+            run_root_sha256="c" * 64,
+            host_state_root_sha256="d" * 64,
+            checkpoint_sha256="e" * 64,
+            input_sha256s=inputs,
+            inventor_roster=(),
+            stage_artifacts={},
+            invalidated_stages=(),
+            effort=effort,
+            manager_id="codex",
+        )
+
+    def test_new_spark_uses_low_reasoning_for_the_wish_wide_session(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", with_economics_capability=True
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            launcher = _native_launcher(checkpoint)
+
+        self.assertIs(launcher, launcher_type.return_value)
+        launcher_type.assert_called_once_with(reasoning_effort="low")
+
+    def test_forge_and_frozen_spark_retain_high_reasoning(self):
+        for effort, marker in (("forge", True), ("spark", False)):
+            with self.subTest(effort=effort, marker=marker), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher"
+            ) as launcher_type:
+                checkpoint = self._launcher_checkpoint(
+                    effort=effort, with_economics_capability=marker
+                )
+                _native_launcher(checkpoint)
+
+                launcher_type.assert_called_once_with(reasoning_effort="high")
+
     def test_newer_cad_rejection_supersedes_resolved_make_proposal_feedback(self):
         proposal_rejection = {"failure_code": "make-product-metadata-invalid"}
         cad_rejection = {"failure_code": "declared-cad-output-changed"}

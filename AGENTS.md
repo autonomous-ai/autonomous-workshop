@@ -40,6 +40,11 @@ All implementation and product-run work must preserve these boundaries:
   no turn, artifact, gate, or evidence. Spark/Forge Release explicitly records
   Playtest `not-run`; Quest requires passing Playtest evidence. Frozen older
   runs retain their materialized protocol when resumed.
+- New Codex Spark runs also freeze their versioned economics capability and use
+  one low-reasoning native session across Make and Release. Forge, Quest, other
+  Managers, and older unmarked Spark runs retain their prior runtime profile.
+  This changes cognitive spend only; every deterministic product and
+  publication gate remains identical.
 - A capable Forge or Quest Make attempt may return directly to Invent only when
   exact preserved evidence proves that the sealed concept prevents any
   conforming build. Quest Playtest returns directly to Make for implementation
@@ -94,14 +99,17 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0013-manual-first-release.md`, and
 `docs/adr/0014-terminal-published-release.md`, and
 `docs/adr/0015-defer-playtest.md`, and
-`docs/adr/0016-selectable-effort-routes.md` before changing the CLI, runtime,
+`docs/adr/0016-selectable-effort-routes.md`, and
+`docs/adr/0019-frozen-spark-economics-profile.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
 active Playtest stage while preserving truthful omission and frozen-run
 compatibility. ADR 0016 supersedes ADR 0015's fixed topology for new runs while
 preserving its truthful omission contract for Spark and Forge. The
-native-session path is the production architecture.
+native-session path is the production architecture. ADR 0019 freezes a
+lower-cost Codex profile only for new marked Spark runs without changing their
+gates or upgrading older sessions.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

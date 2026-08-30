@@ -6,7 +6,8 @@ Workshop. It is authoritative together with
 [ADR 0013](adr/0013-manual-first-release.md),
 [ADR 0014](adr/0014-terminal-published-release.md),
 [ADR 0015](adr/0015-defer-playtest.md),
-[ADR 0016](adr/0016-selectable-effort-routes.md), and the repository
+[ADR 0016](adr/0016-selectable-effort-routes.md),
+[ADR 0019](adr/0019-frozen-spark-economics-profile.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -46,6 +47,12 @@ checkpoints, not separate model roles or one-shot API calls.
 The root Codex session is the Workshop Manager. Native subagents are bounded
 children it can use for parallel or specialist work; they do not create a
 second product-run session or weaken the one-session continuity rule.
+
+New Codex Spark projects freeze `spark-economics-v1.md` and run that one
+session at low reasoning effort across Make and Release. Forge and Quest stay
+high. An older Spark project without the marker stays high on resume, so a host
+upgrade cannot change its checkpoint-bound runtime policy. The lower profile
+does not waive or reduce any CAD, PDF, evidence, or publication gate.
 
 For each active Invent, Make, Playtest, or Release attempt,
 the Manager creates one native Codex Goal. Only one Goal is active. It binds one objective,
@@ -667,7 +674,10 @@ private Wish demonstrate that:
    request, and evidence tree without copying native-session or credential
    state; and
 10. the executable Workshop run ends at Release and makes no claim of physical
-   printing, delivery, or review.
+    printing, delivery, or review.
+11. a marked Codex Spark run uses its frozen low-reasoning profile across both
+    active stages, while an unmarked historical run resumes with high
+    reasoning and the same exact runtime-policy binding.
 
 ## Engine portability
 

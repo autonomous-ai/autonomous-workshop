@@ -47,6 +47,10 @@ few decisions and checks that make it real.
   workspace, reopen every stable upstream source, or paste large logs into the
   conversation. Open a detailed file only to answer a current design, repair,
   claim, or gate question.
+- Batch independent reads, searches, renders, and checks in one native
+  code-mode action. Do not spend a new reasoning cycle on each file or command
+  when their inputs are already known and their results can be evaluated
+  together.
 - Use search and subagents only for a concrete uncertainty. For Spark, prefer
   one selected Inventor delegation and the shortest complete build path; avoid
   candidate fan-out after the signature interaction is chosen.
@@ -61,6 +65,10 @@ few decisions and checks that make it real.
 - Prefer one complete artifact followed by one evidence-driven revision over
   many partial drafts. Save concise findings with the artifact; do not preserve
   raw transcripts or internal reasoning.
+- For Spark, treat the low reasoning profile as a focus constraint rather than
+  a quality waiver: choose the signature interaction early, keep one complete
+  build on the critical path, batch independent tool work, and spend additional
+  cycles only on a concrete failing check or visible product defect.
 
 ## Run one native Goal for the current stage
 

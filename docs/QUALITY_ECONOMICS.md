@@ -24,6 +24,25 @@ fresh context. Compare like-for-like runs on all reported categories and turn
 coverage. A 0.1x cost claim requires no category to hide an increase behind a
 combined total.
 
+## Named production baseline
+
+Moonchase Fox is the first complete schema-v3 Spark baseline:
+
+| Measure | Whole run | Make | Release |
+|---|---:|---:|---:|
+| Gross input | 24,616,026 | 22,343,631 | 2,272,395 |
+| Cached input | 24,101,632 | 22,059,008 | 2,042,624 |
+| Uncached input | 514,394 | 284,623 | 229,771 |
+| Output | 88,501 | 68,149 | 20,352 |
+| Elapsed | 49m 28s | 39m 21s native work | 9m 5s native work |
+
+The public snapshot is `toys/pico-press-moonchase-fox/`. It passed full-tier
+CAD and publication gates; Release's visual review also found and repaired real
+manual collisions. The next comparable Spark run must beat that artifact on
+quality while using no more than 2,461,602 gross input tokens to establish the
+0.1x economics target. Cached, uncached, and output counts remain visible so a
+nominal win cannot hide a regression in another category.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they
@@ -56,5 +75,6 @@ notes beside the benchmark; do not turn them into lifecycle gate authority.
    stable source at every stage.
 5. Reuse deterministic CAD, render, and manual layout primitives so native
    reasoning chooses the product rather than repeatedly rebuilding plumbing.
-6. Only after comparable benchmarks, tune model or reasoning effort. A cheaper
-   runtime configuration is not a win if blind product preference falls.
+6. After recording the comparable Moonchase baseline, tune the frozen Spark
+   reasoning profile. A cheaper runtime configuration is not a win if blind
+   product preference falls.

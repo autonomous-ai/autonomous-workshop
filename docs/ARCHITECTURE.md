@@ -17,6 +17,12 @@ and evolving artifact determine any additional specialist method or evidence.
 Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
 
+For Codex, new Spark projects freeze a low-reasoning economics profile across
+their one Make-to-Release session. Forge and Quest remain high reasoning, and
+older Spark sessions remain on the profile they started with. Effort changes
+cognitive spend, never the exact-byte CAD, manual, evidence, or publication
+gates.
+
 ## Lifecycle
 
 ```text

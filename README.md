@@ -198,7 +198,7 @@ and cost benchmark.
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=unfinished-turn-v1)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=spark-economics-v1)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -209,6 +209,12 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
 Passed-through stages create no turn, artifact, gate, or fabricated evidence. Spark and Forge record Playtest as `not-run`. Quest requires passing Playtest bound to the current Made revision.
+
+New Codex Spark runs freeze a low-reasoning profile for their one persistent
+Make-to-Release session; Forge and Quest retain high reasoning. Older runs keep
+the exact profile they started with. This is an economics policy, not a quality
+waiver: every effort still passes its full deterministic product and
+publication gates.
 
 The reverse arrows are evidence-bound repair routes, not free-form retries.
 Make can return a Forge or Quest run to Invent only when exact saved evidence
