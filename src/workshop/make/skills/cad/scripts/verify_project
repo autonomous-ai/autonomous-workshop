@@ -83,18 +83,23 @@ SIGNATURE_REVIEW_RELATIVE = Path("snap/SIGNATURE-REVIEW.json")
 SIGNATURE_REVIEW_FIELDS = {
     "schema_version",
     "kind",
+    "concept_sha256",
     "iso_sha256",
     "signature_sha256",
     "reviewer",
     "blind_held_read",
+    "blind_form_read",
     "blind_subjects_read",
     "blind_action_read",
     "blind_relationship_read",
+    "anti_generic_signature_read",
     "wish_revealed_after_blind_read",
     "held_object_unmistakable",
+    "form_matches_wish",
     "subjects_match_wish",
     "action_matches_wish",
     "relationship_matches_wish",
+    "anti_generic_signature_visible",
     "signature_experience_unmistakable",
     "finished_product_desirable",
     "review_rounds",
@@ -160,15 +165,17 @@ def _required_signature_review(project: Path) -> str:
     if content != canonical or not isinstance(review, dict):
         raise ValueError("signature review must use canonical JSON encoding")
     if set(review) != SIGNATURE_REVIEW_FIELDS:
-        raise ValueError("signature review fields do not match schema 3")
-    if review.get("schema_version") != 3 or review.get("kind") != SIGNATURE_REVIEW_KIND:
+        raise ValueError("signature review fields do not match schema 4")
+    if review.get("schema_version") != 4 or review.get("kind") != SIGNATURE_REVIEW_KIND:
         raise ValueError("signature review identity is invalid")
     for key in (
         "reviewer",
         "blind_held_read",
+        "blind_form_read",
         "blind_subjects_read",
         "blind_action_read",
         "blind_relationship_read",
+        "anti_generic_signature_read",
         "largest_risk",
         "resolution",
     ):
@@ -178,14 +185,21 @@ def _required_signature_review(project: Path) -> str:
     for key in (
         "wish_revealed_after_blind_read",
         "held_object_unmistakable",
+        "form_matches_wish",
         "subjects_match_wish",
         "action_matches_wish",
         "relationship_matches_wish",
+        "anti_generic_signature_visible",
         "signature_experience_unmistakable",
         "finished_product_desirable",
     ):
         if review.get(key) is not True:
             raise ValueError(f"signature review must affirm {key}")
+    concept_sha256 = review.get("concept_sha256")
+    if not isinstance(concept_sha256, str) or not SHA256_TEXT.fullmatch(
+        concept_sha256
+    ):
+        raise ValueError("signature review concept_sha256 is invalid")
     if type(review.get("review_rounds")) is not int or review.get(
         "review_rounds"
     ) not in (1, 2):
@@ -1121,20 +1135,25 @@ def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
     (project / "snap" / "iso.png").write_bytes(iso)
     (project / "snap" / "signature.png").write_bytes(signature)
     review = {
-        "schema_version": 3,
+        "schema_version": 4,
         "kind": SIGNATURE_REVIEW_KIND,
+        "concept_sha256": "0" * 64,
         "iso_sha256": hashlib.sha256(iso).hexdigest(),
         "signature_sha256": hashlib.sha256(signature).hexdigest(),
         "reviewer": "fixture-critic",
         "blind_held_read": "A fixture product.",
+        "blind_form_read": "A rounded volumetric fixture form.",
         "blind_subjects_read": "A fixture and its exact parts.",
         "blind_action_read": "The fixture changes state.",
         "blind_relationship_read": "The parts align into the promised state.",
+        "anti_generic_signature_read": "A distinct rounded bridge.",
         "wish_revealed_after_blind_read": True,
         "held_object_unmistakable": True,
+        "form_matches_wish": True,
         "subjects_match_wish": True,
         "action_matches_wish": True,
         "relationship_matches_wish": True,
+        "anti_generic_signature_visible": True,
         "signature_experience_unmistakable": True,
         "finished_product_desirable": True,
         "review_rounds": 1,

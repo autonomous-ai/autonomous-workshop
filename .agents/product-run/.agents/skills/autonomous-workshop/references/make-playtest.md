@@ -134,6 +134,15 @@ outputs, and deterministic CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions.
 
+The `--cad-project-path` value is the self-contained project the trusted host
+will copy into isolation and rebuild. Put its combined generator/import entry,
+local helper source, `snap/` family, and final `measure/verification-pipeline.md`
+inside that exact directory. Root-level assembled STEP/STL files are delivery
+copies, not a substitute for a build entry inside the declared project. Run the
+final verifier against that exact directory, and pass its in-project report as
+`--cad-verification-path`; the finalizer rejects a report outside the declared
+project before the host spends another isolated verification.
+
 Keep stable exported STEP/STL/GLB files, product PNG renders, source, and
 measurements in the product tree. Do not preserve `__cadgen__` runtime caches,
 generation locks/progress files, `__pycache__`, or temporary work trees there:
@@ -176,17 +185,21 @@ two total review rounds: the initial blind review and, only after a failed first
 read, one focused blind rereview. Do **not** reveal the Wish, title,
 concept, desired nouns, Inventor, or intended answer. First ask what physical
 object it sees; which subjects it identifies; what action occurs; what spatial
-or causal relationship connects those subjects; and whether it looks like a
+or causal relationship connects those subjects; what volumetric form,
+cross-section, and surface language it sees; and whether it looks like a
 desirable finished product rather than a flat cutout, generic primitive,
 technical test, or repeated turntable. Preserve those unprompted reads. Only
-then reveal the Wish to that same critic. Require the critic—not the root
-Manager—to compare the blind subjects, action, and relationship separately with
-the exact promise. Sharing nouns is not enough: `beside` does not satisfy
+then reveal the Wish and exact compact Invented concept to that same critic.
+Require the critic—not the root Manager—to compare the blind form, subjects,
+action, relationship, and concept's anti-generic signature separately with the
+exact promise. Sharing nouns is not enough: `beside` does not satisfy
 `through`, a static fish does not satisfy a leaping whale, and a turntable does
-not satisfy a state change.
+not satisfy a state change. A constant extrusion does not satisfy a promised
+pillow-rounded cabochon merely because its front silhouette uses the right
+nouns.
 
-If any subject, action, or relationship does not match, or the product does not
-look finished and desirable, repair the single largest geometry/composition
+If any form, subject, action, relationship, or anti-generic signature does not
+match, or the product does not look finished and desirable, repair the single largest geometry/composition
 defect, rerender both exact images, and request the one permitted focused blind
 rereview. Do not coordinate a third critic or review round. Do not proceed to
 the integrated final verifier or Release on copy alone. If the first candidate
@@ -197,20 +210,25 @@ Preserve the final review as canonical JSON at
 
 ```json
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "kind": "autonomous-workshop.signature-experience-review",
+  "concept_sha256": "<exact canonical Invented concept hash>",
   "iso_sha256": "<lowercase SHA-256 of final iso.png>",
   "signature_sha256": "<lowercase SHA-256 of final signature.png>",
   "reviewer": "<bounded independent reviewer identity>",
   "blind_held_read": "<what the reviewer saw before learning the Wish>",
+  "blind_form_read": "<volumetric form, cross-section, and surface language seen blindly>",
   "blind_subjects_read": "<subjects seen before learning the Wish>",
   "blind_action_read": "<action or transformation seen before learning the Wish>",
   "blind_relationship_read": "<spatial or causal relationship seen before learning the Wish>",
+  "anti_generic_signature_read": "<exact distinctive concept feature visible after reveal>",
   "wish_revealed_after_blind_read": true,
   "held_object_unmistakable": true,
+  "form_matches_wish": true,
   "subjects_match_wish": true,
   "action_matches_wish": true,
   "relationship_matches_wish": true,
+  "anti_generic_signature_visible": true,
   "signature_experience_unmistakable": true,
   "finished_product_desirable": true,
   "review_rounds": 1,
@@ -219,8 +237,9 @@ Preserve the final review as canonical JSON at
 }
 ```
 
-The finalizer requires every confirmation, all unprompted reads, one or two
-review rounds, and exact final-image hashes. This is review evidence, not a numeric beauty score; never
+The finalizer requires every confirmation, all unprompted reads, the exact
+Invented concept binding, one or two review rounds, and exact final-image hashes. This
+is review evidence, not a numeric beauty score; never
 claim an independent or blind review that did not occur. The public toy archive
 keeps it beside the reviewed renders.
 

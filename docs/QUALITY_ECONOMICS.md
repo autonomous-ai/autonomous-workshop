@@ -174,6 +174,32 @@ that the bounded funnel can spend far less than Moonchase Fox and refuse an
 unconvincing product before downstream cost. A successful challenger must keep
 that discipline while actually reaching publication.
 
+Orbit Cradle then completed and published under Spark v3, proving bounded
+same-session recovery and the full host effect path. Its telemetry is partial
+because one timed-out Make turn and two failed Release turns had no terminal
+usage event:
+
+| Measure | Measured floor / result |
+|---|---:|
+| Gross input | >=2,480,047 partial |
+| Cached input | >=2,348,160 partial |
+| Uncached input | >=131,887 partial |
+| Output | >=16,013 partial |
+| Reasoning output | >=2,734 partial |
+| Turn coverage | 2 / 5 |
+| Wish to publication | 54m 40s |
+
+The run cannot establish a token reduction from those floors. It did expose
+two concrete costs: a verification report outside the declared CAD project
+caused an avoidable host rejection and third Make turn, while one native
+Release failure required an explicit normal CLI resume. More importantly, the
+published object passed subject/action/relationship review but remained a
+constant-depth extrusion even though its canonical concept promised a
+pillow-rounded cabochon. Schema v4 now binds the critic to blind volumetric form
+and the concept's anti-generic signature, and the finalizer rejects an
+out-of-project verification report before isolated host work. The paired
+quality-and-economics objective remains open.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

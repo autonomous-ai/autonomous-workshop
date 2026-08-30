@@ -1472,6 +1472,7 @@ def _validate_signature_review(
     *,
     product_root_value: str,
     cad_project_path: PurePosixPath,
+    concept_sha256: str,
 ) -> None:
     review_relative = (
         PurePosixPath(product_root_value) / cad_project_path / SIGNATURE_REVIEW_PATH
@@ -1496,18 +1497,23 @@ def _validate_signature_review(
         {
             "schema_version",
             "kind",
+            "concept_sha256",
             "iso_sha256",
             "signature_sha256",
             "reviewer",
             "blind_held_read",
+            "blind_form_read",
             "blind_subjects_read",
             "blind_action_read",
             "blind_relationship_read",
+            "anti_generic_signature_read",
             "wish_revealed_after_blind_read",
             "held_object_unmistakable",
+            "form_matches_wish",
             "subjects_match_wish",
             "action_matches_wish",
             "relationship_matches_wish",
+            "anti_generic_signature_visible",
             "signature_experience_unmistakable",
             "finished_product_desirable",
             "review_rounds",
@@ -1518,8 +1524,9 @@ def _validate_signature_review(
     )
     if (
         type(review["schema_version"]) is not int
-        or review["schema_version"] != 3
+        or review["schema_version"] != 4
         or review["kind"] != SIGNATURE_REVIEW_KIND
+        or review["concept_sha256"] != concept_sha256
     ):
         raise ProposalError("Make signature review identity is invalid")
     if content != canonical_json(review):
@@ -1527,9 +1534,11 @@ def _validate_signature_review(
     _bounded_text(review["reviewer"], "Make signature reviewer", 200)
     _bounded_text(review["blind_held_read"], "Make blind held read", 1_000)
     for field, label in (
+        ("blind_form_read", "Make blind form read"),
         ("blind_subjects_read", "Make blind subjects read"),
         ("blind_action_read", "Make blind action read"),
         ("blind_relationship_read", "Make blind relationship read"),
+        ("anti_generic_signature_read", "Make anti-generic signature read"),
     ):
         _bounded_text(review[field], label, 1_000)
     _bounded_text(review["largest_risk"], "Make signature largest_risk", 2_000)
@@ -1537,6 +1546,7 @@ def _validate_signature_review(
     for field, label in (
         ("wish_revealed_after_blind_read", "Wish was revealed only after the blind read"),
         ("held_object_unmistakable", "held object is unmistakable"),
+        ("form_matches_wish", "visible form matches the Wish and concept"),
         ("subjects_match_wish", "blind subjects match the Wish"),
         ("action_matches_wish", "blind action matches the Wish"),
         (
@@ -1546,6 +1556,10 @@ def _validate_signature_review(
         (
             "signature_experience_unmistakable",
             "signature experience is unmistakable",
+        ),
+        (
+            "anti_generic_signature_visible",
+            "anti-generic signature is visible in the exact product",
         ),
         ("finished_product_desirable", "product looks finished and desirable"),
     ):
@@ -1620,10 +1634,15 @@ def _make_contract(
         run_root,
         product_root_value=product_root_value,
         cad_project_path=project_relative,
+        concept_sha256=invented["concept_sha256"],
     )
     verification_relative = _safe_relative(
         cad_verification_path, "CAD verification path"
     )
+    if verification_relative.parts[: len(project_relative.parts)] != project_relative.parts:
+        raise ProposalError(
+            "CAD verification must live inside the declared CAD project"
+        )
     product_document, product_bytes, _ = _read_json(
         run_root,
         "%s/product.json" % product_root_value,

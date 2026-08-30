@@ -497,7 +497,7 @@ class _OneSessionProductAgent:
         product_root_value = inputs["product_root"]
         product_root = run_root / product_root_value
         (product_root / "cad" / "project").mkdir(parents=True, exist_ok=True)
-        (product_root / "validation").mkdir(exist_ok=True)
+        (product_root / "cad" / "project" / "validation").mkdir(exist_ok=True)
         wish = _read_json(run_root / "WISH.json")
         invented = inputs.get("invented")
         spark_source = None
@@ -615,20 +615,25 @@ class _OneSessionProductAgent:
         _write_json(
             signature_path.with_name("SIGNATURE-REVIEW.json"),
             {
-                "schema_version": 3,
+                "schema_version": 4,
                 "kind": "autonomous-workshop.signature-experience-review",
+                "concept_sha256": _sha256(_canonical_json(invented["concept"])),
                 "iso_sha256": _sha256(render_path.read_bytes()),
                 "signature_sha256": _sha256(signature_path.read_bytes()),
                 "reviewer": "independent-native-visual-critic",
                 "blind_held_read": "A compact orbital play object with a strong ring.",
+                "blind_form_read": "A rounded volumetric ring with a deep center.",
                 "blind_subjects_read": "A ring, orbiting token, and central play field.",
                 "blind_action_read": "The token moves through three distinct ring states.",
                 "blind_relationship_read": "The token crosses and returns around the ring.",
+                "anti_generic_signature_read": "Orbital waypoints shape the play field.",
                 "wish_revealed_after_blind_read": True,
                 "held_object_unmistakable": True,
+                "form_matches_wish": True,
                 "subjects_match_wish": True,
                 "action_matches_wish": True,
                 "relationship_matches_wish": True,
+                "anti_generic_signature_visible": True,
                 "signature_experience_unmistakable": True,
                 "finished_product_desirable": True,
                 "review_rounds": 1,
@@ -637,7 +642,7 @@ class _OneSessionProductAgent:
             },
         )
         _write_json(
-            product_root / "validation" / "cad-verification.json",
+            product_root / "cad" / "project" / "validation" / "cad-verification.json",
             {
                 "schema_version": 1,
                 "validator": "materialized-cad-final",
@@ -659,7 +664,7 @@ class _OneSessionProductAgent:
                 "--cad-project-path",
                 "cad/project",
                 "--cad-verification-path",
-                "validation/cad-verification.json",
+                "cad/project/validation/cad-verification.json",
             )
         )
         self._run_finalizer(run_root, *arguments)
@@ -2087,9 +2092,10 @@ class NativeFullRunTest(unittest.TestCase):
         recovery_delays = [
             call.args[0]
             for call in backoff.call_args_list
-            if call.args and call.args[0] >= 1
+            if call.args and call.args[0] >= 0.75
         ]
         self.assertEqual(len(recovery_delays), 1)
+        self.assertGreaterEqual(recovery_delays[0], 0.75)
         self.assertLessEqual(recovery_delays[0], 30)
         self.assertEqual(
             [packet["stage"] for packet in launcher.stage_packets],
@@ -2843,7 +2849,7 @@ class NativeFullRunTest(unittest.TestCase):
                     "artifacts/make/r0001/product/assembled.step.json",
                     "artifacts/make/r0001/product/assembled.stl",
                     "artifacts/make/r0001/product/cad/project/build.py",
-                    "artifacts/make/r0001/product/validation/cad-verification.json",
+                    "artifacts/make/r0001/product/cad/project/validation/cad-verification.json",
                 },
                 "release": {
                     "artifacts/release/release.json",

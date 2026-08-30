@@ -84,9 +84,10 @@ host-owned authenticated effect, not agent-authored Release evidence.
   exact-product interaction, reveal, or anti-generic views. Both remain in the
   toy rather than a shared render directory so later reviewers can study what
   Make actually inspected. `SIGNATURE-REVIEW.json` sits beside them and binds
-  the final hashes, the critic's unprompted object, subject, action, and
-  relationship reads before the Wish was revealed, the exact comparison after
-  reveal, bounded review-round count, and recorded resolution. New runs seal
+  the final hashes and canonical concept, the critic's unprompted object, form,
+  subject, action, and relationship reads before the Wish was revealed, the
+  exact anti-generic and semantic comparison after reveal, bounded review-round
+  count, and recorded resolution. New runs seal
   exactly one such final family under the declared CAD project; iteration
   renders are not public artifacts.
 - The exact Wish is withheld by default. Publishing its text requires the

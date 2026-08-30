@@ -126,6 +126,11 @@ ADR 0023 adds a frozen 20-minute Spark native-turn boundary, requires the blind
 critic to agree separately on subjects, action, and relationship, bounds that
 critic to two rounds, and makes the integrated final CAD verifier refuse to run
 before the hash-bound review exists.
+ADR 0024 treats “10x quality at 0.1x cost” as a comparative North Star rather
+than a literal lifecycle threshold. ADR 0025 extends the blind review to exact
+form and the concept's anti-generic signature, binds it to the canonical concept
+hash, and requires the final verification report inside the declared
+self-contained CAD project.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

@@ -452,19 +452,23 @@ shows exact STL poses or views chosen to make the signature experience legible
 without copy. The finalizer also requires hash-bound
 `<cad-project>/snap/SIGNATURE-REVIEW.json` from one bounded independent native
 visual critic. The critic first receives only the exact images and separately
-records its unprompted held-object, subject, action, and spatial or causal
-relationship reads. Only then does the same critic learn the Wish and compare
-each dimension with the promise. The hash-bound evidence confirms an
+records its unprompted held-object, volumetric-form, subject, action, and spatial
+or causal relationship reads. Only then does the same critic learn the Wish and
+canonical concept and compare each dimension plus the concept's anti-generic
+signature with the promise. The hash-bound evidence confirms an
 unmistakable, desirable final product; one critic performs no more than two
 rounds. Make performs this review after narrow build and geometry checks but
 before one integrated final verifier, so visual repair does not repeatedly pay
 the complete CAD-gate cost. The materialized final verifier refuses to begin
-final-mode geometry work until the canonical schema-v3 review and exact image
+final-mode geometry work until the canonical schema-v4 review and exact image
 hashes exist, then records the review hash in its report. The finalizer rejects a second
 final `snap/` family outside the declared CAD project. Those explicit paths are archived under
 `make/verification/renders/`; the family is the only one eligible for automatic
 README hero selection. Diagnostic silhouettes elsewhere remain evidence and
 cannot be promoted accidentally.
+The finalizer also requires the submitted verification report to be inside the
+declared CAD project. This cheaply proves the agent verified the same
+self-contained directory the host will later copy into isolation and rebuild.
 
 Host-selected product artifacts share the package contract's 95 MiB per-file
 limit while the durable run retains its 128 MiB cumulative referenced-artifact

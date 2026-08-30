@@ -46,13 +46,16 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
   must make the promised interaction, reveal, or anti-generic detail visually
   inspectable before prose can claim it. A bounded independent native visual
   critic receives only the exact images; separately records the held object,
-  subjects, action, and spatial or causal relationship; and learns the Wish
-  only afterward. That same critic compares every semantic dimension with the
-  exact promise. Make permits at most two review rounds and resolves at most one
+  volumetric form, subjects, action, and spatial or causal relationship; and
+  learns the Wish and canonical concept only afterward. That same critic
+  compares every semantic dimension and the concept's anti-generic signature
+  with the exact promise. Make permits at most two review rounds and resolves at most one
   focused visual defect before one integrated final verifier. The verifier
   refuses final-mode geometry work until the canonical review exists, then
   records its hash; the review, resolution, and one canonical render family are
   sealed before Make can pass.
+  The authored verification report must be inside the declared self-contained
+  CAD project, which is the exact directory the host copies and rebuilds.
   A capable Forge or Quest Make may return to Invent only with exact preserved
   evidence that the sealed concept prevents any conforming build.
 - **Playtest** independently evaluates the sealed Made revision only in Quest,

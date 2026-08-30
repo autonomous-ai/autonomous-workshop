@@ -459,7 +459,7 @@ class StageProposalToolTest(unittest.TestCase):
         (product_root / "cad/project").mkdir(parents=True)
         (product_root / "cad/project/snap").mkdir()
         (product_root / "exports/stl").mkdir(parents=True)
-        (product_root / "validation").mkdir()
+        (product_root / "cad/project/validation").mkdir()
         product = {
             "title": "Moon Nook",
             "summary": "A tiny lunar observatory.",
@@ -478,7 +478,7 @@ class StageProposalToolTest(unittest.TestCase):
         )
         (product_root / "assembled.stl").write_bytes(assembled_stl)
         (product_root / "exports/stl/assembled.stl").write_bytes(assembled_stl)
-        (product_root / "validation/cad-build.json").write_bytes(verification)
+        (product_root / "cad/project/validation/cad-build.json").write_bytes(verification)
         render = Image.new("RGB", (900, 900), "#fff4df")
         pen = ImageDraw.Draw(render)
         pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
@@ -494,8 +494,9 @@ class StageProposalToolTest(unittest.TestCase):
             product_root / "cad/project/snap/signature.png", format="PNG"
         )
         review = {
-            "schema_version": 3,
+            "schema_version": 4,
             "kind": "autonomous-workshop.signature-experience-review",
+            "concept_sha256": self.invented.concept_sha256,
             "iso_sha256": sha256(
                 (product_root / "cad/project/snap/iso.png").read_bytes()
             ),
@@ -504,14 +505,18 @@ class StageProposalToolTest(unittest.TestCase):
             ),
             "reviewer": "independent-native-visual-critic",
             "blind_held_read": "A compact moon observatory with a clear opening.",
+            "blind_form_read": "A rounded observatory body with a deep opening.",
             "blind_subjects_read": "A moon observatory, opening, and rotating mask.",
             "blind_action_read": "The mask rotates through three exact states.",
             "blind_relationship_read": "The opening aligns with the observatory window.",
+            "anti_generic_signature_read": "A deep lunar opening frames the mask.",
             "wish_revealed_after_blind_read": True,
             "held_object_unmistakable": True,
+            "form_matches_wish": True,
             "subjects_match_wish": True,
             "action_matches_wish": True,
             "relationship_matches_wish": True,
+            "anti_generic_signature_visible": True,
             "signature_experience_unmistakable": True,
             "finished_product_desirable": True,
             "review_rounds": 1,
@@ -539,7 +544,7 @@ class StageProposalToolTest(unittest.TestCase):
             ),
             product=product,
             product_json_sha256=sha256(product_bytes),
-            cad_verification_path="validation/cad-build.json",
+            cad_verification_path="cad/project/validation/cad-build.json",
             cad_verification_sha256=sha256(verification),
         )
 
@@ -677,7 +682,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
 
         made_document, made_bytes = self.assert_canonical_file(made_path)
@@ -732,7 +737,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
 
@@ -760,7 +765,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
         made_document, made_bytes = self.assert_canonical_file(
             "artifacts/make/r0001/made.json"
@@ -802,7 +807,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("requires a product render", missing.stderr)
@@ -817,7 +822,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("diagnostic grayscale image", rejected.stderr)
@@ -835,7 +840,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("requires a signature render", missing_signature.stderr)
@@ -851,7 +856,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("signature render", rejected_signature.stderr)
@@ -880,7 +885,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("requires a signature review", missing.stderr)
@@ -893,10 +898,25 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("must use canonical JSON encoding", noncanonical.stderr)
+
+        review["concept_sha256"] = "f" * 64
+        review_path.write_bytes(canonical_json(review))
+        stale_concept = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("signature review identity is invalid", stale_concept.stderr)
+        review["concept_sha256"] = self.invented.concept_sha256
 
         review["blind_held_read"] = ""
         review_path.write_bytes(canonical_json(review))
@@ -907,7 +927,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn(
@@ -927,12 +947,42 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("final held object is unmistakable", unreadable.stderr)
 
         review["held_object_unmistakable"] = True
+        review["form_matches_wish"] = False
+        review_path.write_bytes(canonical_json(review))
+        wrong_form = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("visible form matches the Wish and concept", wrong_form.stderr)
+
+        review["form_matches_wish"] = True
+        review["anti_generic_signature_visible"] = False
+        review_path.write_bytes(canonical_json(review))
+        generic = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("anti-generic signature is visible", generic.stderr)
+
+        review["anti_generic_signature_visible"] = True
         review["finished_product_desirable"] = False
         review_path.write_bytes(canonical_json(review))
         undesirable = self.run_tool(
@@ -942,7 +992,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("product looks finished and desirable", undesirable.stderr)
@@ -957,7 +1007,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn(
@@ -975,7 +1025,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("one or two review rounds", unbounded_review.stderr)
@@ -990,11 +1040,40 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("not bound to the final signature.png", stale.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_verification_must_belong_to_declared_cad_project(self):
+        product_root, _, _, verification = self.create_product()
+        outside = product_root / "validation/cad-build.json"
+        outside.parent.mkdir()
+        outside.write_bytes(verification)
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        rejected = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn(
+            "CAD verification must live inside the declared CAD project",
+            rejected.stderr,
+        )
 
     def test_make_rejects_duplicate_final_snap_family(self):
         product_root, _, _, _ = self.create_product()
@@ -1019,7 +1098,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("duplicate final snap family", rejected.stderr)
@@ -1093,7 +1172,7 @@ class StageProposalToolTest(unittest.TestCase):
                     "--cad-project-path",
                     "cad/project",
                     "--cad-verification-path",
-                    "validation/cad-build.json",
+                    "cad/project/validation/cad-build.json",
                     expected=2,
                 )
                 self.assertIn(error_label, result.stderr)
@@ -1134,7 +1213,7 @@ class StageProposalToolTest(unittest.TestCase):
                     "--cad-project-path",
                     "cad/project",
                     "--cad-verification-path",
-                    "validation/cad-build.json",
+                    "cad/project/validation/cad-build.json",
                     expected=2,
                 )
                 self.assertIn("editor, backup, or patch debris", result.stderr)
@@ -1148,7 +1227,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
 
     def test_make_prunes_empty_directories_before_writing_a_proposal(self):
@@ -1172,7 +1251,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
 
         self.assertFalse((product_root / "cad/spec").exists())
@@ -1204,7 +1283,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
 
         self.assertFalse((product_root / "cad/project/__cadgen__").exists())
@@ -1241,7 +1320,7 @@ class StageProposalToolTest(unittest.TestCase):
                 "--cad-project-path",
                 "cad/project",
                 "--cad-verification-path",
-                "validation/cad-build.json",
+                "cad/project/validation/cad-build.json",
             )
         finally:
             project.chmod(0o700)
@@ -1282,7 +1361,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
 
@@ -2113,7 +2192,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("not a symlink", result.stderr)
