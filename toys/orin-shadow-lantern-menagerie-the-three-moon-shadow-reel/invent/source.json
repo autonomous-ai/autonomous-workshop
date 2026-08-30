@@ -1,0 +1,290 @@
+{
+  "selected_inventor_id": "orin-shadow",
+  "ranking": [
+    {
+      "inventor_id": "orin-shadow",
+      "rationale": "Exact match: the Wish is a mechanical cast-shadow theatre using an ordinary external light, one rotating control, exact occluders, and three inspectable projected stories. Orin's Taste explicitly requires light direction, projection plane, distance band, state angles, alignment cue, and honest unverified optics."
+    },
+    {
+      "inventor_id": "luma-vale",
+      "rationale": "Strong alternate for hand-powered shadow, aperture, and rotating-mask work with few broad parts, but its broader optical-transformation craft is less specifically centred on a projected second story than Orin's mechanical shadow theatre."
+    },
+    {
+      "inventor_id": "bob",
+      "rationale": "The large wheel, indexing, full motion, and repeated reset suit Bob's kinetic-machine craft, but the Wish's decisive spectacle is projected silhouette geometry rather than an exposed linkage or gear train."
+    },
+    {
+      "inventor_id": "pico-press",
+      "rationale": "One obvious spin, compact support-free parts, broad load paths, and reset are good fits. Pico's three-part hard rule is unnecessarily restrictive here, and shadow projection is outside its primary craft."
+    },
+    {
+      "inventor_id": "vela-bloom",
+      "rationale": "Vela handles one-control transformations, indexed endpoints, rigid links, and tactile reset well, but Lantern Menagerie transforms a projected image rather than deploying the physical object's volume."
+    },
+    {
+      "inventor_id": "ivy",
+      "rationale": "Ivy could make geometric optics physically legible and truthfully testable, but the Wish prioritizes theatrical creature magic over a science or mathematics teaching object."
+    },
+    {
+      "inventor_id": "mira-fold",
+      "rationale": "The compact object and fold-out element overlap Mira's tactile transformation craft, but three shadow states and a wheel-driven optical mechanism are not a two-or-three-part pocket puzzle."
+    },
+    {
+      "inventor_id": "tess-loop",
+      "rationale": "Negative space and flat-print silhouette vocabulary are relevant, yet the requested single assembled projection mechanism is not a modular mosaic or rearrangement toy."
+    },
+    {
+      "inventor_id": "kestrel-knot",
+      "rationale": "A captive path could constrain wheel motion, but loops, crossings, and topology are not the source of the three optical transformations."
+    },
+    {
+      "inventor_id": "eve",
+      "rationale": "Eve's cinematic little-world instinct could enrich the moon-gate presence, but there is no personal real-world reference and the Wish is explicitly mechanism-first."
+    },
+    {
+      "inventor_id": "sonora-reed",
+      "rationale": "Passive geometry and hand power align only generally; playable sound is absent and acoustic geometry would distract from the shadow contract."
+    },
+    {
+      "inventor_id": "leo",
+      "rationale": "No tabletop rules, players, or simulation-driven game are requested."
+    },
+    {
+      "inventor_id": "alice",
+      "rationale": "No known tabletop classic or personal customization is requested."
+    },
+    {
+      "inventor_id": "abo",
+      "rationale": "No abstract strategy game, board structure, or combinatorial rules are requested."
+    }
+  ],
+  "concept": {
+    "title": "Lantern Menagerie: the Three-Moon Shadow Reel",
+    "summary": "A palm-scale freestanding moon gate captures a flat three-creature open-carrier reel between front and rear shells. A phone flashlight shines from behind through the rear aperture, the currently indexed opaque creature, and the matching front portal, casting a bold dark rabbit, fox, or owl inside a circular field on a nearby wall. The two-sided scalloped rim is the single obvious control. Full rotation clicks through 0/120/240-degree states and returns to a uniquely deep rabbit-home click whose double-V mark meets a fixed crescent pointer. Four large support-conscious printed parts—front shell, rear shell, silhouette reel, and captured fold-out stand—use no electronics, magnets, glue, purchased hardware, or loose retainer.",
+    "category": "hand-powered mechanical cast-shadow theatre",
+    "signature_decision": "Use three direct, connected positive opaque creature profiles on one shallow open carrier, with the hub, outer ring, separator spokes, and attachments cropped by matching 44 mm front/rear moon-gate portals at the three indexes. This makes each promised dark silhouette exact and independently inspectable, avoids inverted bright-animal cutouts, and lets the same visible reel be control, optical program, and truthful full-motion eclipse wipe.",
+    "intended_interaction": "Deploy the rear kickstand to its 68-degree compression stop; place the gate on a level surface 600–900 mm from a pale wall; place a phone flashlight 400–500 mm behind the gate and aim at the raised rear bullseye until the projected portal is circular and its two small edge bites are symmetric. Start where the reel's double-V home mark meets the shell's fixed crescent and the uniquely deeper click is felt: RABBIT/RESET. Turn the exposed scalloped reel clockwise through an intentional eclipse wipe to the next click for FOX, then the next for OWL; continue one more click or turn either direction until the double-V/crescent and deep click return to reset.",
+    "envelope_mm": {
+      "length_mm": 114,
+      "width_mm": 82,
+      "height_mm": 130,
+      "folded_depth_mm": 13,
+      "deployed_depth_mm": 82,
+      "mass_target_g": "under 180 in common rigid filament; design target, not measured"
+    },
+    "dimension_convention": "Component length is left-right x, width is front-back/light-axis z, and height is vertical y in the assembled upright pose.",
+    "physical_form": "Two shallow asymmetric shell halves lock into one circular moon gate rising from a cloud-shaped plinth. Matching 44 mm clear portals are bordered only by shallow crescent-and-crater blind relief, so decoration cannot contaminate the projected creatures or form a deep optical tunnel. The 114 mm reel is captured in a 3.8 mm cavity, with 3 mm of scalloped rim exposed at both sides as the obvious wheel. A fixed shell crescent points to the reel's double-V rabbit-home mark. The large U-shaped stand is captured between shell bearing pockets, folds flush into the rear recess, and opens to a broad rear foot.",
+    "components": [
+      {
+        "key": "front_shell",
+        "name": "Front moon-gate shell and plinth",
+        "purpose": "Sets the front edge of the fixed projected field, guards the reel, supplies the fixed crescent reset pointer and front feet, and captures the reel and stand when joined to the rear shell.",
+        "form": "Flat-print architectural arch with a 44 mm circular through-portal centred 31 mm above the reel axis; nominal 2.4 mm face with local 4 mm ribs; integral 7.2 mm diameter by 5.2 mm reel spindle with 1.2 mm root fillet; four broad chamfered one-time snap hooks; raised crescent reset pointer; two broad front feet; 1.5 mm minimum external fillets, 1 mm by 45-degree portal chamfer, and no through decoration outside the portal.",
+        "placement": "Wall-facing half of the upright gate; portal centre 79 mm above the table and reel axis 48 mm above the table.",
+        "interfaces": "Spindle passes through the reel's 7.8 mm bore for 0.3 mm radial clearance; four shell hooks engage rear receivers after wheel and stand placement; shell perimeter creates a guarded cavity with 0.6 mm total reel end play and finger-accessible rim gaps no larger than 3 mm.",
+        "dimensions_mm": {
+          "length_mm": 108,
+          "width_mm": 4.8,
+          "height_mm": 130
+        },
+        "print_stance": "Outer architectural face on the bed with spindle and snap hooks upward; all hook and spindle shoulders use 45-degree or steeper printable ramps; no supports intended."
+      },
+      {
+        "key": "rear_shell",
+        "name": "Rear moon-gate shell, bearing, index, and stand housing",
+        "purpose": "Sets the source-side portal edge, receives the reel spindle, provides three-state indexing and geometric aiming cues, captures the kickstand, and completes the guarded moon-gate body.",
+        "form": "Matching flat-print arch with a 44 mm circular portal and 1 mm by 45-degree chamfer; nominal 2.4 mm face; 7.8 mm spindle receiver; protected 20 x 6 x 1.8 mm detent leaf with 0.5 mm maximum working deflection and rounded nose; four snap receivers; raised concentric 18/8 mm bullseye and beam arrow; two 3 x 5 mm portal-edge bites; paired stand-bearing half-pockets, folded recess, and 68-degree compression stops.",
+        "placement": "Phone-facing half of the gate, no more than 3.8 mm behind the animal plane at any portal edge.",
+        "interfaces": "Spindle receiver supports the front spindle tip without axial preload; detent nose engages three reel pockets, with rabbit 0.25 mm deeper than fox/owl; snap receivers permanently capture front hooks; paired half-pockets close around stand trunnions with 0.4 mm side clearance.",
+        "dimensions_mm": {
+          "length_mm": 108,
+          "width_mm": 8.2,
+          "height_mm": 130
+        },
+        "print_stance": "Outer rear face on the bed with bearing pockets and protected coplanar detent upward; no bridged roof, unsupported horizontal bore, or support material intended."
+      },
+      {
+        "key": "shadow_reel",
+        "name": "Three-creature open-carrier silhouette reel",
+        "purpose": "Provides the single large control and carries the exact positive opaque rabbit, fox, and owl profiles through all promised indexed and intermediate motion states.",
+        "form": "114 mm diameter, 3.2 mm thick planar open carrier with twelve broad 10 mm scallops, outer annulus from radius 55 to 57 mm, 7 mm-radius hub, and three 5 mm-wide curved separator spokes placed at sector bisectors. The three locally upright opaque creature unions are centred at 31 mm radius and 120-degree spacing; each has at least two 3.2 mm attachments routed outside the indexed 22 mm portal radius. A 7.8 mm central bore runs on the front spindle. Three detent pockets index the states; rabbit is 0.25 mm deeper and has a double-V rim notch. No floating islands or animal-shaped light holes are allowed.",
+        "placement": "Captured between shells in a 3.8 mm cavity with the active creature centred behind both 44 mm portals; rabbit at 0 degrees, fox at 120 degrees, owl at 240 degrees, and rabbit again at 360 degrees.",
+        "interfaces": "Central bore rotates on the spindle with 0.3 mm radial/0.6 mm diametral clearance; 0.6 mm total axial end play is shared between three 0.4 mm-high bearing pads; detent pockets meet the protected rear leaf; shell edges hide hub, ring, attachments, and inactive creatures at each index while 3 mm of scalloped rim remains touchable at both sides.",
+        "dimensions_mm": {
+          "length_mm": 114,
+          "width_mm": 3.2,
+          "height_mm": 114
+        },
+        "print_stance": "Either broad face on the bed; all stencil openings and carrier gaps run vertically through the flat reel; no supports intended."
+      },
+      {
+        "key": "kickstand",
+        "name": "Fold-out projection stand",
+        "purpose": "Holds the moon gate upright, folds inside the palm-scale storage envelope, and provides a broad rear footprint without becoming a phone holder or blocking the portal beam.",
+        "form": "One U-shaped 5 mm-thick leg with 74 mm-wide foot, two integral 6.0 mm rounded trunnions, guarded hinge shoulders, folded and deployed stop flats, 2 mm edge radii, and a broad central opening below the optical axis.",
+        "placement": "Placed between rear-shell half-pockets before the shells lock; folds upward flush in the rear recess and deploys rearward 68 degrees so its foot is about 78 mm behind the front feet while remaining below the portal light cone.",
+        "interfaces": "Trunnions are permanently captured by the closed shell bearing pockets with 0.4 mm side clearance; broad shoulders carry load against folded and 68-degree compression stops; small geometric bumps only index the positions and do not carry standing load.",
+        "dimensions_mm": {
+          "length_mm": 74,
+          "width_mm": 5,
+          "height_mm": 88
+        },
+        "print_stance": "Either broad side flat on the bed; trunnions are coplanar with the stand and use teardrop/diamond bearing sections and 45-degree shoulders; no supports intended."
+      }
+    ],
+    "optical_geometry": {
+      "layer_order": "phone flashlight -> chamfered 44 mm rear-shell portal -> 0.3 mm rear running gap -> 3.2 mm open-carrier stencil -> 0.3 mm front running gap -> chamfered 44 mm front-shell portal -> wall",
+      "light_direction": "approximately normal to the wheel and wall, rear-to-front through the raised rear halo",
+      "projection_plane": "pale matte wall approximately parallel to the reel plane",
+      "source_to_mask_mm": [400, 500],
+      "mask_to_wall_mm": [600, 900],
+      "point_source_magnification_range": [2.2, 3.25],
+      "predicted_portal_diameter_on_wall_mm": [96.8, 143],
+      "alignment_cue": "Aim at the raised rear 18/8 mm bullseye and adjust yaw/pitch until the projected 44 mm portal field is circular and the two 3 x 5 mm edge bites are symmetric.",
+      "state_angles_deg": {
+        "rabbit_reset": 0,
+        "fox": 120,
+        "owl": 240
+      },
+      "transition_contract": "Reel travel is continuous and cyclic through 0–360 degrees. At non-indexed poses the fixed portal truthfully shows tilted/cropped parts of outgoing and incoming positive profiles plus the curved separator spoke as an intentional eclipse wipe; continuous animal recognition or a literal morph is not promised. Make must ray-cast every 5 degrees, including any double-image or dark interval, and Playtest must exercise at least one uninterrupted full rotation in both directions."
+    },
+    "silhouette_specification": {
+      "coordinate_system": "Millimetres around each local creature centre on the reel's 31 mm pitch radius, +x right and +y up when that creature is indexed at the top; all primitives union to one positive opaque connected body. The fixed portal clips at local radius 22 mm; attachments extend beyond that boundary into carrier spokes/ring and must be hidden by both shell masks at the index.",
+      "global_minima_mm": {
+        "opaque_web_width": 3.2,
+        "recognition_feature_width": 4.5,
+        "carrier_spoke_width": 5,
+        "structural_frame_wall": 3.2
+      },
+      "rabbit": "Right-facing union: body ellipse centre (-3,-5), radii (11,10); head ellipse (7,5), radii (7,6); muzzle ellipse (13,3), radii (4,3); tail circle (-14,-4), radius 4; ear capsules (3,9)–(0,21), width 4.8 and (8,9)–(8,21), width 4.5; 3.6 mm tapered foot attachments from (-9,-13) to (-9,-23) and (4,-13) to (4,-23), continued behind the shell mask to the lower carrier spoke/ring.",
+      "fox": "Left-facing union: torso ellipse (2,-6), radii (12,7); neck capsule (-6,-3)–(-10,4), width 7; head polygon [(-15,7),(-8,11),(-3,7),(-7,2),(-16,1),(-20,4)]; ears [(-12,9),(-10,20),(-6,10)] and [(-7,10),(-3,18),(-2,7)]; bushy tail polygon [(10,-7),(18,-4),(21,3),(17,12),(11,8),(7,1)]; 3.8 mm leg attachments from (-3,-11) to (-3,-23) and (7,-11) to (7,-23), continued behind the shell mask to the carrier.",
+      "owl": "Front-facing union: body ellipse (0,-5), radii (11,15); head circle (0,8), radius 10; ears [(-9,12),(-7,21),(-2,16)] and [(9,12),(7,21),(2,16)]; wing ellipses (-8,-4) and (8,-4), radii (5,11); 3.6 mm-high perch at y=-20 extending to x=±23 behind the shell mask; two 4 mm feet join body to perch, and perch ends join the carrier. No facial holes."
+    },
+    "assembly": [
+      "Place the front shell outer-face down, place the reel over its integral spindle at rabbit home, and verify that the positive rabbit is locally upright behind the front portal.",
+      "Place both stand trunnions into the rear shell's open half-pockets, align rear portal and spindle receiver, and press the four broad shell locks once; this permanently captures reel and stand without a loose cap or pin.",
+      "Verify 0.6 mm total reel end play, free 360-degree motion through all three clicks, and folded/68-degree stand compression stops.",
+      "Rotate until the uniquely deeper click is felt and the reel double-V meets the fixed crescent; verify rabbit centring before first use."
+    ],
+    "print_plan": {
+      "process": "consumer FFF in one common rigid filament",
+      "nominal_nozzle_mm": 0.4,
+      "nominal_layer_height_mm": 0.2,
+      "supports": "none intended for any of the four prescribed stances",
+      "material_note": "No material-specific strength, index-leaf life, trunnion snap life, or dimensional compensation is claimed at Invent; Make must select and declare a rigid filament and verify exact clearances in source, mesh, and slicer evidence.",
+      "robustness_margin": "3.2 mm minimum structural/silhouette webs is a deliberate design margin, not a universal sourced durability rule."
+    },
+    "safety_and_use": [
+      "Ages eight and up with ordinary hand force only; no spring energy, projectiles, magnets, electronics, glue, purchased fasteners, sharp silhouette tips, or loose in-use parts.",
+      "All user-contact edges target at least 1.5 mm fillets; pointed ears/snouts exist inside the guarded portal and terminate with at least 0.8 mm tip radius.",
+      "The wheel touch surface is the exposed scalloped rim; frame guards cover the axle and stencil edges. Running gaps and the stand hinge require exact pinch-access inspection before any safety claim.",
+      "Do not stare into the phone flashlight; aim toward a wall, keep the phone separate from the toy, deploy the stand before turning the wheel, and use only on a level surface."
+    ],
+    "assumptions": [
+      "The owner supplies an ordinary phone flashlight and a pale wall; the toy contains no light source and does not hold the phone.",
+      "The first-order point-source similar-triangle model is used only for projected scale; actual phone emitter extent and optics will be tested rather than assumed.",
+      "A 114 x 130 x 13 mm folded object and 114 mm control wheel satisfy the qualitative palm-size request while prioritizing robust, recognizable mask geometry.",
+      "The direct silhouettes are designed to remain legible without internal eye or fur detail; rabbit ears/haunch, fox snout/ears/tail, and owl frontal symmetry/perch carry recognition."
+    ],
+    "unresolved_risks": [
+      "No exact CAD, ray-cast, slice, print, physical light test, repeated-cycle test, or human recognition test exists at Invent; all are required downstream.",
+      "Finite phone emitters may soften ears, gaps, snout, and tail at the far wall distance; exact ray evidence and physical Playtest may require narrowing the distance band without changing the direct open-carrier mechanism.",
+      "The frame index leaf and one-time stand saddle insertion are material- and orientation-sensitive; Make must verify strain, clearance, retention, and cycle path or return concept-invalidating evidence rather than silently changing the interfaces.",
+      "The cyclic transition includes tilted/cropped animal fragments, possible overlaps, and curved separator-spoke eclipse wipes; full-motion evidence must show them truthfully and cannot present indexed stills as a continuous literal morph.",
+      "The deployed footprint is a design target, not tipping proof; Make and Playtest must evaluate stability during wheel torque on a level surface.",
+      "Room-light brightness, projected edge softness, age-eight control discovery, creature recognition, delight, fit, and durability remain physically unverified."
+    ],
+    "downstream_acceptance_evidence": [
+      "Make: exact parametric source and STEP-first four-part assembly matching these dimensions and interfaces, with product render and diagnostic state/exploded views.",
+      "Make: deterministic projections at 0, 120, and 240 degrees plus every 5 degrees across a complete 0–360-degree cycle, all derived from exact sealed geometry with light geometry recorded.",
+      "Make: collision, detent, shell-lock retention, axial/radial clearance, minimum wall/web, support, and stand-fold/deploy inspections; slicer evidence for all four prescribed stances.",
+      "Playtest: agent-playtest, mechanical-check, and printability-check required by the blueprint, distinguishing digital evidence from any exact physical evidence actually obtained.",
+      "Playtest: recognition of rabbit/fox/owl, full two-way motion, reset discovery, finite-emitter edge softness, normal-room visibility, tipping, and pinch/access evaluated against the exact Made bytes."
+    ]
+  },
+  "research": {
+    "research_note_path": "evidence/invent/research-notes.md",
+    "research_note_sha256": "44fef42016ce6dc85756b6e64e6d2e8fa02fe4719bc06abbd66df95292bd9e81",
+    "design_decision_path": "evidence/invent/design-decision.md",
+    "design_decision_sha256": "f6005a5655e0cc86cbf4032b6cfdc4d3b228ed6a8ea11f6a1f9103c4000bfd9b",
+    "specialist_evidence": [
+      {
+        "path": "evidence/invent/orin-brief.md",
+        "sha256": "1e02109599cc8adb328ee216307209c893b7789d66c39bb3f3c37ad5af06a77d",
+        "role": "Selected Orin Shadow mechanism exploration and build-ready recommendation."
+      },
+      {
+        "path": "evidence/invent/feasibility-review.md",
+        "sha256": "0f1d4b734af940011b98d433371a58e2d5668b9446a881271208db309d797853",
+        "role": "Independent optical/mechanical feasibility critique and failure-mode review."
+      },
+      {
+        "path": "evidence/invent/synthesis.md",
+        "sha256": "862e54ea3dbacb956902fcee85935f883aba7f67c780b9997e3940f2118f7fdf",
+        "role": "Manager synthesis of specialist review into the final four-large-part cyclic design."
+      }
+    ],
+    "claims": [
+      {
+        "id": "projection-scale",
+        "claim": "For a point-source shadow with parallel mask and screen planes, similar triangles give linear magnification equal to source-to-screen distance divided by source-to-mask distance.",
+        "source": "U.S. FDA, Resource Manual for Compliance Test Parameters of Diagnostic X-Ray Systems",
+        "url": "https://www.fda.gov/radiation-emitting-products/medical-x-ray-imaging/resource-manual-compliance-test-parameters-diagnostic-x-ray-systems",
+        "accessed": "2026-08-29",
+        "use": "Supports only the calculated 2.2x–3.25x scale band, not sharpness or recognition."
+      },
+      {
+        "id": "finite-source-penumbra",
+        "claim": "A finite source produces geometric unsharpness/penumbra; unsharpness grows with source size and object-to-image separation and decreases with source-to-object distance.",
+        "source": "IAEA-TECDOC-1445, section 2.1.3",
+        "url": "https://www-pub.iaea.org/MTCD/Publications/PDF/te_1445_web.pdf",
+        "accessed": "2026-08-29",
+        "use": "Supports the controlled distance band and requirement for exact phone-light testing; the radiographic formula is used only as an optical analogue."
+      },
+      {
+        "id": "fff-wall-floor",
+        "claim": "UltiMaker's FFF design guide gives the nozzle diameter as a minimum printable wall-thickness floor and notes 0.4 mm as a common standard nozzle.",
+        "source": "UltiMaker, How to design for FFF 3D printing",
+        "url": "https://ultimaker.com/wp-content/uploads/2024/06/How-to-design-for-FFF-1.pdf",
+        "accessed": "2026-08-29",
+        "use": "Only a printable-feature floor; the concept's 3.2 mm webs are a deliberate robustness margin and not sourced durability proof."
+      },
+      {
+        "id": "fff-hole-floor",
+        "claim": "UltiMaker states minimum hole size depends on material and settings and offers 2 mm only as a rule-of-thumb lower bound.",
+        "source": "UltiMaker, Design for FDM 3D printing: Maximize your success",
+        "url": "https://ultimaker.com/learn/design-for-fff-3d-printing-maximize-your-success/",
+        "accessed": "2026-08-29",
+        "use": "Screens out tiny apertures; it does not prove silhouette openings, optics, or durability."
+      }
+    ],
+    "candidate_mechanisms": [
+      {
+        "name": "guarded open-carrier planar shadow reel",
+        "decision": "selected",
+        "reason": "Direct masks provide the strongest exact, inspectable rabbit/fox/owl evidence with four broad support-conscious parts and one visible wheel."
+      },
+      {
+        "name": "trihedral multi-profile rotor",
+        "decision": "rejected",
+        "reason": "Spatial fins create self-shadowing, fragile supports, a narrow sweet spot, and poorly inspectable intermediate poses."
+      },
+      {
+        "name": "wheel-driven translating mask strip",
+        "decision": "rejected",
+        "reason": "Crank/slider conversion, guides, capture, and three masks exceed four parts or create a fragile combined strip."
+      },
+      {
+        "name": "two-layer differential or moire shutters",
+        "decision": "rejected",
+        "reason": "Gearing, fine apertures, and layer sensitivity add risk without improving truthfulness over direct creature masks."
+      }
+    ],
+    "deliberate_design_decisions": [
+      "114 mm reel, 44 mm paired portals, 31 mm creature pitch radius, 3.2 mm profile webs, 5 mm carrier spokes, 0.6 mm total axial end play, 7.2/7.8 mm spindle interface, full cyclic travel, and 68-degree stand deployment are authored design margins to be verified, not sourced universal facts.",
+      "The three creatures use bold external profiles and forbid facial holes so recognition does not depend on fine penumbra-sensitive detail.",
+      "The source and wall distance bands trade a calculated 96.8–143 mm wall image against finite-emitter blur; physical performance remains unresolved."
+    ],
+    "scope_limit": "Research and calculations support design intent only. They do not prove exact geometry, printing, fit, strength, motion life, brightness, sharpness, safety, recognition, or player response."
+  }
+}

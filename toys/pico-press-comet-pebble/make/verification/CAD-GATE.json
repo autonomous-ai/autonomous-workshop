@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.cad-verification",
+  "artifact": {
+    "step_path": "assembled.step",
+    "step_sha256": "6ea8b82c329ecd6bfb5893e9bdbc46091df4d130c119f215d815046c870b3e61",
+    "stl_path": "assembled.stl",
+    "stl_sha256": "c25742f2f3ee8a711d1e37fed1e3b89f8cfe06c76166079a6dc37f5a847df3f2",
+    "source_path": "cad/comet_pebble.step.py",
+    "source_sha256": "a501f2601c7ce643c257378ea88d65f576e328d4aef039228a25738021455772"
+  },
+  "toolchain": {
+    "python": "3.11.15",
+    "cadgen": "0.4.19",
+    "build123d": "0.11.1",
+    "pillow": "12.3.0"
+  },
+  "geometry": {
+    "solid_count": 1,
+    "bbox_mm": [68.03792590261043, 44.69127932559793, 34.000000200000024],
+    "volume_mm3": 42112.70490480781,
+    "uniform_density_com_mm": [0.4980246446126184, -0.44111556120867257, 15.356459128834732],
+    "landing_ellipse_radii_mm": [17.2, 10.2],
+    "minimum_com_radial_margin_mm": 9.669143362247459,
+    "section_axis_sweep_degrees": 27.0,
+    "inertia_curvature_axis_mismatch_degrees": 10.261835436507795,
+    "inverted_crown_cap_normalized_com_radius": 1.3348655828187381,
+    "sampled_best_alternate_rest_gap_mm": 1.0185952487140444,
+    "sampled_inverted_rest_gap_mm": 3.287081742330555
+  },
+  "final_pipeline": {
+    "result": "pass",
+    "print_ready_claim": true,
+    "report_path": "cad/measure/verification-pipeline.md",
+    "report_sha256": "d4da92b6ec95e9a2dfa2b09311e224d2a91b6791e92fb1b1c188a1ba380d169d",
+    "checks": {
+      "layout": "pass",
+      "generation": "pass",
+      "strict_fit": "pass",
+      "local_balance": "pass",
+      "local_static_rest": "pass",
+      "local_spec": "pass",
+      "refs": "pass",
+      "validate": "pass",
+      "interfere": "pass",
+      "mesh": "pass",
+      "thickness_0_4mm_nozzle": "pass"
+    },
+    "thickness_report_path": "cad/measure/thickness-comet_pebble.md",
+    "thickness_report_sha256": "2c7721fc6df68b23b7435c950270db7495c0e57ee325783d4d3941457e215fa9"
+  },
+  "presentation": {
+    "hero_path": "cad/snap/iso.png",
+    "hero_sha256": "fdc6e732c9f20915c77690949f64bf4905d7c503e8fdf95970f2a485a2c511a8",
+    "visual_review": "The 1200 px RGB hero and 1000 px top/right views show a legible skewed pebble silhouette and upward smiling-star crown."
+  },
+  "limitations": [
+    "No physical print or motion test was run.",
+    "Digital geometry and mass-property checks do not prove an always-settles claim, durability, hand feel, or behavior across desk surfaces.",
+    "The intended balance assumes uniform density; use 100% infill for the closest first-print correspondence."
+  ]
+}

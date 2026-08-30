@@ -73,7 +73,11 @@ A current public snapshot follows the real lifecycle:
 Historical snapshots may lack `TOKENS.json`; schema-v1 token snapshots contain
 only a combined legacy counter that cannot be truthfully split, and schema-v1
 Release snapshots may retain `MANUAL.md`. They are legacy evidence and are
-never rewritten or presented as a current terminal Release.
+never rewritten or presented as a current terminal Release. When an older
+projection omitted the render tree but its exact public Factory hero is still
+available, a root `renders/` directory may preserve an archive-local copy with
+its source and SHA-256. That recovered presentation asset is labeled as
+post-publication provenance and is never represented as sealed Make evidence.
 
 Snapshots never contain an undisclosed Wish, Codex prompt/transcript/chain of
 thought, host checkpoint, credentials, raw Factory receipt, generated G-code,

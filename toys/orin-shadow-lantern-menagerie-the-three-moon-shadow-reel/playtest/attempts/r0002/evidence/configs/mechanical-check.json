@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "check_id": "mechanical-check",
+  "product_artifact_sha256": "28e8a417d8ffe4e4c702c5eea1ca336dab843d950149ef768fc1f5d9da66787f",
+  "seed": 20260829,
+  "method": "Independent source and sealed-evidence audit plus isolated work-copy replay of the 17-condition project fit audit, five declared rigid-body motion conditions, and an adversarial reel sweep including the omitted front-shell detent obstacle.",
+  "inspection_targets": [
+    "cad/lantern_menagerie_lib.py",
+    "cad/measure/check_fit.py",
+    "cad/measure/motion.json",
+    "cad/measure/verification-pipeline.md",
+    "assembled.step.json"
+  ],
+  "acceptance": [
+    "The stand ordinary sweep must clear at 29 samples, both stand endpoint overtravel checks must block at the authored endpoints, and the reel must demonstrate a two-way 73-sample cycle including the functional front detent interaction.",
+    "Rabbit home must preserve a measurable 0.25 mm differential against fox and owl with radial entry clearance, and the nose and pockets must have a demonstrable cam-in/cam-out path.",
+    "Shell hooks must have a demonstrable insertion path through the receiver as well as a separately verified retained pullout stop.",
+    "The deployed stand angle and footprint must agree with the authored brief before endpoint evidence passes.",
+    "Digital checks must not be represented as proof of snap force, retention force, tipping, pinch safety, strength, or cycle life."
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "assembly": "assembled.step.py",
+  "conditions": [
+    {
+      "id": "shell-lock-rigid-pullout-blocked",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "After closure, pulling the resting front shell toward the wall must drive every one-sided latch shoulder into the rear receiver.",
+      "inputs": {
+        "moving_part": "front_shell",
+        "obstacle_parts": ["rear_shell"],
+        "translation": [0.0, 5.0, 0.0],
+        "steps": 21,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    },
+    {
+      "id": "shell-lock-lower-left-lead-path-clear",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "A 3.0 mm-diameter conservative round proxy follows the lower-left latch leading-face centre through its exact receiver before one-axis flex and recovery.",
+      "inputs": {"start": [-43.0, 0.0, 10.0], "end": [-43.0, -11.0, 10.0], "radius": 1.5, "obstacle_parts": ["rear_shell"]},
+      "thresholds": {"maxOverlapMm3": 0.5}
+    },
+    {
+      "id": "shell-lock-lower-right-lead-path-clear",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "The lower-right latch leading-face centre has the same receiver path.",
+      "inputs": {"start": [43.0, 0.0, 10.0], "end": [43.0, -11.0, 10.0], "radius": 1.5, "obstacle_parts": ["rear_shell"]},
+      "thresholds": {"maxOverlapMm3": 0.5}
+    },
+    {
+      "id": "shell-lock-upper-left-lead-path-clear",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "The upper-left latch leading-face centre has the same receiver path.",
+      "inputs": {"start": [-15.0, 0.0, 118.0], "end": [-15.0, -11.0, 118.0], "radius": 1.5, "obstacle_parts": ["rear_shell"]},
+      "thresholds": {"maxOverlapMm3": 0.5}
+    },
+    {
+      "id": "shell-lock-upper-right-lead-path-clear",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "The upper-right latch leading-face centre has the same receiver path.",
+      "inputs": {"start": [15.0, 0.0, 118.0], "end": [15.0, -11.0, 118.0], "radius": 1.5, "obstacle_parts": ["rear_shell"]},
+      "thresholds": {"maxOverlapMm3": 0.5}
+    },
+    {
+      "id": "kickstand-deployed-stop-blocks-overtravel",
+      "check": "rotation_motion_collision",
+      "expect": "blocked",
+      "description": "The deployed shoulder must contact the rear shell when pushed 10 degrees beyond its authored deployed endpoint.",
+      "inputs": {
+        "moving_part": "kickstand",
+        "obstacle_parts": ["rear_shell"],
+        "axis_point": [0.0, -14.5, 28.5],
+        "axis_direction": [1.0, 0.0, 0.0],
+        "start_deg": 0.0,
+        "end_deg": 10.0,
+        "steps": 11,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    },
+    {
+      "id": "kickstand-folded-stop-blocks-overtravel",
+      "check": "rotation_motion_collision",
+      "expect": "blocked",
+      "description": "The folded shoulder must contact the rear shell when pushed 10 degrees beyond the authored folded endpoint.",
+      "inputs": {
+        "moving_part": "kickstand",
+        "obstacle_parts": ["rear_shell"],
+        "axis_point": [0.0, -14.5, 28.5],
+        "axis_direction": [1.0, 0.0, 0.0],
+        "start_deg": -112.0,
+        "end_deg": -122.0,
+        "steps": 21,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    },
+    {
+      "id": "kickstand-deployed-to-folded-clear",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The captured kickstand must return from its deployed pose to the folded rear pose without crossing either shell or the reel.",
+      "inputs": {
+        "moving_part": "kickstand",
+        "obstacle_parts": ["front_shell", "rear_shell", "shadow_reel"],
+        "axis_point": [0.0, -14.5, 28.5],
+        "axis_direction": [1.0, 0.0, 0.0],
+        "start_deg": 0.0,
+        "end_deg": -112.0,
+        "steps": 57,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    },
+    {
+      "id": "reel-hard-parts-clockwise-full-cycle-clear",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The rigid reel layer must clear the rear shell and deployed stand through one complete cycle; intended front-leaf detent contact is explicitly outside this rigid-body check.",
+      "inputs": {
+        "moving_part": "shadow_reel",
+        "obstacle_parts": ["rear_shell", "kickstand"],
+        "axis_point": [0.0, -2.7, 59.0],
+        "axis_direction": [0.0, -1.0, 0.0],
+        "start_deg": 0.0,
+        "end_deg": 360.0,
+        "steps": 73,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    },
+    {
+      "id": "reel-hard-parts-counterclockwise-full-cycle-clear",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The rigid reel layer must clear the rear shell and deployed stand through the reverse complete cycle.",
+      "inputs": {
+        "moving_part": "shadow_reel",
+        "obstacle_parts": ["rear_shell", "kickstand"],
+        "axis_point": [0.0, -2.7, 59.0],
+        "axis_direction": [0.0, -1.0, 0.0],
+        "start_deg": 0.0,
+        "end_deg": -360.0,
+        "steps": 73,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.5
+      }
+    }
+  ]
+}

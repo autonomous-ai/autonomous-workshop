@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "check_id": "mechanical-check",
+  "product_artifact_sha256": "7670e30199d25813d015f1b36cf8962e78a01722cff02524ee3240b938793d00",
+  "seed": 20260829,
+  "method": "Independent source and sealed-evidence audit plus isolated exact-source replay of the 21-condition fit audit, 24-condition specification audit, and 10-condition motion manifest covering two-way reel clearance, four latch entry corridors, pullout capture, stand arc, and both endpoint stops.",
+  "inspection_targets": [
+    "cad/params.py",
+    "cad/parts/reel.py",
+    "cad/parts/shells.py",
+    "cad/parts/stand.py",
+    "cad/measure/check_fit.py",
+    "cad/measure/check_spec.py",
+    "cad/measure/motion.json",
+    "cad/measure/verification-pipeline.md",
+    "assembled.step.json"
+  ],
+  "acceptance": [
+    "Clockwise and counterclockwise hard-part reel cycles must each clear 73 samples, while fit evidence must encode a rounded two-way detent cam with the authored rabbit-home differential.",
+    "All four one-axis latch entry corridors must clear and retained shell pullout must block separately.",
+    "The stand must implement the authored 112-degree endpoint, clear the full deployed-to-folded arc, block both overtravel directions, and remain within the authored about-82-mm depth target.",
+    "Rigid and algebraic checks must not be represented as proof of elastic force, strain, detent feel, snap retention, tipping, strength, or cycle life."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "check_id": "printability-check",
+  "product_artifact_sha256": "9ff89565b9c5aa91e7338007c641607da1c3afa0ba9a3cafe749ef9d2cc20403",
+  "seed": 20260829,
+  "method": "Independent full-manifest audit, exact-STL hash verification, read-only mesh/bed replay for all four parts, sealed standard wall evidence for all four parts, and fresh explicit 0.16-mm requested-voxel replay of the exact repaired rear shell.",
+  "mesh_sha256": {
+    "front_shell": "05f5954fe1478cd30668e6bbd592ed14fcbe2b554dd3d1c6030975f66d3f4a29",
+    "kickstand": "8a68cbdcdc7571575272218d6df449a5e76af1e2de81ade354a191dce5584cfa",
+    "rear_shell": "847811e2898dc2f971d7fa2c5539efe13064bb8770b4316cdd8879b9452c1b12",
+    "shadow_reel": "2a14b2ab6030b4dd14b5378262b603927598bfecc7c57700c56a61a58103a62e"
+  },
+  "bed_mm": [220, 220, 220],
+  "nozzle_mm": 0.4,
+  "minimum_wall_mm": 0.8,
+  "rear_requested_voxel_mm": 0.16,
+  "acceptance": [
+    "Every exact sealed STL must be one connected, watertight, manifold, consistently wound positive-volume shell that fits the declared bed.",
+    "Standard wall evidence must pass all four exact parts and a fresh fine rear-shell replay must pass the 0.8-mm threshold on the current repaired rear STL.",
+    "The fine report must name the current round-4 rear STL, whose hash differs from the rejected round-3 rear STL.",
+    "Hollowability warnings are optimization observations, not successful-print evidence; no slicer, support, print, fit, snap, warping, strength, or cycle claim may be inferred."
+  ]
+}
