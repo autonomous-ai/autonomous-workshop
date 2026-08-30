@@ -296,6 +296,8 @@ not a combined token total:
 | Invent turn 1 | 919,268 | 770,048 | 15,436 | 14m49s |
 | Make turn 1 | 1,895,614 | 1,632,512 | 28,311 | 30m00s |
 | Make recovery | 804,655 | 709,120 | 8,157 | 10m31s |
+| Make explicit-resume turn 1 | 2,383,232 | 2,087,680 | 28,341 | 30m00s |
+| Make automatic recovery | 1,966,262 | 1,724,160 | 25,750 | 30m00s |
 
 The token reduction versus Moonseed Bloom is material, but the paired objective
 still failed. Exact renders read as a faceted blob-like whale attached to a
@@ -310,6 +312,17 @@ parts, explicitly rejecting blob-plus-board, plaque, and floating-piece reads.
 New runs freeze those fixes. The preserved run remains resumable with its
 historical protocol, and its same session retains the exact failed preflight
 and can continue non-destructively from the existing CAD.
+
+One explicit normal CLI resume then confirmed the bounded failure window. The
+historical session repeated destructive preflight twice, copied the project
+into `cad-final` and `cad-release` workarounds, and eventually switched to
+non-destructive preflight. Three smaller parts passed the fixed 0.8 mm wall
+gate, while the whale retained localized 0.20 mm regions. Two consecutive
+30-minute turns ended without a proposal, so Workshop stopped the invocation
+and preserved the exact session instead of opening more attempts. The run was
+not resumed again: it had not reached visual repair, Playtest, or Release, and
+additional operator retries would spend against a known frozen-protocol dead
+end rather than validate the new-run fix.
 
 The resume exposed two more deterministic ordering failures. The first proposal
 declared four non-part `*.step.py` entries; local verification selected one with
