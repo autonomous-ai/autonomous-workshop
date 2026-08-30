@@ -475,6 +475,16 @@ class StageProposalToolTest(unittest.TestCase):
             b"|---:|---|---:|---:|\n"
             b"| 1 | `check_thickness exact.stl` | rc=0 | 0.01 |\n"
         )
+        preflight = (
+            b"# Verification pipeline record\n\n"
+            b"- Recorded: content-addressed\n"
+            b"- Mode: `print-preflight`\n"
+            b"- Result: **PASS** (exit 0)\n\n"
+            b"| # | command | result | seconds |\n"
+            b"|---:|---|---:|---:|\n"
+            b"| 1 | `check_mesh exact.stl` | rc=0 | 0.01 |\n"
+            b"| 2 | `check_thickness exact.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
+        )
         (product_root / "product.json").write_bytes(product_bytes)
         (product_root / "cad/project/moon.step.py").write_text("pass\n")
         (product_root / "assembled.step").write_bytes(b"ISO-10303-21;\n")
@@ -487,6 +497,10 @@ class StageProposalToolTest(unittest.TestCase):
         (product_root / "assembled.stl").write_bytes(assembled_stl)
         (product_root / "exports/stl/assembled.stl").write_bytes(assembled_stl)
         (product_root / "cad/project/validation/cad-build.json").write_bytes(verification)
+        (product_root / "cad/project/measure").mkdir()
+        (product_root / "cad/project/measure/print-preflight.md").write_bytes(
+            preflight
+        )
         render = Image.new("RGB", (900, 900), "#fff4df")
         pen = ImageDraw.Draw(render)
         pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
@@ -502,7 +516,7 @@ class StageProposalToolTest(unittest.TestCase):
             product_root / "cad/project/snap/signature.png", format="PNG"
         )
         review = {
-            "schema_version": 5,
+            "schema_version": 6,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": self.invented.concept_sha256,
             "iso_sha256": sha256(
@@ -536,6 +550,7 @@ class StageProposalToolTest(unittest.TestCase):
                 }
             ],
             "blocking_visual_defects": [],
+            "print_preflight_sha256": sha256(preflight),
             "largest_risk": "The three states need a stronger direction cue.",
             "resolution": "The final sheet uses separated contrasting states.",
         }
@@ -1152,6 +1167,46 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn("passing final full-tier report", failed_current.stderr)
+
+    def test_make_requires_hash_bound_standard_print_preflight(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        preflight = product_root / "cad/project/measure/print-preflight.md"
+        preflight.write_text(
+            "# Verification pipeline record\n\n"
+            "- Mode: `print-preflight`\n"
+            "- Result: **PASS** (exit 0)\n\n"
+            "| # | command | result | seconds |\n"
+            "|---:|---|---:|---:|\n"
+            "| 1 | `check_mesh exact.stl` | rc=0 | 0.01 |\n"
+            "| 2 | `check_thickness exact.stl --nozzle 0.1` | rc=0 | 0.01 |\n",
+            encoding="utf-8",
+        )
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["print_preflight_sha256"] = sha256(preflight.read_bytes())
+        review_path.write_bytes(canonical_json(review))
+
+        completed = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("standard 0.4 mm thickness", completed.stderr)
 
     def test_make_verification_must_belong_to_declared_cad_project(self):
         product_root, _, _, verification = self.create_product()

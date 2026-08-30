@@ -77,9 +77,14 @@ the design or repeat completed subagent work.
 
 Use one deliberate verification funnel. During source edits, build the smallest
 entry that exposes the changed relationship and run only its relevant narrow
-check. As soon as a plausible exact draft STL exists, run `check_mesh` and
-`check_thickness` against that freshly exported STL. Repair and regenerate
-before review if either fails. Then render the candidate and perform the blind
+check. As soon as plausible exact draft geometry exists, run
+`verify_project <cad-project> --print-preflight --fresh`. This fixed cheap gate
+generates **every declared printable part**, runs strict bed fit, exports every
+STL, and checks every mesh and wall thickness at the same standard 0.4 mm
+nozzle profile used by the final gate. Do not substitute an assembly-only STL,
+omit a printable, invoke `check_thickness` with a smaller nozzle, or weaken a
+threshold to manufacture a pass. Repair and regenerate until the canonical
+`measure/print-preflight.md` passes. Then render the candidate and perform the blind
 signature review below **before** the expensive integrated final verifier.
 Resolve at most one largest visual defect coherently, rebuild, rerun those two
 narrow artifact checks, and rerender the exact final candidate; then batch
@@ -221,12 +226,21 @@ images. A missing or contradicted critical requirement is a blocking visual
 defect. Do not hide it in `largest_risk`, `resolution`, or concept prose while
 setting the aggregate booleans true.
 
+Fail closed on presentation quality. A blind read of “prototype,” “device,” or
+the wrong ordinary object; dominant exposed working geometry; a signature
+detail that needs zoom; raw or jagged faceting; an unclear state transition;
+or a visible caveat in `largest_risk` is a blocking visual defect even when the
+CAD is technically valid. `largest_risk` may describe a nonvisual physical
+unknown after a visual pass, but it may not launder a visible defect while
+`blocking_visual_defects` stays empty. Do not set `finished_product_desirable`
+or aggregate match booleans true merely to advance the workflow.
+
 Preserve the final review as canonical JSON at
 `<cad-project>/snap/SIGNATURE-REVIEW.json` with exactly these fields:
 
 ```json
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "kind": "autonomous-workshop.signature-experience-review",
   "concept_sha256": "<exact canonical Invented concept hash>",
   "iso_sha256": "<lowercase SHA-256 of final iso.png>",
@@ -256,13 +270,15 @@ Preserve the final review as canonical JSON at
     }
   ],
   "blocking_visual_defects": [],
+  "print_preflight_sha256": "<lowercase SHA-256 of passing measure/print-preflight.md>",
   "largest_risk": "<strongest concrete final finding>",
   "resolution": "<specific geometry, pose, or composition resolution>"
 }
 ```
 
 The finalizer requires every confirmation, all unprompted reads, at least one
-explicit critical-form check, no blocking visual defect, the exact Invented
+explicit critical-form check, no blocking visual defect, the exact passing
+all-printable 0.4 mm preflight hash, the exact Invented
 concept binding, one or two review rounds, and exact final-image hashes. It also
 requires the current CAD report to be a passing final full-tier run containing
 a successful thickness row; omitting a failed check cannot reach the host's

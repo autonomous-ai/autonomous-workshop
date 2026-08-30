@@ -232,6 +232,35 @@ a successful thickness row. Spark concept prose may not normalize a geometry
 repair that contradicts the exact Wish. The next production challenger must
 show that this tighter order improves both truthfulness and cost.
 
+Moonseed Bloom then challenged Forge with a six-part kinetic celestial flower.
+Invent earned some of its extra work: one independent review rejected an
+overpacked barrel cam, and the same 23m23s native turn sealed a simpler side
+moon-wheel/Scotch-yoke concept. Make exposed the remaining economics failure:
+
+| Measure | Observed before operator resume |
+|---|---:|
+| Invent | 1 turn, 23m23s, passed |
+| Make turn 1 | 60m00s, timed out |
+| Make turn 2 | 44m58s, failed |
+| CLI wall time | 2h08m25s |
+| Publication | not created |
+
+Make spent its visual review before discovering that one printable base had
+0.14 mm regions and 0.7% sub-minimum surface at the normal 0.4 mm nozzle. It
+then experimented with 0.2, 0.1, and even 0.04 mm nozzle arguments before
+returning to the standard profile; later repairs exposed more strict-fit and
+thickness failures. Its critic also accepted a coarse prototype/device read,
+dominant exposed mechanism, and zoom-dependent star as finished and desirable.
+
+Schema v6 replaces the advisory single-STL preflight with one deterministic
+`--print-preflight` mode. It generates every declared printable, runs strict
+fit, exports every STL, and runs mesh plus thickness gates at the fixed final
+0.4 mm profile. The visual review binds that passing report. Product-run
+instructions also make prototype/device reads, dominant exposed mechanisms,
+zoom-dependent signatures, raw faceting, unclear state changes, and visible
+`largest_risk` caveats blocking rather than cosmetically acceptable. No new
+agent, model judge, or retry loop is added.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

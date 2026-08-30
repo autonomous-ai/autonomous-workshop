@@ -612,10 +612,23 @@ class _OneSessionProductAgent:
                 (offset + 110, 160, offset + 490, 700), fill=color
             )
         signature.save(signature_path, format="PNG", optimize=False)
+        preflight = (
+            b"# Verification pipeline record\n\n"
+            b"- Recorded: content-addressed\n"
+            b"- Mode: `print-preflight`\n"
+            b"- Result: **PASS** (exit 0)\n\n"
+            b"| # | command | result | seconds |\n"
+            b"|---:|---|---:|---:|\n"
+            b"| 1 | `check_mesh assembled.stl` | rc=0 | 0.01 |\n"
+            b"| 2 | `check_thickness assembled.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
+        )
+        preflight_path = product_root / "cad/project/measure/print-preflight.md"
+        preflight_path.parent.mkdir(parents=True, exist_ok=True)
+        preflight_path.write_bytes(preflight)
         _write_json(
             signature_path.with_name("SIGNATURE-REVIEW.json"),
             {
-                "schema_version": 5,
+                "schema_version": 6,
                 "kind": "autonomous-workshop.signature-experience-review",
                 "concept_sha256": _sha256(_canonical_json(invented["concept"])),
                 "iso_sha256": _sha256(render_path.read_bytes()),
@@ -645,6 +658,7 @@ class _OneSessionProductAgent:
                     }
                 ],
                 "blocking_visual_defects": [],
+                "print_preflight_sha256": _sha256(preflight),
                 "largest_risk": "The three play states could read as decoration.",
                 "resolution": "Separated color and position make the state change explicit.",
             },

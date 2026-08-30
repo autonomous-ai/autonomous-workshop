@@ -685,8 +685,19 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         signature = b"exact signature fixture"
         (snap / "iso.png").write_bytes(iso)
         (snap / "signature.png").write_bytes(signature)
+        preflight = (
+            b"# Verification pipeline record\n\n"
+            b"- Recorded: content-addressed\n"
+            b"- Mode: `print-preflight`\n"
+            b"- Result: **PASS** (exit 0)\n\n"
+            b"| # | command | result | seconds |\n"
+            b"|---:|---|---:|---:|\n"
+            b"| 1 | `check_mesh part_token.stl` | rc=0 | 0.01 |\n"
+            b"| 2 | `check_thickness part_token.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
+        )
+        (self.project / "measure/print-preflight.md").write_bytes(preflight)
         review = {
-            "schema_version": 5,
+            "schema_version": 6,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": "0" * 64,
             "iso_sha256": _sha(iso),
@@ -716,6 +727,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
                 }
             ],
             "blocking_visual_defects": [],
+            "print_preflight_sha256": _sha(preflight),
             "largest_risk": "The relationship could be subtle.",
             "resolution": "The exact relationship is visible.",
         }
@@ -822,6 +834,41 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         self.assertIn("still has blocking visual defects", completed.stderr)
         self.assertNotIn("check_layout", completed.stdout)
 
+    def test_weakened_bound_preflight_cannot_unlock_final_geometry(self):
+        self._write_signature_review(review_rounds=1)
+        preflight_path = self.project / "measure/print-preflight.md"
+        preflight = preflight_path.read_bytes().replace(
+            b"--nozzle 0.4", b"--nozzle 0.1"
+        )
+        preflight_path.write_bytes(preflight)
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["print_preflight_sha256"] = _sha(preflight)
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--fresh",
+                "--exports",
+                "--strict-fit",
+                "--no-report",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("standard 0.4 mm thickness", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
+
     def test_non_print_ready_plan_retains_every_other_deterministic_gate(self):
         output = self._plan("--skip-thickness")
 
@@ -843,6 +890,54 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
 
     def test_full_plan_still_requires_thickness(self):
         self.assertIn("check_thickness", self._plan())
+
+    def test_print_preflight_checks_every_printable_at_fixed_profile(self):
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--print-preflight",
+                "--fresh",
+                "--dry-run",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("part_token.step.py", completed.stdout)
+        self.assertIn("check_fit", completed.stdout)
+        self.assertIn("--strict", completed.stdout)
+        self.assertIn("check_mesh", completed.stdout)
+        self.assertIn("check_thickness", completed.stdout)
+        self.assertIn("--nozzle 0.4", completed.stdout)
+        self.assertNotIn("inspect batch", completed.stdout)
+        self.assertNotIn("SIGNATURE-REVIEW", completed.stderr)
+
+    def test_print_preflight_refuses_weakened_nozzle(self):
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--print-preflight",
+                "--nozzle",
+                "0.1",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("fixed 0.4 mm nozzle profile", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
 
 
 if __name__ == "__main__":

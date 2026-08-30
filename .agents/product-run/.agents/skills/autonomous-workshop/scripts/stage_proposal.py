@@ -1519,6 +1519,7 @@ def _validate_signature_review(
             "review_rounds",
             "critical_form_requirements",
             "blocking_visual_defects",
+            "print_preflight_sha256",
             "largest_risk",
             "resolution",
         },
@@ -1526,7 +1527,7 @@ def _validate_signature_review(
     )
     if (
         type(review["schema_version"]) is not int
-        or review["schema_version"] != 5
+        or review["schema_version"] != 6
         or review["kind"] != SIGNATURE_REVIEW_KIND
         or review["concept_sha256"] != concept_sha256
     ):
@@ -1577,6 +1578,65 @@ def _validate_signature_review(
     )
     if blockers:
         raise ProposalError("Make signature review still has blocking visual defects")
+    expected_preflight = _sha256(
+        review["print_preflight_sha256"],
+        "Make signature review print_preflight_sha256",
+    )
+    preflight_relative = review_relative.parent.parent / "measure/print-preflight.md"
+    actual_preflight, _, _ = _hash_regular(
+        run_root,
+        preflight_relative.as_posix(),
+        "Make print preflight",
+    )
+    if actual_preflight != expected_preflight:
+        raise ProposalError(
+            "Make signature review is not bound to the passing print preflight"
+        )
+    preflight_bytes, _ = _read_regular(
+        run_root,
+        preflight_relative.as_posix(),
+        "Make print preflight",
+        maximum=1_000_000,
+    )
+    try:
+        preflight_text = preflight_bytes.decode("utf-8")
+    except UnicodeError as exc:
+        raise ProposalError("Make print preflight must be UTF-8 text") from exc
+    if (
+        not preflight_text.startswith("# Verification pipeline record\n")
+        or "- Mode: `print-preflight`\n" not in preflight_text
+        or "- Result: **PASS** (exit 0)\n" not in preflight_text
+        or "check_mesh" not in preflight_text
+        or "check_thickness" not in preflight_text
+        or "--nozzle 0.4" not in preflight_text
+    ):
+        raise ProposalError(
+            "Make print preflight must pass mesh and standard 0.4 mm thickness"
+        )
+    project_relative = PurePosixPath(product_root_value) / cad_project_path
+    project_path = run_root.joinpath(*project_relative.parts)
+    printable_names = sorted(
+        path.name.removesuffix(".step.py") + ".stl"
+        for path in project_path.glob("part_*.step.py")
+        if path.is_file() and not path.is_symlink()
+    )
+    preflight_lines = preflight_text.splitlines()
+    for printable_name in printable_names:
+        if not any(
+            "check_mesh" in line
+            and printable_name in line
+            and "| rc=0 |" in line
+            for line in preflight_lines
+        ) or not any(
+            "check_thickness" in line
+            and printable_name in line
+            and "--nozzle 0.4" in line
+            and "| rc=0 |" in line
+            for line in preflight_lines
+        ):
+            raise ProposalError(
+                "Make print preflight does not cover %s" % printable_name
+            )
     for field, label in (
         ("wish_revealed_after_blind_read", "Wish was revealed only after the blind read"),
         ("held_object_unmistakable", "held object is unmistakable"),

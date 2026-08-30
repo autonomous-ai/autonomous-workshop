@@ -456,14 +456,16 @@ records its unprompted held-object, volumetric-form, subject, action, and spatia
 or causal relationship reads. Only then does the same critic learn the Wish and
 canonical concept and compare each dimension plus the concept's anti-generic
 signature with the promise. The hash-bound evidence confirms an
-unmistakable, desirable final product; schema v5 also enumerates every explicit
+unmistakable, desirable final product; schema v6 also enumerates every explicit
 positive and negative held-form requirement with blind visual evidence and
 requires no blocking visual defect. One critic performs no more than two
-rounds. Make runs narrow mesh and wall-thickness checks on a fresh draft export
-before this review, then performs one integrated final verifier, so a
+rounds. Before this review, Make runs the fixed print-preflight mode: every
+declared printable is generated, strict-fit checked, exported, mesh checked,
+and thickness checked at the final 0.4 mm nozzle profile. The review binds the
+passing preflight hash. Make then performs one integrated final verifier, so a
 printability repair cannot invalidate an already-spent visual read. The
 materialized final verifier refuses to begin final-mode geometry work until the
-canonical schema-v5 review and exact image hashes exist, then records the review
+canonical schema-v6 review and exact image hashes exist, then records the review
 hash in its report. The finalizer rejects a second
 final `snap/` family outside the declared CAD project. Those explicit paths are archived under
 `make/verification/renders/`; the family is the only one eligible for automatic
@@ -475,6 +477,9 @@ self-contained directory the host will later copy into isolation and rebuild.
 It parses only the current report record and requires final mode, a passing
 headline, a successful thickness row, and no thickness-skip flag. A prior pass
 below a current failure or a locally omitted gate cannot become a Made proposal.
+The run-local finalizer independently checks the bound preflight report, its
+fixed 0.4 mm profile, and coverage for every `part_*.step.py` printable before
+accepting the same proposal.
 
 Host-selected product artifacts share the package contract's 95 MiB per-file
 limit while the durable run retains its 128 MiB cumulative referenced-artifact

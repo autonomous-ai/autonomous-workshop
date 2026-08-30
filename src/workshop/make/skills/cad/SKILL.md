@@ -127,11 +127,15 @@ gate.
 8. **Validate geometrically.** Run `scripts/inspect refs <step-or-cad-target> --facts --planes --positioning` as the baseline, then verify the dimensions and relationships the user's spec calls out with targeted `measure`, `align`, `frame`, or `diff` checks. Put several independent requests through one `scripts/inspect batch` process; do not parallelize warm `inspect` calls. Run `scripts/inspect validate <step-or-cad-target>` for geometry soundness: `refs --facts` reports counts and bounds, and its `ok` field covers ref resolution only — an open shell and an inverted solid both pass it. For an assembly, also run `scripts/inspect interfere <step-or-cad-target>`: nothing else in the toolchain answers whether two parts occupy the same space, and no render can establish the *absence* of a clash — least of all one hidden inside the assembly.
 9. **Reconcile image-derived work.** When the project came from an image/spec, every source repair that changes a parameter, landmark, part count, or construction family must be reconciled back into the approved `*_spec.md`. Give every landmark a local geometry target, render the orthogonal set plus every usable reference viewpoint, compare source against STEP, and run the likeness gate. `references/image-derived-verification.md` defines the two local audits and the integrated `verify_project --image-derived` command.
 10. **Repair and rerun.** If a check fails, change the smallest responsible source section, regenerate, and rerun the failed validation.
-11. **Render before the expensive final gate.** After an exact draft STL passes
-    its narrow build and geometry checks, run `check_mesh` and `check_thickness`
-    against the freshly exported draft STL. Repair and regenerate before review
-    if either fails; never spend a visual-review round on geometry that cannot
-    pass the full print-ready gate. Then use
+11. **Render before the expensive final gate.** After plausible exact draft
+    geometry exists, run
+    `scripts/verify_project <project> --print-preflight --fresh`. This fixed
+    cheap gate generates every declared printable, runs strict bed fit, exports
+    every STL, and checks each mesh and wall thickness at the final 0.4 mm
+    nozzle profile. Repair and regenerate before review if it fails. Never use
+    an assembly-only STL, omit a printable, or lower the nozzle/threshold to
+    manufacture a pass; never spend a visual-review round on geometry that
+    cannot pass the full print-ready gate. Then use
     `scripts/render_product <assembled-or-primary.stl> -o <project>/snap/iso.png --motion-sheet <project>/snap/signature.png`
     and inspect the PNG at full size. Choose `--base`, `--accent`, and
     `--background` colors appropriate to the product. This presentation render
@@ -152,6 +156,9 @@ gate.
     full verifier as the visual iteration loop. Any geometry change after the
     review invalidates it and requires a fresh blind read of the regenerated
     images; copying old prose and replacing hashes is not a review.
+    A prototype/device read, dominant exposed mechanism, zoom-dependent
+    signature, raw faceting, unclear state change, or any visible caveat in
+    `largest_risk` is blocking even when deterministic CAD checks pass.
     Keep binary silhouettes from the image-to-CAD likeness tool under a named
     review/evidence path, never at `snap/iso.png`.
 
