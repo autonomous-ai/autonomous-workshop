@@ -21,7 +21,7 @@ def push_toy_directory(
     title: str,
     environment: Optional[Mapping[str, str]] = None,
 ) -> str:
-    """Run ``git add``, ``git commit``, and ``git push`` for one toy folder."""
+    """Commit one toy folder and push it without losing concurrent remote work."""
 
     repository = Path(repository_root).resolve(strict=True)
     snapshot = Path(target).resolve(strict=True)
@@ -67,8 +67,53 @@ def push_toy_directory(
     if changed.returncode == 1:
         heading = " ".join(title.split()) or snapshot.name
         git("commit", "--only", "-m", "Add %s" % heading, "--", relative)
-    git("push")
-    return relative
+    pushed = git("push", check=False)
+    if pushed.returncode == 0:
+        return relative
+
+    push_error = pushed.stderr.decode("utf-8", errors="replace").lower()
+    if not any(
+        marker in push_error
+        for marker in ("fetch first", "non-fast-forward", "failed to push some refs")
+    ):
+        raise GitPushError("Git add, commit, or push failed")
+
+    # A product run can outlive another contributor's push. Rebase and retry
+    # only when the checkout is otherwise pristine: Workshop must never stash,
+    # rewrite, or accidentally include unrelated builder work.
+    status = git("status", "--porcelain", "--untracked-files=all")
+    if status.stdout.strip():
+        raise GitPushError("Git push needs reconciliation in a dirty checkout")
+    upstream = git(
+        "rev-parse",
+        "--abbrev-ref",
+        "--symbolic-full-name",
+        "@{upstream}",
+        check=False,
+    )
+    if upstream.returncode != 0 or not upstream.stdout.strip():
+        raise GitPushError("Git push has no upstream to reconcile")
+
+    for _attempt in range(3):
+        git("fetch")
+        rebased = git("rebase", "@{upstream}", check=False)
+        if rebased.returncode != 0:
+            git("rebase", "--abort", check=False)
+            raise GitPushError("Git could not rebase the toy commit")
+        pushed = git("push", check=False)
+        if pushed.returncode == 0:
+            return relative
+        push_error = pushed.stderr.decode("utf-8", errors="replace").lower()
+        if not any(
+            marker in push_error
+            for marker in (
+                "fetch first",
+                "non-fast-forward",
+                "failed to push some refs",
+            )
+        ):
+            break
+    raise GitPushError("Git push remained non-fast-forward after bounded retries")
 
 
 __all__ = ["GitPushError", "push_toy_directory"]
