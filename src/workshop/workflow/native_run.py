@@ -137,8 +137,11 @@ from workshop.workflow.agent_run import (
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V1_CAPABILITY_PATH,
     DEEP_NATIVE_TURN_LIMIT,
     DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+    DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_V1_NATIVE_TURN_LIMIT,
     EFFORT_ROUTE_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
@@ -3597,7 +3600,8 @@ def _native_launcher(checkpoint: AgentRunCheckpoint) -> NativeSessionLauncher:
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
     Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
-    runs keep high reasoning while binding their compaction and turn limits.
+    runs shape reasoning by stage while binding their compaction and turn
+    limits. Deep-v1 runs retain their historical all-high profile.
     Older runs lack those markers and retain their historical profile on resume.
     """
 
@@ -3607,8 +3611,19 @@ def _native_launcher(checkpoint: AgentRunCheckpoint) -> NativeSessionLauncher:
             and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
             return CodexNativeSessionLauncher(
-                reasoning_effort="high",
+                reasoning_effort=(
+                    "high" if checkpoint.stage == "invent" else "medium"
+                ),
                 auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+            )
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_V1_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                reasoning_effort="high",
+                auto_compact_token_limit=DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
                 timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
             )
         if (
@@ -3647,7 +3662,35 @@ def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
         and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
     ):
         return DEEP_NATIVE_TURN_LIMIT
+    if (
+        checkpoint.manager_id == DEFAULT_MANAGER_ID
+        and checkpoint.effort in ("forge", "quest")
+        and DEEP_ECONOMICS_V1_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        return DEEP_V1_NATIVE_TURN_LIMIT
     return _MAX_NATIVE_TURNS
+
+
+def _deep_make_critical_path_prompt(checkpoint: AgentRunCheckpoint) -> str:
+    """Return the frozen v2 first-proof instruction for an initial Make turn."""
+
+    if not (
+        checkpoint.stage == "make"
+        and checkpoint.effort in ("forge", "quest")
+        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        return ""
+    return (
+        "\n\nThis run uses the frozen deep-economics-v2 critical path. "
+        "Your first Make deliverable must be the smallest exact causal "
+        "or kinematic proof plus neutral held/signature blockout renders, "
+        "saved under the declared CAD project at review/early-proof/. "
+        "Create, run, inspect, and record that proof before authoring the "
+        "complete part tree or detailing final geometry. Do not batch-write "
+        "the whole product first. If the proof fails, simplify or repair "
+        "the relationship immediately. Reuse the passing proof source in "
+        "the final product and preserve the proof files in the product tree."
+    )
 
 
 def _launcher_call(
@@ -3662,6 +3705,11 @@ def _launcher_call(
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = native_stage_prompt(checkpoint.stage)
+    if (
+        not unfinished_continuation
+        and not recoverable_continuation
+    ):
+        prompt += _deep_make_critical_path_prompt(checkpoint)
     if unfinished_continuation:
         prompt += (
             "\n\nYour previous native turn returned without "

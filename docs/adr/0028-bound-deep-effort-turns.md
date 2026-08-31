@@ -4,6 +4,7 @@
 - Date: 2026-08-30
 - Owners: Runtime, workflow, and product-run protocol maintainers
 - Relates to: ADR 0023 (bounded Spark turns), ADR 0027 (all-printable preflight)
+- Superseded for new runs by: ADR 0030 (stage-shaped deep economics)
 
 ## Context
 

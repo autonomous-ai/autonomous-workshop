@@ -109,6 +109,16 @@ sealed concept itself is impossible; do not bury the failure under added parts
 or decorative geometry. Once it passes, reuse that exact source and expand only
 the parts required for the signature experience.
 
+For a run with `deep-economics-v2.md`, this is the first persisted Make
+deliverable. Save the exact causal/kinematic result, a concise finding, and the
+neutral held/signature blockout renders inside the declared CAD project at
+`review/early-proof/` before writing the complete part tree. The proof may use
+one minimal helper/source path and rough geometry, but it must exercise the
+actual defining relationship and actual planned outer form. Inspect it now;
+do not create a retrospective proof after the final product. Reuse its
+parameters and source when expanding the passing design, and keep the entire
+directory in the final product snapshot.
+
 Prove the held form just as early as the mechanism. Before detailed parts,
 create the cheapest exact volumetric blockout that shows the required held view
 and signature view, render both, and inspect their actual pixels without the

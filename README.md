@@ -199,17 +199,17 @@ a gate, and no dollar estimate is inferred. See
 [`docs/QUALITY_ECONOMICS.md`](docs/QUALITY_ECONOMICS.md) for the paired quality
 and cost benchmark.
 
-Forge and Quest now falsify both the hardest mechanism and the defining held
-form with cheap exact geometry before detailed CAD. Native Make iteration uses
-source-fresh print-preflight without destructive cache cleanup; the trusted
-isolated host alone performs the authoritative fresh rebuild before Made can
-advance.
+Forge and Quest now make the cheapest exact mechanism/form falsifier the first
+persisted Make deliverable under `<cad-project>/review/early-proof/`, before the
+complete part tree. Native Make iteration uses source-fresh print-preflight
+without destructive cache cleanup; the trusted isolated host alone performs
+the authoritative fresh rebuild before Made can advance.
 
 ## Architecture
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v1)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v2)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -225,13 +225,14 @@ New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
 ceiling for their one persistent Make-to-Release session, and a 20-minute
 boundary per native turn. A timeout resumes the exact session and Goal through
 the existing bounded recovery path; it is not a 20-minute stage deadline.
-New Forge and Quest runs retain high reasoning while freezing a 32k
-compaction ceiling, a 30-minute boundary per native turn, and an eight-turn cap
-per CLI invocation. Their novelty must come from one strong, early-proven
-relationship or interaction—not gratuitous parts or mechanisms. Older runs keep
-the exact profile they started with. These are economics policies, not quality
-waivers: every effort still passes its full deterministic product and
-publication gates.
+New Forge and Quest runs keep high reasoning for Invent, use medium reasoning
+for Make, Playtest, and Release, freeze a 24k compaction ceiling, retain the
+30-minute boundary per native turn, and stop after eight native turns per CLI
+invocation. Their novelty must come from one strong relationship or interaction
+that Make persists and inspects as its first proof—not gratuitous parts or
+mechanisms. Older runs keep the exact profile they started with. These are
+economics policies, not quality waivers: every effort still passes its full
+deterministic product and publication gates.
 
 The reverse arrows are evidence-bound repair routes, not free-form retries.
 Make can return a Forge or Quest run to Invent only when exact saved evidence

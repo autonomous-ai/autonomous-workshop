@@ -333,9 +333,9 @@ bytes. The old CLI then opened another Make turn because a host rejection resets
 the two-timeout recovery streak. The operator stopped that turn after 30s and
 preserved the session and every artifact.
 
-New Forge and Quest runs therefore freeze `deep-economics-v1.md`: high reasoning
-is retained for quality, while context compacts at 32k, each native turn stops
-at 30 minutes, and one CLI invocation stops after eight native turns. Invent
+That iteration froze `deep-economics-v1.md`: high reasoning was retained for
+quality, while context compacted at 32k, each native turn stopped at 30 minutes,
+and one CLI invocation stopped after eight native turns. Invent
 and Make must prove the hardest causal or kinematic relationship with minimal
 exact geometry before detailing the full product, and recovery must reuse
 durable passed work. The Make finalizer now also refuses anything other than one
@@ -344,6 +344,35 @@ Together with schema v6's all-printable preflight, these changes target the
 observed token and retry leaks without weakening any CAD, Playtest, manual, or
 publication gate. A fresh Forge and Quest production run remains required to
 measure the improvement; policy is not proof.
+
+Starbell Seed was that fresh Quest check. Invent sealed a much stronger
+three-part helical seed-to-flower concept in 18m21s, including an explicit
+minimal motion coupon and held/signature blockout. Make nevertheless spent
+about 23.5 minutes before persisting any product source, batch-wrote the whole
+part tree, and reached its first numeric motion proof only near the end of the
+automatic recovery turn. It preserved coherent STEP source and a passing 60° /
+14 mm motion calculation, but never reached print-preflight, product renders,
+Playtest, Release, or publication. Workshop stopped after two bounded Make
+turns and the run remains preserved as a negative benchmark.
+
+Host token telemetry again remained unmeasured. Local native-session
+diagnostics are recorded separately and are not added together:
+
+| Stage / turn | Input tokens | Cached input | Output tokens | Reasoning output | Elapsed |
+|---|---:|---:|---:|---:|---:|
+| Invent turn 1 | 1,261,691 | 1,115,136 | 26,642 | 3,752 | 18m21s |
+| Make turn 1 | 1,895,334 | 1,621,248 | 23,493 | 5,905 | 30m00s |
+| Make recovery | 2,067,470 | 1,903,616 | 17,856 | 4,723 | 30m00s |
+
+This result separates CAD runtime from workflow latency: individual observed
+generation steps took seconds, while most spend occurred before the first
+persisted falsifier and during late repair. New runs now freeze
+`deep-economics-v2.md`: Invent remains high reasoning, later stages use medium,
+context compacts at 24k, and one invocation stops after eight turns. More
+importantly, the host's initial Make prompt makes the exact mechanism/form proof
+under `<cad-project>/review/early-proof/` the first persisted deliverable before
+the complete part tree. A fresh Quest and Forge production run are still needed
+to prove this change improves both quality and economics.
 
 ## Quality is comparative evidence, not a model score
 

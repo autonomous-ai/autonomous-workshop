@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 870" role="img" aria-labelledby="title description">
   <title id="title">Forge effort route: Wish to Invent to Make to Release</title>
-  <desc id="description">Forge is the balanced Autonomous Workshop route. New Codex Forge runs retain high reasoning while freezing a 32k automatic compaction ceiling and 30-minute boundary per native turn. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Invent, followed by Make and Release. A fixed preflight generates every printable and requires strict fit, mesh validity, and 0.4 mm-nozzle thickness before one independent critic blindly reads the exact form, subjects, action, and relationship. The critic binds that passing report, then checks every explicit held-form constraint and the anti-generic signature with no blocking visual defect. Make permits at most two review rounds, then requires one passing full-tier CAD report. If exact evidence proves the sealed concept prevents a conforming build, Make can return to a new Invent Goal within the shared revision budget. Playtest is passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
+  <desc id="description">Forge is the balanced Autonomous Workshop route. New Codex Forge runs use high reasoning for Invent and medium reasoning afterward, with a 24k automatic compaction ceiling, 30-minute native-turn boundary, and eight-turn command cap. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Invent, followed by Make and Release. Make first persists and inspects minimal mechanism and held-form proof before authoring the complete part tree. A fixed preflight then generates every printable and requires strict fit, mesh validity, and 0.4 mm-nozzle thickness before one independent critic blindly reads the exact form, subjects, action, and relationship. The critic binds that passing report, then checks every explicit held-form constraint and the anti-generic signature with no blocking visual defect. Make permits at most two review rounds, then requires one passing full-tier CAD report. If exact evidence proves the sealed concept prevents a conforming build, Make can return to a new Invent Goal within the shared revision budget. Playtest is passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/></filter>
     <marker id="arrow" viewBox="0 0 12 12" markerWidth="18" markerHeight="18" refX="11" refY="6" orient="auto" markerUnits="userSpaceOnUse" overflow="visible"><polygon points="0,0 12,6 0,12" fill="#525b66"/></marker>
@@ -32,7 +32,7 @@
 
   <g filter="url(#shadow)"><rect x="55" y="185" width="1090" height="68" rx="18" class="manager"/></g>
   <text x="83" y="212" class="eyebrow" fill="#376b61">WORKSHOP MANAGER</text>
-  <text x="83" y="237" class="body">Codex Forge: high · 32k · 30m/turn · 8 turns/command; every gate and Goal stays intact.</text>
+  <text x="83" y="237" class="body">Codex Forge: Invent high · later medium · 24k · 30m/turn · 8 turns/command; gates stay intact.</text>
 
   <path class="route" d="M 195 355 H 240"/>
   <path class="route" d="M 450 355 H 495"/>
@@ -54,8 +54,8 @@
   <g filter="url(#shadow)"><rect x="495" y="285" width="210" height="150" rx="20" class="active"/></g>
   <text x="520" y="315" class="eyebrow orange">CODEX GOAL · MAKE</text>
   <text x="520" y="350" class="heading">MAKE</text>
-  <text x="520" y="377" class="body">Prove mechanism + form.</text>
-  <text x="520" y="399" class="body">All parts preflight → review.</text>
+  <text x="520" y="377" class="body">Persist first proof.</text>
+  <text x="520" y="399" class="body">Then preflight + review.</text>
   <text x="520" y="421" class="body">No blockers → full final gate.</text>
 
   <g filter="url(#shadow)"><rect x="750" y="285" width="210" height="150" rx="20" class="active"/></g>

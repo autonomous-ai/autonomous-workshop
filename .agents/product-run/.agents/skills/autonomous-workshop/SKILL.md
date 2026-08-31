@@ -69,11 +69,13 @@ few decisions and checks that make it real.
   a quality waiver: choose the signature interaction early, keep one complete
   build on the critical path, batch independent tool work, and spend additional
   cycles only on a concrete failing check or visible product defect.
-- For Forge and Quest, use high reasoning to make the concept simpler and more
-  inevitable, not to multiply features. Their frozen 30-minute turns and 32k
-  compaction ceiling are focus constraints, not quality waivers. Prove the
-  hardest causal or kinematic relationship with the smallest exact falsifiable
-  geometry before committing to detailed parts. If that proof is expensive or
+- For Forge and Quest, spend high reasoning where it changes the concept and
+  use the stage-shaped frozen profile thereafter. Their 30-minute turns and
+  compacted context are focus constraints, not quality waivers. In Make, the
+  first persisted deliverable is the smallest exact causal or kinematic proof
+  plus neutral held/signature blockout renders under
+  `<cad-project>/review/early-proof/`. Inspect it before authoring the complete
+  part tree or detailed final geometry. If that proof is expensive or
   ambiguous, simplify the mechanism while preserving the signature magic.
 
 ## Run one native Goal for the current stage
