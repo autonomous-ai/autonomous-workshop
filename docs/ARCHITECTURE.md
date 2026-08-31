@@ -19,10 +19,11 @@ decorated, and be represented no more strongly than its evidence permits.
 
 For Codex, new Spark projects freeze low reasoning, a 64k automatic
 context-compaction ceiling across their one Make-to-Release session, and a
-20-minute boundary per native turn. New Forge and Quest projects keep high
-reasoning for Invent and Make, use medium reasoning for Playtest and Release,
-compact Make at 16k and other stages at 24k, and freeze a 12-minute first-Make
-proof boundary plus 30-minute normal turns. Older runs remain on the
+20-minute boundary per native turn. New Forge and Quest projects begin Invent
+with 20 minutes at high reasoning and use a 10-minute decisive medium recovery
+when needed. Make uses an eight-minute medium proof phase, then resumes the
+same Goal at high reasoning for a normal 30-minute turn after a valid proof
+marker. Playtest and Release use medium, and every stage compacts at 24k. Older runs remain on the
 profile they started with. Effort changes
 cognitive spend, never the exact-byte CAD, manual, Playtest, evidence, or
 publication gates.
@@ -112,22 +113,26 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v4.md` capability keeps
-high reasoning for Invent and Make, uses medium reasoning for Playtest and
-Release, compacts Make at 16k, and compacts other stages at 24k. One profile
-identity binds the persistent thread while the host selects those
-stage-specific turn settings. The first Make turn has a 12-minute proof
-boundary; subsequent and recovery turns retain 30 minutes. The same recovery
+For new Forge and Quest runs, the frozen `deep-economics-v5.md` capability
+begins Invent with high reasoning for 20 minutes and gives a recoverable
+continuation 10 minutes at medium to finalize existing work. Make first uses
+medium reasoning for an eight-minute proof phase, then resumes the same Goal at
+high reasoning with a normal 30-minute turn. Playtest and Release use medium;
+every stage compacts at 24k. One profile identity binds the persistent thread
+while the host selects those stage-specific turn settings. The same recovery
 semantics apply, with no more than eight native turns across one CLI
-invocation. Make receives a direct critical-path instruction to persist and
-inspect its minimal exact mechanism/form proof under
+invocation. Make receives a direct critical-path instruction and exact CAD
+command shapes to persist and inspect its minimal exact mechanism/form proof under
 `<cad-project>/review/early-proof/` before authoring the complete part tree.
 One independent native critic first reads only the exact blockout images, then
 learns the Wish and sealed concept and checks every positive and negative
 held-form constraint. Generic, plaque-like, box-like, or exposed-mechanism
-readings fail this early proof. This report is model evidence used to avoid an
+readings fail this early proof. A canonical checkpoint-bound
+`.make-proof-ready.json` may end only the native proof turn; it is not a gate,
+artifact, or transition. This report is model evidence used to avoid an
 expensive bad direction; the later hash-bound final signature review and host
-CAD gate remain authoritative. Frozen deep-v3 retains its high-Invent,
+CAD gate remain authoritative. Frozen deep-v4 retains its high-Invent/Make,
+medium-later 16k-Make profile. Frozen deep-v3 retains its high-Invent,
 medium-later 24k profile; frozen deep-v2 retains its effective all-high thread
 binding; deep-v1 and older runs retain their original profile.
 

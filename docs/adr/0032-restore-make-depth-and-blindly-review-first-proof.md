@@ -1,6 +1,6 @@
 # ADR 0032: Restore Make depth and blindly review first proof
 
-- Status: Accepted
+- Status: Superseded by ADR 0033
 - Date: 2026-08-30
 - Owners: Runtime, workflow, and product-run protocol maintainers
 - Supersedes for new runs: ADR 0031's `deep-economics-v3` profile

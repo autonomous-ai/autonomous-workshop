@@ -27,8 +27,8 @@ skill is your workflow playbook, not a separate agent process.
    finalizing. Never resubmit unchanged rejected bytes.
 4. Read only the reference for the current stage:
    - Invent: [references/invent.md](references/invent.md)
-   - Make: [references/make-playtest.md](references/make-playtest.md)
-   - Playtest: [references/make-playtest.md](references/make-playtest.md)
+   - Make: [references/make.md](references/make.md)
+   - Playtest: [references/playtest.md](references/playtest.md)
    - Release:
      [references/release-deliver.md](references/release-deliver.md)
 5. Read [references/effects-and-recovery.md](references/effects-and-recovery.md)
@@ -70,8 +70,11 @@ few decisions and checks that make it real.
   build on the critical path, batch independent tool work, and spend additional
   cycles only on a concrete failing check or visible product defect.
 - For Forge and Quest, spend high reasoning where it changes the concept and
-  exact product. Their first Make turn has a 12-minute proof boundary; normal
-  and recovery turns retain 30 minutes, and Make compacts at 16k. These
+  exact final product. Invent begins with a 20-minute high-reasoning turn and
+  receives one decisive 10-minute medium recovery when needed. Make begins
+  with an eight-minute medium proof turn and resumes the same Goal at high
+  reasoning as soon as its exact proof-ready marker exists. Later turns retain
+  30 minutes, and every stage compacts at 24k. These
   boundaries and compacted context are focus constraints, not quality waivers. In Make, the
   first persisted deliverable is the smallest exact causal or kinematic proof
   plus neutral held/signature blockout renders under

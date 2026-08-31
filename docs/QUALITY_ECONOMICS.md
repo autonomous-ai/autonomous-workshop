@@ -411,6 +411,38 @@ hash-bound final signature review, deterministic CAD checks, Playtest, manual,
 and publication gates remain unchanged. Fresh paired Quest and Forge production
 runs must still prove v4 improves both quality and economics.
 
+The identical Three-Sky Seed Wish then tested v4. Invent's first high-reasoning
+turn wrote a complete source but reached its 30-minute boundary; a 2m23s
+recovery passed the Invent gate. Make's 12-minute proof turn and 30-minute
+recovery made 40 tool calls yet wrote zero Make files. The preserved run never
+reached preflight, Playtest, Release, GitHub, or Factory. Local session
+diagnostics—not host telemetry—reported the following separate counters:
+
+| Stage / turn | Input | Cached input | Output | Reasoning output | Elapsed |
+|---|---:|---:|---:|---:|---:|
+| Invent initial | 945,603 | 835,328 | 13,902 | 1,353 | 30m00s |
+| Invent recovery | 231,484 | 190,976 | 2,250 | 238 | 2m23s |
+| Make proof | 326,804 | 259,584 | 3,563 | 583 | 12m00s |
+| Make recovery | 638,973 | 519,680 | 6,210 | 715 | 30m00s |
+
+Tool-call inspection showed repeated instruction/reference reads, skill-tree
+enumeration, help discovery, and interpreter checks before source creation.
+The lower raw Make token count was therefore a false economy: it bought no
+artifact. Cost optimization is evaluated per completed desirable product.
+
+New runs now freeze `deep-economics-v5.md`. Invent begins high for 20 minutes;
+a recoverable continuation gets 10 minutes at medium to seal the strongest
+existing source rather than restart. Make begins with an eight-minute medium
+proof phase and exact host-supplied CAD commands. Optional references, help,
+and delegation wait until proof source, renders, and blind review exist. A
+canonical checkpoint-bound `.make-proof-ready.json` ends only that native turn,
+then the same Make Goal resumes at high reasoning for its 30-minute final
+phase. Every stage compacts at 24k; Playtest and Release remain medium; the
+eight-turn command cap remains. The marker is only a liveness hint, never a
+quality gate or transition. Existing final CAD, blind-review, Playtest, manual,
+publication, and GitHub requirements remain unchanged. A completed Quest and
+Forge are still required before v5 deep-route economics can be called proven.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

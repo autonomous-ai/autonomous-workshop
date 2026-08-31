@@ -140,12 +140,16 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V1_CAPABILITY_PATH,
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V4_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
     DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
     DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_V1_NATIVE_TURN_LIMIT,
+    DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
+    DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
@@ -196,6 +200,7 @@ _PLAYTEST_PROPOSAL_REJECTION_HEAD_KIND = (
     "autonomous-workshop.playtest-proposal-rejection-head"
 )
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
+_MAKE_PROOF_READY_NAME = ".make-proof-ready.json"
 _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
 _SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _MAX_STAGE_INPUT_BYTES = 512 * 1024
@@ -3604,6 +3609,7 @@ def _uses_dynamic_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
         )
     )
@@ -3613,13 +3619,14 @@ def _native_launcher(
     checkpoint: AgentRunCheckpoint,
     *,
     initial_make_proof_boundary: bool = False,
+    recoverable_continuation: bool = False,
 ) -> NativeSessionLauncher:
     """Construct the frozen Manager launcher.
 
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
     Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
-    v4 and v3 runs shape reasoning and the first-Make boundary per turn while
+    v5, v4, and v3 runs shape reasoning and turn boundaries while
     binding their whole frozen profile to one persistent session. Deep-v2
     retains its effective all-high session binding; deep-v1 retains its
     historical all-high profile.
@@ -3631,6 +3638,39 @@ def _native_launcher(
             checkpoint.effort in ("forge", "quest")
             and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
+            if checkpoint.stage == "invent":
+                reasoning_effort = (
+                    "medium" if recoverable_continuation else "high"
+                )
+                timeout_seconds = (
+                    DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS
+                    if recoverable_continuation
+                    else DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS
+                )
+            elif checkpoint.stage == "make":
+                reasoning_effort = (
+                    "medium" if initial_make_proof_boundary else "high"
+                )
+                timeout_seconds = (
+                    DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                    if initial_make_proof_boundary
+                    else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+                )
+            else:
+                reasoning_effort = "medium"
+                timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+            return CodexNativeSessionLauncher(
+                reasoning_effort=reasoning_effort,
+                auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                runtime_profile_sha256=checkpoint.input_sha256s[
+                    DEEP_ECONOMICS_CAPABILITY_PATH
+                ],
+                timeout_seconds=timeout_seconds,
+            )
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
             return CodexNativeSessionLauncher(
                 reasoning_effort=(
                     "high" if checkpoint.stage in ("invent", "make") else "medium"
@@ -3641,7 +3681,7 @@ def _native_launcher(
                     else DEEP_AUTO_COMPACT_TOKEN_LIMIT
                 ),
                 runtime_profile_sha256=checkpoint.input_sha256s[
-                    DEEP_ECONOMICS_CAPABILITY_PATH
+                    DEEP_ECONOMICS_V4_CAPABILITY_PATH
                 ],
                 timeout_seconds=(
                     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
@@ -3724,6 +3764,7 @@ def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
         )
@@ -3738,7 +3779,11 @@ def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
     return _MAX_NATIVE_TURNS
 
 
-def _deep_make_critical_path_prompt(checkpoint: AgentRunCheckpoint) -> str:
+def _deep_make_critical_path_prompt(
+    checkpoint: AgentRunCheckpoint,
+    *,
+    proof_boundary: bool = True,
+) -> str:
     """Return the versioned first-proof instruction for an initial Make turn."""
 
     if not (
@@ -3746,11 +3791,25 @@ def _deep_make_critical_path_prompt(checkpoint: AgentRunCheckpoint) -> str:
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
         )
     ):
         return ""
+    if (
+        DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and not proof_boundary
+    ):
+        return (
+            " The checkpoint-bound v5 proof marker is already valid. Do not "
+            "rewrite it, repeat early exploration, or restart the proof. "
+            "Reuse the exact proof source and parameters, persist the "
+            "smallest complete product baseline, finish print preflight and "
+            "the final hash-bound blind review, make at most one focused "
+            "repair, run the integrated verifier once, and invoke the Make "
+            "finalizer. Only agent-outcome.json completes this Goal."
+        )
     prompt = (
         "\n\nThis run uses the frozen deep-economics critical path. "
         "Your first Make deliverable must be the smallest exact causal "
@@ -3762,9 +3821,12 @@ def _deep_make_critical_path_prompt(checkpoint: AgentRunCheckpoint) -> str:
         "the relationship immediately. Reuse the passing proof source in "
         "the final product and preserve the proof files in the product tree."
     )
-    if DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s:
+    if (
+        DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V4_CAPABILITY_PATH not in checkpoint.input_sha256s
+    ):
         return prompt
-    return prompt + (
+    prompt += (
         " Before treating the held/signature blockout as passing, ask one "
         "independent native visual critic to inspect only those exact images "
         "without the Wish or concept. Record its unprompted object, form, "
@@ -3773,18 +3835,60 @@ def _deep_make_critical_path_prompt(checkpoint: AgentRunCheckpoint) -> str:
         "the proof on any generic, plaque-like, box-like, or exposed-mechanism "
         "reading. Repair and rerender the proof before expanding final parts."
     )
+    if DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s:
+        return prompt
+    return prompt + (
+        " This v5 proof turn is action-only. After reading the mandatory root "
+        "instructions and current-stage reference once, do not enumerate or "
+        "reread skill trees, open optional CAD references, invoke --help, or "
+        "delegate before a working proof source exists. The materialized CAD "
+        "commands are exactly .agents/skills/cad/scripts/gen <source.step.py> "
+        "--write, .agents/skills/cad/scripts/export <source.step> --stl, and "
+        ".agents/skills/cad/scripts/render_product <source.stl> -o "
+        "<cad-project>/review/early-proof/held.png --motion-sheet "
+        "<cad-project>/review/early-proof/signature.png "
+        "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json, "
+        "write source first, then run only those commands. Once exact proof "
+        "source, results, held/signature images, "
+        "and the blind review are durable under review/early-proof/, write "
+        "%s as canonical JSON containing exactly {\"checkpoint_sha256\":\"%s\","
+        "\"kind\":\"autonomous-workshop.make-proof-ready\","
+        "\"schema_version\":1} followed by one newline. The host uses that "
+        "marker only to "
+        "end this proof turn and resume the same Make Goal at high reasoning; "
+        "it does not advance or waive the Make gate."
+        % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+    )
 
 
-def _deep_make_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
-    """Return the frozen v4 proof-review instruction for Make recovery."""
+def _deep_make_recovery_prompt(
+    checkpoint: AgentRunCheckpoint,
+    *,
+    proof_boundary: bool = True,
+) -> str:
+    """Return the versioned proof-review instruction for Make recovery."""
 
     if not (
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and (
+            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
     ):
         return ""
-    return (
+    if (
+        DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and not proof_boundary
+    ):
+        return (
+            " The v5 proof marker remains valid, so this is final-product "
+            "recovery. Do not rewrite the marker, reread optional references, "
+            "or restart the proof. Reuse the durable proof and complete only "
+            "the remaining baseline, preflight, final renders and review, "
+            "single integrated verification, and Make finalizer work."
+        )
+    prompt = (
         " Before expanding the final part tree, complete the frozen "
         "early-proof blind review: one independent native critic sees "
         "only the exact held/signature blockout images first, records "
@@ -3795,6 +3899,94 @@ def _deep_make_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
         "proof, persist the smallest complete product source "
         "immediately and keep all later work on that one baseline."
     )
+    if DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s:
+        return prompt
+    return prompt + (
+        " This proof boundary still has no valid v5 ready marker. Do not "
+        "survey tools, invoke --help, reread instructions, or delegate. "
+        "Write and run the smallest proof source now. After the proof and "
+        "blind review files exist, write %s with the exact checkpoint-bound "
+        "canonical JSON specified in the initial Make instruction."
+        % _MAKE_PROOF_READY_NAME
+    )
+
+
+def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
+    """Return the frozen v5 decisive Invent recovery instruction."""
+
+    if not (
+        checkpoint.stage == "invent"
+        and checkpoint.effort in ("forge", "quest")
+        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        return ""
+    return (
+        " Do not restart roster comparison, research, exploration, or "
+        "subagent work. If the routed Invent source already exists, validate "
+        "that one source and invoke the Invent finalizer immediately. If it "
+        "does not exist, select the strongest current concept, write one "
+        "compact complete source, and finalize it. Optional refinement is "
+        "strictly lower priority than sealing the current viable concept."
+    )
+
+
+def _make_proof_ready_path(paths: NativeRunPaths) -> Path:
+    return paths.workspace / _MAKE_PROOF_READY_NAME
+
+
+def _make_proof_ready(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+) -> bool:
+    """Validate the untrusted v5 turn marker without treating it as evidence."""
+
+    if not (
+        checkpoint.stage == "make"
+        and checkpoint.effort in ("forge", "quest")
+        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        return False
+    path = _make_proof_ready_path(paths)
+    try:
+        before = path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise StateConflict("Make proof turn marker cannot be inspected") from exc
+    if path.is_symlink() or not stat.S_ISREG(before.st_mode):
+        raise StateConflict("Make proof turn marker must be a regular file")
+    try:
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict("Make proof turn marker cannot be read") from exc
+    stable = (
+        1 <= len(content) <= 1_024
+        and (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        == (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+    )
+    expected = {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.make-proof-ready",
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+    }
+    valid = False
+    if stable:
+        try:
+            marker = _strict_json_bytes(content, label="Make proof turn marker")
+        except ContractError:
+            marker = None
+        valid = (
+            marker == expected
+            and content == _canonical_json_bytes(expected) + b"\n"
+        )
+    if valid:
+        return True
+    try:
+        path.unlink()
+    except OSError as exc:
+        raise StateConflict("invalid Make proof turn marker cannot be removed") from exc
+    return False
 
 
 def _launcher_call(
@@ -3805,15 +3997,23 @@ def _launcher_call(
     paths: NativeRunPaths,
     unfinished_continuation: bool = False,
     recoverable_continuation: bool = False,
+    make_proof_boundary: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = native_stage_prompt(checkpoint.stage)
+    v5_make_phase = (
+        checkpoint.stage == "make"
+        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    )
     if (
         not unfinished_continuation
         and not recoverable_continuation
-    ):
-        prompt += _deep_make_critical_path_prompt(checkpoint)
+    ) or v5_make_phase:
+        prompt += _deep_make_critical_path_prompt(
+            checkpoint,
+            proof_boundary=make_proof_boundary,
+        )
     if unfinished_continuation:
         prompt += (
             "\n\nYour previous native turn returned without "
@@ -3835,7 +4035,11 @@ def _launcher_call(
             "finalizer as soon as its contract is satisfied, and return "
             "after it writes agent-outcome.json."
         )
-        prompt += _deep_make_recovery_prompt(checkpoint)
+        prompt += _deep_make_recovery_prompt(
+            checkpoint,
+            proof_boundary=make_proof_boundary,
+        )
+        prompt += _deep_invent_recovery_prompt(checkpoint)
     arguments = {
         "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256,
@@ -3844,7 +4048,11 @@ def _launcher_call(
         "host_state_root": paths.host_state,
         "prompt": prompt,
         "activity_observer": activity_observer,
-        "finalization_marker": paths.workspace / _AGENT_OUTCOME_NAME,
+        "finalization_marker": (
+            _make_proof_ready_path(paths)
+            if make_proof_boundary
+            else paths.workspace / _AGENT_OUTCOME_NAME
+        ),
     }
     try:
         return getattr(launcher, method)(**arguments)
@@ -6061,16 +6269,27 @@ def _run_native_session(
         )
         launcher_failure: Optional[WorkshopError] = None
         turn_launcher = launcher
+        make_proof_boundary = False
         if turn_launcher is None:
-            initial_make_proof_boundary = (
+            if (
                 checkpoint.stage == "make"
-                and checkpoint.checkpoint_sha256 not in initial_make_boundaries
-            )
+                and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            ):
+                initial_make_proof_boundary = not _make_proof_ready(
+                    paths, checkpoint
+                )
+                make_proof_boundary = initial_make_proof_boundary
+            else:
+                initial_make_proof_boundary = (
+                    checkpoint.stage == "make"
+                    and checkpoint.checkpoint_sha256 not in initial_make_boundaries
+                )
             turn_launcher = _native_launcher(
                 checkpoint,
                 initial_make_proof_boundary=initial_make_proof_boundary,
+                recoverable_continuation=recoverable_continuation,
             )
-            if initial_make_proof_boundary:
+            if initial_make_proof_boundary and not make_proof_boundary:
                 initial_make_boundaries.add(checkpoint.checkpoint_sha256)
         try:
             with wish_run_timing_span(
@@ -6086,6 +6305,7 @@ def _run_native_session(
                     paths=paths,
                     unfinished_continuation=unfinished_continuation,
                     recoverable_continuation=recoverable_continuation,
+                    make_proof_boundary=make_proof_boundary,
                     activity_observer=turn_activity_observer,
                 )
         except WorkshopError as exc:

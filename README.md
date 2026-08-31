@@ -209,7 +209,7 @@ the authoritative fresh rebuild before Made can advance.
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v4)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v5)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -225,14 +225,17 @@ New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
 ceiling for their one persistent Make-to-Release session, and a 20-minute
 boundary per native turn. A timeout resumes the exact session and Goal through
 the existing bounded recovery path; it is not a 20-minute stage deadline.
-New Forge and Quest runs keep high reasoning for Invent and Make, use medium
-reasoning for Playtest and Release, compact Make at 16k and other stages at 24k, retain the
-30-minute normal boundary, and stop after eight native turns per CLI
-invocation. The first Make turn is a 12-minute proof boundary; if needed, the
-same Goal resumes with the normal 30-minute window. Their novelty must come
+New Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
+use a decisive 10-minute medium recovery only when needed. Make starts with an
+eight-minute medium proof turn at 24k context; after exact proof bytes and a
+blind review are durable, a checkpoint-bound marker returns control to the
+host and the same Make Goal resumes at high reasoning with the normal
+30-minute window. Playtest and Release use medium, every stage compacts at 24k,
+and one CLI invocation stops after eight native turns. Their novelty must come
 from one strong relationship or interaction
 that Make persists and has one independent critic inspect blindly as its first
-proof—not gratuitous parts or mechanisms. Older runs keep the exact profile
+proof—not gratuitous parts or mechanisms. The proof marker is only a liveness
+boundary; it is not a gate or stage transition. Older runs keep the exact profile
 they started with. These are
 economics policies, not quality waivers: every effort still passes its full
 deterministic product and publication gates.

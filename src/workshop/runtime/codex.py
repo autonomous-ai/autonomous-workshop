@@ -1063,7 +1063,7 @@ def _validated_finalization_marker(
     value: Optional[Path],
     run_root: Path,
 ) -> Optional[Path]:
-    """Bind liveness monitoring to the one exact run-local proposal path."""
+    """Bind liveness monitoring to one trusted run-local turn marker."""
 
     if value is None:
         return None
@@ -1071,14 +1071,15 @@ def _validated_finalization_marker(
         marker = Path(value)
     except TypeError as exc:
         raise ContractError(
-            "Codex finalization marker must be the exact in-run "
-            "agent-outcome.json path"
+            "Codex finalization marker must be an exact trusted in-run path"
         ) from exc
-    expected = run_root / "agent-outcome.json"
-    if not marker.is_absolute() or marker != expected:
+    expected = {
+        run_root / "agent-outcome.json",
+        run_root / ".make-proof-ready.json",
+    }
+    if not marker.is_absolute() or marker not in expected:
         raise ContractError(
-            "Codex finalization marker must be the exact in-run "
-            "agent-outcome.json path"
+            "Codex finalization marker must be an exact trusted in-run path"
         )
     return marker
 

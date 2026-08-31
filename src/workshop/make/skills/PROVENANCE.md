@@ -87,6 +87,10 @@
   pipeline records the exact schema and review hash; the shared workflow and
   CAD guidance limit the native critic to two rounds and require separate
   agreement on the Wish's subjects, action, and spatial or causal relationship.
+- Adapted locally on 2026-08-31 so a frozen Workshop deep-v5 Make proof turn
+  follows host-supplied exact `gen`, `export`, and `render_product` commands
+  before optional CAD references or help discovery. The exception ends at the
+  proof-turn marker and does not change any final CAD gate.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do

@@ -24,6 +24,9 @@ from workshop.workflow.native_run import (
     _current_make_proposal_rejection,
     _deep_make_critical_path_prompt,
     _deep_make_recovery_prompt,
+    _deep_invent_recovery_prompt,
+    _make_proof_ready,
+    _make_proof_ready_path,
     _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
@@ -61,12 +64,16 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V1_CAPABILITY_PATH,
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V4_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
     DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
     DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_V1_NATIVE_TURN_LIMIT,
+    DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
+    DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -421,7 +428,8 @@ class NativeHostTest(unittest.TestCase):
             "deep-v1": DEEP_ECONOMICS_V1_CAPABILITY_PATH,
             "deep-v2": DEEP_ECONOMICS_V2_CAPABILITY_PATH,
             "deep-v3": DEEP_ECONOMICS_V3_CAPABILITY_PATH,
-            "deep-v4": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v4": DEEP_ECONOMICS_V4_CAPABILITY_PATH,
+            "deep-v5": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
@@ -491,11 +499,11 @@ class NativeHostTest(unittest.TestCase):
 
         launcher_type.assert_called_once_with(reasoning_effort="low")
 
-    def test_deep_v4_shapes_each_stage_under_one_frozen_runtime_profile(self):
+    def test_deep_v5_shapes_each_stage_under_one_frozen_runtime_profile(self):
         for effort in ("forge", "quest"):
             for stage, reasoning in (
                 ("invent", "high"),
-                ("make", "high"),
+                ("make", "medium"),
                 ("playtest", "medium"),
                 ("release", "medium"),
             ):
@@ -504,7 +512,7 @@ class NativeHostTest(unittest.TestCase):
                 ) as launcher_type:
                     checkpoint = self._launcher_checkpoint(
                         effort=effort,
-                        economics_capability="deep-v4",
+                        economics_capability="deep-v5",
                         stage=stage,
                     )
                     _native_launcher(
@@ -514,25 +522,25 @@ class NativeHostTest(unittest.TestCase):
 
                     launcher_type.assert_called_once_with(
                         reasoning_effort=reasoning,
-                        auto_compact_token_limit=(
-                            DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT
-                            if stage == "make"
-                            else DEEP_AUTO_COMPACT_TOKEN_LIMIT
-                        ),
+                        auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
                         runtime_profile_sha256="a" * 64,
                         timeout_seconds=(
-                            DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                            DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                             if stage == "make"
-                            else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+                            else (
+                                DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS
+                                if stage == "invent"
+                                else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+                            )
                         ),
                     )
                     self.assertEqual(
                         _native_turn_limit(checkpoint), DEEP_NATIVE_TURN_LIMIT
                     )
 
-    def test_deep_make_prompt_requires_first_persisted_proof(self):
+    def test_deep_v5_make_prompt_requires_action_first_persisted_proof(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v4"
+            effort="quest", economics_capability="deep-v5"
         )
         prompt = _deep_make_critical_path_prompt(checkpoint)
 
@@ -541,6 +549,22 @@ class NativeHostTest(unittest.TestCase):
         self.assertIn("before authoring the complete part tree", prompt)
         self.assertIn("independent native visual critic", prompt)
         self.assertIn("exposed-mechanism", prompt)
+        self.assertIn("action-only", prompt)
+        self.assertIn(".make-proof-ready.json", prompt)
+        self.assertIn("do not enumerate", prompt)
+        self.assertIn(checkpoint.checkpoint_sha256, prompt)
+        self.assertIn(
+            '{"checkpoint_sha256":"%s","kind":"autonomous-workshop.make-proof-ready","schema_version":1}'
+            % checkpoint.checkpoint_sha256,
+            prompt,
+        )
+        final_prompt = _deep_make_critical_path_prompt(
+            checkpoint,
+            proof_boundary=False,
+        )
+        self.assertIn("proof marker is already valid", final_prompt)
+        self.assertIn("Only agent-outcome.json completes", final_prompt)
+        self.assertNotIn("action-only", final_prompt)
         legacy_prompt = _deep_make_critical_path_prompt(
             self._launcher_checkpoint(
                 effort="quest",
@@ -553,16 +577,16 @@ class NativeHostTest(unittest.TestCase):
             _deep_make_critical_path_prompt(
                 self._launcher_checkpoint(
                     effort="quest",
-                    economics_capability="deep-v4",
+                    economics_capability="deep-v5",
                     stage="invent",
                 )
             ),
             "",
         )
 
-    def test_deep_v4_make_recovery_restores_normal_turn_boundary(self):
+    def test_deep_v5_make_after_proof_restores_high_normal_turn_boundary(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v4", stage="make"
+            effort="quest", economics_capability="deep-v5", stage="make"
         )
         with mock.patch(
             "workshop.workflow.native_run.CodexNativeSessionLauncher"
@@ -574,13 +598,25 @@ class NativeHostTest(unittest.TestCase):
 
         launcher_type.assert_called_once_with(
             reasoning_effort="high",
-            auto_compact_token_limit=DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
+            auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
             runtime_profile_sha256="a" * 64,
             timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
         )
-        recovery_prompt = _deep_make_recovery_prompt(checkpoint)
+        recovery_prompt = _deep_make_recovery_prompt(
+            checkpoint,
+            proof_boundary=True,
+        )
         self.assertIn("independent native critic", recovery_prompt)
         self.assertIn("persist the smallest complete product source", recovery_prompt)
+        self.assertIn("Do not survey tools", recovery_prompt)
+        self.assertIn(".make-proof-ready.json", recovery_prompt)
+        final_recovery = _deep_make_recovery_prompt(
+            checkpoint,
+            proof_boundary=False,
+        )
+        self.assertIn("final-product recovery", final_recovery)
+        self.assertIn("proof marker remains valid", final_recovery)
+        self.assertNotIn("write .make-proof-ready.json", final_recovery)
         self.assertEqual(
             _deep_make_recovery_prompt(
                 self._launcher_checkpoint(
@@ -591,6 +627,121 @@ class NativeHostTest(unittest.TestCase):
             ),
             "",
         )
+
+    def test_deep_v5_invent_recovery_is_medium_bounded_and_decisive(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v5", stage="invent"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint, recoverable_continuation=True)
+
+        launcher_type.assert_called_once_with(
+            reasoning_effort="medium",
+            auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+            runtime_profile_sha256="a" * 64,
+            timeout_seconds=DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
+        )
+        prompt = _deep_invent_recovery_prompt(checkpoint)
+        self.assertIn("Do not restart roster comparison", prompt)
+        self.assertIn("finalizer immediately", prompt)
+        self.assertEqual(
+            _deep_invent_recovery_prompt(
+                self._launcher_checkpoint(
+                    effort="quest",
+                    economics_capability="deep-v4",
+                    stage="invent",
+                )
+            ),
+            "",
+        )
+
+    def test_deep_v4_retains_frozen_reasoning_compaction_and_boundaries(self):
+        for stage, reasoning in (
+            ("invent", "high"),
+            ("make", "high"),
+            ("playtest", "medium"),
+            ("release", "medium"),
+        ):
+            with self.subTest(stage=stage), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher"
+            ) as launcher_type:
+                checkpoint = self._launcher_checkpoint(
+                    effort="quest", economics_capability="deep-v4", stage=stage
+                )
+                _native_launcher(
+                    checkpoint,
+                    initial_make_proof_boundary=(stage == "make"),
+                )
+
+                launcher_type.assert_called_once_with(
+                    reasoning_effort=reasoning,
+                    auto_compact_token_limit=(
+                        DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT
+                        if stage == "make"
+                        else DEEP_AUTO_COMPACT_TOKEN_LIMIT
+                    ),
+                    runtime_profile_sha256="a" * 64,
+                    timeout_seconds=(
+                        DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                        if stage == "make"
+                        else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+                    ),
+                )
+
+    def test_deep_v5_make_proof_marker_is_exact_checkpoint_bound_hint(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v5", stage="make"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            paths = NativeRunPaths(
+                workspace=root / "workspace",
+                host_state=root / "host-state",
+            )
+            paths.workspace.mkdir()
+            paths.host_state.mkdir()
+            marker = _make_proof_ready_path(paths)
+
+            self.assertFalse(_make_proof_ready(paths, checkpoint))
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.make-proof-ready",
+                        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(_make_proof_ready(paths, checkpoint))
+
+            marker.write_text("{}\n", encoding="utf-8")
+            self.assertFalse(_make_proof_ready(paths, checkpoint))
+            self.assertFalse(marker.exists())
+
+    def test_deep_v5_make_proof_marker_fails_closed_on_symlink(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v5", stage="make"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            paths = NativeRunPaths(
+                workspace=root / "workspace",
+                host_state=root / "host-state",
+            )
+            paths.workspace.mkdir()
+            paths.host_state.mkdir()
+            outside = root / "outside.json"
+            outside.write_text("{}\n", encoding="utf-8")
+            _make_proof_ready_path(paths).symlink_to(outside)
+
+            with self.assertRaisesRegex(StateConflict, "regular file"):
+                _make_proof_ready(paths, checkpoint)
 
     def test_deep_v3_retains_medium_make_and_24k_compaction(self):
         checkpoint = self._launcher_checkpoint(

@@ -2115,44 +2115,45 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             self.assertTrue(factory.processes[0].terminated)
 
-    def test_new_finalization_marker_reaps_missing_terminal_and_returns_to_host(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve() / "run"
-            root.mkdir()
-            marker = root / "agent-outcome.json"
+    def test_new_trusted_turn_markers_reap_missing_terminal_and_return_to_host(self):
+        for marker_name in ("agent-outcome.json", ".make-proof-ready.json"):
+            with self.subTest(marker_name=marker_name), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                marker = root / marker_name
 
-            def finalize():
-                marker.write_text("{}\n", encoding="utf-8")
+                def finalize():
+                    marker.write_text("{}\n", encoding="utf-8")
 
-            launcher, factory = self.launcher(
-                [
-                    {
-                        "stdout": self.start_events(terminal=False),
-                        "stdout_callbacks": {2: finalize},
-                        "block_stdout_after_values": True,
-                        "hang_until_terminated": True,
-                    }
-                ]
-            )
-
-            with mock.patch.object(
-                codex_runtime,
-                "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
-                0.05,
-            ), mock.patch.object(
-                codex_runtime,
-                "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
-                0.005,
-            ):
-                outcome = self.start(
-                    launcher,
-                    root,
-                    finalization_marker=marker,
+                launcher, factory = self.launcher(
+                    [
+                        {
+                            "stdout": self.start_events(terminal=False),
+                            "stdout_callbacks": {2: finalize},
+                            "block_stdout_after_values": True,
+                            "hang_until_terminated": True,
+                        }
+                    ]
                 )
 
-            self.assertEqual(outcome.status, "completed")
-            self.assertTrue(marker.is_file())
-            self.assertTrue(factory.processes[0].terminated)
+                with mock.patch.object(
+                    codex_runtime,
+                    "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
+                    0.05,
+                ), mock.patch.object(
+                    codex_runtime,
+                    "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
+                    0.005,
+                ):
+                    outcome = self.start(
+                        launcher,
+                        root,
+                        finalization_marker=marker,
+                    )
+
+                self.assertEqual(outcome.status, "completed")
+                self.assertTrue(marker.is_file())
+                self.assertTrue(factory.processes[0].terminated)
 
     def test_finalization_marker_fail_open_cannot_extend_turn_timeout(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -2388,7 +2389,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
             with self.assertRaisesRegex(
                 ContractError,
-                "exact in-run agent-outcome.json",
+                "exact trusted in-run path",
             ):
                 self.start(
                     launcher,
