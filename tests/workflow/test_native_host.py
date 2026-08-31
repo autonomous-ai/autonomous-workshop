@@ -458,6 +458,30 @@ class NativeHostTest(unittest.TestCase):
             manager_id="codex",
         )
 
+    def test_grid_keepalive_service_cannot_create_repeating_wishes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "WORKSHOP_HOME": str(home),
+                    "XPC_SERVICE_NAME": "grid.serve.accidental-wish-daemon",
+                },
+                clear=True,
+            ), self.assertRaisesRegex(
+                StateConflict,
+                "finite jobs.*bounded one-shot runner",
+            ):
+                start_native_run(
+                    Wish.create(
+                        "wish-must-not-materialize",
+                        "a moon toy that must start only once",
+                    ),
+                    effort="spark",
+                )
+
+            self.assertFalse(home.exists())
+
     def test_v3_spark_adds_low_reasoning_compaction_and_turn_boundary(self):
         checkpoint = self._launcher_checkpoint(
             effort="spark", economics_capability="v3"

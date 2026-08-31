@@ -6812,6 +6812,17 @@ def _prune_empty_make_product_directories(
             continue
 
 
+def _reject_grid_keepalive_wish_start() -> None:
+    service_name = os.environ.get("XPC_SERVICE_NAME", "")
+    if service_name.startswith("grid.serve."):
+        raise StateConflict(
+            "refusing to create a new Wish from Grid's persistent-service "
+            "launcher %r; Workshop Wish commands are finite jobs, so run this "
+            "command with Grid's bounded one-shot runner instead of service start"
+            % service_name
+        )
+
+
 def start_native_run(
     wish: Wish,
     *,
@@ -6842,6 +6853,8 @@ def start_native_run(
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
     """
+
+    _reject_grid_keepalive_wish_start()
 
     selected_effort = workshop_effort(effort) if effort is not None else None
     selected_manager = manager_spec(
