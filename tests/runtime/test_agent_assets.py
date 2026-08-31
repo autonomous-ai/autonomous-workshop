@@ -140,6 +140,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "deep-economics-v6.md",
             "deep-economics-v7.md",
             "deep-economics-v8.md",
+            "deep-economics-v9.md",
             "make.md",
             "playtest.md",
         ):

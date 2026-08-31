@@ -144,7 +144,9 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V5_CAPABILITY_PATH,
     DEEP_ECONOMICS_V6_CAPABILITY_PATH,
     DEEP_ECONOMICS_V7_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V8_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
     DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
@@ -3614,6 +3616,7 @@ def _phased_deep_capability_path(
 
     for path in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V8_CAPABILITY_PATH,
         DEEP_ECONOMICS_V7_CAPABILITY_PATH,
         DEEP_ECONOMICS_V6_CAPABILITY_PATH,
         DEEP_ECONOMICS_V5_CAPABILITY_PATH,
@@ -3646,7 +3649,7 @@ def _native_launcher(
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
     Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
-    v8 through v3 runs shape reasoning and turn boundaries while
+    v9 through v3 runs shape reasoning and turn boundaries while
     binding their whole frozen profile to one persistent session. Deep-v2
     retains its effective all-high session binding; deep-v1 retains its
     historical all-high profile.
@@ -3672,7 +3675,10 @@ def _native_launcher(
                 timeout_seconds = (
                     (
                         DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
-                        if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                        if phased_deep_path in (
+                            DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+                        )
                         else DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                     )
                     if initial_make_proof_boundary
@@ -3683,7 +3689,11 @@ def _native_launcher(
                 timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
             return CodexNativeSessionLauncher(
                 reasoning_effort=reasoning_effort,
-                auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                auto_compact_token_limit=(
+                    DEEP_AUTO_COMPACT_TOKEN_LIMIT
+                    if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                    else DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT
+                ),
                 runtime_profile_sha256=checkpoint.input_sha256s[phased_deep_path],
                 timeout_seconds=timeout_seconds,
             )
@@ -3698,7 +3708,7 @@ def _native_launcher(
                 auto_compact_token_limit=(
                     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT
                     if checkpoint.stage == "make"
-                    else DEEP_AUTO_COMPACT_TOKEN_LIMIT
+                    else DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT
                 ),
                 runtime_profile_sha256=checkpoint.input_sha256s[
                     DEEP_ECONOMICS_V4_CAPABILITY_PATH
@@ -3717,7 +3727,7 @@ def _native_launcher(
                 reasoning_effort=(
                     "high" if checkpoint.stage == "invent" else "medium"
                 ),
-                auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                auto_compact_token_limit=DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
                 runtime_profile_sha256=checkpoint.input_sha256s[
                     DEEP_ECONOMICS_V3_CAPABILITY_PATH
                 ],
@@ -3737,7 +3747,7 @@ def _native_launcher(
                 # Keep its effective all-high policy so a stopped historical
                 # run can resume without same-version runtime-policy drift.
                 reasoning_effort="high",
-                auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                auto_compact_token_limit=DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
                 timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
             )
         if (
@@ -3811,6 +3821,7 @@ def _deep_make_critical_path_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3846,13 +3857,17 @@ def _deep_make_critical_path_prompt(
     )
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V7_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V6_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V5_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V4_CAPABILITY_PATH not in checkpoint.input_sha256s
     ):
         return prompt
-    if DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s:
+    if (
+        DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
+    ):
         prompt += (
             " Before treating the held/signature blockout as passing, ask one "
             "independent native visual critic to inspect only those exact images "
@@ -3958,8 +3973,13 @@ def _deep_make_critical_path_prompt(
         "high reasoning; it does not advance or waive the Make gate."
         % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
         )
+    profile_name = (
+        "v9"
+        if _phased_deep_capability_path(checkpoint) == DEEP_ECONOMICS_CAPABILITY_PATH
+        else "v8"
+    )
     return prompt + (
-        " This v8 proof turn has one 16-minute medium runway. The production v7 "
+        f" This {profile_name} proof turn has one 16-minute medium runway. The production v7 "
         "trace proved that separate reads consume the whole phase, so do not "
         "read stable instructions in separate tool calls and do not call get_goal. "
         "Create or continue the current Make Goal immediately, then use one "
@@ -4007,6 +4027,7 @@ def _deep_make_recovery_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4052,12 +4073,16 @@ def _deep_make_recovery_prompt(
             "running, then persist its unprompted read, perform the revealed "
             "comparison yourself, and write the exact marker."
         )
-    if (
-        _phased_deep_capability_path(checkpoint)
-        == DEEP_ECONOMICS_CAPABILITY_PATH
+    phased_deep_path = _phased_deep_capability_path(checkpoint)
+    if phased_deep_path in (
+        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V8_CAPABILITY_PATH,
     ):
+        profile_name = (
+            "v9" if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH else "v8"
+        )
         return prompt + (
-            " This v8 recovery stays on one proof runway. Do not call get_goal, "
+            f" This {profile_name} recovery stays on one proof runway. Do not call get_goal, "
             "reread stable instructions separately, inspect an empty tree, spawn "
             "an early critic, or create empty directories alone. Batch any still "
             "necessary bounded reads once, then make the next action an authored "

@@ -217,7 +217,7 @@ final hash-bound Make review.
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v8)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v9)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -235,10 +235,10 @@ boundary per native turn. A timeout resumes the exact session and Goal through
 the existing bounded recovery path; it is not a 20-minute stage deadline.
 New Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
 use a decisive 10-minute medium recovery only when needed. Make starts with one
-16-minute medium proof runway at 24k context; after exact proof bytes and a
+16-minute medium proof runway at 256k context; after exact proof bytes and a
 blind review are durable, a checkpoint-bound marker returns control to the
 host and the same Make Goal resumes at high reasoning with the normal
-30-minute window. Playtest and Release use medium, every stage compacts at 24k,
+30-minute window. Playtest and Release use medium, every stage compacts at 256k,
 and one CLI invocation stops after eight native turns. The host binds a private
 writable cache; the proof turn defers the broad CAD skill, batches its required
 reads, makes source the next durable action, and batches generate/export/render
@@ -247,7 +247,8 @@ and reserves independent blind critique for final Make. Their novelty must come
 from one strong relationship or interaction
 that Make persists and has one independent critic inspect blindly as its first
 proof—not gratuitous parts or mechanisms. The proof marker is only a liveness
-boundary; it is not a gate or stage transition. Older runs keep the exact profile
+boundary; it is not a gate or stage transition. Frozen deep-v8 runs retain their
+24k compaction; older runs keep the exact profile
 they started with. These are
 economics policies, not quality waivers: every effort still passes its full
 deterministic product and publication gates.

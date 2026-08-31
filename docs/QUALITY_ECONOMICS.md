@@ -531,13 +531,17 @@ critic, and create an empty directory, then expired before source authoring.
 V7 reduced root input about 18% and output 36% versus v6, but produced fewer
 durable Make bytes. It is another false economy, not product cost.
 
-New runs now freeze `deep-economics-v8.md`. Early Make receives one 16-minute
+New runs then froze `deep-economics-v8.md`. Early Make receives one 16-minute
 medium runway. Mandatory reads are one bounded batch; the Manager does not
 spend a call on `get_goal`, an empty-tree check, or directory-only work; source
 and its directories are the next edit. The exact CAD commands remain one batch
 with the private cache. Root inspection owns the cheap early direction check;
 the independent blind critic remains mandatory at the final hash-bound review.
 Fresh terminal evidence remains required across all three efforts.
+
+New runs now freeze `deep-economics-v9.md`, retaining v8's proof runway and
+prompt discipline while raising automatic compaction from 24k to 256k at every
+deep stage. Frozen v8 and older runs keep their original 24k ceiling.
 
 ## Quality is comparative evidence, not a model score
 

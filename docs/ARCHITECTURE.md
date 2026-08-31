@@ -27,7 +27,7 @@ marker. The host supplies a private writable cache; proof defers the broad CAD
 skill, batches mandatory reads and deterministic CAD commands, and makes source
 the next durable action. Root inspection owns this cheap early direction check;
 independent blind critique remains mandatory at final Make.
-Playtest and Release use medium, and every stage compacts at 24k. Older runs remain on the
+Playtest and Release use medium, and every stage compacts at 256k. Frozen deep-v8 and older runs remain on the
 profile they started with. Effort changes
 cognitive spend, never the exact-byte CAD, manual, Playtest, evidence, or
 publication gates.
@@ -117,12 +117,12 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v8.md` capability
+For new Forge and Quest runs, the frozen `deep-economics-v9.md` capability
 begins Invent with high reasoning for 20 minutes and gives a recoverable
 continuation 10 minutes at medium to finalize existing work. Make first uses
 medium reasoning for one 16-minute proof runway, then resumes the same Goal at
 high reasoning with a normal 30-minute turn. Playtest and Release use medium;
-every stage compacts at 24k. One profile identity binds the persistent thread
+every stage compacts at 256k. One profile identity binds the persistent thread
 while the host selects those stage-specific turn settings. The same recovery
 semantics apply, with no more than eight native turns across one CLI
 invocation. Make receives a direct critical-path instruction and exact CAD
@@ -143,7 +143,8 @@ readings fail this early proof. A canonical checkpoint-bound
 artifact, or transition. This report is model evidence used to avoid an
 expensive bad direction; the later hash-bound final signature review and host
 CAD gate remain authoritative. The independent native critic remains mandatory
-for final Make's hash-bound review. Frozen deep-v7 retains its eight-minute
+for final Make's hash-bound review. Frozen deep-v8 retains its 16-minute proof
+runway and 24k compaction. Frozen deep-v7 retains its eight-minute
 proof turns, separate reads, and early-critic contract. Frozen deep-v6 retains its exact executable
 proof instructions without v7 batching and skill deferral. Frozen deep-v5
 retains the same phase settings and its original materialized CAD entrypoint
