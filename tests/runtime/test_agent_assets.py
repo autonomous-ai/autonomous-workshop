@@ -111,6 +111,13 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             (
                 assets.skill_root
                 / "references"
+                / "invent-concept-v1.md"
+            ).is_file()
+        )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
                 / "deep-economics-v1.md"
             ).is_file()
         )
@@ -191,6 +198,29 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
                 self.assertIn(required, playtest)
         self.assertNotIn("--print-preflight --fresh", make)
         self.assertNotIn("Make contract", playtest)
+
+    def test_marked_invent_instructions_keep_authorship_native_and_effects_host_owned(self):
+        root = (
+            REPOSITORY / ".agents" / "product-run" / ".agents" / "skills"
+            / "autonomous-workshop" / "references"
+        )
+        guidance = " ".join(
+            (
+                (root / "invent.md").read_text(encoding="utf-8")
+                + " "
+                + (root / "invent-concept-v1.md").read_text(encoding="utf-8")
+            ).split()
+        )
+        for required in (
+            "Manager and selected Inventor must author",
+            "exactly these five JSON files",
+            "Invoke exactly one ready finalizer",
+            "never researches, composes prompts, renders, reads credentials",
+            "host performs authorized effects after the native process exits",
+            "never adds a Concept stage, Goal, turn",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, guidance)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

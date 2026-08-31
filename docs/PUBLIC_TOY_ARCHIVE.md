@@ -24,6 +24,13 @@ toys/<inventor>-<slug>/
 │   ├── source.json                 # when a validated authored source exists
 │   ├── attempts/rNNNN/             # superseded sealed Invent contracts/source
 │   └── ATTEMPTS.json
+├── concept/                        # marked Forge/Quest Made binding only
+│   ├── BINDING.json                # always: exact hashes and bounded claims
+│   ├── pre-render.json             # only with exact-Wish disclosure authority
+│   ├── sealed.json                 # only with exact-Wish disclosure authority
+│   ├── effect.json                 # sanitized; only with that authority
+│   ├── source/                     # exact five files, only when disclosed
+│   └── images/                     # exact sealed role bytes, only when disclosed
 ├── make/
 │   ├── invented.json              # Spark's compact Make-owned concept only
 │   ├── made.json
@@ -92,6 +99,12 @@ host-owned authenticated effect, not agent-authored Release evidence.
   renders are not public artifacts.
 - The exact Wish is withheld by default. Publishing its text requires the
   caller to opt in explicitly; either form retains the exact Wish hash.
+- A marked schema-v2 Made snapshot always records its exact sealed Concept and
+  sanitized effect hashes in `concept/BINDING.json`. Exact Concept source and
+  image bytes are copied only under the existing exact-Wish disclosure
+  authority, because their research and instructions may reveal private Wish
+  context. The binding claims role completeness and byte identity only; Concept
+  imagery is not product, Playtest, Factory, manufacture, or delivery evidence.
 - Agent prompts, transcripts, reasoning, session data, host state,
   credentials, and raw effect receipts are never copied.
 - `MANIFEST.json` hashes every archive file except the root `README.md` and

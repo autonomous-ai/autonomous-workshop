@@ -84,6 +84,7 @@ MAX_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
 MAX_RELEASE_MANUAL_BYTES = 16 * 1024 * 1024
 MAX_MANUAL_DESIGN_EVIDENCE_BYTES = 64 * 1024
 MAX_SIGNATURE_REVIEW_BYTES = 64 * 1024
+MAX_CONCEPT_VALIDATOR_OUTPUT_BYTES = 8 * 1024 * 1024
 MAX_RELEASE_PDF_VALIDATOR_OUTPUT_BYTES = 4 * 1024
 RELEASE_PDF_VALIDATION_TIMEOUT_SECONDS = 15
 MAX_FILE_BYTES = 95 * 1024 * 1024
@@ -528,6 +529,19 @@ def _pdf_validator_path() -> Path:
     return resolved
 
 
+def _concept_validator_path() -> Path:
+    script = Path(__file__).resolve(strict=True)
+    candidate = script.with_name("concept_validator.py")
+    try:
+        identity = candidate.lstat()
+        resolved = candidate.resolve(strict=True)
+    except OSError as exc:
+        raise ProposalError("Invent Concept validator is unavailable") from exc
+    if candidate.is_symlink() or not stat.S_ISREG(identity.st_mode) or resolved.parent != script.parent:
+        raise ProposalError("Invent Concept validator must be an immutable sibling file")
+    return resolved
+
+
 def _pdf_validator_environment() -> dict[str, str]:
     environment = {
         "LANG": "C",
@@ -541,6 +555,42 @@ def _pdf_validator_environment() -> dict[str, str]:
         if isinstance(value, str) and value:
             environment[name] = value
     return environment
+
+
+def _validate_pre_render_concept(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    python = _workshop_python()
+    validator = _concept_validator_path()
+    try:
+        completed = subprocess.run(
+            (str(python), "-I", "-B", str(validator)),
+            input=canonical_json(payload),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            cwd=payload["run_root"],
+            env=_pdf_validator_environment(),
+            timeout=15,
+            check=False,
+            start_new_session=True,
+        )
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        raise ProposalError("Invent Concept validator could not be launched") from exc
+    if not 1 <= len(completed.stdout) <= MAX_CONCEPT_VALIDATOR_OUTPUT_BYTES:
+        raise ProposalError("Invent Concept validator returned invalid output")
+    try:
+        result = json.loads(completed.stdout.decode("utf-8"), object_pairs_hook=_strict_object)
+    except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        raise ProposalError("Invent Concept validator returned invalid output") from exc
+    if completed.stdout != canonical_json(result) or not isinstance(result, dict):
+        raise ProposalError("Invent Concept validator returned invalid output")
+    if completed.returncode == 0 and set(result) == {"ok", "result"} and result["ok"] is True:
+        validated = result["result"]
+        if isinstance(validated, dict) and set(validated) == {"checks", "pre_render"}:
+            return validated
+    if completed.returncode == 2 and set(result) == {"error", "ok"} and result["ok"] is False:
+        error = result["error"]
+        if isinstance(error, str) and error and len(error) <= 1_000:
+            raise ProposalError("Invent Concept source is invalid: %s" % error)
+    raise ProposalError("Invent Concept validator returned invalid output")
 
 
 def _validate_pdf_manual(content: bytes) -> None:
@@ -1213,7 +1263,7 @@ def _validate_manifest(value: Any, label: str) -> dict[str, Any]:
 
 
 def _validate_made(value: Any) -> dict[str, Any]:
-    expected = {
+    common = {
         "schema_version",
         "kind",
         "round",
@@ -1231,13 +1281,21 @@ def _validate_made(value: Any) -> dict[str, Any]:
         "cad_verification_sha256",
         "made_sha256",
     }
+    if not isinstance(value, Mapping):
+        raise ProposalError("native Made must be an object")
+    schema_version = value.get("schema_version")
+    expected = (
+        common
+        if schema_version == 1
+        else common | {"concept_sha256", "concept_effect_sha256"}
+    )
     made = _fields(value, expected, "native Made")
-    if type(made["schema_version"]) is not int or made["schema_version"] != 1:
-        raise ProposalError("native Made schema_version must be 1")
+    if type(schema_version) is not int or schema_version not in (1, 2):
+        raise ProposalError("native Made schema_version must be 1 or 2")
     if made["kind"] != MADE_KIND:
         raise ProposalError("native Made kind is invalid")
     round_index = _positive_int(made["round"], "native Made round")
-    for key in (
+    hash_fields = (
         "wish_sha256",
         "assignment_sha256",
         "taste_sha256",
@@ -1245,7 +1303,10 @@ def _validate_made(value: Any) -> dict[str, Any]:
         "invented_sha256",
         "product_json_sha256",
         "cad_verification_sha256",
-    ):
+    )
+    if schema_version == 2:
+        hash_fields += ("concept_sha256", "concept_effect_sha256")
+    for key in hash_fields:
         _sha256(made[key], "native Made %s" % key)
     if made["product_root"] != "artifacts/make/r%04d/product" % round_index:
         raise ProposalError("native Made product_root is not canonical")
@@ -1817,8 +1878,116 @@ def _make_contract(
             "Make product contains a duplicate final snap family outside the "
             "declared CAD project: %s" % ", ".join(duplicate_snap_paths)
         )
+    concept_bindings: dict[str, str] = {}
+    if "invent_concept_capability" in inputs:
+        sealed = _mapping(inputs.get("sealed_concept"), "Make sealed Concept", nonempty=True)
+        effect = _mapping(inputs.get("concept_effect"), "Make Concept effect", nonempty=True)
+        sealed_binding = _fields(
+            _mapping(inputs.get("sealed_concept_artifact"), "Make sealed Concept artifact", nonempty=True),
+            {"path", "sha256"},
+            "Make sealed Concept artifact",
+        )
+        effect_binding = _fields(
+            _mapping(inputs.get("concept_effect_artifact"), "Make Concept effect artifact", nonempty=True),
+            {"path", "sha256"},
+            "Make Concept effect artifact",
+        )
+        provenance = _mapping(
+            _mapping(sealed.get("source"), "Make pre-render Concept", nonempty=True).get("provenance"),
+            "Make Concept provenance",
+            nonempty=True,
+        )
+        concept_round = _positive_int(provenance.get("round"), "Make Concept round")
+        if concept_round > round_index:
+            raise ProposalError("Make Concept round is newer than the Make round")
+        expected_prefix = "artifacts/concept/r%04d" % concept_round
+        if sealed_binding["path"] != "%s/sealed.json" % expected_prefix or effect_binding["path"] != "%s/effect.json" % expected_prefix:
+            raise ProposalError("Make Concept artifacts are not canonical for this round")
+        for binding, value, label in (
+            (sealed_binding, sealed, "sealed Concept"),
+            (effect_binding, effect, "Concept effect"),
+        ):
+            content, _ = _read_regular(
+                run_root, binding["path"], "Make %s" % label, maximum=MAX_CONTRACT_BYTES
+            )
+            if content != canonical_json(value) or hashlib.sha256(content).hexdigest() != _sha256(binding["sha256"], "Make %s artifact sha256" % label):
+                raise ProposalError("Make %s differs from its packet binding" % label)
+        sealed_fields = {"schema_version", "kind", "source", "descriptor", "image_manifest", "concept_sha256"}
+        if set(sealed) != sealed_fields or sealed.get("schema_version") != 2 or sealed.get("kind") != "autonomous-workshop.concept-sealed":
+            raise ProposalError("Make sealed Concept fields are invalid")
+        source = _mapping(sealed["source"], "Make pre-render Concept", nonempty=True)
+        if source.get("concept_sha256") != json_sha256({key: value for key, value in source.items() if key != "concept_sha256"}):
+            raise ProposalError("Make pre-render Concept identity is invalid")
+        sealed_sha256 = json_sha256({key: value for key, value in sealed.items() if key != "concept_sha256"})
+        if sealed.get("concept_sha256") != sealed_sha256:
+            raise ProposalError("Make sealed Concept identity is invalid")
+        effect_fields = {
+            "schema_version", "kind", "pre_render_concept_sha256", "sealed_concept_sha256",
+            "profile_id", "profile_sha256", "roles", "concept_effect_sha256",
+        }
+        if set(effect) != effect_fields or effect.get("schema_version") != 1 or effect.get("kind") != "autonomous-workshop.concept-image-effect":
+            raise ProposalError("Make Concept effect fields are invalid")
+        effect_sha256 = json_sha256({key: value for key, value in effect.items() if key != "concept_effect_sha256"})
+        if (
+            effect.get("concept_effect_sha256") != effect_sha256
+            or effect.get("pre_render_concept_sha256") != source["concept_sha256"]
+            or effect.get("sealed_concept_sha256") != sealed_sha256
+        ):
+            raise ProposalError("Make Concept effect identity is invalid")
+        image_manifest = _mapping(sealed.get("image_manifest"), "Make Concept image manifest", nonempty=True)
+        entries = _array(image_manifest.get("entries"), "Make Concept image entries", nonempty=True)
+        images: dict[str, str] = {}
+        concept_root = "%s/concept" % expected_prefix
+        for entry in entries:
+            normalized = _fields(
+                entry, {"path", "bytes", "sha256", "executable"}, "Make Concept image entry"
+            )
+            relative = _safe_relative(normalized["path"], "Make Concept image path").as_posix()
+            if relative in images:
+                raise ProposalError("Make Concept image paths must be unique")
+            content, _ = _read_regular(
+                run_root, "%s/%s" % (concept_root, relative), "Make Concept image", maximum=MAX_FILE_BYTES
+            )
+            observed = hashlib.sha256(content).hexdigest()
+            if observed != normalized["sha256"] or len(content) != normalized["bytes"] or normalized["executable"] is not False:
+                raise ProposalError("Make Concept image differs from its manifest")
+            images[relative] = observed
+        role_values = _array(effect.get("roles"), "Make Concept effect roles", nonempty=True)
+        role_images: dict[str, str] = {}
+        for role in role_values:
+            normalized = _fields(
+                role, {"role", "path", "intent_sha256", "image_sha256", "media_type"},
+                "Make Concept effect role",
+            )
+            if normalized["path"] in role_images:
+                raise ProposalError("Make Concept effect image paths must be unique")
+            _sha256(normalized["intent_sha256"], "Make Concept intent sha256")
+            _sha256(normalized["image_sha256"], "Make Concept image sha256")
+            role_images[normalized["path"]] = normalized["image_sha256"]
+        if role_images != images:
+            raise ProposalError("Make Concept effect differs from its image manifest")
+        brief = _mapping(source.get("brief"), "Make Concept brief", nonempty=True)
+        components = _array(brief.get("components"), "Make Concept components", nonempty=True)
+        concept_keys = [item.get("key") if isinstance(item, Mapping) else None for item in components]
+        product_keys = product.get("components")
+        if (
+            not isinstance(product_keys, list)
+            or any(not isinstance(key, str) or not key for key in product_keys)
+            or len(set(product_keys)) != len(product_keys)
+            or set(product_keys) != set(concept_keys)
+            or len(product_keys) != len(concept_keys)
+        ):
+            raise ProposalError("Make product component keys differ from the Concept brief")
+        concept_pixel_hashes = set(images.values())
+        copied = sorted(entry["path"] for entry in manifest["entries"] if entry["sha256"] in concept_pixel_hashes)
+        if copied:
+            raise ProposalError("Make product must not copy sealed Concept image pixels")
+        concept_bindings = {
+            "concept_sha256": sealed_sha256,
+            "concept_effect_sha256": effect_sha256,
+        }
     identity = {
-        "schema_version": 1,
+        "schema_version": 2 if concept_bindings else 1,
         "kind": MADE_KIND,
         "round": round_index,
         "wish_sha256": assignment["wish_sha256"],
@@ -1833,6 +2002,7 @@ def _make_contract(
         "product_json_sha256": hashlib.sha256(product_bytes).hexdigest(),
         "cad_verification_path": verification_relative.as_posix(),
         "cad_verification_sha256": verification_sha256,
+        **concept_bindings,
     }
     return {**identity, "made_sha256": json_sha256(identity)}
 
@@ -2012,8 +2182,20 @@ def _make_invent_revision_contract(
                     % ref
                 )
     feedback_sha256 = json_sha256(feedback)
+    concept_bindings = {}
+    if "invent_concept_capability" in inputs:
+        sealed = _mapping(inputs.get("sealed_concept"), "Make revision sealed Concept", nonempty=True)
+        effect = _mapping(inputs.get("concept_effect"), "Make revision Concept effect", nonempty=True)
+        sealed_sha256 = _sha256(sealed.get("concept_sha256"), "Make revision Concept sha256")
+        effect_sha256 = _sha256(effect.get("concept_effect_sha256"), "Make revision Concept effect sha256")
+        if effect.get("sealed_concept_sha256") != sealed_sha256:
+            raise ProposalError("Make revision Concept effect differs from sealed Concept")
+        concept_bindings = {
+            "concept_sha256": sealed_sha256,
+            "concept_effect_sha256": effect_sha256,
+        }
     identity = {
-        "schema_version": 1,
+        "schema_version": 2 if concept_bindings else 1,
         "kind": MAKE_INVENT_REVISION_KIND,
         "round": round_index,
         "wish_sha256": assignment["wish_sha256"],
@@ -2023,6 +2205,7 @@ def _make_invent_revision_contract(
         "evidence_manifest": manifest,
         "feedback": feedback,
         "feedback_sha256": feedback_sha256,
+        **concept_bindings,
     }
     return {
         **identity,
@@ -3069,9 +3252,21 @@ def _seal(
     transition: str,
     additional_contracts: Sequence[tuple[str, Mapping[str, Any]]] = (),
     additional_files: Sequence[tuple[str, bytes]] = (),
+    existing_files: Sequence[tuple[str, bytes]] = (),
+    additional_roots: Sequence[str] = (),
     contract_path_value: str | None = None,
     identity_field_value: str | None = None,
 ) -> dict[str, Any]:
+    normalized_roots = tuple(
+        _safe_relative(root.rstrip("/"), "additional artifact root").as_posix() + "/"
+        for root in additional_roots
+    )
+
+    def allowed(relative: str) -> bool:
+        return relative.startswith("artifacts/%s/" % stage["stage"]) or any(
+            relative.startswith(root) for root in normalized_roots
+        )
+
     contract_path = (
         _safe_relative(contract_path_value, "stage contract path").as_posix()
         if contract_path_value is not None
@@ -3089,7 +3284,7 @@ def _seal(
         relative = _safe_relative(additional_path, "additional contract path").as_posix()
         if relative == contract_path or any(item["path"] == relative for item in artifacts):
             raise ProposalError("stage contract paths must be unique")
-        if not relative.startswith("artifacts/%s/" % stage["stage"]):
+        if not allowed(relative):
             raise ProposalError("additional contract must stay under the current stage")
         content = canonical_json(additional_contract)
         if len(content) > MAX_CONTRACT_BYTES:
@@ -3102,13 +3297,29 @@ def _seal(
         relative = _safe_relative(additional_path, "additional artifact path").as_posix()
         if any(item["path"] == relative for item in artifacts):
             raise ProposalError("stage artifact paths must be unique")
-        if not relative.startswith("artifacts/%s/" % stage["stage"]):
+        if not allowed(relative):
             raise ProposalError("additional artifact must stay under the current stage")
         if not isinstance(content, bytes) or not content or len(content) > MAX_JSON_BYTES:
             raise ProposalError("additional stage artifact is invalid")
         _atomic_write(run_root, relative, content)
         artifacts.append(
             {"path": relative, "sha256": hashlib.sha256(content).hexdigest()}
+        )
+    for existing_path, expected_content in existing_files:
+        relative = _safe_relative(existing_path, "existing artifact path").as_posix()
+        if any(item["path"] == relative for item in artifacts):
+            raise ProposalError("stage artifact paths must be unique")
+        if not allowed(relative):
+            raise ProposalError("existing artifact must stay under the current stage")
+        if not isinstance(expected_content, bytes) or not expected_content:
+            raise ProposalError("existing stage artifact is invalid")
+        observed, _ = _read_regular(
+            run_root, relative, "existing stage artifact", maximum=MAX_JSON_BYTES
+        )
+        if observed != expected_content:
+            raise ProposalError("existing stage artifact changed after validation")
+        artifacts.append(
+            {"path": relative, "sha256": hashlib.sha256(observed).hexdigest()}
         )
     outcome = {
         "schema_version": 1,
@@ -3205,6 +3416,10 @@ def _parser() -> argparse.ArgumentParser:
 
     invent = subparsers.add_parser("invent", help="Seal concept and research JSON.")
     invent.add_argument("--source", required=True, help="Run-local Invent authored JSON.")
+    invent.add_argument(
+        "--concept-root",
+        help="Packet-bound five-file pre-render Concept root for marked Invent.",
+    )
 
     make = subparsers.add_parser("make", help="Seal one exact product tree.")
     make.add_argument("--product-root", required=True, help="Run-local product tree.")
@@ -3280,6 +3495,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
     additional_contracts: list[tuple[str, Mapping[str, Any]]] = []
     additional_files: list[tuple[str, bytes]] = []
+    existing_files: list[tuple[str, bytes]] = []
+    additional_roots: list[str] = []
     contract_path_value = None
     identity_field_value = None
     if args.command == "match":
@@ -3291,6 +3508,49 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             run_root, args.source, "Invent authored source"
         )
         inputs = _mapping(stage["inputs"], "Invent STAGE inputs", nonempty=True)
+        marked_concept = "invent_concept_capability" in inputs
+        if marked_concept and "assignment" in inputs:
+            raise ProposalError("Invent Concept capability requires routed Invent")
+        if marked_concept:
+            capability = _fields(
+                _mapping(
+                    inputs["invent_concept_capability"],
+                    "Invent Concept capability",
+                    nonempty=True,
+                ),
+                {"path", "sha256"},
+                "Invent Concept capability",
+            )
+            if (
+                capability["path"]
+                != ".agents/skills/autonomous-workshop/references/invent-concept-v1.md"
+                or not isinstance(capability["sha256"], str)
+                or SHA256_RE.fullmatch(capability["sha256"]) is None
+            ):
+                raise ProposalError("Invent Concept capability binding is invalid")
+            round_index = _positive_int(inputs.get("concept_round"), "Invent Concept round")
+            concept_prefix = "artifacts/concept/r%04d" % round_index
+            expected_paths = {
+                "concept_root": "%s/concept" % concept_prefix,
+                "concept_pre_render_path": "%s/pre-render.json" % concept_prefix,
+                "concept_sealed_path": "%s/sealed.json" % concept_prefix,
+                "concept_effect_path": "%s/effect.json" % concept_prefix,
+            }
+            for name, expected_path in expected_paths.items():
+                observed_path = _safe_relative(inputs.get(name), "Invent %s" % name).as_posix()
+                if observed_path != expected_path:
+                    raise ProposalError("Invent %s is not canonical for this round" % name)
+            if args.concept_root != expected_paths["concept_root"]:
+                raise ProposalError("marked Invent requires its exact packet-bound --concept-root")
+            for name in ("standing_concept_sha256", "revision_input_sha256"):
+                value = inputs.get(name)
+                if round_index == 1:
+                    if value is not None:
+                        raise ProposalError("initial Invent Concept must not name revision inputs")
+                elif not isinstance(value, str) or SHA256_RE.fullmatch(value) is None:
+                    raise ProposalError("revised Invent Concept requires exact revision bindings")
+        elif args.concept_root is not None:
+            raise ProposalError("unmarked Invent does not accept --concept-root")
         if "assignment" in inputs:
             contract = _invent_contract(stage, source)
         else:
@@ -3324,6 +3584,41 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             / "source.json"
         ).as_posix()
         additional_files.append((source_path, source_content))
+        if marked_concept:
+            validated = _validate_pre_render_concept(
+                {
+                    "run_root": str(run_root),
+                    "concept_root": inputs["concept_root"],
+                    "wish": inputs["wish"],
+                    "inventor_roster": inputs["inventor_roster"],
+                    "assignment": assignment,
+                    "invented": contract,
+                    "creative_source": source,
+                    "creative_source_hex": source_content.hex(),
+                    "creative_source_path": source_path,
+                    "creative_source_sha256": hashlib.sha256(source_content).hexdigest(),
+                    "round": round_index,
+                    "standing_concept_sha256": inputs.get("standing_concept_sha256"),
+                    "revision_input_sha256": inputs.get("revision_input_sha256"),
+                }
+            )
+            pre_render = _mapping(
+                validated["pre_render"], "validated pre-render Concept", nonempty=True
+            )
+            additional_contracts.append((inputs["concept_pre_render_path"], pre_render))
+            for name in (
+                "brief.json",
+                "derived_wish.json",
+                "descriptor.json",
+                "prompts.json",
+                "research.json",
+            ):
+                relative = "%s/%s" % (inputs["concept_root"], name)
+                content, _ = _read_regular(
+                    run_root, relative, "Invent Concept %s" % name, maximum=MAX_JSON_BYTES
+                )
+                existing_files.append((relative, content))
+            additional_roots.append("artifacts/concept/r%04d" % round_index)
         transition = stage["next_transition"]
     elif args.command == "make":
         inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
@@ -3416,6 +3711,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         transition=transition,
         additional_contracts=additional_contracts,
         additional_files=additional_files,
+        existing_files=existing_files,
+        additional_roots=additional_roots,
         contract_path_value=contract_path_value,
         identity_field_value=identity_field_value,
     )

@@ -32,6 +32,19 @@ with exactly `selected_inventor_id`, roster-covering `ranking`, `concept`, and
 `research`. The Make finalizer seals those bindings together with the Made
 contract, so Spark still has exact creative provenance without another turn.
 
+When `STAGE.json.inputs.invent_concept_capability` is present, the packet also
+binds the complete sealed Concept and sanitized image-effect evidence. Reopen
+those exact bytes before building. The brief and derived Wish numerical facts
+are authoritative; Concept images communicate design intent but do not prove
+geometry, dimensions, fit, printability, or product completion. Declare stable
+component keys in `product.json` whose set exactly equals the brief's component
+keys—no omissions, aliases, renamed counterparts, or extras. Create all product
+geometry and presentation evidence freshly from the build. Never copy a sealed
+Concept image (even under another filename) into the product tree: the
+finalizer and host reject any matching SHA-256. The marked Made contract binds
+both the sealed Concept identity and sanitized effect identity for downstream
+gates.
+
 For Spark, scan the roster's bounded agent descriptions in one pass, rank the
 complete roster, and open the full Taste and skill bundle only for the selected
 Inventor. First name the hardest-to-fake magic: the perception, motion, rule,

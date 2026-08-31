@@ -26,7 +26,10 @@ skill is your workflow playbook, not a separate agent process.
    its exact feedback and change the rejected artifact or evidence before
    finalizing. Never resubmit unchanged rejected bytes.
 4. Read only the reference for the current stage:
-   - Invent: [references/invent.md](references/invent.md)
+   - Invent: [references/invent.md](references/invent.md). For a packet carrying
+     `invent_concept_capability`, also read the exact bound
+     [references/invent-concept-v1.md](references/invent-concept-v1.md) and
+     complete that compound authorship before the same one finalizer.
    - Make: [references/make.md](references/make.md)
    - Playtest: [references/playtest.md](references/playtest.md)
    - Release:

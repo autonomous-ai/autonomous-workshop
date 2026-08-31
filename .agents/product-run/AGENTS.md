@@ -70,6 +70,12 @@ feedback loop in Python.
   or a truthful need blocks progress.
 - Complete the native Goal only after the stage finalizer succeeds. Then return
   control immediately to the host; do not begin the next stage.
+- A marked Forge/Quest Invent packet binds `invent-concept-v1.md`. In that same
+  Invent Goal, author its complete five-file pre-render Concept tree and use the
+  packet-gated `--concept-root` form of the one `invent` finalizer. The Manager
+  and selected Inventor own all research and design content. The finalizer does
+  no rendering; provider credentials and durable image effects remain host-only
+  after the native process exits. This adds no Concept stage, Goal, or turn.
 - A native Goal is working state for Codex. It never replaces `STAGE.json`,
   sealed files, host budgets, gates, or checkpoints as durable workflow
   authority.

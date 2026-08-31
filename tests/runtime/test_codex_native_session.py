@@ -78,6 +78,17 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
             candidate = Path(value).resolve(strict=True)
             if candidate.is_dir():
                 runtime_paths.add(candidate)
+    workshop_package = Path(codex_runtime.__file__).resolve(strict=True).parents[1]
+    workshop_import_root = workshop_package.parent
+    if not any(
+        path.is_dir()
+        and (
+            workshop_import_root == path.resolve(strict=True)
+            or workshop_import_root.is_relative_to(path.resolve(strict=True))
+        )
+        for path in runtime_paths
+    ):
+        runtime_paths.add(workshop_import_root)
     library_dir = sysconfig.get_config_var("LIBDIR")
     library_name = sysconfig.get_config_var(
         "INSTSONAME"
@@ -1326,6 +1337,92 @@ class CodexNativeSessionTest(unittest.TestCase):
                 resumed.binding.checkpoint_sha256,
                 payload["checkpoint_sha256"],
             )
+
+    def test_editable_policy_grants_import_root_and_accepts_package_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            started = self.start(launcher, root)
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
+            predecessors = (
+                codex_runtime._run_policy_before_editable_workshop_package(
+                    root,
+                    current_policy,
+                )
+            )
+            workshop_package_path = Path(
+                codex_runtime.__file__
+            ).resolve(strict=True).parents[1]
+            workshop_package = str(workshop_package_path)
+            workshop_import_root = str(workshop_package_path.parent)
+            if not predecessors:
+                self.skipTest("Workshop is installed below purelib, not editable")
+            current_paths = {
+                item.path for item in current_policy.trusted_python_runtime_paths
+            }
+            package_only_paths = {
+                item.path for item in predecessors[0].trusted_python_runtime_paths
+            }
+            no_source_paths = {
+                item.path for item in predecessors[1].trusted_python_runtime_paths
+            }
+            self.assertIn(workshop_import_root, current_paths)
+            self.assertEqual(
+                package_only_paths,
+                current_paths - {workshop_import_root} | {workshop_package},
+            )
+            self.assertEqual(
+                no_source_paths,
+                current_paths - {workshop_import_root},
+            )
+
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            payload["runtime_config_sha256"] = (
+                codex_runtime._runtime_config_sha256(
+                    launcher.cli_version,
+                    launcher.model,
+                    launcher.reasoning_effort,
+                    predecessors[0],
+                )
+            )
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            resumed = self.resume(launcher, root)
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+            filesystem_override = next(
+                value
+                for value in factory.calls[1][0]
+                if value.startswith(
+                    "permissions.workshop-product-run.filesystem="
+                )
+            )
+            filesystem = tomllib.loads(filesystem_override)["permissions"][
+                "workshop-product-run"
+            ]["filesystem"]
+            self.assertEqual(filesystem[workshop_import_root], "read")
 
     def test_resume_rejects_never_shipped_venv_feature_predecessors(self):
         marker = Path(sys.executable).parent.parent / "pyvenv.cfg"

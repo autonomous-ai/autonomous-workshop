@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
+import base64
 import importlib.util
 import json
 import os
@@ -20,6 +21,7 @@ from unittest import mock
 
 from workshop.errors import ContractError, WorkshopError
 from workshop.make.native import NativeMade
+from workshop.integrations.concept_images import ConceptImageProfile
 from workshop.make.native_gate import NATIVE_CAD_FULL_TIER, NATIVE_CAD_VERIFIER_MODE
 from workshop.release.native import NativeRelease
 from workshop.runtime.codex import codex_supports_native_workshop
@@ -325,6 +327,7 @@ def _assert_agent_write_ownership(
                 or relative.startswith("sources/")
                 or relative.startswith("work/")
                 or relative.startswith("artifacts/%s/" % stage)
+                or (stage == "invent" and relative.startswith("artifacts/concept/"))
             )
             if not allowed:
                 raise MockSessionEvidenceError(
@@ -660,11 +663,47 @@ def run_mock_session_acceptance(
             "host_state": str(host_state),
         },
     )
+    profile = ConceptImageProfile()
+    concept_credentials = home / "concept-images.json"
+    _write_private_json(
+        concept_credentials,
+        {
+            "schema_version": 1,
+            "profile": {
+                "profile_id": profile.profile_id,
+                "origin": profile.origin,
+                "model": profile.model,
+                "request_schema_version": profile.request_schema_version,
+                "supports_idempotency": profile.supports_idempotency,
+                "supports_operation_readback": profile.supports_operation_readback,
+                "supports_absence_proof": profile.supports_absence_proof,
+            },
+            "api_key": FIXTURE_SECRETS[0],
+        },
+    )
+    concept_calls = []
+
+    def concept_transport(url, headers, body, timeout):
+        concept_calls.append((url, dict(headers), json.loads(body), timeout))
+        image = b"\x89PNG\r\n\x1a\nmock-session-concept-%02d" % len(concept_calls)
+        return 200, {"Content-Type": "application/json"}, json.dumps(
+            {
+                "data": [
+                    {
+                        "b64_json": base64.b64encode(image).decode("ascii"),
+                        "id": "mock-concept-%02d" % len(concept_calls),
+                    }
+                ]
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
     environment = {
         "WORKSHOP_HOME": str(home),
         "WORKSHOP_CODEX_BIN": str(wrapper),
         "FACTORY_USERNAME": "mock-session-service",
         "FACTORY_PASSWORD": FIXTURE_SECRETS[0],
+        "WORKSHOP_CONCEPT_IMAGE_CREDENTIALS_FILE": str(concept_credentials),
     }
     repository = Path(__file__).resolve().parents[2]
     projections_before = _projection_snapshot(repository, product_id)
@@ -677,6 +716,9 @@ def run_mock_session_acceptance(
             ), mock.patch(
                 "workshop.workflow.native_run._FACTORY_PROJECT_FILE_TRANSPORT",
                 server.project_file_transport,
+            ), mock.patch(
+                "workshop.workflow.native_run._CONCEPT_IMAGE_TRANSPORT",
+                concept_transport,
             ):
                 receipt = start_native_run(
                     _fixed_wish(product_id), effort=effort
@@ -693,6 +735,19 @@ def run_mock_session_acceptance(
         trace, session_id = _validate_trace(
             paths.workspace, paths.host_state, effort=effort
         )
+        expected_concept_calls = (
+            0
+            if effort == "spark"
+            else sum(
+                item.path.startswith("artifacts/concept/")
+                and item.path.endswith((".png", ".jpg", ".jpeg", ".webp"))
+                for item in checkpoint.stage_artifacts["invent"]
+            )
+        )
+        if len(concept_calls) != expected_concept_calls:
+            raise MockSessionEvidenceError(
+                "%s:Concept image calls differ from sealed role artifacts" % effort
+            )
         session = receipt.get("session")
         if not isinstance(session, Mapping) or session.get("used_web_search") is not False:
             raise MockSessionEvidenceError(

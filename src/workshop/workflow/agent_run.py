@@ -52,6 +52,7 @@ from workshop.runtime.project_boundary import (
 from workshop.wish import Wish
 from workshop.workflow.effort import (
     EFFORT_ROUTE_CAPABILITY_PATH,
+    INVENT_CONCEPT_CAPABILITY_PATH,
     workshop_effort,
 )
 
@@ -498,7 +499,14 @@ class AgentOutcome:
             raise ContractError("agent outcome artifact paths must be unique")
         for artifact in self.artifacts:
             parts = _safe_relative(artifact.path, "agent artifact path").parts
-            if len(parts) < 3 or parts[:2] != ("artifacts", self.stage):
+            stage_owned = len(parts) >= 3 and parts[:2] == ("artifacts", self.stage)
+            invent_concept_owned = (
+                self.stage == "invent"
+                and len(parts) >= 4
+                and parts[:2] == ("artifacts", "concept")
+                and re.fullmatch(r"r[0-9]{4}", parts[2]) is not None
+            )
+            if not stage_owned and not invent_concept_owned:
                 raise ContractError(
                     "agent artifact paths must live under artifacts/%s" % self.stage
                 )
@@ -1660,9 +1668,22 @@ class AgentRun:
             raise ArtifactError("gate artifact paths must be unique")
         for artifact in host_artifacts:
             parts = _safe_relative(artifact.path, "host gate artifact path").parts
-            if len(parts) < 3 or parts[:2] != ("artifacts", outcome.stage):
+            stage_owned = len(parts) >= 3 and parts[:2] == (
+                "artifacts",
+                outcome.stage,
+            )
+            concept_owned = (
+                outcome.stage == "invent"
+                and INVENT_CONCEPT_CAPABILITY_PATH
+                in {item["path"] for item in payload["inputs"]}
+                and len(parts) >= 4
+                and parts[:2] == ("artifacts", "concept")
+                and re.fullmatch(r"r[0-9]{4}", parts[2]) is not None
+            )
+            if not stage_owned and not concept_owned:
                 raise ArtifactError(
-                    "host gate artifacts must live under artifacts/%s" % outcome.stage
+                    "host gate artifacts must live under artifacts/%s"
+                    % outcome.stage
                 )
         all_artifacts = tuple(outcome.artifacts) + host_artifacts
         additions = self._verify_outcome_artifacts(

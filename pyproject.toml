@@ -38,6 +38,7 @@ include = ["workshop*", "cli*"]
 workshop = [
   "artifacts/schemas/*.json",
   "contributors/schemas/*.json",
+  "concept/schemas/*.json",
   "runtime/schemas/*.json",
   "make/schemas/*.json",
   "make/skills/*",

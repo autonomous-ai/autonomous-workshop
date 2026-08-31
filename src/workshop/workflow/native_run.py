@@ -35,6 +35,12 @@ from workshop.errors import (
 from workshop.contributors import (
     parse_taste_bytes,
 )
+from workshop.concept import (
+    SOURCE_PATHS,
+    PreRenderConcept,
+    SealedConcept,
+    seal_pre_render_concept,
+)
 from workshop.integrations.factory import (
     FACTORY_CONTENT_MAPPING,
     FactoryReleaseWriter,
@@ -49,6 +55,17 @@ from workshop.integrations.factory import (
 from workshop.integrations.git import (
     GitPushError,
     push_toy_directory,
+)
+from workshop.integrations.concept_images import (
+    ConceptImageAmbiguous,
+    ConceptImagePreTransmissionError,
+    ConceptImageProfile,
+    ConceptImageReference,
+    ConceptImageRejected,
+    ConceptImageRequest,
+    load_concept_image_credentials,
+    sniff_image,
+    urllib_image_transport,
 )
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
@@ -105,6 +122,7 @@ from workshop.runtime import (
     manager_launcher,
     manager_spec,
 )
+from workshop.runtime.concept_effects import ConceptEffectEvidence, ConceptEffectLedger
 from workshop.runtime.managers import NativeSessionLauncher
 from workshop.runtime.agent_assets import (
     parse_inventor_custom_agent_bytes,
@@ -165,6 +183,7 @@ from workshop.workflow.effort import (
     DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
+    INVENT_CONCEPT_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -194,6 +213,7 @@ _STAGE_INPUT_NAME = "STAGE.json"
 _AGENT_OUTCOME_NAME = "agent-outcome.json"
 _AUTHORIZATION_NAME = "authorization.json"
 _RELEASE_EFFECT_WAIT_NAME = "release-effect-wait.json"
+_INVENT_EFFECT_WAIT_NAME = "invent-effect-wait.json"
 _PUBLIC_EXAMPLE_STATUS_NAME = "public-example.json"
 _NATIVE_TOKEN_USAGE_NAME = "native-token-usage.json"
 _NATIVE_TOKEN_USAGE_KIND = "autonomous-workshop.native-token-usage"
@@ -213,6 +233,9 @@ _PLAYTEST_PROPOSAL_REJECTION_KIND = (
 _PLAYTEST_PROPOSAL_REJECTION_HEAD_KIND = (
     "autonomous-workshop.playtest-proposal-rejection-head"
 )
+_INVENT_PROPOSAL_REJECTION_NAME = "invent-proposal-rejection.json"
+_INVENT_PROPOSAL_REJECTION_KIND = "autonomous-workshop.invent-proposal-rejection"
+_MAX_INVENT_PROPOSAL_REJECTIONS = 32
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
 _MAKE_PROOF_READY_NAME = ".make-proof-ready.json"
 _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
@@ -241,6 +264,14 @@ _FACTORY_PUBLICATION_NEED = (
     "Factory publication could not be verified; restore server connectivity, "
     "then resume this run. Workshop will perform authenticated reconciliation "
     "of the existing effect before any retry."
+)
+_CONCEPT_IMAGE_CREDENTIALS_NEED = (
+    "Concept image credentials are missing or malformed; configure the private "
+    "WORKSHOP_CONCEPT_IMAGE_CREDENTIALS_FILE, then resume this run."
+)
+_CONCEPT_IMAGE_EFFECT_NEED = (
+    "Concept image generation is incomplete; restore the configured provider, "
+    "then resume this run. Workshop will reconcile the exact pending roles before any retry."
 )
 _LEGACY_RELEASE_UPGRADE_NEED = (
     "This historical run has an obsolete Release contract. It remains readable, "
@@ -301,6 +332,7 @@ _PLAYTEST_PROPOSAL_REJECTION_FEEDBACK = {
 # public readback, and receipt validation code.
 _FACTORY_TRANSPORT = urllib_transport
 _FACTORY_PROJECT_FILE_TRANSPORT = urllib_project_file_transport
+_CONCEPT_IMAGE_TRANSPORT = urllib_image_transport
 
 
 def _factory_transport_overrides() -> dict[str, Any]:
@@ -1922,6 +1954,19 @@ def _checkpoint_allows_make_invent_revision(
     )
 
 
+def _checkpoint_uses_invent_concept(
+    checkpoint: AgentRunCheckpoint,
+) -> bool:
+    """Select the compound boundary only from exact frozen run inputs."""
+
+    effort = _checkpoint_effort(checkpoint)
+    return bool(
+        effort is not None
+        and effort.includes("invent")
+        and INVENT_CONCEPT_CAPABILITY_PATH in checkpoint.input_sha256s
+    )
+
+
 def _checkpoint_next_stage(checkpoint: AgentRunCheckpoint, stage: str) -> str:
     effort = _checkpoint_effort(checkpoint)
     if effort is not None:
@@ -2468,6 +2513,132 @@ def _routed_make_creative_paths(round_index: int) -> tuple[str, str]:
     return "%s/assignment.json" % prefix, "%s/invented.json" % prefix
 
 
+def _invent_concept_paths(round_index: int) -> tuple[str, str, str, str]:
+    if type(round_index) is not int or not 1 <= round_index <= 100:
+        raise ContractError("Invent Concept round must be from 1 through 100")
+    prefix = "artifacts/concept/r%04d" % round_index
+    return (
+        "%s/concept" % prefix,
+        "%s/pre-render.json" % prefix,
+        "%s/sealed.json" % prefix,
+        "%s/effect.json" % prefix,
+    )
+
+
+def _invent_proposal_rejection_path(run: AgentRun) -> Path:
+    return run.host_state_root / _INVENT_PROPOSAL_REJECTION_NAME
+
+
+def _read_invent_proposal_rejection(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> Optional[Mapping[str, Any]]:
+    path = _invent_proposal_rejection_path(run)
+    if not path.exists() and not path.is_symlink():
+        return None
+    identity = path.lstat()
+    if path.is_symlink() or not stat.S_ISREG(identity.st_mode) or stat.S_IMODE(identity.st_mode) != 0o600:
+        raise StateConflict("Invent proposal rejection must be a private file")
+    value = _strict_json_bytes(path.read_bytes(), label="Invent proposal rejection")
+    expected = {
+        "schema_version", "kind", "product_id", "checkpoint_sha256", "subject_sha256",
+        "attempt", "outcome_sha256", "error_code", "feedback", "rejection_sha256",
+    }
+    identity_value = {key: item for key, item in value.items() if key != "rejection_sha256"}
+    if (
+        set(value) != expected
+        or value["schema_version"] != 1
+        or value["kind"] != _INVENT_PROPOSAL_REJECTION_KIND
+        or value["product_id"] != checkpoint.product_id
+        or value["checkpoint_sha256"] != checkpoint.checkpoint_sha256
+        or type(value["attempt"]) is not int
+        or not 1 <= value["attempt"] <= _MAX_INVENT_PROPOSAL_REJECTIONS
+        or not isinstance(value["feedback"], str)
+        or not value["feedback"]
+        or value["rejection_sha256"] != _sha256(_canonical_json_bytes(identity_value))
+    ):
+        raise StateConflict("Invent proposal rejection belongs to different state")
+    return value
+
+
+def _persist_invent_proposal_rejection(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    proposal: AgentOutcomeProposal,
+    error: Exception,
+) -> Mapping[str, Any]:
+    previous = _read_invent_proposal_rejection(run, checkpoint)
+    attempt = 1 if previous is None else previous["attempt"] + 1
+    if attempt > _MAX_INVENT_PROPOSAL_REJECTIONS:
+        raise TransitionError("Invent proposal rejection budget is exhausted")
+    feedback = " ".join(str(error).split())[:2_000]
+    if not feedback:
+        feedback = "Invent authored bytes failed deterministic validation."
+    identity = {
+        "schema_version": 1,
+        "kind": _INVENT_PROPOSAL_REJECTION_KIND,
+        "product_id": checkpoint.product_id,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "subject_sha256": proposal.subject_sha256,
+        "attempt": attempt,
+        "outcome_sha256": proposal.outcome.sha256,
+        "error_code": "invent-authored-contract-invalid",
+        "feedback": feedback,
+    }
+    record = {**identity, "rejection_sha256": _sha256(_canonical_json_bytes(identity))}
+    _write_private_json(_invent_proposal_rejection_path(run), record)
+    return record
+
+
+def _accepted_invent_concept(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> tuple[SealedConcept, ConceptEffectEvidence, AgentArtifact, AgentArtifact]:
+    if not _checkpoint_uses_invent_concept(checkpoint):
+        raise StateConflict("run does not use the active Invent Concept capability")
+    sealed_candidates = tuple(
+        item
+        for item in checkpoint.stage_artifacts.get("invent", ())
+        if re.fullmatch(r"artifacts/concept/r[0-9]{4}/sealed\.json", item.path)
+    )
+    if len(sealed_candidates) != 1:
+        raise StateConflict("accepted Invent lacks one standing sealed Concept")
+    match = re.fullmatch(
+        r"artifacts/concept/r([0-9]{4})/sealed\.json",
+        sealed_candidates[0].path,
+    )
+    if match is None:  # guarded by the candidate expression
+        raise StateConflict("accepted sealed Concept path is invalid")
+    concept_round = int(match.group(1))
+    concept_root, unused_pre, sealed_path, effect_path = _invent_concept_paths(
+        concept_round
+    )
+    del unused_pre
+    sealed_artifact = _stage_artifact_at(checkpoint, "invent", sealed_path)
+    effect_artifact = _stage_artifact_at(checkpoint, "invent", effect_path)
+    sealed_document, sealed_content = read_bounded_json_artifact(
+        run.run_root, sealed_path, label="accepted sealed Concept"
+    )
+    if _sha256(sealed_content) != sealed_artifact.sha256:
+        raise StateConflict("accepted sealed Concept differs from its binding")
+    sealed = SealedConcept.from_mapping(
+        sealed_document, root=run.run_root / concept_root
+    )
+    sealed.validate_tree()
+    effect = _read_contract(
+        run.run_root,
+        effect_artifact,
+        ConceptEffectEvidence,
+        label="accepted Concept effect evidence",
+    )
+    if (
+        effect.pre_render_concept_sha256 != sealed.source.concept_sha256
+        or effect.sealed_concept_sha256 != sealed.concept_sha256
+        or {(item.path, item.image_sha256) for item in effect.roles}
+        != {(item.path, item.sha256) for item in sealed.image_manifest.entries}
+    ):
+        raise StateConflict("accepted Concept effect differs from sealed bytes")
+    return sealed, effect, sealed_artifact, effect_artifact
+
+
 def _routed_creative_context(
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
@@ -2715,6 +2886,7 @@ def _prepare_effort_stage_input(
     checkpoint: AgentRunCheckpoint,
     *,
     roster: InventorRoster,
+    invent_proposal_rejection: Optional[Mapping[str, Any]] = None,
     cad_gate_rejection: Optional[Mapping[str, Any]],
     make_proposal_rejection: Optional[Mapping[str, Any]],
     playtest_proposal_rejection: Optional[Mapping[str, Any]],
@@ -2756,6 +2928,49 @@ def _prepare_effort_stage_input(
             "assignment_contract_path": assignment_path,
             "contract_path": invented_path,
         }
+        invent_concept = _checkpoint_uses_invent_concept(checkpoint)
+        if invent_concept:
+            concept_round = checkpoint.round_index or 1
+            concept_root, pre_render_path, sealed_path, effect_path = (
+                _invent_concept_paths(concept_round)
+            )
+            capability_sha256 = checkpoint.input_sha256s[
+                INVENT_CONCEPT_CAPABILITY_PATH
+            ]
+            subject_inputs.update(
+                {
+                    "invent_concept_capability_sha256": capability_sha256,
+                    "concept_round": concept_round,
+                }
+            )
+            inputs.update(
+                {
+                    "invent_concept_capability": {
+                        "path": INVENT_CONCEPT_CAPABILITY_PATH,
+                        "sha256": capability_sha256,
+                    },
+                    "concept_root": concept_root,
+                    "concept_pre_render_path": pre_render_path,
+                    "concept_sealed_path": sealed_path,
+                    "concept_effect_path": effect_path,
+                    "concept_round": concept_round,
+                    "standing_concept_sha256": None,
+                    "revision_input_sha256": None,
+                }
+            )
+            context.update(
+                {
+                    "invent_concept": True,
+                    "concept_root": concept_root,
+                    "concept_pre_render_path": pre_render_path,
+                    "concept_sealed_path": sealed_path,
+                    "concept_effect_path": effect_path,
+                    "concept_round": concept_round,
+                    "wish": base["wish"],
+                    "standing_concept_sha256": None,
+                    "revision_input_sha256": None,
+                }
+            )
         prior_paths = checkpoint.stage_artifacts.get("invent")
         if prior_paths:
             if "invent" not in checkpoint.invalidated_stages:
@@ -2768,6 +2983,66 @@ def _prepare_effort_stage_input(
                 unused_binding,
             ) = _routed_creative_context(run, checkpoint, roster)
             del unused_binding
+            if invent_concept:
+                prior_round = checkpoint.round_index - 1
+                prior_root, unused_pre, prior_sealed_path, prior_effect_path = (
+                    _invent_concept_paths(prior_round)
+                )
+                del unused_pre
+                prior_sealed_artifact = _stage_artifact_at(
+                    checkpoint, "invent", prior_sealed_path
+                )
+                prior_effect_artifact = _stage_artifact_at(
+                    checkpoint, "invent", prior_effect_path
+                )
+                prior_sealed_document, prior_sealed_content = read_bounded_json_artifact(
+                    run.run_root,
+                    prior_sealed_artifact.path,
+                    label="prior sealed Concept",
+                )
+                if _sha256(prior_sealed_content) != prior_sealed_artifact.sha256:
+                    raise StateConflict(
+                        "prior sealed Concept differs from its artifact binding"
+                    )
+                prior_sealed = SealedConcept.from_mapping(
+                    prior_sealed_document,
+                    root=run.run_root / prior_root,
+                )
+                prior_sealed.validate_tree()
+                prior_effect = _read_contract(
+                    run.run_root,
+                    prior_effect_artifact,
+                    ConceptEffectEvidence,
+                    label="prior Concept effect evidence",
+                )
+                if (
+                    prior_effect.sealed_concept_sha256
+                    != prior_sealed.concept_sha256
+                ):
+                    raise StateConflict(
+                        "prior Concept effect differs from the standing Concept"
+                    )
+                subject_inputs.update(
+                    {
+                        "prior_concept_artifact_sha256": prior_sealed_artifact.sha256,
+                        "standing_concept_sha256": prior_sealed.concept_sha256,
+                        "prior_concept_effect_sha256": prior_effect_artifact.sha256,
+                    }
+                )
+                inputs.update(
+                    {
+                        "prior_concept_artifact": _artifact_binding(
+                            prior_sealed_artifact
+                        ),
+                        "prior_concept_effect_artifact": _artifact_binding(
+                            prior_effect_artifact
+                        ),
+                        "standing_concept_sha256": prior_sealed.concept_sha256,
+                    }
+                )
+                context["prior_sealed_concept"] = prior_sealed
+                context["prior_concept_effect"] = prior_effect
+                context["standing_concept_sha256"] = prior_sealed.concept_sha256
             make_revision_paths = tuple(
                 artifact
                 for artifact in checkpoint.stage_artifacts.get("make", ())
@@ -2793,6 +3068,14 @@ def _prepare_effort_stage_input(
                     prior_assignment,
                     prior_invented,
                     expected_round=checkpoint.round_index - 1,
+                    expected_concept_sha256=(
+                        prior_sealed.concept_sha256 if invent_concept else None
+                    ),
+                    expected_concept_effect_sha256=(
+                        prior_effect.concept_effect_sha256
+                        if invent_concept
+                        else None
+                    ),
                 )
                 make_revision.validate_evidence_tree(run.run_root)
                 feedback = [item.to_dict() for item in make_revision.feedback]
@@ -2832,7 +3115,16 @@ def _prepare_effort_stage_input(
                         ),
                         "feedback": feedback,
                         "feedback_sha256": make_revision.feedback_sha256,
+                        "revision_input_sha256": (
+                            make_revision.revision_request_sha256
+                        ),
                     }
+                )
+                subject_inputs["revision_input_sha256"] = (
+                    make_revision.revision_request_sha256
+                )
+                context["revision_input_sha256"] = (
+                    make_revision.revision_request_sha256
                 )
             else:
                 prior_made = _read_contract(
@@ -2841,11 +3133,22 @@ def _prepare_effort_stage_input(
                     NativeMade,
                     label="prior routed native Made contract",
                 )
-                prior_made.assert_context(
-                    prior_assignment,
-                    prior_invented,
-                    expected_round=prior_made.round,
-                )
+                if invent_concept:
+                    prior_made.assert_context(
+                        prior_assignment,
+                        prior_invented,
+                        expected_round=prior_made.round,
+                        expected_concept_sha256=prior_sealed.concept_sha256,
+                        expected_concept_effect_sha256=(
+                            prior_effect.concept_effect_sha256
+                        ),
+                    )
+                else:
+                    prior_made.assert_context(
+                        prior_assignment,
+                        prior_invented,
+                        expected_round=prior_made.round,
+                    )
                 failing_playtested_artifact = _stage_primary(checkpoint, "playtest")
                 failing_playtested = _read_contract(
                     run.run_root,
@@ -2892,8 +3195,22 @@ def _prepare_effort_stage_input(
                         ),
                         "feedback": feedback,
                         "feedback_sha256": failing_playtested.feedback_sha256,
+                        "revision_input_sha256": (
+                            failing_playtested.playtested_sha256
+                        ),
                     }
                 )
+                subject_inputs["revision_input_sha256"] = (
+                    failing_playtested.playtested_sha256
+                )
+                context["revision_input_sha256"] = (
+                    failing_playtested.playtested_sha256
+                )
+        if invent_proposal_rejection is not None:
+            subject_inputs["host_invent_proposal_rejection_sha256"] = (
+                invent_proposal_rejection["rejection_sha256"]
+            )
+            inputs["host_invent_proposal_rejection"] = invent_proposal_rejection
         subject = _stage_subject("invent", subject_inputs)
         context.update(
             {
@@ -2964,6 +3281,40 @@ def _prepare_effort_stage_input(
                     "taste_sha256": assignment.selected_taste_sha256,
                 },
             }
+            if _checkpoint_uses_invent_concept(checkpoint):
+                (
+                    sealed_concept,
+                    concept_effect,
+                    sealed_artifact,
+                    effect_artifact,
+                ) = _accepted_invent_concept(run, checkpoint)
+                common.update(
+                    {
+                        "invent_concept_capability": {
+                            "path": INVENT_CONCEPT_CAPABILITY_PATH,
+                            "sha256": checkpoint.input_sha256s[
+                                INVENT_CONCEPT_CAPABILITY_PATH
+                            ],
+                        },
+                        "sealed_concept": sealed_concept.to_dict(),
+                        "sealed_concept_artifact": _artifact_binding(
+                            sealed_artifact
+                        ),
+                        "concept_effect": concept_effect.to_dict(),
+                        "concept_effect_artifact": _artifact_binding(
+                            effect_artifact
+                        ),
+                    }
+                )
+                context.update(
+                    {
+                        "invent_concept": True,
+                        "sealed_concept": sealed_concept,
+                        "sealed_concept_artifact": sealed_artifact,
+                        "concept_effect": concept_effect,
+                        "concept_effect_artifact": effect_artifact,
+                    }
+                )
         feedback_artifact: Optional[AgentArtifact] = None
         prior = checkpoint.stage_artifacts.get("playtest")
         if prior and "playtest" in checkpoint.invalidated_stages:
@@ -2989,6 +3340,26 @@ def _prepare_effort_stage_input(
                 else None
             ),
         }
+        if context.get("invent_concept") is True:
+            subject_inputs.update(
+                {
+                    "invent_concept_capability_sha256": checkpoint.input_sha256s[
+                        INVENT_CONCEPT_CAPABILITY_PATH
+                    ],
+                    "sealed_concept_sha256": context[
+                        "sealed_concept"
+                    ].concept_sha256,
+                    "sealed_concept_artifact_sha256": context[
+                        "sealed_concept_artifact"
+                    ].sha256,
+                    "concept_effect_sha256": context[
+                        "concept_effect"
+                    ].concept_effect_sha256,
+                    "concept_effect_artifact_sha256": context[
+                        "concept_effect_artifact"
+                    ].sha256,
+                }
+            )
         make_invent_revision_allowed = _checkpoint_allows_make_invent_revision(
             checkpoint
         )
@@ -3054,9 +3425,32 @@ def _prepare_effort_stage_input(
             NativeMade,
             label="routed native Made contract",
         )
-        made.assert_context(
-            assignment, invented, expected_round=checkpoint.round_index
-        )
+        if _checkpoint_uses_invent_concept(checkpoint):
+            sealed_concept, concept_effect, sealed_artifact, effect_artifact = (
+                _accepted_invent_concept(run, checkpoint)
+            )
+            made.assert_context(
+                assignment,
+                invented,
+                expected_round=checkpoint.round_index,
+                expected_concept_sha256=sealed_concept.concept_sha256,
+                expected_concept_effect_sha256=(
+                    concept_effect.concept_effect_sha256
+                ),
+            )
+            context.update(
+                {
+                    "invent_concept": True,
+                    "sealed_concept": sealed_concept,
+                    "concept_effect": concept_effect,
+                    "sealed_concept_artifact": sealed_artifact,
+                    "concept_effect_artifact": effect_artifact,
+                }
+            )
+        else:
+            made.assert_context(
+                assignment, invented, expected_round=checkpoint.round_index
+            )
         context.update(
             {
                 "assignment": assignment,
@@ -3254,11 +3648,15 @@ def _prepare_stage_input(
     playtest_proposal_rejection = _read_playtest_proposal_rejection(
         run, checkpoint
     )
+    invent_proposal_rejection = _read_invent_proposal_rejection(
+        run, checkpoint
+    )
     if _checkpoint_effort(checkpoint) is not None:
         return _prepare_effort_stage_input(
             run,
             checkpoint,
             roster=roster,
+            invent_proposal_rejection=invent_proposal_rejection,
             cad_gate_rejection=cad_gate_rejection,
             make_proposal_rejection=make_proposal_rejection,
             playtest_proposal_rejection=playtest_proposal_rejection,
@@ -4795,10 +5193,12 @@ def _record_authorization(
     publish_requested: bool,
     create: bool,
     github_publish_requested: bool = False,
+    concept_render_authority: Optional[Mapping[str, Any]] = None,
 ) -> Mapping[str, Any]:
     path = _authorization_path(paths)
     current = False
     current_github = False
+    current_concept: Optional[Mapping[str, Any]] = None
     if path.exists() or path.is_symlink():
         try:
             identity = path.lstat()
@@ -4819,16 +5219,18 @@ def _record_authorization(
             "publish_requested",
         }
         current_expected = legacy_expected | {"github_publish_requested"}
+        concept_expected = current_expected | {"concept_render_authority"}
         if (
-            set(value) not in (legacy_expected, current_expected)
-            or value["schema_version"] not in (1, 2)
+            set(value) not in (legacy_expected, current_expected, concept_expected)
+            or value["schema_version"] not in (1, 2, 3)
             or (value["schema_version"] == 1 and set(value) != legacy_expected)
             or (value["schema_version"] == 2 and set(value) != current_expected)
+            or (value["schema_version"] == 3 and set(value) != concept_expected)
             or value["kind"] != _AUTHORIZATION_KIND
             or value["product_id"] != product_id
             or type(value["publish_requested"]) is not bool
             or (
-                value["schema_version"] == 2
+                value["schema_version"] in (2, 3)
                 and type(value["github_publish_requested"]) is not bool
             )
         ):
@@ -4836,24 +5238,63 @@ def _record_authorization(
         current = value["publish_requested"]
         current_github = (
             value["github_publish_requested"]
-            if value["schema_version"] == 2
+            if value["schema_version"] in (2, 3)
             else False
         )
+        if value["schema_version"] == 3:
+            candidate = value["concept_render_authority"]
+            if candidate is not None and (
+                not isinstance(candidate, Mapping)
+                or set(candidate) != {
+                    "profile_id", "profile_sha256", "transmitted_data_classes"
+                }
+                or not isinstance(candidate["profile_id"], str)
+                or re.fullmatch(r"[0-9a-f]{64}", candidate["profile_sha256"]) is None
+                or candidate["transmitted_data_classes"]
+                != ["drawing-instruction-text", "exact-prior-role-images"]
+            ):
+                raise StateConflict("run Concept-render authorization is invalid")
+            current_concept = None if candidate is None else dict(candidate)
     elif not create:
         raise StateConflict("run authorization is missing")
+    if concept_render_authority is not None and (
+        not isinstance(concept_render_authority, Mapping)
+        or set(concept_render_authority) != {
+            "profile_id", "profile_sha256", "transmitted_data_classes"
+        }
+        or not isinstance(concept_render_authority["profile_id"], str)
+        or not concept_render_authority["profile_id"]
+        or re.fullmatch(
+            r"[0-9a-f]{64}", concept_render_authority["profile_sha256"]
+        )
+        is None
+        or concept_render_authority["transmitted_data_classes"]
+        != ["drawing-instruction-text", "exact-prior-role-images"]
+    ):
+        raise ContractError("Concept-render authorization is invalid")
     value = {
-        "schema_version": 2,
+        "schema_version": 3,
         "kind": _AUTHORIZATION_KIND,
         "product_id": product_id,
         "publish_requested": bool(current or publish_requested),
         "github_publish_requested": bool(
             current_github or github_publish_requested
         ),
+        "concept_render_authority": (
+            dict(current_concept)
+            if current_concept is not None
+            else (
+                dict(concept_render_authority)
+                if concept_render_authority is not None
+                else None
+            )
+        ),
     }
     if (
         create
         or value["publish_requested"] != current
         or value["github_publish_requested"] != current_github
+        or value["concept_render_authority"] != current_concept
     ):
         _write_private_json(path, value)
     return value
@@ -4946,6 +5387,16 @@ def _evaluate_make_invent_revision_stage(
         context["assignment"],
         context["invented"],
         expected_round=checkpoint.round_index,
+        expected_concept_sha256=(
+            context["sealed_concept"].concept_sha256
+            if context.get("invent_concept") is True
+            else None
+        ),
+        expected_concept_effect_sha256=(
+            context["concept_effect"].concept_effect_sha256
+            if context.get("invent_concept") is True
+            else None
+        ),
     )
     canonical = request.validate_evidence_tree(run.run_root)
     additional = _manifest_agent_artifacts(
@@ -5040,10 +5491,53 @@ def _evaluate_make_stage(
         made = _read_contract(
             run.run_root, artifact, NativeMade, label="native Made contract"
         )
-        made.assert_context(
-            assignment, invented, expected_round=checkpoint.round_index
-        )
+        if context.get("invent_concept") is True:
+            sealed_concept = context["sealed_concept"]
+            concept_effect = context["concept_effect"]
+            made.assert_context(
+                assignment,
+                invented,
+                expected_round=checkpoint.round_index,
+                expected_concept_sha256=sealed_concept.concept_sha256,
+                expected_concept_effect_sha256=(
+                    concept_effect.concept_effect_sha256
+                ),
+            )
+        else:
+            made.assert_context(
+                assignment, invented, expected_round=checkpoint.round_index
+            )
         canonical = made.validate_product_tree(run.run_root)
+        if context.get("invent_concept") is True:
+            concept_keys = tuple(
+                component["key"]
+                for component in context["sealed_concept"].brief["components"]
+            )
+            product_keys_value = made.product.get("components")
+            product_keys = (
+                tuple(product_keys_value)
+                if isinstance(product_keys_value, (tuple, list))
+                else ()
+            )
+            if (
+                len(product_keys) != len(set(product_keys))
+                or set(product_keys) != set(concept_keys)
+                or len(product_keys) != len(concept_keys)
+            ):
+                raise ContractError(
+                    "Make product component keys differ from the Concept brief"
+                )
+            concept_image_hashes = {
+                entry.sha256
+                for entry in context["sealed_concept"].image_manifest.entries
+            }
+            if any(
+                entry.sha256 in concept_image_hashes
+                for entry in canonical.artifact_manifest.entries
+            ):
+                raise ContractError(
+                    "Make product contains copied sealed Concept image pixels"
+                )
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -5084,6 +5578,14 @@ def _evaluate_make_stage(
             "product_artifact_sha256": canonical.artifact_sha256,
             "product_tree_rehashed": True,
             "upstream_bindings_valid": True,
+            "concept_sha256": (
+                made.concept_sha256 if made.schema_version == 2 else None
+            ),
+            "concept_effect_sha256": (
+                made.concept_effect_sha256 if made.schema_version == 2 else None
+            ),
+            "concept_component_keys_match": made.schema_version == 2,
+            "concept_pixels_excluded": made.schema_version == 2,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verifier_sha256": cad_evidence.verifier_sha256,
             "cad_verifier_mode": cad_evidence.verifier_mode,
@@ -5794,6 +6296,110 @@ def _release_effect_path(run: AgentRun) -> Path:
     return run.host_state_root / "release-effect.json"
 
 
+def _invent_effect_wait_path(run: AgentRun) -> Path:
+    return run.host_state_root / _INVENT_EFFECT_WAIT_NAME
+
+
+def _write_invent_effect_wait(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    proposal: AgentOutcomeProposal,
+    pre_render_artifact_sha256: str,
+    need: str,
+    effect_checkpoint_sha256: Optional[str] = None,
+) -> None:
+    if checkpoint.stage != "invent" or checkpoint.status != "waiting" or need not in (
+        _CONCEPT_IMAGE_CREDENTIALS_NEED,
+        _CONCEPT_IMAGE_EFFECT_NEED,
+    ):
+        raise TransitionError("Invent effect wait requires a waiting Invent")
+    _write_private_json(
+        _invent_effect_wait_path(run),
+        {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.invent-effect-wait",
+            "product_id": checkpoint.product_id,
+            "stage": "invent",
+            "waiting_checkpoint_sha256": checkpoint.checkpoint_sha256,
+            "proposal_checkpoint_sha256": proposal.checkpoint_sha256,
+            "effect_checkpoint_sha256": (
+                proposal.checkpoint_sha256
+                if effect_checkpoint_sha256 is None
+                else effect_checkpoint_sha256
+            ),
+            "proposal_subject_sha256": proposal.subject_sha256,
+            "proposal_outcome_sha256": proposal.outcome.sha256,
+            "pre_render_artifact_sha256": pre_render_artifact_sha256,
+            "outcome": proposal.outcome.to_dict(),
+            "need": need,
+        },
+    )
+
+
+def _read_invent_effect_wait(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> Optional[Mapping[str, Any]]:
+    path = _invent_effect_wait_path(run)
+    if not path.exists() and not path.is_symlink():
+        return None
+    try:
+        identity = path.lstat()
+        content = path.read_bytes()
+    except OSError as exc:
+        raise StateConflict("Invent effect wait is unavailable") from exc
+    if path.is_symlink() or not stat.S_ISREG(identity.st_mode) or stat.S_IMODE(identity.st_mode) != 0o600:
+        raise StateConflict("Invent effect wait must be a private file")
+    try:
+        value = _strict_json_bytes(content, label="Invent effect wait")
+        pending = AgentOutcome.from_mapping(value["outcome"])
+    except (ContractError, KeyError) as exc:
+        raise StateConflict("Invent effect wait is invalid") from exc
+    expected = {
+        "schema_version", "kind", "product_id", "stage", "waiting_checkpoint_sha256",
+        "proposal_checkpoint_sha256", "proposal_subject_sha256", "proposal_outcome_sha256",
+        "effect_checkpoint_sha256", "pre_render_artifact_sha256", "outcome", "need",
+    }
+    hash_fields = (
+        "waiting_checkpoint_sha256", "proposal_checkpoint_sha256",
+        "effect_checkpoint_sha256", "proposal_subject_sha256", "proposal_outcome_sha256",
+        "pre_render_artifact_sha256",
+    )
+    if (
+        set(value) != expected
+        or value["schema_version"] != 1
+        or value["kind"] != "autonomous-workshop.invent-effect-wait"
+        or value["product_id"] != checkpoint.product_id
+        or value["stage"] != checkpoint.stage
+        or checkpoint.stage != "invent"
+        or checkpoint.status != "waiting"
+        or value["waiting_checkpoint_sha256"] != checkpoint.checkpoint_sha256
+        or value["need"] not in (_CONCEPT_IMAGE_CREDENTIALS_NEED, _CONCEPT_IMAGE_EFFECT_NEED)
+        or any(not isinstance(value[name], str) or re.fullmatch(r"[0-9a-f]{64}", value[name]) is None for name in hash_fields)
+        or pending.stage != "invent"
+        or pending.status != "ready"
+        or pending.sha256 != value["proposal_outcome_sha256"]
+    ):
+        raise StateConflict("Invent effect wait belongs to different state")
+    pre_render = tuple(
+        item for item in pending.artifacts
+        if PurePosixPath(item.path).name == "pre-render.json"
+    )
+    if len(pre_render) != 1 or pre_render[0].sha256 != value["pre_render_artifact_sha256"]:
+        raise StateConflict("Invent effect wait pre-render binding is invalid")
+    return value
+
+
+def _remove_invent_effect_wait(run: AgentRun) -> None:
+    path = _invent_effect_wait_path(run)
+    if not path.exists() and not path.is_symlink():
+        return
+    identity = path.lstat()
+    if path.is_symlink() or not stat.S_ISREG(identity.st_mode):
+        raise StateConflict("Invent effect wait must be a regular file")
+    path.unlink()
+
+
 def _release_effect_wait_path(run: AgentRun) -> Path:
     return run.host_state_root / _RELEASE_EFFECT_WAIT_NAME
 
@@ -6230,7 +6836,22 @@ def _existing_release_for_promotion(
         NativeMade,
         label="native Made contract",
     )
-    made.assert_context(assignment, invented, expected_round=checkpoint.round_index)
+    if _checkpoint_uses_invent_concept(checkpoint):
+        sealed_concept, concept_effect, unused_sealed, unused_effect = (
+            _accepted_invent_concept(run, checkpoint)
+        )
+        del unused_sealed, unused_effect
+        made.assert_context(
+            assignment,
+            invented,
+            expected_round=checkpoint.round_index,
+            expected_concept_sha256=sealed_concept.concept_sha256,
+            expected_concept_effect_sha256=concept_effect.concept_effect_sha256,
+        )
+    else:
+        made.assert_context(
+            assignment, invented, expected_round=checkpoint.round_index
+        )
     blueprint = ToyBlueprint()
     playtested: Optional[NativePlaytested]
     if direct_release:
@@ -6512,6 +7133,426 @@ def _evaluate_release_stage(
     )
 
 
+class _ConceptImageCredentialsUnavailable(WorkshopError):
+    pass
+
+
+class _ConceptImageEffectUnavailable(WorkshopError):
+    pass
+
+
+def _concept_effect_ledger(run: AgentRun) -> ConceptEffectLedger:
+    return ConceptEffectLedger(run.host_state_root / "concept-effects.sqlite3")
+
+
+def _read_pre_render_from_proposal(
+    run: AgentRun,
+    proposal: AgentOutcomeProposal,
+    context: Mapping[str, Any],
+) -> tuple[PreRenderConcept, AgentArtifact]:
+    path = context["concept_pre_render_path"]
+    matches = tuple(item for item in proposal.outcome.artifacts if item.path == path)
+    if len(matches) != 1:
+        raise ContractError("marked Invent proposal lacks its exact pre-render Concept")
+    artifact = matches[0]
+    document, content = read_bounded_json_artifact(
+        run.run_root, artifact.path, label="pending pre-render Concept"
+    )
+    if _sha256(content) != artifact.sha256:
+        raise StateConflict("pending pre-render Concept differs from its artifact binding")
+    concept = PreRenderConcept.from_mapping(
+        document, root=run.run_root / context["concept_root"]
+    )
+    concept.validate_tree()
+    return concept, artifact
+
+
+def _concept_role_plan(concept: PreRenderConcept) -> tuple[tuple[str, str, str, tuple[str, ...]], ...]:
+    prompts = concept.drawing_instructions
+    descriptor = concept.descriptor
+    plan: list[tuple[str, str, str, tuple[str, ...]]] = []
+    for role in ("front", "top", "bottom", "exploded"):
+        prompt = prompts[role]
+        plan.append(
+            (
+                role,
+                prompt["instruction"],
+                descriptor[role]["path"],
+                tuple(prompt["references"]),
+            )
+        )
+    components = concept.brief["components"]
+    for component in components:
+        key = component["key"]
+        prompt = prompts["components"][key]
+        plan.append(
+            (
+                "components.%s" % key,
+                prompt["instruction"],
+                descriptor["components"][key]["path"],
+                tuple(prompt["references"]),
+            )
+        )
+    if len({item[0] for item in plan}) != len(plan) or len({item[2] for item in plan}) != len(plan):
+        raise ContractError("Concept role plan contains duplicate roles or paths")
+    return tuple(plan)
+
+
+def _read_installed_concept_image(concept: PreRenderConcept, relative: str) -> bytes:
+    path = concept.root / PurePosixPath(relative)
+    try:
+        before = path.lstat()
+        if path.is_symlink() or not stat.S_ISREG(before.st_mode):
+            raise ArtifactError("installed Concept image must be a regular file")
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise ArtifactError("installed Concept image is unavailable") from exc
+    if (
+        (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+        or len(content) != before.st_size
+    ):
+        raise ArtifactError("installed Concept image changed while reading")
+    sniff_image(content)
+    return content
+
+
+def _install_concept_image(concept: PreRenderConcept, relative: str, content: bytes) -> None:
+    suffix_media = {
+        ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"
+    }
+    relative_path = PurePosixPath(relative)
+    media_type = sniff_image(content)
+    if suffix_media.get(relative_path.suffix.casefold()) != media_type:
+        raise ArtifactError("Concept image bytes differ from the descriptor suffix")
+    root = concept.root.resolve(strict=True)
+    parent = root
+    for part in relative_path.parts[:-1]:
+        parent = parent / part
+        try:
+            parent.mkdir(mode=0o700)
+        except FileExistsError:
+            pass
+        identity = parent.lstat()
+        if parent.is_symlink() or not stat.S_ISDIR(identity.st_mode) or parent.resolve(strict=True) != parent:
+            raise ArtifactError("Concept image output parent is unsafe")
+    destination = root / relative_path
+    if destination.exists() or destination.is_symlink():
+        observed = _read_installed_concept_image(concept, relative)
+        if observed != content:
+            raise StateConflict("Concept image output conflicts with existing bytes")
+        return
+    _atomic_private_write(destination, content, mode=0o600)
+    if _read_installed_concept_image(concept, relative) != content:
+        raise StateConflict("installed Concept image differs from provider bytes")
+
+
+def _assert_complete_concept_effect_tree(
+    concept: PreRenderConcept, image_paths: Sequence[str]
+) -> None:
+    expected_files = set(SOURCE_PATHS) | set(image_paths)
+    expected_directories = {
+        PurePosixPath(path).parents[index].as_posix()
+        for path in image_paths
+        for index in range(len(PurePosixPath(path).parents) - 1)
+        if PurePosixPath(path).parents[index].as_posix() != "."
+    }
+    observed_files: set[str] = set()
+    observed_directories: set[str] = set()
+    for path in concept.root.rglob("*"):
+        relative = path.relative_to(concept.root).as_posix()
+        identity = path.lstat()
+        if path.is_symlink():
+            raise ArtifactError("Concept effect tree must not contain links")
+        if stat.S_ISREG(identity.st_mode):
+            observed_files.add(relative)
+        elif stat.S_ISDIR(identity.st_mode):
+            observed_directories.add(relative)
+        else:
+            raise ArtifactError("Concept effect tree contains a special node")
+    if observed_files != expected_files or observed_directories != expected_directories:
+        raise ArtifactError("Concept effect tree contains missing or unexpected paths")
+
+
+def _complete_marked_invent_effect(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    proposal: AgentOutcomeProposal,
+    context: Mapping[str, Any],
+    pre_effect_decision: StageGateDecision,
+) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
+    concept, pre_render_artifact = _read_pre_render_from_proposal(run, proposal, context)
+    authorization = _record_authorization(
+        NativeRunPaths(run.run_root, run.host_state_root),
+        product_id=checkpoint.product_id,
+        publish_requested=False,
+        create=False,
+    )
+    authority = authorization.get("concept_render_authority")
+    if not isinstance(authority, Mapping):
+        raise StateConflict("marked Invent lacks disclosed Concept-render authority")
+    try:
+        client = load_concept_image_credentials(transport=_CONCEPT_IMAGE_TRANSPORT)
+    except (ContractError, OSError, ValueError) as exc:
+        raise _ConceptImageCredentialsUnavailable() from exc
+    if (
+        client.profile.profile_id != authority.get("profile_id")
+        or client.profile.profile_sha256 != authority.get("profile_sha256")
+    ):
+        raise _ConceptImageCredentialsUnavailable()
+    plan = _concept_role_plan(concept)
+    ledger = _concept_effect_ledger(run)
+    aggregate_id = ledger.prepare_aggregate(
+        product_id=checkpoint.product_id,
+        checkpoint_sha256=context.get(
+            "concept_effect_checkpoint_sha256", checkpoint.checkpoint_sha256
+        ),
+        subject_sha256=proposal.subject_sha256,
+        pre_render_sha256=concept.concept_sha256,
+        source_manifest_sha256=concept.source_manifest.artifact_sha256,
+        required_roles=[item[0] for item in plan],
+    )
+    completed: dict[str, tuple[str, str, str]] = {}
+    for role, instruction, output_path, reference_roles in plan:
+        references: list[ConceptImageReference] = []
+        reference_bindings: list[dict[str, str]] = []
+        for reference_role in reference_roles:
+            if reference_role not in completed:
+                raise StateConflict("Concept role references an incomplete prior role")
+            reference_path, reference_sha256, reference_media = completed[reference_role]
+            reference_content = _read_installed_concept_image(concept, reference_path)
+            if _sha256(reference_content) != reference_sha256:
+                raise StateConflict("Concept reference image changed after completion")
+            references.append(
+                ConceptImageReference(reference_role, reference_sha256, reference_media, reference_content)
+            )
+            reference_bindings.append({"role": reference_role, "sha256": reference_sha256})
+        identity = {
+            "product_id": checkpoint.product_id,
+            "checkpoint_sha256": context.get(
+                "concept_effect_checkpoint_sha256", checkpoint.checkpoint_sha256
+            ),
+            "subject_sha256": proposal.subject_sha256,
+            "pre_render_sha256": concept.concept_sha256,
+            "source_manifest_sha256": concept.source_manifest.artifact_sha256,
+            "role": role,
+            "output_path": output_path,
+            "instruction_sha256": _sha256(_canonical_json_bytes(instruction)),
+            "references": reference_bindings,
+            "profile_id": client.profile.profile_id,
+            "profile_sha256": client.profile.profile_sha256,
+            "model": client.profile.model,
+            "request_schema_version": client.profile.request_schema_version,
+        }
+        operation = ledger.prepare_role(aggregate_id=aggregate_id, identity=identity)
+        if operation.state == "sending":
+            operation = ledger.finish(
+                operation.intent_id,
+                operation.effect_token or "",
+                state="unknown",
+                error_code="interrupted-after-transmission",
+            )
+        if operation.state == "unknown":
+            prior_response = operation.response or {}
+            provider_operation_id = prior_response.get("provider_operation_id")
+            if not isinstance(provider_operation_id, str):
+                raise _ConceptImageEffectUnavailable()
+            try:
+                reconciled = client.reconcile(provider_operation_id)
+            except ConceptImageRejected:
+                raise _ConceptImageEffectUnavailable()
+            if reconciled.status == "succeeded":
+                response = reconciled.response
+                if response is None:  # guarded by the integration contract
+                    raise StateConflict("Concept reconciliation lacks image bytes")
+                _install_concept_image(concept, output_path, response.content)
+                image_sha256 = _sha256(response.content)
+                operation = ledger.reconcile_unknown(
+                    operation.intent_id,
+                    provider_operation_id,
+                    state="succeeded",
+                    response={
+                        "image_sha256": image_sha256,
+                        "media_type": response.media_type,
+                        "output_path": output_path,
+                        "provider_operation_id": provider_operation_id,
+                        "metadata": dict(response.metadata),
+                    },
+                )
+            elif (
+                reconciled.status == "absent"
+                and client.profile.supports_absence_proof
+                and client.profile.supports_idempotency
+            ):
+                operation = ledger.reconcile_unknown(
+                    operation.intent_id,
+                    provider_operation_id,
+                    state="planned",
+                    error_code="authenticated-absence",
+                )
+            else:
+                raise _ConceptImageEffectUnavailable()
+        if operation.state == "rejected":
+            operation = ledger.retry_rejected(operation.intent_id)
+        if operation.state == "rejected":
+            raise _ConceptImageEffectUnavailable()
+        if operation.state == "succeeded":
+            response = operation.response or {}
+            image_sha256 = response.get("image_sha256")
+            media_type = response.get("media_type")
+            if not isinstance(image_sha256, str) or not isinstance(media_type, str):
+                raise StateConflict("Concept effect receipt is incomplete")
+            installed = _read_installed_concept_image(concept, output_path)
+            if _sha256(installed) != image_sha256 or sniff_image(installed) != media_type:
+                raise StateConflict("Concept effect receipt differs from installed bytes")
+            completed[role] = (output_path, image_sha256, media_type)
+            continue
+        sending = ledger.begin(operation.intent_id)
+        request = ConceptImageRequest(
+            role=role,
+            instruction=instruction,
+            output_path=output_path,
+            idempotency_key=operation.intent_id,
+            references=tuple(references),
+        )
+        try:
+            response = client.render(request)
+            _install_concept_image(concept, output_path, response.content)
+            image_sha256 = _sha256(response.content)
+            operation = ledger.finish(
+                sending.intent_id,
+                sending.effect_token or "",
+                state="succeeded",
+                response={
+                    "image_sha256": image_sha256,
+                    "media_type": response.media_type,
+                    "output_path": output_path,
+                    "provider_operation_id": response.provider_operation_id,
+                    "metadata": dict(response.metadata),
+                },
+            )
+        except ConceptImagePreTransmissionError:
+            ledger.finish(
+                sending.intent_id,
+                sending.effect_token or "",
+                state="rejected",
+                error_code="pre-transmission",
+            )
+            raise _ConceptImageEffectUnavailable()
+        except ConceptImageRejected:
+            ledger.finish(
+                sending.intent_id,
+                sending.effect_token or "",
+                state="rejected",
+                error_code="provider-rejected",
+            )
+            raise _ConceptImageEffectUnavailable()
+        except ConceptImageAmbiguous as ambiguous:
+            ledger.finish(
+                sending.intent_id,
+                sending.effect_token or "",
+                state="unknown",
+                response={"provider_operation_id": ambiguous.provider_operation_id},
+                error_code="ambiguous-after-transmission",
+            )
+            raise _ConceptImageEffectUnavailable()
+        completed[role] = (output_path, image_sha256, response.media_type)
+    ledger.mark_aggregate_succeeded(
+        aggregate_id, observed={role: values[1] for role, values in completed.items()}
+    )
+    _assert_complete_concept_effect_tree(
+        concept, [values[0] for values in completed.values()]
+    )
+    sealed = seal_pre_render_concept(concept)
+    sealed_path = context["concept_sealed_path"]
+    sealed_bytes = _canonical_json_bytes(sealed.to_dict())
+    _atomic_private_write(run.run_root / sealed_path, sealed_bytes, mode=0o600)
+    roles = [
+        {
+            "role": role,
+            "path": values[0],
+            "intent_sha256": next(
+                item.evidence_intent_sha256
+                for item in ledger.roles(aggregate_id)
+                if item.role == role
+            ),
+            "image_sha256": values[1],
+            "media_type": values[2],
+        }
+        for role, values in completed.items()
+    ]
+    effect_contract = ConceptEffectEvidence.from_mapping(
+        {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.concept-image-effect",
+            "pre_render_concept_sha256": concept.concept_sha256,
+            "sealed_concept_sha256": sealed.concept_sha256,
+            "profile_id": client.profile.profile_id,
+            "profile_sha256": client.profile.profile_sha256,
+            "roles": roles,
+            "concept_effect_sha256": _sha256(
+                _canonical_json_bytes(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.concept-image-effect",
+                        "pre_render_concept_sha256": concept.concept_sha256,
+                        "sealed_concept_sha256": sealed.concept_sha256,
+                        "profile_id": client.profile.profile_id,
+                        "profile_sha256": client.profile.profile_sha256,
+                        "roles": roles,
+                    }
+                )
+            ),
+        }
+    )
+    effect = effect_contract.to_dict()
+    effect_path = context["concept_effect_path"]
+    effect_bytes = _canonical_json_bytes(effect)
+    _atomic_private_write(run.run_root / effect_path, effect_bytes, mode=0o600)
+    # Reopen every host-created byte before it can support the gate.
+    sealed_document, observed_sealed = read_bounded_json_artifact(run.run_root, sealed_path, label="sealed Concept")
+    observed_contract = SealedConcept.from_mapping(sealed_document, root=concept.root)
+    observed_contract.validate_tree()
+    if observed_sealed != sealed_bytes or observed_contract.to_dict() != sealed.to_dict():
+        raise StateConflict("sealed Concept changed before the Invent gate")
+    effect_document, observed_effect = read_bounded_json_artifact(run.run_root, effect_path, label="Concept effect evidence")
+    if observed_effect != effect_bytes or effect_document != effect:
+        raise StateConflict("Concept effect evidence changed before the Invent gate")
+    image_artifacts = tuple(
+        AgentArtifact(
+            "%s/%s" % (context["concept_root"], values[0]), values[1]
+        )
+        for values in completed.values()
+    )
+    additional = (
+        AgentArtifact(sealed_path, _sha256(sealed_bytes)),
+        AgentArtifact(effect_path, _sha256(effect_bytes)),
+        *image_artifacts,
+    )
+    checks = {
+        **pre_effect_decision.evidence.to_dict()["checks"],
+        "sealed_concept_sha256": sealed.concept_sha256,
+        "concept_effect_sha256": effect["concept_effect_sha256"],
+        "concept_effect_artifact_sha256": _sha256(effect_bytes),
+        "concept_role_count": len(roles),
+        "concept_images_rehashed": True,
+    }
+    evidence = StageGateEvidence(
+        stage="invent",
+        gate_id="invent.routed-sealed-concept-v1",
+        validator_version="1.0.0",
+        passed=True,
+        checkpoint_sha256=checkpoint.checkpoint_sha256,
+        subject_sha256=proposal.subject_sha256,
+        outcome_sha256=proposal.outcome.sha256,
+        artifact_path=pre_effect_decision.evidence.artifact_path,
+        artifact_sha256=pre_effect_decision.evidence.artifact_sha256,
+        checks=checks,
+    )
+    return StageGateDecision(evidence=evidence, transition="make"), additional
+
+
 def _persist_gate_decision(
     run: AgentRun, checkpoint: AgentRunCheckpoint, decision: StageGateDecision
 ) -> None:
@@ -6580,7 +7621,7 @@ def _process_agent_outcome_inner(
             proposal.checkpoint_sha256 != checkpoint.checkpoint_sha256
             or proposal.subject_sha256 != subject_sha256
         ):
-            raise StateConflict("pending Release proposal belongs to different state")
+            raise StateConflict("pending stage proposal belongs to different state")
     run.validate_outcome(proposal.outcome)
     if proposal.outcome.status != "ready":
         updated = run.apply_outcome(proposal.outcome)
@@ -6610,18 +7651,76 @@ def _process_agent_outcome_inner(
             operation="gate.evaluate",
         ):
             if context.get("routed_invent") is True:
-                decision = evaluate_routed_invent_stage(
-                    proposal,
-                    run_root=run.run_root,
-                    expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
-                    expected_subject_sha256=subject_sha256,
-                    wish_sha256=checkpoint.wish_sha256,
-                    roster=context["roster"],
-                    assignment_artifact_path=context[
-                        "assignment_contract_path"
-                    ],
-                    invented_artifact_path=context["invent_contract_path"],
-                )
+                try:
+                    decision = evaluate_routed_invent_stage(
+                        proposal,
+                        run_root=run.run_root,
+                        expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+                        expected_subject_sha256=subject_sha256,
+                        wish_sha256=checkpoint.wish_sha256,
+                        roster=context["roster"],
+                        assignment_artifact_path=context[
+                            "assignment_contract_path"
+                        ],
+                        invented_artifact_path=context["invent_contract_path"],
+                        concept_context=(
+                            context if context.get("invent_concept") is True else None
+                        ),
+                    )
+                except (ArtifactError, ContractError) as error:
+                    if isinstance(error, StateConflict) or context.get("invent_concept") is not True:
+                        raise
+                    _persist_invent_proposal_rejection(
+                        run, checkpoint, proposal, error
+                    )
+                    _remove_agent_outcome(run.run_root)
+                    return checkpoint
+                if context.get("invent_concept") is True:
+                    try:
+                        decision, additional = _complete_marked_invent_effect(
+                            run, checkpoint, proposal, context, decision
+                        )
+                    except (
+                        _ConceptImageCredentialsUnavailable,
+                        _ConceptImageEffectUnavailable,
+                    ) as unavailable:
+                        need = (
+                            _CONCEPT_IMAGE_CREDENTIALS_NEED
+                            if isinstance(
+                                unavailable, _ConceptImageCredentialsUnavailable
+                            )
+                            else _CONCEPT_IMAGE_EFFECT_NEED
+                        )
+                        waiting = AgentOutcome(
+                            stage="invent",
+                            status="waiting",
+                            artifacts=proposal.outcome.artifacts,
+                            needs=(need,),
+                        )
+                        updated = run.apply_outcome(waiting)
+                        _remove_agent_outcome(run.run_root)
+                        pre_render_artifacts = tuple(
+                            item
+                            for item in proposal.outcome.artifacts
+                            if item.path == context["concept_pre_render_path"]
+                        )
+                        if len(pre_render_artifacts) != 1:
+                            raise StateConflict(
+                                "pending Invent effect lacks its pre-render artifact"
+                            )
+                        _write_invent_effect_wait(
+                            run,
+                            updated,
+                            proposal=proposal,
+                            pre_render_artifact_sha256=(
+                                pre_render_artifacts[0].sha256
+                            ),
+                            need=need,
+                            effect_checkpoint_sha256=context.get(
+                                "concept_effect_checkpoint_sha256"
+                            ),
+                        )
+                        return updated
             else:
                 decision = evaluate_invent_stage(
                     proposal,
@@ -7530,6 +8629,19 @@ def start_native_run(
             product_id=wish.product_id,
             publish_requested=True,
             github_publish_requested=github_publish_requested,
+            concept_render_authority=(
+                {
+                    "profile_id": ConceptImageProfile().profile_id,
+                    "profile_sha256": ConceptImageProfile().profile_sha256,
+                    "transmitted_data_classes": [
+                        "drawing-instruction-text",
+                        "exact-prior-role-images",
+                    ],
+                }
+                if selected_effort is not None
+                and selected_effort.name in ("forge", "quest")
+                else None
+            ),
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
@@ -7626,6 +8738,53 @@ def _resume_native_run_locked(
             )
     if checkpoint.status == "waiting":
         waiting_checkpoint = checkpoint
+        invent_effect_wait = _read_invent_effect_wait(run, checkpoint)
+        if invent_effect_wait is not None:
+            pending_outcome = AgentOutcome.from_mapping(invent_effect_wait["outcome"])
+            checkpoint = run.resume()
+            _rebind_existing_progress(paths, waiting_checkpoint, checkpoint)
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="stage.prepare",
+            ):
+                subject, unused_packet, prepared_context = _prepare_stage_input(
+                    run, checkpoint
+                )
+            del unused_packet
+            if subject != invent_effect_wait["proposal_subject_sha256"]:
+                raise StateConflict(
+                    "pending Invent proposal subject changed while waiting"
+                )
+            context = dict(prepared_context)
+            context["concept_effect_checkpoint_sha256"] = invent_effect_wait[
+                "effect_checkpoint_sha256"
+            ]
+            proposal = AgentOutcomeProposal(
+                checkpoint_sha256=checkpoint.checkpoint_sha256,
+                subject_sha256=subject,
+                outcome=pending_outcome,
+            )
+            _remove_invent_effect_wait(run)
+            updated = _process_agent_outcome(
+                run,
+                checkpoint,
+                subject_sha256=subject,
+                context=context,
+                pending_proposal=proposal,
+                timing_observer=timing_observer,
+            )
+            _rebind_existing_progress(paths, checkpoint, updated, activity="completed")
+            return _native_receipt(
+                updated,
+                paths=paths,
+                action=(
+                    "concept-images-pending"
+                    if updated.status == "waiting"
+                    else "invent-concept-sealed"
+                ),
+            )
         effect_wait = _read_release_effect_wait(run, checkpoint)
         if effect_wait is not None and effect_wait["schema_version"] == 2:
             pending_outcome = AgentOutcome.from_mapping(effect_wait["outcome"])

@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/schemas/workshop/concept-v2.json",
+  "title": "Dormant route-aware Concept v2 contract",
+  "oneOf": [
+    {"$ref": "#/$defs/preRender"},
+    {"$ref": "#/$defs/sealed"}
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "artifact_sha256",
+        "entries",
+        "total_bytes",
+        "created_at"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "entries": {"type": "array"},
+        "total_bytes": {"type": "integer", "minimum": 0},
+        "created_at": {"type": "string", "minLength": 1}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "origin",
+        "wish_sha256",
+        "product_id",
+        "objective",
+        "context",
+        "assignment_sha256",
+        "taste_sha256",
+        "blueprint_sha256",
+        "invented_sha256",
+        "creative_source_path",
+        "creative_source_sha256",
+        "round",
+        "standing_concept_sha256",
+        "revision_input_sha256",
+        "provenance_sha256"
+      ],
+      "properties": {
+        "schema_version": {"const": 2},
+        "kind": {"const": "autonomous-workshop.concept-provenance"},
+        "origin": {"enum": ["invent", "spark-make"]},
+        "wish_sha256": {"$ref": "#/$defs/sha256"},
+        "product_id": {"type": "string", "minLength": 1, "maxLength": 256},
+        "objective": {"type": "string", "minLength": 1, "maxLength": 50000},
+        "context": {"type": "object"},
+        "assignment_sha256": {"$ref": "#/$defs/sha256"},
+        "taste_sha256": {"$ref": "#/$defs/sha256"},
+        "blueprint_sha256": {"$ref": "#/$defs/sha256"},
+        "invented_sha256": {"$ref": "#/$defs/sha256"},
+        "creative_source_path": {"type": "string", "minLength": 1},
+        "creative_source_sha256": {"$ref": "#/$defs/sha256"},
+        "round": {"type": "integer", "minimum": 1, "maximum": 100},
+        "standing_concept_sha256": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        },
+        "revision_input_sha256": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        },
+        "provenance_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "preRender": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "provenance",
+        "source_manifest",
+        "brief",
+        "research",
+        "drawing_instructions",
+        "descriptor",
+        "derived_wish",
+        "concept_sha256"
+      ],
+      "properties": {
+        "schema_version": {"const": 2},
+        "kind": {"const": "autonomous-workshop.concept-pre-render"},
+        "provenance": {"$ref": "#/$defs/provenance"},
+        "source_manifest": {"$ref": "#/$defs/manifest"},
+        "brief": {"type": "object"},
+        "research": {"type": "object"},
+        "drawing_instructions": {"type": "object"},
+        "descriptor": {"type": "object"},
+        "derived_wish": {"type": "object"},
+        "concept_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "sealed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "source",
+        "descriptor",
+        "image_manifest",
+        "concept_sha256"
+      ],
+      "properties": {
+        "schema_version": {"const": 2},
+        "kind": {"const": "autonomous-workshop.concept-sealed"},
+        "source": {"$ref": "#/$defs/preRender"},
+        "descriptor": {"type": "object"},
+        "image_manifest": {"$ref": "#/$defs/manifest"},
+        "concept_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

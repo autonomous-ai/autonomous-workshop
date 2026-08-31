@@ -585,7 +585,12 @@ Forge and Quest Invent own the product concept from roster selection through
 research and final direction. Their `STAGE.json` binds the exact Wish, complete
 Inventor roster, universal blueprint, and canonical assignment and Invented
 paths. The one Invent finalizer seals both `NativeMatchAssignment` and
-`NativeInvented`. Spark performs the same bounded selection and compact concept
+`NativeInvented`. For a newly marked Forge or Quest run, that same finalizer
+also validates and preserves the complete five-file pre-render Concept source.
+After the native process exits, the host independently reopens it, persists a
+pending proposal, performs or reconciles authorized role-level image effects,
+and seals exact returned bytes before the one Invent gate advances. Spark
+performs the same bounded selection and compact concept
 handoff inside Make, sealing assignment, Invented, and Made contracts from one
 turn. Python never chooses the Inventor or concept. The `NativeInvented` result
 contains:
@@ -597,12 +602,13 @@ contains:
   direction.
 
 Forge/Quest Make receives that exact sealed Invent contract in its own
-`STAGE.json`; Spark creates and consumes the compound creative source within
-Make. The Made
-contract binds the accepted Invent identity, while the host rehashes exact
-product bytes and reruns deterministic CAD checks before advancing. No image
-provider, separate drawing effect, or second model credential sits between
-Invent and Make.
+`STAGE.json`; marked runs additionally receive the sealed Concept, sanitized
+effect evidence, derived Wish, brief, descriptor, and image manifest. Spark
+creates and consumes the compound creative source within Make and remains
+outside the active Concept protocol. Marked Made schema v2 binds both Concept
+identities, requires exact brief/product component-key correspondence, and
+forbids copied Concept pixels in the product tree. Provider credentials never
+enter the native subprocess, packet, workspace evidence, or public status.
 
 The host CAD gate retains two claim-bound tiers for historical protocols. Its
 default/full tier reruns the

@@ -55,6 +55,20 @@ tests = ["tests/invent/**"]
 docs = ["src/workshop/invent/README.md"]
 
 [[components]]
+id = "concept"
+name = "Concept"
+purpose = "Preserve dormant, provenance-bound concept contracts for future route integration."
+primary_role = "Concept maintainer"
+backup_role = "Concept backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "standard"
+source = ["src/workshop/concept/**"]
+tests = ["tests/concept/**"]
+docs = ["src/workshop/concept/README.md"]
+
+[[components]]
 id = "make"
 name = "Make"
 purpose = "Create exact mechanical, CAD, and printable product artifacts."

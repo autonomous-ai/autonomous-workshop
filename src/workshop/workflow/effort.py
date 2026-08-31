@@ -18,6 +18,9 @@ from workshop.errors import ContractError
 EFFORT_ROUTE_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/effort-routes-v1.md"
 )
+INVENT_CONCEPT_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/invent-concept-v1.md"
+)
 SPARK_ECONOMICS_V1_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/spark-economics-v1.md"
 )
@@ -218,6 +221,7 @@ __all__ = [
     "DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS",
     "DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS",
     "EFFORT_ROUTE_CAPABILITY_PATH",
+    "INVENT_CONCEPT_CAPABILITY_PATH",
     "SPARK_AUTO_COMPACT_TOKEN_LIMIT",
     "SPARK_ECONOMICS_CAPABILITY_PATH",
     "SPARK_ECONOMICS_V1_CAPABILITY_PATH",

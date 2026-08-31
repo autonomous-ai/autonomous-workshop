@@ -340,6 +340,132 @@ def invented_source(*, include_selection: bool) -> dict:
     return value
 
 
+def author_concept_source(root: Path, stage, authored: dict) -> None:
+    """Author the exact five-file pre-render tree for marked Invent only."""
+
+    inputs = stage["inputs"]
+    concept_root = root / inputs["concept_root"]
+    wish_bytes = (root / "WISH.json").read_bytes()
+    wish = json.loads(wish_bytes)
+    wish_sha256 = hashlib.sha256(wish_bytes).hexdigest()
+    excerpt = "English draughts uses diagonal movement on a bounded board."
+    excerpt_sha256 = hashlib.sha256(canonical_json(excerpt)).hexdigest()
+    components = authored["concept"]["components"]
+    brief = {
+        "object": "orbit dog draughts set",
+        "category": "tactile tabletop game",
+        "envelope_mm": authored["concept"]["envelope_mm"],
+        "wall_thickness_mm": 2.4,
+        "print_stance": {
+            "orientation": "board down",
+            "supports_required": False,
+            "support_notes": "The board and pieces use self-supporting profiles.",
+        },
+        "features": [
+            {
+                "id": "orbital-waypoints",
+                "text": "Orbital waypoints preserve the familiar playable squares.",
+            }
+        ],
+        "fit_target": {
+            "target": "piece on waypoint",
+            "dimensions_mm": {
+                "length_mm": 8.0,
+                "width_mm": 8.0,
+                "height_mm": 3.0,
+            },
+            "clearance_mm": 0.3,
+        },
+        "components": components,
+    }
+    fields = (
+        "object",
+        "category",
+        "envelope_mm",
+        "wall_thickness_mm",
+        "print_stance",
+        "fit_target",
+        "features.orbital-waypoints",
+    ) + tuple("components.%s" % item["key"] for item in components)
+    brief["facts"] = [
+        {"field": field, "source_id": "source-1", "assumption_reason": None}
+        for field in fields
+    ]
+    research = {
+        "sources": [
+            {
+                "id": "source-1",
+                "origin": "https://www.fmjd.org/",
+                "excerpt": excerpt,
+                "excerpt_sha256": excerpt_sha256,
+                "retrieved_at": OBSERVED_AT,
+            }
+        ],
+        "findings": [
+            {
+                "finding": "The familiar rules bound the board and piece relationship.",
+                "source_ids": ["source-1"],
+            }
+        ],
+    }
+    prompts = {
+        "presentation": "Neutral studio treatment at one stable scale.",
+        "front": {
+            "instruction": "Front view of the orbital board and tactile pieces.",
+            "references": [],
+        },
+        "top": {
+            "instruction": "Top view of the same orbital board.",
+            "references": ["front"],
+        },
+        "bottom": {
+            "instruction": "Bottom interface view of the same board.",
+            "references": ["front"],
+        },
+        "exploded": {
+            "instruction": "Exploded view separating the board and playing pieces.",
+            "references": ["front", "top", "bottom"],
+        },
+        "components": {
+            item["key"]: {
+                "instruction": "%s alone with the same orbital finish." % item["name"],
+                "references": ["front"],
+            }
+            for item in components
+        },
+    }
+    descriptor = {
+        "front": {"path": "images/front.png"},
+        "top": {"path": "images/top.png"},
+        "bottom": {"path": "images/bottom.png"},
+        "exploded": {"path": "images/exploded.png"},
+        "components": {
+            item["key"]: {"path": "images/components/%s.png" % item["key"]}
+            for item in components
+        },
+    }
+    derived = {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.concept-derived-wish",
+        "wish_sha256": wish_sha256,
+        "product_id": wish["product_id"],
+        "objective": wish["objective"],
+        "context": wish["context"],
+        "constraints": {"envelope_mm": brief["envelope_mm"]},
+    }
+    derived["derived_wish_sha256"] = hashlib.sha256(
+        canonical_json(derived)
+    ).hexdigest()
+    for name, value in (
+        ("brief.json", brief),
+        ("derived_wish.json", derived),
+        ("descriptor.json", descriptor),
+        ("prompts.json", prompts),
+        ("research.json", research),
+    ):
+        write_json(concept_root / name, value)
+
+
 def author_invent(root: Path, stage) -> None:
     assignment = stage["inputs"].get("assignment")
     if assignment is not None and assignment["selected_inventor_id"] != "alice":
@@ -371,11 +497,23 @@ def author_invent(root: Path, stage) -> None:
     if "invent-physical" in scenario:
         authored["concept"].pop("intended_interaction", None)
     write_json(root / source, authored)
-    finalizer(root, "invent", "--source", source)
+    arguments = ["invent", "--source", source]
+    if "invent_concept_capability" in stage["inputs"]:
+        author_concept_source(root, stage, authored)
+        arguments.extend(("--concept-root", stage["inputs"]["concept_root"]))
+    finalizer(root, *arguments)
 
 
 def author_make(root: Path, stage) -> None:
     inputs = stage["inputs"]
+    if "concept-tree-tamper" in stage["product_id"] and "sealed_concept" in inputs:
+        concept_root = root / (
+            "artifacts/concept/r%04d/concept"
+            % inputs["sealed_concept"]["source"]["provenance"]["round"]
+        )
+        first_image = inputs["sealed_concept"]["image_manifest"]["entries"][0]["path"]
+        target = concept_root / first_image
+        target.write_bytes(target.read_bytes() + b"changed")
     creative_source = None
     if inputs.get("creative_source_required") is True:
         creative_source = "authored/spark-make.json"
@@ -409,6 +547,8 @@ def author_make(root: Path, stage) -> None:
             "Digitally verified; no claim of physical manufacture or delivery."
         ],
     }
+    if "concept-component-mismatch" in stage["product_id"]:
+        product["components"] = ["wrong-component"]
     write_json(product_root / "product.json", product)
     (product_root / "wish.json").write_bytes((root / "WISH.json").read_bytes())
     (product_root / "assembled.step").write_bytes(
@@ -427,6 +567,35 @@ def author_make(root: Path, stage) -> None:
     for offset, color in ((0, "#35aeb8"), (600, "#ffb445"), (1200, "#35aeb8")):
         signature_pen.ellipse((offset + 110, 160, offset + 490, 700), fill=color)
     signature.save(project / "snap/signature.png", format="PNG")
+    if "concept-copied-pixels" in stage["product_id"] and "sealed_concept" in inputs:
+        concept = inputs["sealed_concept"]
+        concept_root = root / (
+            "artifacts/concept/r%04d/concept" % concept["source"]["provenance"]["round"]
+        )
+        copied = concept["image_manifest"]["entries"][0]["path"]
+        (product_root / "copied-concept.png").write_bytes(
+            (concept_root / copied).read_bytes()
+        )
+    write_json(
+        project / "snap/SIGNATURE-REVIEW.json",
+        {
+            "schema_version": 2,
+            "kind": "autonomous-workshop.signature-experience-review",
+            "iso_sha256": hashlib.sha256(render_path.read_bytes()).hexdigest(),
+            "signature_sha256": hashlib.sha256(
+                (project / "snap/signature.png").read_bytes()
+            ).hexdigest(),
+            "reviewer": "deterministic-independent-native-critic",
+            "blind_held_read": "A compact orbital game board with tactile pieces.",
+            "blind_signature_read": "Three exact states show a clear orbital play sequence.",
+            "wish_revealed_after_blind_read": True,
+            "held_object_unmistakable": True,
+            "signature_experience_unmistakable": True,
+            "finished_product_desirable": True,
+            "largest_risk": "The three states could visually merge.",
+            "resolution": "Contrasting separated panels preserve each exact state.",
+        },
+    )
     write_json(
         product_root / "assembled.step.json",
         {
@@ -707,7 +876,7 @@ AUTHORS = {
 def run() -> int:
     global _LAST_FINALIZER
     if "--version" in sys.argv[1:]:
-        print("codex-cli 0.145.0")
+        print("codex-cli 0.150.0")
         return 0
     arguments = sys.argv[1:]
     try:
@@ -718,7 +887,12 @@ def run() -> int:
     forbidden = sorted(
         name
         for name in os.environ
-        if name.startswith("FACTORY_") or name in {"OPENAI_API_KEY", "ANTHROPIC_API_KEY"}
+        if name.startswith("FACTORY_")
+        or name in {
+            "OPENAI_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "WORKSHOP_CONCEPT_IMAGE_CREDENTIALS_FILE",
+        }
     )
     if forbidden:
         raise RuntimeError("credentials reached native runtime: %s" % forbidden)

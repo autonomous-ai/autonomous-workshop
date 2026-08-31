@@ -121,6 +121,7 @@ class build_py(_build_py):
             "leo",
             "luma-vale",
             "mira-fold",
+            "orin-shadow",
             "pico-press",
             "sonora-reed",
             "tess-loop",

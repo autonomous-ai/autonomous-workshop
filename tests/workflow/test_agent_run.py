@@ -633,6 +633,35 @@ class AgentRunTest(unittest.TestCase):
                     {stage for stage, unused in transitions},
                 )
 
+    def test_invent_concept_marker_never_adds_a_lifecycle_stage(self):
+        references = self.skill / "references"
+        (references / "effort-routes-v1.md").write_bytes(
+            b"selectable effort routes\n"
+        )
+        (references / "invent-concept-v1.md").write_bytes(
+            b"compound Invent Concept boundary\n"
+        )
+        for effort, transitions in {
+            "spark": (("wish", "make"), ("make", "release"), ("release", "complete")),
+            "forge": (("wish", "invent"), ("invent", "make"), ("make", "release"), ("release", "complete")),
+            "quest": (("wish", "invent"), ("invent", "make"), ("make", "playtest"), ("playtest", "release"), ("release", "complete")),
+        }.items():
+            with self.subTest(effort=effort):
+                run = AgentRun.create(
+                    self.root / (effort + "-concept"),
+                    host_state_root=self.root / (effort + "-concept-host"),
+                    product_id="concept-" + effort,
+                    wish_bytes=canonical_wish("concept-" + effort, "Make a moon toy."),
+                    product_run_constitution_source=self.product_run_constitution,
+                    skill_root=self.skill,
+                    effort=effort,
+                )
+                for stage, transition in transitions:
+                    self.advance(run, stage, transition)
+                checkpoint = run.snapshot()
+                self.assertNotIn("concept", checkpoint.stage_artifacts)
+                self.assertNotEqual(checkpoint.stage, "concept")
+
     def test_capable_forge_make_can_return_to_invent_with_failed_gate(self):
         references = self.skill / "references"
         (references / "effort-routes-v1.md").write_bytes(

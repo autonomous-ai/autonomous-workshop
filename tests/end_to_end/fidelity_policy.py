@@ -16,6 +16,7 @@ APPROVED_PATCH_TARGETS = frozenset(
     {
         "workshop.workflow.native_run._FACTORY_TRANSPORT",
         "workshop.workflow.native_run._FACTORY_PROJECT_FILE_TRANSPORT",
+        "workshop.workflow.native_run._CONCEPT_IMAGE_TRANSPORT",
     }
 )
 FORBIDDEN_INTERNAL_TERMS = frozenset(

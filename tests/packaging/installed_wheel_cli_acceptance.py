@@ -24,6 +24,8 @@ SCHEMA_OWNERS = {
     "validator-policy.schema.json": "make",
     "verification-receipt.schema.json": "make",
     "receipt.schema.json": "runtime",
+    "concept-v1.schema.json": "concept",
+    "concept-v2.schema.json": "concept",
 }
 SKILL_PATHS = {
     "cad": "make/skills/cad",
@@ -47,6 +49,7 @@ INVENTORS = (
     "leo",
     "luma-vale",
     "mira-fold",
+    "orin-shadow",
     "pico-press",
     "sonora-reed",
     "tess-loop",
@@ -259,6 +262,7 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
 
         runtime_data_roots = (
             "workshop/artifacts/schemas/",
+            "workshop/concept/schemas/",
             "workshop/contributors/_inventors/",
             "workshop/contributors/schemas/",
             "workshop/make/schemas/",

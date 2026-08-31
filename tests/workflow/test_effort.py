@@ -31,6 +31,7 @@ from workshop.workflow.effort import (
     DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    INVENT_CONCEPT_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -39,11 +40,16 @@ from workshop.workflow.effort import (
     WORKSHOP_EFFORTS,
     workshop_effort,
 )
+from workshop.make.native import NativeMade
 
 
 class WorkshopEffortTest(unittest.TestCase):
     def test_named_efforts_have_exact_passthrough_lifecycles(self):
         self.assertEqual(DEFAULT_WORKSHOP_EFFORT, "spark")
+        self.assertEqual(
+            INVENT_CONCEPT_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/invent-concept-v1.md",
+        )
         self.assertEqual(
             SPARK_ECONOMICS_CAPABILITY_PATH,
             ".agents/skills/autonomous-workshop/references/spark-economics-v3.md",
@@ -142,6 +148,14 @@ class WorkshopEffortTest(unittest.TestCase):
         self.assertEqual(workshop_effort("spark").next_stage("wish"), "make")
         self.assertEqual(workshop_effort("forge").next_stage("make"), "release")
         self.assertEqual(workshop_effort("quest").next_stage("make"), "playtest")
+        self.assertNotIn(
+            "concept",
+            {stage for route in WORKSHOP_EFFORTS.values() for stage in route.lifecycle},
+        )
+
+    def test_unmarked_made_contract_retains_legacy_exact_shape(self):
+        self.assertIn("concept_sha256", NativeMade.__dataclass_fields__)
+        self.assertIn("concept_effect_sha256", NativeMade.__dataclass_fields__)
 
     def test_unknown_effort_fails_closed(self):
         for value in (None, "", "minimal", "SPARK", 1):

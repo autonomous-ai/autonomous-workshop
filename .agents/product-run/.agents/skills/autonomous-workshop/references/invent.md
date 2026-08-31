@@ -95,17 +95,32 @@ category, envelope and wall thickness, print stance, distinctive features,
 each component's form, dimensions, placement, and interfaces, intended
 interaction, assumptions, and unresolved risks. Bind researched claims to the
 supporting entries in `research`; label deliberate design decisions as such.
-Then run:
+If `STAGE.json.inputs.invent_concept_capability` is present, read its bound
+`references/invent-concept-v1.md` and author its exact five-file pre-render
+tree as part of this same Goal. The selected Inventor owns specialist design
+content; the root Manager checks cross-file component and mechanism coherence
+and remains responsible for the one finalizer call. Then run the packet-matched
+form:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . invent --source <invent-source.json>
 ```
 
+For a marked compound Invent, append:
+
+```bash
+  --concept-root <STAGE.json.inputs.concept_root>
+```
+
 The deterministic finalizer derives the exact roster-bound assignment, binds
 the chosen concept and research to it, preserves the exact authored bytes as
-the sibling `source.json`, and writes both canonical assignment and Invented contracts plus
-`agent-outcome.json`. It does not research, judge, assign a quality score, or
-run the improvement loop. Complete the Invent Goal only after the command
-succeeds, then return to the host. The host validates and seals the exact
-Invent contract before checkpointing Make.
+the sibling `source.json`, and writes both canonical assignment and Invented
+contracts plus `agent-outcome.json`; for a marked run it also derives v2
+provenance, validates and preserves the exact pre-render tree, and lists the
+complete authored set in that same outcome. It does not research, compose
+instructions, render, access credentials, judge, assign a quality score, run
+the improvement loop, or move a checkpoint. Complete the Invent Goal only
+after this one command succeeds, then return to the host. The host independently
+validates, renders through its authorized durable effect boundary, seals exact
+bytes, and only then passes the Invent gate to Make.

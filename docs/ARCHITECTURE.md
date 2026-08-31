@@ -47,6 +47,15 @@ Quest: Wish -> Invent <-> Make <-> Playtest -> Release
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
+Concept is an active, versioned sub-boundary of newly marked Forge and Quest
+Invent, never a lifecycle stage. One Invent Goal authors assignment, invention,
+and the five-file pre-render source; after the native process exits, the host
+revalidates those exact bytes, runs or reconciles authorized role-level image
+effects, seals the returned images, and passes the single Invent gate. Marked
+Make binds the sealed Concept and sanitized effect identity. Spark and unmarked
+historical runs retain their exact former packets, contracts, and gates. No
+route adds a Concept Goal, turn, checkpoint, transition, or status value.
+
 - **Wish** preserves the person's exact words and explicit constraints.
 - The first active creative stage selects and binds one Inventor. Optional
   stages pass through without turns, artifacts, gates, or fabricated evidence.
@@ -401,6 +410,7 @@ old run from silently gaining a new lifecycle edge.
 | Evidence | May support | Does not prove |
 |---|---|---|
 | Native research with cited sources | factual design assumptions | that a source is current if it was not checked |
+| Active marked-Invent Concept evidence | exact provenance, source completeness, provider-role completeness, and local byte identity | visual meaning, quality, buildability, printability, Playtest, publication, manufacture, or delivery |
 | AI simulation | executable rules, termination, measured strategy or pacing proxies | human enjoyment or comprehension |
 | Independent model inspection | a recorded prediction about clarity, novelty, or Taste fit | human preference or physical behavior |
 | CAD/kernel verification | topology, dimensions, required files, and exact computed geometry properties | successful physical printing or durability |

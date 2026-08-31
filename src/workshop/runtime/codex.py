@@ -684,6 +684,13 @@ def _python_runtime_permission_identities(
     those trees is therefore trusted runtime code even though the surrounding
     Workshop checkout remains denied.
 
+    An editable installation places only a ``.pth`` indirection in
+    ``purelib`` and keeps the actual ``workshop`` package in the source tree.
+    Python ``-I`` still follows that installed path, but the Codex filesystem
+    policy must grant the resolved import root explicitly so Python can list
+    it and discover the package.  Trust only that import root, never its
+    checkout or repository root.
+
     A standalone interpreter build (for example uv's managed CPython) links
     the executable against a sibling ``libpython*.{dylib,so}`` that lives
     outside ``stdlib``/``platstdlib``.  Without that shared library granted
@@ -730,6 +737,17 @@ def _python_runtime_permission_identities(
             continue
         if resolved_path.is_dir():
             candidates.add(resolved_path)
+    workshop_package = Path(__file__).resolve(strict=True).parents[1]
+    workshop_import_root = workshop_package.parent
+    if not any(
+        candidate.is_dir()
+        and (
+            workshop_import_root == candidate.resolve(strict=True)
+            or workshop_import_root.is_relative_to(candidate.resolve(strict=True))
+        )
+        for candidate in candidates
+    ):
+        candidates.add(workshop_import_root)
     library_dir = sysconfig.get_config_var("LIBDIR")
     library_name = sysconfig.get_config_var(
         "INSTSONAME"
@@ -751,6 +769,65 @@ def _python_runtime_permission_identities(
         _trusted_runtime_path_identity(path)
         for path in sorted(candidates, key=lambda candidate: str(candidate))
     )
+
+
+def _run_policy_before_editable_workshop_package(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> tuple[_CodexRunPolicy, ...]:
+    """Reconstruct the two exact editable-install predecessor policies.
+
+    Installed wheels already place ``workshop`` below ``purelib`` and need no
+    extra identity.  Editable installs need the package's import root.  Two
+    earlier policies may be checkpointed: the original policy with no source
+    grant, and the intermediate policy that granted only the package child and
+    therefore could not list the import root.  Reconstruct exactly those two.
+    """
+
+    workshop_package_path = Path(__file__).resolve(strict=True).parents[1]
+    workshop_package = str(workshop_package_path)
+    workshop_import_root = str(workshop_package_path.parent)
+    matching = tuple(
+        identity
+        for identity in run_policy.trusted_python_runtime_paths
+        if identity.path == workshop_import_root
+    )
+    if not matching:
+        return ()
+    if len(matching) != 1 or not stat.S_ISDIR(matching[0].resolved_mode):
+        raise CodexInvocationError(
+            "Codex runtime policy has no unique editable Workshop import root"
+        )
+    without_import_root = tuple(
+        identity
+        for identity in run_policy.trusted_python_runtime_paths
+        if identity.path != workshop_import_root
+    )
+    package_only_paths = tuple(
+        sorted(
+            (
+                *without_import_root,
+                _trusted_runtime_path_identity(workshop_package_path),
+            ),
+            key=lambda identity: identity.path,
+        )
+    )
+    predecessors = []
+    for paths in (package_only_paths, without_import_root):
+        predecessors.append(
+            _CodexRunPolicy(
+                permission_config_arguments=_permission_config_arguments(
+                    run_root,
+                    paths,
+                    run_policy.trusted_codex_runtime_paths,
+                ),
+                trusted_python_runtime_paths=paths,
+                trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
+                environment_allowlist=run_policy.environment_allowlist,
+                environment_overrides=run_policy.environment_overrides,
+            )
+        )
+    return tuple(predecessors)
 
 
 def _codex_runtime_permission_identities(
@@ -1789,6 +1866,9 @@ class CodexNativeSessionLauncher:
             root,
             run_policy,
         )
+        policies_before_editable_package = (
+            _run_policy_before_editable_workshop_package(root, run_policy)
+        )
         policy_before_venv_directory = (
             _run_policy_before_venv_launcher_directory(
                 root,
@@ -1817,6 +1897,10 @@ class CodexNativeSessionLauncher:
                 ),
                 False,
             )
+        ]
+        predecessor_policies[0:0] = [
+            (policy, True)
+            for policy in policies_before_editable_package
         ]
         if policy_before_venv_directory is not None:
             predecessor_policies.insert(

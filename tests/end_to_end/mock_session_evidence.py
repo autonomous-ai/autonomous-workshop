@@ -33,6 +33,7 @@ APPROVED_PATCH_TARGETS = frozenset(
     {
         "workshop.workflow.native_run._FACTORY_TRANSPORT",
         "workshop.workflow.native_run._FACTORY_PROJECT_FILE_TRANSPORT",
+        "workshop.workflow.native_run._CONCEPT_IMAGE_TRANSPORT",
     }
 )
 MOCK_SESSION_FILES = (
@@ -231,7 +232,7 @@ def _bound_files(
         stage_owned = bool(
             stage == "invent"
             and re.match(
-                r"^artifacts/invent/(?:r[0-9]{4}/)?.+",
+                r"^artifacts/(?:invent/(?:r[0-9]{4}/)?|concept/r[0-9]{4}/).+",
                 relative,
             )
         ) or bool(

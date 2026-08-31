@@ -11,7 +11,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from workshop.artifacts import build_artifact_manifest
-from workshop.errors import ContractError
+from workshop.concept import PreRenderConcept, seal_pre_render_concept
+from workshop.errors import ArtifactError, ContractError
 from workshop.invent.native import NativeInvented
 from workshop.make.contracts import Made
 from workshop.make.native import NativeMade
@@ -26,6 +27,12 @@ from workshop.playtest.native import NativePlaytested
 from workshop.product import ToyBlueprint
 from workshop.release.native import NativeRelease
 from workshop.workflow.proposals import AgentOutcomeProposal
+from workshop.workflow.stage_gates import evaluate_routed_invent_stage
+from workshop.wish import Wish
+from workshop.runtime.concept_effects import (
+    ConceptEffectEvidence,
+    ConceptEffectRoleEvidence,
+)
 
 
 REPOSITORY = Path(__file__).resolve().parents[2]
@@ -454,6 +461,146 @@ class StageProposalToolTest(unittest.TestCase):
             "blueprint_sha256": self.blueprint.sha256,
         }
 
+    def create_marked_invent_source(self):
+        wish = Wish.create(
+            "run-local-toy",
+            "A tactile moon observatory with a compact phase dial.",
+            context={"audience": "adult"},
+        )
+        wish_bytes = canonical_json(wish.to_dict())
+        (self.run_root / "WISH.json").write_bytes(wish_bytes)
+        wish_sha256 = sha256(wish_bytes)
+        assignment = NativeMatchAssignment(
+            wish_sha256=wish_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
+            selected_inventor_id=self.assignment.selected_inventor_id,
+            selected_agent_path=self.assignment.selected_agent_path,
+            selected_agent_sha256=self.assignment.selected_agent_sha256,
+            selected_source_manifest_sha256=self.assignment.selected_source_manifest_sha256,
+            selected_taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.blueprint.sha256,
+            ranking=self.assignment.ranking,
+        )
+        invented = NativeInvented(
+            wish_sha256=wish_sha256,
+            assignment_sha256=assignment.assignment_sha256,
+            taste_sha256=assignment.selected_taste_sha256,
+            blueprint_sha256=assignment.blueprint_sha256,
+            concept=self.invented.to_dict()["concept"],
+            research=self.invented.to_dict()["research"],
+        )
+        source = {
+            "selected_inventor_id": assignment.selected_inventor_id,
+            "ranking": [item.to_dict() for item in assignment.ranking],
+            "concept": invented.to_dict()["concept"],
+            "research": invented.to_dict()["research"],
+        }
+        root = "artifacts/concept/r0001/concept"
+        excerpt = "A bounded physical reference."
+        excerpt_sha256 = sha256(canonical_json(excerpt))
+        brief = {
+            "object": "moon observatory",
+            "category": "tactile tabletop object",
+            "envelope_mm": {"length_mm": 60, "width_mm": 40, "height_mm": 25},
+            "wall_thickness_mm": 2.4,
+            "print_stance": {
+                "orientation": "body down",
+                "supports_required": False,
+                "support_notes": "self-supporting shell",
+            },
+            "features": [{"id": "phase-dial", "text": "A tactile rotating phase dial."}],
+            "fit_target": {
+                "target": "phase dial axle",
+                "dimensions_mm": {"length_mm": 5, "width_mm": 5, "height_mm": 20},
+                "clearance_mm": 0.3,
+            },
+            "components": [self.invented.to_dict()["concept"]["components"][0]],
+        }
+        fields = (
+            "object", "category", "envelope_mm", "wall_thickness_mm", "print_stance",
+            "fit_target", "features.phase-dial", "components.observatory",
+        )
+        brief["facts"] = [
+            {"field": field, "source_id": "source-1", "assumption_reason": None}
+            for field in fields
+        ]
+        research = {
+            "sources": [{
+                "id": "source-1",
+                "origin": "https://example.test/moon",
+                "excerpt": excerpt,
+                "excerpt_sha256": excerpt_sha256,
+                "retrieved_at": "2026-08-30T00:00:00+00:00",
+            }],
+            "findings": [{
+                "finding": "The source bounds the tactile phase mechanism.",
+                "source_ids": ["source-1"],
+            }],
+        }
+        prompts = {
+            "presentation": "Neutral studio treatment at consistent scale.",
+            "front": {"instruction": "Front view of the observatory.", "references": []},
+            "top": {"instruction": "Top view of the same body.", "references": ["front"]},
+            "bottom": {"instruction": "Bottom interface view.", "references": ["front"]},
+            "exploded": {
+                "instruction": "Show the Observatory body and phase dial separated.",
+                "references": ["front", "top", "bottom"],
+            },
+            "components": {
+                "observatory": {
+                    "instruction": "Observatory body alone with matching finish.",
+                    "references": ["front"],
+                }
+            },
+        }
+        descriptor = {
+            "front": {"path": "images/front.png"},
+            "top": {"path": "images/top.png"},
+            "bottom": {"path": "images/bottom.png"},
+            "exploded": {"path": "images/exploded.png"},
+            "components": {"observatory": {"path": "images/components/observatory.png"}},
+        }
+        derived = {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.concept-derived-wish",
+            "wish_sha256": wish_sha256,
+            "product_id": wish.product_id,
+            "objective": wish.objective,
+            "context": dict(wish.context),
+            "constraints": {"envelope_mm": brief["envelope_mm"]},
+        }
+        derived["derived_wish_sha256"] = sha256(canonical_json(derived))
+        for name, value in (
+            ("brief.json", brief),
+            ("derived_wish.json", derived),
+            ("descriptor.json", descriptor),
+            ("prompts.json", prompts),
+            ("research.json", research),
+        ):
+            self.write_json("%s/%s" % (root, name), value, canonical=True)
+        inputs = {
+            "effort": "forge",
+            "wish": {"path": "WISH.json", "sha256": wish_sha256},
+            "wish_sha256": wish_sha256,
+            "inventor_roster": self.roster.to_dict(),
+            "blueprint": self.blueprint.to_dict(),
+            "blueprint_sha256": self.blueprint.sha256,
+            "assignment_contract_path": "artifacts/invent/assignment.json",
+            "contract_path": "artifacts/invent/invented.json",
+            "invent_concept_capability": {
+                "path": ".agents/skills/autonomous-workshop/references/invent-concept-v1.md",
+                "sha256": "f" * 64,
+            },
+            "concept_root": root,
+            "concept_pre_render_path": "artifacts/concept/r0001/pre-render.json",
+            "concept_sealed_path": "artifacts/concept/r0001/sealed.json",
+            "concept_effect_path": "artifacts/concept/r0001/effect.json",
+            "concept_round": 1,
+            "standing_concept_sha256": None,
+            "revision_input_sha256": None,
+        }
+        return inputs, source
+
     def create_product(self):
         product_root = self.run_root / "artifacts/make/r0001/product"
         (product_root / "cad/project").mkdir(parents=True)
@@ -678,6 +825,184 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertEqual(proposal.outcome.proposed_transition, "make")
 
+    def test_marked_routed_invent_seals_complete_pre_render_concept(self):
+        inputs, source = self.create_marked_invent_source()
+        self.write_stage("invent", inputs)
+        self.write_json("drafts/marked-invent.json", source, canonical=True)
+
+        self.run_tool(
+            "invent",
+            "--source",
+            "drafts/marked-invent.json",
+            "--concept-root",
+            inputs["concept_root"],
+        )
+
+        pre_render_document, pre_render_bytes = self.assert_canonical_file(
+            inputs["concept_pre_render_path"]
+        )
+        pre_render = PreRenderConcept.from_mapping(
+            pre_render_document, root=self.run_root / inputs["concept_root"]
+        )
+        self.assertEqual(pre_render.provenance.round, 1)
+        proposal_document, _ = self.assert_canonical_file("agent-outcome.json")
+        proposal = AgentOutcomeProposal.from_mapping(proposal_document)
+        paths = tuple(item.path for item in proposal.outcome.artifacts)
+        self.assertEqual(
+            paths,
+            (
+                "artifacts/invent/invented.json",
+                "artifacts/invent/assignment.json",
+                inputs["concept_pre_render_path"],
+                "artifacts/invent/source.json",
+                *("%s/%s" % (inputs["concept_root"], name) for name in (
+                    "brief.json", "derived_wish.json", "descriptor.json",
+                    "prompts.json", "research.json",
+                )),
+            ),
+        )
+        self.assertEqual(
+            dict((item.path, item.sha256) for item in proposal.outcome.artifacts)[
+                inputs["concept_pre_render_path"]
+            ],
+            sha256(pre_render_bytes),
+        )
+        decision = evaluate_routed_invent_stage(
+            proposal,
+            run_root=self.run_root,
+            expected_checkpoint_sha256="1" * 64,
+            expected_subject_sha256="2" * 64,
+            wish_sha256=inputs["wish_sha256"],
+            roster=self.roster,
+            assignment_artifact_path="artifacts/invent/assignment.json",
+            invented_artifact_path="artifacts/invent/invented.json",
+            concept_context={
+                "concept_root": inputs["concept_root"],
+                "concept_pre_render_path": inputs["concept_pre_render_path"],
+                "concept_round": 1,
+                "standing_concept_sha256": None,
+                "revision_input_sha256": None,
+                "wish": inputs["wish"],
+            },
+        )
+        self.assertEqual(
+            decision.evidence.checks["pre_render_concept_sha256"],
+            pre_render.concept_sha256,
+        )
+        brief_path = self.run_root / inputs["concept_root"] / "brief.json"
+        brief_path.write_bytes(brief_path.read_bytes() + b" ")
+        with self.assertRaises((ArtifactError, ContractError)):
+            evaluate_routed_invent_stage(
+                proposal,
+                run_root=self.run_root,
+                expected_checkpoint_sha256="1" * 64,
+                expected_subject_sha256="2" * 64,
+                wish_sha256=inputs["wish_sha256"],
+                roster=self.roster,
+                assignment_artifact_path="artifacts/invent/assignment.json",
+                invented_artifact_path="artifacts/invent/invented.json",
+                concept_context={
+                    "concept_root": inputs["concept_root"],
+                    "concept_pre_render_path": inputs["concept_pre_render_path"],
+                    "concept_round": 1,
+                    "standing_concept_sha256": None,
+                    "revision_input_sha256": None,
+                    "wish": inputs["wish"],
+                },
+            )
+
+    def test_marked_routed_invent_rejects_incomplete_or_extra_source_tree(self):
+        for mutation in ("missing-role", "extra-file"):
+            with self.subTest(mutation=mutation):
+                inputs, source = self.create_marked_invent_source()
+                if mutation == "missing-role":
+                    prompts_path = self.run_root / inputs["concept_root"] / "prompts.json"
+                    prompts = json.loads(prompts_path.read_text())
+                    prompts.pop("presentation")
+                    prompts_path.write_bytes(canonical_json(prompts))
+                else:
+                    self.write_json(
+                        "%s/extra.json" % inputs["concept_root"], {"extra": True}
+                    )
+                self.write_stage("invent", inputs)
+                self.write_json("drafts/marked-invent.json", source, canonical=True)
+
+                result = self.run_tool(
+                    "invent",
+                    "--source",
+                    "drafts/marked-invent.json",
+                    "--concept-root",
+                    inputs["concept_root"],
+                    expected=2,
+                )
+                self.assertIn("Invent Concept source is invalid", result.stderr)
+                self.assertFalse((self.run_root / "agent-outcome.json").exists())
+                if (self.run_root / "STAGE.json").exists():
+                    (self.run_root / "STAGE.json").chmod(0o600)
+                for path in (
+                    self.run_root / "artifacts/invent/invented.json",
+                    self.run_root / "artifacts/invent/assignment.json",
+                    self.run_root / inputs["concept_pre_render_path"],
+                    self.run_root / "artifacts/invent/source.json",
+                ):
+                    self.assertFalse(path.exists())
+
+    def test_marked_invent_rejects_stale_round_and_substituted_wish_before_output(self):
+        inputs, source = self.create_marked_invent_source()
+        inputs["concept_round"] = 2
+        self.write_stage("invent", inputs)
+        self.write_json("drafts/marked-invent.json", source, canonical=True)
+        result = self.run_tool(
+            "invent", "--source", "drafts/marked-invent.json",
+            "--concept-root", inputs["concept_root"], expected=2,
+        )
+        self.assertIn("not canonical for this round", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        (self.run_root / "STAGE.json").chmod(0o600)
+        inputs, source = self.create_marked_invent_source()
+        self.write_stage("invent", inputs)
+        self.write_json("drafts/marked-invent.json", source, canonical=True)
+        (self.run_root / "WISH.json").write_bytes(
+            canonical_json({"substituted": True})
+        )
+        result = self.run_tool(
+            "invent", "--source", "drafts/marked-invent.json",
+            "--concept-root", inputs["concept_root"], expected=2,
+        )
+        self.assertIn("Wish sha256 differs", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_marked_invent_rejects_linked_or_duplicate_key_source(self):
+        inputs, source = self.create_marked_invent_source()
+        brief = self.run_root / inputs["concept_root"] / "brief.json"
+        outside = self.run_root / "outside.json"
+        outside.write_bytes(brief.read_bytes())
+        brief.unlink()
+        brief.symlink_to(outside)
+        self.write_stage("invent", inputs)
+        self.write_json("drafts/marked-invent.json", source, canonical=True)
+        result = self.run_tool(
+            "invent", "--source", "drafts/marked-invent.json",
+            "--concept-root", inputs["concept_root"], expected=2,
+        )
+        self.assertIn("regular files", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        (self.run_root / "STAGE.json").chmod(0o600)
+        brief.unlink()
+        inputs, source = self.create_marked_invent_source()
+        research = self.run_root / inputs["concept_root"] / "research.json"
+        research.write_bytes(b'{"sources":[],"sources":[],"findings":[]}')
+        self.write_stage("invent", inputs)
+        self.write_json("drafts/marked-invent.json", source, canonical=True)
+        result = self.run_tool(
+            "invent", "--source", "drafts/marked-invent.json",
+            "--concept-root", inputs["concept_root"], expected=2,
+        )
+        self.assertIn("strict finite UTF-8 JSON", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_spark_make_seals_all_compound_creative_contracts(self):
         product_root, _, _, _ = self.create_product()
         assignment_path = "artifacts/make/r0001/assignment.json"
@@ -745,6 +1070,96 @@ class StageProposalToolTest(unittest.TestCase):
             ),
         )
         self.assertEqual(proposal.outcome.proposed_transition, "playtest")
+
+    def test_marked_make_binds_sealed_concept_and_rejects_concept_pixels(self):
+        inputs, source = self.create_marked_invent_source()
+        self.write_stage("invent", inputs)
+        self.write_json("drafts/marked-invent.json", source, canonical=True)
+        self.run_tool(
+            "invent", "--source", "drafts/marked-invent.json",
+            "--concept-root", inputs["concept_root"],
+        )
+        assignment, _ = self.assert_canonical_file("artifacts/invent/assignment.json")
+        invented, _ = self.assert_canonical_file("artifacts/invent/invented.json")
+        pre_render_document, _ = self.assert_canonical_file(inputs["concept_pre_render_path"])
+        pre_render = PreRenderConcept.from_mapping(
+            pre_render_document, root=self.run_root / inputs["concept_root"]
+        )
+        descriptor_paths = (
+            "images/front.png", "images/top.png", "images/bottom.png",
+            "images/exploded.png", "images/components/observatory.png",
+        )
+        for index, path in enumerate(descriptor_paths):
+            image = self.run_root / inputs["concept_root"] / path
+            image.parent.mkdir(parents=True, exist_ok=True)
+            image.write_bytes(b"\x89PNG\r\n\x1a\nconcept-%d" % index)
+        sealed = seal_pre_render_concept(pre_render)
+        sealed_path = inputs["concept_sealed_path"]
+        self.write_json(sealed_path, sealed.to_dict(), canonical=True)
+        effect = ConceptEffectEvidence(
+            pre_render_concept_sha256=pre_render.concept_sha256,
+            sealed_concept_sha256=sealed.concept_sha256,
+            profile_id="openrouter-images-v1",
+            profile_sha256="9" * 64,
+            roles=tuple(
+                ConceptEffectRoleEvidence(
+                    role=(
+                        ("front", "top", "bottom", "exploded")[index]
+                        if index < 4 else "components.observatory"
+                    ),
+                    path=entry.path,
+                    intent_sha256=("%x" % (index + 1)) * 64,
+                    image_sha256=entry.sha256,
+                    media_type="image/png",
+                )
+                for index, entry in enumerate(sealed.image_manifest.entries)
+            ),
+        )
+        effect_path = inputs["concept_effect_path"]
+        self.write_json(effect_path, effect.to_dict(), canonical=True)
+        product_root, _, _, _ = self.create_product()
+        make_inputs = {
+            "assignment": assignment,
+            "invented": invented,
+            "invent_concept_capability": inputs["invent_concept_capability"],
+            "sealed_concept": sealed.to_dict(),
+            "sealed_concept_artifact": {
+                "path": sealed_path,
+                "sha256": sha256((self.run_root / sealed_path).read_bytes()),
+            },
+            "concept_effect": effect.to_dict(),
+            "concept_effect_artifact": {
+                "path": effect_path,
+                "sha256": sha256((self.run_root / effect_path).read_bytes()),
+            },
+        }
+        self.write_stage("make", make_inputs, round_index=1)
+        self.run_tool(
+            "make",
+            "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project",
+            "--cad-verification-path", "validation/cad-build.json",
+        )
+        made_document, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
+        made = NativeMade.from_mapping(made_document)
+        self.assertEqual(made.schema_version, 2)
+        self.assertEqual(made.concept_sha256, sealed.concept_sha256)
+        self.assertEqual(made.concept_effect_sha256, effect.concept_effect_sha256)
+
+        # Reusing exact Concept pixels in the product is prohibited even under another name.
+        copied = product_root / "cad/project/snap/copied-concept.png"
+        copied.write_bytes(
+            (self.run_root / inputs["concept_root"] / descriptor_paths[0]).read_bytes()
+        )
+        (self.run_root / "agent-outcome.json").unlink()
+        result = self.run_tool(
+            "make",
+            "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project",
+            "--cad-verification-path", "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("must not copy sealed Concept image pixels", result.stderr)
 
     def test_spark_make_requires_creative_source_before_sealing(self):
         self.create_product()

@@ -10,8 +10,9 @@
 > `Wish -> Invent -> Make -> Release` (the default), and Quest is
 > `Wish -> Invent -> Make -> Playtest -> Release`. New runs have no separate
 > Match turn; Inventor selection is part of the first active creative stage.
-> Concept sequences below are future integration sketches and must be adapted
-> to these effort routes before activation.
+> Concept is not and will not become a separate lifecycle stage. Its v2
+> contracts are active only for newly marked Forge/Quest Invent attempts;
+> Spark and unmarked historical runs retain their frozen behavior.
 
 ## Goal
 
@@ -37,10 +38,10 @@ current main
     `-- incremental production changes
             +-- runtime fixes
             +-- Make and Factory fixes
-            +-- dormant Concept contracts and gates
+            +-- Concept contracts and structural checks (restored, then activated)
             +-- pre-render Concept protocol
             +-- durable Concept image effects
-            `-- Concept lifecycle activation
+            `-- compound creative-stage activation
 ```
 
 Each integration change starts from the latest `origin/main`, carries its own
@@ -133,10 +134,14 @@ Made artifacts without requiring legacy `project.json`.
 
 ## Phase 3: Restore Concept incrementally
 
-### Dormant Concept contracts and gate
+### Concept contracts and gate
 
-Restore the Concept schema, contract types, structural gate, package data, and
-focused tests without changing the production lifecycle. Include:
+**Status: active for newly marked Forge/Quest; compatibility preserved.** `main`
+contains compatibility-only schema-v1 readers,
+route-aware schema-v2 pre-render and sealed values, exact-tree checks, pure
+structural evaluation, component-owned schemas/package data, and focused
+failure-path tests without changing the production lifecycle. The restored
+boundary includes:
 
 - exact routed-Wish identity, objective, and context preservation from
   `948a34d`;
@@ -144,14 +149,25 @@ focused tests without changing the production lifecycle. Include:
 - current Inventor-selection, Invent, blueprint, Taste, and artifact hash
   bindings, including Spark's combined selection-and-Make source.
 
-Keeping this layer dormant makes the data boundary independently reviewable
-before it can affect a live product run.
+The pure contract layer remains independently reviewable even though marked
+Forge/Quest Invent now composes it with the host-owned image effect. It still
+has no credential, network, lifecycle, or effect authority of its own.
+
+Schema v1 is parse/validation compatibility only. It does not resume a
+historical Concept checkpoint and is never accepted into a current run.
+Schema v2 binds either `invent` or `spark-make` provenance, exact authored
+source bytes, round and revision inputs, path-only pre-render source, and
+already-present sealed image bytes. Its local conversion is check-only and
+performs no write, provider call, credential read, gate decision, or effect.
 
 ### Pre-render Concept proposal protocol
 
-Rebuild the useful parts of `25e647d` and `c2873bd`:
+**Status: active for marked Forge/Quest Invent.**
 
-- Codex finalizes a pre-render proposal containing the Concept source
+The contract and structural-validation portions of `25e647d` and `c2873bd`
+are restored. The owning Invent finalizer now:
+
+- the owning Invent finalizer accepts pre-render Concept source
   documents and path-only descriptor;
 - the finalizer validates the same structural constraints the host will
   require;
@@ -164,8 +180,11 @@ Do not restore the feature branch's quiet-period completion fallback. Current
 
 ### Durable Concept image-effect boundary
 
-Complete `harden-concept-image-effect-boundary` before enabling paid Concept
-rendering. The host must own:
+**Status: active for marked Forge/Quest Invent.** See
+[`CONCEPT_IMAGE_EFFECTS.md`](CONCEPT_IMAGE_EFFECTS.md) for configuration,
+authorization, ambiguity, and recovery behavior.
+
+The host owns:
 
 - explicit private-data transmission authorization;
 - a durable intent written before transmission;
@@ -178,27 +197,31 @@ rendering. The host must own:
 Provider request/response compatibility from `e189bcb` belongs at this
 boundary. Its obsolete CAD timestamp and `--no-report` workarounds do not.
 
-### Activate Concept in the current lifecycle
+### Activate Concept inside the current creative boundaries
 
-Only after the contracts, pre-render protocol, image-effect boundary, and both
-QA tiers are ready, define Concept's position in each selectable effort route
-in a new architecture decision. The historical feature-branch sketch was:
+**Status: active for newly marked Forge and Quest; intentionally absent from
+Spark and unmarked historical runs.**
+
+The immutable marker versions the active boundary without changing the route.
+The historical standalone-stage sketch was:
 
 ```text
 Wish -> Match -> Invent -> Concept -> Make <-> Playtest -> terminal Release
 ```
 
-Do not activate that fixed topology unchanged: new runs have no Match turn,
-Spark and Forge pass Playtest through, and passed-through stages may not create
-a turn, artifact, gate, or evidence. Any Concept activation must preserve
-those effort semantics or explicitly supersede ADR 0016.
+That topology is rejected. Forge and Quest author Concept source within their
+existing Invent Goal and native turn. Spark remains unchanged. After the native
+turn returns, the host validates
+the authored source, perform a separately authorized durable image effect, seal
+exact returned bytes, and decide the owning stage gate. No route may add a
+Concept stage, Goal, turn, checkpoint, transition, pass-through artifact, or
+Concept-only wait.
 
 Route Playtest feedback by invalidation scope:
 
 ```text
-build-only feedback       -> Make
-design-level feedback     -> Concept
-invention-level feedback  -> Invent
+build-only feedback                    -> Make
+design- or invention-level feedback    -> Invent (Forge/Quest)
 ```
 
 This activation change must update the authoritative topology, deterministic
@@ -209,22 +232,22 @@ documentation, checkpoint invalidation, and wait/resume scenarios together.
 
 | Commit | Subject | Disposition |
 |---|---|---|
-| `25e647d` | Fix Concept finalization before image rendering | Reimplement in pre-render Concept protocol |
-| `c2873bd` | Fix native completion and Concept brief validation | Keep validation; drop obsolete completion fallback |
-| `ea34822` | Reject stale Concept contracts across repair rounds | Port with Concept contracts |
-| `febb478` | Backlog Concept image-effect hardening | Preserve and complete before activation |
-| `1853cfd` | Add real-Codex mock-session acceptance | Rewritten and merged as effort-aware published-Release acceptance |
-| `b2e5b9b` | Preserve the Workshop Python environment | Port early against current sandbox policy |
-| `50fff85` | Close native Codex process streams | Reassess and port as focused cleanup |
-| `948a34d` | Enforce exact routed Wish context | Port with Concept contracts |
-| `db83d57` | Validate Make product metadata before handoff | Adapt to current `NativeMade` contract |
-| `27d5950` | Require source-clean replayable CAD | Preserve invariant; do not transplant old policy |
-| `d8b48d3` | Accept canonical Make metadata handoff | Superseded by `main` |
-| `1a19157` | Select sealed nested assembled output | Adapt to current Factory inventory |
-| `69afa5c` | Bind E2E context proof to final source bytes | Rewritten and merged into the effort-aware mock-session tier |
-| `e4eb604` | Audit only run-root stage bindings | Rewritten and merged into the effort-aware mock-session tier |
-| `9a979e0` | Complete old mock-session OpenSpec tasks | Reconciled and superseded by the current-route rewrite |
-| `e189bcb` | Harden Concept rendering and native CAD verification | Split provider/Concept work from obsolete CAD workarounds |
+| `25e647d` | Fix Concept finalization before image rendering | **Rewritten and activated:** compound Invent finalizer plus host-owned effect |
+| `c2873bd` | Fix native completion and Concept brief validation | **Reconciled:** structural validation restored; obsolete completion fallback superseded |
+| `ea34822` | Reject stale Concept contracts across repair rounds | **Rewritten and activated:** round, standing Concept, effect, and revision bindings enforced |
+| `febb478` | Backlog Concept image-effect hardening | **Rewritten and activated:** durable authorized role ledger and wait/resume boundary |
+| `1853cfd` | Add real-Codex mock-session acceptance | **Rewritten and merged:** effort-aware published-Release acceptance |
+| `b2e5b9b` | Preserve the Workshop Python environment | **Deferred:** requires a separate current-sandbox change |
+| `50fff85` | Close native Codex process streams | **Deferred:** requires separate focused process-cleanup evidence |
+| `948a34d` | Enforce exact routed Wish context | **Reconciled:** contract behavior restored; standalone finalizer wiring superseded |
+| `db83d57` | Validate Make product metadata before handoff | **Deferred:** must target the current `NativeMade` contract separately |
+| `27d5950` | Require source-clean replayable CAD | **Superseded:** current fresh exact-byte CAD replay preserves the retained invariant |
+| `d8b48d3` | Accept canonical Make metadata handoff | **Superseded:** current `main` accepts native Made artifacts |
+| `1a19157` | Select sealed nested assembled output | **Deferred:** must target current Factory inventory separately |
+| `69afa5c` | Bind E2E context proof to final source bytes | **Rewritten and merged:** effort-aware mock-session tier |
+| `e4eb604` | Audit only run-root stage bindings | **Rewritten and merged:** effort-aware mock-session tier |
+| `9a979e0` | Complete old mock-session OpenSpec tasks | **Superseded:** current-route rewrite owns the accepted tasks |
+| `e189bcb` | Harden Concept rendering and native CAD verification | **Split:** current provider/effect boundary activated; obsolete CAD workarounds superseded |
 
 ## Per-change merge discipline
 

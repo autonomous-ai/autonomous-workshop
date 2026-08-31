@@ -15,6 +15,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Sequence
 
 from workshop.artifacts import ArtifactEntry, ArtifactManifest, MAX_ENTRIES
+from workshop.concept import SealedConcept
 from workshop.errors import ContractError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
@@ -74,6 +75,23 @@ def _strict_json(content: bytes, label: str) -> dict[str, Any]:
         raise StateConflict("%s is not strict UTF-8 JSON" % label) from exc
     if not isinstance(value, dict):
         raise StateConflict("%s must contain one JSON object" % label)
+    return value
+
+
+def _public_concept_effect(value: Mapping[str, Any]) -> Mapping[str, Any]:
+    expected = {
+        "schema_version", "kind", "pre_render_concept_sha256",
+        "sealed_concept_sha256", "profile_id", "profile_sha256", "roles",
+        "concept_effect_sha256",
+    }
+    if set(value) != expected or value.get("schema_version") != 1 or value.get(
+        "kind"
+    ) != "autonomous-workshop.concept-image-effect":
+        raise StateConflict("Concept effect fields are invalid")
+    identity = {key: value[key] for key in expected - {"concept_effect_sha256"}}
+    observed = hashlib.sha256(_canonical_json(identity)[:-1]).hexdigest()
+    if value.get("concept_effect_sha256") != observed:
+        raise StateConflict("Concept effect identity is invalid")
     return value
 
 
@@ -376,6 +394,42 @@ def _copy_made_tree(
         writer(destination, content)
 
 
+def _resolve_concept_binding(
+    run_root: Path,
+    *,
+    concept_sha256: str,
+    concept_effect_sha256: str,
+) -> tuple[Path, bytes, SealedConcept, bytes, Mapping[str, Any]]:
+    candidates = []
+    for path in sorted(
+        (run_root / "artifacts/concept").glob(
+            "r[0-9][0-9][0-9][0-9]/sealed.json"
+        )
+    ):
+        content = _stable_file(path, "candidate sealed Concept")
+        document = _strict_json(content, "candidate sealed Concept")
+        if document.get("concept_sha256") == concept_sha256:
+            candidates.append((path.parent, content, document))
+    if len(candidates) != 1:
+        raise StateConflict("public archive cannot resolve the Made Concept")
+    concept_directory, sealed_content, sealed_document = candidates[0]
+    sealed = SealedConcept.from_mapping(
+        sealed_document,
+        root=concept_directory / "concept",
+    )
+    sealed.validate_tree()
+    effect_path = concept_directory / "effect.json"
+    effect_content = _stable_file(effect_path, "accepted Concept effect")
+    effect = _public_concept_effect(_strict_json(effect_content, "Concept effect"))
+    if (
+        sealed.concept_sha256 != concept_sha256
+        or effect["concept_effect_sha256"] != concept_effect_sha256
+        or effect["sealed_concept_sha256"] != sealed.concept_sha256
+    ):
+        raise StateConflict("public Concept differs from the Made binding")
+    return concept_directory, sealed_content, sealed, effect_content, effect
+
+
 def _invent_attempts(
     writer: PublicWriter,
     run_root: Path,
@@ -473,6 +527,8 @@ def _invent_attempts(
         accepted_assignment,
         accepted_invented,
         expected_round=made.round,
+        expected_concept_sha256=made.concept_sha256,
+        expected_concept_effect_sha256=made.concept_effect_sha256,
     )
     for round_number in sorted(proposals):
         assignment, invented = proposals[round_number]
@@ -609,10 +665,18 @@ def _made_attempts(
         proposal = NativeMade.from_mapping(
             _strict_json(content, "Make round %d contract" % round_number)
         )
+        if proposal.schema_version == 2:
+            _resolve_concept_binding(
+                run_root,
+                concept_sha256=proposal.concept_sha256,
+                concept_effect_sha256=proposal.concept_effect_sha256,
+            )
         proposal.assert_context(
             assignment,
             invented,
             expected_round=round_number,
+            expected_concept_sha256=proposal.concept_sha256,
+            expected_concept_effect_sha256=proposal.concept_effect_sha256,
         )
         if round_number == made.round:
             proposal.validate_product_tree(run_root)
@@ -857,7 +921,13 @@ def write_public_workflow_archive(
             _strict_json(invented_content, "Invented contract")
         )
         invented.assert_context(assignment)
-        made.assert_context(assignment, invented, expected_round=made.round)
+        made.assert_context(
+            assignment,
+            invented,
+            expected_round=made.round,
+            expected_concept_sha256=made.concept_sha256,
+            expected_concept_effect_sha256=made.concept_effect_sha256,
+        )
         writer("match/assignment.json", assignment_content)
         writer("make/invented.json", invented_content)
         invent_attempts = {made.round: (assignment, invented)}
@@ -870,6 +940,60 @@ def write_public_workflow_archive(
             max(invent_attempts),
         ),
     )
+
+    if made.schema_version == 2:
+        (
+            concept_directory,
+            sealed_content,
+            sealed,
+            effect_content,
+            effect,
+        ) = _resolve_concept_binding(
+            run_root,
+            concept_sha256=made.concept_sha256,
+            concept_effect_sha256=made.concept_effect_sha256,
+        )
+        concept_prefix = concept_directory.relative_to(run_root).as_posix()
+        copied = bool(disclose_exact_wish)
+        writer(
+            "concept/BINDING.json",
+            _canonical_json(
+                {
+                    "schema_version": 1,
+                    "kind": "autonomous-workshop.public-concept-binding",
+                    "concept_sha256": sealed.concept_sha256,
+                    "concept_effect_sha256": effect["concept_effect_sha256"],
+                    "exact_source_and_images_copied": copied,
+                    "claims": (
+                        "Byte identity and role completeness only; no aesthetic, "
+                        "buildability, Playtest, manufacture, or delivery claim."
+                    ),
+                }
+            ),
+        )
+        if copied:
+            writer("concept/pre-render.json", _artifact_file(
+                run_root, "%s/pre-render.json" % concept_prefix,
+                "accepted pre-render Concept",
+            ))
+            writer("concept/sealed.json", sealed_content)
+            writer("concept/effect.json", effect_content)
+            for entry in sealed.source.source_manifest.entries:
+                writer(
+                    "concept/source/%s" % entry.path,
+                    _stable_file(
+                        sealed.root.joinpath(*PurePosixPath(entry.path).parts),
+                        "Concept source %s" % entry.path,
+                    ),
+                )
+            for entry in sealed.image_manifest.entries:
+                writer(
+                    "concept/images/%s" % entry.path,
+                    _stable_file(
+                        sealed.root.joinpath(*PurePosixPath(entry.path).parts),
+                        "Concept image %s" % entry.path,
+                    ),
+                )
 
     made_attempts, make_attempts_document = _made_attempts(
         run_root,

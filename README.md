@@ -232,6 +232,15 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
 
 Passed-through stages create no turn, artifact, gate, or fabricated evidence. Spark and Forge record Playtest as `not-run`. Quest requires passing Playtest bound to the current Made revision.
 
+Newly marked Forge and Quest runs also activate Concept inside the existing
+Invent turn: Codex authors pre-render design evidence, then the trusted host
+performs authorized durable image effects and seals exact returned bytes before
+Make. This adds no Concept stage or model turn. Selecting either effort records
+prospective authority to send drawing instructions and prior-role reference
+images to the frozen provider profile; credentials remain host-only. See
+[Concept image effects](docs/CONCEPT_IMAGE_EFFECTS.md) for private configuration
+and unknown-outcome recovery. Spark and unmarked historical runs are unchanged.
+
 New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
 ceiling for their one persistent Make-to-Release session, and a 20-minute
 boundary per native turn. A timeout resumes the exact session and Goal through

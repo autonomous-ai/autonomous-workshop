@@ -12,7 +12,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
 from workshop._validation import copy_json_mapping, require_sha256
 from workshop.artifacts import (
@@ -113,13 +113,15 @@ class NativeMade:
     product_json_sha256: str
     cad_verification_path: str
     cad_verification_sha256: str
+    concept_sha256: Optional[str] = None
+    concept_effect_sha256: Optional[str] = None
     schema_version: int = 1
     kind: str = NATIVE_MADE_KIND
     made_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("native Made schema_version must be 1")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
+            raise ContractError("native Made schema_version must be 1 or 2")
         if self.kind != NATIVE_MADE_KIND:
             raise ContractError("native Made kind is invalid")
         if type(self.round) is not int or not 1 <= self.round <= 100:
@@ -134,6 +136,15 @@ class NativeMade:
             (self.cad_verification_sha256, "native Made CAD verification sha256"),
         ):
             require_sha256(value, label)
+        if self.schema_version == 1:
+            if self.concept_sha256 is not None or self.concept_effect_sha256 is not None:
+                raise ContractError("native Made schema v1 cannot bind Concept")
+        else:
+            require_sha256(self.concept_sha256, "native Made Concept sha256")
+            require_sha256(
+                self.concept_effect_sha256,
+                "native Made Concept effect sha256",
+            )
         expected_root = "artifacts/make/r%04d/product" % self.round
         if _safe_relative(self.product_root, "native Made product_root").as_posix() != expected_root:
             raise ContractError("native Made product_root is not canonical for its round")
@@ -163,7 +174,7 @@ class NativeMade:
         )
 
     def _identity_dict(self) -> dict[str, Any]:
-        return {
+        identity = {
             "schema_version": self.schema_version,
             "kind": self.kind,
             "round": self.round,
@@ -180,6 +191,14 @@ class NativeMade:
             "cad_verification_path": self.cad_verification_path,
             "cad_verification_sha256": self.cad_verification_sha256,
         }
+        if self.schema_version == 2:
+            identity.update(
+                {
+                    "concept_sha256": self.concept_sha256,
+                    "concept_effect_sha256": self.concept_effect_sha256,
+                }
+            )
+        return identity
 
     def to_dict(self) -> dict[str, Any]:
         payload = self._identity_dict()
@@ -188,7 +207,7 @@ class NativeMade:
 
     @classmethod
     def from_mapping(cls, value: Any) -> "NativeMade":
-        expected = {
+        common = {
             "schema_version",
             "kind",
             "round",
@@ -206,7 +225,15 @@ class NativeMade:
             "cad_verification_sha256",
             "made_sha256",
         }
-        if not isinstance(value, Mapping) or set(value) != expected:
+        if not isinstance(value, Mapping):
+            raise ContractError("native Made fields are invalid")
+        schema_version = value.get("schema_version")
+        expected = (
+            common
+            if schema_version == 1
+            else common | {"concept_sha256", "concept_effect_sha256"}
+        )
+        if schema_version not in (1, 2) or set(value) != expected:
             raise ContractError("native Made fields are invalid")
         made = cls(
             schema_version=value["schema_version"],
@@ -224,6 +251,8 @@ class NativeMade:
             product_json_sha256=value["product_json_sha256"],
             cad_verification_path=value["cad_verification_path"],
             cad_verification_sha256=value["cad_verification_sha256"],
+            concept_sha256=value.get("concept_sha256"),
+            concept_effect_sha256=value.get("concept_effect_sha256"),
         )
         if dict(value) != made.to_dict():
             raise ContractError("native Made hashes or canonical identity are invalid")
@@ -235,6 +264,8 @@ class NativeMade:
         invented: NativeInvented,
         *,
         expected_round: int,
+        expected_concept_sha256: Optional[str] = None,
+        expected_concept_effect_sha256: Optional[str] = None,
     ) -> None:
         if not isinstance(assignment, NativeMatchAssignment) or not isinstance(
             invented, NativeInvented
@@ -250,6 +281,19 @@ class NativeMade:
             or self.invented_sha256 != invented.invented_sha256
         ):
             raise ContractError("native Made belongs to different Workshop inputs")
+        if self.schema_version == 2:
+            require_sha256(
+                expected_concept_sha256, "expected native Made Concept sha256"
+            )
+            require_sha256(
+                expected_concept_effect_sha256,
+                "expected native Made Concept effect sha256",
+            )
+            if (
+                self.concept_sha256 != expected_concept_sha256
+                or self.concept_effect_sha256 != expected_concept_effect_sha256
+            ):
+                raise ContractError("native Made belongs to different Concept inputs")
 
     def validate_product_tree(self, run_root: Path) -> Made:
         """Rehash the exact product tree and return the canonical Made contract."""

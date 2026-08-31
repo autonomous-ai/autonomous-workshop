@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass, field
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any, Mapping, Optional
 
@@ -17,6 +17,7 @@ from workshop._validation import (
     require_sha256,
 )
 from workshop.errors import ContractError, StateConflict
+from workshop.concept import ConceptExpectedContext, PreRenderConcept, evaluate_concept_brief
 from workshop.invent.native import NativeInvented
 from workshop.match.native import NativeMatchAssignment, InventorRoster
 from workshop.workflow.agent_run import (
@@ -29,6 +30,7 @@ from workshop.workflow.proposals import (
     AgentOutcomeProposal,
     read_bounded_json_artifact,
 )
+from workshop.wish import Wish
 
 
 STAGE_GATE_EVIDENCE_KIND = "autonomous-workshop.stage-gate-evidence"
@@ -503,6 +505,7 @@ def evaluate_routed_invent_stage(
     roster: InventorRoster,
     assignment_artifact_path: str,
     invented_artifact_path: str,
+    concept_context: Optional[Mapping[str, Any]] = None,
 ) -> StageGateDecision:
     """Validate combined selection + invention from one routed Invent turn."""
 
@@ -511,27 +514,47 @@ def evaluate_routed_invent_stage(
     require_sha256(wish_sha256, "expected Invent Wish sha256")
     if not isinstance(roster, InventorRoster):
         raise ContractError("routed Invent gate requires an InventorRoster")
+    source_artifact_path = (
+        PurePosixPath(invented_artifact_path).parent / "source.json"
+    ).as_posix()
+    legacy_paths = (invented_artifact_path, assignment_artifact_path, source_artifact_path)
+    expected_paths = legacy_paths
+    if concept_context is not None:
+        concept_root = concept_context.get("concept_root")
+        pre_render_path = concept_context.get("concept_pre_render_path")
+        if not isinstance(concept_root, str) or not isinstance(pre_render_path, str):
+            raise ContractError("marked Invent gate lacks canonical Concept paths")
+        expected_paths = (
+            invented_artifact_path,
+            assignment_artifact_path,
+            pre_render_path,
+            source_artifact_path,
+            *("%s/%s" % (concept_root, name) for name in (
+                "brief.json", "derived_wish.json", "descriptor.json",
+                "prompts.json", "research.json",
+            )),
+        )
     if (
         proposal.checkpoint_sha256 != expected_checkpoint_sha256
         or proposal.subject_sha256 != expected_subject_sha256
     ):
         raise StateConflict("routed Invent proposal belongs to another stage subject")
     outcome = proposal.outcome
-    source_artifact_path = (
-        PurePosixPath(invented_artifact_path).parent / "source.json"
-    ).as_posix()
     if (
         outcome.stage != "invent"
         or outcome.status != "ready"
         or outcome.proposed_transition != "make"
         or outcome.needs
         or tuple(item.path for item in outcome.artifacts)
-        != (invented_artifact_path, assignment_artifact_path, source_artifact_path)
+        != expected_paths
     ):
         raise ContractError(
             "routed Invent outcome must contain its exact Invented, assignment, and source artifacts"
         )
-    invented_artifact, assignment_artifact, source_artifact = outcome.artifacts
+    invented_artifact = outcome.artifacts[0]
+    assignment_artifact = outcome.artifacts[1]
+    pre_render_artifact = outcome.artifacts[2] if concept_context is not None else None
+    source_artifact = outcome.artifacts[3] if concept_context is not None else outcome.artifacts[2]
     assignment = NativeMatchAssignment.from_mapping(
         _artifact_document(
             run_root, assignment_artifact, label="routed native Match assignment"
@@ -559,6 +582,59 @@ def evaluate_routed_invent_stage(
         or source["research"] != invented.to_dict()["research"]
     ):
         raise ContractError("routed Invent source differs from its sealed contracts")
+    concept_checks: dict[str, Any] = {}
+    if concept_context is not None:
+        wish_binding = concept_context.get("wish")
+        if not isinstance(wish_binding, Mapping) or set(wish_binding) != {"path", "sha256"}:
+            raise ContractError("marked Invent gate Wish binding is invalid")
+        wish_document, wish_content = read_bounded_json_artifact(
+            run_root, wish_binding["path"], label="marked Invent Wish"
+        )
+        if hashlib.sha256(wish_content).hexdigest() != wish_binding["sha256"]:
+            raise StateConflict("marked Invent Wish differs from its binding")
+        if not isinstance(wish_document, Mapping) or set(wish_document) != {
+            "schema_version", "product_id", "objective", "constraints", "context"
+        }:
+            raise ContractError("marked Invent Wish fields are invalid")
+        wish = Wish(**dict(wish_document))
+        if pre_render_artifact is None:
+            raise ContractError("marked Invent pre-render artifact is absent")
+        pre_render_document = _artifact_document(
+            run_root, pre_render_artifact, label="marked pre-render Concept"
+        )
+        concept_root = concept_context["concept_root"]
+        pre_render = PreRenderConcept.from_mapping(
+            pre_render_document,
+            root=Path(run_root).resolve(strict=True) / concept_root,
+        )
+        source_document, source_content = read_bounded_json_artifact(
+            run_root, source_artifact.path, label="routed Invent authored source"
+        )
+        if source_document != source:
+            raise StateConflict("routed Invent source changed during validation")
+        expected = ConceptExpectedContext(
+            origin="invent",
+            wish=wish,
+            wish_sha256=wish_sha256,
+            assignment=assignment,
+            invented=invented,
+            creative_source_path=source_artifact.path,
+            creative_source_sha256=hashlib.sha256(source_content).hexdigest(),
+            round=concept_context["concept_round"],
+            standing_concept_sha256=concept_context.get("standing_concept_sha256"),
+            revision_input_sha256=concept_context.get("revision_input_sha256"),
+        )
+        pre_render.assert_context(expected, Path(run_root))
+        pre_render.validate_tree()
+        structural = dict(evaluate_concept_brief(pre_render, wish=wish))
+        concept_checks = {
+            "pre_render_concept_sha256": pre_render.concept_sha256,
+            "pre_render_artifact_sha256": pre_render_artifact.sha256,
+            "source_manifest_sha256": pre_render.source_manifest.artifact_sha256,
+            "derived_wish_sha256": pre_render.derived_wish.derived_wish_sha256,
+            "concept_round": pre_render.provenance.round,
+            "concept_structure": structural,
+        }
     evidence = StageGateEvidence(
         stage="invent",
         gate_id="invent.routed-concept-v1",
@@ -581,6 +657,7 @@ def evaluate_routed_invent_stage(
             "source_bound": True,
             "selected_taste_sha256": assignment.selected_taste_sha256,
             "wish_bound": True,
+            **concept_checks,
         },
     )
     return StageGateDecision(evidence=evidence, transition="make")

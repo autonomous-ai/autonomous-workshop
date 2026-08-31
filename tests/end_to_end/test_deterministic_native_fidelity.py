@@ -1,7 +1,9 @@
 import hashlib
+import base64
 import json
 import os
 import shutil
+import sqlite3
 import stat
 import tempfile
 import unittest
@@ -18,6 +20,10 @@ from workshop.integrations.factory import (
     FACTORY_TOY_CATEGORY_SLUG,
     FactoryProjectFileResponse,
     HttpResponse,
+)
+from workshop.integrations.concept_images import (
+    ConceptImageAmbiguous,
+    ConceptImageProfile,
 )
 from workshop.make.native_gate import (
     NATIVE_CAD_FULL_TIER,
@@ -114,6 +120,7 @@ class _DeterministicFactoryTransport:
         self.import_category = None
         self.import_has_cad = False
         self.import_has_manual = False
+        self.import_names = set()
 
     def design(self):
         return {
@@ -168,6 +175,7 @@ class _DeterministicFactoryTransport:
             if files and len(files) == 1:
                 with zipfile.ZipFile(BytesIO(files[0])) as archive:
                     names = set(archive.namelist())
+                    self.import_names = names
                     self.import_has_manual = "MANUAL.pdf" in names
                     self.import_has_cad = any(
                         name.lower().endswith((".step", ".stl")) for name in names
@@ -202,6 +210,56 @@ class _DeterministicFactoryTransport:
         )
 
 
+class _DeterministicConceptImageTransport:
+    """Deterministic image provider double at the outbound adapter boundary."""
+
+    def __init__(
+        self, *, fail_once_at=None, ambiguous_once_at=None, reject_once_at=None
+    ):
+        self.calls = []
+        self.fail_once_at = fail_once_at
+        self.ambiguous_once_at = ambiguous_once_at
+        self.reject_once_at = reject_once_at
+        self._failed = False
+        self._ambiguous = False
+        self._rejected = False
+
+    def __call__(self, url, headers, body, timeout):
+        payload = json.loads(body)
+        self.calls.append((url, dict(headers), payload, timeout))
+        call_number = len(self.calls)
+        if self.fail_once_at == call_number and not self._failed:
+            self._failed = True
+            raise OSError("deterministic pre-transmission failure")
+        if self.ambiguous_once_at == call_number and not self._ambiguous:
+            self._ambiguous = True
+            raise ConceptImageAmbiguous(
+                "deterministic ambiguous transmission",
+                provider_operation_id="concept-ambiguous-%02d" % call_number,
+            )
+        if self.reject_once_at == call_number and not self._rejected:
+            self._rejected = True
+            return 422, {"Content-Type": "application/json"}, b'{"error":"rejected"}'
+        color = (
+            (31 + len(self.calls) * 29) % 255,
+            (79 + len(self.calls) * 43) % 255,
+            (127 + len(self.calls) * 61) % 255,
+        )
+        image = BytesIO()
+        from PIL import Image
+
+        Image.new("RGB", (64, 64), color).save(image, format="PNG")
+        response = {
+            "data": [
+                {
+                    "b64_json": base64.b64encode(image.getvalue()).decode("ascii"),
+                    "id": "concept-operation-%02d" % len(self.calls),
+                }
+            ]
+        }
+        return 200, {"Content-Type": "application/json"}, _canonical_json(response)
+
+
 @unittest.skipUnless(
     os.environ.get("WORKSHOP_RUN_DETERMINISTIC_E2E") == "1",
     "run through the required deterministic-e2e CI gate",
@@ -218,8 +276,31 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         self.binary.parent.mkdir()
         shutil.copyfile(_FIXTURE_CODEX, self.binary)
         self.binary.chmod(0o700)
+        profile = ConceptImageProfile()
+        self.concept_credentials = self.root / "concept-images.json"
+        self.concept_credentials.write_bytes(
+            _canonical_json(
+                {
+                    "schema_version": 1,
+                    "profile": {
+                        "profile_id": profile.profile_id,
+                        "origin": profile.origin,
+                        "model": profile.model,
+                        "request_schema_version": profile.request_schema_version,
+                        "supports_idempotency": profile.supports_idempotency,
+                        "supports_operation_readback": profile.supports_operation_readback,
+                        "supports_absence_proof": profile.supports_absence_proof,
+                    },
+                    "api_key": "deterministic-concept-secret",
+                }
+            )
+        )
+        self.concept_credentials.chmod(0o600)
+        self.concept_transport = _DeterministicConceptImageTransport()
 
-    def _environment(self, *, home=None, credentials=True):
+    def _environment(
+        self, *, home=None, credentials=True, concept_credentials=True
+    ):
         home = self.home if home is None else Path(home)
         environment = {
             "PATH": os.environ.get("PATH", os.defpath),
@@ -228,6 +309,10 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
             "WORKSHOP_HOME": str(home),
             "WORKSHOP_CODEX_BIN": str(self.binary),
         }
+        if concept_credentials:
+            environment["WORKSHOP_CONCEPT_IMAGE_CREDENTIALS_FILE"] = str(
+                self.concept_credentials
+            )
         if credentials:
             environment.update(
                 {
@@ -246,11 +331,30 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
             context={"source": "required-deterministic-e2e"},
         )
 
-    def _run(self, product_id, transport, *, effort="forge", home=None, credentials=True):
+    def _run(
+        self,
+        product_id,
+        transport,
+        *,
+        effort="forge",
+        home=None,
+        credentials=True,
+        concept_credentials=True,
+        concept_transport=None,
+    ):
+        self.concept_transport = (
+            concept_transport
+            if concept_transport is not None
+            else _DeterministicConceptImageTransport()
+        )
         self.addCleanup(self._remove_projection, product_id)
         with mock.patch.dict(
             os.environ,
-            self._environment(home=home, credentials=credentials),
+            self._environment(
+                home=home,
+                credentials=credentials,
+                concept_credentials=concept_credentials,
+            ),
             clear=True,
         ), mock.patch(
             "workshop.workflow.native_run._FACTORY_TRANSPORT",
@@ -258,6 +362,9 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         ), mock.patch(
             "workshop.workflow.native_run._FACTORY_PROJECT_FILE_TRANSPORT",
             transport.project_file,
+        ), mock.patch(
+            "workshop.workflow.native_run._CONCEPT_IMAGE_TRANSPORT",
+            self.concept_transport,
         ):
             try:
                 return start_native_run(self._wish(product_id), effort=effort)
@@ -271,10 +378,22 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
                     ) from exc
                 raise
 
-    def _resume(self, product_id, transport, *, home=None, credentials=True):
+    def _resume(
+        self,
+        product_id,
+        transport,
+        *,
+        home=None,
+        credentials=True,
+        concept_credentials=True,
+    ):
         with mock.patch.dict(
             os.environ,
-            self._environment(home=home, credentials=credentials),
+            self._environment(
+                home=home,
+                credentials=credentials,
+                concept_credentials=concept_credentials,
+            ),
             clear=True,
         ), mock.patch(
             "workshop.workflow.native_run._FACTORY_TRANSPORT",
@@ -282,6 +401,9 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         ), mock.patch(
             "workshop.workflow.native_run._FACTORY_PROJECT_FILE_TRANSPORT",
             transport.project_file,
+        ), mock.patch(
+            "workshop.workflow.native_run._CONCEPT_IMAGE_TRANSPORT",
+            self.concept_transport,
         ):
             return resume_native_run(product_id)
 
@@ -407,6 +529,22 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         self.assertNotIn("match", checkpoint.stage_artifacts)
         self.assertNotIn("concept", checkpoint.stage_artifacts)
         self.assertNotIn("deliver", checkpoint.stage_artifacts)
+        expected_concept_calls = 0 if effort == "spark" else 5
+        self.assertEqual(len(self.concept_transport.calls), expected_concept_calls)
+        if effort != "spark":
+            self.assertEqual(
+                [len(item[2]["input_references"]) for item in self.concept_transport.calls],
+                [0, 1, 1, 3, 1],
+            )
+            invent_names = {
+                Path(item.path).name
+                for item in checkpoint.stage_artifacts["invent"]
+            }
+            self.assertTrue({"pre-render.json", "sealed.json", "effect.json"} <= invent_names)
+            self.assertEqual(
+                [item["stage"] for item in self._trace(paths)].count("invent"),
+                1,
+            )
 
         trace = self._trace(paths)
         self.assertEqual([item["stage"] for item in trace], expected_stages)
@@ -478,6 +616,21 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         )
         self.assertFalse((paths.workspace / "agent-outcome.json").exists())
         self.assertFalse((paths.workspace / "STAGE.json").stat().st_mode & 0o222)
+        self.assertFalse(
+            any(name.startswith("concept/") for name in transport.import_names)
+        )
+        public = Path(__file__).resolve().parents[2] / (
+            "toys/alice-%s" % product_id
+        )
+        if effort == "spark":
+            self.assertFalse((public / "concept").exists())
+        else:
+            binding = json.loads(
+                (public / "concept/BINDING.json").read_text(encoding="utf-8")
+            )
+            self.assertFalse(binding["exact_source_and_images_copied"])
+            self.assertFalse((public / "concept/source").exists())
+            self.assertFalse((public / "concept/images").exists())
 
         creative_stage = "make" if effort == "spark" else "invent"
         creative_names = {
@@ -566,6 +719,129 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         ).snapshot()
         self.assertEqual((checkpoint.stage, checkpoint.status), ("invent", "active"))
 
+    def test_missing_concept_credentials_resume_without_repeating_invent(self):
+        product_id = "deterministic-concept-credential-wait"
+        transport = _DeterministicFactoryTransport(product_id)
+        waiting = self._run(
+            product_id,
+            transport,
+            effort="forge",
+            concept_credentials=False,
+        )
+        paths = self._paths(product_id)
+        first_trace = self._trace(paths)
+        self.assertEqual((waiting["stage"], waiting["status"]), ("invent", "waiting"))
+        self.assertEqual([item["stage"] for item in first_trace], ["invent"])
+        self.assertEqual(self.concept_transport.calls, [])
+        advanced = self._resume(product_id, transport)
+        self.assertEqual((advanced["stage"], advanced["status"]), ("make", "active"))
+        self.assertEqual(len(self.concept_transport.calls), 5)
+        self.assertEqual(self._trace(paths), first_trace)
+        completed = self._resume(product_id, transport)
+        self.assertEqual((completed["stage"], completed["status"]), ("release", "complete"))
+        self.assertEqual(
+            [item["stage"] for item in self._trace(paths)],
+            ["invent", "make", "release"],
+        )
+
+    def test_partial_concept_roles_resume_same_intents_without_repeating_invent(self):
+        product_id = "deterministic-concept-partial-resume"
+        transport = _DeterministicFactoryTransport(product_id)
+        concept_transport = _DeterministicConceptImageTransport(fail_once_at=2)
+        waiting = self._run(
+            product_id,
+            transport,
+            effort="forge",
+            concept_transport=concept_transport,
+        )
+        paths = self._paths(product_id)
+        first_trace = self._trace(paths)
+        self.assertEqual((waiting["stage"], waiting["status"]), ("invent", "waiting"))
+        self.assertEqual(len(concept_transport.calls), 2)
+        advanced = self._resume(product_id, transport)
+        self.assertEqual((advanced["stage"], advanced["status"]), ("make", "active"))
+        self.assertEqual(len(concept_transport.calls), 6)
+        self.assertEqual(self._trace(paths), first_trace)
+
+    def test_ambiguous_concept_role_waits_without_resend_or_repeated_cognition(self):
+        product_id = "deterministic-concept-ambiguous"
+        transport = _DeterministicFactoryTransport(product_id)
+        concept_transport = _DeterministicConceptImageTransport(ambiguous_once_at=2)
+        waiting = self._run(
+            product_id,
+            transport,
+            effort="forge",
+            concept_transport=concept_transport,
+        )
+        paths = self._paths(product_id)
+        first_trace = self._trace(paths)
+        self.assertEqual((waiting["stage"], waiting["status"]), ("invent", "waiting"))
+        again = self._resume(product_id, transport)
+        self.assertEqual((again["stage"], again["status"]), ("invent", "waiting"))
+        self.assertEqual(len(concept_transport.calls), 2)
+        self.assertEqual(self._trace(paths), first_trace)
+
+    def test_provider_rejection_waits_without_blind_resend(self):
+        product_id = "deterministic-concept-provider-rejection"
+        transport = _DeterministicFactoryTransport(product_id)
+        concept_transport = _DeterministicConceptImageTransport(reject_once_at=2)
+        waiting = self._run(
+            product_id,
+            transport,
+            effort="forge",
+            concept_transport=concept_transport,
+        )
+        paths = self._paths(product_id)
+        first_trace = self._trace(paths)
+        self.assertEqual((waiting["stage"], waiting["status"]), ("invent", "waiting"))
+        again = self._resume(product_id, transport)
+        self.assertEqual((again["stage"], again["status"]), ("invent", "waiting"))
+        self.assertEqual(len(concept_transport.calls), 2)
+        self.assertEqual(self._trace(paths), first_trace)
+
+    def test_stale_completed_role_receipt_fails_closed_before_resend(self):
+        product_id = "deterministic-concept-stale-receipt"
+        transport = _DeterministicFactoryTransport(product_id)
+        concept_transport = _DeterministicConceptImageTransport(fail_once_at=2)
+        waiting = self._run(
+            product_id,
+            transport,
+            effort="forge",
+            concept_transport=concept_transport,
+        )
+        self.assertEqual((waiting["stage"], waiting["status"]), ("invent", "waiting"))
+        paths = self._paths(product_id)
+        ledger = paths.host_state / "concept-effects.sqlite3"
+        with sqlite3.connect(str(ledger)) as connection:
+            row = connection.execute(
+                "SELECT intent_id,response_json FROM concept_operations "
+                "WHERE state='succeeded'"
+            ).fetchone()
+            self.assertIsNotNone(row)
+            response = json.loads(row[1])
+            response["image_sha256"] = "0" * 64
+            connection.execute(
+                "UPDATE concept_operations SET response_json=? WHERE intent_id=?",
+                (json.dumps(response, sort_keys=True, separators=(",", ":")), row[0]),
+            )
+        with self.assertRaisesRegex(StateConflict, "receipt differs"):
+            self._resume(product_id, transport)
+        self.assertEqual(len(concept_transport.calls), 2)
+
+    def test_make_rejects_component_mismatch_and_copied_concept_pixels(self):
+        for scenario in ("concept-component-mismatch", "concept-copied-pixels"):
+            with self.subTest(scenario=scenario):
+                product_id = "deterministic-%s" % scenario
+                transport = _DeterministicFactoryTransport(product_id)
+                with self.assertRaises(WorkshopError):
+                    self._run(product_id, transport, effort="forge")
+                paths = self._paths(product_id)
+                checkpoint = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+                self.assertEqual((checkpoint.stage, checkpoint.status), ("make", "active"))
+                self.assertEqual(transport.calls, [])
+
     def test_invent_rejects_invalid_authored_selection_research_and_context(self):
         scenarios = (
             "invent-unavailable",
@@ -601,6 +877,18 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
             paths.workspace, host_state_root=paths.host_state
         ).snapshot()
         self.assertEqual((checkpoint.stage, checkpoint.status), ("make", "active"))
+
+    def test_changed_sealed_concept_is_rejected_before_make_acceptance(self):
+        product_id = "deterministic-concept-tree-tamper"
+        transport = _DeterministicFactoryTransport(product_id)
+        with self.assertRaises(WorkshopError):
+            self._run(product_id, transport, effort="forge")
+        paths = self._paths(product_id)
+        with self.assertRaisesRegex(StateConflict, "sealed agent artifact changed"):
+            AgentRun.open(
+                paths.workspace, host_state_root=paths.host_state
+            ).snapshot()
+        self.assertEqual(transport.calls, [])
 
     def test_playtest_rejects_stale_missing_mismatched_and_tampered_evidence(self):
         scenarios = (

@@ -145,6 +145,59 @@ class NativeMadeTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "different Workshop inputs"):
             made.assert_context(self.assignment, other_invented, expected_round=1)
 
+    def test_schema_v2_binds_exact_concept_and_effect_without_changing_v1_shape(self):
+        legacy, _ = self._made()
+        legacy_document = legacy.to_dict()
+        self.assertEqual(legacy_document["schema_version"], 1)
+        self.assertNotIn("concept_sha256", legacy_document)
+        self.assertNotIn("concept_effect_sha256", legacy_document)
+
+        arguments = {
+            key: value
+            for key, value in legacy.__dict__.items()
+            if key != "made_sha256"
+        }
+        arguments.update(
+            {
+                "schema_version": 2,
+                "concept_sha256": "1" * 64,
+                "concept_effect_sha256": "2" * 64,
+            }
+        )
+        marked = NativeMade(**arguments)
+        rebuilt = NativeMade.from_mapping(marked.to_dict())
+        rebuilt.assert_context(
+            self.assignment,
+            self.invented,
+            expected_round=1,
+            expected_concept_sha256="1" * 64,
+            expected_concept_effect_sha256="2" * 64,
+        )
+        with self.assertRaisesRegex(ContractError, "different Concept inputs"):
+            rebuilt.assert_context(
+                self.assignment,
+                self.invented,
+                expected_round=1,
+                expected_concept_sha256="3" * 64,
+                expected_concept_effect_sha256="2" * 64,
+            )
+
+    def test_schema_versions_reject_mixed_concept_shapes(self):
+        made, _ = self._made()
+        with self.assertRaisesRegex(ContractError, "v1 cannot bind Concept"):
+            NativeMade(
+                **{
+                    key: value
+                    for key, value in made.__dict__.items()
+                    if key not in ("made_sha256", "concept_sha256")
+                },
+                concept_sha256="1" * 64,
+            )
+        document = made.to_dict()
+        document["schema_version"] = 2
+        with self.assertRaisesRegex(ContractError, "fields are invalid"):
+            NativeMade.from_mapping(document)
+
 
 if __name__ == "__main__":
     unittest.main()

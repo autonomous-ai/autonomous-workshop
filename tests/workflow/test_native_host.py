@@ -7,10 +7,11 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 from cli.main import main, parser
-from workshop.errors import ContractError, StateConflict, WorkshopError
+from workshop.errors import ArtifactError, ContractError, StateConflict, WorkshopError
 from workshop.match.native import (
     InventorRoster,
     MatchRankingEntry,
@@ -28,6 +29,14 @@ from workshop.workflow.native_run import (
     _make_proof_ready,
     _make_proof_ready_path,
     _v13_operator_resume_recovery,
+    _checkpoint_uses_invent_concept,
+    _assert_complete_concept_effect_tree,
+    _CONCEPT_IMAGE_CREDENTIALS_NEED,
+    _install_concept_image,
+    _persist_invent_proposal_rejection,
+    _read_invent_proposal_rejection,
+    _read_invent_effect_wait,
+    _write_invent_effect_wait,
     _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
@@ -89,12 +98,185 @@ from workshop.workflow.effort import (
     DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    EFFORT_ROUTE_CAPABILITY_PATH,
+    INVENT_CONCEPT_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
     SPARK_ECONOMICS_V2_CAPABILITY_PATH,
     SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
 )
+
+
+class InventConceptCapabilitySelectionTest(unittest.TestCase):
+    def _checkpoint(self, effort, *, marked):
+        inputs = {EFFORT_ROUTE_CAPABILITY_PATH: "a" * 64}
+        if marked:
+            inputs[INVENT_CONCEPT_CAPABILITY_PATH] = "b" * 64
+        return AgentRunCheckpoint(
+            product_id="concept-capability-" + effort,
+            stage="make" if effort == "spark" else "invent",
+            status="active",
+            revision=0,
+            round_index=1,
+            max_rounds=4,
+            wish_sha256="c" * 64,
+            run_root_sha256="d" * 64,
+            host_state_root_sha256="e" * 64,
+            checkpoint_sha256="f" * 64,
+            input_sha256s=inputs,
+            inventor_roster=(),
+            stage_artifacts={},
+            invalidated_stages=(),
+            effort=effort,
+        )
+
+    def test_only_marked_forge_and_quest_activate_the_boundary(self):
+        for effort, marked, expected in (
+            ("forge", True, True),
+            ("quest", True, True),
+            ("spark", True, False),
+            ("forge", False, False),
+            ("quest", False, False),
+        ):
+            with self.subTest(effort=effort, marked=marked):
+                self.assertEqual(
+                    _checkpoint_uses_invent_concept(
+                        self._checkpoint(effort, marked=marked)
+                    ),
+                    expected,
+                )
+
+
+class InventProposalRejectionTest(unittest.TestCase):
+    def test_record_is_bounded_state_bound_and_revision_neutral(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary)
+            run = mock.Mock(host_state_root=host)
+            checkpoint = AgentRunCheckpoint(
+                product_id="invent-rejection",
+                stage="invent",
+                status="active",
+                revision=0,
+                round_index=0,
+                max_rounds=4,
+                wish_sha256="1" * 64,
+                run_root_sha256="2" * 64,
+                host_state_root_sha256="3" * 64,
+                checkpoint_sha256="4" * 64,
+                input_sha256s={},
+                inventor_roster=(),
+                stage_artifacts={},
+                invalidated_stages=(),
+                effort="forge",
+            )
+            outcome = AgentOutcome(
+                stage="invent",
+                status="ready",
+                artifacts=(AgentArtifact("artifacts/invent/invented.json", "5" * 64),),
+                proposed_transition="make",
+            )
+            proposal = AgentOutcomeProposal(
+                checkpoint.checkpoint_sha256,
+                "6" * 64,
+                outcome,
+            )
+            first = _persist_invent_proposal_rejection(
+                run, checkpoint, proposal, ContractError("bad\nbytes")
+            )
+            second = _persist_invent_proposal_rejection(
+                run, checkpoint, proposal, ContractError("still bad")
+            )
+            self.assertEqual((first["attempt"], second["attempt"]), (1, 2))
+            self.assertEqual(checkpoint.revision, 0)
+            self.assertEqual(_read_invent_proposal_rejection(run, checkpoint), second)
+            path = host / "invent-proposal-rejection.json"
+            value = json.loads(path.read_text())
+            value["checkpoint_sha256"] = "7" * 64
+            path.write_text(json.dumps(value), encoding="utf-8")
+            path.chmod(0o600)
+            with self.assertRaises(StateConflict):
+                _read_invent_proposal_rejection(run, checkpoint)
+
+
+class ConceptImageInstallBoundaryTest(unittest.TestCase):
+    def test_atomic_install_is_idempotent_and_tree_rejects_unexpected_paths(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            for name in (
+                "brief.json",
+                "derived_wish.json",
+                "descriptor.json",
+                "prompts.json",
+                "research.json",
+            ):
+                (root / name).write_bytes(b"{}")
+            concept = SimpleNamespace(root=root)
+            image = b"\x89PNG\r\n\x1a\nexact"
+            _install_concept_image(concept, "images/front.png", image)
+            _install_concept_image(concept, "images/front.png", image)
+            _assert_complete_concept_effect_tree(concept, ("images/front.png",))
+            with self.assertRaises(StateConflict):
+                _install_concept_image(
+                    concept,
+                    "images/front.png",
+                    b"\x89PNG\r\n\x1a\nchanged",
+                )
+            (root / "unexpected.txt").write_text("unexpected", encoding="utf-8")
+            with self.assertRaisesRegex(ArtifactError, "unexpected"):
+                _assert_complete_concept_effect_tree(concept, ("images/front.png",))
+
+
+class InventEffectWaitContractTest(unittest.TestCase):
+    def test_pending_proposal_is_exactly_bound_and_tamper_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run = mock.Mock(host_state_root=root)
+            checkpoint = AgentRunCheckpoint(
+                product_id="invent-wait",
+                stage="invent",
+                status="waiting",
+                revision=0,
+                round_index=0,
+                max_rounds=4,
+                wish_sha256="1" * 64,
+                run_root_sha256="2" * 64,
+                host_state_root_sha256="3" * 64,
+                checkpoint_sha256="4" * 64,
+                input_sha256s={},
+                inventor_roster=(),
+                stage_artifacts={},
+                invalidated_stages=(),
+                effort="forge",
+                needs=(_CONCEPT_IMAGE_CREDENTIALS_NEED,),
+            )
+            outcome = AgentOutcome(
+                stage="invent",
+                status="ready",
+                artifacts=(
+                    AgentArtifact(
+                        "artifacts/concept/r0001/pre-render.json", "5" * 64
+                    ),
+                ),
+                proposed_transition="make",
+            )
+            proposal = AgentOutcomeProposal("6" * 64, "7" * 64, outcome)
+            _write_invent_effect_wait(
+                run,
+                checkpoint,
+                proposal=proposal,
+                pre_render_artifact_sha256="5" * 64,
+                need=_CONCEPT_IMAGE_CREDENTIALS_NEED,
+            )
+            observed = _read_invent_effect_wait(run, checkpoint)
+            self.assertEqual(observed["proposal_outcome_sha256"], outcome.sha256)
+            path = root / "invent-effect-wait.json"
+            value = json.loads(path.read_text())
+            value["product_id"] = "cross-run"
+            path.write_text(json.dumps(value), encoding="utf-8")
+            path.chmod(0o600)
+            with self.assertRaises(StateConflict):
+                _read_invent_effect_wait(run, checkpoint)
 
 
 class NativeTokenTelemetryCompatibilityTest(unittest.TestCase):

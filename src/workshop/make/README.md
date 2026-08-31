@@ -4,6 +4,13 @@ Consumes the exact sealed Invent result and owns mechanical and 3D creation,
 CAD verification, maker provenance, Make contracts, and the Workshop's single
 locked skill tree in `skills/`.
 
+For new marked Forge and Quest runs, Make also receives the exact sealed
+Concept and sanitized image-effect identity. Schema-v2 `Made` binds both,
+requires product component keys to equal the Concept brief, and rejects any
+product-tree file whose bytes copy a Concept image. Spark and frozen unmarked
+runs retain schema-v1 behavior. Concept imagery is design context, never CAD,
+Playtest, Factory, manufacture, or delivery evidence.
+
 Public API: `workshop.make`.
 
 Reusable Codex-native creation capabilities live once in `skills/`. The host

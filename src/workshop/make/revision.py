@@ -11,7 +11,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
 from workshop._validation import (
     bounded_text,
@@ -159,14 +159,16 @@ class NativeMakeInventRevision:
     evidence_root: str
     evidence_manifest: ArtifactManifest
     feedback: Sequence[MakeInventRevisionFeedback]
+    concept_sha256: Optional[str] = None
+    concept_effect_sha256: Optional[str] = None
     schema_version: int = 1
     kind: str = MAKE_INVENT_REVISION_KIND
     feedback_sha256: str = field(init=False)
     revision_request_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("Make Invent-revision schema_version must be 1")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
+            raise ContractError("Make Invent-revision schema_version must be 1 or 2")
         if self.kind != MAKE_INVENT_REVISION_KIND:
             raise ContractError("Make Invent-revision kind is invalid")
         if type(self.round) is not int or not 1 <= self.round <= 100:
@@ -176,6 +178,15 @@ class NativeMakeInventRevision:
             self.assignment_sha256, "Make Invent-revision assignment sha256"
         )
         require_sha256(self.invented_sha256, "Make Invent-revision Invented sha256")
+        if self.schema_version == 1:
+            if self.concept_sha256 is not None or self.concept_effect_sha256 is not None:
+                raise ContractError("Make Invent-revision schema v1 cannot bind Concept")
+        else:
+            require_sha256(self.concept_sha256, "Make Invent-revision Concept sha256")
+            require_sha256(
+                self.concept_effect_sha256,
+                "Make Invent-revision Concept effect sha256",
+            )
         expected_root = "artifacts/make/r%04d/revision-evidence" % self.round
         if _safe_relative(
             self.evidence_root, "Make Invent-revision evidence_root"
@@ -213,7 +224,7 @@ class NativeMakeInventRevision:
         )
 
     def _identity_dict(self) -> dict[str, Any]:
-        return {
+        identity = {
             "schema_version": self.schema_version,
             "kind": self.kind,
             "round": self.round,
@@ -225,6 +236,14 @@ class NativeMakeInventRevision:
             "feedback": [item.to_dict() for item in self.feedback],
             "feedback_sha256": self.feedback_sha256,
         }
+        if self.schema_version == 2:
+            identity.update(
+                {
+                    "concept_sha256": self.concept_sha256,
+                    "concept_effect_sha256": self.concept_effect_sha256,
+                }
+            )
+        return identity
 
     def to_dict(self) -> dict[str, Any]:
         payload = self._identity_dict()
@@ -237,6 +256,8 @@ class NativeMakeInventRevision:
         invented: NativeInvented,
         *,
         expected_round: int,
+        expected_concept_sha256: Optional[str] = None,
+        expected_concept_effect_sha256: Optional[str] = None,
     ) -> None:
         if not isinstance(assignment, NativeMatchAssignment) or not isinstance(
             invented, NativeInvented
@@ -254,6 +275,19 @@ class NativeMakeInventRevision:
             raise ContractError(
                 "Make Invent-revision request belongs to different Workshop inputs"
             )
+        if self.schema_version == 2:
+            require_sha256(expected_concept_sha256, "expected Make revision Concept sha256")
+            require_sha256(
+                expected_concept_effect_sha256,
+                "expected Make revision Concept effect sha256",
+            )
+            if (
+                self.concept_sha256 != expected_concept_sha256
+                or self.concept_effect_sha256 != expected_concept_effect_sha256
+            ):
+                raise ContractError(
+                    "Make Invent-revision belongs to different Concept inputs"
+                )
 
     def validate_evidence_tree(self, run_root: Path) -> ArtifactManifest:
         root = Path(run_root).resolve(strict=True)
@@ -274,7 +308,7 @@ class NativeMakeInventRevision:
 
     @classmethod
     def from_mapping(cls, value: Any) -> "NativeMakeInventRevision":
-        expected = {
+        common = {
             "schema_version",
             "kind",
             "round",
@@ -287,7 +321,15 @@ class NativeMakeInventRevision:
             "feedback_sha256",
             "revision_request_sha256",
         }
-        if not isinstance(value, Mapping) or set(value) != expected:
+        if not isinstance(value, Mapping):
+            raise ContractError("Make Invent-revision fields are invalid")
+        schema_version = value.get("schema_version")
+        expected = (
+            common
+            if schema_version == 1
+            else common | {"concept_sha256", "concept_effect_sha256"}
+        )
+        if schema_version not in (1, 2) or set(value) != expected:
             raise ContractError("Make Invent-revision fields are invalid")
         feedback = value["feedback"]
         if isinstance(feedback, (str, bytes)) or not isinstance(feedback, Sequence):
@@ -306,6 +348,8 @@ class NativeMakeInventRevision:
             feedback=tuple(
                 MakeInventRevisionFeedback.from_mapping(item) for item in feedback
             ),
+            concept_sha256=value.get("concept_sha256"),
+            concept_effect_sha256=value.get("concept_effect_sha256"),
         )
         if dict(value) != request.to_dict():
             raise ContractError(

@@ -28,6 +28,10 @@ from workshop.workflow.native_run import (
 from workshop.errors import ArtifactError, EffectError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.integrations.factory import FACTORY_CONTENT_MAPPING
+from workshop.integrations.concept_images import (
+    ConceptImageProfile,
+    ConceptImageResponse,
+)
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
     NATIVE_CAD_FULL_TIER,
@@ -61,6 +65,7 @@ from workshop.wish import Wish
 from workshop.workflow import AgentRun
 from workshop.workflow.agent_run import AgentArtifact, AgentOutcome
 from workshop.workflow.proposals import AgentOutcomeProposal
+from tests.end_to_end.deterministic_codex import author_concept_source
 
 
 _OBSERVED_AT = "2026-08-26T00:00:00+00:00"
@@ -490,7 +495,11 @@ class _OneSessionProductAgent:
                 }
             )
         _write_json(run_root / source, authored)
-        self._run_finalizer(run_root, "invent", "--source", source)
+        arguments = ["invent", "--source", source]
+        if "invent_concept_capability" in stage["inputs"]:
+            author_concept_source(run_root, stage, authored)
+            arguments.extend(("--concept-root", stage["inputs"]["concept_root"]))
+        self._run_finalizer(run_root, *arguments)
 
     def _author_make(self, run_root, stage):
         inputs = stage["inputs"]
@@ -1402,6 +1411,36 @@ class _FactoryEffects:
 
 
 class NativeFullRunTest(unittest.TestCase):
+    def setUp(self):
+        profile = ConceptImageProfile()
+        counter = {"value": 0}
+
+        def render(unused_request):
+            counter["value"] += 1
+            output = io.BytesIO()
+            Image.new(
+                "RGB",
+                (32, 32),
+                (
+                    counter["value"] * 29 % 255,
+                    counter["value"] * 47 % 255,
+                    counter["value"] * 71 % 255,
+                ),
+            ).save(output, format="PNG")
+            return ConceptImageResponse(
+                output.getvalue(),
+                "image/png",
+                "native-full-run-%d" % counter["value"],
+            )
+
+        client = SimpleNamespace(profile=profile, render=render)
+        patcher = mock.patch(
+            "workshop.workflow.native_run.load_concept_image_credentials",
+            return_value=client,
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_permanent_factory_error_is_visible_and_not_an_outage_wait(self):
         launcher = _OneSessionProductAgent()
 
@@ -3059,6 +3098,35 @@ class NativeFullRunTest(unittest.TestCase):
                 self.assertTrue(
                     {"assignment.json", "invented.json"} <= creative_paths
                 )
+                make_packet = next(
+                    packet
+                    for packet in launcher.stage_packets
+                    if packet["stage"] == "make"
+                )
+                made = NativeMade.from_mapping(
+                    _read_json(
+                        paths.workspace
+                        / checkpoint.stage_artifacts["make"][0].path
+                    )
+                )
+                if effort == "spark":
+                    self.assertNotIn("sealed_concept", make_packet["inputs"])
+                    self.assertEqual(made.schema_version, 1)
+                else:
+                    self.assertTrue(
+                        {
+                            "sealed_concept",
+                            "sealed_concept_artifact",
+                            "concept_effect",
+                            "concept_effect_artifact",
+                        }
+                        <= set(make_packet["inputs"])
+                    )
+                    self.assertEqual(made.schema_version, 2)
+                    self.assertEqual(
+                        made.concept_sha256,
+                        make_packet["inputs"]["sealed_concept"]["concept_sha256"],
+                    )
                 release = NativeRelease.from_mapping(
                     _read_json(
                         paths.workspace

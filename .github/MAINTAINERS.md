@@ -18,6 +18,7 @@ second reviewer is required for critical changes whenever one is available.
 | Wish | `src/workshop/wish`, `tests/wish` | `@deehw` | Vacant | Standard |
 | Match | `src/workshop/match`, `tests/match` | `@deehw` | Vacant | High |
 | Invent | `src/workshop/invent`, `tests/invent` | `@deehw` | Vacant | Standard |
+| Concept | `src/workshop/concept`, `tests/concept` | `@deehw` | Vacant | Standard |
 | Make | `src/workshop/make`, `tests/make` | `@deehw` | Vacant | High |
 | Playtest | `src/workshop/playtest`, `tests/playtest` | `@deehw` | Vacant | High |
 | Release | `src/workshop/release`, `tests/release` | `@deehw` | Vacant | High |

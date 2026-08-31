@@ -95,6 +95,37 @@ class MakeInventRevisionTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "different Workshop inputs"):
             request.assert_context(self.assignment, self.invented, expected_round=2)
 
+    def test_schema_v2_binds_standing_concept_and_effect(self):
+        legacy = self.request()
+        request = NativeMakeInventRevision(
+            round=legacy.round,
+            wish_sha256=legacy.wish_sha256,
+            assignment_sha256=legacy.assignment_sha256,
+            invented_sha256=legacy.invented_sha256,
+            evidence_root=legacy.evidence_root,
+            evidence_manifest=legacy.evidence_manifest,
+            feedback=legacy.feedback,
+            schema_version=2,
+            concept_sha256="8" * 64,
+            concept_effect_sha256="9" * 64,
+        )
+        rebuilt = NativeMakeInventRevision.from_mapping(request.to_dict())
+        rebuilt.assert_context(
+            self.assignment,
+            self.invented,
+            expected_round=1,
+            expected_concept_sha256="8" * 64,
+            expected_concept_effect_sha256="9" * 64,
+        )
+        with self.assertRaisesRegex(ContractError, "different Concept"):
+            rebuilt.assert_context(
+                self.assignment,
+                self.invented,
+                expected_round=1,
+                expected_concept_sha256="7" * 64,
+                expected_concept_effect_sha256="9" * 64,
+            )
+
     def test_feedback_must_block_and_cite_manifest_evidence(self):
         with self.assertRaisesRegex(ContractError, "build-blocking"):
             MakeInventRevisionFeedback(

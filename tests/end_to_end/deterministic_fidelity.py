@@ -152,6 +152,10 @@ def assert_native_ownership(trace: tuple[Mapping[str, Any], ...]) -> None:
                 relative == "agent-outcome.json"
                 or relative.startswith("authored/")
                 or relative.startswith("artifacts/%s/" % phase)
+                or (
+                    phase == "invent"
+                    and relative.startswith("artifacts/concept/")
+                )
             )
             if not allowed:
                 raise AssertionError(

@@ -11,6 +11,8 @@
 /tests/match/ @deehw
 /src/workshop/invent/ @deehw
 /tests/invent/ @deehw
+/src/workshop/concept/ @deehw
+/tests/concept/ @deehw
 /src/workshop/make/ @deehw
 /tests/make/ @deehw
 /src/workshop/playtest/ @deehw

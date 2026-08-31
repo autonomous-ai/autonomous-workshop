@@ -17,6 +17,8 @@ SCHEMA_LOCATIONS = (
         "verification-receipt.schema.json",
         Path("make/schemas/verification-receipt.schema.json"),
     ),
+    ("concept-v1.schema.json", Path("concept/schemas/concept-v1.schema.json")),
+    ("concept-v2.schema.json", Path("concept/schemas/concept-v2.schema.json")),
 )
 SCHEMA_NAMES = tuple(name for name, _ in SCHEMA_LOCATIONS)
 
