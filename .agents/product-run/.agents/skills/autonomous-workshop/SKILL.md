@@ -72,17 +72,19 @@ few decisions and checks that make it real.
 - For Forge and Quest, spend high reasoning where it changes the concept and
   exact final product. Invent begins with a 20-minute high-reasoning turn and
   receives one decisive 10-minute medium recovery when needed. Make begins
-  with an eight-minute medium proof turn and resumes the same Goal at high
+  with one 16-minute medium proof runway and resumes the same Goal at high
   reasoning as soon as its exact proof-ready marker exists. Later turns retain
   30 minutes, and every stage compacts at 24k. These
   boundaries and compacted context are focus constraints, not quality waivers. In Make, the
   first persisted deliverable is the smallest exact causal or kinematic proof
   plus neutral held/signature blockout renders under
   `<cad-project>/review/early-proof/`. Inspect it before authoring the complete
-  part tree or detailed final geometry. One independent native critic must
-  blindly read those images before learning the Wish, then compare every exact
-  positive and negative held-form requirement. Self-review cannot pass this
-  boundary. If that proof is expensive or
+  part tree or detailed final geometry. Batch mandatory reads, author source as
+  the next durable action, and use root inspection for this cheap early
+  direction check. One independent native critic must still blindly review the
+  canonical final images before learning the Wish, then compare every exact
+  positive and negative held-form requirement. Self-review cannot pass that
+  final boundary. If the early proof is expensive or
   ambiguous, simplify the mechanism while preserving the signature magic.
 
 ## Run one native Goal for the current stage

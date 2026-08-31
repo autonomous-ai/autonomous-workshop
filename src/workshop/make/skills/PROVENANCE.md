@@ -100,6 +100,10 @@
   generated valid CAD and renders but exhausted its turn before blind review.
   Deep-v7 defers this broad skill until the proof marker because the host
   supplies the complete narrow interface; final CAD behavior remains unchanged.
+- Adapted locally again on 2026-08-31 after the deep-v7 production proof spent
+  both bounded turns on preparatory agent cycles without source. Deep-v8 keeps
+  broad-skill deferral while batching stable reads and reserving independent
+  blind critique for the mandatory final review; final CAD behavior is unchanged.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do

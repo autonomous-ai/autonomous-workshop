@@ -513,6 +513,32 @@ startup only; every final product and publication gate remains unchanged.
 Fresh terminal Spark, Forge, and Quest evidence is required before the
 cross-effort economics goal is proven.
 
+The identical Quest then tested v7. Invent passed after 20 minutes plus 5m45s
+of recovery. Make wrote no product bytes in either eight-minute proof turn.
+The first turn used separate native cycles to read root instructions, the
+Workshop skill, Make reference, and stage packets, then expired. Recovery used
+separate cycles to create the Make Goal, inspect an empty tree, spawn the early
+critic, and create an empty directory, then expired before source authoring.
+
+| Root stage / turn | Input | Cached input | Uncached input | Output | Reasoning output |
+|---|---:|---:|---:|---:|---:|
+| Invent initial | 344,365 | 290,048 | 54,317 | 3,075 | 392 |
+| Invent recovery | 166,486 | 125,184 | 41,302 | 4,368 | 149 |
+| Make proof | 119,610 | 93,952 | 25,658 | 781 | 154 |
+| Make proof recovery | 107,084 | 77,824 | 29,260 | 888 | 94 |
+| **Root total** | **737,545** | **587,008** | **150,537** | **9,112** | **789** |
+
+V7 reduced root input about 18% and output 36% versus v6, but produced fewer
+durable Make bytes. It is another false economy, not product cost.
+
+New runs now freeze `deep-economics-v8.md`. Early Make receives one 16-minute
+medium runway. Mandatory reads are one bounded batch; the Manager does not
+spend a call on `get_goal`, an empty-tree check, or directory-only work; source
+and its directories are the next edit. The exact CAD commands remain one batch
+with the private cache. Root inspection owns the cheap early direction check;
+the independent blind critic remains mandatory at the final hash-bound review.
+Fresh terminal evidence remains required across all three efforts.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

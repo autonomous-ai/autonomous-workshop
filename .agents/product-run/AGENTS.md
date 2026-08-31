@@ -16,7 +16,7 @@ Quest: Wish -> Invent -> Make -> Playtest -> Release
 For a new Codex run, the host may freeze a versioned economics profile for this
 entire session. Spark uses its low-reasoning fast profile. Current Forge and
 Quest runs use a bounded high-reasoning Invent turn with decisive medium
-recovery, then a medium Make proof turn followed by high-reasoning final Make;
+recovery, then one 16-minute medium Make proof runway followed by high-reasoning final Make;
 Playtest and Release use medium. Make's minimal exact mechanism/form evidence
 is the first persisted deliverable. Its proof-ready marker ends only that
 native turn, while recovery stays inside the same Goal. Treat every profile

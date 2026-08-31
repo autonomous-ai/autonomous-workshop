@@ -112,7 +112,7 @@ class SkillFingerprintTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("self-check passed", result.stdout)
 
-    def test_v7_proof_batch_uses_private_cache_from_workspace_with_spaces(self):
+    def test_v8_proof_batch_uses_private_cache_from_workspace_with_spaces(self):
         cad = resolve_skills_root() / "cad"
         with tempfile.TemporaryDirectory() as temporary:
             workspace = Path(temporary).resolve() / "product run with spaces"

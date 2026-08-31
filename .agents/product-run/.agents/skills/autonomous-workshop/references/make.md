@@ -18,16 +18,18 @@ once, select one Inventor whose Taste owns the hardest-to-fake magic, and write
 one compact source with exactly `selected_inventor_id`, roster-covering
 `ranking`, `concept`, and `research`.
 
-During a frozen deep-v7 proof turn, follow the host prompt literally. Read this
-reference and the root skills once in separate bounded reads, then write source
-before optional reading or help discovery. The broad CAD skill is deliberately
-not applicable until the proof marker exists: the host already supplies the
-complete proof interface. Before executing the proof commands, spawn one
-independent native critic without the Wish or concept and ask it to wait for
-the exact held/signature paths. Persist exact mechanism/relationship evidence,
-neutral held/signature blockout images, and the blind finding under
-`<cad-project>/review/early-proof/`. The root Manager compares that blind read
-against the Wish; do not spend a second child turn revealing it. The host-provided
+During a frozen deep-v8 proof turn, follow the host prompt literally. Create or
+continue the Make Goal immediately, then inspect the required stable
+instructions, stage packet, and sealed concept in one bounded batch rather than
+separate tool calls. Write source and its parent directories in the next file
+edit before optional reading or help discovery. The broad CAD skill is
+deliberately not applicable until the proof marker exists: the host already
+supplies the complete proof interface. Do not inspect an empty product tree,
+create an empty directory as separate work, or spawn an early critic. Persist
+exact mechanism/relationship evidence, neutral held/signature blockout images,
+and one compact root visual finding under
+`<cad-project>/review/early-proof/`. The canonical independent blind critic
+remains mandatory during final Make. The host-provided
 `.make-proof-ready.json` marker ends only that native turn; it never advances
 Make. The resumed high-reasoning turn must reuse the passing proof rather than
 restart, and only then loads the broad CAD skill.

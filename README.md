@@ -208,14 +208,16 @@ expose one module-scope `gen_step()`, and the host supplies exact
 `$WORKSHOP_PYTHON`-prefixed generate, export, and render commands so Make does
 not spend its bounded proof phase rediscovering package entrypoints. New deep
 runs bind a private run-local cache, defer the broad CAD skill until final
-Make, prestart the blind critic without the Wish, and execute the three proof
-commands as one foreground batch.
+Make, batch all mandatory proof reads, author source as the next durable action,
+and execute the three proof commands as one foreground batch. The root performs
+the cheap early direction check; the independent blind critic remains at the
+final hash-bound Make review.
 
 ## Architecture
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v7)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v8)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -232,15 +234,16 @@ ceiling for their one persistent Make-to-Release session, and a 20-minute
 boundary per native turn. A timeout resumes the exact session and Goal through
 the existing bounded recovery path; it is not a 20-minute stage deadline.
 New Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
-use a decisive 10-minute medium recovery only when needed. Make starts with an
-eight-minute medium proof turn at 24k context; after exact proof bytes and a
+use a decisive 10-minute medium recovery only when needed. Make starts with one
+16-minute medium proof runway at 24k context; after exact proof bytes and a
 blind review are durable, a checkpoint-bound marker returns control to the
 host and the same Make Goal resumes at high reasoning with the normal
 30-minute window. Playtest and Release use medium, every stage compacts at 24k,
 and one CLI invocation stops after eight native turns. The host binds a private
-writable cache; the proof turn defers the broad CAD skill, starts its blind
-critic before the exact images exist, and batches generate/export/render in one
-foreground call. Their novelty must come
+writable cache; the proof turn defers the broad CAD skill, batches its required
+reads, makes source the next durable action, and batches generate/export/render
+in one foreground call. It uses root inspection for the early direction check
+and reserves independent blind critique for final Make. Their novelty must come
 from one strong relationship or interaction
 that Make persists and has one independent critic inspect blindly as its first
 proof—not gratuitous parts or mechanisms. The proof marker is only a liveness

@@ -67,6 +67,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V4_CAPABILITY_PATH,
     DEEP_ECONOMICS_V5_CAPABILITY_PATH,
     DEEP_ECONOMICS_V6_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V7_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
@@ -76,6 +77,7 @@ from workshop.workflow.effort import (
     DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
     DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
+    DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -433,18 +435,20 @@ class NativeHostTest(unittest.TestCase):
             "deep-v4": DEEP_ECONOMICS_V4_CAPABILITY_PATH,
             "deep-v5": DEEP_ECONOMICS_V5_CAPABILITY_PATH,
             "deep-v6": DEEP_ECONOMICS_V6_CAPABILITY_PATH,
-            "deep-v7": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v7": DEEP_ECONOMICS_V7_CAPABILITY_PATH,
+            "deep-v8": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        if economics_capability == "deep-v7":
-            # A real v7 run materializes the preserved v5/v6 references too. The
+        if economics_capability == "deep-v8":
+            # A real v8 run materializes the preserved v5-v7 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
             inputs = {
                 DEEP_ECONOMICS_V5_CAPABILITY_PATH: "b" * 64,
                 DEEP_ECONOMICS_V6_CAPABILITY_PATH: "c" * 64,
+                DEEP_ECONOMICS_V7_CAPABILITY_PATH: "d" * 64,
                 DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
             }
         else:
@@ -537,7 +541,7 @@ class NativeHostTest(unittest.TestCase):
 
         launcher_type.assert_called_once_with(reasoning_effort="low")
 
-    def test_deep_v7_shapes_each_stage_under_one_frozen_runtime_profile(self):
+    def test_deep_v8_shapes_each_stage_under_one_frozen_runtime_profile(self):
         for effort in ("forge", "quest"):
             for stage, reasoning in (
                 ("invent", "high"),
@@ -550,7 +554,7 @@ class NativeHostTest(unittest.TestCase):
                 ) as launcher_type:
                     checkpoint = self._launcher_checkpoint(
                         effort=effort,
-                        economics_capability="deep-v7",
+                        economics_capability="deep-v8",
                         stage=stage,
                     )
                     _native_launcher(
@@ -563,7 +567,7 @@ class NativeHostTest(unittest.TestCase):
                         auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
                         runtime_profile_sha256="a" * 64,
                         timeout_seconds=(
-                            DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                            DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                             if stage == "make"
                             else (
                                 DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS
@@ -674,6 +678,29 @@ class NativeHostTest(unittest.TestCase):
         self.assertIn("v7 recovery stays on the proof fast path", recovery)
         self.assertIn("run the supplied generate", recovery)
         self.assertIn("together in one foreground tool call", recovery)
+
+    def test_deep_v8_make_prompt_reserves_one_runway_for_product_bytes(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v8"
+        )
+        prompt = _deep_make_critical_path_prompt(checkpoint)
+
+        self.assertIn("This v8 proof turn has one 16-minute medium runway", prompt)
+        self.assertIn("do not call get_goal", prompt)
+        self.assertIn("one bounded batch", prompt)
+        self.assertIn("inspect an empty product tree", prompt)
+        self.assertIn("spawn an early critic", prompt)
+        self.assertIn("very next file edit", prompt)
+        self.assertIn("together in one foreground tool call", prompt)
+        self.assertIn("early direction check", prompt)
+        self.assertIn("final independent critic", prompt)
+        self.assertNotIn("ask one independent native visual critic", prompt)
+        self.assertNotIn("This v7 proof turn", prompt)
+
+        recovery = _deep_make_recovery_prompt(checkpoint)
+        self.assertIn("v8 recovery stays on one proof runway", recovery)
+        self.assertIn("Do not call get_goal", recovery)
+        self.assertIn("next action an authored proof source", recovery)
 
     def test_deep_v7_make_after_proof_restores_high_normal_turn_boundary(self):
         checkpoint = self._launcher_checkpoint(

@@ -143,6 +143,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V4_CAPABILITY_PATH,
     DEEP_ECONOMICS_V5_CAPABILITY_PATH,
     DEEP_ECONOMICS_V6_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V7_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
@@ -151,6 +152,7 @@ from workshop.workflow.effort import (
     DEEP_V1_NATIVE_TURN_LIMIT,
     DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
     DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
@@ -3612,6 +3614,7 @@ def _phased_deep_capability_path(
 
     for path in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V7_CAPABILITY_PATH,
         DEEP_ECONOMICS_V6_CAPABILITY_PATH,
         DEEP_ECONOMICS_V5_CAPABILITY_PATH,
     ):
@@ -3643,7 +3646,7 @@ def _native_launcher(
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
     Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
-    v6, v5, v4, and v3 runs shape reasoning and turn boundaries while
+    v8 through v3 runs shape reasoning and turn boundaries while
     binding their whole frozen profile to one persistent session. Deep-v2
     retains its effective all-high session binding; deep-v1 retains its
     historical all-high profile.
@@ -3667,7 +3670,11 @@ def _native_launcher(
                     "medium" if initial_make_proof_boundary else "high"
                 )
                 timeout_seconds = (
-                    DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                    (
+                        DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                        if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                        else DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                    )
                     if initial_make_proof_boundary
                     else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
                 )
@@ -3804,6 +3811,7 @@ def _deep_make_critical_path_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3838,20 +3846,22 @@ def _deep_make_critical_path_prompt(
     )
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V7_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V6_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V5_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V4_CAPABILITY_PATH not in checkpoint.input_sha256s
     ):
         return prompt
-    prompt += (
-        " Before treating the held/signature blockout as passing, ask one "
-        "independent native visual critic to inspect only those exact images "
-        "without the Wish or concept. Record its unprompted object, form, "
-        "control, and relationship read. Then reveal the Wish and concept, "
-        "compare every positive and negative held-form requirement, and fail "
-        "the proof on any generic, plaque-like, box-like, or exposed-mechanism "
-        "reading. Repair and rerender the proof before expanding final parts."
-    )
+    if DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s:
+        prompt += (
+            " Before treating the held/signature blockout as passing, ask one "
+            "independent native visual critic to inspect only those exact images "
+            "without the Wish or concept. Record its unprompted object, form, "
+            "control, and relationship read. Then reveal the Wish and concept, "
+            "compare every positive and negative held-form requirement, and fail "
+            "the proof on any generic, plaque-like, box-like, or exposed-mechanism "
+            "reading. Repair and rerender the proof before expanding final parts."
+        )
     if _phased_deep_capability_path(checkpoint) is None:
         return prompt
     if (
@@ -3911,7 +3921,11 @@ def _deep_make_critical_path_prompt(
             "it does not advance or waive the Make gate."
             % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
         )
-    return prompt + (
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_V7_CAPABILITY_PATH
+    ):
+        return prompt + (
         " This v7 proof turn is action-only. Read the mandatory root, Workshop "
         "skill, and current Make reference once in separate bounded reads. The "
         "broad CAD skill is deliberately not applicable until the proof marker "
@@ -3943,6 +3957,41 @@ def _deep_make_critical_path_prompt(
         "marker only to end this proof turn and resume the same Make Goal at "
         "high reasoning; it does not advance or waive the Make gate."
         % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+        )
+    return prompt + (
+        " This v8 proof turn has one 16-minute medium runway. The production v7 "
+        "trace proved that separate reads consume the whole phase, so do not "
+        "read stable instructions in separate tool calls and do not call get_goal. "
+        "Create or continue the current Make Goal immediately, then use one "
+        "bounded batch to inspect only the root instructions, Workshop skill, "
+        "current Make reference, STAGE.json, and sealed concept fields needed "
+        "for source. The broad CAD skill is deliberately not applicable until "
+        "the proof marker exists. Do not enumerate skills, open optional "
+        "references, invoke --help, inspect an empty product tree, create empty "
+        "directories as a separate action, or spawn an early critic. Author the "
+        "proof source and its parent directories together in the very next file "
+        "edit. Define exactly one module-scope def gen_step() returning the "
+        "build123d shape. Then run generate, export, and render together in one "
+        "foreground tool call using the exact three \"$WORKSHOP_PYTHON\" commands: "
+        ".agents/skills/cad/scripts/gen <source.step.py> --write; "
+        ".agents/skills/cad/scripts/export <source.step> --stl; and "
+        ".agents/skills/cad/scripts/render_product <source.stl> -o "
+        "<cad-project>/review/early-proof/held.png --motion-sheet "
+        "<cad-project>/review/early-proof/signature.png "
+        "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json. "
+        "The host already binds a private writable XDG_CACHE_HOME. Inspect the "
+        "exact images yourself immediately; this early direction check is not "
+        "the final independent blind-review gate. If the form is generic, flat, "
+        "box-like, or the interaction is ambiguous, make at most one focused "
+        "source repair and rerun the same batch. Once source, STEP, STL, held, "
+        "signature, and a compact root proof finding are durable under "
+        "review/early-proof/, write %s as canonical JSON containing exactly "
+        "{\"checkpoint_sha256\":\"%s\","
+        "\"kind\":\"autonomous-workshop.make-proof-ready\","
+        "\"schema_version\":1} followed by one newline. The host uses that "
+        "marker only to resume the same Make Goal at high reasoning; the final "
+        "independent critic and every Make gate remain mandatory."
+        % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
     )
 
 
@@ -3958,6 +4007,7 @@ def _deep_make_recovery_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3990,7 +4040,7 @@ def _deep_make_recovery_prompt(
         return prompt
     if (
         _phased_deep_capability_path(checkpoint)
-        == DEEP_ECONOMICS_CAPABILITY_PATH
+        == DEEP_ECONOMICS_V7_CAPABILITY_PATH
     ):
         return prompt + (
             " This v7 recovery stays on the proof fast path: do not load the "
@@ -4001,6 +4051,20 @@ def _deep_make_recovery_prompt(
             "Start the blind critic before that batch if it is not already "
             "running, then persist its unprompted read, perform the revealed "
             "comparison yourself, and write the exact marker."
+        )
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_CAPABILITY_PATH
+    ):
+        return prompt + (
+            " This v8 recovery stays on one proof runway. Do not call get_goal, "
+            "reread stable instructions separately, inspect an empty tree, spawn "
+            "an early critic, or create empty directories alone. Batch any still "
+            "necessary bounded reads once, then make the next action an authored "
+            "proof source with its parent directories. Run the supplied generate, "
+            "export, and render commands together in one foreground call, inspect "
+            "the images yourself, persist the compact root finding, and write the "
+            "exact marker. Reuse every existing byte."
         )
     return prompt + (
         " This proof boundary still has no valid phased-deep ready marker. Do not "
