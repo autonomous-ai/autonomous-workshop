@@ -616,6 +616,18 @@ stream and remain explicitly unmeasured. The large measured input total is
 mostly cache reads; both total and uncached input remain relevant economics.
 This failed run is useful quality evidence, not a completed product cost.
 
+### V11 production result: source handoff validated
+
+Fresh Quest `wish-20260831-163206-abbea127` wrote its 30,049-byte Invent source
+27 seconds before the initial 20-minute boundary but did not finalize in that
+turn. V11 recovery found the existing source, invoked the deterministic
+finalizer, passed the host Invent gate, and entered Make in 59 seconds. The
+comparable v10 run exhausted its original recovery and later needed 3m34s on an
+operator resume after source already existed. V11 therefore reduced the
+observed existing-source handoff about 72% while preserving the full initial
+creative allowance and exact Invent contract. The product remains a live run;
+this is stage evidence, not a completed-product claim.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they
