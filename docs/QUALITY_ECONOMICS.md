@@ -476,6 +476,43 @@ from a path containing spaces and verifies STEP, STL, held PNG, and signature
 PNG outputs. V6 still must complete and publish fresh Quest and Forge products
 before deep-route economics are proven.
 
+The same Three-Sky Seed then tested v6 through the regular production CLI.
+Invent passed after its 20-minute initial turn and 4m08s recovery. Make's first
+eight-minute turn wrote no files. Recovery used the now-correct commands and
+produced valid proof source, STEP, STL, a 900×900 held render, and a 2700×900
+three-pose signature sheet. The object was fully volumetric and had a captive
+halo, but the three distinct skies and action were not unmistakable. No blind
+review or proof marker existed when the second bounded Make turn ended, so the
+run stopped without Playtest, publication, or GitHub product claim.
+
+The exact execution trace found three remaining leaks: the first generation
+attempt could not write `ezdxf`'s user-home font cache; the proof phase loaded
+and reread roughly 59.5 KB of root/Workshop/Make/CAD guidance even though the
+host supplied the narrow interface; and generate, export, and render occupied
+separate reasoning cycles. The critic started only 46 seconds before timeout.
+
+| Root stage / turn | Input | Cached input | Uncached input | Output | Reasoning output |
+|---|---:|---:|---:|---:|---:|
+| Invent initial | 323,888 | 266,752 | 57,136 | 3,604 | 369 |
+| Invent recovery | 184,484 | 149,504 | 34,980 | 5,537 | 200 |
+| Make proof | 189,382 | 157,696 | 31,686 | 2,800 | 1,323 |
+| Make proof recovery | 197,906 | 161,792 | 36,114 | 2,343 | 91 |
+| **Root total** | **895,660** | **735,744** | **159,916** | **14,284** | — |
+
+Three bounded children separately reported 140,197 input and 2,910 output.
+Together the observed root and children reported 1,035,857 input and 17,194
+output tokens over about 40m15s. V6 cut root input 28% and output 26% versus
+the v5 failed run, but this is still failed-run exposure, not product cost.
+
+New runs now freeze `deep-economics-v7.md`. The host binds a private writable
+run cache before Codex starts. The broad CAD skill is deferred until final
+Make, the blind critic starts before proof generation without seeing the Wish,
+and generate/export/render run in one foreground batch. The root performs the
+revealed comparison without a second child turn. V7 changes scheduling and
+startup only; every final product and publication gate remains unchanged.
+Fresh terminal Spark, Forge, and Quest evidence is required before the
+cross-effort economics goal is proven.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

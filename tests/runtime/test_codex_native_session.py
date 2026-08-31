@@ -467,6 +467,9 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(call["env"]["TMPDIR"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TMP"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TEMP"], str(root / ".tmp"))
+            self.assertEqual(
+                call["env"]["XDG_CACHE_HOME"], str(root / ".cache")
+            )
             self.assertEqual(call["env"]["PYTHONHASHSEED"], "0")
             self.assertEqual(call["env"]["PYTHONDONTWRITEBYTECODE"], "1")
             self.assertEqual(call["env"]["PYTHONNOUSERSITE"], "1")
@@ -475,6 +478,9 @@ class CodexNativeSessionTest(unittest.TestCase):
                 str(Path(sys.executable).absolute()),
             )
             self.assertEqual(stat.S_IMODE((root / ".tmp").stat().st_mode), 0o700)
+            self.assertEqual(
+                stat.S_IMODE((root / ".cache").stat().st_mode), 0o700
+            )
             self.assertNotIn(str(state_root), command)
             self.assertEqual(call["env"]["OPENAI_API_KEY"], "codex-auth")
             self.assertNotIn("FACTORY_PASSWORD", call["env"])
@@ -1074,6 +1080,61 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
             self.assertNotIn(THREAD_ID, json.dumps(resumed.to_dict()))
 
+    def test_resume_accepts_exact_private_cache_policy_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            started = self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
+            predecessor_policy = codex_runtime._run_policy_before_private_cache(
+                root,
+                current_policy,
+            )
+            payload["runtime_config_sha256"] = codex_runtime._runtime_config_sha256(
+                launcher.cli_version,
+                launcher.model,
+                launcher.reasoning_effort,
+                predecessor_policy,
+            )
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            resumed = self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 2)
+            self.assertEqual(
+                factory.calls[1][1]["env"]["XDG_CACHE_HOME"],
+                str(root / ".cache"),
+            )
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+            self.assertEqual(
+                resumed.binding.checkpoint_sha256,
+                payload["checkpoint_sha256"],
+            )
+
     def test_resume_accepts_only_the_exact_workshop_python_policy_predecessor(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1091,12 +1152,18 @@ class CodexNativeSessionTest(unittest.TestCase):
                 root,
                 launcher.binary,
             )
-            historical_policy = (
-                codex_runtime._run_policy_before_venv_launcher_directory(
+            policy_before_private_cache = (
+                codex_runtime._run_policy_before_private_cache(
                     root,
                     current_policy,
                 )
-                or current_policy
+            )
+            historical_policy = (
+                codex_runtime._run_policy_before_venv_launcher_directory(
+                    root,
+                    policy_before_private_cache,
+                )
+                or policy_before_private_cache
             )
             predecessor_policy = (
                 codex_runtime._run_policy_before_workshop_python(
@@ -1192,10 +1259,16 @@ class CodexNativeSessionTest(unittest.TestCase):
                     str(launcher_path),
                 )
 
+                policy_before_private_cache = (
+                    codex_runtime._run_policy_before_private_cache(
+                        root,
+                        current_policy,
+                    )
+                )
                 predecessor_policy = (
                     codex_runtime._run_policy_before_venv_launcher_directory(
                         root,
-                        current_policy,
+                        policy_before_private_cache,
                     )
                 )
                 self.assertIsNotNone(predecessor_policy)
@@ -1350,12 +1423,18 @@ class CodexNativeSessionTest(unittest.TestCase):
                 root,
                 launcher.binary,
             )
-            historical_policy = (
-                codex_runtime._run_policy_before_venv_launcher_directory(
+            policy_before_private_cache = (
+                codex_runtime._run_policy_before_private_cache(
                     root,
                     current_policy,
                 )
-                or current_policy
+            )
+            historical_policy = (
+                codex_runtime._run_policy_before_venv_launcher_directory(
+                    root,
+                    policy_before_private_cache,
+                )
+                or policy_before_private_cache
             )
             predecessor_policy = (
                 codex_runtime._run_policy_before_codex_fs_helper(
@@ -1465,6 +1544,21 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             with self.assertRaisesRegex(
                 CodexInvocationError, "temp directory must be a real 0700"
+            ):
+                self.start(launcher, root)
+            self.assertEqual(factory.calls, [])
+
+    def test_rejects_product_cache_symlink_before_launch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            outside = root.parent / "outside-cache"
+            outside.mkdir()
+            (root / ".cache").symlink_to(outside, target_is_directory=True)
+            launcher, factory = self.launcher([{"stdout": self.start_events()}])
+
+            with self.assertRaisesRegex(
+                CodexInvocationError, "cache directory must be a real 0700"
             ):
                 self.start(launcher, root)
             self.assertEqual(factory.calls, [])

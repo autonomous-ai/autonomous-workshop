@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -111,12 +112,14 @@ class SkillFingerprintTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("self-check passed", result.stdout)
 
-    def test_v6_proof_commands_run_from_workspace_path_with_spaces(self):
+    def test_v7_proof_batch_uses_private_cache_from_workspace_with_spaces(self):
         cad = resolve_skills_root() / "cad"
         with tempfile.TemporaryDirectory() as temporary:
             workspace = Path(temporary).resolve() / "product run with spaces"
             proof = workspace / "product" / "cad" / "review" / "early-proof"
             proof.mkdir(parents=True)
+            private_cache = workspace / ".cache"
+            private_cache.mkdir(mode=0o700)
             source = proof / "proof.step.py"
             source.write_text(
                 "from build123d import Box\n\n"
@@ -159,6 +162,7 @@ class SkillFingerprintTest(unittest.TestCase):
                     result = subprocess.run(
                         command,
                         cwd=workspace,
+                        env={**os.environ, "XDG_CACHE_HOME": str(private_cache)},
                         capture_output=True,
                         text=True,
                         check=False,

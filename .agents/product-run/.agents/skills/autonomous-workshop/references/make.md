@@ -18,31 +18,34 @@ once, select one Inventor whose Taste owns the hardest-to-fake magic, and write
 one compact source with exactly `selected_inventor_id`, roster-covering
 `ranking`, `concept`, and `research`.
 
-During a frozen deep proof turn, follow the host prompt literally. Read this
-reference and the root skills once, then write source before optional reading,
-help discovery, or delegation. Persist exact mechanism/relationship evidence,
+During a frozen deep-v7 proof turn, follow the host prompt literally. Read this
+reference and the root skills once in separate bounded reads, then write source
+before optional reading or help discovery. The broad CAD skill is deliberately
+not applicable until the proof marker exists: the host already supplies the
+complete proof interface. Before executing the proof commands, spawn one
+independent native critic without the Wish or concept and ask it to wait for
+the exact held/signature paths. Persist exact mechanism/relationship evidence,
 neutral held/signature blockout images, and the blind finding under
-`<cad-project>/review/early-proof/`. The host-provided
+`<cad-project>/review/early-proof/`. The root Manager compares that blind read
+against the Wish; do not spend a second child turn revealing it. The host-provided
 `.make-proof-ready.json` marker ends only that native turn; it never advances
 Make. The resumed high-reasoning turn must reuse the passing proof rather than
-restart.
-
-The proof render command is exact:
-
-```bash
-"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/render_product <entry.stl> \
-  -o <cad-project>/review/early-proof/held.png \
-  --motion-sheet <cad-project>/review/early-proof/signature.png \
-  --motion-angles=-12,0,12
-```
+restart, and only then loads the broad CAD skill.
 
 Replace the bracketed paths from `STAGE.json`; do not invoke help to rediscover
-this interface. The proof entry defines exactly one module-scope `gen_step()`
-and returns the build123d shape. Generate and export it with:
+this interface or configure a cache. The host binds a private writable
+`XDG_CACHE_HOME`. The proof entry defines exactly one module-scope `gen_step()`
+and returns the build123d shape. Generate, export, and render it in this order
+inside one foreground tool call so no agent reasoning cycle separates the
+deterministic commands:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/cad/scripts/gen <entry.step.py> --write
 "$WORKSHOP_PYTHON" .agents/skills/cad/scripts/export <entry.step> --stl
+"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/render_product <entry.stl> \
+  -o <cad-project>/review/early-proof/held.png \
+  --motion-sheet <cad-project>/review/early-proof/signature.png \
+  --motion-angles=-12,0,12
 ```
 
 Use one product funnel:

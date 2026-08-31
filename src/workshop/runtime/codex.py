@@ -460,6 +460,37 @@ def _run_policy_before_workshop_python(
     )
 
 
+def _run_policy_before_private_cache(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Return the exact policy from before run-local cache isolation.
+
+    Native CAD imports write font and renderer caches. Product runs deny the
+    user's home tree, so inheriting ``$HOME/.cache`` makes the first exact CAD
+    command fail before any geometry is evaluated. New sessions bind a private
+    cache inside the writable run; this reconstructs only the immediately
+    preceding policy so already-checkpointed sessions remain resumable.
+    """
+
+    private_cache = ("XDG_CACHE_HOME", str(run_root / ".cache"))
+    if run_policy.environment_overrides.count(private_cache) != 1:
+        raise CodexInvocationError(
+            "Codex runtime policy has no unique private cache binding"
+        )
+    return _CodexRunPolicy(
+        permission_config_arguments=run_policy.permission_config_arguments,
+        trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
+        trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
+        environment_allowlist=run_policy.environment_allowlist,
+        environment_overrides=tuple(
+            entry
+            for entry in run_policy.environment_overrides
+            if entry != private_cache
+        ),
+    )
+
+
 def _run_policy_before_codex_fs_helper(
     run_root: Path,
     run_policy: _CodexRunPolicy,
@@ -839,10 +870,12 @@ def _codex_run_policy(run_root: Path, binary: str) -> _CodexRunPolicy:
     trusted_python_paths = _python_runtime_permission_identities()
     trusted_codex_paths = _codex_runtime_permission_identities(binary)
     private_temp = str(run_root / ".tmp")
+    private_cache = str(run_root / ".cache")
     overrides = (
         ("TMPDIR", private_temp),
         ("TMP", private_temp),
         ("TEMP", private_temp),
+        ("XDG_CACHE_HOME", private_cache),
         ("WORKSHOP_PYTHON", str(Path(sys.executable).absolute())),
         *_CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES,
     )
@@ -859,24 +892,24 @@ def _codex_run_policy(run_root: Path, binary: str) -> _CodexRunPolicy:
     )
 
 
-def _private_run_temp(run_root: Path) -> Path:
-    """Return a real 0700 temp directory contained by the exact run root."""
+def _private_run_directory(run_root: Path, name: str, label: str) -> Path:
+    """Return one real 0700 runtime directory inside the exact run root."""
 
-    path = run_root / ".tmp"
+    path = run_root / name
     try:
         path.mkdir(mode=0o700)
     except FileExistsError:
         pass
     except OSError as exc:
         raise CodexInvocationError(
-            "Codex product-run temp directory could not be created"
+            "Codex product-run %s directory could not be created" % label
         ) from exc
     try:
         identity = path.lstat()
         resolved = path.resolve(strict=True)
     except OSError as exc:
         raise CodexInvocationError(
-            "Codex product-run temp directory is unavailable"
+            "Codex product-run %s directory is unavailable" % label
         ) from exc
     if (
         path.is_symlink()
@@ -885,9 +918,18 @@ def _private_run_temp(run_root: Path) -> Path:
         or stat.S_IMODE(identity.st_mode) != 0o700
     ):
         raise CodexInvocationError(
-            "Codex product-run temp directory must be a real 0700 directory"
+            "Codex product-run %s directory must be a real 0700 directory"
+            % label
         )
     return path
+
+
+def _private_run_temp(run_root: Path) -> Path:
+    return _private_run_directory(run_root, ".tmp", "temp")
+
+
+def _private_run_cache(run_root: Path) -> Path:
+    return _private_run_directory(run_root, ".cache", "cache")
 
 
 def _codex_run_environment(
@@ -895,11 +937,14 @@ def _codex_run_environment(
     run_policy: _CodexRunPolicy,
 ) -> Mapping[str, str]:
     private_temp = str(_private_run_temp(run_root))
+    private_cache = str(_private_run_cache(run_root))
     overrides = dict(run_policy.environment_overrides)
     if any(
         overrides.get(name) != private_temp
         for name in ("TMPDIR", "TMP", "TEMP")
-    ) or overrides.get("WORKSHOP_PYTHON") != str(
+    ) or overrides.get("XDG_CACHE_HOME") != private_cache or overrides.get(
+        "WORKSHOP_PYTHON"
+    ) != str(
         Path(sys.executable).absolute()
     ):
         raise CodexInvocationError(
@@ -1740,11 +1785,18 @@ class CodexNativeSessionLauncher:
                 else None
             ),
         )
+        policy_before_private_cache = _run_policy_before_private_cache(
+            root,
+            run_policy,
+        )
         policy_before_venv_directory = (
-            _run_policy_before_venv_launcher_directory(root, run_policy)
+            _run_policy_before_venv_launcher_directory(
+                root,
+                policy_before_private_cache,
+            )
         )
         historical_policy = (
-            run_policy
+            policy_before_private_cache
             if policy_before_venv_directory is None
             else policy_before_venv_directory
         )
@@ -1753,6 +1805,7 @@ class CodexNativeSessionLauncher:
             historical_policy,
         )
         predecessor_policies: list[tuple[_CodexRunPolicy, bool]] = [
+            (policy_before_private_cache, True),
             (
                 _run_policy_before_workshop_python(historical_policy),
                 True,

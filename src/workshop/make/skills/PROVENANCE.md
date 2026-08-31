@@ -96,6 +96,10 @@
   executable. Deep-v6 instructions require the exact Workshop interpreter for
   every CAD entry point and explicitly require one module-scope `gen_step()`;
   final CAD behavior remains unchanged.
+- Adapted locally again on 2026-08-31 after the deep-v6 production proof
+  generated valid CAD and renders but exhausted its turn before blind review.
+  Deep-v7 defers this broad skill until the proof marker because the host
+  supplies the complete narrow interface; final CAD behavior remains unchanged.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do

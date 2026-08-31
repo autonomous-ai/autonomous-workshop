@@ -23,7 +23,9 @@ context-compaction ceiling across their one Make-to-Release session, and a
 with 20 minutes at high reasoning and use a 10-minute decisive medium recovery
 when needed. Make uses an eight-minute medium proof phase, then resumes the
 same Goal at high reasoning for a normal 30-minute turn after a valid proof
-marker. Playtest and Release use medium, and every stage compacts at 24k. Older runs remain on the
+marker. The host supplies a private writable cache; proof defers the broad CAD
+skill, prestarts its blind critic, and batches deterministic CAD commands.
+Playtest and Release use medium, and every stage compacts at 24k. Older runs remain on the
 profile they started with. Effort changes
 cognitive spend, never the exact-byte CAD, manual, Playtest, evidence, or
 publication gates.
@@ -113,7 +115,7 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v6.md` capability
+For new Forge and Quest runs, the frozen `deep-economics-v7.md` capability
 begins Invent with high reasoning for 20 minutes and gives a recoverable
 continuation 10 minutes at medium to finalize existing work. Make first uses
 medium reasoning for an eight-minute proof phase, then resumes the same Goal at
@@ -125,17 +127,23 @@ invocation. Make receives a direct critical-path instruction and exact CAD
 command shapes to persist and inspect its minimal exact mechanism/form proof under
 `<cad-project>/review/early-proof/` before authoring the complete part tree.
 The source defines one module-scope `gen_step()`. Generate, export, and render
-all use the exact `$WORKSHOP_PYTHON` rather than executing CAD package
-directories or discovering `python -m` paths.
-One independent native critic first reads only the exact blockout images, then
-learns the Wish and sealed concept and checks every positive and negative
-held-form constraint. Generic, plaque-like, box-like, or exposed-mechanism
+all use the exact `$WORKSHOP_PYTHON` in one foreground batch rather than
+executing CAD package directories or discovering `python -m` paths. The host
+binds `XDG_CACHE_HOME` to a private run-local directory. During proof, the
+broad CAD skill is deliberately deferred until the marker because the host
+already supplies the complete narrow interface.
+One independent native critic is spawned without the Wish before the exact
+blockout images exist and waits for those paths. The root then checks its blind
+read against every positive and negative held-form constraint without a second
+child reveal turn. Generic, plaque-like, box-like, or exposed-mechanism
 readings fail this early proof. A canonical checkpoint-bound
 `.make-proof-ready.json` may end only the native proof turn; it is not a gate,
 artifact, or transition. This report is model evidence used to avoid an
 expensive bad direction; the later hash-bound final signature review and host
-CAD gate remain authoritative. Frozen deep-v5 retains the same phase settings
-and its original materialized CAD entrypoint instructions. Frozen deep-v4 retains its high-Invent/Make,
+CAD gate remain authoritative. Frozen deep-v6 retains its exact executable
+proof instructions without v7 batching and skill deferral. Frozen deep-v5
+retains the same phase settings and its original materialized CAD entrypoint
+instructions. Frozen deep-v4 retains its high-Invent/Make,
 medium-later 16k-Make profile. Frozen deep-v3 retains its high-Invent,
 medium-later 24k profile; frozen deep-v2 retains its effective all-high thread
 binding; deep-v1 and older runs retain their original profile.

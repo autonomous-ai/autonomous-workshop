@@ -66,6 +66,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
     DEEP_ECONOMICS_V4_CAPABILITY_PATH,
     DEEP_ECONOMICS_V5_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V6_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
@@ -431,17 +432,19 @@ class NativeHostTest(unittest.TestCase):
             "deep-v3": DEEP_ECONOMICS_V3_CAPABILITY_PATH,
             "deep-v4": DEEP_ECONOMICS_V4_CAPABILITY_PATH,
             "deep-v5": DEEP_ECONOMICS_V5_CAPABILITY_PATH,
-            "deep-v6": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v6": DEEP_ECONOMICS_V6_CAPABILITY_PATH,
+            "deep-v7": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        if economics_capability == "deep-v6":
-            # A real v6 run materializes the preserved v5 reference too. The
+        if economics_capability == "deep-v7":
+            # A real v7 run materializes the preserved v5/v6 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
             inputs = {
                 DEEP_ECONOMICS_V5_CAPABILITY_PATH: "b" * 64,
+                DEEP_ECONOMICS_V6_CAPABILITY_PATH: "c" * 64,
                 DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
             }
         else:
@@ -534,7 +537,7 @@ class NativeHostTest(unittest.TestCase):
 
         launcher_type.assert_called_once_with(reasoning_effort="low")
 
-    def test_deep_v6_shapes_each_stage_under_one_frozen_runtime_profile(self):
+    def test_deep_v7_shapes_each_stage_under_one_frozen_runtime_profile(self):
         for effort in ("forge", "quest"):
             for stage, reasoning in (
                 ("invent", "high"),
@@ -547,7 +550,7 @@ class NativeHostTest(unittest.TestCase):
                 ) as launcher_type:
                     checkpoint = self._launcher_checkpoint(
                         effort=effort,
-                        economics_capability="deep-v6",
+                        economics_capability="deep-v7",
                         stage=stage,
                     )
                     _native_launcher(
@@ -649,9 +652,32 @@ class NativeHostTest(unittest.TestCase):
             "",
         )
 
-    def test_deep_v6_make_after_proof_restores_high_normal_turn_boundary(self):
+    def test_deep_v7_make_prompt_batches_cached_proof_and_prestarts_critic(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v6", stage="make"
+            effort="quest", economics_capability="deep-v7"
+        )
+        prompt = _deep_make_critical_path_prompt(checkpoint)
+
+        self.assertIn("This v7 proof turn", prompt)
+        self.assertIn("separate bounded reads", prompt)
+        self.assertIn("broad CAD skill is deliberately not applicable", prompt)
+        self.assertIn("spawn one blind critic", prompt)
+        self.assertIn("wait for the exact held/signature paths", prompt)
+        self.assertIn("together in one foreground tool call", prompt)
+        self.assertIn("host already binds XDG_CACHE_HOME", prompt)
+        self.assertIn('"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/gen', prompt)
+        self.assertIn("do not spend a second child turn", prompt)
+        self.assertIn(checkpoint.checkpoint_sha256, prompt)
+        self.assertNotIn("This v6 proof turn", prompt)
+
+        recovery = _deep_make_recovery_prompt(checkpoint)
+        self.assertIn("v7 recovery stays on the proof fast path", recovery)
+        self.assertIn("run the supplied generate", recovery)
+        self.assertIn("together in one foreground tool call", recovery)
+
+    def test_deep_v7_make_after_proof_restores_high_normal_turn_boundary(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v7", stage="make"
         )
         with mock.patch(
             "workshop.workflow.native_run.CodexNativeSessionLauncher"
@@ -673,8 +699,8 @@ class NativeHostTest(unittest.TestCase):
         )
         self.assertIn("independent native critic", recovery_prompt)
         self.assertIn("persist the smallest complete product source", recovery_prompt)
-        self.assertIn("Do not survey tools", recovery_prompt)
-        self.assertIn(".make-proof-ready.json", recovery_prompt)
+        self.assertIn("v7 recovery stays on the proof fast path", recovery_prompt)
+        self.assertIn("one foreground tool call", recovery_prompt)
         final_recovery = _deep_make_recovery_prompt(
             checkpoint,
             proof_boundary=False,
@@ -693,9 +719,9 @@ class NativeHostTest(unittest.TestCase):
             "",
         )
 
-    def test_deep_v6_invent_recovery_is_medium_bounded_and_decisive(self):
+    def test_deep_v7_invent_recovery_is_medium_bounded_and_decisive(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v6", stage="invent"
+            effort="quest", economics_capability="deep-v7", stage="invent"
         )
         with mock.patch(
             "workshop.workflow.native_run.CodexNativeSessionLauncher"
@@ -755,9 +781,9 @@ class NativeHostTest(unittest.TestCase):
                     ),
                 )
 
-    def test_deep_v6_make_proof_marker_is_exact_checkpoint_bound_hint(self):
+    def test_deep_v7_make_proof_marker_is_exact_checkpoint_bound_hint(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v6", stage="make"
+            effort="quest", economics_capability="deep-v7", stage="make"
         )
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -789,9 +815,9 @@ class NativeHostTest(unittest.TestCase):
             self.assertFalse(_make_proof_ready(paths, checkpoint))
             self.assertFalse(marker.exists())
 
-    def test_deep_v6_make_proof_marker_fails_closed_on_symlink(self):
+    def test_deep_v7_make_proof_marker_fails_closed_on_symlink(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v6", stage="make"
+            effort="quest", economics_capability="deep-v7", stage="make"
         )
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()

@@ -1,6 +1,6 @@
 # ADR 0034: Bind proof to executable CAD entrypoints
 
-- Status: Accepted
+- Status: Superseded by ADR 0035 for new runs
 - Date: 2026-08-31
 - Owners: Runtime, workflow, product-run protocol, and CAD-skill maintainers
 - Supersedes for new runs: ADR 0033's `deep-economics-v5` profile

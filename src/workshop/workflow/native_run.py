@@ -142,6 +142,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
     DEEP_ECONOMICS_V4_CAPABILITY_PATH,
     DEEP_ECONOMICS_V5_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V6_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
@@ -3611,6 +3612,7 @@ def _phased_deep_capability_path(
 
     for path in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V6_CAPABILITY_PATH,
         DEEP_ECONOMICS_V5_CAPABILITY_PATH,
     ):
         if path in checkpoint.input_sha256s:
@@ -3802,6 +3804,7 @@ def _deep_make_critical_path_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3835,6 +3838,7 @@ def _deep_make_critical_path_prompt(
     )
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V6_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V5_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V4_CAPABILITY_PATH not in checkpoint.input_sha256s
     ):
@@ -3877,30 +3881,67 @@ def _deep_make_critical_path_prompt(
             "Make gate."
             % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
         )
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_V6_CAPABILITY_PATH
+    ):
+        return prompt + (
+            " This v6 proof turn is action-only. After reading the mandatory root "
+            "instructions and current-stage reference once, do not enumerate or "
+            "reread skill trees, open optional CAD references, invoke --help, or "
+            "delegate before a working proof source exists. The materialized CAD "
+            "source must define exactly one module-scope def gen_step() that "
+            "returns the build123d shape. The materialized CAD commands are "
+            "exactly \"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/gen "
+            "<source.step.py> --write, \"$WORKSHOP_PYTHON\" "
+            ".agents/skills/cad/scripts/export <source.step> --stl, and "
+            "\"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/render_product "
+            "<source.stl> -o "
+            "<cad-project>/review/early-proof/held.png --motion-sheet "
+            "<cad-project>/review/early-proof/signature.png "
+            "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json, "
+            "write source first, then run only those commands. Once exact proof "
+            "source, results, held/signature images, "
+            "and the blind review are durable under review/early-proof/, write "
+            "%s as canonical JSON containing exactly {\"checkpoint_sha256\":\"%s\","
+            "\"kind\":\"autonomous-workshop.make-proof-ready\","
+            "\"schema_version\":1} followed by one newline. The host uses that "
+            "marker only to "
+            "end this proof turn and resume the same Make Goal at high reasoning; "
+            "it does not advance or waive the Make gate."
+            % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+        )
     return prompt + (
-        " This v6 proof turn is action-only. After reading the mandatory root "
-        "instructions and current-stage reference once, do not enumerate or "
-        "reread skill trees, open optional CAD references, invoke --help, or "
-        "delegate before a working proof source exists. The materialized CAD "
-        "source must define exactly one module-scope def gen_step() that "
-        "returns the build123d shape. The materialized CAD commands are "
-        "exactly \"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/gen "
-        "<source.step.py> --write, \"$WORKSHOP_PYTHON\" "
-        ".agents/skills/cad/scripts/export <source.step> --stl, and "
-        "\"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/render_product "
-        "<source.stl> -o "
+        " This v7 proof turn is action-only. Read the mandatory root, Workshop "
+        "skill, and current Make reference once in separate bounded reads. The "
+        "broad CAD skill is deliberately not applicable until the proof marker "
+        "exists; do not open it, enumerate skill trees, read optional references, "
+        "invoke --help, or delegate product creation before then. Define exactly "
+        "one module-scope def gen_step() returning the build123d shape. Before "
+        "running CAD, spawn one blind critic with no Wish or concept and tell it "
+        "to wait for the exact held/signature paths, then inspect only those "
+        "images. Run generate, export, and render together in one foreground "
+        "tool call using the three exact \"$WORKSHOP_PYTHON\" commands below. "
+        "Do not set up a cache: the host already binds XDG_CACHE_HOME to a private "
+        "writable run directory. The commands are \"$WORKSHOP_PYTHON\" "
+        ".agents/skills/cad/scripts/gen <source.step.py> --write, "
+        "\"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/export <source.step> "
+        "--stl, and \"$WORKSHOP_PYTHON\" "
+        ".agents/skills/cad/scripts/render_product <source.stl> -o "
         "<cad-project>/review/early-proof/held.png --motion-sheet "
         "<cad-project>/review/early-proof/signature.png "
-        "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json, "
-        "write source first, then run only those commands. Once exact proof "
-        "source, results, held/signature images, "
-        "and the blind review are durable under review/early-proof/, write "
-        "%s as canonical JSON containing exactly {\"checkpoint_sha256\":\"%s\","
+        "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json. "
+        "After the critic returns its unprompted object, form, control, action, "
+        "and relationship read, compare that read yourself against every Wish "
+        "and concept requirement; do not spend a second child turn on reveal. "
+        "Repair and rerun the one batch at most once. Once exact proof source, "
+        "results, held/signature images, and the blind review are durable under "
+        "review/early-proof/, write %s as canonical JSON containing exactly "
+        "{\"checkpoint_sha256\":\"%s\","
         "\"kind\":\"autonomous-workshop.make-proof-ready\","
         "\"schema_version\":1} followed by one newline. The host uses that "
-        "marker only to "
-        "end this proof turn and resume the same Make Goal at high reasoning; "
-        "it does not advance or waive the Make gate."
+        "marker only to end this proof turn and resume the same Make Goal at "
+        "high reasoning; it does not advance or waive the Make gate."
         % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
     )
 
@@ -3917,6 +3958,7 @@ def _deep_make_recovery_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
         )
@@ -3946,6 +3988,20 @@ def _deep_make_recovery_prompt(
     )
     if _phased_deep_capability_path(checkpoint) is None:
         return prompt
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_CAPABILITY_PATH
+    ):
+        return prompt + (
+            " This v7 recovery stays on the proof fast path: do not load the "
+            "broad CAD skill or optional references, configure a cache, or "
+            "rediscover commands. Reuse any existing source and exact outputs. "
+            "If the three CAD outputs are incomplete, run the supplied generate, "
+            "export, and render commands together in one foreground tool call. "
+            "Start the blind critic before that batch if it is not already "
+            "running, then persist its unprompted read, perform the revealed "
+            "comparison yourself, and write the exact marker."
+        )
     return prompt + (
         " This proof boundary still has no valid phased-deep ready marker. Do not "
         "survey tools, invoke --help, reread instructions, or delegate. "
