@@ -584,9 +584,46 @@ class MockSessionArchitectureTest(unittest.TestCase):
             repository
             / ".agents/product-run/.agents/skills/autonomous-workshop/references/make-playtest.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("<evidence_root>/configs/<check-id>.json", reference)
+        playtest_reference = reference.split(
+            "## Playtest Goal and independent evidence loop", 1
+        )[1]
+        self.assertIn(
+            "<evidence_root>/configs/<check-id>.json", playtest_reference
+        )
         for field in ("schema_version", "check_id", "seed", "artifact_sha256"):
-            self.assertIn(field, reference)
+            self.assertIn(field, playtest_reference)
+        for field in (
+            "passed",
+            "evaluator",
+            "evaluator_version",
+            "config_ref",
+            "evidence_ref",
+            "observed_at",
+            "observations",
+        ):
+            self.assertIn("`%s`" % field, playtest_reference)
+        for field in (
+            "code",
+            "area",
+            "severity",
+            "finding",
+            "change",
+            "evidence_refs",
+            "invalidates",
+        ):
+            self.assertIn("`%s`" % field, playtest_reference)
+        self.assertIn(
+            "Every check is a strict object with exactly these eight fields",
+            playtest_reference,
+        )
+        self.assertIn(
+            "Every item is a strict object with exactly these seven\nfields",
+            playtest_reference,
+        )
+        self.assertIn(
+            '`verdict` is exactly `pass`, `improve`, or `block`',
+            playtest_reference,
+        )
 
 
 def _multipart(fields: dict[str, list[bytes]]) -> tuple[str, bytes]:

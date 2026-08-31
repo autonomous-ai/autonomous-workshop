@@ -425,6 +425,84 @@ final cited outputs under the exact `evidence_root`. Write one authored JSON
 source with exactly `checks`, `feedback`, and `verdict`. Every failing check
 must name a concrete area and repair.
 
+The complete authored-input shape is:
+
+```json
+{
+  "checks": [
+    {
+      "check_id": "mechanical-check",
+      "passed": true,
+      "evaluator": "workshop mechanical evaluator",
+      "evaluator_version": "1.0.0",
+      "config_ref": "configs/mechanical-check.json",
+      "evidence_ref": "results/mechanical-check.json",
+      "observed_at": "2026-08-31T04:00:00Z",
+      "observations": {
+        "evidence_class": "AI-simulated",
+        "claims": ["The seeded simulation completed without a collision."]
+      }
+    }
+  ],
+  "feedback": [],
+  "verdict": "pass"
+}
+```
+
+The source object accepts no other top-level fields. `checks` is a non-empty
+array containing each id from `STAGE.json.inputs.required_check_ids` exactly
+once. Every check is a strict object with exactly these eight fields:
+
+- `check_id`: the matching required id; 1–128 lowercase letters, digits,
+  periods, underscores, or hyphens, beginning with a letter or digit;
+- `passed`: a JSON boolean;
+- `evaluator`: non-empty text naming the actual evaluator, at most 1,000
+  characters and not `self-report` or `trust-me`;
+- `evaluator_version`: an exact, non-floating version such as `1.0.0`, not a
+  moving name such as `latest`, `main`, `head`, or `snapshot`;
+- `config_ref`: the evidence-root-relative canonical
+  `configs/<check_id>.json` path described above;
+- `evidence_ref`: a safe evidence-root-relative path to a regular static
+  evidence file;
+- `observed_at`: an ISO-8601 timestamp with an explicit UTC offset; and
+- `observations`: a non-empty JSON object containing the evaluator's concrete
+  results. Use `evidence_class` and `claims` when the result supports a later
+  Release claim, while preserving any additional finite JSON needed to explain
+  the check.
+
+Both referenced files must already exist inside `evidence_root`. The finalizer
+derives and seals their SHA-256 values; do not add authored hash fields to a
+check.
+
+`feedback` is an array. Every item is a strict object with exactly these seven
+fields:
+
+```json
+{
+  "code": "mechanism-binds",
+  "area": "mechanism",
+  "severity": "improve",
+  "finding": "The simulated slider binds before reaching its end state.",
+  "change": "Increase the guide clearance and rerun the mechanical check.",
+  "evidence_refs": ["results/mechanical-check.json"],
+  "invalidates": ["playtest", "release"]
+}
+```
+
+- `code` and `area` are non-empty text of at most 200 characters;
+- `severity` is exactly `note`, `improve`, or `block`;
+- `finding` and `change` are non-empty text;
+- `evidence_refs` is an array of non-empty string references; and
+- `invalidates` is a non-empty, duplicate-free array. It must be exactly
+  `["playtest","release"]` for an implementation repair, or contain exactly
+  `invent`, `make`, `playtest`, and `release` for a concept revision. Concept
+  revision requires `improve` or `block` severity.
+
+`verdict` is exactly `pass`, `improve`, or `block`. A `pass` requires every
+check to pass and forbids actionable (`improve` or `block`) feedback. Any other
+verdict requires at least one feedback item and either a failed check or
+actionable feedback.
+
 If `STAGE.json` contains `host_playtest_proposal_rejection`, read its exact
 failure code and feedback before repairing the evidence. The host quarantined
 the rejected proposal because its config, evidence, or contract could not be
