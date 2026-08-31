@@ -146,6 +146,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V7_CAPABILITY_PATH,
     DEEP_ECONOMICS_V8_CAPABILITY_PATH,
     DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V10_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -157,6 +158,7 @@ from workshop.workflow.effort import (
     DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
@@ -3662,6 +3664,7 @@ def _phased_deep_capability_path(
 
     for path in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V10_CAPABILITY_PATH,
         DEEP_ECONOMICS_V9_CAPABILITY_PATH,
         DEEP_ECONOMICS_V8_CAPABILITY_PATH,
         DEEP_ECONOMICS_V7_CAPABILITY_PATH,
@@ -3696,7 +3699,7 @@ def _native_launcher(
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
     Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
-    v10 through v3 runs shape reasoning and turn boundaries while
+    v11 through v3 runs shape reasoning and turn boundaries while
     binding their whole frozen profile to one persistent session. Deep-v2
     retains its effective all-high session binding; deep-v1 retains its
     historical all-high profile.
@@ -3724,16 +3727,24 @@ def _native_launcher(
                         DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                         if phased_deep_path in (
                             DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V10_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V9_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V8_CAPABILITY_PATH,
                         )
                         else DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                     )
                 elif (
-                    phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                    phased_deep_path in (
+                        DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+                    )
                     and not recoverable_continuation
                 ):
-                    timeout_seconds = DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                    timeout_seconds = (
+                        DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                        if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                        else DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                    )
                 else:
                     timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
             else:
@@ -3745,6 +3756,7 @@ def _native_launcher(
                     DEEP_AUTO_COMPACT_TOKEN_LIMIT
                     if phased_deep_path in (
                         DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V10_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V9_CAPABILITY_PATH,
                     )
                     else DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT
@@ -3876,6 +3888,7 @@ def _deep_make_critical_path_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V9_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3893,10 +3906,19 @@ def _deep_make_critical_path_prompt(
     ):
         if (
             _phased_deep_capability_path(checkpoint)
-            == DEEP_ECONOMICS_CAPABILITY_PATH
+            in (
+                DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+            )
         ):
+            profile_name = (
+                "v11"
+                if _phased_deep_capability_path(checkpoint)
+                == DEEP_ECONOMICS_CAPABILITY_PATH
+                else "v10"
+            )
             return (
-                " The checkpoint-bound v10 proof marker is valid. This first "
+                f" The checkpoint-bound {profile_name} proof marker is valid. This first "
                 "final-product continuation has a 15-minute source handoff "
                 "boundary. Keep the same Make Goal. In one bounded first call, "
                 "read STAGE.json, the exact early-proof source/finding, the "
@@ -3934,6 +3956,7 @@ def _deep_make_critical_path_prompt(
     )
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V9_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V7_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -3944,6 +3967,7 @@ def _deep_make_critical_path_prompt(
         return prompt
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V9_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
     ):
@@ -4099,8 +4123,14 @@ def _deep_make_critical_path_prompt(
         "independent critic and every Make gate remain mandatory."
         % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
         )
+    profile_name = (
+        "v11"
+        if _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_CAPABILITY_PATH
+        else "v10"
+    )
     return prompt + (
-        " This v10 proof turn has one 16-minute medium runway. Create or continue "
+        f" This {profile_name} proof turn has one 16-minute medium runway. Create or continue "
         "the Make Goal immediately without get_goal, then batch the mandatory "
         "root, Workshop, Make, STAGE, and sealed-concept reads once. Do not open "
         "the broad CAD skill, optional references, --help, an empty tree, or an "
@@ -4138,6 +4168,7 @@ def _deep_make_recovery_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V9_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4153,10 +4184,19 @@ def _deep_make_recovery_prompt(
     ):
         if (
             _phased_deep_capability_path(checkpoint)
-            == DEEP_ECONOMICS_CAPABILITY_PATH
+            in (
+                DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+            )
         ):
+            profile_name = (
+                "v11"
+                if _phased_deep_capability_path(checkpoint)
+                == DEEP_ECONOMICS_CAPABILITY_PATH
+                else "v10"
+            )
             return (
-                " The v10 proof marker remains valid. Continue final-product "
+                f" The {profile_name} proof marker remains valid. Continue final-product "
                 "recovery from the exact source and generated bytes already on "
                 "disk. Do not rewrite the marker, restart proof, call update_plan, "
                 "search APIs, inspect tool source, or read optional references. "
@@ -4186,10 +4226,19 @@ def _deep_make_recovery_prompt(
         return prompt
     if (
         _phased_deep_capability_path(checkpoint)
-        == DEEP_ECONOMICS_CAPABILITY_PATH
+        in (
+            DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+        )
     ):
+        profile_name = (
+            "v11"
+            if _phased_deep_capability_path(checkpoint)
+            == DEEP_ECONOMICS_CAPABILITY_PATH
+            else "v10"
+        )
         return (
-            " This v10 proof recovery reuses every durable byte. Do not call "
+            f" This {profile_name} proof recovery reuses every durable byte. Do not call "
             "get_goal, reread stable instructions, inspect an empty tree, spawn "
             "an early critic, or open optional references. Complete proof.py and "
             "the three state entry sources in the next edit, generate/export all "
@@ -4250,6 +4299,24 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
         and _phased_deep_capability_path(checkpoint) is not None
     ):
         return ""
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_CAPABILITY_PATH
+    ):
+        return (
+            " This v11 Invent recovery is a source handoff, not a creative "
+            "continuation. Do not call update_plan or get_goal, read or edit "
+            "an existing source, wait for children, research, compare, review, "
+            "or refine before finalization. Your first action must check only "
+            "whether work/invent-source.json exists. If it exists, your next "
+            "action must invoke the exact Invent finalizer on that file. Repair "
+            "only a concrete deterministic finalizer error, then invoke it "
+            "again. If the source does not exist, make the first file edit the "
+            "smallest contract-complete source from the strongest decision "
+            "already in context, and make the next action the exact finalizer. "
+            "The ten-minute boundary is repair reserve; agent-outcome.json is "
+            "the only stopping condition."
+        )
     return (
         " Do not restart roster comparison, research, exploration, or "
         "subagent work. If the routed Invent source already exists, validate "
@@ -4368,8 +4435,10 @@ def _make_proof_ready(
         )
     if (
         valid
-        and _phased_deep_capability_path(checkpoint)
-        == DEEP_ECONOMICS_CAPABILITY_PATH
+        and _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+        )
     ):
         valid = _v10_make_proof_artifacts_ready(paths, checkpoint)
     if valid:

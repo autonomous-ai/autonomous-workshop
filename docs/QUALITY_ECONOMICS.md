@@ -580,6 +580,42 @@ Final Make then gets a 15-minute source-first handoff before normal recovery,
 preventing another 30-minute documentation-only turn. V10 is still unproven
 until a fresh terminal product passes and publishes.
 
+### V10 production result: valid Invent source missed its finalizer
+
+Production Quest `wish-20260831-153128-dde436ba` used the compact roster index
+and selected a concept titled *Three-Sky Seed — Meridian Shutter*. The initial
+Invent turn consumed its full 20-minute high-reasoning boundary. During the
+10-minute medium recovery it wrote a valid 30,018-byte `invent-source.json`
+only 71 seconds before timeout and did not invoke the finalizer. The host
+stopped safely after two recoverable turns. In an isolated copy, the exact
+deterministic finalizer accepted those bytes in 0.2 seconds. A normal operator
+resume then finalized and passed Invent in 3m34s.
+
+This is finalization latency, not a concept-contract failure. New runs therefore
+freeze `deep-economics-v11.md`. Invent recovery is now explicitly a two-action
+source handoff: check for existing source and finalize it, or write the smallest
+contract-complete source first and finalize next. Reading, editing, planning,
+research, child waits, and refinement are forbidden before that first finalizer
+attempt. Frozen v10 keeps its exact original recovery behavior.
+
+The same v10 run then validated the exact-state Make boundary. In one measured
+15-minute proof turn it authored the helper, three state-source/STEP/STL
+families, held render, and root finding. The fixed-camera state renderer found a
+minimum mean RGB difference of only 0.071 against the required 2.000; none of
+the relief skies was legible, and the held blockout read as a gear/spinner
+rather than a smooth seed. The session truthfully returned a failed Make
+outcome after its one permitted repair and wrote no proof marker. Playtest,
+Release, Factory publication, and GitHub snapshot did not run.
+
+| V10 measured Make proof | Input | Cached input | Uncached input | Output | Reasoning output |
+|---|---:|---:|---:|---:|---:|
+| Failed exact-state proof | 2,628,457 | 2,554,880 | 73,577 | 21,467 | 12,974 |
+
+The three Invent turns were not reported by the native runtime's token event
+stream and remain explicitly unmeasured. The large measured input total is
+mostly cache reads; both total and uncached input remain relevant economics.
+This failed run is useful quality evidence, not a completed product cost.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

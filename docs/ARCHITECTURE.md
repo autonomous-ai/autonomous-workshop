@@ -20,8 +20,10 @@ decorated, and be represented no more strongly than its evidence permits.
 For Codex, new Spark projects freeze low reasoning, a 64k automatic
 context-compaction ceiling across their one Make-to-Release session, and a
 20-minute boundary per native turn. New Forge and Quest projects begin Invent
-with 20 minutes at high reasoning and use a 10-minute decisive medium recovery
-when needed. Codex ranks a compact complete-roster Taste index before opening
+with 20 minutes at high reasoning and use a 10-minute medium source handoff
+when needed: an existing source is finalized before any reading or refinement;
+otherwise the first edit writes source and the next action finalizes it. Codex
+ranks a compact complete-roster Taste index before opening
 the best three full agents. Make uses one 16-minute medium real-state proof
 runway, then resumes the same Goal at high reasoning for a 15-minute source
 handoff before normal 30-minute recovery after a valid proof marker. The host
@@ -120,9 +122,11 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v10.md` capability
+For new Forge and Quest runs, the frozen `deep-economics-v11.md` capability
 begins Invent with high reasoning for 20 minutes and gives a recoverable
-continuation 10 minutes at medium to finalize existing work. The stage packet
+continuation 10 minutes at medium as a source handoff. Its first action checks
+only whether source exists; existing source goes straight to the finalizer,
+while missing source is written in the first edit and finalized next. The stage packet
 contains a compact index derived from every exact Taste header; Codex ranks the
 complete roster there, then reads only the best three full custom agents. Make
 first uses medium reasoning for one 16-minute proof runway, then resumes the
@@ -153,7 +157,8 @@ artifact, or transition. V10 accepts it only when all three state sources, STEP,
 STL, render, and finding bytes are durable and distinct. This report is model
 evidence used to avoid an expensive bad direction; the later hash-bound final signature review and host
 CAD gate remain authoritative. The independent native critic remains mandatory
-for final Make's hash-bound review. Frozen deep-v9 retains its 256k compaction,
+for final Make's hash-bound review. Frozen deep-v10 retains its original Invent
+recovery plus the same exact-state Make behavior. Frozen deep-v9 retains its 256k compaction,
 one-mesh viewpoint proof, and normal 30-minute final turn. Frozen deep-v8
 retains its 16-minute proof runway and 24k compaction. Frozen deep-v7 retains
 its eight-minute

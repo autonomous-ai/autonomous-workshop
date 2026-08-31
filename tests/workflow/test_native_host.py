@@ -70,6 +70,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V7_CAPABILITY_PATH,
     DEEP_ECONOMICS_V8_CAPABILITY_PATH,
     DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V10_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -82,6 +83,7 @@ from workshop.workflow.effort import (
     DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -442,13 +444,14 @@ class NativeHostTest(unittest.TestCase):
             "deep-v7": DEEP_ECONOMICS_V7_CAPABILITY_PATH,
             "deep-v8": DEEP_ECONOMICS_V8_CAPABILITY_PATH,
             "deep-v9": DEEP_ECONOMICS_V9_CAPABILITY_PATH,
-            "deep-v10": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v10": DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+            "deep-v11": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        if economics_capability == "deep-v10":
-            # A real v10 run materializes the preserved v5-v9 references too. The
+        if economics_capability == "deep-v11":
+            # A real v11 run materializes the preserved v5-v10 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
             inputs = {
@@ -457,7 +460,17 @@ class NativeHostTest(unittest.TestCase):
                 DEEP_ECONOMICS_V7_CAPABILITY_PATH: "c" * 64,
                 DEEP_ECONOMICS_V8_CAPABILITY_PATH: "b" * 64,
                 DEEP_ECONOMICS_V9_CAPABILITY_PATH: "9" * 64,
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH: "0" * 64,
                 DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+            }
+        elif economics_capability == "deep-v10":
+            inputs = {
+                DEEP_ECONOMICS_V5_CAPABILITY_PATH: "e" * 64,
+                DEEP_ECONOMICS_V6_CAPABILITY_PATH: "d" * 64,
+                DEEP_ECONOMICS_V7_CAPABILITY_PATH: "c" * 64,
+                DEEP_ECONOMICS_V8_CAPABILITY_PATH: "b" * 64,
+                DEEP_ECONOMICS_V9_CAPABILITY_PATH: "9" * 64,
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH: "a" * 64,
             }
         elif economics_capability == "deep-v9":
             inputs = {
@@ -625,6 +638,22 @@ class NativeHostTest(unittest.TestCase):
                     runtime_profile_sha256="a" * 64,
                     timeout_seconds=timeout,
                 )
+
+    def test_deep_v11_final_make_keeps_v10_source_handoff(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v11", stage="make"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint, initial_make_proof_boundary=False)
+
+        launcher_type.assert_called_once_with(
+            reasoning_effort="high",
+            auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+            runtime_profile_sha256="a" * 64,
+            timeout_seconds=DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+        )
 
     def test_deep_v5_retains_its_frozen_phased_profile_and_prompt(self):
         checkpoint = self._launcher_checkpoint(
@@ -801,6 +830,28 @@ class NativeHostTest(unittest.TestCase):
         )
         self.assertIn("v10 proof marker remains valid", final_recovery)
         self.assertIn("write it in the next action", final_recovery)
+
+    def test_deep_v11_keeps_real_states_and_makes_invent_recovery_action_first(self):
+        make_checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v11", stage="make"
+        )
+        self.assertIn(
+            "This v11 proof turn",
+            _deep_make_critical_path_prompt(make_checkpoint),
+        )
+        self.assertIn(
+            "v11 proof recovery",
+            _deep_make_recovery_prompt(make_checkpoint),
+        )
+
+        invent_checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v11", stage="invent"
+        )
+        recovery = _deep_invent_recovery_prompt(invent_checkpoint)
+        self.assertIn("source handoff, not a creative continuation", recovery)
+        self.assertIn("first action must check only", recovery)
+        self.assertIn("next action must invoke the exact Invent finalizer", recovery)
+        self.assertIn("ten-minute boundary is repair reserve", recovery)
 
     def test_deep_v7_make_after_proof_restores_high_normal_turn_boundary(self):
         checkpoint = self._launcher_checkpoint(

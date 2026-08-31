@@ -220,7 +220,7 @@ blind critic remains at the final hash-bound Make review.
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v10)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v11)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -237,7 +237,8 @@ ceiling for their one persistent Make-to-Release session, and a 20-minute
 boundary per native turn. A timeout resumes the exact session and Goal through
 the existing bounded recovery path; it is not a 20-minute stage deadline.
 New Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
-use a decisive 10-minute medium recovery only when needed. A compact index
+use a 10-minute medium source handoff only when needed: finalize an existing
+source first, or write then finalize before any refinement. A compact index
 covers every exact Taste header before Codex reads only the best three full
 Inventors. Make starts with one 16-minute medium real-state proof runway at 256k
 context; after exact proof bytes are durable, a checkpoint-bound marker returns
@@ -253,7 +254,8 @@ and reserves independent blind critique for final Make. Their novelty must come
 from one strong relationship or interaction
 that Make persists and has one independent critic inspect blindly as its first
 proof—not gratuitous parts or mechanisms. The proof marker is only a liveness
-boundary; it is not a gate or stage transition. Frozen deep-v9 runs retain
+boundary; it is not a gate or stage transition. Frozen deep-v10 runs retain
+their original less prescriptive Invent recovery. Frozen deep-v9 runs retain
 their 256k compaction, viewpoint-only proof, and normal 30-minute final Make;
 frozen deep-v8 runs retain their 24k compaction. Older runs keep the exact profile
 they started with. These are
