@@ -529,7 +529,7 @@ def author_make(root: Path, stage) -> None:
         if rejected_contract.exists():
             rejected_contract.unlink()
     project = product_root / "cad/project"
-    validation = product_root / "validation"
+    validation = project / "validation"
     project.mkdir(parents=True, exist_ok=True)
     validation.mkdir(parents=True, exist_ok=True)
     product = {
@@ -567,6 +567,24 @@ def author_make(root: Path, stage) -> None:
     for offset, color in ((0, "#35aeb8"), (600, "#ffb445"), (1200, "#35aeb8")):
         signature_pen.ellipse((offset + 110, 160, offset + 490, 700), fill=color)
     signature.save(project / "snap/signature.png", format="PNG")
+    preflight = (
+        b"# Verification pipeline record\n\n"
+        b"- Recorded: content-addressed\n"
+        b"- Mode: `print-preflight`\n"
+        b"- Result: **PASS** (exit 0)\n\n"
+        b"| # | command | result | seconds |\n"
+        b"|---:|---|---:|---:|\n"
+        b"| 1 | `check_mesh orbit_board.stl` | rc=0 | 0.01 |\n"
+        b"| 2 | `check_thickness orbit_board.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
+    )
+    preflight_path = project / "measure/print-preflight.md"
+    preflight_path.parent.mkdir(parents=True, exist_ok=True)
+    preflight_path.write_bytes(preflight)
+    concept_sha256 = inputs.get("invented", {}).get("concept_sha256")
+    if not isinstance(concept_sha256, str):
+        concept_sha256 = hashlib.sha256(
+            canonical_json(invented_source(include_selection=True)["concept"])
+        ).hexdigest()
     if "concept-copied-pixels" in stage["product_id"] and "sealed_concept" in inputs:
         concept = inputs["sealed_concept"]
         concept_root = root / (
@@ -579,19 +597,39 @@ def author_make(root: Path, stage) -> None:
     write_json(
         project / "snap/SIGNATURE-REVIEW.json",
         {
-            "schema_version": 2,
+            "schema_version": 6,
             "kind": "autonomous-workshop.signature-experience-review",
+            "concept_sha256": concept_sha256,
             "iso_sha256": hashlib.sha256(render_path.read_bytes()).hexdigest(),
             "signature_sha256": hashlib.sha256(
                 (project / "snap/signature.png").read_bytes()
             ).hexdigest(),
             "reviewer": "deterministic-independent-native-critic",
             "blind_held_read": "A compact orbital game board with tactile pieces.",
-            "blind_signature_read": "Three exact states show a clear orbital play sequence.",
+            "blind_form_read": "A rounded tactile board with a shallow sculpted play field.",
+            "blind_subjects_read": "A board, tactile pieces, and orbital waypoints.",
+            "blind_action_read": "Pieces move between three visible orbital states.",
+            "blind_relationship_read": "The tactile pieces move through the board's orbital waypoints.",
+            "anti_generic_signature_read": "Orbital waypoints make the familiar game board distinct.",
             "wish_revealed_after_blind_read": True,
             "held_object_unmistakable": True,
+            "form_matches_wish": True,
+            "subjects_match_wish": True,
+            "action_matches_wish": True,
+            "relationship_matches_wish": True,
+            "anti_generic_signature_visible": True,
             "signature_experience_unmistakable": True,
             "finished_product_desirable": True,
+            "review_rounds": 1,
+            "critical_form_requirements": [
+                {
+                    "requirement": "The board must be rounded and volumetric.",
+                    "blind_evidence": "The exact renders show rounded depth and a tactile play field.",
+                    "matches": True,
+                }
+            ],
+            "blocking_visual_defects": [],
+            "print_preflight_sha256": hashlib.sha256(preflight).hexdigest(),
             "largest_risk": "The three states could visually merge.",
             "resolution": "Contrasting separated panels preserve each exact state.",
         },
@@ -622,16 +660,16 @@ def author_make(root: Path, stage) -> None:
         generator,
         encoding="utf-8",
     )
-    write_json(
-        validation / "cad-verification.json",
-        {
-            "schema_version": 1,
-            "validator": "materialized-cad-final",
-            "validator_version": "1.0.0",
-            "passed": True,
-            "checks": ["fresh-export", "strict-fit", "printable-mesh"],
-            "final_pipeline": {"print_ready_claim": True},
-        },
+    (validation / "cad-verification.json").write_text(
+        "# Verification pipeline record\n\n"
+        "- Recorded: content-addressed\n"
+        "- Mode: `final`\n"
+        "- Result: **PASS** (exit 0)\n\n"
+        "| # | command | result | seconds |\n"
+        "|---:|---|---:|---:|\n"
+        "| 1 | `check_mesh assembled.stl` | rc=0 | 0.01 |\n"
+        "| 2 | `check_thickness assembled.stl --nozzle 0.4` | rc=0 | 0.01 |\n",
+        encoding="utf-8",
     )
     arguments = ["make"]
     if creative_source is not None:
@@ -642,7 +680,7 @@ def author_make(root: Path, stage) -> None:
         "--cad-project-path",
         "cad/project",
         "--cad-verification-path",
-        "validation/cad-verification.json",
+        "cad/project/validation/cad-verification.json",
     ))
     finalizer(root, *arguments)
 

@@ -40,7 +40,22 @@ The implementation was verified on 2026-08-31 with:
 - `openspec validate restore-dormant-concept-contracts --strict` and `openspec validate activate-invent-concept-boundary --strict` — both changes validated.
 - `git diff --check` — passed.
 
-The authenticated real-Codex mock-session case and any live-provider request
-remain opt-in and were not run in this verification. No live-provider success,
-visual quality, buildability from Concept imagery, manufacture, delivery, or
-physical result is claimed from the deterministic doubles.
+The deterministic Spark/Forge/Quest route matrix was rerun on 2026-08-31 with
+`WORKSHOP_RUN_DETERMINISTIC_E2E=1` and passed. The required authenticated
+real-Codex mock-session acceptance remains open. The first Forge retry against
+local Concept-image and Factory doubles used `gpt-5.6-terra` at high effort
+through an in-memory test-only launcher override; it completed Invent in
+290.86 seconds but its following Make proof turn exited 126 because the
+mock-session wrapper incorrectly required a final context record at the
+intermediate proof boundary. The wrapper now accepts only the exact
+checkpoint-bound Make marker and retains strict context validation for normal
+finalization. A second Terra/high Forge retry completed Invent in 313.01
+seconds and the Make proof boundary in 152.97 seconds, both in the same native
+session. The local Codex transcript was subsequently recovered: final Make
+returned an exact `waiting` outcome because the independent rereview found the
+alternate loose wave/radial state visually ambiguous after the one permitted
+focused repair. It therefore never produced a terminal Forge receipt. Quest
+and the partial-role real acceptance remain unattempted. No live-provider
+request was made, and no live-provider success, visual quality, buildability
+from Concept imagery, manufacture, delivery, or physical result is claimed
+from the deterministic doubles.

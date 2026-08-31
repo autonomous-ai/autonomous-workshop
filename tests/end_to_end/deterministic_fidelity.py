@@ -43,7 +43,7 @@ PHASE_PROOFS: Mapping[str, PhaseProof] = {
             "/product/product.json",
             "/product/assembled.step",
             "/product/assembled.stl",
-            "/product/validation/cad-verification.json",
+            "/product/cad/project/validation/cad-verification.json",
         ),
         (
             "/evidence/make/r0001-cad-gate.json",

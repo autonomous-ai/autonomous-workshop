@@ -42,12 +42,32 @@ class RealCodexMockSessionEndToEndTest(unittest.TestCase):
         )
         self.assertEqual(report.stages, CANONICAL_ROUTES[report.effort])
         self.assertEqual(report.session_starts, 1)
-        self.assertEqual(report.session_resumes, len(report.stages) - 1)
+        self.assertGreaterEqual(report.session_resumes, len(report.stages) - 1)
         self.assertEqual(report.context_records_verified, len(report.stages))
         self.assertEqual(report.final_stage, "release")
         self.assertEqual(report.final_status, "complete")
         self.assertEqual(report.publication_status, "public")
         print(json.dumps(report.to_dict(include_local_paths=False), sort_keys=True))
+
+    def test_forge_partial_concept_effect_wait_reconciles_without_repeating_invent(self):
+        preflight_codex()
+        configured = os.environ.get(HOME_ENVIRONMENT)
+        if configured:
+            self.skipTest("the partial-role acceptance requires an isolated home")
+        with tempfile.TemporaryDirectory(prefix="workshop-mock-session-partial-") as value:
+            report = run_mock_session_acceptance(
+                Path(value).resolve(),
+                effort="forge",
+                turn_timeout_seconds=int(
+                    os.environ.get("WORKSHOP_MOCK_SESSION_TURN_TIMEOUT", "900")
+                ),
+                partial_concept_roles=True,
+            )
+        self.assertEqual(report.stages, CANONICAL_ROUTES["forge"])
+        self.assertEqual(report.session_starts, 1)
+        self.assertGreaterEqual(report.session_resumes, len(report.stages) - 1)
+        self.assertEqual(report.context_records_verified, len(report.stages))
+        self.assertEqual((report.final_stage, report.final_status), ("release", "complete"))
 
 
 if __name__ == "__main__":

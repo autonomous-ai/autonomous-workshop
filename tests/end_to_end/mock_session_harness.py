@@ -29,6 +29,8 @@ from workshop.wish import Wish
 from workshop.workflow import AgentRun, WORKSHOP_EFFORTS
 from workshop.workflow.native_run import (
     native_run_paths,
+    native_run_status,
+    resume_native_run,
     start_native_run,
 )
 
@@ -328,6 +330,7 @@ def _assert_agent_write_ownership(
                 or relative.startswith("work/")
                 or relative.startswith("artifacts/%s/" % stage)
                 or (stage == "invent" and relative.startswith("artifacts/concept/"))
+                or (stage == "make" and relative == ".make-proof-ready.json")
             )
             if not allowed:
                 raise MockSessionEvidenceError(
@@ -366,14 +369,37 @@ def _validate_trace(
 ) -> tuple[tuple[Mapping[str, Any], ...], str]:
     trace = _read_trace(run_root)
     expected = CANONICAL_ROUTES[effort]
-    stages = tuple(value.get("stage") for value in trace)
+    boundaries = tuple(
+        index
+        for index, value in enumerate(trace)
+        if value.get("make_proof_boundary") is True
+    )
+    if len(boundaries) > 1:
+        raise MockSessionEvidenceError(
+            "%s:multiple intermediate Make proof turns were observed" % effort
+        )
+    if boundaries:
+        boundary = boundaries[0]
+        if (
+            trace[boundary].get("stage") != "make"
+            or boundary + 1 >= len(trace)
+            or trace[boundary + 1].get("stage") != "make"
+        ):
+            raise MockSessionEvidenceError(
+                "%s:intermediate Make proof boundary is not followed by Make" % effort
+            )
+    stages = tuple(
+        value.get("stage")
+        for value in trace
+        if value.get("make_proof_boundary") is not True
+    )
     if stages != expected:
         raise MockSessionEvidenceError(
             "%s:stage trace differs: expected %r, observed %r"
             % (effort, expected, stages)
         )
     methods = tuple(value.get("method") for value in trace)
-    if methods != ("start",) + ("resume",) * (len(expected) - 1):
+    if methods != ("start",) + ("resume",) * (len(trace) - 1):
         raise MockSessionEvidenceError(
             "%s:native start/resume trace differs: %r" % (effort, methods)
         )
@@ -416,14 +442,15 @@ def _validate_trace(
             raise MockSessionEvidenceError(
                 "%s:%s packet snapshot changed" % (effort, stage)
             )
-        validate_context_record(
-            run_root / value["context_record_path"],
-            run_root=run_root,
-            packet_path=packet_path,
-            agent_writes=value.get("agent_writes"),
-            proposal_artifacts=value.get("proposal_artifacts"),
-            turn_output_hashes=value.get("turn_output_hashes"),
-        )
+        if value.get("make_proof_boundary") is not True:
+            validate_context_record(
+                run_root / value["context_record_path"],
+                run_root=run_root,
+                packet_path=packet_path,
+                agent_writes=value.get("agent_writes"),
+                proposal_artifacts=value.get("proposal_artifacts"),
+                turn_output_hashes=value.get("turn_output_hashes"),
+            )
     _assert_agent_write_ownership(trace, effort=effort)
     session = read_bounded_json(host_state / "codex-session.json", 64 * 1024)
     session_id = session.get("thread_id")
@@ -628,6 +655,7 @@ def run_mock_session_acceptance(
     *,
     effort: str,
     turn_timeout_seconds: int = DEFAULT_TURN_TIMEOUT_SECONDS,
+    partial_concept_roles: bool = False,
 ) -> MockSessionReport:
     if effort not in CANONICAL_ROUTES or effort not in WORKSHOP_EFFORTS:
         raise ContractError("mock-session effort must be spark, forge, or quest")
@@ -685,6 +713,8 @@ def run_mock_session_acceptance(
 
     def concept_transport(url, headers, body, timeout):
         concept_calls.append((url, dict(headers), json.loads(body), timeout))
+        if partial_concept_roles and effort != "spark" and len(concept_calls) == 2:
+            raise OSError("mock Concept transport failed before transmission")
         image = b"\x89PNG\r\n\x1a\nmock-session-concept-%02d" % len(concept_calls)
         return 200, {"Content-Type": "application/json"}, json.dumps(
             {
@@ -723,6 +753,61 @@ def run_mock_session_acceptance(
                 receipt = start_native_run(
                     _fixed_wish(product_id), effort=effort
                 )
+                if partial_concept_roles:
+                    if effort == "spark":
+                        raise ContractError(
+                            "partial Concept acceptance requires Forge or Quest"
+                        )
+                    if (receipt.get("stage"), receipt.get("status")) != (
+                        "invent",
+                        "waiting",
+                    ):
+                        raise MockSessionEvidenceError(
+                            "%s:partial Concept effect did not wait at Invent" % effort
+                        )
+                    paths = native_run_paths(product_id)
+                    status = native_run_status(product_id)
+                    if (status.get("stage"), status.get("status")) != (
+                        "invent",
+                        "waiting",
+                    ):
+                        raise MockSessionEvidenceError(
+                            "%s:status did not preserve the Invent wait" % effort
+                        )
+                    pending_session = read_bounded_json(
+                        paths.host_state / "codex-session.json", 64 * 1024
+                    )
+                    pending_session_id = pending_session.get("thread_id")
+                    if not isinstance(pending_session_id, str) or not pending_session_id:
+                        raise MockSessionEvidenceError(
+                            "%s:Invent wait lacks a bound native session" % effort
+                        )
+                    trace_before_effect_resume = _read_trace(paths.workspace)
+                    assert_no_fixture_secrets(
+                        paths.workspace,
+                        paths.host_state,
+                        extra_text=(json.dumps(status, sort_keys=True),),
+                    )
+                    receipt = resume_native_run(product_id)
+                    if (receipt.get("stage"), receipt.get("status")) != (
+                        "make",
+                        "active",
+                    ):
+                        raise MockSessionEvidenceError(
+                            "%s:Concept reconciliation did not advance to Make" % effort
+                        )
+                    if _read_trace(paths.workspace) != trace_before_effect_resume:
+                        raise MockSessionEvidenceError(
+                            "%s:Concept reconciliation repeated Invent cognition" % effort
+                        )
+                    resumed_session = read_bounded_json(
+                        paths.host_state / "codex-session.json", 64 * 1024
+                    )
+                    if resumed_session.get("thread_id") != pending_session_id:
+                        raise MockSessionEvidenceError(
+                            "%s:Concept reconciliation changed the native session" % effort
+                        )
+                    receipt = resume_native_run(product_id)
             # Resolve the production paths while the isolated WORKSHOP_HOME is
             # still authoritative. Validation deliberately happens after the
             # server closes, but it must not fall back to the developer's home.
@@ -744,7 +829,10 @@ def run_mock_session_acceptance(
                 for item in checkpoint.stage_artifacts["invent"]
             )
         )
-        if len(concept_calls) != expected_concept_calls:
+        expected_transport_calls = expected_concept_calls + int(
+            partial_concept_roles and effort != "spark"
+        )
+        if len(concept_calls) != expected_transport_calls:
             raise MockSessionEvidenceError(
                 "%s:Concept image calls differ from sealed role artifacts" % effort
             )
@@ -771,7 +859,9 @@ def run_mock_session_acceptance(
             session_starts=1,
             session_resumes=len(trace) - 1,
             session_id=session_id,
-            context_records_verified=len(trace),
+            context_records_verified=sum(
+                value.get("make_proof_boundary") is not True for value in trace
+            ),
             context_proof="verified-final-bytes-and-run-root-inputs",
             terminal_event_fallbacks=sum(
                 _terminal_evidence_mode(

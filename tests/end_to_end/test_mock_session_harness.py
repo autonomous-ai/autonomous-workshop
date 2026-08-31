@@ -902,6 +902,36 @@ for event in events:
         self.assertNotIn("turn.completed", missing.stdout)
         self.assertIn("context proof failed", missing.stderr)
 
+    def test_exact_make_proof_marker_allows_intermediate_terminal_without_context(self):
+        self.fake_codex()
+        fake = self.bin / "codex"
+        source = fake.read_text(encoding="utf-8")
+        source = source.replace(
+            "context.write_text(json.dumps(record))",
+            """marker = root / '.make-proof-ready.json'
+marker.write_text(json.dumps({
+    'schema_version': 1,
+    'kind': 'autonomous-workshop.make-proof-ready',
+    'checkpoint_sha256': checkpoint,
+}, sort_keys=True, separators=(',', ':')) + '\\n')""",
+        )
+        fake.write_text(source, encoding="utf-8")
+        result = subprocess.run(
+            [str(self.wrapper), "exec", "--model", "gpt-5.6-sol", "-"],
+            cwd=self.root,
+            env=self.environment(),
+            input="proof prompt",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("turn.completed", result.stdout)
+        trace = json.loads((self.root / ".mock-session/turns.jsonl").read_text())
+        self.assertTrue(trace["make_proof_boundary"])
+        self.assertEqual(trace["turn_output_hashes"], {})
+        self.assertIsNone(trace["context_proof_error"])
+
     def test_same_checkpoint_repair_uses_distinct_subject_bound_packet(self):
         self.fake_codex()
         arguments = ["exec", "--model", "gpt-5.6-sol", "-"]

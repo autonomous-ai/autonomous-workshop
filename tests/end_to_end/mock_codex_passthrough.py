@@ -291,6 +291,51 @@ def _context_proof_error(
     return None
 
 
+def _make_proof_boundary(run_root: Path, packet: Mapping[str, object]) -> bool:
+    """Recognize the host's exact intermediate deep-Make marker.
+
+    This is not finalization evidence.  It only lets the pass-through return
+    the terminal event for a bounded proof turn, so the production host can
+    consume its own marker and resume the same native Goal.  Every ordinary
+    turn still requires the complete context record below.
+    """
+
+    if packet.get("stage") != "make":
+        return False
+    checkpoint = packet.get("checkpoint_sha256")
+    if not isinstance(checkpoint, str) or not checkpoint:
+        return False
+    path = run_root / ".make-proof-ready.json"
+    try:
+        before = path.lstat()
+    except OSError:
+        return False
+    if path.is_symlink() or not path.is_file():
+        return False
+    try:
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError:
+        return False
+    if (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size) != (
+        after.st_dev,
+        after.st_ino,
+        after.st_mtime_ns,
+        after.st_size,
+    ):
+        return False
+    expected = {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.make-proof-ready",
+        "checkpoint_sha256": checkpoint,
+    }
+    try:
+        value = json.loads(content.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        return False
+    return value == expected and content == _canonical_json(expected) + b"\n"
+
+
 def _runtime_configuration(arguments: list[str]) -> tuple[str | None, str | None, str]:
     model = arguments[arguments.index("--model") + 1] if "--model" in arguments else None
     effort = next(
@@ -341,6 +386,7 @@ def main() -> int:
     prohibited: set[str] = set()
     terminal_line: str | None = None
     terminal_forwarded = False
+    make_proof_boundary = False
     thread_ids: set[str] = set()
     timed_out = False
     child = subprocess.Popen(
@@ -395,14 +441,18 @@ def main() -> int:
                 thread_ids.add(event["thread_id"])
             if event.get("type") == "turn.completed":
                 terminal_line = line
-                immediate_hashes = _context_output_hashes(run_root, context_record)
-                immediate_error = _context_proof_error(
-                    run_root,
-                    context_record,
-                    packet,
-                    packet_sha256,
-                    immediate_hashes,
-                )
+                make_proof_boundary = _make_proof_boundary(run_root, packet)
+                if make_proof_boundary:
+                    immediate_error = None
+                else:
+                    immediate_hashes = _context_output_hashes(run_root, context_record)
+                    immediate_error = _context_proof_error(
+                        run_root,
+                        context_record,
+                        packet,
+                        packet_sha256,
+                        immediate_hashes,
+                    )
                 if immediate_error is None and not prohibited:
                     sys.stdout.write(line)
                     sys.stdout.flush()
@@ -418,12 +468,17 @@ def main() -> int:
     )
     elapsed = round(time.monotonic() - started, 6)
     output_hashes = _context_output_hashes(run_root, context_record)
-    proof_error = _context_proof_error(
-        run_root,
-        context_record,
-        packet,
-        packet_sha256,
-        output_hashes,
+    make_proof_boundary = _make_proof_boundary(run_root, packet)
+    proof_error = (
+        None
+        if make_proof_boundary
+        else _context_proof_error(
+            run_root,
+            context_record,
+            packet,
+            packet_sha256,
+            output_hashes,
+        )
     )
     if returncode == 0 and terminal_line is not None and proof_error is not None:
         returncode = 126
@@ -453,6 +508,7 @@ def main() -> int:
             "agent_writes": agent_writes,
             "proposal_artifacts": _proposal_artifacts(run_root),
             "turn_output_hashes": output_hashes,
+            "make_proof_boundary": make_proof_boundary,
             "context_proof_error": proof_error,
             "returncode": returncode,
         },
