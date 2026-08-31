@@ -175,6 +175,96 @@ class SkillFingerprintTest(unittest.TestCase):
             self.assertTrue(held.is_file())
             self.assertTrue(signature.is_file())
 
+    def test_state_sheet_uses_distinct_exact_meshes_and_rejects_duplicates(self):
+        cad = resolve_skills_root() / "cad"
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary).resolve()
+            state_stls = []
+            for index, width in enumerate((20, 28, 36)):
+                source = workspace / ("state-%d.step.py" % index)
+                source.write_text(
+                    "from build123d import Box\n\n"
+                    "def gen_step():\n"
+                    "    return Box(%d, 18, 16)\n" % width,
+                    encoding="utf-8",
+                )
+                generated = subprocess.run(
+                    (
+                        sys.executable,
+                        str(cad / "scripts" / "gen"),
+                        source.name,
+                        "--write",
+                    ),
+                    cwd=workspace,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=60,
+                )
+                self.assertEqual(generated.returncode, 0, generated.stderr)
+                step = source.with_suffix("")
+                exported = subprocess.run(
+                    (
+                        sys.executable,
+                        str(cad / "scripts" / "export"),
+                        step.name,
+                        "--stl",
+                    ),
+                    cwd=workspace,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=60,
+                )
+                self.assertEqual(exported.returncode, 0, exported.stderr)
+                state_stls.append(step.with_suffix(".stl"))
+
+            command = [
+                sys.executable,
+                str(cad / "scripts" / "render_product"),
+                state_stls[0].name,
+                "-o",
+                "held.png",
+                "--state-sheet",
+                "signature.png",
+            ]
+            for state in state_stls:
+                command.extend(("--state-stl", state.name))
+            rendered = subprocess.run(
+                command,
+                cwd=workspace,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+            self.assertEqual(rendered.returncode, 0, rendered.stderr)
+            self.assertIn("exact states", rendered.stdout)
+            self.assertTrue((workspace / "signature.png").is_file())
+
+            duplicate = subprocess.run(
+                (
+                    sys.executable,
+                    str(cad / "scripts" / "render_product"),
+                    state_stls[0].name,
+                    "-o",
+                    "duplicate-held.png",
+                    "--state-sheet",
+                    "duplicate-signature.png",
+                    "--state-stl",
+                    state_stls[0].name,
+                    "--state-stl",
+                    state_stls[0].name,
+                ),
+                cwd=workspace,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+            self.assertNotEqual(duplicate.returncode, 0)
+            self.assertIn("visually indistinguishable", duplicate.stderr)
+
     def test_step_parts_command_guidance_uses_the_installed_skill_root(self):
         skill_text = (resolve_skills_root() / "step-parts" / "SKILL.md").read_text(
             encoding="utf-8"

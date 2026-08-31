@@ -127,3 +127,10 @@ The repository-authored `product-to-cad` skill was removed on 2026-08-26. The
 Invent now owns the build spec, selected visual direction, and researched
 physical facts it used to restate, and Make reaches CAD through the `cad`,
 `image-to-cad`, `design-reference`, and `step-parts` skills directly.
+
+Workshop's local CAD adaptation also adds fixed-camera exact-state signature
+sheets. `render_product --state-sheet` accepts two to five state STLs and
+rejects visually indistinguishable frames, while the older motion sheet remains
+truthfully documented as viewpoint presentation of one unchanged mesh. This
+closes the production gap where repeated camera angles were mistaken for
+evidence of a toy's promised transformation.

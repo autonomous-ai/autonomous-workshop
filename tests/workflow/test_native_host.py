@@ -69,6 +69,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V6_CAPABILITY_PATH,
     DEEP_ECONOMICS_V7_CAPABILITY_PATH,
     DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V9_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -80,6 +81,7 @@ from workshop.workflow.effort import (
     DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -439,13 +441,14 @@ class NativeHostTest(unittest.TestCase):
             "deep-v6": DEEP_ECONOMICS_V6_CAPABILITY_PATH,
             "deep-v7": DEEP_ECONOMICS_V7_CAPABILITY_PATH,
             "deep-v8": DEEP_ECONOMICS_V8_CAPABILITY_PATH,
-            "deep-v9": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v9": DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+            "deep-v10": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        if economics_capability == "deep-v9":
-            # A real v9 run materializes the preserved v5-v8 references too. The
+        if economics_capability == "deep-v10":
+            # A real v10 run materializes the preserved v5-v9 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
             inputs = {
@@ -453,7 +456,16 @@ class NativeHostTest(unittest.TestCase):
                 DEEP_ECONOMICS_V6_CAPABILITY_PATH: "d" * 64,
                 DEEP_ECONOMICS_V7_CAPABILITY_PATH: "c" * 64,
                 DEEP_ECONOMICS_V8_CAPABILITY_PATH: "b" * 64,
+                DEEP_ECONOMICS_V9_CAPABILITY_PATH: "9" * 64,
                 DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+            }
+        elif economics_capability == "deep-v9":
+            inputs = {
+                DEEP_ECONOMICS_V5_CAPABILITY_PATH: "e" * 64,
+                DEEP_ECONOMICS_V6_CAPABILITY_PATH: "d" * 64,
+                DEEP_ECONOMICS_V7_CAPABILITY_PATH: "c" * 64,
+                DEEP_ECONOMICS_V8_CAPABILITY_PATH: "b" * 64,
+                DEEP_ECONOMICS_V9_CAPABILITY_PATH: "a" * 64,
             }
         elif economics_capability == "deep-v8":
             inputs = {
@@ -590,6 +602,29 @@ class NativeHostTest(unittest.TestCase):
                     self.assertEqual(
                         _native_turn_limit(checkpoint), DEEP_NATIVE_TURN_LIMIT
                     )
+
+    def test_deep_v10_final_make_uses_source_handoff_then_normal_recovery(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v10", stage="make"
+        )
+        for recoverable, timeout in (
+            (False, DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS),
+            (True, DEEP_NATIVE_TURN_TIMEOUT_SECONDS),
+        ):
+            with self.subTest(recoverable=recoverable), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher"
+            ) as launcher_type:
+                _native_launcher(
+                    checkpoint,
+                    initial_make_proof_boundary=False,
+                    recoverable_continuation=recoverable,
+                )
+                launcher_type.assert_called_once_with(
+                    reasoning_effort="high",
+                    auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                    runtime_profile_sha256="a" * 64,
+                    timeout_seconds=timeout,
+                )
 
     def test_deep_v5_retains_its_frozen_phased_profile_and_prompt(self):
         checkpoint = self._launcher_checkpoint(
@@ -743,6 +778,30 @@ class NativeHostTest(unittest.TestCase):
             _deep_make_recovery_prompt(checkpoint),
         )
 
+    def test_deep_v10_requires_real_states_and_source_first_final_handoff(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v10"
+        )
+        proof = _deep_make_critical_path_prompt(checkpoint)
+        self.assertIn("This v10 proof turn", proof)
+        self.assertIn("state-0.step.py", proof)
+        self.assertIn("--state-sheet", proof)
+        self.assertIn("viewpoint-only motion sheet is not state evidence", proof)
+
+        final = _deep_make_critical_path_prompt(checkpoint, proof_boundary=False)
+        self.assertIn("15-minute source handoff boundary", final)
+        self.assertIn("next action must write", final)
+        self.assertIn("do not call update_plan or get_goal", final)
+
+        proof_recovery = _deep_make_recovery_prompt(checkpoint)
+        self.assertIn("v10 proof recovery", proof_recovery)
+        self.assertIn("three state STL inputs", proof_recovery)
+        final_recovery = _deep_make_recovery_prompt(
+            checkpoint, proof_boundary=False
+        )
+        self.assertIn("v10 proof marker remains valid", final_recovery)
+        self.assertIn("write it in the next action", final_recovery)
+
     def test_deep_v7_make_after_proof_restores_high_normal_turn_boundary(self):
         checkpoint = self._launcher_checkpoint(
             effort="quest", economics_capability="deep-v7", stage="make"
@@ -882,6 +941,72 @@ class NativeHostTest(unittest.TestCase):
             marker.write_text("{}\n", encoding="utf-8")
             self.assertFalse(_make_proof_ready(paths, checkpoint))
             self.assertFalse(marker.exists())
+
+    def test_deep_v10_marker_requires_three_distinct_durable_state_proofs(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v10", stage="make"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            paths = NativeRunPaths(
+                workspace=root / "workspace",
+                host_state=root / "host-state",
+            )
+            paths.workspace.mkdir()
+            paths.host_state.mkdir()
+            marker = _make_proof_ready_path(paths)
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.make-proof-ready",
+                        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertFalse(_make_proof_ready(paths, checkpoint))
+            self.assertFalse(marker.exists())
+
+            proof = (
+                paths.workspace
+                / "artifacts/make/r0001/product/review/early-proof"
+            )
+            proof.mkdir(parents=True)
+            for name in (
+                "proof.py",
+                "state-0.step.py",
+                "state-1.step.py",
+                "state-2.step.py",
+                "state-0.step",
+                "state-1.step",
+                "state-2.step",
+                "held.png",
+                "signature.png",
+                "finding.json",
+            ):
+                (proof / name).write_bytes((name + "\n").encode())
+            for index in range(3):
+                (proof / ("state-%d.stl" % index)).write_bytes(
+                    ("distinct-state-%d\n" % index).encode()
+                )
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.make-proof-ready",
+                        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(_make_proof_ready(paths, checkpoint))
 
     def test_deep_v7_make_proof_marker_fails_closed_on_symlink(self):
         checkpoint = self._launcher_checkpoint(

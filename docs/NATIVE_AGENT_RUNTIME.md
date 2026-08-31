@@ -15,7 +15,8 @@ Workshop. It is authoritative together with
 [ADR 0031](adr/0031-bind-deep-profile-and-bound-first-proof.md),
 [ADR 0032](adr/0032-restore-make-depth-and-blindly-review-first-proof.md),
 [ADR 0036](adr/0036-reserve-proof-runway-for-product-bytes.md),
-[ADR 0037](adr/0037-raise-deep-compaction-ceiling.md), and the repository
+[ADR 0037](adr/0037-raise-deep-compaction-ceiling.md),
+[ADR 0038](adr/0038-prove-product-states-and-bound-final-source.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -61,29 +62,35 @@ session at low reasoning effort with a 64k automatic context-compaction ceiling
 across Make and Release plus a 20-minute boundary per native turn. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
-waiver. New Forge and Quest projects freeze `deep-economics-v9.md`: Invent
+waiver. New Forge and Quest projects freeze `deep-economics-v10.md`: Invent
 starts with 20 minutes at high reasoning and a recoverable continuation gets
-10 minutes at medium to seal existing work. Make starts with one 16-minute
-medium proof phase at 256k, then the same Goal resumes at high reasoning for a
-normal 30-minute turn after its checkpoint-bound proof marker exists.
+10 minutes at medium to seal existing work. A compact exact-Taste-header index
+covers the complete roster before Codex reads only the strongest three full
+agents. Make starts with one 16-minute medium real-state proof phase at 256k,
+then the same Goal resumes at high reasoning for a 15-minute source handoff
+before normal 30-minute recovery after its checkpoint-bound proof marker exists.
 Playtest and Release use medium, and every stage compacts at 256k. One CLI
 invocation launches at most eight native turns across all stages. Make's first
 persisted deliverable is the smallest exact causal/kinematic proof plus neutral
 held/signature blockout evidence under the declared CAD project; the complete
 part tree comes only after the root checks those early images against the
-Wish's exact held-form constraints. Its source
-defines one module-scope `gen_step()`, and every CAD package entrypoint uses the
+Wish's exact held-form constraints. Its shared proof helper feeds three exact
+state entries, each defining one module-scope `gen_step()`, and every CAD package entrypoint uses the
 exact `$WORKSHOP_PYTHON`; package directories are never executed directly.
 The host binds a private run-local cache. During proof the broad CAD skill is
 deferred, mandatory reads execute in one bounded batch, source is the next
 durable action, and generate/export/render execute in one foreground batch.
-The root performs the early direction check. Independent blind critique remains
+`render_product --state-sheet` uses three distinct state STLs at one fixed
+camera and refuses visually indistinguishable frames; a motion sheet remains
+viewpoint-only presentation. The root performs the early direction check. Independent blind critique remains
 mandatory at final Make.
 The marker
 ends only that process turn; it is neither a gate nor a stage transition. Their extra work earns one
 distinctive signature experience rather than gratuitous part or mechanism
-count. Frozen deep-v8 runs retain their 16-minute proof runway and 24k compaction.
-Frozen deep-v7 runs retain their eight-minute phases, separate reads,
+count. Frozen deep-v9 runs retain their 256k compaction, viewpoint-only early
+sheet, and normal 30-minute final turn. Frozen deep-v8 runs retain their
+16-minute proof runway and 24k compaction. Frozen deep-v7 runs retain their
+eight-minute phases, separate reads,
 and early-critic contract. Frozen deep-v6 runs retain their exact executable proof contract without
 v7 batching or skill deferral. Frozen deep-v5 runs retain their phased settings and original
 materialized CAD entrypoint instructions. Frozen deep-v4 runs retain high Invent/Make, medium later, 16k Make and
@@ -763,14 +770,15 @@ private Wish demonstrate that:
     and a 20-minute boundary per native turn across both active stages; v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
     bindings; and
-12. a deep-v9 Codex Forge or Quest run uses bounded high Invent with decisive
-    medium recovery, one 16-minute medium Make proof runway followed by
-    high-reasoning final Make, medium later stages, 256k compaction, a 30-minute
-    normal boundary, an eight-turn CLI invocation cap, and a checkpoint-bound
-    proof-turn marker with no gate authority, a private run cache, deferred
-    broad CAD guidance, one batched mandatory read, immediate source work,
-    root early inspection, batched interpreter-prefixed CAD commands, and an
-    exact `gen_step()` source contract, while deep-v8 and older exact runs retain
+12. a deep-v10 Codex Forge or Quest run uses index-first bounded high Invent
+    with decisive medium recovery, one 16-minute medium Make proof runway
+    followed by a 15-minute high source handoff and normal 30-minute recovery,
+    medium later stages, 256k compaction, an eight-turn CLI invocation cap, and
+    a checkpoint-bound proof-turn marker with no gate authority, a private run
+    cache, deferred broad CAD guidance, one batched mandatory read, immediate
+    source work, root early inspection, three fixed-camera exact-state renders,
+    batched interpreter-prefixed CAD commands, and exact `gen_step()` state
+    entries, while older exact runs retain
     their original profile.
 
 ## Engine portability

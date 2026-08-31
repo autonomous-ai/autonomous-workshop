@@ -203,21 +203,24 @@ Forge and Quest now make the cheapest exact mechanism/form falsifier the first
 persisted Make deliverable under `<cad-project>/review/early-proof/`, before the
 complete part tree. Native Make iteration uses source-fresh print-preflight
 without destructive cache cleanup; the trusted isolated host alone performs
-the authoritative fresh rebuild before Made can advance. The proof source must
-expose one module-scope `gen_step()`, and the host supplies exact
+the authoritative fresh rebuild before Made can advance. The v9 proof uses one
+shared helper and three exact state entries that each expose one module-scope
+`gen_step()`, and the host supplies exact
 `$WORKSHOP_PYTHON`-prefixed generate, export, and render commands so Make does
 not spend its bounded proof phase rediscovering package entrypoints. New deep
 runs bind a private run-local cache, defer the broad CAD skill until final
 Make, batch all mandatory proof reads, author source as the next durable action,
-and execute the three proof commands as one foreground batch. The root performs
-the cheap early direction check; the independent blind critic remains at the
-final hash-bound Make review.
+and execute proof commands as one foreground batch. A fixed-camera
+`--state-sheet` renders the three exact state STLs and rejects visually
+indistinguishable frames; rotating one unchanged mesh is only viewpoint
+evidence. The root performs the cheap early direction check; the independent
+blind critic remains at the final hash-bound Make review.
 
 ## Architecture
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v9)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v10)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -234,21 +237,25 @@ ceiling for their one persistent Make-to-Release session, and a 20-minute
 boundary per native turn. A timeout resumes the exact session and Goal through
 the existing bounded recovery path; it is not a 20-minute stage deadline.
 New Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
-use a decisive 10-minute medium recovery only when needed. Make starts with one
-16-minute medium proof runway at 256k context; after exact proof bytes and a
-blind review are durable, a checkpoint-bound marker returns control to the
-host and the same Make Goal resumes at high reasoning with the normal
-30-minute window. Playtest and Release use medium, every stage compacts at 256k,
+use a decisive 10-minute medium recovery only when needed. A compact index
+covers every exact Taste header before Codex reads only the best three full
+Inventors. Make starts with one 16-minute medium real-state proof runway at 256k
+context; after exact proof bytes are durable, a checkpoint-bound marker returns
+control to the host and the same Make Goal resumes at high reasoning with a
+15-minute source handoff before normal 30-minute recovery. Playtest and Release
+use medium, every stage compacts at 256k,
 and one CLI invocation stops after eight native turns. The host binds a private
 writable cache; the proof turn defers the broad CAD skill, batches its required
 reads, makes source the next durable action, and batches generate/export/render
-in one foreground call. It uses root inspection for the early direction check
+in one foreground call. It uses three distinct exact-state STLs and root
+inspection for the early direction check
 and reserves independent blind critique for final Make. Their novelty must come
 from one strong relationship or interaction
 that Make persists and has one independent critic inspect blindly as its first
 proof—not gratuitous parts or mechanisms. The proof marker is only a liveness
-boundary; it is not a gate or stage transition. Frozen deep-v8 runs retain their
-24k compaction; older runs keep the exact profile
+boundary; it is not a gate or stage transition. Frozen deep-v9 runs retain
+their 256k compaction, viewpoint-only proof, and normal 30-minute final Make;
+frozen deep-v8 runs retain their 24k compaction. Older runs keep the exact profile
 they started with. These are
 economics policies, not quality waivers: every effort still passes its full
 deterministic product and publication gates.
@@ -273,8 +280,9 @@ or follows links.
 For new runs it also requires two inspected chromatic exact-product renders:
 `<cad-project>/snap/iso.png` is the hero, while
 `<cad-project>/snap/signature.png` shows the signature interaction, reveal, or
-anti-generic detail across exact poses or views without relying on marketing
-copy. Before spending that review, Make runs one fixed print preflight that
+anti-generic detail without relying on marketing copy. When geometry changes,
+it uses fixed-camera exact-state STLs; motion-sheet poses of one mesh are only
+viewpoint evidence. Before spending that review, Make runs one fixed print preflight that
 generates every printable part and requires strict bed fit, mesh validity, and
 wall thickness at the final 0.4 mm nozzle profile. Its passing report is bound
 into a schema-v6 `SIGNATURE-REVIEW.json`, which records one bounded

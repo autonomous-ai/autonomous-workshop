@@ -15,8 +15,9 @@ Quest: Wish -> Invent -> Make -> Playtest -> Release
 
 For a new Codex run, the host may freeze a versioned economics profile for this
 entire session. Spark uses its low-reasoning fast profile. Current Forge and
-Quest runs use a bounded high-reasoning Invent turn with decisive medium
-recovery, then one 16-minute medium Make proof runway followed by high-reasoning final Make;
+Quest runs use an index-first bounded high-reasoning Invent turn with decisive
+medium recovery, then one 16-minute medium real-state Make proof runway followed
+by a 15-minute source-first high-reasoning final-Make handoff and normal recovery;
 Playtest and Release use medium. Make's minimal exact mechanism/form evidence
 is the first persisted deliverable. Its proof-ready marker ends only that
 native turn, while recovery stays inside the same Goal. Treat every profile
@@ -88,6 +89,11 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   and craft. Compare the immutable roster and select the best fit inside the
   first enabled creative stage: Invent for Forge/Quest or Make for Spark. Use
   that exact `.codex/agents/<inventor-id>.toml` agent and its bound skills.
+- In the first creative stage, rank the complete host-derived
+  `inventor_discovery_index`, then open only the best three full custom-agent
+  TOMLs before selecting. The index is not a router or score; it is the exact
+  Taste-header discovery view that avoids repeatedly loading the entire full
+  roster.
 - Use native subagent delegation for bounded parallel research, candidate
   comparison, specialist creation, or independent review when it improves the
   active Goal. Do not launch another `codex` process or build a Python worker

@@ -13,12 +13,13 @@ build-blocking contradiction may use the optional
 ## Critical path
 
 For Forge and Quest, trust the sealed Invent contract. Do not repeat research,
-roster comparison, or broad concept exploration. For Spark, scan the roster
-once, select one Inventor whose Taste owns the hardest-to-fake magic, and write
-one compact source with exactly `selected_inventor_id`, roster-covering
-`ranking`, `concept`, and `research`.
+roster comparison, or broad concept exploration. For Spark, rank the complete
+roster once from `STAGE.json`'s compact `inventor_discovery_index`, read only
+the best three full custom-agent TOMLs, select the Inventor whose Taste owns
+the hardest-to-fake magic, and write one compact source with exactly
+`selected_inventor_id`, roster-covering `ranking`, `concept`, and `research`.
 
-During a frozen deep-v8 proof turn, follow the host prompt literally. Create or
+During a frozen deep-v8 or deep-v9 proof turn, follow the host prompt literally. Create or
 continue the Make Goal immediately, then inspect the required stable
 instructions, stage packet, and sealed concept in one bounded batch rather than
 separate tool calls. Write source and its parent directories in the next file
@@ -62,7 +63,11 @@ Use one product funnel:
    --print-preflight` without `--fresh`. It must cover every printable at the
    fixed 0.4 mm nozzle standard.
 4. Render the exact STL to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
-   and `<cad-project>/snap/signature.png` (at least 1200×800 RGB). The signature
+   and `<cad-project>/snap/signature.png` (at least 1200×800 RGB). When the
+   promise changes product geometry or state, generate distinct exact-state
+   STLs and use `render_product --state-sheet ... --state-stl ...` at one fixed
+   view. `--motion-sheet` rotates one unchanged mesh and is only presentation
+   viewpoint evidence; it can never prove a state transition. The signature
    sheet must show the promised states or interaction, not repeated angles.
 5. Give one independent native critic only those images. Record its blind held
    object, volumetric form, subjects, action, and relationship. Then reveal the

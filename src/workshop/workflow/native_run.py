@@ -145,6 +145,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V6_CAPABILITY_PATH,
     DEEP_ECONOMICS_V7_CAPABILITY_PATH,
     DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V9_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -155,6 +156,7 @@ from workshop.workflow.effort import (
     DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
     DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
@@ -2662,6 +2664,46 @@ def _artifact_binding(artifact: AgentArtifact) -> dict[str, str]:
     return {"path": artifact.path, "sha256": artifact.sha256}
 
 
+def _inventor_discovery_index(
+    run: AgentRun,
+    roster: InventorRoster,
+) -> Mapping[str, Any]:
+    """Derive the complete cheap-routing index from bound custom-agent bytes."""
+
+    inventors: list[dict[str, str]] = []
+    for entry in roster.inventors:
+        path = run.run_root / entry.agent_path
+        try:
+            content = path.read_bytes()
+        except OSError as exc:
+            raise StateConflict("materialized Inventor agent cannot be read") from exc
+        if _sha256(content) != entry.agent_sha256:
+            raise StateConflict("materialized Inventor agent differs from its binding")
+        binding = parse_inventor_custom_agent_bytes(content)
+        taste = parse_taste_bytes(
+            binding.taste_bytes,
+            path=(
+                run.run_root
+                / ".codex"
+                / "inventor-discovery"
+                / entry.inventor_id
+                / "TASTE.md"
+            ),
+        )
+        inventors.append({
+            "inventor_id": entry.inventor_id,
+            "agent_path": entry.agent_path,
+            "name": taste.name,
+            "description": taste.description,
+        })
+    return {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.inventor-discovery-index",
+        "roster_sha256": roster.roster_sha256,
+        "inventors": inventors,
+    }
+
+
 def _prepare_effort_stage_input(
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
@@ -2704,6 +2746,7 @@ def _prepare_effort_stage_input(
         }
         inputs: dict[str, Any] = {
             **base,
+            "inventor_discovery_index": _inventor_discovery_index(run, roster),
             "assignment_contract_path": assignment_path,
             "contract_path": invented_path,
         }
@@ -2863,6 +2906,9 @@ def _prepare_effort_stage_input(
             common = dict(base)
             common.update(
                 {
+                    "inventor_discovery_index": _inventor_discovery_index(
+                        run, roster
+                    ),
                     "creative_source_required": True,
                     "assignment_contract_path": assignment_path,
                     "invented_contract_path": invented_path,
@@ -3616,6 +3662,7 @@ def _phased_deep_capability_path(
 
     for path in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V9_CAPABILITY_PATH,
         DEEP_ECONOMICS_V8_CAPABILITY_PATH,
         DEEP_ECONOMICS_V7_CAPABILITY_PATH,
         DEEP_ECONOMICS_V6_CAPABILITY_PATH,
@@ -3649,7 +3696,7 @@ def _native_launcher(
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
     Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
-    v9 through v3 runs shape reasoning and turn boundaries while
+    v10 through v3 runs shape reasoning and turn boundaries while
     binding their whole frozen profile to one persistent session. Deep-v2
     retains its effective all-high session binding; deep-v1 retains its
     historical all-high profile.
@@ -3672,18 +3719,23 @@ def _native_launcher(
                 reasoning_effort = (
                     "medium" if initial_make_proof_boundary else "high"
                 )
-                timeout_seconds = (
-                    (
+                if initial_make_proof_boundary:
+                    timeout_seconds = (
                         DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                         if phased_deep_path in (
                             DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V9_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V8_CAPABILITY_PATH,
                         )
                         else DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                     )
-                    if initial_make_proof_boundary
-                    else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
-                )
+                elif (
+                    phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                    and not recoverable_continuation
+                ):
+                    timeout_seconds = DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                else:
+                    timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
             else:
                 reasoning_effort = "medium"
                 timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
@@ -3691,7 +3743,10 @@ def _native_launcher(
                 reasoning_effort=reasoning_effort,
                 auto_compact_token_limit=(
                     DEEP_AUTO_COMPACT_TOKEN_LIMIT
-                    if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                    if phased_deep_path in (
+                        DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+                    )
                     else DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT
                 ),
                 runtime_profile_sha256=checkpoint.input_sha256s[phased_deep_path],
@@ -3821,6 +3876,7 @@ def _deep_make_critical_path_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V9_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3835,6 +3891,27 @@ def _deep_make_critical_path_prompt(
         _phased_deep_capability_path(checkpoint) is not None
         and not proof_boundary
     ):
+        if (
+            _phased_deep_capability_path(checkpoint)
+            == DEEP_ECONOMICS_CAPABILITY_PATH
+        ):
+            return (
+                " The checkpoint-bound v10 proof marker is valid. This first "
+                "final-product continuation has a 15-minute source handoff "
+                "boundary. Keep the same Make Goal. In one bounded first call, "
+                "read STAGE.json, the exact early-proof source/finding, the "
+                "current Make reference, and the CAD SKILL.md. Your next action "
+                "must write the complete final product source by reusing the "
+                "proof geometry and parameters. Before that edit, do not call "
+                "update_plan or get_goal, search APIs, inspect tool source, read "
+                "optional CAD references, invoke --help, or rediscover assembly "
+                "helpers. Prefer direct build123d shapes and labeled Compound "
+                "children. After source exists, run check_layout, generation, "
+                "preflight, actual-state renders, the final independent hash-bound "
+                "review, one integrated verifier, and the Make finalizer. The "
+                "boundary preserves every byte for normal recovery; only "
+                "agent-outcome.json completes this Goal."
+            )
         return (
             " The checkpoint-bound phased-deep proof marker is already valid. Do not "
             "rewrite it, repeat early exploration, or restart the proof. "
@@ -3857,6 +3934,7 @@ def _deep_make_critical_path_prompt(
     )
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V9_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V7_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V6_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -3866,6 +3944,7 @@ def _deep_make_critical_path_prompt(
         return prompt
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V9_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
     ):
         prompt += (
@@ -3973,12 +4052,19 @@ def _deep_make_critical_path_prompt(
         "high reasoning; it does not advance or waive the Make gate."
         % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
         )
-    profile_name = (
-        "v9"
-        if _phased_deep_capability_path(checkpoint) == DEEP_ECONOMICS_CAPABILITY_PATH
-        else "v8"
-    )
-    return prompt + (
+    if (
+        _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+        )
+    ):
+        profile_name = (
+            "v9"
+            if _phased_deep_capability_path(checkpoint)
+            == DEEP_ECONOMICS_V9_CAPABILITY_PATH
+            else "v8"
+        )
+        return prompt + (
         f" This {profile_name} proof turn has one 16-minute medium runway. The production v7 "
         "trace proved that separate reads consume the whole phase, so do not "
         "read stable instructions in separate tool calls and do not call get_goal. "
@@ -4012,6 +4098,31 @@ def _deep_make_critical_path_prompt(
         "marker only to resume the same Make Goal at high reasoning; the final "
         "independent critic and every Make gate remain mandatory."
         % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+        )
+    return prompt + (
+        " This v10 proof turn has one 16-minute medium runway. Create or continue "
+        "the Make Goal immediately without get_goal, then batch the mandatory "
+        "root, Workshop, Make, STAGE, and sealed-concept reads once. Do not open "
+        "the broad CAD skill, optional references, --help, an empty tree, or an "
+        "early critic. In the next file edit create review/early-proof/proof.py "
+        "plus state-0.step.py, state-1.step.py, and state-2.step.py. The helper "
+        "must build three materially different exact product states from shared "
+        "parameters; every state entry defines one module-scope gen_step(). "
+        "Generate and export all three states in one foreground call. Then run "
+        "render_product on state-0.stl for held.png with --state-sheet "
+        "signature.png and three --state-stl arguments naming state-0.stl, "
+        "state-1.stl, and state-2.stl. A viewpoint-only motion sheet is not state "
+        "evidence. Inspect the held image and every actual-state frame yourself. "
+        "Fail or make one focused source repair if the object is generic, flat, "
+        "box-like, exposed, or if the promised action/subjects/relationship are "
+        "not unmistakably different across frames. Persist finding.json with the "
+        "root read of each frame. Once proof.py, all three state sources, STEP and "
+        "STL outputs, held.png, signature.png, and finding.json are durable, write "
+        "%s as canonical JSON containing exactly {\"checkpoint_sha256\":\"%s\","
+        "\"kind\":\"autonomous-workshop.make-proof-ready\",\"schema_version\":1} "
+        "followed by one newline. The marker only resumes the same Goal; the final "
+        "independent critic and every Make gate remain mandatory."
+        % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
     )
 
 
@@ -4027,6 +4138,7 @@ def _deep_make_recovery_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V9_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4039,6 +4151,19 @@ def _deep_make_recovery_prompt(
         _phased_deep_capability_path(checkpoint) is not None
         and not proof_boundary
     ):
+        if (
+            _phased_deep_capability_path(checkpoint)
+            == DEEP_ECONOMICS_CAPABILITY_PATH
+        ):
+            return (
+                " The v10 proof marker remains valid. Continue final-product "
+                "recovery from the exact source and generated bytes already on "
+                "disk. Do not rewrite the marker, restart proof, call update_plan, "
+                "search APIs, inspect tool source, or read optional references. "
+                "If the complete product source is not yet durable, write it in "
+                "the next action from proof.py. Then repair only concrete "
+                "preflight/render/review failures and invoke the Make finalizer."
+            )
         return (
             " The phased-deep proof marker remains valid, so this is final-product "
             "recovery. Do not rewrite the marker, reread optional references, "
@@ -4061,6 +4186,21 @@ def _deep_make_recovery_prompt(
         return prompt
     if (
         _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_CAPABILITY_PATH
+    ):
+        return (
+            " This v10 proof recovery reuses every durable byte. Do not call "
+            "get_goal, reread stable instructions, inspect an empty tree, spawn "
+            "an early critic, or open optional references. Complete proof.py and "
+            "the three state entry sources in the next edit, generate/export all "
+            "three states in one foreground call, and use render_product "
+            "--state-sheet with the three state STL inputs. Inspect all real "
+            "state frames, persist finding.json, and write the exact checkpoint "
+            "marker from the initial instruction. A viewpoint-only sheet cannot "
+            "complete this boundary."
+        )
+    if (
+        _phased_deep_capability_path(checkpoint)
         == DEEP_ECONOMICS_V7_CAPABILITY_PATH
     ):
         return prompt + (
@@ -4075,11 +4215,11 @@ def _deep_make_recovery_prompt(
         )
     phased_deep_path = _phased_deep_capability_path(checkpoint)
     if phased_deep_path in (
-        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V9_CAPABILITY_PATH,
         DEEP_ECONOMICS_V8_CAPABILITY_PATH,
     ):
         profile_name = (
-            "v9" if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH else "v8"
+            "v9" if phased_deep_path == DEEP_ECONOMICS_V9_CAPABILITY_PATH else "v8"
         )
         return prompt + (
             f" This {profile_name} recovery stays on one proof runway. Do not call get_goal, "
@@ -4122,6 +4262,62 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
 
 def _make_proof_ready_path(paths: NativeRunPaths) -> Path:
     return paths.workspace / _MAKE_PROOF_READY_NAME
+
+
+def _v10_make_proof_artifacts_ready(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+) -> bool:
+    """Require durable real-state proof bytes before accepting a v10 marker."""
+
+    proof = (
+        paths.workspace
+        / "artifacts"
+        / "make"
+        / ("r%04d" % checkpoint.round_index)
+        / "product"
+        / "review"
+        / "early-proof"
+    )
+    required = (
+        "proof.py",
+        "state-0.step.py",
+        "state-1.step.py",
+        "state-2.step.py",
+        "state-0.step",
+        "state-1.step",
+        "state-2.step",
+        "state-0.stl",
+        "state-1.stl",
+        "state-2.stl",
+        "held.png",
+        "signature.png",
+        "finding.json",
+    )
+    contents: dict[str, bytes] = {}
+    for name in required:
+        path = proof / name
+        try:
+            before = path.lstat()
+            if path.is_symlink() or not stat.S_ISREG(before.st_mode):
+                return False
+            if not 1 <= before.st_size <= 64 * 1024 * 1024:
+                return False
+            content = path.read_bytes()
+            after = path.lstat()
+        except OSError:
+            return False
+        if (
+            (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+            != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+            or len(content) != before.st_size
+        ):
+            return False
+        contents[name] = content
+    state_hashes = {
+        _sha256(contents["state-%d.stl" % index]) for index in range(3)
+    }
+    return len(state_hashes) == 3
 
 
 def _make_proof_ready(
@@ -4170,6 +4366,12 @@ def _make_proof_ready(
             marker == expected
             and content == _canonical_json_bytes(expected) + b"\n"
         )
+    if (
+        valid
+        and _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_CAPABILITY_PATH
+    ):
+        valid = _v10_make_proof_artifacts_ready(paths, checkpoint)
     if valid:
         return True
     try:

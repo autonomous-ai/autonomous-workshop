@@ -21,14 +21,17 @@ For Codex, new Spark projects freeze low reasoning, a 64k automatic
 context-compaction ceiling across their one Make-to-Release session, and a
 20-minute boundary per native turn. New Forge and Quest projects begin Invent
 with 20 minutes at high reasoning and use a 10-minute decisive medium recovery
-when needed. Make uses one 16-minute medium proof runway, then resumes the
-same Goal at high reasoning for a normal 30-minute turn after a valid proof
-marker. The host supplies a private writable cache; proof defers the broad CAD
+when needed. Codex ranks a compact complete-roster Taste index before opening
+the best three full agents. Make uses one 16-minute medium real-state proof
+runway, then resumes the same Goal at high reasoning for a 15-minute source
+handoff before normal 30-minute recovery after a valid proof marker. The host
+supplies a private writable cache; proof defers the broad CAD
 skill, batches mandatory reads and deterministic CAD commands, and makes source
 the next durable action. Root inspection owns this cheap early direction check;
 independent blind critique remains mandatory at final Make.
-Playtest and Release use medium, and every stage compacts at 256k. Frozen deep-v8 and older runs remain on the
-profile they started with. Effort changes
+Playtest and Release use medium, and every stage compacts at 256k. Frozen
+deep-v9 retains that ceiling with its original proof and final-Make behavior;
+deep-v8 and older runs remain on the profile they started with. Effort changes
 cognitive spend, never the exact-byte CAD, manual, Playtest, evidence, or
 publication gates.
 
@@ -117,20 +120,26 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v9.md` capability
+For new Forge and Quest runs, the frozen `deep-economics-v10.md` capability
 begins Invent with high reasoning for 20 minutes and gives a recoverable
-continuation 10 minutes at medium to finalize existing work. Make first uses
-medium reasoning for one 16-minute proof runway, then resumes the same Goal at
-high reasoning with a normal 30-minute turn. Playtest and Release use medium;
+continuation 10 minutes at medium to finalize existing work. The stage packet
+contains a compact index derived from every exact Taste header; Codex ranks the
+complete roster there, then reads only the best three full custom agents. Make
+first uses medium reasoning for one 16-minute proof runway, then resumes the
+same Goal at high reasoning with a 15-minute source-handoff boundary before
+normal 30-minute recovery. Playtest and Release use medium;
 every stage compacts at 256k. One profile identity binds the persistent thread
 while the host selects those stage-specific turn settings. The same recovery
 semantics apply, with no more than eight native turns across one CLI
 invocation. Make receives a direct critical-path instruction and exact CAD
 command shapes to persist and inspect its minimal exact mechanism/form proof under
 `<cad-project>/review/early-proof/` before authoring the complete part tree.
-The source defines one module-scope `gen_step()`. Generate, export, and render
-all use the exact `$WORKSHOP_PYTHON` in one foreground batch rather than
-executing CAD package directories or discovering `python -m` paths. The host
+One shared helper feeds three state entries, each defining one module-scope
+`gen_step()`. Generate and export run in one exact `$WORKSHOP_PYTHON` batch;
+`render_product --state-sheet` uses the three distinct state STLs at one fixed
+camera and refuses visually indistinguishable frames. A motion sheet is only
+viewpoint evidence for one unchanged mesh. These commands avoid executing CAD
+package directories or discovering `python -m` paths. The host
 binds `XDG_CACHE_HOME` to a private run-local directory. During proof, the
 broad CAD skill is deliberately deferred until the marker because the host
 already supplies the complete narrow interface.
@@ -138,13 +147,16 @@ Mandatory stable reads execute in one bounded batch, and source plus its parent
 directories are the next durable action. The root directly checks the early
 blockout against every positive and negative held-form constraint. Generic,
 plaque-like, box-like, or exposed-mechanism
-readings fail this early proof. A canonical checkpoint-bound
+readings or ambiguous state frames fail this early proof. A canonical checkpoint-bound
 `.make-proof-ready.json` may end only the native proof turn; it is not a gate,
-artifact, or transition. This report is model evidence used to avoid an
-expensive bad direction; the later hash-bound final signature review and host
+artifact, or transition. V10 accepts it only when all three state sources, STEP,
+STL, render, and finding bytes are durable and distinct. This report is model
+evidence used to avoid an expensive bad direction; the later hash-bound final signature review and host
 CAD gate remain authoritative. The independent native critic remains mandatory
-for final Make's hash-bound review. Frozen deep-v8 retains its 16-minute proof
-runway and 24k compaction. Frozen deep-v7 retains its eight-minute
+for final Make's hash-bound review. Frozen deep-v9 retains its 256k compaction,
+one-mesh viewpoint proof, and normal 30-minute final turn. Frozen deep-v8
+retains its 16-minute proof runway and 24k compaction. Frozen deep-v7 retains
+its eight-minute
 proof turns, separate reads, and early-critic contract. Frozen deep-v6 retains its exact executable
 proof instructions without v7 batching and skill deferral. Frozen deep-v5
 retains the same phase settings and its original materialized CAD entrypoint

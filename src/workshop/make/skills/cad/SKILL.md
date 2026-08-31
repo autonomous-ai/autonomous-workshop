@@ -1,6 +1,6 @@
 ---
 name: cad
-description: Create, modify, inspect, and validate STEP-first parametric CAD parts and assemblies. Use for natural-language CAD specs, reference images, 2D technical drawings, STEP/STP generation or direct inspection, Python CAD source, source-level joints, selector references, geometry facts, measurements, mating deltas, and secondary STL/3MF/native GLB outputs from CAD geometry. Do not use during a host-identified Workshop v8 early-proof turn; use the host's exact proof commands and load this broad skill only after the proof marker.
+description: Create, modify, inspect, and validate STEP-first parametric CAD parts and assemblies. Use for natural-language CAD specs, reference images, 2D technical drawings, STEP/STP generation or direct inspection, Python CAD source, source-level joints, selector references, geometry facts, measurements, mating deltas, and secondary STL/3MF/native GLB outputs from CAD geometry. Do not use during a host-identified Workshop v8/v9 early-proof turn; use the host's exact proof commands and load this broad skill only after the proof marker.
 ---
 
 # CAD generation, inspection, and validation
@@ -59,8 +59,8 @@ If the host supplies the materialized skill directory directly, use that exact
 directory for `CAD_SKILL_ROOT`. Run these commands from the project that owns
 the artifacts so target paths resolve inside the product workspace.
 
-**Workshop v8 proof deferral.** When the immutable Make packet and host prompt
-identify the frozen v8 proof turn, this broad skill is deliberately not
+**Workshop v8/v9 proof deferral.** When the immutable Make packet and host prompt
+identify a frozen v8 or v9 proof turn, this broad skill is deliberately not
 applicable yet. The host supplies the exact `gen`, `export`, and
 `render_product` command shapes. Follow that narrow interface without loading
 this file, `run-cost.md`, progressive references, or `--help` output. Load this
@@ -74,7 +74,7 @@ required at all — in a temporary paper project, with no geometry and no
 daemon. Run it after touching that file: a guard that stops firing does not
 fail, it just stops appearing.
 
-**A run is expensive.** Outside the Workshop v8 proof deferral, the measured
+**A run is expensive.** Outside the Workshop v8/v9 proof deferral, the measured
 cost of every command, and which to run per round versus once at the end, are
 in `references/run-cost.md` — read it before planning a run, because `inspect
 validate` and `inspect interfere` are more than half the cost between them and
@@ -149,13 +149,20 @@ gate.
     nozzle profile. Repair and regenerate before review if it fails. Never use
     an assembly-only STL, omit a printable, or lower the nozzle/threshold to
     manufacture a pass; never spend a visual-review round on geometry that
-    cannot pass the full print-ready gate. Then use
-    `scripts/render_product <assembled-or-primary.stl> -o <project>/snap/iso.png --motion-sheet <project>/snap/signature.png`
-    and inspect the PNG at full size. Choose `--base`, `--accent`, and
+    cannot pass the full print-ready gate. Then use `scripts/render_product
+    <assembled-or-primary.stl> -o <project>/snap/iso.png` and inspect the PNG
+    at full size. When the promise changes product geometry or state, export
+    two to five exact-state STLs and add `--state-sheet
+    <project>/snap/signature.png --state-stl <state-0.stl> --state-stl
+    <state-1.stl> ...`; the fixed-camera sheet rejects visually
+    indistinguishable states. Use `--motion-sheet` only for viewpoint evidence
+    of one unchanged mesh. Rotating the camera/object cannot prove a mechanism
+    state transition. Choose `--base`, `--accent`, and
     `--background` colors appropriate to the product. This presentation render
     explains the product to people; it does not replace any geometry check. Set
-    `--motion-view` and `--motion-angles` to expose the signature interaction.
-    For a static product, use the sheet as a small set of exact views that makes
+    `--state-view` to expose the signature interaction, or `--motion-view` and
+    `--motion-angles` for static-view presentation. For a static product, use
+    the motion sheet as a small set of exact views that makes
     its anti-generic detail unmistakable. Judge the sheet without its title: if
     the promised interaction or reveal is not legible, repair the product rather
     than relying on customer copy to assert it. Complete the Workshop's blind

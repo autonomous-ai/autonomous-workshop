@@ -543,6 +543,43 @@ New runs now freeze `deep-economics-v9.md`, retaining v8's proof runway and
 prompt discipline while raising automatic compaction from 24k to 256k at every
 deep stage. Frozen v8 and older runs keep their original 24k ceiling.
 
+### V8 production result: liveness recovered, state evidence and final handoff failed
+
+The next identical Three-Sky Seed Quest,
+`wish-20260831-123720-43b4ec40`, proved that v8 fixed the immediate liveness
+failure. Early Make wrote proof source after 5m44s and completed the marker in
+12m14s. It also proved that the old signature interface answered the wrong
+question: `--motion-sheet=-12,0,12` showed one unchanged object from nearby
+viewpoints, and the root incorrectly accepted those nearly identical frames as
+three skies.
+
+Final Make then used a full 30-minute high turn on documentation and API search
+without writing product source. Recovery wrote source after about 9m30s and
+generated the three part STEP files, assembled STL, and renders, but strict fit
+failed on the upper-shell print datum, disconnected bodies, and missing project
+fit audit. The visibly rough, repeated-state product was not Playtested,
+released, published, or snapshotted.
+
+| V8 root/child total | Input | Cached input | Uncached input | Output | Reasoning output |
+|---|---:|---:|---:|---:|---:|
+| Failed Quest | 1,602,623 | 1,265,920 | 336,703 | 25,242 | 2,147 |
+
+These totals were reconstructed from the local root and child Codex turn
+telemetry because timeout turns were not all persisted into Workshop's simple
+stage counter; the per-turn native log is the source for this diagnostic only.
+V8 produced real geometry but spent too long before final source and did not
+produce a toy.
+
+New runs therefore freeze `deep-economics-v10.md`. The complete Inventor roster
+is first ranked from a compact exact-Taste-header index and only the best three
+full agents are opened. Early Make creates three exact state STLs and a
+fixed-camera `--state-sheet`; visually indistinguishable frames fail
+deterministically, while motion sheets remain viewpoint-only. The host requires
+all three state source/STEP/STL families before accepting the proof marker.
+Final Make then gets a 15-minute source-first handoff before normal recovery,
+preventing another 30-minute documentation-only turn. V10 is still unproven
+until a fresh terminal product passes and publishes.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

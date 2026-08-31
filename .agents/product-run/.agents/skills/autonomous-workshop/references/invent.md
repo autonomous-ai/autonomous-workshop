@@ -1,9 +1,14 @@
 # Invent contract
 
-Read `STAGE.json`. It binds the exact Wish, immutable Inventor roster,
-universal blueprint, canonical assignment and Invented output paths, frozen
-effort, and current checkpoint. Verify those bytes before acting. The blueprint
-is an open-ended shared contract, not a product classification.
+Read `STAGE.json`. It binds the exact Wish, immutable Inventor roster, compact
+`inventor_discovery_index`, universal blueprint, canonical assignment and
+Invented output paths, frozen effort, and current checkpoint. Verify those
+bytes before acting. Rank the complete roster from the index first, then read
+only the full custom-agent TOMLs for the best three candidates before choosing.
+Do not dump, reread, or batch-load every full TOML: the host derives the index
+from the exact bound Taste headers specifically to make complete-roster routing
+cheap. The blueprint is an open-ended shared contract, not a product
+classification.
 
 ## Invent Goal and improvement loop
 
@@ -34,8 +39,8 @@ responsible for the one stage proposal.
 
 While pursuing the Goal:
 
-1. **Observe:** Read the Wish, complete roster and custom-agent instructions,
-   relevant skill resources, and any exact upstream evidence. Identify what
+1. **Observe:** Read the Wish, complete roster index, the top three full
+   custom-agent instructions, relevant skill resources, and any exact upstream evidence. Identify what
    needs factual research and what needs creative exploration.
 2. **Act:** Use Codex-native search, browsing, file tools, and specialist
    subagents to research supported facts and explore materially different
