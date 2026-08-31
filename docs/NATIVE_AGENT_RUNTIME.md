@@ -120,6 +120,13 @@ project. Session memory is useful continuity, but the durable checkpoint,
 sealed manifests, and reconciled receipts remain authoritative. If memory and
 files disagree, the files win.
 
+A Wish command is a finite job, not a daemon. The host rejects new Wish
+creation when macOS reports that it is running beneath a `grid.serve.*`
+keepalive service, because every clean command exit would otherwise relaunch
+the caller and allocate a different Wish id. Long-running foreground Wishes
+must use Grid's bounded one-shot runner. Read-only status and explicit resume
+retain their normal behavior.
+
 A native turn timeout or explicitly recognized provider-transport disconnect
 does not require a person to rerun the command after the session UUID has been
 checkpointed. The disconnect may arrive either on the private launcher
