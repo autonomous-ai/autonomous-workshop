@@ -374,6 +374,7 @@ def _runtime_config_sha256(
     *,
     auto_compact_token_limit: Optional[int] = None,
     timeout_seconds: Optional[int] = None,
+    runtime_profile_sha256: Optional[str] = None,
     include_codex_runtime_paths: bool = True,
 ) -> str:
     """Bind a checkpoint to the exact non-secret policy used to launch it."""
@@ -383,7 +384,6 @@ def _runtime_config_sha256(
         "cli_version": cli_version,
         "event_protocol": "jsonl-turn-terminal-v2",
         "model": model,
-        "reasoning_effort": reasoning_effort,
         "ignore_rules": False,
         "ignore_user_config": True,
         "native_web_search": True,
@@ -412,10 +412,17 @@ def _runtime_config_sha256(
             identity.to_dict()
             for identity in run_policy.trusted_codex_runtime_paths
         ]
-    if auto_compact_token_limit is not None:
-        payload["auto_compact_token_limit"] = auto_compact_token_limit
-    if timeout_seconds is not None:
-        payload["timeout_seconds"] = timeout_seconds
+    if runtime_profile_sha256 is None:
+        payload["reasoning_effort"] = reasoning_effort
+        if auto_compact_token_limit is not None:
+            payload["auto_compact_token_limit"] = auto_compact_token_limit
+        if timeout_seconds is not None:
+            payload["timeout_seconds"] = timeout_seconds
+    else:
+        payload["runtime_profile_sha256"] = _require_sha256(
+            runtime_profile_sha256,
+            "Codex runtime profile sha256",
+        )
     return _sha256_json(payload)
 
 
@@ -1505,6 +1512,7 @@ class CodexNativeSessionLauncher:
         model: str = "gpt-5.6-sol",
         reasoning_effort: str = "high",
         auto_compact_token_limit: Optional[int] = None,
+        runtime_profile_sha256: Optional[str] = None,
         binary: Optional[str] = None,
         timeout_seconds: int = DEFAULT_CODEX_TIMEOUT_SECONDS,
         popen_factory: Any = subprocess.Popen,
@@ -1528,6 +1536,11 @@ class CodexNativeSessionLauncher:
             raise ValueError(
                 "Codex auto_compact_token_limit must be from 16,000 to 1,000,000"
             )
+        if runtime_profile_sha256 is not None:
+            _require_sha256(
+                runtime_profile_sha256,
+                "Codex runtime profile sha256",
+            )
         if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600:
             raise ValueError("Codex timeout_seconds must be from 1 to 3,600")
         self.binary = _resolved_codex_binary(
@@ -1536,6 +1549,7 @@ class CodexNativeSessionLauncher:
         self.model = model
         self.reasoning_effort = reasoning_effort
         self.auto_compact_token_limit = auto_compact_token_limit
+        self.runtime_profile_sha256 = runtime_profile_sha256
         self.timeout_seconds = timeout_seconds
         self._popen_factory = popen_factory
         self._version_runner = version_runner
@@ -1618,6 +1632,7 @@ class CodexNativeSessionLauncher:
             self.reasoning_effort,
             run_policy,
             auto_compact_token_limit=self.auto_compact_token_limit,
+            runtime_profile_sha256=self.runtime_profile_sha256,
             timeout_seconds=(
                 self.timeout_seconds
                 if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
@@ -1717,6 +1732,7 @@ class CodexNativeSessionLauncher:
             self.reasoning_effort,
             run_policy,
             auto_compact_token_limit=self.auto_compact_token_limit,
+            runtime_profile_sha256=self.runtime_profile_sha256,
             timeout_seconds=(
                 self.timeout_seconds
                 if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
@@ -1761,6 +1777,7 @@ class CodexNativeSessionLauncher:
                     self.reasoning_effort,
                     policy,
                     auto_compact_token_limit=self.auto_compact_token_limit,
+                    runtime_profile_sha256=self.runtime_profile_sha256,
                     timeout_seconds=(
                         self.timeout_seconds
                         if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS

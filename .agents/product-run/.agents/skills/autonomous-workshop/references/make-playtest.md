@@ -109,7 +109,7 @@ sealed concept itself is impossible; do not bury the failure under added parts
 or decorative geometry. Once it passes, reuse that exact source and expand only
 the parts required for the signature experience.
 
-For a run with `deep-economics-v2.md`, this is the first persisted Make
+For a run with `deep-economics-v2.md` or `deep-economics-v3.md`, this is the first persisted Make
 deliverable. Save the exact causal/kinematic result, a concise finding, and the
 neutral held/signature blockout renders inside the declared CAD project at
 `review/early-proof/` before writing the complete part tree. The proof may use

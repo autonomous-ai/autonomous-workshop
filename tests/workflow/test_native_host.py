@@ -58,6 +58,8 @@ from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
     DEEP_ECONOMICS_V1_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V2_CAPABILITY_PATH,
+    DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_NATIVE_TURN_LIMIT,
     DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
     DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
@@ -414,7 +416,8 @@ class NativeHostTest(unittest.TestCase):
     def _launcher_checkpoint(*, effort, economics_capability, stage="make"):
         capability_paths = {
             "deep-v1": DEEP_ECONOMICS_V1_CAPABILITY_PATH,
-            "deep-v2": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v2": DEEP_ECONOMICS_V2_CAPABILITY_PATH,
+            "deep-v3": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
@@ -484,7 +487,7 @@ class NativeHostTest(unittest.TestCase):
 
         launcher_type.assert_called_once_with(reasoning_effort="low")
 
-    def test_deep_v2_shapes_reasoning_by_stage_and_tightens_context_and_turns(self):
+    def test_deep_v3_shapes_each_stage_under_one_frozen_runtime_profile(self):
         for effort in ("forge", "quest"):
             for stage, reasoning in (
                 ("invent", "high"),
@@ -497,23 +500,31 @@ class NativeHostTest(unittest.TestCase):
                 ) as launcher_type:
                     checkpoint = self._launcher_checkpoint(
                         effort=effort,
-                        economics_capability="deep-v2",
+                        economics_capability="deep-v3",
                         stage=stage,
                     )
-                    _native_launcher(checkpoint)
+                    _native_launcher(
+                        checkpoint,
+                        initial_make_proof_boundary=(stage == "make"),
+                    )
 
                     launcher_type.assert_called_once_with(
                         reasoning_effort=reasoning,
                         auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
-                        timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+                        runtime_profile_sha256="a" * 64,
+                        timeout_seconds=(
+                            DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                            if stage == "make"
+                            else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+                        ),
                     )
                     self.assertEqual(
                         _native_turn_limit(checkpoint), DEEP_NATIVE_TURN_LIMIT
                     )
 
-    def test_deep_v2_make_prompt_requires_first_persisted_proof(self):
+    def test_deep_make_prompt_requires_first_persisted_proof(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v2"
+            effort="quest", economics_capability="deep-v3"
         )
         prompt = _deep_make_critical_path_prompt(checkpoint)
 
@@ -524,11 +535,48 @@ class NativeHostTest(unittest.TestCase):
             _deep_make_critical_path_prompt(
                 self._launcher_checkpoint(
                     effort="quest",
-                    economics_capability="deep-v2",
+                    economics_capability="deep-v3",
                     stage="invent",
                 )
             ),
             "",
+        )
+
+    def test_deep_v3_make_recovery_restores_normal_turn_boundary(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v3", stage="make"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(
+                checkpoint,
+                initial_make_proof_boundary=False,
+            )
+
+        launcher_type.assert_called_once_with(
+            reasoning_effort="medium",
+            auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+            runtime_profile_sha256="a" * 64,
+            timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+        )
+
+    def test_deep_v2_retains_effective_all_high_session_binding(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v2", stage="make"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(
+                checkpoint,
+                initial_make_proof_boundary=True,
+            )
+
+        launcher_type.assert_called_once_with(
+            reasoning_effort="high",
+            auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+            timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
         )
 
     def test_deep_v1_retains_all_high_profile_and_original_turn_cap(self):

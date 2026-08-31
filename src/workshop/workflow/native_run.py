@@ -138,6 +138,8 @@ from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
     DEEP_ECONOMICS_V1_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V2_CAPABILITY_PATH,
+    DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_NATIVE_TURN_LIMIT,
     DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
     DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
@@ -3594,26 +3596,57 @@ def _prepare_stage_input(
     return subject, packet, context
 
 
-def _native_launcher(checkpoint: AgentRunCheckpoint) -> NativeSessionLauncher:
+def _uses_dynamic_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
+    return (
+        checkpoint.manager_id == DEFAULT_MANAGER_ID
+        and checkpoint.effort in ("forge", "quest")
+        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    )
+
+
+def _native_launcher(
+    checkpoint: AgentRunCheckpoint,
+    *,
+    initial_make_proof_boundary: bool = False,
+) -> NativeSessionLauncher:
     """Construct the frozen Manager launcher.
 
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
     Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
-    runs shape reasoning by stage while binding their compaction and turn
-    limits. Deep-v1 runs retain their historical all-high profile.
+    v3 runs shape reasoning and the first-Make boundary per turn while binding
+    the whole frozen profile to one persistent session. Deep-v2 retains its
+    effective all-high session binding; deep-v1 retains its historical
+    all-high profile.
     Older runs lack those markers and retain their historical profile on resume.
     """
 
     if checkpoint.manager_id == DEFAULT_MANAGER_ID:
-        if (
-            checkpoint.effort in ("forge", "quest")
-            and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
-        ):
+        if _uses_dynamic_deep_profile(checkpoint):
             return CodexNativeSessionLauncher(
                 reasoning_effort=(
                     "high" if checkpoint.stage == "invent" else "medium"
                 ),
+                auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                runtime_profile_sha256=checkpoint.input_sha256s[
+                    DEEP_ECONOMICS_CAPABILITY_PATH
+                ],
+                timeout_seconds=(
+                    DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                    if checkpoint.stage == "make" and initial_make_proof_boundary
+                    else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+                ),
+            )
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                # V2 bound the first stage's exact turn configuration to the
+                # persistent thread before stage-shaped resume was supported.
+                # Keep its effective all-high policy so a stopped historical
+                # run can resume without same-version runtime-policy drift.
+                reasoning_effort="high",
                 auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
                 timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
             )
@@ -3659,7 +3692,10 @@ def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
     if (
         checkpoint.manager_id == DEFAULT_MANAGER_ID
         and checkpoint.effort in ("forge", "quest")
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and (
+            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
     ):
         return DEEP_NATIVE_TURN_LIMIT
     if (
@@ -3677,11 +3713,14 @@ def _deep_make_critical_path_prompt(checkpoint: AgentRunCheckpoint) -> str:
     if not (
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and (
+            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
     ):
         return ""
     return (
-        "\n\nThis run uses the frozen deep-economics-v2 critical path. "
+        "\n\nThis run uses the frozen deep-economics critical path. "
         "Your first Make deliverable must be the smallest exact causal "
         "or kinematic proof plus neutral held/signature blockout renders, "
         "saved under the declared CAD project at review/early-proof/. "
@@ -5873,7 +5912,7 @@ def _run_native_session(
     run: AgentRun,
     paths: NativeRunPaths,
     *,
-    launcher: NativeSessionLauncher,
+    launcher: Optional[NativeSessionLauncher],
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
@@ -5892,6 +5931,7 @@ def _run_native_session(
     consecutive_recoverable_turns = 0
     recoverable_continuation = False
     native_turn_limit = _native_turn_limit(run.snapshot())
+    initial_make_boundaries: set[str] = set()
     while turns < native_turn_limit:
         checkpoint = run.snapshot()
         if checkpoint.status in ("waiting", "failed", "complete"):
@@ -5954,6 +5994,18 @@ def _run_native_session(
             activity_observer,
         )
         launcher_failure: Optional[WorkshopError] = None
+        turn_launcher = launcher
+        if turn_launcher is None:
+            initial_make_proof_boundary = (
+                checkpoint.stage == "make"
+                and checkpoint.checkpoint_sha256 not in initial_make_boundaries
+            )
+            turn_launcher = _native_launcher(
+                checkpoint,
+                initial_make_proof_boundary=initial_make_proof_boundary,
+            )
+            if initial_make_proof_boundary:
+                initial_make_boundaries.add(checkpoint.checkpoint_sha256)
         try:
             with wish_run_timing_span(
                 timing_observer,
@@ -5962,7 +6014,7 @@ def _run_native_session(
                 operation="session.%s" % method,
             ):
                 last_session = _launcher_call(
-                    launcher,
+                    turn_launcher,
                     method,
                     checkpoint=checkpoint,
                     paths=paths,
@@ -6558,7 +6610,10 @@ def start_native_run(
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
-        launcher = _native_launcher(checkpoint)
+        launcher = (
+            None if _uses_dynamic_deep_profile(checkpoint)
+            else _native_launcher(checkpoint)
+        )
         checkpoint, session, turns, action = _run_native_session(
             run,
             paths,
@@ -6739,7 +6794,10 @@ def _resume_native_run_locked(
             action="inspected-terminal",
         )
     _prune_empty_make_product_directories(paths.workspace, checkpoint)
-    launcher = _native_launcher(checkpoint)
+    launcher = (
+        None if _uses_dynamic_deep_profile(checkpoint)
+        else _native_launcher(checkpoint)
+    )
     checkpoint, session, turns, action = _run_native_session(
         run,
         paths,

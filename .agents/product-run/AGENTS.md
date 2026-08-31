@@ -17,7 +17,9 @@ For a new Codex run, the host may freeze a versioned economics profile for this
 entire session. Spark uses its low-reasoning fast profile. Current Forge and
 Quest runs keep high reasoning for Invent, use medium reasoning afterward, and
 require Make's minimal exact mechanism/form evidence as the first persisted
-deliverable. Treat every profile as a focus constraint, not permission to make
+deliverable. Their first Make turn is a shorter proof boundary; recovery stays
+inside the same Goal and receives the normal turn window. Treat every profile
+as a focus constraint, not permission to make
 a generic product or skip proof. Other Managers and frozen older runs keep
 their own bound runtime profile.
 

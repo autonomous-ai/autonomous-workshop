@@ -70,8 +70,9 @@ few decisions and checks that make it real.
   build on the critical path, batch independent tool work, and spend additional
   cycles only on a concrete failing check or visible product defect.
 - For Forge and Quest, spend high reasoning where it changes the concept and
-  use the stage-shaped frozen profile thereafter. Their 30-minute turns and
-  compacted context are focus constraints, not quality waivers. In Make, the
+  use the stage-shaped frozen profile thereafter. Their first Make turn has a
+  12-minute proof boundary; normal and recovery turns retain 30 minutes. These
+  boundaries and compacted context are focus constraints, not quality waivers. In Make, the
   first persisted deliverable is the smallest exact causal or kinematic proof
   plus neutral held/signature blockout renders under
   `<cad-project>/review/early-proof/`. Inspect it before authoring the complete

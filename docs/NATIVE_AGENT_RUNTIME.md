@@ -11,7 +11,8 @@ Workshop. It is authoritative together with
 [ADR 0020](adr/0020-signature-experience-evidence.md),
 [ADR 0021](adr/0021-compacted-spark-and-signature-review.md),
 [ADR 0022](adr/0022-blind-review-before-final-verification.md),
-[ADR 0023](adr/0023-bounded-spark-turn-and-semantic-review.md), and the repository
+[ADR 0023](adr/0023-bounded-spark-turn-and-semantic-review.md),
+[ADR 0031](adr/0031-bind-deep-profile-and-bound-first-proof.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -57,15 +58,18 @@ session at low reasoning effort with a 64k automatic context-compaction ceiling
 across Make and Release plus a 20-minute boundary per native turn. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
-waiver. New Forge and Quest projects freeze `deep-economics-v2.md`: Invent keeps
+waiver. New Forge and Quest projects freeze `deep-economics-v3.md`: Invent keeps
 high reasoning while Make, Playtest, and Release use medium reasoning; every
-stage uses a 24k compaction ceiling and 30-minute native turn boundary. One CLI
+stage uses a 24k compaction ceiling and normal turns have a 30-minute boundary.
+The first Make turn has a 12-minute proof boundary before the same Goal may
+resume with the normal window. One CLI
 invocation launches at most eight native turns across all stages. Make's first
 persisted deliverable is the smallest exact causal/kinematic proof plus neutral
 held/signature blockout evidence under the declared CAD project; the complete
 part tree comes only after that proof is inspected. Their extra work earns one
 distinctive signature experience rather than gratuitous part or mechanism
-count. Frozen v1 and older runs retain their prior profile. A frozen v2 Spark
+count. Frozen deep-v2 runs retain the effective all-high thread binding they
+started with; deep-v1 and older runs retain their prior profile. A frozen v2 Spark
 remains low with 64k compaction
 and the historical timeout; v1 stays low without a Workshop-specified
 compaction setting; an older unmarked Spark stays high. A host upgrade therefore
@@ -161,7 +165,9 @@ avoid restarting broad exploration or depending on a child agent, run the
 remaining essential deterministic checks, and prioritize the stage finalizer.
 
 The private session checkpoint also binds the Codex CLI version and exact
-runtime-policy hash. A package manager may replace the installed CLI while a
+runtime-policy hash. A deep-v3 run binds one immutable whole-profile identity,
+allowing its promised stage-specific reasoning and turn boundaries without
+changing the persistent thread's security policy. A package manager may replace the installed CLI while a
 long native turn is running. Resume accepts that drift only when the saved
 checkpoint is intact, every Wish, constitution, path, permission-profile,
 feature, and thread binding is unchanged, and the installed CLI is a strictly
@@ -730,9 +736,10 @@ private Wish demonstrate that:
     and a 20-minute boundary per native turn across both active stages; v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
     bindings; and
-12. a deep-v2 Codex Forge or Quest run uses high reasoning for Invent and
+12. a deep-v3 Codex Forge or Quest run uses high reasoning for Invent and
     medium reasoning afterward, with a frozen 24k compaction ceiling,
-    30-minute turn boundary, eight-turn CLI invocation cap, and first-persisted
+    12-minute first-Make proof boundary, 30-minute normal boundary, eight-turn
+    CLI invocation cap, and first-persisted
     Make proof, while older exact runs retain their original profile.
 
 ## Engine portability

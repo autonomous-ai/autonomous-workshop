@@ -1867,6 +1867,74 @@ class CodexNativeSessionTest(unittest.TestCase):
                 self.resume(changed, root)
             self.assertEqual(len(factory.calls), 1)
 
+    def test_frozen_runtime_profile_allows_bound_stage_turn_policy_changes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            factory = FakePopenFactory(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="made at medium")},
+                ]
+            )
+            profile_sha256 = "a" * 64
+            invent = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                reasoning_effort="high",
+                auto_compact_token_limit=24_000,
+                timeout_seconds=1_800,
+                runtime_profile_sha256=profile_sha256,
+            )
+            make = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                reasoning_effort="medium",
+                auto_compact_token_limit=24_000,
+                timeout_seconds=720,
+                runtime_profile_sha256=profile_sha256,
+            )
+
+            started = self.start(invent, root)
+            resumed = self.resume(make, root)
+
+            self.assertEqual(
+                started.binding.runtime_config_sha256,
+                resumed.binding.runtime_config_sha256,
+            )
+            self.assertIn('model_reasoning_effort="high"', factory.calls[0][0])
+            self.assertIn('model_reasoning_effort="medium"', factory.calls[1][0])
+
+    def test_frozen_runtime_profile_identity_drift_fails_before_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            factory = FakePopenFactory(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="must not launch")},
+                ]
+            )
+            original = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                runtime_profile_sha256="a" * 64,
+            )
+            changed = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                runtime_profile_sha256="b" * 64,
+            )
+
+            self.start(original, root)
+            with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                self.resume(changed, root)
+            self.assertEqual(len(factory.calls), 1)
+
     def test_shortened_timeout_is_bound_and_drift_fails_before_resume(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"

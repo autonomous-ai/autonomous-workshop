@@ -1,6 +1,6 @@
 # ADR 0030: Shape deep effort by stage and persist proof first
 
-- Status: Accepted
+- Status: Superseded for new runs by ADR 0031
 - Date: 2026-08-30
 - Owners: Runtime, workflow, and product-run protocol maintainers
 - Supersedes for new runs: ADR 0028's all-high `deep-economics-v1` profile

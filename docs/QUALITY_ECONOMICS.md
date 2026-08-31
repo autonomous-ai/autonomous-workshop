@@ -366,10 +366,19 @@ diagnostics are recorded separately and are not added together:
 
 This result separates CAD runtime from workflow latency: individual observed
 generation steps took seconds, while most spend occurred before the first
-persisted falsifier and during late repair. New runs now freeze
-`deep-economics-v2.md`: Invent remains high reasoning, later stages use medium,
-context compacts at 24k, and one invocation stops after eight turns. More
-importantly, the host's initial Make prompt makes the exact mechanism/form proof
+persisted falsifier and during late repair. The prompt-only
+`deep-economics-v2.md` iteration did not enforce that ordering: the next Quest
+Make again persisted no product bytes for its full first 30-minute turn. It
+also exposed that the launcher created for high-reasoning Invent was reused
+after the checkpoint moved to Make. The automatic recovery wrote the requested
+`review/early-proof/` source within about 4.5 minutes.
+
+New runs therefore freeze `deep-economics-v3.md`: one whole-profile identity
+keeps the persistent thread stable while Invent actually uses high reasoning
+and later stages actually use medium. Context compacts at 24k, one invocation
+stops after eight turns, and the first Make turn stops at a 12-minute proof
+boundary before recovery receives the normal 30-minute window. The host's
+initial Make prompt still makes the exact mechanism/form proof
 under `<cad-project>/review/early-proof/` the first persisted deliverable before
 the complete part tree. A fresh Quest and Forge production run are still needed
 to prove this change improves both quality and economics.
