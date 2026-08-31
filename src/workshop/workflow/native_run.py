@@ -4337,15 +4337,50 @@ def _v10_make_proof_artifacts_ready(
 ) -> bool:
     """Require durable real-state proof bytes before accepting a v10 marker."""
 
-    proof = (
+    product = (
         paths.workspace
         / "artifacts"
         / "make"
         / ("r%04d" % checkpoint.round_index)
         / "product"
-        / "review"
-        / "early-proof"
     )
+    candidates = [product / "review" / "early-proof"]
+    cad = product / "cad"
+    try:
+        cad_identity = cad.lstat()
+    except FileNotFoundError:
+        pass
+    except OSError:
+        return False
+    else:
+        if cad.is_symlink() or not stat.S_ISDIR(cad_identity.st_mode):
+            return False
+        try:
+            projects = tuple(cad.iterdir())
+        except OSError:
+            return False
+        for project in projects:
+            try:
+                identity = project.lstat()
+            except OSError:
+                return False
+            if project.is_symlink():
+                return False
+            if stat.S_ISDIR(identity.st_mode):
+                candidates.append(project / "review" / "early-proof")
+    existing = []
+    for candidate in candidates:
+        if not candidate.exists() and not candidate.is_symlink():
+            continue
+        try:
+            existing.append(
+                _existing_real_directory(candidate, label="Make proof directory")
+            )
+        except StateConflict:
+            return False
+    if len(existing) != 1:
+        return False
+    proof = existing[0]
     required = (
         "proof.py",
         "state-0.step.py",

@@ -628,6 +628,17 @@ observed existing-source handoff about 72% while preserving the full initial
 creative allowance and exact Invent contract. The product remains a live run;
 this is stage evidence, not a completed-product claim.
 
+The same run exposed a host path defect after Make produced a valid fixed-camera
+state sheet. Product instructions correctly place proof under
+`product/cad/<project>/review/early-proof`, but the host marker validator looked
+only at `product/review/early-proof`. The launcher stopped on the marker, then
+the host rejected and deleted it and mistakenly launched another 16-minute
+proof turn instead of the 15-minute final-source handoff. The validator now
+resolves exactly one real CAD-project proof directory, rejects symlinks and
+ambiguous candidates, and retains the historical direct path. This is a host
+protocol fix; the preserved production run remains on its original process
+until the next explicit resume.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

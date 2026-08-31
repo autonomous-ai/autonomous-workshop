@@ -1024,7 +1024,7 @@ class NativeHostTest(unittest.TestCase):
 
             proof = (
                 paths.workspace
-                / "artifacts/make/r0001/product/review/early-proof"
+                / "artifacts/make/r0001/product/cad/dreamseed/review/early-proof"
             )
             proof.mkdir(parents=True)
             for name in (
@@ -1058,6 +1058,27 @@ class NativeHostTest(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertTrue(_make_proof_ready(paths, checkpoint))
+
+            second = (
+                paths.workspace
+                / "artifacts/make/r0001/product/cad/other/review/early-proof"
+            )
+            second.mkdir(parents=True)
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.make-proof-ready",
+                        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertFalse(_make_proof_ready(paths, checkpoint))
+            self.assertFalse(marker.exists())
 
     def test_deep_v7_make_proof_marker_fails_closed_on_symlink(self):
         checkpoint = self._launcher_checkpoint(
