@@ -128,6 +128,13 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
                 / "deep-economics-v3.md"
             ).is_file()
         )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "deep-economics-v4.md"
+            ).is_file()
+        )
 
     def test_effort_guidance_distinguishes_direct_release_and_quest_playtest(self):
         guidance = (

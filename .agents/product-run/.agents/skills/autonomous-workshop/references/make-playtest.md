@@ -109,7 +109,8 @@ sealed concept itself is impossible; do not bury the failure under added parts
 or decorative geometry. Once it passes, reuse that exact source and expand only
 the parts required for the signature experience.
 
-For a run with `deep-economics-v2.md` or `deep-economics-v3.md`, this is the first persisted Make
+For a run with `deep-economics-v2.md`, `deep-economics-v3.md`, or
+`deep-economics-v4.md`, this is the first persisted Make
 deliverable. Save the exact causal/kinematic result, a concise finding, and the
 neutral held/signature blockout renders inside the declared CAD project at
 `review/early-proof/` before writing the complete part tree. The proof may use
@@ -118,6 +119,15 @@ actual defining relationship and actual planned outer form. Inspect it now;
 do not create a retrospective proof after the final product. Reuse its
 parameters and source when expanding the passing design, and keep the entire
 directory in the final product snapshot.
+
+For `deep-economics-v4.md`, self-review cannot pass the held/signature proof.
+Use one bounded independent native visual critic. First show it only the exact
+blockout images and record its unprompted object, volumetric form, control,
+action, and relationship read. Then reveal the Wish and sealed concept and
+compare every positive and negative held-form requirement. A generic,
+plaque-like, board-like, box-like, container-like, or exposed-mechanism reading
+fails. Repair and rerender once at most before expanding the final part tree.
+Bind the reviewed image hashes in the early-proof report and preserve it.
 
 Prove the held form just as early as the mechanism. Before detailed parts,
 create the cheapest exact volumetric blockout that shows the required held view

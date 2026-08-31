@@ -70,13 +70,16 @@ few decisions and checks that make it real.
   build on the critical path, batch independent tool work, and spend additional
   cycles only on a concrete failing check or visible product defect.
 - For Forge and Quest, spend high reasoning where it changes the concept and
-  use the stage-shaped frozen profile thereafter. Their first Make turn has a
-  12-minute proof boundary; normal and recovery turns retain 30 minutes. These
+  exact product. Their first Make turn has a 12-minute proof boundary; normal
+  and recovery turns retain 30 minutes, and Make compacts at 16k. These
   boundaries and compacted context are focus constraints, not quality waivers. In Make, the
   first persisted deliverable is the smallest exact causal or kinematic proof
   plus neutral held/signature blockout renders under
   `<cad-project>/review/early-proof/`. Inspect it before authoring the complete
-  part tree or detailed final geometry. If that proof is expensive or
+  part tree or detailed final geometry. One independent native critic must
+  blindly read those images before learning the Wish, then compare every exact
+  positive and negative held-form requirement. Self-review cannot pass this
+  boundary. If that proof is expensive or
   ambiguous, simplify the mechanism while preserving the signature magic.
 
 ## Run one native Goal for the current stage

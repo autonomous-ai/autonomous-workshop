@@ -1,6 +1,6 @@
 # ADR 0031: Bind the deep profile and bound first proof
 
-- Status: Accepted
+- Status: Superseded for new runs by ADR 0032
 - Date: 2026-08-30
 - Owners: Runtime, workflow, and product-run protocol maintainers
 - Supersedes for new runs: ADR 0030's `deep-economics-v2` profile

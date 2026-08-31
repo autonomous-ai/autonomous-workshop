@@ -373,15 +373,43 @@ also exposed that the launcher created for high-reasoning Invent was reused
 after the checkpoint moved to Make. The automatic recovery wrote the requested
 `review/early-proof/` source within about 4.5 minutes.
 
-New runs therefore freeze `deep-economics-v3.md`: one whole-profile identity
-keeps the persistent thread stable while Invent actually uses high reasoning
-and later stages actually use medium. Context compacts at 24k, one invocation
-stops after eight turns, and the first Make turn stops at a 12-minute proof
-boundary before recovery receives the normal 30-minute window. The host's
-initial Make prompt still makes the exact mechanism/form proof
-under `<cad-project>/review/early-proof/` the first persisted deliverable before
-the complete part tree. A fresh Quest and Forge production run are still needed
-to prove this change improves both quality and economics.
+That evidence produced `deep-economics-v3.md`: one whole-profile identity kept
+the persistent thread stable while Invent actually used high reasoning and
+later stages used medium. Context compacted at 24k, one invocation stopped
+after eight turns, and the first Make turn stopped at a 12-minute proof boundary
+before recovery received the normal 30-minute window.
+
+The identical Three-Sky Seed Wish then tested v3. Invent passed in 15m53s with
+473,815 input, 397,056 cached input, 12,132 output, and 1,894 reasoning-output
+tokens. The initial 12-minute Make turn again persisted no product file; its
+terminal token event was unavailable, so no token count is inferred. Recovery
+persisted proof source about 5m43s later and reached an exact passing mechanism
+report plus held/signature images. That useful milestone arrived about 17m45s
+after Make began, versus roughly 34.5 minutes in the v2 run. The two-turn Make
+window therefore fell from 60 to 42 minutes.
+
+The paired objective still failed. The medium-reasoning recovery consumed
+1,285,442 input, 1,148,928 cached input, 13,976 output, and 1,139
+reasoning-output tokens—more gross input than the comparable v2 high-reasoning
+recovery. It produced a crude cylindrical exposed mechanism instead of the
+sealed smooth volumetric seed, then its own superficial inspection marked those
+pixels as passing. It never persisted the complete product, reached final
+preflight, Playtest, Release, or publication. The host stopped after the two
+bounded failures and preserved the run.
+
+New runs therefore freeze `deep-economics-v4.md`. Make returns to high
+reasoning because medium was neither cheaper nor better in the paired run, but
+Make compacts at the runtime's minimum supported 16k while other stages retain
+24k. The 12-minute first-proof and 30-minute recovery boundaries remain. Before
+detailed CAD, one independent native critic receives only the exact early
+blockout images, records the unprompted object/form/control/action/relationship
+read, then receives the Wish and concept and checks every positive and negative
+held-form constraint. A generic, plaque-like, box-like, container-like, or
+exposed-mechanism reading fails and gets one repair at most. This early report
+is evidence for native judgment, not a new host aesthetic gate; the existing
+hash-bound final signature review, deterministic CAD checks, Playtest, manual,
+and publication gates remain unchanged. Fresh paired Quest and Forge production
+runs must still prove v4 improves both quality and economics.
 
 ## Quality is comparative evidence, not a model score
 

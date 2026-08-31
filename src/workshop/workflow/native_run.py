@@ -139,7 +139,9 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_CAPABILITY_PATH,
     DEEP_ECONOMICS_V1_CAPABILITY_PATH,
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V3_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
     DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
     DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
@@ -3600,7 +3602,10 @@ def _uses_dynamic_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
     return (
         checkpoint.manager_id == DEFAULT_MANAGER_ID
         and checkpoint.effort in ("forge", "quest")
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and (
+            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
     )
 
 
@@ -3614,22 +3619,47 @@ def _native_launcher(
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
     Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
-    v3 runs shape reasoning and the first-Make boundary per turn while binding
-    the whole frozen profile to one persistent session. Deep-v2 retains its
-    effective all-high session binding; deep-v1 retains its historical
-    all-high profile.
+    v4 and v3 runs shape reasoning and the first-Make boundary per turn while
+    binding their whole frozen profile to one persistent session. Deep-v2
+    retains its effective all-high session binding; deep-v1 retains its
+    historical all-high profile.
     Older runs lack those markers and retain their historical profile on resume.
     """
 
     if checkpoint.manager_id == DEFAULT_MANAGER_ID:
-        if _uses_dynamic_deep_profile(checkpoint):
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                reasoning_effort=(
+                    "high" if checkpoint.stage in ("invent", "make") else "medium"
+                ),
+                auto_compact_token_limit=(
+                    DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT
+                    if checkpoint.stage == "make"
+                    else DEEP_AUTO_COMPACT_TOKEN_LIMIT
+                ),
+                runtime_profile_sha256=checkpoint.input_sha256s[
+                    DEEP_ECONOMICS_CAPABILITY_PATH
+                ],
+                timeout_seconds=(
+                    DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                    if checkpoint.stage == "make" and initial_make_proof_boundary
+                    else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+                ),
+            )
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
             return CodexNativeSessionLauncher(
                 reasoning_effort=(
                     "high" if checkpoint.stage == "invent" else "medium"
                 ),
                 auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
                 runtime_profile_sha256=checkpoint.input_sha256s[
-                    DEEP_ECONOMICS_CAPABILITY_PATH
+                    DEEP_ECONOMICS_V3_CAPABILITY_PATH
                 ],
                 timeout_seconds=(
                     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
@@ -3694,6 +3724,7 @@ def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
         )
     ):
@@ -3708,18 +3739,19 @@ def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
 
 
 def _deep_make_critical_path_prompt(checkpoint: AgentRunCheckpoint) -> str:
-    """Return the frozen v2 first-proof instruction for an initial Make turn."""
+    """Return the versioned first-proof instruction for an initial Make turn."""
 
     if not (
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
         )
     ):
         return ""
-    return (
+    prompt = (
         "\n\nThis run uses the frozen deep-economics critical path. "
         "Your first Make deliverable must be the smallest exact causal "
         "or kinematic proof plus neutral held/signature blockout renders, "
@@ -3729,6 +3761,39 @@ def _deep_make_critical_path_prompt(checkpoint: AgentRunCheckpoint) -> str:
         "the whole product first. If the proof fails, simplify or repair "
         "the relationship immediately. Reuse the passing proof source in "
         "the final product and preserve the proof files in the product tree."
+    )
+    if DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s:
+        return prompt
+    return prompt + (
+        " Before treating the held/signature blockout as passing, ask one "
+        "independent native visual critic to inspect only those exact images "
+        "without the Wish or concept. Record its unprompted object, form, "
+        "control, and relationship read. Then reveal the Wish and concept, "
+        "compare every positive and negative held-form requirement, and fail "
+        "the proof on any generic, plaque-like, box-like, or exposed-mechanism "
+        "reading. Repair and rerender the proof before expanding final parts."
+    )
+
+
+def _deep_make_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
+    """Return the frozen v4 proof-review instruction for Make recovery."""
+
+    if not (
+        checkpoint.stage == "make"
+        and checkpoint.effort in ("forge", "quest")
+        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        return ""
+    return (
+        " Before expanding the final part tree, complete the frozen "
+        "early-proof blind review: one independent native critic sees "
+        "only the exact held/signature blockout images first, records "
+        "its unprompted read, then receives the Wish and concept and "
+        "checks every positive and negative held-form constraint. A "
+        "generic, box-like, plaque-like, or exposed-mechanism reading "
+        "fails the proof and must be repaired now. After a passing "
+        "proof, persist the smallest complete product source "
+        "immediately and keep all later work on that one baseline."
     )
 
 
@@ -3770,6 +3835,7 @@ def _launcher_call(
             "finalizer as soon as its contract is satisfied, and return "
             "after it writes agent-outcome.json."
         )
+        prompt += _deep_make_recovery_prompt(checkpoint)
     arguments = {
         "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256,

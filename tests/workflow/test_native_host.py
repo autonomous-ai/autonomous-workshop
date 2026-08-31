@@ -23,6 +23,7 @@ from workshop.workflow.native_run import (
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
     _current_make_proposal_rejection,
     _deep_make_critical_path_prompt,
+    _deep_make_recovery_prompt,
     _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
@@ -59,7 +60,9 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_CAPABILITY_PATH,
     DEEP_ECONOMICS_V1_CAPABILITY_PATH,
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V3_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
     DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
     DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
@@ -417,7 +420,8 @@ class NativeHostTest(unittest.TestCase):
         capability_paths = {
             "deep-v1": DEEP_ECONOMICS_V1_CAPABILITY_PATH,
             "deep-v2": DEEP_ECONOMICS_V2_CAPABILITY_PATH,
-            "deep-v3": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v3": DEEP_ECONOMICS_V3_CAPABILITY_PATH,
+            "deep-v4": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
@@ -487,11 +491,11 @@ class NativeHostTest(unittest.TestCase):
 
         launcher_type.assert_called_once_with(reasoning_effort="low")
 
-    def test_deep_v3_shapes_each_stage_under_one_frozen_runtime_profile(self):
+    def test_deep_v4_shapes_each_stage_under_one_frozen_runtime_profile(self):
         for effort in ("forge", "quest"):
             for stage, reasoning in (
                 ("invent", "high"),
-                ("make", "medium"),
+                ("make", "high"),
                 ("playtest", "medium"),
                 ("release", "medium"),
             ):
@@ -500,7 +504,7 @@ class NativeHostTest(unittest.TestCase):
                 ) as launcher_type:
                     checkpoint = self._launcher_checkpoint(
                         effort=effort,
-                        economics_capability="deep-v3",
+                        economics_capability="deep-v4",
                         stage=stage,
                     )
                     _native_launcher(
@@ -510,7 +514,11 @@ class NativeHostTest(unittest.TestCase):
 
                     launcher_type.assert_called_once_with(
                         reasoning_effort=reasoning,
-                        auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                        auto_compact_token_limit=(
+                            DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT
+                            if stage == "make"
+                            else DEEP_AUTO_COMPACT_TOKEN_LIMIT
+                        ),
                         runtime_profile_sha256="a" * 64,
                         timeout_seconds=(
                             DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
@@ -524,27 +532,37 @@ class NativeHostTest(unittest.TestCase):
 
     def test_deep_make_prompt_requires_first_persisted_proof(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v3"
+            effort="quest", economics_capability="deep-v4"
         )
         prompt = _deep_make_critical_path_prompt(checkpoint)
 
         self.assertIn("first Make deliverable", prompt)
         self.assertIn("review/early-proof/", prompt)
         self.assertIn("before authoring the complete part tree", prompt)
+        self.assertIn("independent native visual critic", prompt)
+        self.assertIn("exposed-mechanism", prompt)
+        legacy_prompt = _deep_make_critical_path_prompt(
+            self._launcher_checkpoint(
+                effort="quest",
+                economics_capability="deep-v3",
+            )
+        )
+        self.assertIn("first Make deliverable", legacy_prompt)
+        self.assertNotIn("independent native visual critic", legacy_prompt)
         self.assertEqual(
             _deep_make_critical_path_prompt(
                 self._launcher_checkpoint(
                     effort="quest",
-                    economics_capability="deep-v3",
+                    economics_capability="deep-v4",
                     stage="invent",
                 )
             ),
             "",
         )
 
-    def test_deep_v3_make_recovery_restores_normal_turn_boundary(self):
+    def test_deep_v4_make_recovery_restores_normal_turn_boundary(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v3", stage="make"
+            effort="quest", economics_capability="deep-v4", stage="make"
         )
         with mock.patch(
             "workshop.workflow.native_run.CodexNativeSessionLauncher"
@@ -555,10 +573,42 @@ class NativeHostTest(unittest.TestCase):
             )
 
         launcher_type.assert_called_once_with(
+            reasoning_effort="high",
+            auto_compact_token_limit=DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
+            runtime_profile_sha256="a" * 64,
+            timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+        )
+        recovery_prompt = _deep_make_recovery_prompt(checkpoint)
+        self.assertIn("independent native critic", recovery_prompt)
+        self.assertIn("persist the smallest complete product source", recovery_prompt)
+        self.assertEqual(
+            _deep_make_recovery_prompt(
+                self._launcher_checkpoint(
+                    effort="quest",
+                    economics_capability="deep-v3",
+                    stage="make",
+                )
+            ),
+            "",
+        )
+
+    def test_deep_v3_retains_medium_make_and_24k_compaction(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v3", stage="make"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(
+                checkpoint,
+                initial_make_proof_boundary=True,
+            )
+
+        launcher_type.assert_called_once_with(
             reasoning_effort="medium",
             auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
             runtime_profile_sha256="a" * 64,
-            timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+            timeout_seconds=DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
         )
 
     def test_deep_v2_retains_effective_all_high_session_binding(self):
