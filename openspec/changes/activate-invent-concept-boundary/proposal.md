@@ -12,6 +12,10 @@ Forge and Quest currently stop Invent after sealing a compact `NativeInvented` r
 - Keep the executable topology unchanged: Forge remains `Wish -> Invent -> Make -> Release`, Quest remains `Wish -> Invent -> Make -> Playtest -> Release`, and no Concept stage, Goal, turn, checkpoint, transition, or Concept-only wait is introduced.
 - Leave Spark and every frozen older run on their existing immutable protocols. Spark receives no Concept requirement in this change because it has no Invent stage; a later independently versioned change may activate the same sub-boundary inside folded Spark Make.
 - Update deterministic and real-Codex acceptance traces, product-run instructions, lifecycle documentation, packaging, wait/resume, tamper, rejection, and effect-reconciliation coverage together with activation.
+- Expose a complete field-by-field, agent-facing canonical skeleton for every
+  Concept-authored JSON file, including nested records, role dependencies,
+  descriptor timing, and canonical hash derivation, so Invent does not need to
+  reverse-engineer accepted input structure from finalizer implementation.
 
 ## Capabilities
 

@@ -222,6 +222,33 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             with self.subTest(required=required):
                 self.assertIn(required, guidance)
 
+    def test_marked_invent_concept_reference_exposes_complete_authored_shapes(self):
+        reference = " ".join(
+            (
+                REPOSITORY / ".agents" / "product-run" / ".agents" / "skills"
+                / "autonomous-workshop" / "references" / "invent-concept-v1.md"
+            ).read_text(encoding="utf-8").split()
+        )
+
+        for required in (
+            "## Complete authored-source schema",
+            "`brief.json` has this canonical skeleton",
+            '"wall_thickness_mm"',
+            '"supports_required"',
+            '"assumption_reason"',
+            "`research.json` has exactly these nested entry shapes",
+            '"excerpt_sha256"',
+            '"retrieved_at"',
+            "`prompts.json` has one presentation treatment",
+            '"references": ["front", "top", "bottom"]',
+            "`descriptor.json` declares the pre-render image locations only",
+            "Do not put a `sha256` in this pre-render descriptor",
+            "`derived_wish.json` has exactly these eight fields",
+            '"derived_wish_sha256"',
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, reference)
+
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

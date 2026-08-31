@@ -63,6 +63,26 @@ The finalizer performs no provider call and writes neither image bytes nor the s
 
 **Alternative considered:** add a second finalizer invocation after host rendering. Rejected because the native turn has already returned, image bytes are host-owned, and asking Codex to finalize them would blur effect authority and add an unnecessary continuation.
 
+### 2a. Publish the complete authored Concept input shape with the frozen capability
+
+The immutable `invent-concept-v1.md` reference is the agent-facing contract,
+not merely a workflow overview. It MUST enumerate a canonical skeleton for
+each of `brief.json`, `research.json`, `prompts.json`, `descriptor.json`, and
+`derived_wish.json`, including every nested required field, value constraint,
+cross-file key relationship, role-reference order, pre-render versus sealed
+descriptor distinction, and the two canonical SHA-256 derivations. The
+skeletons guide authored source only; they do not expose host-private effect
+state, provider metadata, or a host-side design judgment.
+
+This keeps structural ownership where it belongs: the deterministic finalizer
+still rejects malformed bytes, while the native Manager receives enough exact
+contract information to author a conforming first proposal without inspecting
+implementation code or discovering fields through rejection cycles.
+
+**Alternative considered:** link the agent to Python validators or schema
+implementation. Rejected because implementation is not the product-run
+interface and does not provide a stable, compact, complete authoring contract.
+
 ### 3. Split the Invent host gate into pre-effect and post-effect phases under one checkpoint
 
 The host handles a ready marked Invent proposal in this order:

@@ -32,6 +32,27 @@ The existing Forge or Quest Invent Goal SHALL select the Inventor, research and 
 - **THEN** the finalizer fails without writing a ready outcome
 - **AND** the Manager remains inside the same Invent Goal to repair authored bytes
 
+### Requirement: Concept authors receive complete field-by-field source schemas
+
+The frozen agent-facing Invent Concept capability SHALL provide canonical
+skeletons for all five native-authored source documents: `brief.json`,
+`research.json`, `prompts.json`, `descriptor.json`, and `derived_wish.json`.
+For every document, it SHALL identify all required nested fields and value
+constraints, the exact cross-document component and source references, the
+required role dependency order, and canonical hash inputs where a hash is
+authored. It SHALL distinguish pre-render descriptor leaves from host-sealed
+image leaves. The capability MUST NOT require an agent to inspect validator
+implementation or obtain repeated finalizer rejections to discover a required
+field. It MUST NOT expose host-private credentials, provider state, raw
+receipts, or semantic host judgments.
+
+#### Scenario: A Manager prepares a first pre-render Concept proposal
+- **WHEN** the Manager reads the packet-bound Invent Concept capability
+- **THEN** it can identify the complete structural shape of all five authored
+  JSON documents and their cross-file bindings from that capability alone
+- **AND** it knows that image hashes are host-added after rendering rather than
+  authored in the pre-render descriptor
+
 ### Requirement: The host seals Concept before Invent advances
 
 After receiving a ready compound proposal, the host SHALL independently reopen the assignment, Invented, creative-source, and pre-render Concept bytes; repeat provenance and structural validation; complete and reconcile the authorized image effect; construct the sealed Concept from exact returned bytes; and record one passed Invent gate that binds every accepted identity and effect receipt. The checkpoint MUST NOT advance to Make until the complete sealed Concept passes those checks.

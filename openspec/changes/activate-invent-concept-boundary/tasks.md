@@ -71,3 +71,8 @@
 - [x] 8.3 Run focused Concept, Invent, Make, workflow, runtime-effect, integration, CLI, archive, architecture, and packaging unit suites with `PYTHONPATH=src python -m unittest`; verify all failure-path coverage passes.
 - [ ] 8.4 Run the required deterministic route matrix with `WORKSHOP_RUN_DETERMINISTIC_E2E=1`, then run the opt-in real-Codex marked Forge/Quest acceptance in an authorized environment; record exact stage/session/effect evidence and any skipped live-provider condition truthfully.
 - [x] 8.5 Run the full offline unittest suite, build/install acceptance, strict validation for both the prerequisite and this change, secret scan, and `git diff --check`; verify every check passes before exposing the activation marker in a release.
+- [x] 8.6 Expose complete field-by-field canonical skeletons for all five
+  agent-authored Concept JSON inputs, including nested constraints, cross-file
+  bindings, role ordering, descriptor sealing timing, and canonical hash
+  derivation; add a source-asset regression test and reconcile the active
+  proposal, design, and Invent Concept specification with that contract.
