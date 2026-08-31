@@ -141,6 +141,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
     DEEP_ECONOMICS_V4_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V5_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
@@ -3603,12 +3604,26 @@ def _prepare_stage_input(
     return subject, packet, context
 
 
+def _phased_deep_capability_path(
+    checkpoint: AgentRunCheckpoint,
+) -> Optional[str]:
+    """Return the exact frozen phased-deep profile path, newest first."""
+
+    for path in (
+        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V5_CAPABILITY_PATH,
+    ):
+        if path in checkpoint.input_sha256s:
+            return path
+    return None
+
+
 def _uses_dynamic_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
     return (
         checkpoint.manager_id == DEFAULT_MANAGER_ID
         and checkpoint.effort in ("forge", "quest")
         and (
-            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            _phased_deep_capability_path(checkpoint) is not None
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
         )
@@ -3626,7 +3641,7 @@ def _native_launcher(
     Codex stays constructed here so existing host tests can patch the concrete
     class without going through the registry. Other Managers load by id. New
     Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
-    v5, v4, and v3 runs shape reasoning and turn boundaries while
+    v6, v5, v4, and v3 runs shape reasoning and turn boundaries while
     binding their whole frozen profile to one persistent session. Deep-v2
     retains its effective all-high session binding; deep-v1 retains its
     historical all-high profile.
@@ -3634,10 +3649,8 @@ def _native_launcher(
     """
 
     if checkpoint.manager_id == DEFAULT_MANAGER_ID:
-        if (
-            checkpoint.effort in ("forge", "quest")
-            and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
-        ):
+        phased_deep_path = _phased_deep_capability_path(checkpoint)
+        if checkpoint.effort in ("forge", "quest") and phased_deep_path:
             if checkpoint.stage == "invent":
                 reasoning_effort = (
                     "medium" if recoverable_continuation else "high"
@@ -3662,9 +3675,7 @@ def _native_launcher(
             return CodexNativeSessionLauncher(
                 reasoning_effort=reasoning_effort,
                 auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
-                runtime_profile_sha256=checkpoint.input_sha256s[
-                    DEEP_ECONOMICS_CAPABILITY_PATH
-                ],
+                runtime_profile_sha256=checkpoint.input_sha256s[phased_deep_path],
                 timeout_seconds=timeout_seconds,
             )
         if (
@@ -3763,7 +3774,7 @@ def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
         checkpoint.manager_id == DEFAULT_MANAGER_ID
         and checkpoint.effort in ("forge", "quest")
         and (
-            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            _phased_deep_capability_path(checkpoint) is not None
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3791,6 +3802,7 @@ def _deep_make_critical_path_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3798,11 +3810,11 @@ def _deep_make_critical_path_prompt(
     ):
         return ""
     if (
-        DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        _phased_deep_capability_path(checkpoint) is not None
         and not proof_boundary
     ):
         return (
-            " The checkpoint-bound v5 proof marker is already valid. Do not "
+            " The checkpoint-bound phased-deep proof marker is already valid. Do not "
             "rewrite it, repeat early exploration, or restart the proof. "
             "Reuse the exact proof source and parameters, persist the "
             "smallest complete product baseline, finish print preflight and "
@@ -3823,6 +3835,7 @@ def _deep_make_critical_path_prompt(
     )
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V5_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V4_CAPABILITY_PATH not in checkpoint.input_sha256s
     ):
         return prompt
@@ -3835,16 +3848,47 @@ def _deep_make_critical_path_prompt(
         "the proof on any generic, plaque-like, box-like, or exposed-mechanism "
         "reading. Repair and rerender the proof before expanding final parts."
     )
-    if DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s:
+    if _phased_deep_capability_path(checkpoint) is None:
         return prompt
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_V5_CAPABILITY_PATH
+    ):
+        return prompt + (
+            " This v5 proof turn is action-only. After reading the mandatory "
+            "root instructions and current-stage reference once, do not "
+            "enumerate or reread skill trees, open optional CAD references, "
+            "invoke --help, or delegate before a working proof source exists. "
+            "The materialized CAD commands are exactly "
+            ".agents/skills/cad/scripts/gen <source.step.py> --write, "
+            ".agents/skills/cad/scripts/export <source.step> --stl, and "
+            ".agents/skills/cad/scripts/render_product <source.stl> -o "
+            "<cad-project>/review/early-proof/held.png --motion-sheet "
+            "<cad-project>/review/early-proof/signature.png "
+            "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json, "
+            "write source first, then run only those commands. Once exact "
+            "proof source, results, held/signature images, and the blind "
+            "review are durable under review/early-proof/, write %s as "
+            "canonical JSON containing exactly {\"checkpoint_sha256\":\"%s\","
+            "\"kind\":\"autonomous-workshop.make-proof-ready\","
+            "\"schema_version\":1} followed by one newline. The host uses "
+            "that marker only to end this proof turn and resume the same "
+            "Make Goal at high reasoning; it does not advance or waive the "
+            "Make gate."
+            % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+        )
     return prompt + (
-        " This v5 proof turn is action-only. After reading the mandatory root "
+        " This v6 proof turn is action-only. After reading the mandatory root "
         "instructions and current-stage reference once, do not enumerate or "
         "reread skill trees, open optional CAD references, invoke --help, or "
         "delegate before a working proof source exists. The materialized CAD "
-        "commands are exactly .agents/skills/cad/scripts/gen <source.step.py> "
-        "--write, .agents/skills/cad/scripts/export <source.step> --stl, and "
-        ".agents/skills/cad/scripts/render_product <source.stl> -o "
+        "source must define exactly one module-scope def gen_step() that "
+        "returns the build123d shape. The materialized CAD commands are "
+        "exactly \"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/gen "
+        "<source.step.py> --write, \"$WORKSHOP_PYTHON\" "
+        ".agents/skills/cad/scripts/export <source.step> --stl, and "
+        "\"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/render_product "
+        "<source.stl> -o "
         "<cad-project>/review/early-proof/held.png --motion-sheet "
         "<cad-project>/review/early-proof/signature.png "
         "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json, "
@@ -3873,16 +3917,17 @@ def _deep_make_recovery_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
         )
     ):
         return ""
     if (
-        DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        _phased_deep_capability_path(checkpoint) is not None
         and not proof_boundary
     ):
         return (
-            " The v5 proof marker remains valid, so this is final-product "
+            " The phased-deep proof marker remains valid, so this is final-product "
             "recovery. Do not rewrite the marker, reread optional references, "
             "or restart the proof. Reuse the durable proof and complete only "
             "the remaining baseline, preflight, final renders and review, "
@@ -3899,10 +3944,10 @@ def _deep_make_recovery_prompt(
         "proof, persist the smallest complete product source "
         "immediately and keep all later work on that one baseline."
     )
-    if DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s:
+    if _phased_deep_capability_path(checkpoint) is None:
         return prompt
     return prompt + (
-        " This proof boundary still has no valid v5 ready marker. Do not "
+        " This proof boundary still has no valid phased-deep ready marker. Do not "
         "survey tools, invoke --help, reread instructions, or delegate. "
         "Write and run the smallest proof source now. After the proof and "
         "blind review files exist, write %s with the exact checkpoint-bound "
@@ -3912,12 +3957,12 @@ def _deep_make_recovery_prompt(
 
 
 def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
-    """Return the frozen v5 decisive Invent recovery instruction."""
+    """Return the frozen phased-deep decisive Invent recovery instruction."""
 
     if not (
         checkpoint.stage == "invent"
         and checkpoint.effort in ("forge", "quest")
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and _phased_deep_capability_path(checkpoint) is not None
     ):
         return ""
     return (
@@ -3938,12 +3983,12 @@ def _make_proof_ready(
     paths: NativeRunPaths,
     checkpoint: AgentRunCheckpoint,
 ) -> bool:
-    """Validate the untrusted v5 turn marker without treating it as evidence."""
+    """Validate the untrusted phased-deep marker without treating it as evidence."""
 
     if not (
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and _phased_deep_capability_path(checkpoint) is not None
     ):
         return False
     path = _make_proof_ready_path(paths)
@@ -4002,14 +4047,14 @@ def _launcher_call(
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = native_stage_prompt(checkpoint.stage)
-    v5_make_phase = (
+    phased_make = (
         checkpoint.stage == "make"
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and _phased_deep_capability_path(checkpoint) is not None
     )
     if (
         not unfinished_continuation
         and not recoverable_continuation
-    ) or v5_make_phase:
+    ) or phased_make:
         prompt += _deep_make_critical_path_prompt(
             checkpoint,
             proof_boundary=make_proof_boundary,
@@ -6273,7 +6318,7 @@ def _run_native_session(
         if turn_launcher is None:
             if (
                 checkpoint.stage == "make"
-                and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+                and _phased_deep_capability_path(checkpoint) is not None
             ):
                 initial_make_proof_boundary = not _make_proof_ready(
                     paths, checkpoint

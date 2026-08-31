@@ -30,14 +30,20 @@ restart.
 The proof render command is exact:
 
 ```bash
-.agents/skills/cad/scripts/render_product <entry.stl> \
+"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/render_product <entry.stl> \
   -o <cad-project>/review/early-proof/held.png \
   --motion-sheet <cad-project>/review/early-proof/signature.png \
   --motion-angles=-12,0,12
 ```
 
 Replace the bracketed paths from `STAGE.json`; do not invoke help to rediscover
-this interface.
+this interface. The proof entry defines exactly one module-scope `gen_step()`
+and returns the build123d shape. Generate and export it with:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/gen <entry.step.py> --write
+"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/export <entry.step> --stl
+```
 
 Use one product funnel:
 

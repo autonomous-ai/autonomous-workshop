@@ -113,7 +113,7 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v5.md` capability
+For new Forge and Quest runs, the frozen `deep-economics-v6.md` capability
 begins Invent with high reasoning for 20 minutes and gives a recoverable
 continuation 10 minutes at medium to finalize existing work. Make first uses
 medium reasoning for an eight-minute proof phase, then resumes the same Goal at
@@ -124,6 +124,9 @@ semantics apply, with no more than eight native turns across one CLI
 invocation. Make receives a direct critical-path instruction and exact CAD
 command shapes to persist and inspect its minimal exact mechanism/form proof under
 `<cad-project>/review/early-proof/` before authoring the complete part tree.
+The source defines one module-scope `gen_step()`. Generate, export, and render
+all use the exact `$WORKSHOP_PYTHON` rather than executing CAD package
+directories or discovering `python -m` paths.
 One independent native critic first reads only the exact blockout images, then
 learns the Wish and sealed concept and checks every positive and negative
 held-form constraint. Generic, plaque-like, box-like, or exposed-mechanism
@@ -131,7 +134,8 @@ readings fail this early proof. A canonical checkpoint-bound
 `.make-proof-ready.json` may end only the native proof turn; it is not a gate,
 artifact, or transition. This report is model evidence used to avoid an
 expensive bad direction; the later hash-bound final signature review and host
-CAD gate remain authoritative. Frozen deep-v4 retains its high-Invent/Make,
+CAD gate remain authoritative. Frozen deep-v5 retains the same phase settings
+and its original materialized CAD entrypoint instructions. Frozen deep-v4 retains its high-Invent/Make,
 medium-later 16k-Make profile. Frozen deep-v3 retains its high-Invent,
 medium-later 24k profile; frozen deep-v2 retains its effective all-high thread
 binding; deep-v1 and older runs retain their original profile.

@@ -203,13 +203,16 @@ Forge and Quest now make the cheapest exact mechanism/form falsifier the first
 persisted Make deliverable under `<cad-project>/review/early-proof/`, before the
 complete part tree. Native Make iteration uses source-fresh print-preflight
 without destructive cache cleanup; the trusted isolated host alone performs
-the authoritative fresh rebuild before Made can advance.
+the authoritative fresh rebuild before Made can advance. The proof source must
+expose one module-scope `gen_step()`, and the host supplies exact
+`$WORKSHOP_PYTHON`-prefixed generate, export, and render commands so Make does
+not spend its bounded proof phase rediscovering package entrypoints.
 
 ## Architecture
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v5)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v6)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)

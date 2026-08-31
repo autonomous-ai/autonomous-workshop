@@ -1,6 +1,6 @@
 # ADR 0033: Phase deep Make at a proof checkpoint
 
-- Status: Accepted
+- Status: Superseded by ADR 0034
 - Date: 2026-08-31
 - Owners: Runtime, workflow, product-run protocol, and CAD-skill maintainers
 - Supersedes for new runs: ADR 0032's `deep-economics-v4` profile

@@ -59,8 +59,8 @@ If the host supplies the materialized skill directory directly, use that exact
 directory for `CAD_SKILL_ROOT`. Run these commands from the project that owns
 the artifacts so target paths resolve inside the product workspace.
 
-**Workshop v5 proof fast path.** When the immutable Make packet and host prompt
-identify the frozen v5 proof turn, the prompt already supplies the exact
+**Workshop v6 proof fast path.** When the immutable Make packet and host prompt
+identify the frozen v6 proof turn, the prompt already supplies the exact
 `gen`, `export`, and `render_product` command shapes. Write the smallest proof
 source and execute those commands before reading `run-cost.md`, any progressive
 reference, or any `--help` output. This narrow exception ends when the
@@ -73,7 +73,7 @@ required at all — in a temporary paper project, with no geometry and no
 daemon. Run it after touching that file: a guard that stops firing does not
 fail, it just stops appearing.
 
-**A run is expensive.** Outside the Workshop v5 proof fast path, the measured
+**A run is expensive.** Outside the Workshop v6 proof fast path, the measured
 cost of every command, and which to run per round versus once at the end, are
 in `references/run-cost.md` — read it before planning a run, because `inspect
 validate` and `inspect interfere` are more than half the cost between them and
@@ -82,7 +82,7 @@ belong at the end, once.
 Use the active project Python interpreter; treat `python` in examples as an
 interpreter placeholder. Use
 `python "$CAD_SKILL_ROOT/scripts/<tool>" --help` for the complete current
-command interface except during the Workshop v5 proof fast path; reference
+command interface except during the Workshop v6 proof fast path; reference
 docs show recommended workflows, not every flag.
 
 **Bootstrap before the first run, not after the first failure.** `requirements.txt` pins `cadgen`, whose own metadata declares `requires-python = ">=3.11"` — a macOS system `python3` is often older and pip will refuse to resolve it, so create a project venv on a modern interpreter rather than pip-installing into the system one, then `python -m pip install -r <skill-dir>/requirements.txt`. That one line is enough for every script here: `numpy` and `scipy` arrive with `build123d`, and `shapely` — which `repair_mesh` needs — with `cadgen` itself. Check that up front; discovering it mid-workflow costs a full build round.

@@ -137,6 +137,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         )
         for reference in (
             "deep-economics-v5.md",
+            "deep-economics-v6.md",
             "make.md",
             "playtest.md",
         ):

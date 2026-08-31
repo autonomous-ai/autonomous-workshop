@@ -443,6 +443,39 @@ quality gate or transition. Existing final CAD, blind-review, Playtest, manual,
 publication, and GitHub requirements remain unchanged. A completed Quest and
 Forge are still required before v5 deep-route economics can be called proven.
 
+The same Three-Sky Seed then tested v5. Invent persisted its source before the
+20-minute boundary and passed during 1m40s of decisive medium recovery, cutting
+v4's 32m23s Invent to 21m40s. Make's first eight-minute proof turn wrote no
+file; recovery wrote a reusable proof source after about one minute, but no
+STEP or render followed. The host stopped after the second bounded Make turn,
+preserving a checkpointed run with no downstream or publication claim.
+
+Tool outputs exposed an execution-contract defect. The host prompt invoked the
+CAD `scripts/gen` package directory directly and received permission denied.
+Recovery improvised `python -m gen`, but its authored source had a top-level
+`result` rather than the required module-scope `gen_step()`, so the CAD loader
+rejected it. The rest of recovery was spent inspecting internals and retrying.
+
+| Stage / turn | Input | Cached input | Output | Reasoning output | Elapsed |
+|---|---:|---:|---:|---:|---:|
+| Invent initial | 618,515 | 519,424 | 10,546 | 606 | 20m00s |
+| Invent recovery | 117,521 | 76,544 | 1,181 | 142 | 1m40s |
+| Make proof | 193,995 | 156,672 | 2,333 | 578 | 8m00s |
+| Make proof recovery | 312,328 | 261,888 | 5,178 | 578 | 8m00s |
+
+V5 reduced failed-run exposure from v4's 2,142,864 input and 25,925 output
+tokens over roughly 75 minutes to 1,242,359 input and 19,238 output tokens over
+roughly 38 minutes, and it left source bytes. That remains failed-run spend,
+not product cost.
+
+New runs therefore freeze `deep-economics-v6.md`. Budgets and phase boundaries
+stay unchanged; the correction supplies exact `$WORKSHOP_PYTHON`-prefixed
+`gen`, `export`, and `render_product` commands and requires one module-scope
+`gen_step()` returning the shape. A real acceptance test runs those commands
+from a path containing spaces and verifies STEP, STL, held PNG, and signature
+PNG outputs. V6 still must complete and publish fresh Quest and Forge products
+before deep-route economics are proven.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

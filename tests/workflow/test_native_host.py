@@ -65,6 +65,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
     DEEP_ECONOMICS_V4_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V5_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
@@ -429,16 +430,26 @@ class NativeHostTest(unittest.TestCase):
             "deep-v2": DEEP_ECONOMICS_V2_CAPABILITY_PATH,
             "deep-v3": DEEP_ECONOMICS_V3_CAPABILITY_PATH,
             "deep-v4": DEEP_ECONOMICS_V4_CAPABILITY_PATH,
-            "deep-v5": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v5": DEEP_ECONOMICS_V5_CAPABILITY_PATH,
+            "deep-v6": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        inputs = (
-            {capability_paths[economics_capability]: "a" * 64}
-            if economics_capability is not None
-            else {}
-        )
+        if economics_capability == "deep-v6":
+            # A real v6 run materializes the preserved v5 reference too. The
+            # host must select the newest frozen profile, not branch merely on
+            # an older file's presence.
+            inputs = {
+                DEEP_ECONOMICS_V5_CAPABILITY_PATH: "b" * 64,
+                DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+            }
+        else:
+            inputs = (
+                {capability_paths[economics_capability]: "a" * 64}
+                if economics_capability is not None
+                else {}
+            )
         return AgentRunCheckpoint(
             product_id="launcher-economics-fixture",
             stage=stage,
@@ -523,7 +534,7 @@ class NativeHostTest(unittest.TestCase):
 
         launcher_type.assert_called_once_with(reasoning_effort="low")
 
-    def test_deep_v5_shapes_each_stage_under_one_frozen_runtime_profile(self):
+    def test_deep_v6_shapes_each_stage_under_one_frozen_runtime_profile(self):
         for effort in ("forge", "quest"):
             for stage, reasoning in (
                 ("invent", "high"),
@@ -536,7 +547,7 @@ class NativeHostTest(unittest.TestCase):
                 ) as launcher_type:
                     checkpoint = self._launcher_checkpoint(
                         effort=effort,
-                        economics_capability="deep-v5",
+                        economics_capability="deep-v6",
                         stage=stage,
                     )
                     _native_launcher(
@@ -562,9 +573,36 @@ class NativeHostTest(unittest.TestCase):
                         _native_turn_limit(checkpoint), DEEP_NATIVE_TURN_LIMIT
                     )
 
-    def test_deep_v5_make_prompt_requires_action_first_persisted_proof(self):
+    def test_deep_v5_retains_its_frozen_phased_profile_and_prompt(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v5"
+            effort="quest", economics_capability="deep-v5", stage="make"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(
+                checkpoint,
+                initial_make_proof_boundary=True,
+            )
+
+        launcher_type.assert_called_once_with(
+            reasoning_effort="medium",
+            auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+            runtime_profile_sha256="a" * 64,
+            timeout_seconds=DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+        )
+        prompt = _deep_make_critical_path_prompt(checkpoint)
+        self.assertIn("This v5 proof turn", prompt)
+        self.assertIn(
+            ".agents/skills/cad/scripts/gen <source.step.py> --write",
+            prompt,
+        )
+        self.assertNotIn("$WORKSHOP_PYTHON", prompt)
+        self.assertNotIn("module-scope def gen_step()", prompt)
+
+    def test_deep_v6_make_prompt_requires_executable_action_first_proof(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v6"
         )
         prompt = _deep_make_critical_path_prompt(checkpoint)
 
@@ -577,6 +615,9 @@ class NativeHostTest(unittest.TestCase):
         self.assertIn(".make-proof-ready.json", prompt)
         self.assertIn("do not enumerate", prompt)
         self.assertIn(checkpoint.checkpoint_sha256, prompt)
+        self.assertNotIn("This v5 proof turn", prompt)
+        self.assertIn('"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/gen', prompt)
+        self.assertIn("exactly one module-scope def gen_step()", prompt)
         self.assertIn(
             '{"checkpoint_sha256":"%s","kind":"autonomous-workshop.make-proof-ready","schema_version":1}'
             % checkpoint.checkpoint_sha256,
@@ -601,16 +642,16 @@ class NativeHostTest(unittest.TestCase):
             _deep_make_critical_path_prompt(
                 self._launcher_checkpoint(
                     effort="quest",
-                    economics_capability="deep-v5",
+                    economics_capability="deep-v6",
                     stage="invent",
                 )
             ),
             "",
         )
 
-    def test_deep_v5_make_after_proof_restores_high_normal_turn_boundary(self):
+    def test_deep_v6_make_after_proof_restores_high_normal_turn_boundary(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v5", stage="make"
+            effort="quest", economics_capability="deep-v6", stage="make"
         )
         with mock.patch(
             "workshop.workflow.native_run.CodexNativeSessionLauncher"
@@ -652,9 +693,9 @@ class NativeHostTest(unittest.TestCase):
             "",
         )
 
-    def test_deep_v5_invent_recovery_is_medium_bounded_and_decisive(self):
+    def test_deep_v6_invent_recovery_is_medium_bounded_and_decisive(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v5", stage="invent"
+            effort="quest", economics_capability="deep-v6", stage="invent"
         )
         with mock.patch(
             "workshop.workflow.native_run.CodexNativeSessionLauncher"
@@ -714,9 +755,9 @@ class NativeHostTest(unittest.TestCase):
                     ),
                 )
 
-    def test_deep_v5_make_proof_marker_is_exact_checkpoint_bound_hint(self):
+    def test_deep_v6_make_proof_marker_is_exact_checkpoint_bound_hint(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v5", stage="make"
+            effort="quest", economics_capability="deep-v6", stage="make"
         )
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -748,9 +789,9 @@ class NativeHostTest(unittest.TestCase):
             self.assertFalse(_make_proof_ready(paths, checkpoint))
             self.assertFalse(marker.exists())
 
-    def test_deep_v5_make_proof_marker_fails_closed_on_symlink(self):
+    def test_deep_v6_make_proof_marker_fails_closed_on_symlink(self):
         checkpoint = self._launcher_checkpoint(
-            effort="quest", economics_capability="deep-v5", stage="make"
+            effort="quest", economics_capability="deep-v6", stage="make"
         )
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()

@@ -111,6 +111,66 @@ class SkillFingerprintTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("self-check passed", result.stdout)
 
+    def test_v6_proof_commands_run_from_workspace_path_with_spaces(self):
+        cad = resolve_skills_root() / "cad"
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary).resolve() / "product run with spaces"
+            proof = workspace / "product" / "cad" / "review" / "early-proof"
+            proof.mkdir(parents=True)
+            source = proof / "proof.step.py"
+            source.write_text(
+                "from build123d import Box\n\n"
+                "def gen_step():\n"
+                "    return Box(20, 18, 16)\n",
+                encoding="utf-8",
+            )
+            relative_source = source.relative_to(workspace)
+            step = source.with_suffix("")
+            stl = step.with_suffix(".stl")
+            held = proof / "held.png"
+            signature = proof / "signature.png"
+
+            commands = (
+                (
+                    sys.executable,
+                    str(cad / "scripts" / "gen"),
+                    str(relative_source),
+                    "--write",
+                ),
+                (
+                    sys.executable,
+                    str(cad / "scripts" / "export"),
+                    str(step.relative_to(workspace)),
+                    "--stl",
+                ),
+                (
+                    sys.executable,
+                    str(cad / "scripts" / "render_product"),
+                    str(stl.relative_to(workspace)),
+                    "-o",
+                    str(held.relative_to(workspace)),
+                    "--motion-sheet",
+                    str(signature.relative_to(workspace)),
+                    "--motion-angles=-12,0,12",
+                ),
+            )
+            for command in commands:
+                with self.subTest(command=Path(command[1]).name):
+                    result = subprocess.run(
+                        command,
+                        cwd=workspace,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=60,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+
+            self.assertTrue(step.is_file())
+            self.assertTrue(stl.is_file())
+            self.assertTrue(held.is_file())
+            self.assertTrue(signature.is_file())
+
     def test_step_parts_command_guidance_uses_the_installed_skill_root(self):
         skill_text = (resolve_skills_root() / "step-parts" / "SKILL.md").read_text(
             encoding="utf-8"

@@ -9,6 +9,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
     DEEP_ECONOMICS_V4_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V5_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_NATIVE_TURN_LIMIT,
@@ -46,6 +47,10 @@ class WorkshopEffortTest(unittest.TestCase):
         self.assertEqual(SPARK_NATIVE_TURN_TIMEOUT_SECONDS, 1_200)
         self.assertEqual(
             DEEP_ECONOMICS_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v6.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V5_CAPABILITY_PATH,
             ".agents/skills/autonomous-workshop/references/deep-economics-v5.md",
         )
         self.assertEqual(

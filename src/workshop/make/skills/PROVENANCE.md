@@ -91,6 +91,11 @@
   follows host-supplied exact `gen`, `export`, and `render_product` commands
   before optional CAD references or help discovery. The exception ends at the
   proof-turn marker and does not change any final CAD gate.
+- Adapted locally again on 2026-08-31 after the first deep-v5 production proof
+  exposed that `scripts/gen` is a Python package directory rather than a shell
+  executable. Deep-v6 instructions require the exact Workshop interpreter for
+  every CAD entry point and explicitly require one module-scope `gen_step()`;
+  final CAD behavior remains unchanged.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do
