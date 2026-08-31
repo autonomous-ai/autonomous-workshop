@@ -64,7 +64,7 @@ session at low reasoning effort with a 64k automatic context-compaction ceiling
 across Make and Release plus a 20-minute boundary per native turn. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
-waiver. New Forge and Quest projects freeze `deep-economics-v12.md`: Invent
+waiver. New Forge and Quest projects freeze `deep-economics-v13.md`: Invent
 starts with 20 minutes at high reasoning and a recoverable continuation gets
 10 minutes at medium strictly as a source handoff. Existing source is finalized
 before reading or refinement; missing source is the first edit and finalization
@@ -73,6 +73,10 @@ covers the complete roster before Codex reads only the strongest three full
 agents. Make starts with one 16-minute medium real-state proof phase at 256k,
 then the same Goal resumes at high reasoning for a 15-minute source handoff
 before normal 30-minute recovery after its checkpoint-bound proof marker exists.
+An explicit operator resume with that valid marker starts directly in normal
+recovery rather than replaying the source handoff. A current wall-thickness
+failure may route to its saved region table and the CAD print-optimisation
+reference once before one all-regions source repair.
 Playtest and Release use medium, and every stage compacts at 256k. One CLI
 invocation launches at most eight native turns across all stages. Make's first
 persisted deliverable is the smallest exact causal/kinematic proof plus neutral
@@ -777,7 +781,7 @@ private Wish demonstrate that:
     and a 20-minute boundary per native turn across both active stages; v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
     bindings; and
-12. a deep-v12 Codex Forge or Quest run uses index-first bounded high Invent
+12. a deep-v13 Codex Forge or Quest run uses index-first bounded high Invent
     with a medium source-first finalization handoff, one 16-minute medium Make proof runway
     followed by a 15-minute high source handoff and normal 30-minute recovery,
     medium later stages, 256k compaction, an eight-turn CLI invocation cap, and
@@ -785,8 +789,9 @@ private Wish demonstrate that:
     cache, deferred broad CAD guidance, one batched mandatory read, immediate
     source work, root early inspection, three fixed-camera exact-state renders,
     batched interpreter-prefixed CAD commands, and exact `gen_step()` state
-    entries, source-first proof sealing, and freshness-bound generated/render
-    evidence, while older exact runs retain
+    entries, source-first proof sealing, freshness-bound generated/render
+    evidence, direct recovery on explicit final-Make resume, and one
+    evidence-triggered thickness-reference route, while older exact runs retain
     their original profile.
 
 ## Engine portability

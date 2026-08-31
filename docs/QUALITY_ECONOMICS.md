@@ -655,6 +655,51 @@ Make. The v12 host binds freshness deterministically: STEP/STL outputs cannot
 predate proof source, renders cannot predate their STL inputs, and the finding
 cannot predate the renders. Frozen v11 retains its original recovery behavior.
 
+### V12 production result: proof recovery fixed; final Make resume and thickness repair leaked
+
+Fresh Forge `wish-20260831-182830-9cbbe7b0` tested the harder missing-source
+Invent branch and the full v12 Make path. Invent's initial 20-minute turn wrote
+no source; its 10-minute recovery wrote, finalized, and passed a valid concept
+in 3m52s. Early Make authored three exact-state proof models during its initial
+16-minute runway. V12 proof recovery reused those bytes and wrote the accepted
+marker in 2m26s, compared with v11's 13m33s proof recovery. The sealing handoff
+is validated.
+
+Final Make persisted complete source plus canonical assembled, part, and state
+STEP outputs inside its 15-minute source boundary. During normal recovery, the
+fixed preflight caught real print defects. The crown's below-minimum samples
+fell from 8,190 to zero; the three-world rotor ultimately passed too. The shell
+then passed watertight/manifold mesh checks but failed thickness. No Make
+proposal, Release, Factory publication, or GitHub toy snapshot was created.
+
+| V12 preserved Forge observation | Result |
+|---|---:|
+| Invent | 2 turns; initial 20m + passing recovery 3m52s |
+| Make proof | initial 16m + passing recovery 2m26s |
+| First final-Make cycle | source 15m + recovery 30m |
+| Explicit operator cycle | replayed source 15m + recovery 30m |
+| Native turns | 8 total; 2 measured, 6 unmeasured |
+| Measured gross input floor | >=1,249,031 partial |
+| Measured cached input floor | >=1,159,936 partial |
+| Measured uncached input floor | >=89,095 partial |
+| Measured output floor | >=8,896 partial |
+| Measured reasoning-output floor | >=1,690 partial |
+| Publication | not created |
+
+The explicit resume exposed a host economics defect: the new CLI invocation
+forgot the in-memory recovery flag and replayed the 15-minute final-source
+phase despite a valid proof marker and durable source. The shell loop exposed a
+second defect. Recovery prohibited every optional reference, including the CAD
+skill's exact constant-wall and all-regions thickness method; Codex therefore
+spent repeated full regenerations exploring scalar and topology changes.
+
+New runs now freeze `deep-economics-v13.md`. The first final continuation keeps
+the source handoff, but an explicit resume with a valid proof marker starts
+directly in normal recovery. A saved thickness failure may load exactly its
+complete region table and `references/print-optimisation.md` once before one
+all-regions source repair. Frozen v12 keeps its original process. Every gate is
+unchanged; v13 remains unproven until a fresh terminal product publishes.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

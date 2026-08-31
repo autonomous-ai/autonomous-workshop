@@ -122,7 +122,7 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v12.md` capability
+For new Forge and Quest runs, the frozen `deep-economics-v13.md` capability
 begins Invent with high reasoning for 20 minutes and gives a recoverable
 continuation 10 minutes at medium as a source handoff. Its first action checks
 only whether source exists; existing source goes straight to the finalizer,
@@ -135,7 +135,12 @@ normal 30-minute recovery. Playtest and Release use medium;
 every stage compacts at 256k. One profile identity binds the persistent thread
 while the host selects those stage-specific turn settings. The same recovery
 semantics apply, with no more than eight native turns across one CLI
-invocation. Make receives a direct critical-path instruction and exact CAD
+invocation. An explicit operator resume after a valid final-Make proof starts
+directly in normal recovery instead of replaying the source handoff. If fixed
+preflight currently fails wall thickness, recovery may read the complete saved
+region table and the single print-optimisation reference before one
+all-regions source repair; it does not reopen broad reference discovery. Make
+receives a direct critical-path instruction and exact CAD
 command shapes to persist and inspect its minimal exact mechanism/form proof under
 `<cad-project>/review/early-proof/` before authoring the complete part tree.
 One shared helper feeds three state entries, each defining one module-scope

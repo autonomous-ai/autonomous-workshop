@@ -20,7 +20,9 @@ medium recovery, then one 16-minute medium real-state Make proof runway followed
 by a 15-minute source-first high-reasoning final-Make handoff and normal recovery;
 Playtest and Release use medium. Make's minimal exact mechanism/form evidence
 is the first persisted deliverable. Its proof-ready marker ends only that
-native turn, while recovery stays inside the same Goal. Treat every profile
+native turn, while recovery stays inside the same Goal. A later explicit
+operator resume with valid proof continues normal final-Make recovery without
+replaying the source handoff. Treat every profile
 as a focus constraint, not permission to make
 a generic product or skip proof. Other Managers and frozen older runs keep
 their own bound runtime profile.

@@ -111,7 +111,7 @@
   <text x="210" y="348" class="eyebrow eyebrow-manager">PLUGGABLE AGENTIC RUNTIME</text>
   <text x="210" y="380" class="heading">WORKSHOP MANAGER</text>
   <text x="210" y="405" class="body">One root session runs every enabled stage; each attempt gets one native Goal.</text>
-  <text x="210" y="426" class="body">Spark: 20m · Deep Invent: 20→10m · Make: proof 16→source 15→recovery 30m · 8/command.</text>
+  <text x="210" y="426" class="body">Spark: 20m · Deep Invent: 20→10m · Make: proof 16→source 15→recovery 30m; resume→recovery.</text>
   <rect x="230" y="440" width="138" height="22" rx="11" class="pill-future"/>
   <text x="299" y="455" text-anchor="middle" class="pill-future-text">CLAUDE CODE</text>
   <rect x="382" y="440" width="138" height="22" rx="11" class="pill-now"/>
@@ -156,7 +156,7 @@
   <text x="250" y="927" class="eyebrow eyebrow-internal">ALL ROUTES · SPARK SELECTS HERE</text>
   <text x="250" y="961" class="heading">MAKE</text>
   <text x="250" y="986" class="body">Deep: 16m · source → 3 exact states → marker → 15m source.</text>
-  <text x="250" y="1008" class="body">Then recovery · fit · mesh · 0.4 mm → final blind review.</text>
+  <text x="250" y="1008" class="body">Then recovery · resume skips source · fit · mesh · 0.4 mm → final blind review.</text>
   <text x="250" y="1030" class="body">No blockers · ≤2 rounds · full final gate binds proof.</text>
   <text x="690" y="949" text-anchor="middle" class="goal-copy">CODEX GOAL</text>
   <text x="690" y="977" text-anchor="middle" class="body">Build + prove</text>

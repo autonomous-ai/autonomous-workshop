@@ -32,7 +32,7 @@
 
   <g filter="url(#shadow)"><rect x="55" y="185" width="1090" height="68" rx="18" class="manager"/></g>
   <text x="83" y="212" class="eyebrow" fill="#376b61">WORKSHOP MANAGER</text>
-  <text x="83" y="237" class="body">Codex Forge: Invent high 20m → source 10m · Make proof 16m → source 15m → recovery 30m · 256k · 8 turns.</text>
+  <text x="83" y="237" class="body">Codex Forge: Invent 20→10m · Make proof 16→source 15→recovery 30m · resume→recovery · 256k.</text>
 
   <path class="route" d="M 195 355 H 240"/>
   <path class="route" d="M 450 355 H 495"/>
@@ -55,7 +55,7 @@
   <text x="520" y="315" class="eyebrow orange">CODEX GOAL · MAKE</text>
   <text x="520" y="350" class="heading">MAKE</text>
   <text x="520" y="377" class="body">16m · source → 3 exact states.</text>
-  <text x="520" y="399" class="body">Same Goal: source 15m → recovery.</text>
+  <text x="520" y="399" class="body">Same Goal: source 15m → recovery; resume → recovery.</text>
   <text x="520" y="421" class="body">Preflight + review + gate.</text>
 
   <g filter="url(#shadow)"><rect x="750" y="285" width="210" height="150" rx="20" class="active"/></g>
