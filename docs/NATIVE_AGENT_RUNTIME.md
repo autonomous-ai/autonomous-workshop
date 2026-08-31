@@ -17,7 +17,8 @@ Workshop. It is authoritative together with
 [ADR 0036](adr/0036-reserve-proof-runway-for-product-bytes.md),
 [ADR 0037](adr/0037-raise-deep-compaction-ceiling.md),
 [ADR 0038](adr/0038-prove-product-states-and-bound-final-source.md),
-[ADR 0039](adr/0039-make-invent-recovery-a-source-handoff.md), and the repository
+[ADR 0039](adr/0039-make-invent-recovery-a-source-handoff.md),
+[ADR 0040](adr/0040-make-proof-recovery-a-sealing-handoff.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -63,7 +64,7 @@ session at low reasoning effort with a 64k automatic context-compaction ceiling
 across Make and Release plus a 20-minute boundary per native turn. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
-waiver. New Forge and Quest projects freeze `deep-economics-v11.md`: Invent
+waiver. New Forge and Quest projects freeze `deep-economics-v12.md`: Invent
 starts with 20 minutes at high reasoning and a recoverable continuation gets
 10 minutes at medium strictly as a source handoff. Existing source is finalized
 before reading or refinement; missing source is the first edit and finalization
@@ -90,7 +91,9 @@ mandatory at final Make.
 The marker
 ends only that process turn; it is neither a gate nor a stage transition. Their extra work earns one
 distinctive signature experience rather than gratuitous part or mechanism
-count. Frozen deep-v10 runs retain their less prescriptive Invent recovery and
+count. V12 proof recovery seals complete current evidence before design work,
+and marker validation rejects generated states or renders older than their
+sources. Frozen deep-v11 retains its original proof recovery. Frozen deep-v10 runs retain their less prescriptive Invent recovery and
 the same exact-state Make behavior. Frozen deep-v9 runs retain their 256k compaction, viewpoint-only early
 sheet, and normal 30-minute final turn. Frozen deep-v8 runs retain their
 16-minute proof runway and 24k compaction. Frozen deep-v7 runs retain their
@@ -774,7 +777,7 @@ private Wish demonstrate that:
     and a 20-minute boundary per native turn across both active stages; v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
     bindings; and
-12. a deep-v11 Codex Forge or Quest run uses index-first bounded high Invent
+12. a deep-v12 Codex Forge or Quest run uses index-first bounded high Invent
     with a medium source-first finalization handoff, one 16-minute medium Make proof runway
     followed by a 15-minute high source handoff and normal 30-minute recovery,
     medium later stages, 256k compaction, an eight-turn CLI invocation cap, and
@@ -782,7 +785,8 @@ private Wish demonstrate that:
     cache, deferred broad CAD guidance, one batched mandatory read, immediate
     source work, root early inspection, three fixed-camera exact-state renders,
     batched interpreter-prefixed CAD commands, and exact `gen_step()` state
-    entries, while older exact runs retain
+    entries, source-first proof sealing, and freshness-bound generated/render
+    evidence, while older exact runs retain
     their original profile.
 
 ## Engine portability

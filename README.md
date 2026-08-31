@@ -220,7 +220,7 @@ blind critic remains at the final hash-bound Make review.
 
 The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v11)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v12)](docs/images/workshop-floorplan.svg)
 
 ```text
 ✨ Spark: Wish -> Make -> Release                 (default)
@@ -254,7 +254,10 @@ and reserves independent blind critique for final Make. Their novelty must come
 from one strong relationship or interaction
 that Make persists and has one independent critic inspect blindly as its first
 proof—not gratuitous parts or mechanisms. The proof marker is only a liveness
-boundary; it is not a gate or stage transition. Frozen deep-v10 runs retain
+boundary; it is not a gate or stage transition. If proof recovery is needed,
+v12 seals current evidence before any new design work and the host rejects
+stale generated or render bytes. Frozen deep-v11 retains its original proof
+recovery. Frozen deep-v10 runs retain
 their original less prescriptive Invent recovery. Frozen deep-v9 runs retain
 their 256k compaction, viewpoint-only proof, and normal 30-minute final Make;
 frozen deep-v8 runs retain their 24k compaction. Older runs keep the exact profile

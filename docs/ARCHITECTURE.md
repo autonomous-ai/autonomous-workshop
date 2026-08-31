@@ -122,7 +122,7 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v11.md` capability
+For new Forge and Quest runs, the frozen `deep-economics-v12.md` capability
 begins Invent with high reasoning for 20 minutes and gives a recoverable
 continuation 10 minutes at medium as a source handoff. Its first action checks
 only whether source exists; existing source goes straight to the finalizer,
@@ -153,11 +153,14 @@ blockout against every positive and negative held-form constraint. Generic,
 plaque-like, box-like, or exposed-mechanism
 readings or ambiguous state frames fail this early proof. A canonical checkpoint-bound
 `.make-proof-ready.json` may end only the native proof turn; it is not a gate,
-artifact, or transition. V10 accepts it only when all three state sources, STEP,
+artifact, or transition. V12 proof recovery seals current evidence before new
+design work, and the host requires generated states and renders to be fresh
+relative to their sources. It accepts the marker only when all three state sources, STEP,
 STL, render, and finding bytes are durable and distinct. This report is model
 evidence used to avoid an expensive bad direction; the later hash-bound final signature review and host
 CAD gate remain authoritative. The independent native critic remains mandatory
-for final Make's hash-bound review. Frozen deep-v10 retains its original Invent
+for final Make's hash-bound review. Frozen deep-v11 retains its original proof
+recovery. Frozen deep-v10 retains its original Invent
 recovery plus the same exact-state Make behavior. Frozen deep-v9 retains its 256k compaction,
 one-mesh viewpoint proof, and normal 30-minute final turn. Frozen deep-v8
 retains its 16-minute proof runway and 24k compaction. Frozen deep-v7 retains

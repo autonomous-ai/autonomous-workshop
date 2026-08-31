@@ -639,6 +639,22 @@ ambiguous candidates, and retains the historical direct path. This is a host
 protocol fix; the preserved production run remains on its original process
 until the next explicit resume.
 
+After producing current distinguishable state evidence, v11 proof recovery
+spent 13m33s editing proof geometry, generating variants, and rerendering before
+writing its finding. Because the old process had already deleted the marker,
+even a corrected operator resume continued final-CAD exploration for another
+full proof boundary instead of rewriting the marker. The run also demonstrated
+the stale-evidence risk when `proof.py` changed after an earlier state sheet;
+the session regenerated correctly, but the host did not require that ordering.
+
+New runs therefore freeze `deep-economics-v12.md`. Proof recovery is an
+action-first sealing handoff: complete current evidence goes directly to the
+finding and marker, while missing or stale outputs are regenerated without a
+source edit. New measurement variants and aesthetic refinement wait for final
+Make. The v12 host binds freshness deterministically: STEP/STL outputs cannot
+predate proof source, renders cannot predate their STL inputs, and the finding
+cannot predate the renders. Frozen v11 retains its original recovery behavior.
+
 ## Quality is comparative evidence, not a model score
 
 Host gates prove contracts, exact bytes, CAD properties, and publication; they

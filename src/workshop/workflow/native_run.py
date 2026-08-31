@@ -147,6 +147,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V8_CAPABILITY_PATH,
     DEEP_ECONOMICS_V9_CAPABILITY_PATH,
     DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V11_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -159,6 +160,7 @@ from workshop.workflow.effort import (
     DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
@@ -3664,6 +3666,7 @@ def _phased_deep_capability_path(
 
     for path in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V11_CAPABILITY_PATH,
         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
         DEEP_ECONOMICS_V9_CAPABILITY_PATH,
         DEEP_ECONOMICS_V8_CAPABILITY_PATH,
@@ -3727,6 +3730,7 @@ def _native_launcher(
                         DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                         if phased_deep_path in (
                             DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V10_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V9_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V8_CAPABILITY_PATH,
@@ -3736,14 +3740,20 @@ def _native_launcher(
                 elif (
                     phased_deep_path in (
                         DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
                     )
                     and not recoverable_continuation
                 ):
                     timeout_seconds = (
-                        DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                        DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
                         if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
-                        else DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                        else (
+                            DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                            if phased_deep_path
+                            == DEEP_ECONOMICS_V11_CAPABILITY_PATH
+                            else DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                        )
                     )
                 else:
                     timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
@@ -3756,6 +3766,7 @@ def _native_launcher(
                     DEEP_AUTO_COMPACT_TOKEN_LIMIT
                     if phased_deep_path in (
                         DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V9_CAPABILITY_PATH,
                     )
@@ -3888,6 +3899,7 @@ def _deep_make_critical_path_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V9_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -3908,14 +3920,15 @@ def _deep_make_critical_path_prompt(
             _phased_deep_capability_path(checkpoint)
             in (
                 DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH,
             )
         ):
             profile_name = (
-                "v11"
-                if _phased_deep_capability_path(checkpoint)
-                == DEEP_ECONOMICS_CAPABILITY_PATH
-                else "v10"
+                "v12" if _phased_deep_capability_path(checkpoint)
+                == DEEP_ECONOMICS_CAPABILITY_PATH else
+                "v11" if _phased_deep_capability_path(checkpoint)
+                == DEEP_ECONOMICS_V11_CAPABILITY_PATH else "v10"
             )
             return (
                 f" The checkpoint-bound {profile_name} proof marker is valid. This first "
@@ -3956,6 +3969,7 @@ def _deep_make_critical_path_prompt(
     )
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V9_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -3967,6 +3981,7 @@ def _deep_make_critical_path_prompt(
         return prompt
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V9_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -4124,10 +4139,10 @@ def _deep_make_critical_path_prompt(
         % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
         )
     profile_name = (
-        "v11"
-        if _phased_deep_capability_path(checkpoint)
-        == DEEP_ECONOMICS_CAPABILITY_PATH
-        else "v10"
+        "v12" if _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_CAPABILITY_PATH else
+        "v11" if _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_V11_CAPABILITY_PATH else "v10"
     )
     return prompt + (
         f" This {profile_name} proof turn has one 16-minute medium runway. Create or continue "
@@ -4168,6 +4183,7 @@ def _deep_make_recovery_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V9_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4186,14 +4202,15 @@ def _deep_make_recovery_prompt(
             _phased_deep_capability_path(checkpoint)
             in (
                 DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH,
             )
         ):
             profile_name = (
-                "v11"
-                if _phased_deep_capability_path(checkpoint)
-                == DEEP_ECONOMICS_CAPABILITY_PATH
-                else "v10"
+                "v12" if _phased_deep_capability_path(checkpoint)
+                == DEEP_ECONOMICS_CAPABILITY_PATH else
+                "v11" if _phased_deep_capability_path(checkpoint)
+                == DEEP_ECONOMICS_V11_CAPABILITY_PATH else "v10"
             )
             return (
                 f" The {profile_name} proof marker remains valid. Continue final-product "
@@ -4226,16 +4243,32 @@ def _deep_make_recovery_prompt(
         return prompt
     if (
         _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_CAPABILITY_PATH
+    ):
+        return (
+            " This v12 proof recovery is a sealing handoff, not a design turn. "
+            "Do not call update_plan or get_goal, research, delegate, create "
+            "measurement meshes, generate variants, or edit proof geometry "
+            "before sealing. In one bounded first action inspect only whether "
+            "proof.py, the three state sources/STEP/STL files, held.png, "
+            "signature.png, and finding.json exist. If they all exist, your "
+            "next action must write the exact checkpoint marker. If only "
+            "finding.json is missing, write it from the current exact renders, "
+            "then write the marker. If generated evidence is missing or stale, "
+            "regenerate the current source without editing it, render, write "
+            "the finding, then the marker. Only a concrete deterministic "
+            "generation or renderer error permits one focused source repair."
+        )
+    if (
+        _phased_deep_capability_path(checkpoint)
         in (
-            DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V11_CAPABILITY_PATH,
             DEEP_ECONOMICS_V10_CAPABILITY_PATH,
         )
     ):
         profile_name = (
-            "v11"
-            if _phased_deep_capability_path(checkpoint)
-            == DEEP_ECONOMICS_CAPABILITY_PATH
-            else "v10"
+            "v11" if _phased_deep_capability_path(checkpoint)
+            == DEEP_ECONOMICS_V11_CAPABILITY_PATH else "v10"
         )
         return (
             f" This {profile_name} proof recovery reuses every durable byte. Do not call "
@@ -4300,11 +4333,17 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
     ):
         return ""
     if (
-        _phased_deep_capability_path(checkpoint)
-        == DEEP_ECONOMICS_CAPABILITY_PATH
+        _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+        )
     ):
+        profile_name = (
+            "v12" if _phased_deep_capability_path(checkpoint)
+            == DEEP_ECONOMICS_CAPABILITY_PATH else "v11"
+        )
         return (
-            " This v11 Invent recovery is a source handoff, not a creative "
+            f" This {profile_name} Invent recovery is a source handoff, not a creative "
             "continuation. Do not call update_plan or get_goal, read or edit "
             "an existing source, wait for children, research, compare, review, "
             "or refine before finalization. Your first action must check only "
@@ -4397,6 +4436,7 @@ def _v10_make_proof_artifacts_ready(
         "finding.json",
     )
     contents: dict[str, bytes] = {}
+    mtimes: dict[str, int] = {}
     for name in required:
         path = proof / name
         try:
@@ -4416,10 +4456,38 @@ def _v10_make_proof_artifacts_ready(
         ):
             return False
         contents[name] = content
+        mtimes[name] = before.st_mtime_ns
     state_hashes = {
         _sha256(contents["state-%d.stl" % index]) for index in range(3)
     }
-    return len(state_hashes) == 3
+    if len(state_hashes) != 3:
+        return False
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_CAPABILITY_PATH
+    ):
+        source_time = max(
+            mtimes["proof.py"],
+            *(mtimes["state-%d.step.py" % index] for index in range(3)),
+        )
+        generated = tuple(
+            "state-%d.%s" % (index, suffix)
+            for index in range(3)
+            for suffix in ("step", "stl")
+        )
+        if any(mtimes[name] < source_time for name in generated):
+            return False
+        if mtimes["held.png"] < mtimes["state-0.stl"]:
+            return False
+        if mtimes["signature.png"] < max(
+            mtimes["state-%d.stl" % index] for index in range(3)
+        ):
+            return False
+        if mtimes["finding.json"] < max(
+            mtimes["held.png"], mtimes["signature.png"]
+        ):
+            return False
+    return True
 
 
 def _make_proof_ready(
@@ -4472,6 +4540,7 @@ def _make_proof_ready(
         valid
         and _phased_deep_capability_path(checkpoint) in (
             DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V11_CAPABILITY_PATH,
             DEEP_ECONOMICS_V10_CAPABILITY_PATH,
         )
     ):
