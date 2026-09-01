@@ -75,6 +75,12 @@ STAGE_FIELDS = {
 
 MATCH_PATH = "artifacts/match/assignment.json"
 INVENT_PATH = "artifacts/invent/invented.json"
+MAKE_REQUIRED_ROOT_FILES = (
+    "product.json",
+    "assembled.step",
+    "assembled.step.json",
+    "assembled.stl",
+)
 
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_STAGE_BYTES = 4 * 1024 * 1024
@@ -1694,6 +1700,13 @@ def _make_contract(
     invented_value: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+    required_root_files = _array(
+        inputs.get("required_root_files"),
+        "Make required_root_files",
+        nonempty=True,
+    )
+    if tuple(required_root_files) != MAKE_REQUIRED_ROOT_FILES:
+        raise ProposalError("Make required_root_files contract is invalid")
     if assignment_value is None or invented_value is None:
         required = _required_fields(
             inputs, {"assignment", "invented"}, "Make STAGE inputs"
@@ -1791,8 +1804,21 @@ def _make_contract(
     _prune_empty_directories(product_root, "Make product tree")
     manifest = _tree_manifest(run_root, product_root_value, "Make product tree")
     paths = {entry["path"] for entry in manifest["entries"]}
-    if "product.json" not in paths:
-        raise ProposalError("Make product manifest lacks product.json")
+    entries = {entry["path"]: entry for entry in manifest["entries"]}
+    missing_root_files = [path for path in required_root_files if path not in paths]
+    if missing_root_files:
+        raise ProposalError(
+            "Make product manifest lacks required root files: %s"
+            % ", ".join(missing_root_files)
+        )
+    empty_root_files = [
+        path for path in required_root_files if entries[path]["bytes"] == 0
+    ]
+    if empty_root_files:
+        raise ProposalError(
+            "Make required root files must not be empty: %s"
+            % ", ".join(empty_root_files)
+        )
     if verification_relative.as_posix() not in paths:
         raise ProposalError("Make product manifest lacks CAD verification")
     if not any(path.endswith(".step") for path in paths):

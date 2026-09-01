@@ -32,6 +32,12 @@ from workshop.runtime.execution import minimal_tool_environment
 
 NATIVE_CAD_GATE_KIND = "autonomous-workshop.native-cad-gate-evidence"
 NATIVE_CAD_VERIFIER_PATH = ".agents/skills/cad/scripts/verify_project"
+NATIVE_MADE_REQUIRED_ROOT_FILES = (
+    "product.json",
+    "assembled.step",
+    "assembled.step.json",
+    "assembled.stl",
+)
 NATIVE_CAD_VERIFIER_MODE = "final-fresh-exports-strict-fit"
 NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE = (
     "final-fresh-exports-strict-fit-skip-thickness-not-print-ready"
@@ -237,6 +243,25 @@ def _validate_exact_product_tree(made: NativeMade, run_root: Path) -> Path:
         if actual_files != declared_files:
             raise ArtifactError(
                 "native Made product tree has undeclared or missing files"
+            )
+        entries = {entry.path: entry for entry in made.product_manifest.entries}
+        missing_root_files = [
+            path for path in NATIVE_MADE_REQUIRED_ROOT_FILES if path not in entries
+        ]
+        if missing_root_files:
+            raise ArtifactError(
+                "native Made product tree lacks required root delivery files: %s"
+                % ", ".join(missing_root_files)
+            )
+        empty_root_files = [
+            path
+            for path in NATIVE_MADE_REQUIRED_ROOT_FILES
+            if entries[path].bytes == 0
+        ]
+        if empty_root_files:
+            raise ArtifactError(
+                "native Made required root delivery files are empty: %s"
+                % ", ".join(empty_root_files)
             )
         if not _declared_directories(declared_files) <= actual_directories:
             raise ArtifactError(
@@ -1068,6 +1093,7 @@ __all__ = [
     "DEFAULT_NATIVE_CAD_OUTPUT_BYTES",
     "DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS",
     "NATIVE_CAD_GATE_KIND",
+    "NATIVE_MADE_REQUIRED_ROOT_FILES",
     "NATIVE_CAD_FULL_TIER",
     "NATIVE_CAD_NON_PRINT_READY_TIER",
     "NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE",

@@ -84,6 +84,8 @@ transcripts, and duplicate render families outside the sealed product tree.
 
 Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
 
+- the exact nonempty root files named by `STAGE.json.required_root_files`:
+  `product.json`, `assembled.step`, `assembled.step.json`, and `assembled.stl`;
 - `product.json` with nonempty `title` and `summary` strings;
 - the self-contained CAD project, source, generated STEP/STL, measurements,
   passing `measure/print-preflight.md`, and final
@@ -91,6 +93,11 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
 - one canonical final render family under `<cad-project>/snap/`;
 - `<cad-project>/snap/SIGNATURE-REVIEW.json` bound to the exact concept,
   preflight, and images.
+
+The root `assembled.*` files are sealed delivery copies of the final combined
+CAD output. They do not replace the self-contained CAD project or its isolated
+verification. Before finalizing, confirm every packet-named root file exists as
+a nonempty regular file; a nested combined export alone is not publishable.
 
 The canonical schema-v6 review contains exactly: `schema_version`, `kind`,
 `concept_sha256`, `iso_sha256`, `signature_sha256`, `reviewer`,

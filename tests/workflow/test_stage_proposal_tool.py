@@ -254,6 +254,17 @@ class StageProposalToolTest(unittest.TestCase):
         path = self.run_root / "STAGE.json"
         if path.exists() or path.is_symlink():
             path.unlink()
+        inputs = dict(inputs)
+        if stage == "make":
+            inputs.setdefault(
+                "required_root_files",
+                [
+                    "product.json",
+                    "assembled.step",
+                    "assembled.step.json",
+                    "assembled.stl",
+                ],
+            )
         document = {
             "schema_version": 1,
             "kind": "autonomous-workshop.stage-input",
@@ -816,6 +827,42 @@ class StageProposalToolTest(unittest.TestCase):
             made_bytes,
             "playtest",
         )
+
+    def test_make_rejects_missing_required_root_delivery_files(self):
+        product_root, _, _, _ = self.create_product()
+        for required in ("assembled.step", "assembled.step.json", "assembled.stl"):
+            with self.subTest(required=required):
+                path = product_root / required
+                content = path.read_bytes()
+                path.unlink()
+                self.write_stage(
+                    "make",
+                    {
+                        "assignment": self.assignment.to_dict(),
+                        "invented": self.invented.to_dict(),
+                        "feedback": [],
+                    },
+                    round_index=1,
+                )
+
+                result = self.run_tool(
+                    "make",
+                    "--product-root",
+                    "artifacts/make/r0001/product",
+                    "--cad-project-path",
+                    "cad/project",
+                    "--cad-verification-path",
+                    "cad/project/validation/cad-build.json",
+                    expected=2,
+                )
+
+                self.assertIn("lacks required root files", result.stderr)
+                self.assertIn(required, result.stderr)
+                self.assertFalse((self.run_root / "agent-outcome.json").exists())
+                self.assertFalse(
+                    (self.run_root / "artifacts/make/r0001/made.json").exists()
+                )
+                path.write_bytes(content)
 
     def test_make_requires_explicit_chromatic_product_render(self):
         product_root, _, _, _ = self.create_product()
