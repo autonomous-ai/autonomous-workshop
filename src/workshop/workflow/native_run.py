@@ -2924,10 +2924,21 @@ def _prepare_effort_stage_input(
         }
         inputs: dict[str, Any] = {
             **base,
-            "inventor_discovery_index": _inventor_discovery_index(run, roster),
             "assignment_contract_path": assignment_path,
             "contract_path": invented_path,
         }
+        if any(
+            path in checkpoint.input_sha256s
+            for path in (
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+                DEEP_ECONOMICS_CAPABILITY_PATH,
+            )
+        ):
+            inputs["inventor_discovery_index"] = _inventor_discovery_index(
+                run, roster
+            )
         invent_concept = _checkpoint_uses_invent_concept(checkpoint)
         if invent_concept:
             concept_round = checkpoint.round_index or 1

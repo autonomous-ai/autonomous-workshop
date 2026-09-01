@@ -6,15 +6,15 @@
 
 ## 2. Define the Two-Input Authoring Contracts
 
-- [ ] 2.1 Add strict typed schemas for the v2 consolidated Invent source, including selection, ranking, physical concept, stable components, interaction trace, proof target, decisions, research, assumptions, and unresolved risks; verify valid and malformed fixtures with focused contract tests.
-- [ ] 2.2 Add strict typed schemas for the ordered adaptive visual plan, including the frozen 2-to-20 role bound, role kinds, purposes, complete instructions, appearance references, and component subjects; verify 20 roles are accepted while 21 roles, duplicate ids, forward references, cycles, missing required roles, unknown component keys, and unjustified optional roles are rejected.
+- [x] 2.1 Add strict typed schemas for the v2 consolidated Invent source, including selection, ranking, physical concept, stable components, interaction trace, proof target, decisions, research, assumptions, and unresolved risks; verify valid and malformed fixtures with focused contract tests.
+- [x] 2.2 Add strict typed schemas for the ordered adaptive visual plan, including the frozen 2-to-20 role bound, role kinds, purposes, complete instructions, appearance references, and component subjects; verify 20 roles are accepted while 21 roles, duplicate ids, forward references, cycles, missing required roles, unknown component keys, and unjustified optional roles are rejected.
 - [ ] 2.3 Add fixtures for a minimal one-piece concept and a multipart concept with need-driven roles; verify each fixture authors exactly `invent-source.json` and `visual-plan.json` and contains no CAD or finalizer-owned projection.
-- [ ] 2.4 Add research validation that permits jointly empty sources/findings but requires support for externally grounded build-critical constraints and reasons for deliberate numerical constraints; verify unsupported facts and fabricated attribution patterns fail.
+- [x] 2.4 Add research validation that permits jointly empty sources/findings but requires support for externally grounded build-critical constraints and reasons for deliberate numerical constraints; verify unsupported facts and fabricated attribution patterns fail.
 
 ## 3. Normalize and Finalize Concept v3
 
 - [ ] 3.1 Implement pure normalization from the two authored inputs and packet bindings into the normalized brief, research, routed-Wish binding, drawing instructions, descriptor, source manifest, and canonical identities; verify deterministic golden fixtures and repeated-run identity equality.
-- [ ] 3.2 Derive safe image paths and canonical hashes in the normalizer, rejecting unsafe or colliding role ids; verify the native fixtures never calculate hashes or author descriptor, manifest, or derived-Wish files.
+- [x] 3.2 Derive safe image paths and canonical hashes in the normalizer, rejecting unsafe or colliding role ids; verify the native fixtures never calculate hashes or author descriptor, manifest, or derived-Wish files.
 - [ ] 3.3 Add the sealed pre-render and rendered Concept v3 contracts plus a common normalized reader for v2 and v3; verify round-trip parsing preserves all Make-facing fields and rejects mixed-version or ambiguous trees.
 - [ ] 3.4 Extend the installed no-dependency finalizer with the packet-gated `invent --source ... --visual-plan ...` interface while retaining `--concept-root` only for v1; verify wrong-version flags and extra authored Concept inputs fail before effects.
 - [ ] 3.5 Mirror normalization and identity validation independently in the host gate; verify tampering with either authored input or any derived projection is detected even when finalizer output claims success.

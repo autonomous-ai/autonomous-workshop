@@ -15,6 +15,7 @@ from workshop.concept import (
     SealedConcept,
     evaluate_concept_brief,
     load_pre_render_concept,
+    normalized_concept_view,
     seal_pre_render_concept,
 )
 from workshop.errors import ArtifactError, ContractError
@@ -286,6 +287,13 @@ class DormantConceptV2Test(unittest.TestCase):
             SealedConcept.from_mapping(sealed.to_dict(), root=source.root).to_dict(),
             sealed.to_dict(),
         )
+        common = normalized_concept_view(sealed.to_dict(), root=source.root)
+        self.assertEqual(common.schema_version, 2)
+        self.assertEqual(common.component_keys, ("dome",))
+        mixed = sealed.to_dict()
+        mixed["schema_version"] = 3
+        with self.assertRaises(ContractError):
+            normalized_concept_view(mixed, root=source.root)
         sealed.validate_tree()
         (self.run_root / root / descriptor["front"]["path"]).write_bytes(b"drift")
         with self.assertRaisesRegex(ArtifactError, "sealed Concept tree"):
