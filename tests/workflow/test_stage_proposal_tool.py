@@ -1134,11 +1134,34 @@ class StageProposalToolTest(unittest.TestCase):
             },
         }
         self.write_stage("make", make_inputs, round_index=1)
+        missing_keys = self.run_tool(
+            "make",
+            "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project",
+            "--cad-verification-path", "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("Make required product component keys", missing_keys.stderr)
+        make_inputs["required_product_component_keys"] = ["renamed-observatory"]
+        self.write_stage("make", make_inputs, round_index=1)
+        changed_keys = self.run_tool(
+            "make",
+            "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project",
+            "--cad-verification-path", "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn(
+            "required product component keys differ from the Concept brief",
+            changed_keys.stderr,
+        )
+        make_inputs["required_product_component_keys"] = ["observatory"]
+        self.write_stage("make", make_inputs, round_index=1)
         self.run_tool(
             "make",
             "--product-root", "artifacts/make/r0001/product",
             "--cad-project-path", "cad/project",
-            "--cad-verification-path", "validation/cad-build.json",
+            "--cad-verification-path", "cad/project/validation/cad-build.json",
         )
         made_document, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
         made = NativeMade.from_mapping(made_document)
@@ -1156,7 +1179,7 @@ class StageProposalToolTest(unittest.TestCase):
             "make",
             "--product-root", "artifacts/make/r0001/product",
             "--cad-project-path", "cad/project",
-            "--cad-verification-path", "validation/cad-build.json",
+            "--cad-verification-path", "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("must not copy sealed Concept image pixels", result.stderr)

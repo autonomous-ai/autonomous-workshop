@@ -1969,13 +1969,26 @@ def _make_contract(
         brief = _mapping(source.get("brief"), "Make Concept brief", nonempty=True)
         components = _array(brief.get("components"), "Make Concept components", nonempty=True)
         concept_keys = [item.get("key") if isinstance(item, Mapping) else None for item in components]
+        required_keys = _array(
+            inputs.get("required_product_component_keys"),
+            "Make required product component keys",
+            nonempty=True,
+        )
+        if (
+            any(not isinstance(key, str) or not key for key in required_keys)
+            or len(set(required_keys)) != len(required_keys)
+            or required_keys != concept_keys
+        ):
+            raise ProposalError(
+                "Make required product component keys differ from the Concept brief"
+            )
         product_keys = product.get("components")
         if (
             not isinstance(product_keys, list)
             or any(not isinstance(key, str) or not key for key in product_keys)
             or len(set(product_keys)) != len(product_keys)
-            or set(product_keys) != set(concept_keys)
-            or len(product_keys) != len(concept_keys)
+            or set(product_keys) != set(required_keys)
+            or len(product_keys) != len(required_keys)
         ):
             raise ProposalError("Make product component keys differ from the Concept brief")
         concept_pixel_hashes = set(images.values())

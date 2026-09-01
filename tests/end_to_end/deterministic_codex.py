@@ -547,6 +547,8 @@ def author_make(root: Path, stage) -> None:
             "Digitally verified; no claim of physical manufacture or delivery."
         ],
     }
+    if "required_product_component_keys" in inputs:
+        product["components"] = list(inputs["required_product_component_keys"])
     if "concept-component-mismatch" in stage["product_id"]:
         product["components"] = ["wrong-component"]
     write_json(product_root / "product.json", product)

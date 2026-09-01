@@ -104,6 +104,13 @@
   both bounded turns on preparatory agent cycles without source. Deep-v8 keeps
   broad-skill deferral while batching stable reads and reserving independent
   blind critique for the mandatory final review; final CAD behavior is unchanged.
+- Adapted locally on 2026-09-01 after the marked Forge acceptance exposed
+  conflicting cache-cleanup guidance. Restricted Workshop product runs now
+  consistently regenerate affected targets without manually deleting protected
+  `__cadgen__` directories, leave byte-free protected residue to the finalizer
+  and trusted host, and never treat an empty cache directory as a product
+  blocker. Outside restricted product runs, the shared-library cache cleanup
+  remains required.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do

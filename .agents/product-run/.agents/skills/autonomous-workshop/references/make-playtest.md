@@ -368,6 +368,12 @@ metadata keys (additional product-specific fields are allowed):
 }
 ```
 
+For a marked Concept packet, this minimum additionally includes
+`"components"`, copied from `STAGE.json.inputs.required_product_component_keys`.
+Those values are stable Concept component keys, not implementation-specific
+CAD variants or repeated physical-instance identifiers; include each exact
+packet key once and no others.
+
 Both `title` and `summary` must be strings with non-whitespace content and no
 more than 2,000 characters. Do not substitute aliases such as `name` or
 `description`; the Make finalizer and trusted host require the exact keys.

@@ -5,11 +5,13 @@ CAD verification, maker provenance, Make contracts, and the Workshop's single
 locked skill tree in `skills/`.
 
 For new marked Forge and Quest runs, Make also receives the exact sealed
-Concept and sanitized image-effect identity. Schema-v2 `Made` binds both,
-requires product component keys to equal the Concept brief, and rejects any
-product-tree file whose bytes copy a Concept image. Spark and frozen unmarked
-runs retain schema-v1 behavior. Concept imagery is design context, never CAD,
-Playtest, Factory, manufacture, or delivery evidence.
+Concept and sanitized image-effect identity. Its stage packet exposes
+`required_product_component_keys` as the ordered exact copy of the sealed
+brief's stable Concept component keys. Schema-v2 `Made` binds both identities,
+requires product component keys to equal that packet and Concept set, and
+rejects any product-tree file whose bytes copy a Concept image. Spark and
+frozen unmarked runs retain schema-v1 behavior. Concept imagery is design
+context, never CAD, Playtest, Factory, manufacture, or delivery evidence.
 
 Public API: `workshop.make`.
 

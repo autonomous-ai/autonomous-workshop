@@ -574,6 +574,8 @@ class _OneSessionProductAgent:
                 "Digitally verified prototype; no claim of physical manufacture or delivery."
             ],
         }
+        if "required_product_component_keys" in inputs:
+            product["components"] = list(inputs["required_product_component_keys"])
         _write_json(product_root / "product.json", product)
         if self.product_contract_name_collisions:
             _write_json(product_root / "assignment.json", {"product_asset": True})
@@ -3119,8 +3121,18 @@ class NativeFullRunTest(unittest.TestCase):
                             "sealed_concept_artifact",
                             "concept_effect",
                             "concept_effect_artifact",
+                            "required_product_component_keys",
                         }
                         <= set(make_packet["inputs"])
+                    )
+                    self.assertEqual(
+                        make_packet["inputs"]["required_product_component_keys"],
+                        [
+                            component["key"]
+                            for component in make_packet["inputs"][
+                                "sealed_concept"
+                            ]["source"]["brief"]["components"]
+                        ],
                     )
                     self.assertEqual(made.schema_version, 2)
                     self.assertEqual(

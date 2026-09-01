@@ -3304,6 +3304,10 @@ def _prepare_effort_stage_input(
                         "concept_effect_artifact": _artifact_binding(
                             effect_artifact
                         ),
+                        "required_product_component_keys": [
+                            component["key"]
+                            for component in sealed_concept.brief["components"]
+                        ],
                     }
                 )
                 context.update(

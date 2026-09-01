@@ -199,6 +199,56 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertNotIn("--print-preflight --fresh", make)
         self.assertNotIn("Make contract", playtest)
 
+    def test_marked_make_guidance_exposes_metadata_and_cache_contract(self):
+        reference_root = (
+            REPOSITORY
+            / ".agents"
+            / "product-run"
+            / ".agents"
+            / "skills"
+            / "autonomous-workshop"
+            / "references"
+        )
+        make = " ".join(
+            (reference_root / "make.md").read_text(encoding="utf-8").split()
+        )
+        for required in (
+            "required_product_component_keys",
+            "stable Concept component keys, not implementation-specific CAD "
+            "variants or repeated physical instances",
+            "One Concept component may produce multiple variant models or "
+            "multiple manufactured instances",
+            '"components": ["component-key-a", "component-key-b"]',
+            "byte-free directories are ignored by both the finalizer and host gate",
+            "never report an empty cache directory as a blocker",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, make)
+        self.assertNotIn("chess-role", make)
+        self.assertNotIn("role-family", make)
+
+        cad = " ".join(
+            (
+                REPOSITORY
+                / "src"
+                / "workshop"
+                / "make"
+                / "skills"
+                / "cad"
+                / "SKILL.md"
+            ).read_text(encoding="utf-8").split()
+        )
+        self.assertIn(
+            "Outside a restricted Workshop product run, delete the project's "
+            "`__cadgen__/` after editing a shared `*_lib.py`",
+            cad,
+        )
+        self.assertIn(
+            "Inside a restricted Workshop product run, never manually delete "
+            "that protected cache",
+            cad,
+        )
+
     def test_marked_invent_instructions_keep_authorship_native_and_effects_host_owned(self):
         root = (
             REPOSITORY / ".agents" / "product-run" / ".agents" / "skills"

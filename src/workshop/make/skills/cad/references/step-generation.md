@@ -236,16 +236,21 @@ relying on implicit resolution by `inspect`.
 
 The local Tier 2 layout has a known cache defect: editing a sibling
 `*_lib.py` does not reliably invalidate existing `__cadgen__` packages, and
-`--force` does not repair that stale package. After any shared-library edit,
-delete that project's cache once before the next build:
+`--force` does not repair that stale package. After any shared-library edit
+outside a restricted Workshop product run, delete that project's cache once
+before the next build:
 
 ```bash
 find <project-dir>/__cadgen__ -depth -delete
 ```
 
 Then use the quick combined-only loop while refining and one multi-target final
-generation when the source is stable. Do not repeatedly delete the cache
-between commands that all correspond to the same source revision.
+generation when the source is stable. Inside a restricted Workshop product
+run, never run that deletion: regenerate every affected target explicitly with
+`scripts/gen <targets...> --write --force`, use non-`--fresh` iterative
+preflight, and leave protected empty cache directories for the finalizer and
+trusted host. Do not repeatedly delete the cache between commands that all
+correspond to the same source revision.
 
 ## Render packages
 

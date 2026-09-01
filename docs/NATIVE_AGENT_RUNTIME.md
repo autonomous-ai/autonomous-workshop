@@ -603,7 +603,11 @@ contains:
 
 Forge/Quest Make receives that exact sealed Invent contract in its own
 `STAGE.json`; marked runs additionally receive the sealed Concept, sanitized
-effect evidence, derived Wish, brief, descriptor, and image manifest. Spark
+effect evidence, derived Wish, brief, descriptor, image manifest, and an
+explicit ordered `required_product_component_keys` copy of the brief's stable
+keys. The routed Make reference maps those Concept component keys to
+`product.json.components` and distinguishes them from implementation-specific
+CAD variants and repeated physical instances. Spark
 creates and consumes the compound creative source within Make and remains
 outside the active Concept protocol. Marked Made schema v2 binds both Concept
 identities, requires exact brief/product component-key correspondence, and

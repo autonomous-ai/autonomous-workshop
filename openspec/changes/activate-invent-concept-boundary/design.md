@@ -152,7 +152,9 @@ Introduce a Made schema that adds `concept_sha256` and the sanitized `concept_ef
 Marked Make performs three additional deterministic checks:
 
 1. the sealed Concept and sanitized effect record still rehash and match the packet;
-2. stable component keys in the Concept brief equal the product's declared component keys exactly; and
+2. the packet's explicit `required_product_component_keys` exactly reproduces
+   the ordered stable keys in the sealed Concept brief, and that key set equals
+   the product's declared component keys exactly; and
 3. no file anywhere in the exact product manifest has a SHA-256 equal to any sealed Concept image.
 
 The brief's numerical constraints are authoritative instructions; image semantics remain native-agent judgment. The host does not use vision or score adherence. The existing signature-review images must be freshly rendered from actual product geometry and remain product evidence, distinct from Concept art.
@@ -169,7 +171,7 @@ The new Invent packet supplies prior exact Concept and revision evidence. V2 pro
 
 ### 10. Update native instructions and acceptance evidence as one protocol version
 
-The materialized Invent reference is expanded with the detailed Concept-authoring sequence already adopted in the integration plan: research, fact attribution, brief, stable components, mechanism/component reconciliation, derived Wish, drawing roles, self-check, and pre-render finalization. The Make reference explains numerical precedence, exact component correspondence, fresh product renders, and Concept-pixel exclusion. The root Manager remains responsible for the single finalizer; a selected Inventor may author bounded content but cannot trigger effects or gates.
+The materialized Invent reference is expanded with the detailed Concept-authoring sequence already adopted in the integration plan: research, fact attribution, brief, stable components, mechanism/component reconciliation, derived Wish, drawing roles, self-check, and pre-render finalization. The routed Make reference publishes a canonical marked `product.json` skeleton, names the packet's exact required Concept component keys, distinguishes them from implementation-specific CAD variants and repeated physical instances, explains numerical precedence and Concept-pixel exclusion, and makes protected empty-cache behavior explicit. The root Manager remains responsible for the single finalizer; a selected Inventor may author bounded content but cannot trigger effects or gates.
 
 Deterministic E2E gains active marked Forge/Quest fixtures and role-level effect doubles, including waits, ambiguity, tamper, revisions, and Spark/unmarked absence. Real-Codex acceptance proves one Invent turn authors the source, host effects occur after exit, and the same session resumes at Make. Documentation and the Concept integration ledger change from dormant/deferred to active for Forge/Quest only.
 

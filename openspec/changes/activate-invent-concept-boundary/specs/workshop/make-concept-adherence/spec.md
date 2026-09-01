@@ -2,11 +2,12 @@
 
 ### Requirement: Marked Forge and Quest Make require the standing sealed Concept
 
-For a run with the active Invent Concept capability, every Forge or Quest Make packet SHALL bind the exact accepted sealed Concept contract, whole-tree identity, manifest, derived Wish, brief, descriptor roles, effect receipt, and their artifact paths. The Make proposal and sealed Made result SHALL carry the same Concept identity. A missing, stale, changed, cross-round, or substituted binding SHALL be refused. Spark and unmarked runs SHALL retain their existing Made shape.
+For a run with the active Invent Concept capability, every Forge or Quest Make packet SHALL bind the exact accepted sealed Concept contract, whole-tree identity, manifest, derived Wish, brief, descriptor roles, effect receipt, and their artifact paths. It SHALL also expose `required_product_component_keys` as the ordered exact copy of the sealed brief's stable component keys. The Make proposal and sealed Made result SHALL carry the same Concept identity. A missing, stale, changed, cross-round, or substituted binding SHALL be refused. Spark and unmarked runs SHALL retain their existing Made shape.
 
 #### Scenario: Make begins after active Invent
 - **WHEN** the host prepares Make for a marked Forge or Quest round
 - **THEN** its packet names the exact standing sealed Concept and effect receipt
+- **AND** it directly names the stable product component keys without requiring the Manager to infer them from nested contracts
 - **AND** the expected Made contract requires that Concept identity
 
 #### Scenario: Make proposes a different Concept
@@ -24,6 +25,28 @@ Before accepting a marked Forge or Quest product, the Make finalizer and host ga
 #### Scenario: Product omits or adds a component
 - **WHEN** the product inventory differs from the sealed brief's stable component keys
 - **THEN** Make is refused with the missing or extra keys named
+
+### Requirement: Marked Make authors receive the complete product metadata contract
+
+The routed Make reference SHALL show a canonical `product.json` skeleton for a
+marked Concept packet, identify `required_product_component_keys` as its exact
+source, and distinguish stable Concept component keys from
+implementation-specific CAD variants and repeated physical instances. It SHALL
+state that each required key appears exactly once
+and that aliases, variant suffixes, duplicates, omissions, and extras are
+invalid. A Manager MUST NOT need to inspect finalizer implementation, read an
+unrouted compatibility reference, or discover the marked metadata shape only
+after completing final CAD verification.
+
+#### Scenario: A Manager starts marked Make
+- **WHEN** it reads the stage-routed Make reference and current packet
+- **THEN** it can write conforming product metadata before detailed CAD work
+- **AND** the distinction between Concept components, implementation variants, and repeated physical instances is explicit
+
+#### Scenario: A protected cache directory remains empty
+- **WHEN** native CAD tooling leaves a sandbox-protected byte-free `__cadgen__` directory
+- **THEN** routed Make and CAD guidance tell the Manager to leave it for the finalizer and trusted host
+- **AND** the Manager does not report that empty directory as a product blocker
 
 ### Requirement: Concept governs design without contaminating product bytes
 

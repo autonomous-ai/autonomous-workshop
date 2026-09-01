@@ -76,15 +76,47 @@ Use one product funnel:
 6. Run the integrated final verifier once. Do not use it as an iteration loop.
 7. Write product metadata and invoke the Make finalizer immediately.
 
-Do not delete `__cadgen__` or use `--fresh` inside the product sandbox. The
-trusted host owns the isolated fresh rebuild. Keep caches, temporary work,
-transcripts, and duplicate render families outside the sealed product tree.
+## Marked Concept handoff
+
+When `STAGE.json.inputs.invent_concept_capability` is present, the packet also
+contains `required_product_component_keys`. These are the stable Concept
+component keys, not implementation-specific CAD variants or repeated physical
+instances. One Concept component may produce multiple variant models or
+multiple manufactured instances; `product.json.components` must still contain
+each packet key exactly once. Copy the packet's exact key set into the root
+product metadata before detailed CAD work; do not derive aliases from filenames
+or expand one key per variant:
+
+```json
+{
+  "title": "Product title",
+  "summary": "Bounded product summary.",
+  "components": ["component-key-a", "component-key-b"]
+}
+```
+
+The `components` array has each packet key exactly once, with no omission,
+alias, renamed counterpart, duplicate, side suffix, or extra. Reopen the bound
+sealed Concept and effect evidence before building. Brief and derived-Wish
+numbers are authoritative; Concept images communicate design intent but do not
+prove geometry, fit, printability, or completion. Generate all product geometry
+and presentation evidence freshly. Never copy sealed Concept image bytes into
+the product tree, even under another filename.
+
+Do not manually delete `__cadgen__` or use `--fresh` inside the product
+sandbox. The trusted host owns the isolated fresh rebuild. The finalizer safely
+removes ordinary derived-cache files before hashing. If the sandbox protects a
+now-empty cache directory from removal, leave it in place: byte-free
+directories are ignored by both the finalizer and host gate, so never report an
+empty cache directory as a blocker. Keep temporary work, transcripts, and
+duplicate render families outside the sealed product tree.
 
 ## Required final product
 
 Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
 
-- `product.json` with nonempty `title` and `summary` strings;
+- `product.json` with nonempty `title` and `summary` strings, plus the exact
+  `components` array above for a marked Concept packet;
 - the self-contained CAD project, source, generated STEP/STL, measurements,
   passing `measure/print-preflight.md`, and final
   `measure/verification-pipeline.md`;

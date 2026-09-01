@@ -76,3 +76,8 @@
   bindings, role ordering, descriptor sealing timing, and canonical hash
   derivation; add a source-asset regression test and reconcile the active
   proposal, design, and Invent Concept specification with that contract.
+- [x] 8.7 Expose the marked Make component inventory directly in its packet and
+  routed `product.json` skeleton, distinguish Concept components from
+  implementation-specific CAD variants and repeated physical instances,
+  reconcile protected empty-cache guidance, and add
+  regression coverage that does not pre-bake the hidden schema.
