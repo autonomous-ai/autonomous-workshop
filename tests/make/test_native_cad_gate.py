@@ -69,6 +69,13 @@ class NativeCadGateTest(unittest.TestCase):
             json.dumps(product, sort_keys=True, separators=(",", ":")) + "\n"
         ).encode("utf-8")
         (product_root / "product.json").write_bytes(product_bytes)
+        (product_root / "assembled.step").write_bytes(b"ISO-10303-21;\n")
+        (product_root / "assembled.step.json").write_text(
+            '{"assembly":"Moon Nook","parts":1}\n'
+        )
+        (product_root / "assembled.stl").write_bytes(
+            b"solid moon\nendsolid moon\n"
+        )
         (project / "moon.step.py").write_text("def build():\n    return None\n")
         (project / "moon.step").write_bytes(b"ISO-10303-21;\n")
         (project / "moon.stl").write_bytes(b"solid moon\nendsolid moon\n")
@@ -151,6 +158,26 @@ class NativeCadGateTest(unittest.TestCase):
             cad_verification_sha256=_sha(verification_bytes),
         )
 
+    def _rebuild_made_manifest(self):
+        previous = self.made
+        self.made = NativeMade(
+            round=previous.round,
+            wish_sha256=previous.wish_sha256,
+            assignment_sha256=previous.assignment_sha256,
+            taste_sha256=previous.taste_sha256,
+            blueprint_sha256=previous.blueprint_sha256,
+            invented_sha256=previous.invented_sha256,
+            product_root=previous.product_root,
+            cad_project_path=previous.cad_project_path,
+            product_manifest=build_artifact_manifest(
+                self.product_root, created_at="content-addressed"
+            ),
+            product=previous.product,
+            product_json_sha256=previous.product_json_sha256,
+            cad_verification_path=previous.cad_verification_path,
+            cad_verification_sha256=previous.cad_verification_sha256,
+        )
+
     def _verify(self, runner, **overrides):
         arguments = {
             "run_root": self.run_root,
@@ -162,6 +189,24 @@ class NativeCadGateTest(unittest.TestCase):
         }
         arguments.update(overrides)
         return verify_native_made_cad(self.made, **arguments)
+
+    def test_missing_required_root_delivery_file_fails_before_verifier(self):
+        invoked = False
+
+        def runner(*_args, **_kwargs):
+            nonlocal invoked
+            invoked = True
+            raise AssertionError("verifier must not run")
+
+        (self.product_root / "assembled.stl").unlink()
+        self._rebuild_made_manifest()
+
+        with self.assertRaisesRegex(
+            NativeMadeTreeGateError,
+            "lacks required root delivery files: assembled.stl",
+        ):
+            self._verify(runner)
+        self.assertFalse(invoked)
 
     def test_success_runs_final_verifier_only_on_declared_isolated_copy(self):
         before = build_artifact_manifest(
