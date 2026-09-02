@@ -4447,6 +4447,10 @@ def _v10_make_proof_artifact_bindings(
     else:
         if cad.is_symlink() or not stat.S_ISDIR(cad_identity.st_mode):
             return None
+        # ``cad`` may itself be the self-contained CAD project.  Keep the
+        # nested-project scan below for products that collect several CAD
+        # projects under that directory.
+        candidates.append(cad / "review" / "early-proof")
         try:
             projects = tuple(cad.iterdir())
         except OSError:
