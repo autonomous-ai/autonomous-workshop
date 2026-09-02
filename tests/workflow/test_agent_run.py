@@ -662,7 +662,7 @@ class AgentRunTest(unittest.TestCase):
                 self.assertNotIn("concept", checkpoint.stage_artifacts)
                 self.assertNotEqual(checkpoint.stage, "concept")
 
-    def test_simplified_concept_marker_is_not_selected_before_activation(self):
+    def test_rollback_switch_keeps_new_deep_runs_on_v1(self):
         references = self.skill / "references"
         (references / "effort-routes-v1.md").write_bytes(
             b"selectable effort routes\n"
@@ -671,15 +671,16 @@ class AgentRunTest(unittest.TestCase):
         simplified = references / "invent-concept-v2.md"
         legacy.write_bytes(b"legacy Concept boundary\n")
         simplified.write_bytes(b"simplified Concept boundary\n")
-        run = AgentRun.create(
-            self.run_root,
-            host_state_root=self.host_state_root,
-            product_id=self.product_id,
-            wish_bytes=canonical_wish(self.product_id, "Make a moon toy."),
-            product_run_constitution_source=self.product_run_constitution,
-            skill_root=self.skill,
-            effort="forge",
-        )
+        with patch.object(agent_run_module, "INVENT_CONCEPT_V2_ACTIVATED", False):
+            run = AgentRun.create(
+                self.run_root,
+                host_state_root=self.host_state_root,
+                product_id=self.product_id,
+                wish_bytes=canonical_wish(self.product_id, "Make a moon toy."),
+                product_run_constitution_source=self.product_run_constitution,
+                skill_root=self.skill,
+                effort="forge",
+            )
         checkpoint = run.snapshot()
         self.assertIn(
             ".agents/skills/autonomous-workshop/references/invent-concept-v1.md",
@@ -707,27 +708,24 @@ class AgentRunTest(unittest.TestCase):
         }
         for name, content in files.items():
             (references / name).write_bytes(content)
-        with patch.dict(
-            os.environ, {"WORKSHOP_INVENT_CONCEPT_V2_ACCEPTANCE": "1"}
-        ):
-            forge = AgentRun.create(
-                self.root / "activated-forge",
-                host_state_root=self.root / "activated-forge-host",
-                product_id="activated-forge",
-                wish_bytes=canonical_wish("activated-forge", "Make a moon toy."),
-                product_run_constitution_source=self.product_run_constitution,
-                skill_root=self.skill,
-                effort="forge",
-            ).snapshot()
-            spark = AgentRun.create(
-                self.root / "activated-spark",
-                host_state_root=self.root / "activated-spark-host",
-                product_id="activated-spark",
-                wish_bytes=canonical_wish("activated-spark", "Make a moon toy."),
-                product_run_constitution_source=self.product_run_constitution,
-                skill_root=self.skill,
-                effort="spark",
-            ).snapshot()
+        forge = AgentRun.create(
+            self.root / "activated-forge",
+            host_state_root=self.root / "activated-forge-host",
+            product_id="activated-forge",
+            wish_bytes=canonical_wish("activated-forge", "Make a moon toy."),
+            product_run_constitution_source=self.product_run_constitution,
+            skill_root=self.skill,
+            effort="forge",
+        ).snapshot()
+        spark = AgentRun.create(
+            self.root / "activated-spark",
+            host_state_root=self.root / "activated-spark-host",
+            product_id="activated-spark",
+            wish_bytes=canonical_wish("activated-spark", "Make a moon toy."),
+            product_run_constitution_source=self.product_run_constitution,
+            skill_root=self.skill,
+            effort="spark",
+        ).snapshot()
         forge_paths = set(forge.input_sha256s)
         self.assertIn(
             ".agents/skills/autonomous-workshop/references/invent-concept-v2.md",
@@ -779,18 +777,15 @@ class AgentRunTest(unittest.TestCase):
             / ".agents/product-run/.agents/skills/autonomous-workshop"
         )
         constitution = repository / ".agents/product-run/AGENTS.md"
-        with patch.dict(
-            os.environ, {"WORKSHOP_INVENT_CONCEPT_V2_ACCEPTANCE": "1"}
-        ):
-            checkpoint = AgentRun.create(
-                self.run_root,
-                host_state_root=self.host_state_root,
-                product_id=self.product_id,
-                wish_bytes=self.wish_bytes,
-                product_run_constitution_source=constitution,
-                skill_root=skill,
-                effort="forge",
-            ).snapshot()
+        checkpoint = AgentRun.create(
+            self.run_root,
+            host_state_root=self.host_state_root,
+            product_id=self.product_id,
+            wish_bytes=self.wish_bytes,
+            product_run_constitution_source=constitution,
+            skill_root=skill,
+            effort="forge",
+        ).snapshot()
         paths = (
             ".agents/skills/autonomous-workshop/references/invent-concept-v2.md",
             ".agents/skills/autonomous-workshop/references/deep-economics-v14.md",

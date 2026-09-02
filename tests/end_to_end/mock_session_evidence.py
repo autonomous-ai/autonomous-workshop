@@ -62,8 +62,9 @@ FORBIDDEN_OUTPUT_PARTS = frozenset(
     }
 )
 _INVENT_CONCEPT_SOURCE = re.compile(
-    r"artifacts/concept/r\d{4}/concept/"
-    r"(?:brief|research|prompts|descriptor|derived_wish)\.json"
+    r"(?:artifacts/concept/r\d{4}/concept/"
+    r"(?:brief|research|prompts|descriptor|derived_wish)\.json|"
+    r"artifacts/invent(?:/r\d{4})?/visual-plan\.json)"
 )
 FORBIDDEN_INTERNAL_TERMS = frozenset(
     {
@@ -296,7 +297,7 @@ def validate_stage_packet_inputs(
     for key, value in inputs.items():
         if isinstance(value, Mapping) and "path" in value and "sha256" in value:
             verify(value, "inputs.%s" % key)
-        elif isinstance(value, list):
+        elif isinstance(value, list) and key != "concept_visual_roles":
             for index, item in enumerate(value):
                 if isinstance(item, Mapping) and "path" in item and "sha256" in item:
                     verify(item, "inputs.%s[%d]" % (key, index))
@@ -405,10 +406,10 @@ def validate_context_record(
                 )
         overlapping = set(outputs) & set(proposal_artifacts)
         if record["stage"] == "invent":
-            # Marked Invent's five Concept inputs are direct Manager-authored
-            # source even though the compound finalizer also lists them in the
-            # accepted proposal.  Derived pre-render and lifecycle artifacts
-            # remain forbidden context outputs.
+            # Marked Invent's v1 Concept files and v2 visual plan are direct
+            # Manager-authored source even though the compound finalizer also
+            # lists them in the accepted proposal. Derived pre-render and
+            # lifecycle artifacts remain forbidden context outputs.
             overlapping = {
                 relative
                 for relative in overlapping

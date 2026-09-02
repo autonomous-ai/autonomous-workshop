@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.simplified-concept-acceptance",
+  "capability_version": "invent-concept-v2/concept-v3/deep-economics-v14",
+  "acceptance_scope": "authenticated-context-and-integration-only",
+  "runs": [
+    {
+      "effort": "forge",
+      "route": ["wish", "invent", "make", "release", "complete"],
+      "final_status": "complete",
+      "publication_status": "published",
+      "session_continuity": "one-verified-native-session",
+      "invent_finalizer_rejection_count": 0,
+      "authored_input_sha256s": {
+        "source": "2e6b0003c05e144cd6a092cd376e0aeac62ed2c46e154a0af41e80094736165d",
+        "visual_plan": "5df6e3a5b55280dbc113fe3632bc96a1edee355c0933116b82531d8a72471702"
+      },
+      "visual_role_count": 2,
+      "effect_resume": "not-exercised",
+      "make_transition": "verified-sealed-v3-invent-to-make",
+      "native_turns": [
+        {"stage": "invent", "reasoning_effort": "high", "elapsed_seconds": 535.175119},
+        {"stage": "make", "reasoning_effort": "medium", "elapsed_seconds": 360.944425},
+        {"stage": "make", "reasoning_effort": "high", "elapsed_seconds": 899.999198},
+        {"stage": "make", "reasoning_effort": "high", "elapsed_seconds": 340.404761},
+        {"stage": "release", "reasoning_effort": "medium", "elapsed_seconds": 686.568945}
+      ]
+    },
+    {
+      "effort": "quest",
+      "route": ["wish", "invent", "make", "playtest", "release", "complete"],
+      "final_status": "complete",
+      "publication_status": "published",
+      "session_continuity": "one-verified-native-session",
+      "invent_finalizer_rejection_count": 0,
+      "authored_input_sha256s": {
+        "source": "cc947ce0f1f7e690cd2bf37a08ee03276ad06bc0998da7fb69bbf29b561d494c",
+        "visual_plan": "c8f1014fd3c3bc23e6d16bd1231056b5a5d57c6ab99040475f677d18be08d4d8"
+      },
+      "visual_role_count": 3,
+      "effect_resume": "not-exercised",
+      "make_transition": "verified-sealed-v3-invent-to-make",
+      "native_turns": [
+        {"stage": "invent", "reasoning_effort": "high", "elapsed_seconds": 543.131826},
+        {"stage": "make", "reasoning_effort": "medium", "elapsed_seconds": 359.862981},
+        {"stage": "make", "reasoning_effort": "medium", "elapsed_seconds": 959.974643},
+        {"stage": "make", "reasoning_effort": "medium", "elapsed_seconds": 156.110316},
+        {"stage": "make", "reasoning_effort": "medium", "elapsed_seconds": 94.695851},
+        {"stage": "playtest", "reasoning_effort": "medium", "elapsed_seconds": 344.413597},
+        {"stage": "release", "reasoning_effort": "medium", "elapsed_seconds": 942.516629}
+      ]
+    }
+  ],
+  "effect_recovery_evidence": "deterministic-partial-role-reconciliation-passed; authenticated terminal runs did not exercise effect resume",
+  "authority": "Concept image and publication credentials remained host-only; effects ran after native Invent exit",
+  "verification": [
+    {
+      "command": "PYTHONPYCACHEPREFIX=/tmp/workshop-v2-pycache .venv/bin/python -m unittest discover -s tests -t . -p 'test_*.py'",
+      "result": "758 passed; 30 intentionally skipped opt-in or live tests"
+    },
+    {
+      "command": "WORKSHOP_RUN_DETERMINISTIC_E2E=1 PYTHONPYCACHEPREFIX=/tmp/workshop-v2-pycache .venv/bin/python -m unittest tests.end_to_end.test_deterministic_native_fidelity",
+      "result": "28 passed"
+    },
+    {
+      "command": ".venv/bin/python -m unittest tests.end_to_end.test_mock_session_harness",
+      "result": "34 passed"
+    },
+    {
+      "command": ".venv/bin/python tests/packaging/installed_wheel_cli_acceptance.py",
+      "result": "passed"
+    },
+    {
+      "command": ".venv/bin/python tools/verify_skill_locks.py",
+      "result": "5 reviewed skill trees match"
+    },
+    {
+      "command": ".venv/bin/python tools/scan_secrets.py",
+      "result": "clean"
+    },
+    {
+      "command": "openspec validate simplify-invent-concept-authoring --strict",
+      "result": "valid"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "evidence_limits": "This report proves protocol usability, frozen-context discovery, exact authored-input binding, same-session lifecycle continuity, host-effect ordering, Playtest preservation for Quest, Release, and publication. It does not claim creative quality, image quality, buildability, physical performance, manufacture, delivery, human response, or economic improvement."
+}

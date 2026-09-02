@@ -1414,6 +1414,14 @@ class _FactoryEffects:
 
 class NativeFullRunTest(unittest.TestCase):
     def setUp(self):
+        # This suite's product-agent fixture is the frozen v1 authoring
+        # protocol. Active v2 routes are covered by the dedicated deterministic
+        # fidelity matrix and route-selection tests.
+        activation = mock.patch(
+            "workshop.workflow.agent_run.INVENT_CONCEPT_V2_ACTIVATED", False
+        )
+        activation.start()
+        self.addCleanup(activation.stop)
         profile = ConceptImageProfile()
         counter = {"value": 0}
 

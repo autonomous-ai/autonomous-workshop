@@ -57,7 +57,7 @@ class WorkshopEffortTest(unittest.TestCase):
             INVENT_CONCEPT_V2_CAPABILITY_PATH,
             ".agents/skills/autonomous-workshop/references/invent-concept-v2.md",
         )
-        self.assertFalse(INVENT_CONCEPT_V2_ACTIVATED)
+        self.assertTrue(INVENT_CONCEPT_V2_ACTIVATED)
         self.assertEqual(
             SPARK_ECONOMICS_CAPABILITY_PATH,
             ".agents/skills/autonomous-workshop/references/spark-economics-v3.md",

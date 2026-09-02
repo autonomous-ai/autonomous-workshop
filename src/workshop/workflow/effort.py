@@ -26,7 +26,7 @@ INVENT_CONCEPT_V2_CAPABILITY_PATH = (
 )
 # Activation is a deliberate source release step after authenticated acceptance.
 # Frozen checkpoints remain governed solely by the exact marker they contain.
-INVENT_CONCEPT_V2_ACTIVATED = False
+INVENT_CONCEPT_V2_ACTIVATED = True
 INVENT_CONCEPT_V2_ACCEPTANCE_ENVIRONMENT = (
     "WORKSHOP_INVENT_CONCEPT_V2_ACCEPTANCE"
 )

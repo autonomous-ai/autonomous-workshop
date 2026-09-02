@@ -596,7 +596,13 @@ def _assert_agent_write_ownership(
                     relative,
                 )
                 is not None
-                or (stage == "invent" and relative == "design/invent-source.json")
+                or (
+                    stage == "invent"
+                    and relative in {
+                        "design/invent-source.json",
+                        "drafts/invent-source.json",
+                    }
+                )
                 or relative in root_sources.get(str(stage), set())
                 or relative.startswith("authored/")
                 or relative.startswith("sources/")
@@ -692,15 +698,19 @@ def _accepted_make_proof_boundaries(
 ) -> tuple[int, ...]:
     """Return only trace boundaries backed by the host's private receipt."""
 
-    boundaries = tuple(
+    observed_boundaries = tuple(
         index
         for index, value in enumerate(trace)
         if value.get("make_proof_boundary") is True
     )
-    if len(boundaries) > 1:
+    boundary_checkpoints = {
+        trace[index].get("checkpoint_sha256") for index in observed_boundaries
+    }
+    if len(boundary_checkpoints) > 1:
         raise MockSessionEvidenceError(
-            "%s:multiple intermediate Make proof turns were observed" % effort
+            "%s:multiple intermediate Make proof checkpoints were observed" % effort
         )
+    boundaries = observed_boundaries[:1]
     acceptance_root = host_state / "make-proof-acceptances"
     acceptance_paths = (
         tuple(sorted(acceptance_root.glob("*.json")))
@@ -783,11 +793,36 @@ def _validate_trace(
             "%s:native start/resume trace differs: %r" % (effort, methods)
         )
     models = {value.get("model") for value in trace}
-    reasoning = {value.get("reasoning_effort") for value in trace}
-    if len(models) != 1 or None in models or len(reasoning) != 1 or None in reasoning:
+    if len(models) != 1 or None in models:
         raise MockSessionEvidenceError(
             "%s:runtime configuration changed across turns" % effort
         )
+    for value in trace:
+        if effort == "spark":
+            expected_reasoning = "low"
+        elif value.get("stage") == "invent":
+            expected_reasoning = (
+                "high" if value.get("method") == "start" else "medium"
+            )
+        elif value.get("stage") == "make":
+            # A bounded proof-phase launcher may finish Make directly or be
+            # reused by recovery before the host observes its durable marker.
+            # Dedicated final-source turns use high reasoning; both are frozen
+            # production shapes, while an observed proof handoff is medium.
+            expected_reasoning = (
+                {"medium"}
+                if value.get("make_proof_boundary") is True
+                else {"medium", "high"}
+            )
+        else:
+            expected_reasoning = {"medium"}
+        if isinstance(expected_reasoning, str):
+            expected_reasoning = {expected_reasoning}
+        if value.get("reasoning_effort") not in expected_reasoning:
+            raise MockSessionEvidenceError(
+                "%s:%s runtime reasoning differs from its frozen stage profile"
+                % (effort, value.get("stage"))
+            )
     stage_agent_writes: dict[str, set[str]] = {}
     for value in trace:
         stage = value["stage"]
@@ -1106,6 +1141,7 @@ def _simplified_concept_acceptance_evidence(
         {
             "stage": str(value["stage"]),
             "elapsed_seconds": float(value["elapsed_seconds"]),
+            "reasoning_effort": str(value["reasoning_effort"]),
         }
         for value in trace
     ]

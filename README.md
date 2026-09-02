@@ -241,12 +241,13 @@ images to the frozen provider profile; credentials remain host-only. See
 [Concept image effects](docs/CONCEPT_IMAGE_EFFECTS.md) for private configuration
 and unknown-outcome recovery. Spark and unmarked historical runs are unchanged.
 
-The simplified two-input Concept v2 implementation is currently an
-acceptance-only capability, not the default for new runs. It replaces the
+New Forge and Quest runs now freeze the simplified two-input Concept v2
+capability. It replaces the
 six-file native authoring surface with one consolidated Invent source and one
 adaptive visual plan while leaving host effects and every Make-to-Release gate
 unchanged. Frozen v1 runs remain byte-compatible; a frozen v2 acceptance run is
-also resumable if future selection is rolled back.
+also resumable if future selection is rolled back. The activation switch can
+disable v2 selection for future runs without changing either frozen protocol.
 
 New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
 ceiling for their one persistent Make-to-Release session, and a 20-minute

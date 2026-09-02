@@ -56,15 +56,13 @@ Make binds the sealed Concept and sanitized effect identity. Spark and unmarked
 historical runs retain their exact former packets, contracts, and gates. No
 route adds a Concept Goal, turn, checkpoint, transition, or status value.
 
-The additive `invent-concept-v2.md` / Concept v3 implementation is present but
-not selected by ordinary new runs pending authenticated Forge and Quest
-acceptance. Its native Invent surface is exactly one consolidated source plus
+New marked Forge and Quest runs select the additive `invent-concept-v2.md` /
+Concept v3 implementation. Its native Invent surface is exactly one consolidated source plus
 one ordered 2-to-20-role visual plan. The finalizer and host independently
 derive the normalized brief, routed Wish, descriptor, manifests, paths, and
 hashes; the host alone creates image bytes and receipts after native exit.
-An explicit acceptance-only environment opt-in can freeze v2 with
-`deep-economics-v14.md`. Disabling that opt-in or the future activation switch
-affects only future runs: checkpoints already frozen with v1 or v2 always use
+The selected route freezes `deep-economics-v14.md`. Disabling the activation
+switch affects only future runs: checkpoints already frozen with v1 or v2 always use
 their own materialized marker, profile, finalizer, and readers.
 
 - **Wish** preserves the person's exact words and explicit constraints.

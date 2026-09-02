@@ -268,6 +268,13 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
     maxDiff = None
 
     def setUp(self):
+        # Most scenarios are frozen-v1 compatibility fixtures. The explicit
+        # simplified cases opt back into v2 through their acceptance flag.
+        activation = patch(
+            "workshop.workflow.agent_run.INVENT_CONCEPT_V2_ACTIVATED", False
+        )
+        activation.start()
+        self.addCleanup(activation.stop)
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve()

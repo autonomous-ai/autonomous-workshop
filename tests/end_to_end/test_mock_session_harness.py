@@ -99,11 +99,26 @@ class MakeProofAcceptanceTraceTest(unittest.TestCase):
                 ),
                 (0,),
             )
+            self.assertEqual(
+                _accepted_make_proof_boundaries(
+                    (*trace, dict(trace[0])), host_state, effort="forge"
+                ),
+                (0,),
+            )
+
             with self.assertRaisesRegex(
                 MockSessionEvidenceError, "multiple intermediate"
             ):
                 _accepted_make_proof_boundaries(
-                    (*trace, dict(trace[0])), host_state, effort="forge"
+                    (
+                        *trace,
+                        {
+                            "make_proof_boundary": True,
+                            "checkpoint_sha256": "c" * 64,
+                        },
+                    ),
+                    host_state,
+                    effort="forge",
                 )
 
 
@@ -306,6 +321,24 @@ class MockSessionContextRecordTest(unittest.TestCase):
             ("WISH.json",),
         )
 
+    def test_adaptive_visual_role_summaries_are_not_run_root_bindings(self):
+        packet = json.loads(self.packet.read_text(encoding="utf-8"))
+        packet["inputs"]["concept_visual_roles"] = [
+            {
+                "id": "held-form",
+                "kind": "primary-form",
+                "purpose": "Show the held form.",
+                "path": "images/held-form.png",
+                "sha256": "c" * 64,
+            }
+        ]
+        _write_json(self.packet, packet)
+
+        self.assertEqual(
+            validate_stage_packet_inputs(self.packet, run_root=self.root),
+            ("WISH.json",),
+        )
+
     def test_current_stage_artifact_sources_are_allowed_but_proposals_are_not(self):
         source = self.root / "artifacts/make/r0001/source.json"
         source.parent.mkdir(parents=True)
@@ -334,28 +367,35 @@ class MockSessionContextRecordTest(unittest.TestCase):
             )
 
     def test_invent_concept_inputs_are_authored_sources_not_generated_proposals(self):
-        relative = "artifacts/concept/r0001/concept/brief.json"
-        source = self.root / relative
-        source.parent.mkdir(parents=True)
-        source.write_bytes(b'{"authored":true}\n')
-        digest = sha256_bytes(source.read_bytes())
-        packet = json.loads(self.packet.read_text(encoding="utf-8"))
-        packet["stage"] = "invent"
-        _write_json(self.packet, packet)
-        value = self.value()
-        value["stage"] = "invent"
-        value["stage_packet_sha256"] = sha256_bytes(self.packet.read_bytes())
-        value["outputs"] = [{"path": relative, "sha256": digest}]
-        _write_json(self.record, value)
-        validated = validate_context_record(
-            self.record,
-            run_root=self.root,
-            packet_path=self.packet,
-            agent_writes=[relative, "agent-outcome.json"],
-            proposal_artifacts=[relative],
-            turn_output_hashes={relative: digest},
-        )
-        self.assertEqual(validated["outputs"], value["outputs"])
+        for relative in (
+            "artifacts/concept/r0001/concept/brief.json",
+            "artifacts/invent/visual-plan.json",
+            "artifacts/invent/r0002/visual-plan.json",
+        ):
+            with self.subTest(relative=relative):
+                source = self.root / relative
+                source.parent.mkdir(parents=True, exist_ok=True)
+                source.write_bytes(b'{"authored":true}\n')
+                digest = sha256_bytes(source.read_bytes())
+                packet = json.loads(self.packet.read_text(encoding="utf-8"))
+                packet["stage"] = "invent"
+                _write_json(self.packet, packet)
+                value = self.value()
+                value["stage"] = "invent"
+                value["stage_packet_sha256"] = sha256_bytes(
+                    self.packet.read_bytes()
+                )
+                value["outputs"] = [{"path": relative, "sha256": digest}]
+                _write_json(self.record, value)
+                validated = validate_context_record(
+                    self.record,
+                    run_root=self.root,
+                    packet_path=self.packet,
+                    agent_writes=[relative, "agent-outcome.json"],
+                    proposal_artifacts=[relative],
+                    turn_output_hashes={relative: digest},
+                )
+                self.assertEqual(validated["outputs"], value["outputs"])
 
     def test_duplicate_malformed_stale_missing_oversized_and_symlink_fail(self):
         self.record.parent.mkdir(parents=True, exist_ok=True)
@@ -587,6 +627,7 @@ class MockSessionArchitectureTest(unittest.TestCase):
                     "stage": "invent",
                     "agent_writes": [
                         "design/invent-source.json",
+                        "drafts/invent-source.json",
                         "notes/inventor-contribution.md",
                         "sources/invent-source.json",
                         "agent-outcome.json",
