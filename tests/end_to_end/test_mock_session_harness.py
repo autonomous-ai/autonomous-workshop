@@ -44,6 +44,7 @@ from tests.end_to_end.mock_session_harness import (
     _accepted_stage_trace,
     _accepted_make_proof_boundaries,
     _assert_agent_write_ownership,
+    _assert_concept_wait_status_private,
     _fixed_wish,
     _terminal_evidence_mode,
     preflight_codex,
@@ -477,6 +478,25 @@ class MockSessionContextRecordTest(unittest.TestCase):
 
 
 class MockSessionArchitectureTest(unittest.TestCase):
+    def test_concept_wait_status_privacy_rejects_private_fields_and_values(self):
+        clean = {
+            "stage": "invent",
+            "status": "waiting",
+            "checkpoint_sha256": "a" * 64,
+            "needs": ["Concept image effects require safe retry or reconciliation."],
+        }
+        _assert_concept_wait_status_private(clean, private_values=("secret-value",))
+        with self.assertRaisesRegex(MockSessionEvidenceError, "private fields"):
+            _assert_concept_wait_status_private(
+                {**clean, "provider_operation_id": "provider-1"},
+                private_values=(),
+            )
+        with self.assertRaisesRegex(MockSessionEvidenceError, "private values"):
+            _assert_concept_wait_status_private(
+                {**clean, "needs": ["secret-value"]},
+                private_values=("secret-value",),
+            )
+
     def test_generic_directive_contains_no_route_or_finalizer_recipe(self):
         validate_generic_directive(DIRECTIVE)
         self.assertIn("bounded native child agent", DIRECTIVE)

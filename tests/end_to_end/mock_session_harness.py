@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import shutil
 import signal
+import sqlite3
 import subprocess
 import sys
 import time
@@ -24,6 +25,7 @@ from workshop.make.native import NativeMade
 from workshop.integrations.concept_images import ConceptImageProfile
 from workshop.make.native_gate import NATIVE_CAD_FULL_TIER, NATIVE_CAD_VERIFIER_MODE
 from workshop.release.native import NativeRelease
+from workshop.runtime.concept_effects import ConceptEffectEvidence, ConceptEffectLedger
 from workshop.runtime.codex import codex_supports_native_workshop
 from workshop.wish import Wish
 from workshop.workflow import AgentRun, WORKSHOP_EFFORTS
@@ -52,6 +54,7 @@ from tests.end_to_end.mock_session_factory import MockSessionFactoryServer
 ENABLE_ENVIRONMENT = "WORKSHOP_RUN_MOCK_SESSION_E2E"
 HOME_ENVIRONMENT = "WORKSHOP_MOCK_SESSION_HOME"
 EFFORT_ENVIRONMENT = "WORKSHOP_MOCK_SESSION_EFFORT"
+PARTIAL_CONCEPT_ENVIRONMENT = "WORKSHOP_MOCK_SESSION_PARTIAL_CONCEPT"
 DEFAULT_TURN_TIMEOUT_SECONDS = 1800
 DEFAULT_ROUTE_TIMEOUT_SECONDS = 7200
 _VERSION = re.compile(r"\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?")
@@ -101,6 +104,7 @@ class MockSessionReport:
     workspace: str
     host_state: str
     protocol_calls: tuple[tuple[str, str], ...]
+    concept_wait_resume: Mapping[str, Any] | None = None
 
     def to_dict(self, *, include_local_paths: bool = True) -> Mapping[str, Any]:
         value: dict[str, Any] = {
@@ -136,7 +140,270 @@ class MockSessionReport:
             value.update(
                 {"workspace": self.workspace, "host_state": self.host_state}
             )
+        if self.concept_wait_resume is not None:
+            value["concept_wait_resume"] = dict(self.concept_wait_resume)
         return value
+
+
+@dataclass(frozen=True)
+class _PartialConceptWaitSnapshot:
+    waiting_checkpoint_sha256: str
+    proposal_checkpoint_sha256: str
+    effect_checkpoint_sha256: str
+    proposal_subject_sha256: str
+    proposal_outcome_sha256: str
+    pre_render_artifact_sha256: str
+    aggregate_id: str
+    role_identities: Mapping[str, str]
+    completed_role_audits: Mapping[str, tuple[str, ...]]
+    completed_roles: tuple[str, ...]
+
+
+_PRIVATE_CONCEPT_STATUS_KEYS = frozenset(
+    {
+        "api_key",
+        "content",
+        "effect_token",
+        "image",
+        "image_bytes",
+        "instruction",
+        "intent_id",
+        "operation_id",
+        "outcome",
+        "prompt",
+        "provider_operation_id",
+        "references",
+        "response",
+    }
+)
+
+
+def _mapping_keys(value: Any) -> set[str]:
+    keys: set[str] = set()
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if isinstance(key, str):
+                keys.add(key)
+            keys.update(_mapping_keys(item))
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        for item in value:
+            keys.update(_mapping_keys(item))
+    return keys
+
+
+def _assert_concept_wait_status_private(
+    status: Mapping[str, Any], *, private_values: Sequence[str]
+) -> None:
+    exposed = _mapping_keys(status) & _PRIVATE_CONCEPT_STATUS_KEYS
+    if exposed:
+        raise MockSessionEvidenceError(
+            "Concept wait status exposes private fields: %s"
+            % ", ".join(sorted(exposed))
+        )
+    encoded = json.dumps(status, sort_keys=True, separators=(",", ":"))
+    leaked = sorted(
+        {value for value in private_values if isinstance(value, str) and value and value in encoded}
+    )
+    if leaked:
+        raise MockSessionEvidenceError("Concept wait status exposes private values")
+
+
+def _capture_partial_concept_wait(
+    paths: Any,
+    status: Mapping[str, Any],
+    concept_calls: Sequence[tuple[Any, Mapping[str, str], Mapping[str, Any], Any]],
+) -> _PartialConceptWaitSnapshot:
+    private_values = list(FIXTURE_SECRETS)
+    for unused_url, headers, body, unused_timeout in concept_calls:
+        del unused_url, unused_timeout
+        private_values.extend(
+            value
+            for key, value in headers.items()
+            if key.lower() in {"authorization", "idempotency-key"}
+        )
+        for key, value in body.items():
+            if key in {"prompt", "instruction"} and isinstance(value, str):
+                private_values.append(value)
+    private_values.extend(
+        (
+            "mock-concept-01",
+            base64.b64encode(b"\x89PNG\r\n\x1a\nmock-session-concept-01").decode("ascii"),
+        )
+    )
+    _assert_concept_wait_status_private(status, private_values=private_values)
+    wait = read_bounded_json(
+        paths.host_state / "invent-effect-wait.json", 2 * 1024 * 1024
+    )
+    identity_fields = (
+        "waiting_checkpoint_sha256",
+        "proposal_checkpoint_sha256",
+        "effect_checkpoint_sha256",
+        "proposal_subject_sha256",
+        "proposal_outcome_sha256",
+        "pre_render_artifact_sha256",
+    )
+    if status.get("checkpoint_sha256") != wait.get("waiting_checkpoint_sha256"):
+        raise MockSessionEvidenceError(
+            "Concept wait status changed its checkpoint identity"
+        )
+    if any(
+        not isinstance(wait.get(name), str)
+        or re.fullmatch(r"[0-9a-f]{64}", str(wait.get(name))) is None
+        for name in identity_fields
+    ):
+        raise MockSessionEvidenceError("Concept wait proposal identities are invalid")
+    ledger_path = paths.host_state / "concept-effects.sqlite3"
+    with sqlite3.connect("file:%s?mode=ro" % ledger_path, uri=True) as connection:
+        connection.row_factory = sqlite3.Row
+        aggregates = connection.execute("SELECT * FROM concept_aggregates").fetchall()
+        operations = connection.execute(
+            "SELECT intent_id,identity_json,state FROM concept_operations ORDER BY created_at,intent_id"
+        ).fetchall()
+        events = connection.execute(
+            "SELECT intent_id,state FROM concept_operation_events ORDER BY event_id"
+        ).fetchall()
+    if len(aggregates) != 1 or len(operations) != 2:
+        raise MockSessionEvidenceError(
+            "partial Concept wait lacks the exact aggregate and attempted roles"
+        )
+    aggregate = aggregates[0]
+    if (
+        aggregate["product_id"] != status.get("product_id")
+        or aggregate["checkpoint_sha256"] != wait["effect_checkpoint_sha256"]
+        or aggregate["subject_sha256"] != wait["proposal_subject_sha256"]
+        or aggregate["state"] != "planned"
+    ):
+        raise MockSessionEvidenceError("Concept wait aggregate identity changed")
+    succeeded = [item for item in operations if item["state"] == "succeeded"]
+    rejected = [item for item in operations if item["state"] == "rejected"]
+    if len(succeeded) != 1 or len(rejected) != 1:
+        raise MockSessionEvidenceError(
+            "partial Concept wait must preserve one completed and one safely rejected role"
+        )
+    audits: dict[str, list[str]] = {}
+    for event in events:
+        audits.setdefault(str(event["intent_id"]), []).append(str(event["state"]))
+    completed_audits = {
+        str(item["intent_id"]): tuple(audits.get(str(item["intent_id"]), ()))
+        for item in succeeded
+    }
+    if any(states != ("planned", "sending", "succeeded") for states in completed_audits.values()):
+        raise MockSessionEvidenceError("completed Concept role audit is not exact")
+    completed_roles = tuple(
+        str(json.loads(item["identity_json"])["role"]) for item in succeeded
+    )
+    return _PartialConceptWaitSnapshot(
+        **{name: str(wait[name]) for name in identity_fields},
+        aggregate_id=str(aggregate["aggregate_id"]),
+        role_identities={
+            str(item["intent_id"]): str(item["identity_json"]) for item in operations
+        },
+        completed_role_audits=completed_audits,
+        completed_roles=completed_roles,
+    )
+
+
+def _verify_partial_concept_completion(
+    paths: Any, snapshot: _PartialConceptWaitSnapshot
+) -> Mapping[str, Any]:
+    wait_path = paths.host_state / "invent-effect-wait.json"
+    if wait_path.exists() or wait_path.is_symlink():
+        raise MockSessionEvidenceError("Concept wait record survived completion")
+    ledger = ConceptEffectLedger(paths.host_state / "concept-effects.sqlite3")
+    roles = ledger.roles(snapshot.aggregate_id)
+    if not roles or any(item.state != "succeeded" for item in roles):
+        raise MockSessionEvidenceError("Concept ledger did not complete every role")
+    for intent_id, identity_json in snapshot.role_identities.items():
+        observed = ledger.get(intent_id)
+        if json.dumps(
+            {"aggregate_id": observed.aggregate_id, **{
+                key: getattr(observed, key)
+                for key in (
+                    "product_id", "checkpoint_sha256", "subject_sha256",
+                    "pre_render_sha256", "source_manifest_sha256", "role",
+                    "output_path", "instruction_sha256", "references", "profile_id",
+                    "profile_sha256", "model", "request_schema_version",
+                )
+            }},
+            sort_keys=True,
+            separators=(",", ":"),
+        ) != identity_json:
+            raise MockSessionEvidenceError("Concept role intent changed on resume")
+    for intent_id, states in snapshot.completed_role_audits.items():
+        if tuple(item["state"] for item in ledger.audit(intent_id)) != states:
+            raise MockSessionEvidenceError("completed Concept role was resent")
+    checkpoint = AgentRun.open(
+        paths.workspace, host_state_root=paths.host_state
+    ).snapshot()
+    effect_artifacts = tuple(
+        item
+        for item in checkpoint.stage_artifacts.get("invent", ())
+        if item.path.endswith("/effect.json")
+    )
+    if len(effect_artifacts) != 1:
+        raise MockSessionEvidenceError("accepted Invent lacks one Concept effect")
+    effect_document = read_bounded_json(
+        paths.workspace / effect_artifacts[0].path, 2 * 1024 * 1024
+    )
+    effect = ConceptEffectEvidence.from_mapping(effect_document)
+    by_role = {item.role: item for item in roles}
+    concept_root = Path(effect_artifacts[0].path).parent / "concept"
+    if set(by_role) != {item.role for item in effect.roles}:
+        raise MockSessionEvidenceError("Concept final receipt role set differs")
+    for receipt in effect.roles:
+        operation = by_role[receipt.role]
+        response = operation.response or {}
+        image = paths.workspace / concept_root / receipt.path
+        try:
+            image_bytes = image.read_bytes()
+        except OSError as exc:
+            raise MockSessionEvidenceError(
+                "Concept final receipt image is unavailable"
+            ) from exc
+        if (
+            receipt.intent_sha256 != operation.evidence_intent_sha256
+            or response.get("image_sha256") != receipt.image_sha256
+            or response.get("media_type") != receipt.media_type
+            or response.get("output_path") != receipt.path
+            or sha256_bytes(image_bytes) != receipt.image_sha256
+        ):
+            raise MockSessionEvidenceError(
+                "Concept final receipt differs from ledger or exact bytes"
+            )
+    invent_gates = tuple((paths.host_state / "gates").glob("*-invent.json"))
+    if len(invent_gates) != 1:
+        raise MockSessionEvidenceError(
+            "partial Concept acceptance lacks one accepted Invent gate"
+        )
+    gate_document = read_bounded_json(invent_gates[0], 2 * 1024 * 1024)
+    gate = gate_document.get("evidence")
+    if not isinstance(gate, Mapping):
+        raise MockSessionEvidenceError("accepted Invent gate evidence is malformed")
+    if (
+        gate.get("subject_sha256") != snapshot.proposal_subject_sha256
+        or gate.get("outcome_sha256") != snapshot.proposal_outcome_sha256
+        or gate.get("checks", {}).get("pre_render_artifact_sha256")
+        != snapshot.pre_render_artifact_sha256
+        or gate.get("checks", {}).get("concept_effect_sha256")
+        != effect.concept_effect_sha256
+        or gate.get("checks", {}).get("concept_role_count") != len(effect.roles)
+    ):
+        raise MockSessionEvidenceError(
+            "accepted Invent gate changed the pending Concept proposal"
+        )
+    return {
+        "status_privacy": "verified",
+        "waiting_checkpoint_sha256": snapshot.waiting_checkpoint_sha256,
+        "effect_checkpoint_sha256": snapshot.effect_checkpoint_sha256,
+        "proposal_subject_sha256": snapshot.proposal_subject_sha256,
+        "proposal_outcome_sha256": snapshot.proposal_outcome_sha256,
+        "pre_render_artifact_sha256": snapshot.pre_render_artifact_sha256,
+        "completed_roles_before_wait": list(snapshot.completed_roles),
+        "sealed_role_count": len(effect.roles),
+        "final_receipts": "verified-exact-ledger-and-image-bytes",
+        "completed_roles_resent": False,
+        "invent_cognition_repeated": False,
+    }
 
 
 def run_bounded_process(
@@ -860,6 +1127,7 @@ def run_mock_session_acceptance(
     repository = Path(__file__).resolve().parents[2]
     projections_before = _projection_snapshot(repository, product_id)
     started = time.monotonic()
+    partial_wait_evidence: Mapping[str, Any] | None = None
     try:
         with _environment(environment), MockSessionFactoryServer(product_id) as server:
             with mock.patch(
@@ -905,6 +1173,9 @@ def run_mock_session_acceptance(
                             "%s:Invent wait lacks a bound native session" % effort
                         )
                     trace_before_effect_resume = _read_trace(paths.workspace)
+                    partial_snapshot = _capture_partial_concept_wait(
+                        paths, status, concept_calls
+                    )
                     assert_no_fixture_secrets(
                         paths.workspace,
                         paths.host_state,
@@ -929,6 +1200,9 @@ def run_mock_session_acceptance(
                         raise MockSessionEvidenceError(
                             "%s:Concept reconciliation changed the native session" % effort
                         )
+                    partial_wait_evidence = _verify_partial_concept_completion(
+                        paths, partial_snapshot
+                    )
                     receipt = resume_native_run(product_id)
             # Resolve the production paths while the isolated WORKSHOP_HOME is
             # still authoritative. Validation deliberately happens after the
@@ -1009,6 +1283,7 @@ def run_mock_session_acceptance(
             workspace=str(paths.workspace),
             host_state=str(paths.host_state),
             protocol_calls=tuple(server.state.loopback_calls),
+            concept_wait_resume=partial_wait_evidence,
         )
         _write_private_json(
             home / ("mock-session-report-%s.json" % effort),
@@ -1031,6 +1306,7 @@ __all__ = [
     "HOME_ENVIRONMENT",
     "MockSessionPrerequisiteError",
     "MockSessionReport",
+    "PARTIAL_CONCEPT_ENVIRONMENT",
     "preflight_codex",
     "redact_diagnostics",
     "run_bounded_process",

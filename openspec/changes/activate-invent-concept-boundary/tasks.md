@@ -62,7 +62,7 @@
 - [x] 7.2 Extend deterministic E2E happy-path assertions for marked Forge and Quest through Concept-bound Make, current Playtest/direct-Release rules, Factory doubles, and terminal publication; verify stage traces contain no Concept lifecycle event and Spark remains `Make -> Release` without provider calls.
 - [x] 7.3 Add deterministic E2E failure scenarios for source mutation, partial roles, missing authority/credentials, provider rejection, pre-transmission timeout, ambiguous post-transmission outcome, authenticated reconciliation, stale receipt, changed sealed bytes, Made mismatch, component mismatch, copied pixels, and stale re-Invent input; verify each exact wait/rejection/invalidation outcome.
 - [x] 7.4 Extend the mock-session harness and context-proof records so a real persistent Codex session authors and finalizes pre-render Concept during the existing Invent Goal, then resumes the same session at Concept-bound Make after host effect doubles complete; verify no host-internal mock or second root session is introduced.
-- [ ] 7.5 Add an opt-in real-Codex wait/resume acceptance case with partial completed roles and reconciliation; verify status privacy, unchanged session/checkpoint/proposal identities, no repeated Invent cognition, and exact final receipts.
+- [x] 7.5 Add an opt-in real-Codex wait/resume acceptance case with partial completed roles and reconciliation; verify status privacy, unchanged session/checkpoint/proposal identities, no repeated Invent cognition, and exact final receipts.
 
 ## 8. Documentation and Final Verification
 

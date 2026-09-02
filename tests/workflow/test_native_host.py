@@ -1485,6 +1485,68 @@ class NativeHostTest(unittest.TestCase):
             self.assertTrue(_make_proof_ready(paths, checkpoint))
             self.assertFalse(marker.exists())
 
+    def test_deep_v10_marker_accepts_cad_directory_as_project_root(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="forge", economics_capability="deep-v10", stage="make"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            paths = NativeRunPaths(root / "workspace", root / "host-state")
+            paths.workspace.mkdir()
+            paths.host_state.mkdir()
+            proof = (
+                paths.workspace
+                / "artifacts/make/r0001/product/cad/review/early-proof"
+            )
+            proof.mkdir(parents=True)
+            for name in (
+                "proof.py",
+                "state-0.step.py",
+                "state-1.step.py",
+                "state-2.step.py",
+                "state-0.step",
+                "state-1.step",
+                "state-2.step",
+                "held.png",
+                "signature.png",
+                "finding.json",
+            ):
+                (proof / name).write_bytes((name + "\n").encode())
+            for index in range(3):
+                (proof / ("state-%d.stl" % index)).write_bytes(
+                    ("distinct-state-%d\n" % index).encode()
+                )
+            marker = _make_proof_ready_path(paths)
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.make-proof-ready",
+                        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            self.assertTrue(_make_proof_ready(paths, checkpoint))
+            receipt = json.loads(
+                _make_proof_acceptance_path(paths, checkpoint).read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(len(receipt["proof_artifacts"]), 13)
+            self.assertTrue(
+                all(
+                    item["path"].startswith(
+                        "artifacts/make/r0001/product/cad/review/early-proof/"
+                    )
+                    for item in receipt["proof_artifacts"]
+                )
+            )
+
     def test_deep_v7_make_proof_marker_fails_closed_on_symlink(self):
         checkpoint = self._launcher_checkpoint(
             effort="quest", economics_capability="deep-v7", stage="make"

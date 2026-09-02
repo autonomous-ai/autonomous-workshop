@@ -147,3 +147,37 @@ that limitation is explicit rather than reconstructed. This is
 context-and-integration acceptance only: it does not prove creative or research
 quality, live-provider success, physical printability, fit, durability,
 manufacture, delivery, human recognition, or Quest behavior.
+
+Task 7.5 was completed on 2026-09-02 with the opt-in Forge partial-role
+acceptance. A clean run from the isolated Workshop home
+`acceptance/forge-partial-20260902.hkSNek` used `gpt-5.6-sol` at medium effort
+and one persistent session (`01a06177-28b6-76d3-aa7f-ff8bf7d86b6a`). Invent
+completed in 642.55 seconds. The harness then allowed the `front` role to
+complete, interrupted the next role before transmission, and verified that the
+public waiting status contained no private field or value. Host reconciliation
+resumed the exact proposal without another Invent turn or resending `front`.
+All five sealed roles subsequently matched their durable intent, response hash,
+installed path, and installed image bytes.
+
+The run also exposed a host proof-discovery defect: a self-contained CAD project
+rooted directly at `product/cad/` placed its proof at
+`product/cad/review/early-proof/`, while the host searched only the product root
+or a nested CAD project. The host now includes that canonical project-root
+candidate. Two focused layout regressions and the 104-test native-host plus
+mock-session suite passed. A fresh run then produced exactly one host-private
+Make proof receipt, passed final Make in 1119.86 seconds, completed Release in
+701.91 seconds, recorded Forge Playtest as `not-run`, and reached terminal
+checkpoint `5673200c07ca0a7543bc1b0384af10638198c7dd7fad9264eb2983c5ca663164`
+with public loopback Factory readback.
+
+The sanitized task-7.5 report is
+`/tmp/workshop-mock-session-forge-partial-20260902.json`, SHA-256
+`4a93f98f688ce0be952aff5fd2322d47beedcecb3f79430c0d0c2bee84d59967`.
+It records status privacy, waiting/effect checkpoints, proposal subject and
+outcome identities, the pre-render artifact hash, the completed role at the
+wait, five sealed roles, no resend, no repeated Invent cognition, and exact
+ledger/receipt/image-byte verification. The Concept images and Factory service
+were deterministic loopback doubles. This remains context-and-integration
+acceptance only; it does not establish live-provider behavior, creative or
+research quality, physical printability, manufacture, delivery, or human
+response.

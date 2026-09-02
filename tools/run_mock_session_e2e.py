@@ -23,6 +23,7 @@ from tests.end_to_end.mock_session_harness import (  # noqa: E402
     EFFORT_ENVIRONMENT,
     ENABLE_ENVIRONMENT,
     HOME_ENVIRONMENT,
+    PARTIAL_CONCEPT_ENVIRONMENT,
     MockSessionPrerequisiteError,
     preflight_codex,
     redact_diagnostics,
@@ -52,6 +53,11 @@ def _arguments() -> argparse.Namespace:
     )
     parser.add_argument(
         "--keep", action="store_true", help="keep isolated state after success"
+    )
+    parser.add_argument(
+        "--partial-concept-roles",
+        action="store_true",
+        help="run the Forge partial Concept effect wait/resume acceptance",
     )
     parser.add_argument(
         "--preflight-only",
@@ -112,6 +118,8 @@ def main() -> int:
         raise SystemExit("--timeout must be from 1 to 21600 seconds")
     if not arguments.preflight_only and arguments.effort is None:
         raise SystemExit("--effort is required unless --preflight-only is used")
+    if arguments.partial_concept_roles and arguments.effort != "forge":
+        raise SystemExit("--partial-concept-roles requires --effort forge")
     try:
         preflight = preflight_codex()
     except MockSessionPrerequisiteError as exc:
@@ -134,16 +142,26 @@ def main() -> int:
             HOME_ENVIRONMENT: str(home),
             EFFORT_ENVIRONMENT: effort,
             "WORKSHOP_MOCK_SESSION_TURN_TIMEOUT": str(arguments.turn_timeout),
+            PARTIAL_CONCEPT_ENVIRONMENT: (
+                "1" if arguments.partial_concept_roles else "0"
+            ),
             "PYTHONPATH": os.pathsep.join(
                 (str(REPOSITORY / "src"), str(REPOSITORY))
             ),
         }
     )
+    test_target = (
+        "tests.end_to_end.test_mock_session_live."
+        "RealCodexMockSessionEndToEndTest."
+        "test_forge_partial_concept_effect_wait_reconciles_without_repeating_invent"
+        if arguments.partial_concept_roles
+        else "tests.end_to_end.test_mock_session_live.RealCodexMockSessionEndToEndTest"
+    )
     command = [
         sys.executable,
         "-m",
         "unittest",
-        "tests.end_to_end.test_mock_session_live.RealCodexMockSessionEndToEndTest",
+        test_target,
     ]
     result = run_bounded_process(
         command,

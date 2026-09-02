@@ -89,6 +89,19 @@ uv run --frozen python tools/run_mock_session_e2e.py \
   --report /tmp/workshop-mock-session-spark.json
 ```
 
+Run the Forge partial-role wait/resume acceptance independently. It interrupts
+the second Concept role before transmission, verifies the privacy-safe Invent
+wait and exact pending identities, resumes without repeating Invent cognition
+or resending completed roles, and rehashes every final receipt against the
+durable ledger and installed image bytes:
+
+```bash
+uv run --frozen python tools/run_mock_session_e2e.py \
+  --effort forge --partial-concept-roles \
+  --turn-timeout 1800 --timeout 21600 --keep \
+  --report /tmp/workshop-mock-session-forge-partial.json
+```
+
 The exact expected traces are Spark `Make -> Release`, Forge
 `Invent -> Make -> Release`, and Quest
 `Invent -> Make -> Playtest -> Release`; every route ends at terminal
@@ -112,6 +125,10 @@ number of temporary marker-based missing-terminal fallbacks, final checkpoint
 hash/status, publication status, loopback protocol calls, and the fixed
 `context-and-integration-only` evidence label. It excludes workspace and
 host-state paths, prompts, transcripts, authored product bytes, and credentials.
+For `--partial-concept-roles`, it additionally records the safe checkpoint and
+proposal hashes, completed roles at the wait, sealed role count, and exact
+receipt/byte verification result; provider operation and intent ids remain
+private.
 
 The three evidence tiers are intentionally distinct:
 
