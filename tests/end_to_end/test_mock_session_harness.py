@@ -41,6 +41,7 @@ from tests.end_to_end.mock_session_evidence import (
 from tests.end_to_end.mock_session_factory import MockSessionFactoryServer
 from tests.end_to_end.mock_session_harness import (
     MockSessionPrerequisiteError,
+    _accepted_stage_trace,
     _accepted_make_proof_boundaries,
     _assert_agent_write_ownership,
     _fixed_wish,
@@ -331,6 +332,30 @@ class MockSessionContextRecordTest(unittest.TestCase):
                 turn_output_hashes={"artifacts/make/r0001/source.json": digest},
             )
 
+    def test_invent_concept_inputs_are_authored_sources_not_generated_proposals(self):
+        relative = "artifacts/concept/r0001/concept/brief.json"
+        source = self.root / relative
+        source.parent.mkdir(parents=True)
+        source.write_bytes(b'{"authored":true}\n')
+        digest = sha256_bytes(source.read_bytes())
+        packet = json.loads(self.packet.read_text(encoding="utf-8"))
+        packet["stage"] = "invent"
+        _write_json(self.packet, packet)
+        value = self.value()
+        value["stage"] = "invent"
+        value["stage_packet_sha256"] = sha256_bytes(self.packet.read_bytes())
+        value["outputs"] = [{"path": relative, "sha256": digest}]
+        _write_json(self.record, value)
+        validated = validate_context_record(
+            self.record,
+            run_root=self.root,
+            packet_path=self.packet,
+            agent_writes=[relative, "agent-outcome.json"],
+            proposal_artifacts=[relative],
+            turn_output_hashes={relative: digest},
+        )
+        self.assertEqual(validated["outputs"], value["outputs"])
+
     def test_duplicate_malformed_stale_missing_oversized_and_symlink_fail(self):
         self.record.parent.mkdir(parents=True, exist_ok=True)
         self.record.write_text('{"schema_version":1,"schema_version":1}')
@@ -542,6 +567,7 @@ class MockSessionArchitectureTest(unittest.TestCase):
                     "stage": "invent",
                     "agent_writes": [
                         "design/invent-source.json",
+                        "notes/inventor-contribution.md",
                         "sources/invent-source.json",
                         "agent-outcome.json",
                     ],
@@ -572,6 +598,16 @@ class MockSessionArchitectureTest(unittest.TestCase):
             "terminal_observed": False,
             "terminal_forwarded": False,
             "returncode": -15,
+            "proposal_artifacts": ["artifacts/make/made.json"],
+            "context_proof_error": None,
+        }
+        unfinished = {
+            "timed_out": False,
+            "terminal_observed": False,
+            "terminal_forwarded": False,
+            "returncode": 0,
+            "proposal_artifacts": [],
+            "context_proof_error": "context record is missing or malformed",
         }
         self.assertEqual(
             _terminal_evidence_mode(public, effort="spark", stage="make"),
@@ -581,15 +617,66 @@ class MockSessionArchitectureTest(unittest.TestCase):
             _terminal_evidence_mode(fallback, effort="spark", stage="make"),
             "finalized-marker-fallback",
         )
+        self.assertEqual(
+            _terminal_evidence_mode(unfinished, effort="forge", stage="make"),
+            "recoverable-unfinished",
+        )
         for changed in (
             {**fallback, "timed_out": True},
             {**fallback, "terminal_forwarded": True},
             {**public, "returncode": 1},
+            {**unfinished, "proposal_artifacts": ["artifacts/make/made.json"]},
+            {**unfinished, "context_proof_error": "different failure"},
         ):
             with self.assertRaisesRegex(
                 MockSessionEvidenceError, "bounded native turn|terminal evidence"
             ):
                 _terminal_evidence_mode(changed, effort="spark", stage="make")
+
+    def test_stage_trace_ignores_only_recoverable_no_proposal_turns(self):
+        def completed(stage):
+            return {
+                "stage": stage,
+                "timed_out": False,
+                "terminal_observed": True,
+                "terminal_forwarded": True,
+                "returncode": 0,
+                "make_proof_boundary": False,
+                "proposal_artifacts": ["artifacts/%s/outcome.json" % stage],
+                "context_proof_error": None,
+            }
+
+        proof = {
+            **completed("make"),
+            "make_proof_boundary": True,
+            "proposal_artifacts": [],
+        }
+        unfinished = {
+            "stage": "make",
+            "timed_out": False,
+            "terminal_observed": False,
+            "terminal_forwarded": False,
+            "returncode": 0,
+            "make_proof_boundary": False,
+            "proposal_artifacts": [],
+            "context_proof_error": "context record is missing or malformed",
+        }
+        trace = (
+            completed("invent"),
+            proof,
+            unfinished,
+            dict(unfinished),
+            completed("make"),
+            completed("release"),
+        )
+        self.assertEqual(
+            _accepted_stage_trace(trace, effort="forge"),
+            ("invent", "make", "release"),
+        )
+        with self.assertRaisesRegex(
+            MockSessionEvidenceError, "not followed by a completed make stage"
+        ):
+            _accepted_stage_trace(trace[:-2] + (completed("release"),), effort="forge")
 
     def test_operator_runner_and_documentation_match_current_routes(self):
         repository = Path(__file__).resolve().parents[2]

@@ -59,3 +59,91 @@ and the partial-role real acceptance remain unattempted. No live-provider
 request was made, and no live-provider success, visual quality, buildability
 from Concept imagery, manufacture, delivery, or physical result is claimed
 from the deterministic doubles.
+
+On 2026-09-02 a further authenticated real-Codex Forge attempt used
+`gpt-5.6-sol` at medium effort through an in-memory test-only launcher override
+and the exact HCMC skyline-chess Wish supplied for task 8.4. One persistent
+session (`01a05dec-fea0-77c1-8492-d451a76ea9aa`) completed Invent in 413.78
+seconds, sealed 16 loopback Concept-image roles, crossed the Make proof boundary
+in 376.74 seconds, and passed the Make host gate after three further same-session
+turns of 1800.03, 51.56, and 301.60 seconds. The final Made bytes contained 12
+side/role STEP and STL parts, a 32-piece assembly, passing print preflight, a
+hash-bound blind signature review, and passing integrated verification. Release
+authored and reviewed an eight-page manual in 869.60 seconds and truthfully
+recorded Forge Playtest as not run. Publication then failed before any Factory
+mutation: `_sealed_primary` rejected the Made layout because the primary STL and
+generator were under `cad/` rather than at the product root. The durable run
+therefore remains active at Release checkpoint
+`b926eeacf1168188fb8fd5846733eb77f2935bfb4fef51fd2aede4c3e6d09952`;
+this is failure evidence, not terminal Forge acceptance, publication, or a
+Quest result.
+
+After `f0f19218` added the Factory-ready Made-root gate, a clean authenticated
+retry on 2026-09-02 used the same exact Wish and an acceptance-only
+`gpt-5.6-sol`/medium launcher override. One persistent session
+(`01a05e54-c446-7611-bb42-1bdba549c588`) completed Invent in 310.44 seconds,
+sealed 12 loopback Concept-image roles, and crossed the initial Make proof
+boundary in 200.51 seconds. Final Make then used turns of 1800.01, 48.65, and
+207.63 seconds. It produced root-level `assembled.stl` and `assembled.step`,
+the complete sealed product tree, a passing hash-bound signature review, and a
+passing integrated CAD verification record; the Make host gate passed. Release
+completed in 567.04 seconds, recorded Forge Playtest as `not-run`, passed the
+public-print-package gate, and received verified public readback from the
+loopback Factory double. The terminal checkpoint is
+`847531d0fcacaff44dad56ef0e6b7abcf4836ac344fc40f0e80ba09c3b0f2cb9`.
+
+The post-run acceptance audit nevertheless failed and emitted no sanitized
+acceptance report: after the 1800-second final-Make boundary, one continuation
+was labeled `make_proof_boundary=true`, so the trace contained two intermediate
+Make proof turns and `_validate_trace` rejected it as
+`forge:multiple intermediate Make proof turns were observed`. The production
+route is terminal and all host gates passed, but this remains failure evidence
+for task 8.4 until the duplicate proof-boundary classification is corrected and
+a fresh authenticated Forge/Quest acceptance produces the required report. No
+live Concept-image provider or live Factory service was used, and no physical
+print, manufacture, delivery, human recognition, or Quest result is claimed.
+
+After `7615c5d8` persisted the one host-accepted Make proof boundary, a fresh
+authenticated Forge run on 2026-09-02 used the same exact HCMC skyline-chess
+Wish and an acceptance-only `gpt-5.6-sol`/medium launcher override. One
+persistent session (`01a06060-f4e4-7710-9885-bf843ecdde4b`) completed Invent in
+429.05 seconds, sealed 12 successful loopback Concept-image roles, and resumed
+Make at the exact sealed Concept binding. The host accepted one Make proof
+boundary after 272.75 seconds. Final Make then used two no-proposal recoverable
+turns of 899.99 and 1800.01 seconds plus a completed turn of 527.89 seconds;
+all three retained the same checkpoint, subject, runtime binding, and session,
+and neither unfinished turn was classified as a proof boundary. The accepted
+Made contract bound the sealed Concept and effect, included root-level
+`assembled.step` and `assembled.stl`, and passed the full fresh strict-fit CAD
+gate.
+
+Release completed in 702.50 seconds, recorded Forge Playtest as `not-run`,
+passed the public-print-package gate, and produced one succeeded import intent,
+one succeeded publication intent, and exact manual hash readback through the
+loopback Factory double. The terminal checkpoint is
+`c4fa6b506d3ca20b893a67168d3f6577de0c960284054b7029ec29256aeba513`.
+The live route-state audit passed before the post-run trace audit exposed three
+acceptance-harness assumptions that predated bounded continuation and compound
+Invent: recoverable no-proposal turns were counted as completed stages,
+final-Make context was limited to the last turn's writes, and the five directly
+authored Concept source files were treated as generated proposal bytes. The
+harness now accepts only the exact recoverable shape when it is followed by a
+completed turn for the same stage, binds final context to cumulative same-stage
+writes, and retains the prohibition for derived finalizer artifacts. It also
+recognizes private `notes/` as the source-note area permitted by the
+materialized constitution. Nineteen focused contract and failure-path tests
+pass, and the preserved six-turn trace now passes the corrected audit with the
+canonical `Invent -> Make -> Release` stage sequence and three verified final
+context records.
+
+The sanitized task-8.4 record has SHA-256
+`45a62fe3447a8cf990b61f23a302d34cf3edbbb0df4ba598e3969974ba321c2d`.
+It records the exact five authored Concept-source hashes, 12-role effect result,
+six native-turn timings, one start and five resumes, Made/Concept/effect
+bindings, gate identities, durable Factory intent identities, truthful
+Playtest omission, and terminal checkpoint. The ephemeral ordered loopback
+HTTP call list was not retained after the original post-run trace exception;
+that limitation is explicit rather than reconstructed. This is
+context-and-integration acceptance only: it does not prove creative or research
+quality, live-provider success, physical printability, fit, durability,
+manufacture, delivery, human recognition, or Quest behavior.

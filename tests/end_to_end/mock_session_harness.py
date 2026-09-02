@@ -327,6 +327,7 @@ def _assert_agent_write_ownership(
                 or relative in root_sources.get(str(stage), set())
                 or relative.startswith("authored/")
                 or relative.startswith("sources/")
+                or relative.startswith("notes/")
                 or relative.startswith("work/")
                 or relative.startswith("artifacts/%s/" % stage)
                 or (stage == "invent" and relative.startswith("artifacts/concept/"))
@@ -352,13 +353,62 @@ def _terminal_evidence_mode(
     if observed is True and forwarded is True and returncode == 0:
         return "public-terminal"
     if observed is False and forwarded is False and type(returncode) is int:
-        # This trace is inspected only after the production host accepted the
-        # exact proposal and completed the route. The missing terminal is the
-        # temporary marker-based launcher fail-open, not independent evidence.
-        return "finalized-marker-fallback"
+        artifacts = value.get("proposal_artifacts")
+        context_error = value.get("context_proof_error")
+        if artifacts == [] and context_error == "context record is missing or malformed":
+            # A bounded Codex turn can end without a proposal and remain
+            # resumable.  It is a real native turn, but not a completed stage
+            # and not a marker-based finalization fallback.
+            return "recoverable-unfinished"
+        if (
+            isinstance(artifacts, list)
+            and bool(artifacts)
+            and context_error is None
+        ):
+            # The host accepted exact proposal bytes even though the public
+            # terminal event was absent.  This is the narrow marker fallback.
+            return "finalized-marker-fallback"
     raise MockSessionEvidenceError(
         "%s:%s has inconsistent native terminal evidence" % (effort, stage)
     )
+
+
+def _accepted_stage_trace(
+    trace: Sequence[Mapping[str, Any]], *, effort: str
+) -> tuple[str, ...]:
+    """Return completed lifecycle stages while validating unfinished turns."""
+
+    modes = tuple(
+        _terminal_evidence_mode(
+            value,
+            effort=effort,
+            stage=str(value.get("stage", "unknown")),
+        )
+        for value in trace
+    )
+    completed: list[str] = []
+    for index, (value, mode) in enumerate(zip(trace, modes)):
+        if value.get("make_proof_boundary") is True:
+            continue
+        stage = value.get("stage")
+        if mode != "recoverable-unfinished":
+            completed.append(stage)
+            continue
+        next_completed = next(
+            (
+                later.get("stage")
+                for later, later_mode in zip(trace[index + 1 :], modes[index + 1 :])
+                if later.get("make_proof_boundary") is not True
+                and later_mode != "recoverable-unfinished"
+            ),
+            None,
+        )
+        if next_completed != stage:
+            raise MockSessionEvidenceError(
+                "%s:%s recoverable turn is not followed by a completed %s stage"
+                % (effort, stage, stage)
+            )
+    return tuple(completed)
 
 
 def _accepted_make_proof_boundaries(
@@ -448,11 +498,7 @@ def _validate_trace(
             raise MockSessionEvidenceError(
                 "%s:intermediate Make proof boundary is not followed by Make" % effort
             )
-    stages = tuple(
-        value.get("stage")
-        for value in trace
-        if value.get("make_proof_boundary") is not True
-    )
+    stages = _accepted_stage_trace(trace, effort=effort)
     if stages != expected:
         raise MockSessionEvidenceError(
             "%s:stage trace differs: expected %r, observed %r"
@@ -469,20 +515,32 @@ def _validate_trace(
         raise MockSessionEvidenceError(
             "%s:runtime configuration changed across turns" % effort
         )
+    stage_agent_writes: dict[str, set[str]] = {}
     for value in trace:
         stage = value["stage"]
+        cumulative_writes = stage_agent_writes.setdefault(stage, set())
+        writes = value.get("agent_writes")
+        if isinstance(writes, list):
+            cumulative_writes.update(
+                relative for relative in writes if isinstance(relative, str)
+            )
+        evidence_mode = _terminal_evidence_mode(
+            value, effort=effort, stage=stage
+        )
         prohibited = value.get("prohibited_items")
         if prohibited:
             raise MockSessionEvidenceError(
                 "%s:%s used prohibited activity: %s"
                 % (effort, stage, prohibited)
             )
-        if value.get("context_proof_error") is not None:
+        if (
+            evidence_mode != "recoverable-unfinished"
+            and value.get("context_proof_error") is not None
+        ):
             raise MockSessionEvidenceError(
                 "%s:%s wrapper rejected context proof: %s"
                 % (effort, stage, value["context_proof_error"])
             )
-        _terminal_evidence_mode(value, effort=effort, stage=stage)
         checkpoint = value.get("checkpoint_sha256")
         if not isinstance(checkpoint, str):
             raise MockSessionEvidenceError(
@@ -502,15 +560,19 @@ def _validate_trace(
             raise MockSessionEvidenceError(
                 "%s:%s packet snapshot changed" % (effort, stage)
             )
-        if value.get("make_proof_boundary") is not True:
+        if (
+            value.get("make_proof_boundary") is not True
+            and evidence_mode != "recoverable-unfinished"
+        ):
             validate_context_record(
                 run_root / value["context_record_path"],
                 run_root=run_root,
                 packet_path=packet_path,
-                agent_writes=value.get("agent_writes"),
+                agent_writes=sorted(cumulative_writes),
                 proposal_artifacts=value.get("proposal_artifacts"),
                 turn_output_hashes=value.get("turn_output_hashes"),
             )
+            cumulative_writes.clear()
     _assert_agent_write_ownership(trace, effort=effort)
     session = read_bounded_json(host_state / "codex-session.json", 64 * 1024)
     session_id = session.get("thread_id")
@@ -920,7 +982,14 @@ def run_mock_session_acceptance(
             session_resumes=len(trace) - 1,
             session_id=session_id,
             context_records_verified=sum(
-                value.get("make_proof_boundary") is not True for value in trace
+                value.get("make_proof_boundary") is not True
+                and _terminal_evidence_mode(
+                    value,
+                    effort=effort,
+                    stage=str(value["stage"]),
+                )
+                != "recoverable-unfinished"
+                for value in trace
             ),
             context_proof="verified-final-bytes-and-run-root-inputs",
             terminal_event_fallbacks=sum(

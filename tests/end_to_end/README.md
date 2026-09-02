@@ -94,6 +94,12 @@ The exact expected traces are Spark `Make -> Release`, Forge
 `Invent -> Make -> Playtest -> Release`; every route ends at terminal
 published Release. The defaults are 1800 seconds per
 Codex turn and 7200 seconds for the whole route; both are bounded CLI options.
+Bounded no-proposal turns that require an operator resume remain native turns,
+but are not completed lifecycle stages. The post-run audit accepts only their
+exact no-terminal, no-proposal shape when a later completed turn for the same
+stage exists. Final context proof is then checked against cumulative writes
+from those same-stage turns; derived finalizer artifacts remain ineligible as
+authored source evidence.
 Successful isolated state is removed unless `--keep` is supplied. Failures and
 timeouts retain their private temporary state and print its location after
 redacting recognizable credentials. Use retained state only for local

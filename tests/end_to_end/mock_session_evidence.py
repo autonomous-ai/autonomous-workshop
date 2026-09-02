@@ -61,6 +61,10 @@ FORBIDDEN_OUTPUT_PARTS = frozenset(
         "factory-effects.sqlite3",
     }
 )
+_INVENT_CONCEPT_SOURCE = re.compile(
+    r"artifacts/concept/r\d{4}/concept/"
+    r"(?:brief|research|prompts|descriptor|derived_wish)\.json"
+)
 FORBIDDEN_INTERNAL_TERMS = frozenset(
     {
         "launcher",
@@ -399,7 +403,18 @@ def validate_context_record(
                     "mock-session finalizer proposal artifact is unavailable: %s"
                     % relative
                 )
-        if set(outputs) & set(proposal_artifacts):
+        overlapping = set(outputs) & set(proposal_artifacts)
+        if record["stage"] == "invent":
+            # Marked Invent's five Concept inputs are direct Manager-authored
+            # source even though the compound finalizer also lists them in the
+            # accepted proposal.  Derived pre-render and lifecycle artifacts
+            # remain forbidden context outputs.
+            overlapping = {
+                relative
+                for relative in overlapping
+                if _INVENT_CONCEPT_SOURCE.fullmatch(relative) is None
+            }
+        if overlapping:
             raise MockSessionEvidenceError(
                 "mock-session outputs cite generated finalizer proposal artifacts"
             )
