@@ -25,6 +25,7 @@ from workshop.workflow.native_run import (
     _deep_make_critical_path_prompt,
     _deep_make_recovery_prompt,
     _deep_invent_recovery_prompt,
+    _make_proof_acceptance_path,
     _make_proof_ready,
     _make_proof_ready_path,
     _v13_operator_resume_recovery,
@@ -1085,7 +1086,7 @@ class NativeHostTest(unittest.TestCase):
                     ),
                 )
 
-    def test_deep_v7_make_proof_marker_is_exact_checkpoint_bound_hint(self):
+    def test_deep_v7_make_proof_marker_is_accepted_once_into_private_state(self):
         checkpoint = self._launcher_checkpoint(
             effort="quest", economics_capability="deep-v7", stage="make"
         )
@@ -1114,10 +1115,77 @@ class NativeHostTest(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertTrue(_make_proof_ready(paths, checkpoint))
+            self.assertFalse(marker.exists())
+            receipt = _make_proof_acceptance_path(paths, checkpoint)
+            self.assertTrue(receipt.is_file())
+            self.assertEqual(stat.S_IMODE(receipt.stat().st_mode), 0o600)
 
+            # The durable receipt, rather than a workspace marker, selects all
+            # later Make continuations for this exact checkpoint.
+            self.assertTrue(_make_proof_ready(paths, checkpoint))
+
+            # Recreating the marker cannot reopen or relabel the proof phase.
             marker.write_text("{}\n", encoding="utf-8")
+            self.assertTrue(_make_proof_ready(paths, checkpoint))
+            self.assertFalse(marker.exists())
+
+    def test_deep_v7_invalid_initial_marker_is_removed_without_receipt(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v7", stage="make"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            paths = NativeRunPaths(
+                workspace=root / "workspace",
+                host_state=root / "host-state",
+            )
+            paths.workspace.mkdir()
+            paths.host_state.mkdir()
+            marker = _make_proof_ready_path(paths)
+            marker.write_text("{}\n", encoding="utf-8")
+
             self.assertFalse(_make_proof_ready(paths, checkpoint))
             self.assertFalse(marker.exists())
+            self.assertFalse(_make_proof_acceptance_path(paths, checkpoint).exists())
+
+    def test_deep_v7_make_proof_acceptance_fails_closed_when_tampered(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v7", stage="make"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            paths = NativeRunPaths(
+                workspace=root / "workspace",
+                host_state=root / "host-state",
+            )
+            paths.workspace.mkdir()
+            paths.host_state.mkdir()
+            marker = _make_proof_ready_path(paths)
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.make-proof-ready",
+                        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(_make_proof_ready(paths, checkpoint))
+            receipt = _make_proof_acceptance_path(paths, checkpoint)
+            value = json.loads(receipt.read_text(encoding="utf-8"))
+            value["checkpoint_sha256"] = "f" * 64
+            receipt.write_text(
+                json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            receipt.chmod(0o600)
+
+            with self.assertRaisesRegex(StateConflict, "acceptance binding"):
+                _make_proof_ready(paths, checkpoint)
 
     def test_deep_v10_marker_requires_three_distinct_durable_state_proofs(self):
         checkpoint = self._launcher_checkpoint(
@@ -1184,6 +1252,33 @@ class NativeHostTest(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertTrue(_make_proof_ready(paths, checkpoint))
+            receipt = json.loads(
+                _make_proof_acceptance_path(paths, checkpoint).read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(len(receipt["proof_artifacts"]), 13)
+            self.assertEqual(
+                {
+                    item["path"].rsplit("/", 1)[-1]
+                    for item in receipt["proof_artifacts"]
+                },
+                {
+                    "proof.py",
+                    "state-0.step.py",
+                    "state-1.step.py",
+                    "state-2.step.py",
+                    "state-0.step",
+                    "state-1.step",
+                    "state-2.step",
+                    "state-0.stl",
+                    "state-1.stl",
+                    "state-2.stl",
+                    "held.png",
+                    "signature.png",
+                    "finding.json",
+                },
+            )
 
             second = (
                 paths.workspace
@@ -1203,7 +1298,9 @@ class NativeHostTest(unittest.TestCase):
                 + "\n",
                 encoding="utf-8",
             )
-            self.assertFalse(_make_proof_ready(paths, checkpoint))
+            # Post-acceptance workspace changes do not reopen proof. The
+            # receipt preserves the exact bytes that passed the boundary.
+            self.assertTrue(_make_proof_ready(paths, checkpoint))
             self.assertFalse(marker.exists())
 
     def test_deep_v7_make_proof_marker_fails_closed_on_symlink(self):
@@ -1250,7 +1347,13 @@ class NativeHostTest(unittest.TestCase):
                 for index in range(3)
                 for suffix in ("step", "stl")
             )
-            for name in (*source_names, *generated_names, "held.png", "signature.png", "finding.json"):
+            for name in (
+                *source_names,
+                *generated_names,
+                "held.png",
+                "signature.png",
+                "finding.json",
+            ):
                 (proof / name).write_bytes((name + "\n").encode())
             base = 2_000_000_000_000_000_000
             for name in source_names:
@@ -1272,11 +1375,15 @@ class NativeHostTest(unittest.TestCase):
             ) + "\n"
             marker.write_text(marker_payload, encoding="utf-8")
             self.assertTrue(_make_proof_ready(paths, checkpoint))
+            receipt = _make_proof_acceptance_path(paths, checkpoint).read_bytes()
 
             os.utime(proof / "proof.py", ns=(base + 40, base + 40))
             marker.write_text(marker_payload, encoding="utf-8")
-            self.assertFalse(_make_proof_ready(paths, checkpoint))
+            self.assertTrue(_make_proof_ready(paths, checkpoint))
             self.assertFalse(marker.exists())
+            self.assertEqual(
+                _make_proof_acceptance_path(paths, checkpoint).read_bytes(), receipt
+            )
 
     def test_deep_v3_retains_medium_make_and_24k_compaction(self):
         checkpoint = self._launcher_checkpoint(

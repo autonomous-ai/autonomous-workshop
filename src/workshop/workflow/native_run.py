@@ -215,6 +215,23 @@ _PLAYTEST_PROPOSAL_REJECTION_HEAD_KIND = (
 )
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
 _MAKE_PROOF_READY_NAME = ".make-proof-ready.json"
+_MAKE_PROOF_ACCEPTANCES_DIRECTORY = "make-proof-acceptances"
+_MAKE_PROOF_ACCEPTANCE_KIND = "autonomous-workshop.make-proof-acceptance"
+_MAKE_PROOF_ARTIFACT_NAMES = (
+    "proof.py",
+    "state-0.step.py",
+    "state-1.step.py",
+    "state-2.step.py",
+    "state-0.step",
+    "state-1.step",
+    "state-2.step",
+    "state-0.stl",
+    "state-1.stl",
+    "state-2.stl",
+    "held.png",
+    "signature.png",
+    "finding.json",
+)
 _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
 _SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _MAX_STAGE_INPUT_BYTES = 512 * 1024
@@ -4406,11 +4423,11 @@ def _make_proof_ready_path(paths: NativeRunPaths) -> Path:
     return paths.workspace / _MAKE_PROOF_READY_NAME
 
 
-def _v10_make_proof_artifacts_ready(
+def _v10_make_proof_artifact_bindings(
     paths: NativeRunPaths,
     checkpoint: AgentRunCheckpoint,
-) -> bool:
-    """Require durable real-state proof bytes before accepting a v10 marker."""
+) -> Optional[list[dict[str, str]]]:
+    """Return exact durable real-state proof bindings for a v10+ marker."""
 
     product = (
         paths.workspace
@@ -4426,21 +4443,21 @@ def _v10_make_proof_artifacts_ready(
     except FileNotFoundError:
         pass
     except OSError:
-        return False
+        return None
     else:
         if cad.is_symlink() or not stat.S_ISDIR(cad_identity.st_mode):
-            return False
+            return None
         try:
             projects = tuple(cad.iterdir())
         except OSError:
-            return False
+            return None
         for project in projects:
             try:
                 identity = project.lstat()
             except OSError:
-                return False
+                return None
             if project.is_symlink():
-                return False
+                return None
             if stat.S_ISDIR(identity.st_mode):
                 candidates.append(project / "review" / "early-proof")
     existing = []
@@ -4452,25 +4469,11 @@ def _v10_make_proof_artifacts_ready(
                 _existing_real_directory(candidate, label="Make proof directory")
             )
         except StateConflict:
-            return False
+            return None
     if len(existing) != 1:
-        return False
+        return None
     proof = existing[0]
-    required = (
-        "proof.py",
-        "state-0.step.py",
-        "state-1.step.py",
-        "state-2.step.py",
-        "state-0.step",
-        "state-1.step",
-        "state-2.step",
-        "state-0.stl",
-        "state-1.stl",
-        "state-2.stl",
-        "held.png",
-        "signature.png",
-        "finding.json",
-    )
+    required = _MAKE_PROOF_ARTIFACT_NAMES
     contents: dict[str, bytes] = {}
     mtimes: dict[str, int] = {}
     for name in required:
@@ -4478,26 +4481,26 @@ def _v10_make_proof_artifacts_ready(
         try:
             before = path.lstat()
             if path.is_symlink() or not stat.S_ISREG(before.st_mode):
-                return False
+                return None
             if not 1 <= before.st_size <= 64 * 1024 * 1024:
-                return False
+                return None
             content = path.read_bytes()
             after = path.lstat()
         except OSError:
-            return False
+            return None
         if (
             (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
             != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
             or len(content) != before.st_size
         ):
-            return False
+            return None
         contents[name] = content
         mtimes[name] = before.st_mtime_ns
     state_hashes = {
         _sha256(contents["state-%d.stl" % index]) for index in range(3)
     }
     if len(state_hashes) != 3:
-        return False
+        return None
     if _phased_deep_capability_path(checkpoint) in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -4512,25 +4515,160 @@ def _v10_make_proof_artifacts_ready(
             for suffix in ("step", "stl")
         )
         if any(mtimes[name] < source_time for name in generated):
-            return False
+            return None
         if mtimes["held.png"] < mtimes["state-0.stl"]:
-            return False
+            return None
         if mtimes["signature.png"] < max(
             mtimes["state-%d.stl" % index] for index in range(3)
         ):
-            return False
+            return None
         if mtimes["finding.json"] < max(
             mtimes["held.png"], mtimes["signature.png"]
         ):
-            return False
+            return None
+    return [
+        {
+            "path": (proof / name).relative_to(paths.workspace).as_posix(),
+            "sha256": _sha256(contents[name]),
+        }
+        for name in required
+    ]
+
+
+def _make_proof_acceptance_path(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    create_parent: bool = False,
+) -> Path:
+    parent = paths.host_state / _MAKE_PROOF_ACCEPTANCES_DIRECTORY
+    try:
+        identity = parent.lstat()
+    except FileNotFoundError:
+        if not create_parent:
+            return parent / (checkpoint.checkpoint_sha256 + ".json")
+        try:
+            parent.mkdir(mode=0o700)
+            identity = parent.lstat()
+        except OSError as exc:
+            raise StateConflict("Make proof acceptance directory is unavailable") from exc
+    except OSError as exc:
+        raise StateConflict("Make proof acceptance directory is unavailable") from exc
+    if (
+        parent.is_symlink()
+        or not stat.S_ISDIR(identity.st_mode)
+        or stat.S_IMODE(identity.st_mode) != 0o700
+    ):
+        raise StateConflict("Make proof acceptance directory must be private")
+    return parent / (checkpoint.checkpoint_sha256 + ".json")
+
+
+def _make_proof_acceptance_identity(
+    checkpoint: AgentRunCheckpoint,
+    marker_sha256: str,
+    proof_artifacts: Sequence[Mapping[str, str]],
+) -> dict[str, Any]:
+    capability_path = _phased_deep_capability_path(checkpoint)
+    if capability_path is None:
+        raise StateConflict("Make proof acceptance requires a phased-deep capability")
+    capability_sha256 = checkpoint.input_sha256s.get(capability_path)
+    if (
+        not isinstance(capability_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", capability_sha256) is None
+    ):
+        raise StateConflict("Make proof acceptance capability binding is invalid")
+    return {
+        "schema_version": 1,
+        "kind": _MAKE_PROOF_ACCEPTANCE_KIND,
+        "product_id": checkpoint.product_id,
+        "stage": "make",
+        "round": checkpoint.round_index,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "capability_path": capability_path,
+        "capability_sha256": capability_sha256,
+        "marker_sha256": marker_sha256,
+        "proof_artifacts": [dict(item) for item in proof_artifacts],
+    }
+
+
+def _read_make_proof_acceptance(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+) -> bool:
+    path = _make_proof_acceptance_path(paths, checkpoint)
+    if not path.exists() and not path.is_symlink():
+        return False
+    value = _read_stable_private_json(
+        path,
+        label="Make proof acceptance",
+        maximum_bytes=16 * 1024,
+    )
+    marker_sha256 = value.get("marker_sha256")
+    proof_artifacts = value.get("proof_artifacts")
+    requires_artifacts = _phased_deep_capability_path(checkpoint) in (
+        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+    )
+    valid_artifacts = (
+        isinstance(proof_artifacts, list)
+        and len(proof_artifacts) == (13 if requires_artifacts else 0)
+        and all(
+            isinstance(item, Mapping)
+            and set(item) == {"path", "sha256"}
+            and isinstance(item.get("path"), str)
+            and item["path"].startswith("artifacts/make/")
+            and "/review/early-proof/" in item["path"]
+            and isinstance(item.get("sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) is not None
+            for item in proof_artifacts
+        )
+        and (
+            not requires_artifacts
+            or tuple(item["path"].rsplit("/", 1)[-1] for item in proof_artifacts)
+            == _MAKE_PROOF_ARTIFACT_NAMES
+        )
+        and (
+            not requires_artifacts
+            or len({item["path"].rsplit("/", 1)[0] for item in proof_artifacts})
+            == 1
+        )
+    )
+    if (
+        not isinstance(marker_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", marker_sha256) is None
+        or not valid_artifacts
+        or value
+        != _make_proof_acceptance_identity(
+            checkpoint, marker_sha256, proof_artifacts
+        )
+        or path.read_bytes() != _canonical_json_bytes(dict(value)) + b"\n"
+    ):
+        raise StateConflict("Make proof acceptance binding is invalid")
     return True
+
+
+def _consume_make_proof_marker(path: Path) -> None:
+    try:
+        before = path.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise StateConflict("Make proof turn marker cannot be inspected") from exc
+    if path.is_symlink() or not stat.S_ISREG(before.st_mode):
+        raise StateConflict("Make proof turn marker must be a regular file")
+    try:
+        path.unlink()
+    except OSError as exc:
+        raise StateConflict("Make proof turn marker cannot be consumed") from exc
 
 
 def _make_proof_ready(
     paths: NativeRunPaths,
     checkpoint: AgentRunCheckpoint,
 ) -> bool:
-    """Validate the untrusted phased-deep marker without treating it as evidence."""
+    """Accept the untrusted marker once and use host-private state thereafter."""
 
     if not (
         checkpoint.stage == "make"
@@ -4539,6 +4677,11 @@ def _make_proof_ready(
     ):
         return False
     path = _make_proof_ready_path(paths)
+    if _read_make_proof_acceptance(paths, checkpoint):
+        # A crash may leave the marker beside a durable receipt, and an agent
+        # may recreate it later. Neither event reopens the proof boundary.
+        _consume_make_proof_marker(path)
+        return True
     try:
         before = path.lstat()
     except FileNotFoundError:
@@ -4581,8 +4724,19 @@ def _make_proof_ready(
             DEEP_ECONOMICS_V10_CAPABILITY_PATH,
         )
     ):
-        valid = _v10_make_proof_artifacts_ready(paths, checkpoint)
+        proof_artifacts = _v10_make_proof_artifact_bindings(paths, checkpoint)
+        valid = proof_artifacts is not None
+    else:
+        proof_artifacts = []
     if valid:
+        receipt = _make_proof_acceptance_identity(
+            checkpoint, _sha256(content), proof_artifacts
+        )
+        receipt_path = _make_proof_acceptance_path(
+            paths, checkpoint, create_parent=True
+        )
+        _write_private_json(receipt_path, receipt, mode=0o600)
+        _consume_make_proof_marker(path)
         return True
     try:
         path.unlink()

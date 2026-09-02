@@ -72,9 +72,10 @@ is the next action. A compact exact-Taste-header index
 covers the complete roster before Codex reads only the strongest three full
 agents. Make starts with one 16-minute medium real-state proof phase at 256k,
 then the same Goal resumes at high reasoning for a 15-minute source handoff
-before normal 30-minute recovery after its checkpoint-bound proof marker exists.
-An explicit operator resume with that valid marker starts directly in normal
-recovery rather than replaying the source handoff. A current wall-thickness
+before normal 30-minute recovery after the host accepts its checkpoint-bound
+proof marker into a private receipt. An explicit operator resume with that
+valid receipt starts directly in normal recovery rather than replaying the
+source handoff. A current wall-thickness
 failure may route to its saved region table and the CAD print-optimisation
 reference once before one all-regions source repair.
 Playtest and Release use medium, and every stage compacts at 256k. One CLI
@@ -92,8 +93,13 @@ durable action, and generate/export/render execute in one foreground batch.
 camera and refuses visually indistinguishable frames; a motion sheet remains
 viewpoint-only presentation. The root performs the early direction check. Independent blind critique remains
 mandatory at final Make.
-The marker
-ends only that process turn; it is neither a gate nor a stage transition. Their extra work earns one
+The marker is a one-time workspace handoff: the host validates its exact bytes,
+atomically records a checkpoint-, capability-, and marker-hash-bound private
+receipt with the exact accepted early-proof artifact hashes, and consumes the
+marker. All later continuations select final Make from that receipt, so marker
+loss, recreation, or post-boundary workspace changes cannot reopen or relabel
+the proof phase. The marker and receipt are neither a product gate nor a stage
+transition. Their extra work earns one
 distinctive signature experience rather than gratuitous part or mechanism
 count. V12 proof recovery seals complete current evidence before design work,
 and marker validation rejects generated states or renders older than their
@@ -785,13 +791,14 @@ private Wish demonstrate that:
     with a medium source-first finalization handoff, one 16-minute medium Make proof runway
     followed by a 15-minute high source handoff and normal 30-minute recovery,
     medium later stages, 256k compaction, an eight-turn CLI invocation cap, and
-    a checkpoint-bound proof-turn marker with no gate authority, a private run
-    cache, deferred broad CAD guidance, one batched mandatory read, immediate
-    source work, root early inspection, three fixed-camera exact-state renders,
-    batched interpreter-prefixed CAD commands, and exact `gen_step()` state
-    entries, source-first proof sealing, freshness-bound generated/render
-    evidence, direct recovery on explicit final-Make resume, and one
-    evidence-triggered thickness-reference route, while older exact runs retain
+    one-time proof-turn marker accepted into a private checkpoint-bound receipt
+    with no gate authority, a private run cache, deferred broad CAD guidance,
+    one batched mandatory read, immediate source work, root early inspection,
+    three fixed-camera exact-state renders, batched interpreter-prefixed CAD
+    commands, and exact `gen_step()` state entries, source-first proof sealing,
+    freshness-bound generated/render evidence, direct recovery on explicit
+    final-Make resume, and one evidence-triggered thickness-reference route,
+    while older exact runs retain
     their original profile.
 
 ## Engine portability
