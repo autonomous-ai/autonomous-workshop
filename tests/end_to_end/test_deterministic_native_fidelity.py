@@ -270,7 +270,7 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
     def setUp(self):
         # Most scenarios are frozen-v1 compatibility fixtures. The explicit
         # simplified cases opt back into v2 through their acceptance flag.
-        activation = patch(
+        activation = mock.patch(
             "workshop.workflow.agent_run.INVENT_CONCEPT_V2_ACTIVATED", False
         )
         activation.start()
@@ -846,6 +846,26 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
             [item["stage"] for item in self._trace(paths)],
             ["invent", "make", "release"],
         )
+
+    def test_simplified_missing_concept_credentials_resume_without_repeating_invent(self):
+        product_id = "deterministic-v2-concept-credential-wait"
+        transport = _DeterministicFactoryTransport(product_id)
+        waiting = self._run(
+            product_id,
+            transport,
+            effort="forge",
+            concept_credentials=False,
+            simplified_concept=True,
+        )
+        paths = self._paths(product_id)
+        first_trace = self._trace(paths)
+        self.assertEqual((waiting["stage"], waiting["status"]), ("invent", "waiting"))
+        self.assertEqual([item["stage"] for item in first_trace], ["invent"])
+        self.assertEqual(self.concept_transport.calls, [])
+        advanced = self._resume(product_id, transport)
+        self.assertEqual((advanced["stage"], advanced["status"]), ("make", "active"))
+        self.assertEqual(len(self.concept_transport.calls), 2)
+        self.assertEqual(self._trace(paths), first_trace)
 
     def test_partial_concept_roles_resume_same_intents_without_repeating_invent(self):
         product_id = "deterministic-concept-partial-resume"

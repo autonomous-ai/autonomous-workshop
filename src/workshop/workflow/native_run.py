@@ -9163,7 +9163,13 @@ def _resume_native_run_locked(
             context["concept_effect_checkpoint_sha256"] = invent_effect_wait[
                 "effect_checkpoint_sha256"
             ]
-            context["concept_effect_resuming"] = True
+            # Credential validation happens before a simplified Concept effect
+            # root is created.  A credential wait therefore has no effect tree
+            # to resume yet; only a provider/effect wait can require an
+            # existing partial tree and ledger state.
+            context["concept_effect_resuming"] = (
+                invent_effect_wait["need"] == _CONCEPT_IMAGE_EFFECT_NEED
+            )
             proposal = AgentOutcomeProposal(
                 checkpoint_sha256=checkpoint.checkpoint_sha256,
                 subject_sha256=subject,
