@@ -41,6 +41,7 @@ from tests.end_to_end.mock_session_evidence import (
 from tests.end_to_end.mock_session_factory import MockSessionFactoryServer
 from tests.end_to_end.mock_session_harness import (
     MockSessionPrerequisiteError,
+    _accepted_make_proof_boundaries,
     _assert_agent_write_ownership,
     _fixed_wish,
     _terminal_evidence_mode,
@@ -56,6 +57,52 @@ THREAD_ID = "12345678-1234-5678-9234-567812345678"
 def _write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_json(value))
+
+
+class MakeProofAcceptanceTraceTest(unittest.TestCase):
+    def test_audit_uses_one_host_receipt_not_marker_reappearances(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host_state = Path(temporary).resolve()
+            checkpoint = "a" * 64
+            marker = canonical_json(
+                {
+                    "schema_version": 1,
+                    "kind": "autonomous-workshop.make-proof-ready",
+                    "checkpoint_sha256": checkpoint,
+                }
+            ) + b"\n"
+            receipt = {
+                "schema_version": 1,
+                "kind": "autonomous-workshop.make-proof-acceptance",
+                "stage": "make",
+                "checkpoint_sha256": checkpoint,
+                "marker_sha256": hashlib.sha256(marker).hexdigest(),
+                "proof_artifacts": [
+                    {"path": "proof/%02d" % index, "sha256": "b" * 64}
+                    for index in range(13)
+                ],
+            }
+            _write_json(
+                host_state / "make-proof-acceptances" / (checkpoint + ".json"),
+                receipt,
+            )
+            trace = (
+                {"make_proof_boundary": True, "checkpoint_sha256": checkpoint},
+                {"make_proof_boundary": False, "checkpoint_sha256": checkpoint},
+            )
+
+            self.assertEqual(
+                _accepted_make_proof_boundaries(
+                    trace, host_state, effort="forge"
+                ),
+                (0,),
+            )
+            with self.assertRaisesRegex(
+                MockSessionEvidenceError, "multiple intermediate"
+            ):
+                _accepted_make_proof_boundaries(
+                    (*trace, dict(trace[0])), host_state, effort="forge"
+                )
 
 
 class _Result:
@@ -920,7 +967,12 @@ marker.write_text(json.dumps({
             [str(self.wrapper), "exec", "--model", "gpt-5.6-sol", "-"],
             cwd=self.root,
             env=self.environment(),
-            input="proof prompt",
+            input=(
+                "proof prompt\n"
+                '{"checkpoint_sha256":"%s","kind":'
+                '"autonomous-workshop.make-proof-ready","schema_version":1}'
+                % self.checkpoint
+            ),
             capture_output=True,
             text=True,
             check=False,
@@ -931,6 +983,36 @@ marker.write_text(json.dumps({
         self.assertTrue(trace["make_proof_boundary"])
         self.assertEqual(trace["turn_output_hashes"], {})
         self.assertIsNone(trace["context_proof_error"])
+
+    def test_marker_recreated_without_host_proof_request_is_not_a_second_boundary(self):
+        self.fake_codex()
+        fake = self.bin / "codex"
+        source = fake.read_text(encoding="utf-8")
+        source = source.replace(
+            "context.write_text(json.dumps(record))",
+            """marker = root / '.make-proof-ready.json'
+marker.write_text(json.dumps({
+    'schema_version': 1,
+    'kind': 'autonomous-workshop.make-proof-ready',
+    'checkpoint_sha256': checkpoint,
+}, sort_keys=True, separators=(',', ':')) + '\\n')""",
+        )
+        fake.write_text(source, encoding="utf-8")
+
+        result = subprocess.run(
+            [str(self.wrapper), "exec", "--model", "gpt-5.6-sol", "-"],
+            cwd=self.root,
+            env=self.environment(),
+            input="final Make continuation",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 126)
+        trace = json.loads((self.root / ".mock-session/turns.jsonl").read_text())
+        self.assertFalse(trace["make_proof_boundary"])
+        self.assertIsNotNone(trace["context_proof_error"])
 
     def test_same_checkpoint_repair_uses_distinct_subject_bound_packet(self):
         self.fake_codex()

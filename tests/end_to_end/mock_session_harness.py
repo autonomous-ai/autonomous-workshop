@@ -361,14 +361,14 @@ def _terminal_evidence_mode(
     )
 
 
-def _validate_trace(
-    run_root: Path,
+def _accepted_make_proof_boundaries(
+    trace: Sequence[Mapping[str, Any]],
     host_state: Path,
     *,
     effort: str,
-) -> tuple[tuple[Mapping[str, Any], ...], str]:
-    trace = _read_trace(run_root)
-    expected = CANONICAL_ROUTES[effort]
+) -> tuple[int, ...]:
+    """Return only trace boundaries backed by the host's private receipt."""
+
     boundaries = tuple(
         index
         for index, value in enumerate(trace)
@@ -378,6 +378,66 @@ def _validate_trace(
         raise MockSessionEvidenceError(
             "%s:multiple intermediate Make proof turns were observed" % effort
         )
+    acceptance_root = host_state / "make-proof-acceptances"
+    acceptance_paths = (
+        tuple(sorted(acceptance_root.glob("*.json")))
+        if acceptance_root.is_dir() and not acceptance_root.is_symlink()
+        else ()
+    )
+    if effort == "spark":
+        if boundaries or acceptance_paths:
+            raise MockSessionEvidenceError(
+                "spark:unexpected intermediate Make proof acceptance"
+            )
+        return boundaries
+    if len(boundaries) != 1 or len(acceptance_paths) != 1:
+        raise MockSessionEvidenceError(
+            "%s:one host-accepted Make proof boundary is required" % effort
+        )
+    boundary_checkpoint = trace[boundaries[0]].get("checkpoint_sha256")
+    acceptance = read_bounded_json(acceptance_paths[0], 16 * 1024)
+    expected_marker = {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.make-proof-ready",
+        "checkpoint_sha256": boundary_checkpoint,
+    }
+    marker_bytes = (
+        json.dumps(
+            expected_marker,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        + b"\n"
+    )
+    if (
+        acceptance.get("schema_version") != 1
+        or acceptance.get("kind")
+        != "autonomous-workshop.make-proof-acceptance"
+        or acceptance.get("stage") != "make"
+        or acceptance.get("checkpoint_sha256") != boundary_checkpoint
+        or acceptance_paths[0].stem != boundary_checkpoint
+        or acceptance.get("marker_sha256")
+        != hashlib.sha256(marker_bytes).hexdigest()
+        or not isinstance(acceptance.get("proof_artifacts"), list)
+        or len(acceptance["proof_artifacts"]) != 13
+    ):
+        raise MockSessionEvidenceError(
+            "%s:Make proof trace lacks its exact host acceptance" % effort
+        )
+    return boundaries
+
+
+def _validate_trace(
+    run_root: Path,
+    host_state: Path,
+    *,
+    effort: str,
+) -> tuple[tuple[Mapping[str, Any], ...], str]:
+    trace = _read_trace(run_root)
+    expected = CANONICAL_ROUTES[effort]
+    boundaries = _accepted_make_proof_boundaries(
+        trace, host_state, effort=effort
+    )
     if boundaries:
         boundary = boundaries[0]
         if (

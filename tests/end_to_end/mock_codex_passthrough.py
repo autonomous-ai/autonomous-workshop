@@ -291,7 +291,11 @@ def _context_proof_error(
     return None
 
 
-def _make_proof_boundary(run_root: Path, packet: Mapping[str, object]) -> bool:
+def _make_proof_boundary(
+    run_root: Path,
+    packet: Mapping[str, object],
+    prompt: str,
+) -> bool:
     """Recognize the host's exact intermediate deep-Make marker.
 
     This is not finalization evidence.  It only lets the pass-through return
@@ -329,6 +333,11 @@ def _make_proof_boundary(run_root: Path, packet: Mapping[str, object]) -> bool:
         "kind": "autonomous-workshop.make-proof-ready",
         "checkpoint_sha256": checkpoint,
     }
+    # A mutable marker appearance is not a host-accepted boundary. The host
+    # requests the one proof handoff by supplying this exact canonical payload
+    # in the proof-phase prompt; final Make prompts do not contain it.
+    if _canonical_json(expected).decode("utf-8") not in prompt:
+        return False
     try:
         value = json.loads(content.decode("utf-8"))
     except (UnicodeDecodeError, ValueError):
@@ -441,7 +450,9 @@ def main() -> int:
                 thread_ids.add(event["thread_id"])
             if event.get("type") == "turn.completed":
                 terminal_line = line
-                make_proof_boundary = _make_proof_boundary(run_root, packet)
+                make_proof_boundary = _make_proof_boundary(
+                    run_root, packet, prompt
+                )
                 if make_proof_boundary:
                     immediate_error = None
                 else:
@@ -468,7 +479,7 @@ def main() -> int:
     )
     elapsed = round(time.monotonic() - started, 6)
     output_hashes = _context_output_hashes(run_root, context_record)
-    make_proof_boundary = _make_proof_boundary(run_root, packet)
+    make_proof_boundary = _make_proof_boundary(run_root, packet, prompt)
     proof_error = (
         None
         if make_proof_boundary
