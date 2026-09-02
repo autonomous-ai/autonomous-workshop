@@ -21,6 +21,15 @@ EFFORT_ROUTE_CAPABILITY_PATH = (
 INVENT_CONCEPT_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/invent-concept-v1.md"
 )
+INVENT_CONCEPT_V2_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/invent-concept-v2.md"
+)
+# Activation is a deliberate source release step after authenticated acceptance.
+# Frozen checkpoints remain governed solely by the exact marker they contain.
+INVENT_CONCEPT_V2_ACTIVATED = False
+INVENT_CONCEPT_V2_ACCEPTANCE_ENVIRONMENT = (
+    "WORKSHOP_INVENT_CONCEPT_V2_ACCEPTANCE"
+)
 SPARK_ECONOMICS_V1_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/spark-economics-v1.md"
 )
@@ -68,6 +77,9 @@ DEEP_ECONOMICS_V12_CAPABILITY_PATH = (
 )
 DEEP_ECONOMICS_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/deep-economics-v13.md"
+)
+DEEP_ECONOMICS_V14_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v14.md"
 )
 SPARK_AUTO_COMPACT_TOKEN_LIMIT = 64_000
 SPARK_NATIVE_TURN_TIMEOUT_SECONDS = 20 * 60
@@ -205,6 +217,7 @@ __all__ = [
     "DEEP_ECONOMICS_V10_CAPABILITY_PATH",
     "DEEP_ECONOMICS_V11_CAPABILITY_PATH",
     "DEEP_ECONOMICS_V12_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V14_CAPABILITY_PATH",
     "DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS",
     "DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT",
     "DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT",
@@ -222,6 +235,9 @@ __all__ = [
     "DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS",
     "EFFORT_ROUTE_CAPABILITY_PATH",
     "INVENT_CONCEPT_CAPABILITY_PATH",
+    "INVENT_CONCEPT_V2_CAPABILITY_PATH",
+    "INVENT_CONCEPT_V2_ACTIVATED",
+    "INVENT_CONCEPT_V2_ACCEPTANCE_ENVIRONMENT",
     "SPARK_AUTO_COMPACT_TOKEN_LIMIT",
     "SPARK_ECONOMICS_CAPABILITY_PATH",
     "SPARK_ECONOMICS_V1_CAPABILITY_PATH",

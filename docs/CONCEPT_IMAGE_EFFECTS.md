@@ -5,6 +5,16 @@ Quest Invent. This does not add a stage: the native Invent turn authors exact
 pre-render source, exits without credentials, and the trusted host renders and
 seals the required roles before the Invent gate may advance to Make.
 
+The next `invent-concept-v2.md` boundary is implemented but remains disabled
+for ordinary new runs until authenticated Forge and Quest acceptance passes.
+Its native turn authors exactly `invent-source.json` and the packet-bound
+`visual-plan.json`; the host derives Concept v3 and executes the plan's 2 to 20
+ordered adaptive roles. The primary-form role is first, a signature-experience
+role is mandatory, and references may name only earlier roles. No fixed view or
+per-component image family is implied. Acceptance operators may opt in with
+`WORKSHOP_INVENT_CONCEPT_V2_ACCEPTANCE=1`; this freezes v2/v14 into that run and
+does not enable other runs.
+
 ## Authorization and configuration
 
 Selecting Forge or Quest for a newly marked run records prospective authority
@@ -42,8 +52,9 @@ The host validates the complete assignment, Invented source, provenance,
 derived Wish, source manifest, and structural rules before creating effect
 intent. Each role has a durable private identity binding checkpoint, subject,
 pre-render Concept, instruction, output path, ordered reference hashes, profile,
-model, and request schema. Roles run in the authored dependency order: front;
-top and bottom; exploded; then stable components.
+model, and request schema. V1 roles run in their fixed authored dependency
+order. V2 intents additionally bind the exact role facts and canonical
+normalized constraint block and run in the adaptive plan's declared order.
 
 A proven pre-transmission failure can retry the same intent on `workshop
 resume`. A provider rejection remains rejected. If transmission may have

@@ -122,6 +122,7 @@ class ConceptImageRequest:
     output_path: str
     idempotency_key: str
     references: tuple[ConceptImageReference, ...] = ()
+    context: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "references", tuple(self.references))
@@ -144,6 +145,22 @@ class ConceptImageRequest:
             or len({item.role for item in self.references}) != len(self.references)
         ):
             raise ContractError("Concept image references are excessive or duplicated")
+        context = dict(self.context)
+        try:
+            encoded_context = _canonical(context)
+        except (TypeError, ValueError, UnicodeError) as exc:
+            raise ContractError("Concept image request context is invalid") from exc
+        if len(encoded_context) > 32_000:
+            raise ContractError("Concept image request context is oversized")
+        object.__setattr__(self, "context", context)
+
+    @property
+    def provider_prompt(self) -> str:
+        if not self.context:
+            return self.instruction
+        return _canonical(
+            {"instruction": self.instruction, "context": self.context}
+        ).decode("utf-8")
 
 
 @dataclass(frozen=True)
@@ -247,7 +264,7 @@ class OpenRouterConceptImageClient:
         ]
         payload = {
             "model": self.profile.model,
-            "prompt": request.instruction,
+            "prompt": request.provider_prompt,
             "n": 1,
             "input_references": references,
         }

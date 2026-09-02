@@ -24,6 +24,7 @@ from tests.end_to_end.mock_session_harness import (  # noqa: E402
     ENABLE_ENVIRONMENT,
     HOME_ENVIRONMENT,
     PARTIAL_CONCEPT_ENVIRONMENT,
+    SIMPLIFIED_CONCEPT_ENVIRONMENT,
     MockSessionPrerequisiteError,
     preflight_codex,
     redact_diagnostics,
@@ -58,6 +59,11 @@ def _arguments() -> argparse.Namespace:
         "--partial-concept-roles",
         action="store_true",
         help="run the Forge partial Concept effect wait/resume acceptance",
+    )
+    parser.add_argument(
+        "--simplified-concept",
+        action="store_true",
+        help="opt into the pre-activation Invent Concept v2 acceptance path",
     )
     parser.add_argument(
         "--preflight-only",
@@ -120,6 +126,8 @@ def main() -> int:
         raise SystemExit("--effort is required unless --preflight-only is used")
     if arguments.partial_concept_roles and arguments.effort != "forge":
         raise SystemExit("--partial-concept-roles requires --effort forge")
+    if arguments.simplified_concept and arguments.effort not in ("forge", "quest"):
+        raise SystemExit("--simplified-concept requires --effort forge or quest")
     try:
         preflight = preflight_codex()
     except MockSessionPrerequisiteError as exc:
@@ -144,6 +152,9 @@ def main() -> int:
             "WORKSHOP_MOCK_SESSION_TURN_TIMEOUT": str(arguments.turn_timeout),
             PARTIAL_CONCEPT_ENVIRONMENT: (
                 "1" if arguments.partial_concept_roles else "0"
+            ),
+            SIMPLIFIED_CONCEPT_ENVIRONMENT: (
+                "1" if arguments.simplified_concept else "0"
             ),
             "PYTHONPATH": os.pathsep.join(
                 (str(REPOSITORY / "src"), str(REPOSITORY))

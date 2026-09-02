@@ -1918,12 +1918,23 @@ def _make_contract(
             {"path", "sha256"},
             "Make Concept effect artifact",
         )
-        provenance = _mapping(
-            _mapping(sealed.get("source"), "Make pre-render Concept", nonempty=True).get("provenance"),
-            "Make Concept provenance",
-            nonempty=True,
+        source = _mapping(
+            sealed.get("source"), "Make pre-render Concept", nonempty=True
         )
-        concept_round = _positive_int(provenance.get("round"), "Make Concept round")
+        sealed_version = sealed.get("schema_version")
+        if sealed_version == 3:
+            concept_round = _positive_int(
+                source.get("round"), "Make Concept round"
+            )
+        else:
+            provenance = _mapping(
+                source.get("provenance"),
+                "Make Concept provenance",
+                nonempty=True,
+            )
+            concept_round = _positive_int(
+                provenance.get("round"), "Make Concept round"
+            )
         if concept_round > round_index:
             raise ProposalError("Make Concept round is newer than the Make round")
         expected_prefix = "artifacts/concept/r%04d" % concept_round
@@ -1938,10 +1949,17 @@ def _make_contract(
             )
             if content != canonical_json(value) or hashlib.sha256(content).hexdigest() != _sha256(binding["sha256"], "Make %s artifact sha256" % label):
                 raise ProposalError("Make %s differs from its packet binding" % label)
-        sealed_fields = {"schema_version", "kind", "source", "descriptor", "image_manifest", "concept_sha256"}
-        if set(sealed) != sealed_fields or sealed.get("schema_version") != 2 or sealed.get("kind") != "autonomous-workshop.concept-sealed":
+        sealed_fields = (
+            {"schema_version", "kind", "source", "images", "concept_sha256"}
+            if sealed_version == 3
+            else {"schema_version", "kind", "source", "descriptor", "image_manifest", "concept_sha256"}
+        )
+        if (
+            set(sealed) != sealed_fields
+            or sealed_version not in (2, 3)
+            or sealed.get("kind") != "autonomous-workshop.concept-sealed"
+        ):
             raise ProposalError("Make sealed Concept fields are invalid")
-        source = _mapping(sealed["source"], "Make pre-render Concept", nonempty=True)
         if source.get("concept_sha256") != json_sha256({key: value for key, value in source.items() if key != "concept_sha256"}):
             raise ProposalError("Make pre-render Concept identity is invalid")
         sealed_sha256 = json_sha256({key: value for key, value in sealed.items() if key != "concept_sha256"})
@@ -1960,14 +1978,77 @@ def _make_contract(
             or effect.get("sealed_concept_sha256") != sealed_sha256
         ):
             raise ProposalError("Make Concept effect identity is invalid")
-        image_manifest = _mapping(sealed.get("image_manifest"), "Make Concept image manifest", nonempty=True)
-        entries = _array(image_manifest.get("entries"), "Make Concept image entries", nonempty=True)
+        if sealed_version == 3:
+            entries = _array(
+                sealed.get("images"), "Make Concept image entries", nonempty=True
+            )
+            descriptor = _mapping(
+                source.get("descriptor"),
+                "Make Concept adaptive descriptor",
+                nonempty=True,
+            )
+            instructions = _array(
+                source.get("drawing_instructions"),
+                "Make Concept adaptive instructions",
+                nonempty=True,
+            )
+            instruction_ids = [
+                item.get("id") for item in instructions if isinstance(item, Mapping)
+            ]
+            if (
+                len(instruction_ids) != len(instructions)
+                or set(instruction_ids) != set(descriptor)
+                or len(instruction_ids) != len(descriptor)
+            ):
+                raise ProposalError(
+                    "Make Concept adaptive roles differ from its descriptor"
+                )
+            if [item.get("id") for item in entries if isinstance(item, Mapping)] != instruction_ids:
+                raise ProposalError(
+                    "Make Concept image order differs from its adaptive instructions"
+                )
+        else:
+            image_manifest = _mapping(
+                sealed.get("image_manifest"),
+                "Make Concept image manifest",
+                nonempty=True,
+            )
+            entries = _array(
+                image_manifest.get("entries"),
+                "Make Concept image entries",
+                nonempty=True,
+            )
         images: dict[str, str] = {}
         concept_root = "%s/concept" % expected_prefix
         for entry in entries:
-            normalized = _fields(
-                entry, {"path", "bytes", "sha256", "executable"}, "Make Concept image entry"
-            )
+            if sealed_version == 3:
+                normalized = _fields(
+                    entry,
+                    {"id", "kind", "purpose", "path", "sha256"},
+                    "Make Concept image entry",
+                )
+                declared = _fields(
+                    _mapping(
+                        descriptor.get(normalized["id"]),
+                        "Make Concept declared image role",
+                        nonempty=True,
+                    ),
+                    {"kind", "purpose", "path"},
+                    "Make Concept declared image role",
+                )
+                if any(
+                    normalized[name] != declared[name]
+                    for name in ("kind", "purpose", "path")
+                ):
+                    raise ProposalError(
+                        "Make Concept image differs from its declared role"
+                    )
+            else:
+                normalized = _fields(
+                    entry,
+                    {"path", "bytes", "sha256", "executable"},
+                    "Make Concept image entry",
+                )
             relative = _safe_relative(normalized["path"], "Make Concept image path").as_posix()
             if relative in images:
                 raise ProposalError("Make Concept image paths must be unique")
@@ -1975,7 +2056,16 @@ def _make_contract(
                 run_root, "%s/%s" % (concept_root, relative), "Make Concept image", maximum=MAX_FILE_BYTES
             )
             observed = hashlib.sha256(content).hexdigest()
-            if observed != normalized["sha256"] or len(content) != normalized["bytes"] or normalized["executable"] is not False:
+            if (
+                observed != normalized["sha256"]
+                or (
+                    sealed_version == 2
+                    and (
+                        len(content) != normalized["bytes"]
+                        or normalized["executable"] is not False
+                    )
+                )
+            ):
                 raise ProposalError("Make Concept image differs from its manifest")
             images[relative] = observed
         role_values = _array(effect.get("roles"), "Make Concept effect roles", nonempty=True)
@@ -1992,6 +2082,16 @@ def _make_contract(
             role_images[normalized["path"]] = normalized["image_sha256"]
         if role_images != images:
             raise ProposalError("Make Concept effect differs from its image manifest")
+        if sealed_version == 3:
+            visual_roles = _array(
+                inputs.get("concept_visual_roles"),
+                "Make Concept visual roles",
+                nonempty=True,
+            )
+            if visual_roles != entries or not 2 <= len(visual_roles) <= 20:
+                raise ProposalError(
+                    "Make Concept visual roles differ from the sealed Concept"
+                )
         brief = _mapping(source.get("brief"), "Make Concept brief", nonempty=True)
         components = _array(brief.get("components"), "Make Concept components", nonempty=True)
         concept_keys = [item.get("key") if isinstance(item, Mapping) else None for item in components]
@@ -3459,6 +3559,10 @@ def _parser() -> argparse.ArgumentParser:
         "--concept-root",
         help="Packet-bound five-file pre-render Concept root for marked Invent.",
     )
+    invent.add_argument(
+        "--visual-plan",
+        help="Packet-bound adaptive visual-plan JSON for simplified Invent.",
+    )
 
     make = subparsers.add_parser("make", help="Seal one exact product tree.")
     make.add_argument("--product-root", required=True, help="Run-local product tree.")
@@ -3548,6 +3652,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
         inputs = _mapping(stage["inputs"], "Invent STAGE inputs", nonempty=True)
         marked_concept = "invent_concept_capability" in inputs
+        simplified_concept = False
         if marked_concept and "assignment" in inputs:
             raise ProposalError("Invent Concept capability requires routed Invent")
         if marked_concept:
@@ -3560,10 +3665,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 {"path", "sha256"},
                 "Invent Concept capability",
             )
+            simplified_concept = capability["path"] == ".agents/skills/autonomous-workshop/references/invent-concept-v2.md"
             if (
-                capability["path"]
-                != ".agents/skills/autonomous-workshop/references/invent-concept-v1.md"
-                or not isinstance(capability["sha256"], str)
+                capability["path"] not in (
+                    ".agents/skills/autonomous-workshop/references/invent-concept-v1.md",
+                    ".agents/skills/autonomous-workshop/references/invent-concept-v2.md",
+                ) or not isinstance(capability["sha256"], str)
                 or SHA256_RE.fullmatch(capability["sha256"]) is None
             ):
                 raise ProposalError("Invent Concept capability binding is invalid")
@@ -3579,8 +3686,32 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 observed_path = _safe_relative(inputs.get(name), "Invent %s" % name).as_posix()
                 if observed_path != expected_path:
                     raise ProposalError("Invent %s is not canonical for this round" % name)
-            if args.concept_root != expected_paths["concept_root"]:
-                raise ProposalError("marked Invent requires its exact packet-bound --concept-root")
+            if simplified_concept:
+                expected_visual = (
+                    PurePosixPath(
+                        _safe_relative(
+                            inputs.get("contract_path"),
+                            "Invent contract_path",
+                        )
+                    ).parent
+                    / "visual-plan.json"
+                ).as_posix()
+                if inputs.get("visual_plan_path") != expected_visual or args.visual_plan != expected_visual:
+                    raise ProposalError("simplified Invent requires its exact packet-bound --visual-plan")
+                if args.concept_root is not None:
+                    raise ProposalError("simplified Invent does not accept --concept-root")
+                concept_directory = run_root.joinpath(
+                    *_safe_relative(inputs["concept_root"], "Invent concept_root").parts
+                )
+                if concept_directory.exists() or concept_directory.is_symlink():
+                    raise ProposalError(
+                        "simplified Invent must not author Concept projections or images"
+                    )
+            else:
+                if args.concept_root != expected_paths["concept_root"]:
+                    raise ProposalError("marked Invent requires its exact packet-bound --concept-root")
+                if args.visual_plan is not None:
+                    raise ProposalError("v1 Invent does not accept --visual-plan")
             for name in ("standing_concept_sha256", "revision_input_sha256"):
                 value = inputs.get(name)
                 if round_index == 1:
@@ -3588,8 +3719,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                         raise ProposalError("initial Invent Concept must not name revision inputs")
                 elif not isinstance(value, str) or SHA256_RE.fullmatch(value) is None:
                     raise ProposalError("revised Invent Concept requires exact revision bindings")
-        elif args.concept_root is not None:
-            raise ProposalError("unmarked Invent does not accept --concept-root")
+        elif args.concept_root is not None or args.visual_plan is not None:
+            raise ProposalError("unmarked Invent does not accept Concept authoring flags")
         if "assignment" in inputs:
             contract = _invent_contract(stage, source)
         else:
@@ -3608,7 +3739,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             contract = _invent_contract_for_assignment(
                 assignment,
                 {"concept": authored["concept"], "research": authored["research"]},
-                require_physical=True,
+                require_physical=not simplified_concept,
             )
             assignment_path = _safe_relative(
                 inputs.get("assignment_contract_path"),
@@ -3624,10 +3755,21 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         ).as_posix()
         additional_files.append((source_path, source_content))
         if marked_concept:
+            visual_content = None
+            if simplified_concept:
+                visual_document, visual_content, _ = _read_json(
+                    run_root, args.visual_plan, "Invent visual plan"
+                )
+                del visual_document
             validated = _validate_pre_render_concept(
                 {
+                    **({
+                        "protocol_version": 2,
+                        "visual_plan_path": args.visual_plan,
+                        "visual_plan_hex": visual_content.hex(),
+                    } if simplified_concept else {}),
                     "run_root": str(run_root),
-                    "concept_root": inputs["concept_root"],
+                    **({"concept_root": inputs["concept_root"]} if not simplified_concept else {}),
                     "wish": inputs["wish"],
                     "inventor_roster": inputs["inventor_roster"],
                     "assignment": assignment,
@@ -3645,19 +3787,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 validated["pre_render"], "validated pre-render Concept", nonempty=True
             )
             additional_contracts.append((inputs["concept_pre_render_path"], pre_render))
-            for name in (
-                "brief.json",
-                "derived_wish.json",
-                "descriptor.json",
-                "prompts.json",
-                "research.json",
-            ):
-                relative = "%s/%s" % (inputs["concept_root"], name)
-                content, _ = _read_regular(
-                    run_root, relative, "Invent Concept %s" % name, maximum=MAX_JSON_BYTES
-                )
-                existing_files.append((relative, content))
             additional_roots.append("artifacts/concept/r%04d" % round_index)
+            if simplified_concept:
+                existing_files.append((args.visual_plan, visual_content))
+            else:
+                for name in (
+                    "brief.json", "derived_wish.json", "descriptor.json",
+                    "prompts.json", "research.json",
+                ):
+                    relative = "%s/%s" % (inputs["concept_root"], name)
+                    content, _ = _read_regular(
+                        run_root, relative, "Invent Concept %s" % name, maximum=MAX_JSON_BYTES
+                    )
+                    existing_files.append((relative, content))
         transition = stage["next_transition"]
     elif args.command == "make":
         inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)

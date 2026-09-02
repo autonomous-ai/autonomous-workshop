@@ -620,6 +620,17 @@ identities, requires exact brief/product component-key correspondence, and
 forbids copied Concept pixels in the product tree. Provider credentials never
 enter the native subprocess, packet, workspace evidence, or public status.
 
+Concept v3 is implemented additively behind the exact
+`invent-concept-v2.md` marker and is not yet selected for ordinary new runs.
+For an opt-in acceptance run, Invent authors only a consolidated source and the
+packet-bound adaptive visual plan. The installed finalizer and trusted host
+normalize those bytes independently, and the host executes the declared roles
+in order after native exit. Make consumes both Concept v2 and v3 through one
+normalized view; v3 packets add `concept_visual_roles` and never require the
+legacy front/top/bottom/exploded or per-component image family. Physical facts
+remain authoritative and images remain non-evidentiary. Rollback suppresses
+v2/v14 materialization for future runs without rewriting a frozen checkpoint.
+
 The host CAD gate retains two claim-bound tiers for historical protocols. Its
 default/full tier reruns the
 materialized verifier with fresh generation, exports, strict fit, mesh, and

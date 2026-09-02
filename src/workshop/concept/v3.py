@@ -11,7 +11,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import stat
 from dataclasses import dataclass, field
+from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
@@ -318,6 +320,7 @@ class PreRenderConceptV3:
     round: int
     bindings: Mapping[str, Any]
     authored_inputs: Mapping[str, Any]
+    author_source_manifest: Mapping[str, Any]
     brief: Mapping[str, Any]
     research: Mapping[str, Any]
     drawing_instructions: tuple[Mapping[str, Any], ...]
@@ -334,20 +337,34 @@ class PreRenderConceptV3:
             raise ContractError("pre-render Concept v3 round is invalid")
         bindings = copy_json_mapping(self.bindings, "Concept v3 bindings", nonempty=True)
         authored = copy_json_mapping(self.authored_inputs, "Concept v3 authored inputs", nonempty=True)
+        source_manifest = copy_json_mapping(
+            self.author_source_manifest, "Concept v3 author-source manifest", nonempty=True
+        )
         brief = copy_json_mapping(self.brief, "Concept v3 brief", nonempty=True)
         research = copy_json_mapping(self.research, "Concept v3 research")
         descriptor = copy_json_mapping(self.descriptor, "Concept v3 descriptor", nonempty=True)
         routed = copy_json_mapping(self.routed_wish, "Concept v3 routed Wish", nonempty=True)
         instructions = tuple(copy_json_mapping(item, "Concept v3 drawing instruction", nonempty=True) for item in self.drawing_instructions)
         role_ids = [item["id"] for item in instructions]
-        if list(descriptor) != role_ids:
-            raise ContractError("Concept v3 descriptor order differs from its visual roles")
+        if set(descriptor) != set(role_ids) or len(descriptor) != len(role_ids):
+            raise ContractError("Concept v3 descriptor roles differ from its visual roles")
         for value, label in ((bindings, "bindings"), (authored, "authored_inputs")):
             for key, item in value.items():
                 if key.endswith("sha256") and item is not None:
                     require_sha256(item, "Concept v3 %s %s" % (label, key))
+        expected_manifest = _author_source_manifest(
+            source_path=authored["source_path"],
+            source_bytes_count=authored["source_bytes"],
+            source_sha256=authored["source_sha256"],
+            visual_plan_path=authored["visual_plan_path"],
+            visual_plan_bytes_count=authored["visual_plan_bytes"],
+            visual_plan_sha256=authored["visual_plan_sha256"],
+        )
+        if source_manifest != expected_manifest:
+            raise ContractError("Concept v3 author-source manifest identity is invalid")
         object.__setattr__(self, "bindings", _freeze(dict(bindings)))
         object.__setattr__(self, "authored_inputs", _freeze(dict(authored)))
+        object.__setattr__(self, "author_source_manifest", _freeze(dict(source_manifest)))
         object.__setattr__(self, "brief", _freeze(dict(brief)))
         object.__setattr__(self, "research", _freeze(dict(research)))
         object.__setattr__(self, "drawing_instructions", tuple(_freeze(dict(item)) for item in instructions))
@@ -359,6 +376,7 @@ class PreRenderConceptV3:
         return {
             "schema_version": self.schema_version, "kind": self.kind, "round": self.round,
             "bindings": _thaw(self.bindings), "authored_inputs": _thaw(self.authored_inputs),
+            "author_source_manifest": _thaw(self.author_source_manifest),
             "brief": _thaw(self.brief), "research": _thaw(self.research),
             "drawing_instructions": _thaw(self.drawing_instructions),
             "descriptor": _thaw(self.descriptor), "routed_wish": _thaw(self.routed_wish),
@@ -369,7 +387,7 @@ class PreRenderConceptV3:
 
     @classmethod
     def from_mapping(cls, value: Any) -> "PreRenderConceptV3":
-        expected = {"schema_version", "kind", "round", "bindings", "authored_inputs", "brief", "research", "drawing_instructions", "descriptor", "routed_wish", "concept_sha256"}
+        expected = {"schema_version", "kind", "round", "bindings", "authored_inputs", "author_source_manifest", "brief", "research", "drawing_instructions", "descriptor", "routed_wish", "concept_sha256"}
         document = _object(value, expected, "pre-render Concept v3")
         created = cls(**{key: document[key] for key in expected - {"concept_sha256"}})
         if created.to_dict() != document:
@@ -391,7 +409,9 @@ class SealedConceptV3:
         if not isinstance(self.source, PreRenderConceptV3):
             raise ContractError("sealed Concept v3 requires its pre-render source")
         images = tuple(copy_json_mapping(item, "sealed Concept v3 image", nonempty=True) for item in self.images)
-        if [item.get("id") for item in images] != list(self.source.descriptor):
+        if [item.get("id") for item in images] != [
+            item["id"] for item in self.source.drawing_instructions
+        ]:
             raise ContractError("sealed Concept v3 images differ from the declared role order")
         for item in images:
             if set(item) != {"id", "kind", "purpose", "path", "sha256"}:
@@ -416,6 +436,83 @@ class SealedConceptV3:
         if created.to_dict() != document:
             raise ContractError("sealed Concept v3 identity is invalid")
         return created
+
+
+def _author_source_manifest(
+    *, source_path: str, source_bytes_count: int, source_sha256: str,
+    visual_plan_path: str, visual_plan_bytes_count: int, visual_plan_sha256: str,
+) -> dict[str, Any]:
+    paths = (source_path, visual_plan_path)
+    for value in paths:
+        candidate = PurePosixPath(value) if isinstance(value, str) else PurePosixPath(".")
+        if (
+            not isinstance(value, str) or not value or candidate.is_absolute()
+            or ".." in candidate.parts or candidate.as_posix() != value
+        ):
+            raise ContractError("Concept v3 authored input path is unsafe")
+    if source_path == visual_plan_path:
+        raise ContractError("Concept v3 authored input paths must be distinct")
+    for count in (source_bytes_count, visual_plan_bytes_count):
+        if type(count) is not int or count <= 0:
+            raise ContractError("Concept v3 authored input byte count is invalid")
+    require_sha256(source_sha256, "Concept v3 source sha256")
+    require_sha256(visual_plan_sha256, "Concept v3 visual plan sha256")
+    entries = [
+        {"path": source_path, "bytes": source_bytes_count, "sha256": source_sha256},
+        {"path": visual_plan_path, "bytes": visual_plan_bytes_count, "sha256": visual_plan_sha256},
+    ]
+    entries.sort(key=lambda item: item["path"])
+    identity = {"schema_version": 1, "entries": entries}
+    return {**identity, "artifact_sha256": _digest(identity)}
+
+
+def seal_pre_render_concept_v3(
+    source: PreRenderConceptV3, image_bytes: Mapping[str, bytes]
+) -> SealedConceptV3:
+    """Seal exactly the declared adaptive image set from exact bytes."""
+
+    if not isinstance(source, PreRenderConceptV3) or not isinstance(image_bytes, Mapping):
+        raise ContractError("Concept v3 sealing requires pre-render source and image bytes")
+    role_order = [item["id"] for item in source.drawing_instructions]
+    if list(image_bytes) != role_order:
+        raise ContractError("Concept v3 image bytes differ from the declared role order")
+    images = []
+    for role_id in role_order:
+        descriptor = source.descriptor[role_id]
+        content = image_bytes[role_id]
+        if not isinstance(content, bytes) or not content:
+            raise ContractError("Concept v3 image bytes are missing")
+        images.append({
+            "id": role_id, "kind": descriptor["kind"], "purpose": descriptor["purpose"],
+            "path": descriptor["path"], "sha256": _digest(content),
+        })
+    return SealedConceptV3(source=source, images=tuple(images))
+
+
+def validate_sealed_concept_v3_tree(
+    concept: SealedConceptV3, concept_root: Path
+) -> None:
+    """Independently rehash every declared image and reject extra tree entries."""
+
+    root = Path(concept_root).resolve(strict=True)
+    if root.is_symlink() or not root.is_dir():
+        raise ContractError("Concept v3 image root must be a real directory")
+    expected = {item["path"]: item["sha256"] for item in concept.images}
+    observed: set[str] = set()
+    for path in root.rglob("*"):
+        identity = path.lstat()
+        if path.is_symlink() or (not stat.S_ISDIR(identity.st_mode) and not stat.S_ISREG(identity.st_mode)):
+            raise ContractError("Concept v3 image tree contains an unsafe entry")
+        if stat.S_ISDIR(identity.st_mode):
+            continue
+        relative = path.relative_to(root).as_posix()
+        if relative not in expected:
+            raise ContractError("Concept v3 image tree contains an unexpected file")
+        if _digest(path.read_bytes()) != expected[relative]:
+            raise ContractError("Concept v3 image differs from its sealed identity")
+        observed.add(relative)
+    if observed != set(expected):
+        raise ContractError("Concept v3 image tree is incomplete")
 
 
 @dataclass(frozen=True)
@@ -524,6 +621,8 @@ def normalize_authored_concept(
             require_sha256(item, "simplified Concept revision sha256")
     constraints = source["concept"]["constraints"]
     constraint_block = {item["id"]: {"description": item["description"], "value": item["value"]} for item in constraints}
+    if len(_canonical(constraint_block)) > 12_000:
+        raise ContractError("normalized Concept constraint block is oversized")
     roles = plan["roles"]
     instructions = tuple({**role, "presentation": plan["presentation"]} for role in roles)
     descriptor = {
@@ -542,9 +641,17 @@ def normalize_authored_concept(
         "revision_input_sha256": revision_input_sha256,
     }
     authored = {
-        "source_path": source_path, "source_sha256": _digest(source_bytes),
-        "visual_plan_path": visual_plan_path, "visual_plan_sha256": _digest(visual_plan_bytes),
+        "source_path": source_path, "source_bytes": len(source_bytes),
+        "source_sha256": _digest(source_bytes),
+        "visual_plan_path": visual_plan_path, "visual_plan_bytes": len(visual_plan_bytes),
+        "visual_plan_sha256": _digest(visual_plan_bytes),
     }
+    source_manifest = _author_source_manifest(
+        source_path=source_path, source_bytes_count=len(source_bytes),
+        source_sha256=authored["source_sha256"], visual_plan_path=visual_plan_path,
+        visual_plan_bytes_count=len(visual_plan_bytes),
+        visual_plan_sha256=authored["visual_plan_sha256"],
+    )
     routed = {
         "wish_sha256": wish_sha256, "product_id": wish.product_id, "objective": wish.objective,
         "context": dict(wish.context), "constraints": constraint_block,
@@ -552,6 +659,7 @@ def normalize_authored_concept(
     routed["routed_wish_sha256"] = _digest(routed)
     return PreRenderConceptV3(
         round=round, bindings=bindings, authored_inputs=authored,
+        author_source_manifest=source_manifest,
         brief=source["concept"], research=_normalized_research(source["research"]),
         drawing_instructions=instructions, descriptor=descriptor, routed_wish=routed,
     )
@@ -562,5 +670,6 @@ __all__ = [
     "ROLE_KINDS", "SEALED_CONCEPT_V3_KIND", "VISUAL_PLAN_KIND",
     "PreRenderConceptV3", "SealedConceptV3", "normalize_authored_concept",
     "NormalizedConceptView", "normalized_concept_view", "validate_authored_source",
+    "seal_pre_render_concept_v3", "validate_sealed_concept_v3_tree",
     "validate_visual_plan",
 ]

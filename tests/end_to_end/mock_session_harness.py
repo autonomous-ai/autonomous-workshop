@@ -55,6 +55,7 @@ ENABLE_ENVIRONMENT = "WORKSHOP_RUN_MOCK_SESSION_E2E"
 HOME_ENVIRONMENT = "WORKSHOP_MOCK_SESSION_HOME"
 EFFORT_ENVIRONMENT = "WORKSHOP_MOCK_SESSION_EFFORT"
 PARTIAL_CONCEPT_ENVIRONMENT = "WORKSHOP_MOCK_SESSION_PARTIAL_CONCEPT"
+SIMPLIFIED_CONCEPT_ENVIRONMENT = "WORKSHOP_MOCK_SESSION_SIMPLIFIED_CONCEPT"
 DEFAULT_TURN_TIMEOUT_SECONDS = 1800
 DEFAULT_ROUTE_TIMEOUT_SECONDS = 7200
 _VERSION = re.compile(r"\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?")
@@ -105,6 +106,7 @@ class MockSessionReport:
     host_state: str
     protocol_calls: tuple[tuple[str, str], ...]
     concept_wait_resume: Mapping[str, Any] | None = None
+    simplified_concept_acceptance: Mapping[str, Any] | None = None
 
     def to_dict(self, *, include_local_paths: bool = True) -> Mapping[str, Any]:
         value: dict[str, Any] = {
@@ -142,6 +144,10 @@ class MockSessionReport:
             )
         if self.concept_wait_resume is not None:
             value["concept_wait_resume"] = dict(self.concept_wait_resume)
+        if self.simplified_concept_acceptance is not None:
+            value["simplified_concept_acceptance"] = dict(
+                self.simplified_concept_acceptance
+            )
         return value
 
 
@@ -1039,12 +1045,99 @@ def _remove_new_projections(before: set[Path], repository: Path, product_id: str
             shutil.rmtree(path)
 
 
+def _simplified_concept_acceptance_evidence(
+    paths: Any,
+    checkpoint: Any,
+    trace: Sequence[Mapping[str, Any]],
+    *,
+    partial_concept_roles: bool,
+) -> Mapping[str, Any]:
+    sealed_artifacts = [
+        item
+        for item in checkpoint.stage_artifacts["invent"]
+        if re.fullmatch(r"artifacts/concept/r[0-9]{4}/sealed\.json", item.path)
+    ]
+    if len(sealed_artifacts) != 1:
+        raise MockSessionEvidenceError(
+            "simplified Concept acceptance lacks one sealed Concept v3"
+        )
+    sealed_path = paths.workspace / sealed_artifacts[0].path
+    sealed = read_bounded_json(sealed_path, 512 * 1024)
+    source = sealed.get("source")
+    if (
+        sealed.get("schema_version") != 3
+        or not isinstance(source, Mapping)
+        or source.get("schema_version") != 3
+    ):
+        raise MockSessionEvidenceError(
+            "simplified Concept acceptance did not seal Concept v3"
+        )
+    authored = source.get("authored_inputs")
+    images = sealed.get("images")
+    if not isinstance(authored, Mapping) or not isinstance(images, list):
+        raise MockSessionEvidenceError(
+            "simplified Concept acceptance evidence is malformed"
+        )
+    authored_hashes = {}
+    for label in ("source", "visual_plan"):
+        relative = authored.get("%s_path" % label)
+        expected_sha256 = authored.get("%s_sha256" % label)
+        if not isinstance(relative, str) or not isinstance(expected_sha256, str):
+            raise MockSessionEvidenceError(
+                "simplified Concept authored-input binding is malformed"
+            )
+        actual_sha256 = sha256_bytes((paths.workspace / relative).read_bytes())
+        if actual_sha256 != expected_sha256:
+            raise MockSessionEvidenceError(
+                "simplified Concept authored input changed after sealing"
+            )
+        authored_hashes[label] = expected_sha256
+    rejection_path = paths.host_state / "invent-proposal-rejection.json"
+    finalizer_rejections = 0
+    if rejection_path.exists() or rejection_path.is_symlink():
+        rejection = read_bounded_json(rejection_path, 64 * 1024)
+        attempt = rejection.get("attempt")
+        if type(attempt) is not int or attempt < 1:
+            raise MockSessionEvidenceError(
+                "simplified Concept rejection evidence is malformed"
+            )
+        finalizer_rejections = attempt
+    accepted_turns = [
+        {
+            "stage": str(value["stage"]),
+            "elapsed_seconds": float(value["elapsed_seconds"]),
+        }
+        for value in trace
+    ]
+    stages = [item["stage"] for item in accepted_turns]
+    if "invent" not in stages or "make" not in stages or stages.index("invent") > stages.index("make"):
+        raise MockSessionEvidenceError(
+            "simplified Concept acceptance lacks the Invent-to-Make transition"
+        )
+    return {
+        "capability_version": "invent-concept-v2/concept-v3/deep-economics-v14",
+        "session_continuity": "one-verified-native-session",
+        "native_turn_count": len(trace),
+        "native_turns": accepted_turns,
+        "finalizer_rejection_count": finalizer_rejections,
+        "authored_input_sha256s": authored_hashes,
+        "visual_role_count": len(images),
+        "effect_resume": (
+            "verified-partial-role-reconciliation"
+            if partial_concept_roles
+            else "not-exercised"
+        ),
+        "make_transition": "verified-sealed-v3-invent-to-make",
+    }
+
+
 def run_mock_session_acceptance(
     home: Path,
     *,
     effort: str,
     turn_timeout_seconds: int = DEFAULT_TURN_TIMEOUT_SECONDS,
     partial_concept_roles: bool = False,
+    simplified_concept: bool = False,
 ) -> MockSessionReport:
     if effort not in CANONICAL_ROUTES or effort not in WORKSHOP_EFFORTS:
         raise ContractError("mock-session effort must be spark, forge, or quest")
@@ -1124,6 +1217,12 @@ def run_mock_session_acceptance(
         "FACTORY_PASSWORD": FIXTURE_SECRETS[0],
         "WORKSHOP_CONCEPT_IMAGE_CREDENTIALS_FILE": str(concept_credentials),
     }
+    if simplified_concept:
+        if effort not in ("forge", "quest"):
+            raise ContractError(
+                "simplified Concept acceptance requires Forge or Quest"
+            )
+        environment["WORKSHOP_INVENT_CONCEPT_V2_ACCEPTANCE"] = "1"
     repository = Path(__file__).resolve().parents[2]
     projections_before = _projection_snapshot(repository, product_id)
     started = time.monotonic()
@@ -1284,6 +1383,16 @@ def run_mock_session_acceptance(
             host_state=str(paths.host_state),
             protocol_calls=tuple(server.state.loopback_calls),
             concept_wait_resume=partial_wait_evidence,
+            simplified_concept_acceptance=(
+                _simplified_concept_acceptance_evidence(
+                    paths,
+                    checkpoint,
+                    trace,
+                    partial_concept_roles=partial_concept_roles,
+                )
+                if simplified_concept
+                else None
+            ),
         )
         _write_private_json(
             home / ("mock-session-report-%s.json" % effort),
@@ -1307,6 +1416,7 @@ __all__ = [
     "MockSessionPrerequisiteError",
     "MockSessionReport",
     "PARTIAL_CONCEPT_ENVIRONMENT",
+    "SIMPLIFIED_CONCEPT_ENVIRONMENT",
     "preflight_codex",
     "redact_diagnostics",
     "run_bounded_process",

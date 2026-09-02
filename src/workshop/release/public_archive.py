@@ -15,7 +15,11 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Sequence
 
 from workshop.artifacts import ArtifactEntry, ArtifactManifest, MAX_ENTRIES
-from workshop.concept import SealedConcept
+from workshop.concept import (
+    SealedConcept,
+    SealedConceptV3,
+    validate_sealed_concept_v3_tree,
+)
 from workshop.errors import ContractError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
@@ -399,7 +403,13 @@ def _resolve_concept_binding(
     *,
     concept_sha256: str,
     concept_effect_sha256: str,
-) -> tuple[Path, bytes, SealedConcept, bytes, Mapping[str, Any]]:
+) -> tuple[
+    Path,
+    bytes,
+    SealedConcept | SealedConceptV3,
+    bytes,
+    Mapping[str, Any],
+]:
     candidates = []
     for path in sorted(
         (run_root / "artifacts/concept").glob(
@@ -413,11 +423,17 @@ def _resolve_concept_binding(
     if len(candidates) != 1:
         raise StateConflict("public archive cannot resolve the Made Concept")
     concept_directory, sealed_content, sealed_document = candidates[0]
-    sealed = SealedConcept.from_mapping(
-        sealed_document,
-        root=concept_directory / "concept",
-    )
-    sealed.validate_tree()
+    if sealed_document.get("schema_version") == 3:
+        sealed = SealedConceptV3.from_mapping(sealed_document)
+        validate_sealed_concept_v3_tree(
+            sealed, concept_directory / "concept"
+        )
+    else:
+        sealed = SealedConcept.from_mapping(
+            sealed_document,
+            root=concept_directory / "concept",
+        )
+        sealed.validate_tree()
     effect_path = concept_directory / "effect.json"
     effect_content = _stable_file(effect_path, "accepted Concept effect")
     effect = _public_concept_effect(_strict_json(effect_content, "Concept effect"))
@@ -978,22 +994,42 @@ def write_public_workflow_archive(
             ))
             writer("concept/sealed.json", sealed_content)
             writer("concept/effect.json", effect_content)
-            for entry in sealed.source.source_manifest.entries:
-                writer(
-                    "concept/source/%s" % entry.path,
-                    _stable_file(
-                        sealed.root.joinpath(*PurePosixPath(entry.path).parts),
-                        "Concept source %s" % entry.path,
-                    ),
-                )
-            for entry in sealed.image_manifest.entries:
-                writer(
-                    "concept/images/%s" % entry.path,
-                    _stable_file(
-                        sealed.root.joinpath(*PurePosixPath(entry.path).parts),
-                        "Concept image %s" % entry.path,
-                    ),
-                )
+            if isinstance(sealed, SealedConceptV3):
+                for entry in sealed.source.author_source_manifest["entries"]:
+                    writer(
+                        "concept/source/%s" % PurePosixPath(entry["path"]).name,
+                        _stable_file(
+                            run_root.joinpath(*PurePosixPath(entry["path"]).parts),
+                            "Concept source %s" % entry["path"],
+                        ),
+                    )
+                for entry in sealed.images:
+                    writer(
+                        "concept/images/%s" % entry["path"],
+                        _stable_file(
+                            concept_directory
+                            / "concept"
+                            / PurePosixPath(entry["path"]),
+                            "Concept image %s" % entry["path"],
+                        ),
+                    )
+            else:
+                for entry in sealed.source.source_manifest.entries:
+                    writer(
+                        "concept/source/%s" % entry.path,
+                        _stable_file(
+                            sealed.root.joinpath(*PurePosixPath(entry.path).parts),
+                            "Concept source %s" % entry.path,
+                        ),
+                    )
+                for entry in sealed.image_manifest.entries:
+                    writer(
+                        "concept/images/%s" % entry.path,
+                        _stable_file(
+                            sealed.root.joinpath(*PurePosixPath(entry.path).parts),
+                            "Concept image %s" % entry.path,
+                        ),
+                    )
 
     made_attempts, make_attempts_document = _made_attempts(
         run_root,

@@ -38,8 +38,13 @@ from workshop.contributors import (
 from workshop.concept import (
     SOURCE_PATHS,
     PreRenderConcept,
+    PreRenderConceptV3,
     SealedConcept,
+    SealedConceptV3,
+    normalized_concept_view,
     seal_pre_render_concept,
+    seal_pre_render_concept_v3,
+    validate_sealed_concept_v3_tree,
 )
 from workshop.integrations.factory import (
     FACTORY_CONTENT_MAPPING,
@@ -167,6 +172,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V10_CAPABILITY_PATH,
     DEEP_ECONOMICS_V11_CAPABILITY_PATH,
     DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V14_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -184,6 +190,7 @@ from workshop.workflow.effort import (
     DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
     INVENT_CONCEPT_CAPABILITY_PATH,
+    INVENT_CONCEPT_V2_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -1977,10 +1984,29 @@ def _checkpoint_uses_invent_concept(
     """Select the compound boundary only from exact frozen run inputs."""
 
     effort = _checkpoint_effort(checkpoint)
+    markers = {
+        path for path in (
+            INVENT_CONCEPT_CAPABILITY_PATH, INVENT_CONCEPT_V2_CAPABILITY_PATH
+        ) if path in checkpoint.input_sha256s
+    }
+    if len(markers) > 1:
+        raise StateConflict("native run freezes ambiguous Invent Concept capabilities")
     return bool(
         effort is not None
         and effort.includes("invent")
-        and INVENT_CONCEPT_CAPABILITY_PATH in checkpoint.input_sha256s
+        and markers
+    )
+
+
+def _checkpoint_invent_concept_capability_path(
+    checkpoint: AgentRunCheckpoint,
+) -> str:
+    if not _checkpoint_uses_invent_concept(checkpoint):
+        raise StateConflict("native run lacks an Invent Concept capability")
+    return (
+        INVENT_CONCEPT_V2_CAPABILITY_PATH
+        if INVENT_CONCEPT_V2_CAPABILITY_PATH in checkpoint.input_sha256s
+        else INVENT_CONCEPT_CAPABILITY_PATH
     )
 
 
@@ -2608,7 +2634,7 @@ def _persist_invent_proposal_rejection(
 
 def _accepted_invent_concept(
     run: AgentRun, checkpoint: AgentRunCheckpoint
-) -> tuple[SealedConcept, ConceptEffectEvidence, AgentArtifact, AgentArtifact]:
+) -> tuple[SealedConcept | SealedConceptV3, ConceptEffectEvidence, AgentArtifact, AgentArtifact]:
     if not _checkpoint_uses_invent_concept(checkpoint):
         raise StateConflict("run does not use the active Invent Concept capability")
     sealed_candidates = tuple(
@@ -2636,10 +2662,22 @@ def _accepted_invent_concept(
     )
     if _sha256(sealed_content) != sealed_artifact.sha256:
         raise StateConflict("accepted sealed Concept differs from its binding")
-    sealed = SealedConcept.from_mapping(
-        sealed_document, root=run.run_root / concept_root
-    )
-    sealed.validate_tree()
+    if sealed_document.get("schema_version") == 3:
+        sealed = SealedConceptV3.from_mapping(sealed_document)
+        validate_sealed_concept_v3_tree(sealed, run.run_root / concept_root)
+        sealed_image_bindings = {
+            (item["path"], item["sha256"]) for item in sealed.images
+        }
+        pre_render_sha256 = sealed.source.concept_sha256
+    else:
+        sealed = SealedConcept.from_mapping(
+            sealed_document, root=run.run_root / concept_root
+        )
+        sealed.validate_tree()
+        sealed_image_bindings = {
+            (item.path, item.sha256) for item in sealed.image_manifest.entries
+        }
+        pre_render_sha256 = sealed.source.concept_sha256
     effect = _read_contract(
         run.run_root,
         effect_artifact,
@@ -2647,10 +2685,10 @@ def _accepted_invent_concept(
         label="accepted Concept effect evidence",
     )
     if (
-        effect.pre_render_concept_sha256 != sealed.source.concept_sha256
+        effect.pre_render_concept_sha256 != pre_render_sha256
         or effect.sealed_concept_sha256 != sealed.concept_sha256
         or {(item.path, item.image_sha256) for item in effect.roles}
-        != {(item.path, item.sha256) for item in sealed.image_manifest.entries}
+        != sealed_image_bindings
     ):
         raise StateConflict("accepted Concept effect differs from sealed bytes")
     return sealed, effect, sealed_artifact, effect_artifact
@@ -2950,6 +2988,7 @@ def _prepare_effort_stage_input(
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                 DEEP_ECONOMICS_CAPABILITY_PATH,
             )
         ):
@@ -2962,9 +3001,8 @@ def _prepare_effort_stage_input(
             concept_root, pre_render_path, sealed_path, effect_path = (
                 _invent_concept_paths(concept_round)
             )
-            capability_sha256 = checkpoint.input_sha256s[
-                INVENT_CONCEPT_CAPABILITY_PATH
-            ]
+            capability_path = _checkpoint_invent_concept_capability_path(checkpoint)
+            capability_sha256 = checkpoint.input_sha256s[capability_path]
             subject_inputs.update(
                 {
                     "invent_concept_capability_sha256": capability_sha256,
@@ -2974,7 +3012,7 @@ def _prepare_effort_stage_input(
             inputs.update(
                 {
                     "invent_concept_capability": {
-                        "path": INVENT_CONCEPT_CAPABILITY_PATH,
+                        "path": capability_path,
                         "sha256": capability_sha256,
                     },
                     "concept_root": concept_root,
@@ -2986,6 +3024,11 @@ def _prepare_effort_stage_input(
                     "revision_input_sha256": None,
                 }
             )
+            if capability_path == INVENT_CONCEPT_V2_CAPABILITY_PATH:
+                inputs["visual_plan_path"] = (
+                    PurePosixPath(invented_path).parent / "visual-plan.json"
+                ).as_posix()
+                context["invent_concept_version"] = 2
             context.update(
                 {
                     "invent_concept": True,
@@ -2999,6 +3042,8 @@ def _prepare_effort_stage_input(
                     "revision_input_sha256": None,
                 }
             )
+            if capability_path == INVENT_CONCEPT_V2_CAPABILITY_PATH:
+                context["visual_plan_path"] = inputs["visual_plan_path"]
         prior_paths = checkpoint.stage_artifacts.get("invent")
         if prior_paths:
             if "invent" not in checkpoint.invalidated_stages:
@@ -3032,11 +3077,19 @@ def _prepare_effort_stage_input(
                     raise StateConflict(
                         "prior sealed Concept differs from its artifact binding"
                     )
-                prior_sealed = SealedConcept.from_mapping(
-                    prior_sealed_document,
-                    root=run.run_root / prior_root,
-                )
-                prior_sealed.validate_tree()
+                if prior_sealed_document.get("schema_version") == 3:
+                    prior_sealed = SealedConceptV3.from_mapping(
+                        prior_sealed_document
+                    )
+                    validate_sealed_concept_v3_tree(
+                        prior_sealed, run.run_root / prior_root
+                    )
+                else:
+                    prior_sealed = SealedConcept.from_mapping(
+                        prior_sealed_document,
+                        root=run.run_root / prior_root,
+                    )
+                    prior_sealed.validate_tree()
                 prior_effect = _read_contract(
                     run.run_root,
                     prior_effect_artifact,
@@ -3068,6 +3121,51 @@ def _prepare_effort_stage_input(
                         "standing_concept_sha256": prior_sealed.concept_sha256,
                     }
                 )
+                if isinstance(prior_sealed, SealedConceptV3):
+                    authored = prior_sealed.source.authored_inputs
+                    prior_source_artifact = _stage_artifact_at(
+                        checkpoint, "invent", authored["source_path"]
+                    )
+                    prior_visual_artifact = _stage_artifact_at(
+                        checkpoint, "invent", authored["visual_plan_path"]
+                    )
+                    prior_source_document, unused_source_bytes = (
+                        read_bounded_json_artifact(
+                            run.run_root,
+                            prior_source_artifact.path,
+                            label="prior simplified Invent source",
+                        )
+                    )
+                    prior_visual_document, unused_visual_bytes = (
+                        read_bounded_json_artifact(
+                            run.run_root,
+                            prior_visual_artifact.path,
+                            label="prior simplified visual plan",
+                        )
+                    )
+                    del unused_source_bytes, unused_visual_bytes
+                    subject_inputs.update(
+                        {
+                            "prior_invent_source_artifact_sha256": prior_source_artifact.sha256,
+                            "prior_visual_plan_artifact_sha256": prior_visual_artifact.sha256,
+                        }
+                    )
+                    inputs.update(
+                        {
+                            "prior_invent_source": {
+                                **_artifact_binding(prior_source_artifact),
+                                "value": prior_source_document,
+                            },
+                            "prior_visual_plan": {
+                                **_artifact_binding(prior_visual_artifact),
+                                "value": prior_visual_document,
+                            },
+                            "prior_normalized_concept": prior_sealed.source.to_dict(),
+                            "prior_normalized_research": prior_sealed.source.to_dict()[
+                                "research"
+                            ],
+                        }
+                    )
                 context["prior_sealed_concept"] = prior_sealed
                 context["prior_concept_effect"] = prior_effect
                 context["standing_concept_sha256"] = prior_sealed.concept_sha256
@@ -3310,34 +3408,33 @@ def _prepare_effort_stage_input(
                 },
             }
             if _checkpoint_uses_invent_concept(checkpoint):
+                capability_path = _checkpoint_invent_concept_capability_path(checkpoint)
                 (
                     sealed_concept,
                     concept_effect,
                     sealed_artifact,
                     effect_artifact,
                 ) = _accepted_invent_concept(run, checkpoint)
-                common.update(
-                    {
-                        "invent_concept_capability": {
-                            "path": INVENT_CONCEPT_CAPABILITY_PATH,
-                            "sha256": checkpoint.input_sha256s[
-                                INVENT_CONCEPT_CAPABILITY_PATH
-                            ],
-                        },
-                        "sealed_concept": sealed_concept.to_dict(),
-                        "sealed_concept_artifact": _artifact_binding(
-                            sealed_artifact
-                        ),
-                        "concept_effect": concept_effect.to_dict(),
-                        "concept_effect_artifact": _artifact_binding(
-                            effect_artifact
-                        ),
-                        "required_product_component_keys": [
-                            component["key"]
-                            for component in sealed_concept.brief["components"]
-                        ],
-                    }
-                )
+                concept_view = normalized_concept_view(sealed_concept)
+                concept_packet = {
+                    "invent_concept_capability": {
+                        "path": capability_path,
+                        "sha256": checkpoint.input_sha256s[capability_path],
+                    },
+                    "sealed_concept": sealed_concept.to_dict(),
+                    "sealed_concept_artifact": _artifact_binding(sealed_artifact),
+                    "concept_effect": concept_effect.to_dict(),
+                    "concept_effect_artifact": _artifact_binding(effect_artifact),
+                    "required_product_component_keys": [
+                        component["key"]
+                        for component in concept_view.brief["components"]
+                    ],
+                }
+                if capability_path == INVENT_CONCEPT_V2_CAPABILITY_PATH:
+                    concept_packet["concept_visual_roles"] = [
+                        dict(role) for role in concept_view.visual_roles
+                    ]
+                common.update(concept_packet)
                 context.update(
                     {
                         "invent_concept": True,
@@ -3376,7 +3473,7 @@ def _prepare_effort_stage_input(
             subject_inputs.update(
                 {
                     "invent_concept_capability_sha256": checkpoint.input_sha256s[
-                        INVENT_CONCEPT_CAPABILITY_PATH
+                        _checkpoint_invent_concept_capability_path(checkpoint)
                     ],
                     "sealed_concept_sha256": context[
                         "sealed_concept"
@@ -4097,6 +4194,7 @@ def _phased_deep_capability_path(
     """Return the exact frozen phased-deep profile path, newest first."""
 
     for path in (
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
         DEEP_ECONOMICS_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -4117,6 +4215,7 @@ def _phased_deep_profile_name(checkpoint: AgentRunCheckpoint) -> str:
 
     path = _phased_deep_capability_path(checkpoint)
     names = {
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH: "v14",
         DEEP_ECONOMICS_CAPABILITY_PATH: "v13",
         DEEP_ECONOMICS_V12_CAPABILITY_PATH: "v12",
         DEEP_ECONOMICS_V11_CAPABILITY_PATH: "v11",
@@ -4180,6 +4279,7 @@ def _native_launcher(
                     timeout_seconds = (
                         DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                         if phased_deep_path in (
+                            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                             DEEP_ECONOMICS_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -4191,6 +4291,7 @@ def _native_launcher(
                     )
                 elif (
                     phased_deep_path in (
+                        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                         DEEP_ECONOMICS_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -4200,7 +4301,10 @@ def _native_launcher(
                 ):
                     timeout_seconds = (
                         DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
-                        if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                        if phased_deep_path in (
+                            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_CAPABILITY_PATH,
+                        )
                         else (
                             DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
                             if phased_deep_path
@@ -4223,6 +4327,7 @@ def _native_launcher(
                 auto_compact_token_limit=(
                     DEEP_AUTO_COMPACT_TOKEN_LIMIT
                     if phased_deep_path in (
+                        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                         DEEP_ECONOMICS_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -4357,7 +4462,8 @@ def _deep_make_critical_path_prompt(
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
         and (
-            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4379,6 +4485,7 @@ def _deep_make_critical_path_prompt(
         if (
             _phased_deep_capability_path(checkpoint)
             in (
+                DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                 DEEP_ECONOMICS_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -4424,7 +4531,8 @@ def _deep_make_critical_path_prompt(
         "the final product and preserve the proof files in the product tree."
     )
     if (
-        DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -4437,7 +4545,8 @@ def _deep_make_critical_path_prompt(
     ):
         return prompt
     if (
-        DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -4635,7 +4744,8 @@ def _deep_make_recovery_prompt(
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
         and (
-            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4655,6 +4765,7 @@ def _deep_make_recovery_prompt(
         if (
             _phased_deep_capability_path(checkpoint)
             in (
+                DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                 DEEP_ECONOMICS_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -4665,7 +4776,10 @@ def _deep_make_recovery_prompt(
             targeted_repair = ""
             if (
                 _phased_deep_capability_path(checkpoint)
-                == DEEP_ECONOMICS_CAPABILITY_PATH
+                in (
+                    DEEP_ECONOMICS_V14_CAPABILITY_PATH,
+                    DEEP_ECONOMICS_CAPABILITY_PATH,
+                )
             ):
                 targeted_repair = (
                     " If the current print-preflight failure is wall thickness, "
@@ -4708,6 +4822,7 @@ def _deep_make_recovery_prompt(
     if (
         _phased_deep_capability_path(checkpoint)
         in (
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             DEEP_ECONOMICS_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         )
@@ -4800,8 +4915,23 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
         and _phased_deep_capability_path(checkpoint) is not None
     ):
         return ""
+    if _phased_deep_capability_path(checkpoint) == DEEP_ECONOMICS_V14_CAPABILITY_PATH:
+        return (
+            " This v14 Invent recovery is a two-input source handoff, not a "
+            "creative continuation. Do not call update_plan or get_goal, reread "
+            "the roster, rerank, research, delegate, review, or refine before "
+            "finalization. Your first action must check only whether "
+            "drafts/invent-source.json and the exact visual_plan_path from "
+            "STAGE.json exist. If both exist, your next action must invoke the "
+            "exact Invent finalizer with --source and --visual-plan. If one is "
+            "missing or a deterministic finalizer error names one invalid input, "
+            "author or repair only that smallest input and immediately invoke "
+            "the finalizer again. The ten-minute boundary is repair reserve; "
+            "agent-outcome.json is the only stopping condition."
+        )
     if (
         _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             DEEP_ECONOMICS_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -4919,6 +5049,7 @@ def _v10_make_proof_artifact_bindings(
     if len(state_hashes) != 3:
         return None
     if _phased_deep_capability_path(checkpoint) in (
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
         DEEP_ECONOMICS_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
     ):
@@ -5023,6 +5154,7 @@ def _read_make_proof_acceptance(
     marker_sha256 = value.get("marker_sha256")
     proof_artifacts = value.get("proof_artifacts")
     requires_artifacts = _phased_deep_capability_path(checkpoint) in (
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
         DEEP_ECONOMICS_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -5135,6 +5267,7 @@ def _make_proof_ready(
     if (
         valid
         and _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             DEEP_ECONOMICS_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -5173,7 +5306,10 @@ def _v13_operator_resume_recovery(
     return (
         first_method == "resume"
         and checkpoint.stage == "make"
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and (
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
         and _make_proof_ready(paths, checkpoint)
     )
 
@@ -5682,9 +5818,10 @@ def _evaluate_make_stage(
             )
         canonical = made.validate_product_tree(run.run_root)
         if context.get("invent_concept") is True:
+            concept_view = normalized_concept_view(context["sealed_concept"])
             concept_keys = tuple(
                 component["key"]
-                for component in context["sealed_concept"].brief["components"]
+                for component in concept_view.brief["components"]
             )
             product_keys_value = made.product.get("components")
             product_keys = (
@@ -5701,8 +5838,7 @@ def _evaluate_make_stage(
                     "Make product component keys differ from the Concept brief"
                 )
             concept_image_hashes = {
-                entry.sha256
-                for entry in context["sealed_concept"].image_manifest.entries
+                entry["sha256"] for entry in concept_view.visual_roles
             }
             if any(
                 entry.sha256 in concept_image_hashes
@@ -7322,7 +7458,7 @@ def _read_pre_render_from_proposal(
     run: AgentRun,
     proposal: AgentOutcomeProposal,
     context: Mapping[str, Any],
-) -> tuple[PreRenderConcept, AgentArtifact]:
+) -> tuple[PreRenderConcept | PreRenderConceptV3, AgentArtifact]:
     path = context["concept_pre_render_path"]
     matches = tuple(item for item in proposal.outcome.artifacts if item.path == path)
     if len(matches) != 1:
@@ -7333,17 +7469,43 @@ def _read_pre_render_from_proposal(
     )
     if _sha256(content) != artifact.sha256:
         raise StateConflict("pending pre-render Concept differs from its artifact binding")
-    concept = PreRenderConcept.from_mapping(
-        document, root=run.run_root / context["concept_root"]
-    )
-    concept.validate_tree()
+    if context.get("invent_concept_version") == 2:
+        concept = PreRenderConceptV3.from_mapping(document)
+    else:
+        concept = PreRenderConcept.from_mapping(
+            document, root=run.run_root / context["concept_root"]
+        )
+        concept.validate_tree()
     return concept, artifact
 
 
-def _concept_role_plan(concept: PreRenderConcept) -> tuple[tuple[str, str, str, tuple[str, ...]], ...]:
+def _concept_role_plan(
+    concept: PreRenderConcept | PreRenderConceptV3,
+) -> tuple[tuple[str, str, str, tuple[str, ...], Mapping[str, Any]], ...]:
+    if isinstance(concept, PreRenderConceptV3):
+        document = concept.to_dict()
+        plan = tuple(
+            (
+                role["id"],
+                role["instruction"],
+                document["descriptor"][role["id"]]["path"],
+                tuple(role["appearance_references"]),
+                {
+                    "role": role,
+                    "normalized_constraints": document["routed_wish"]["constraints"],
+                },
+            )
+            for role in document["drawing_instructions"]
+        )
+        if (
+            len({item[0] for item in plan}) != len(plan)
+            or len({item[2] for item in plan}) != len(plan)
+        ):
+            raise ContractError("Concept role plan contains duplicate roles or paths")
+        return plan
     prompts = concept.drawing_instructions
     descriptor = concept.descriptor
-    plan: list[tuple[str, str, str, tuple[str, ...]]] = []
+    plan: list[tuple[str, str, str, tuple[str, ...], Mapping[str, Any]]] = []
     for role in ("front", "top", "bottom", "exploded"):
         prompt = prompts[role]
         plan.append(
@@ -7352,6 +7514,7 @@ def _concept_role_plan(concept: PreRenderConcept) -> tuple[tuple[str, str, str, 
                 prompt["instruction"],
                 descriptor[role]["path"],
                 tuple(prompt["references"]),
+                {},
             )
         )
     components = concept.brief["components"]
@@ -7364,6 +7527,7 @@ def _concept_role_plan(concept: PreRenderConcept) -> tuple[tuple[str, str, str, 
                 prompt["instruction"],
                 descriptor["components"][key]["path"],
                 tuple(prompt["references"]),
+                {},
             )
         )
     if len({item[0] for item in plan}) != len(plan) or len({item[2] for item in plan}) != len(plan):
@@ -7371,8 +7535,16 @@ def _concept_role_plan(concept: PreRenderConcept) -> tuple[tuple[str, str, str, 
     return tuple(plan)
 
 
-def _read_installed_concept_image(concept: PreRenderConcept, relative: str) -> bytes:
-    path = concept.root / PurePosixPath(relative)
+def _concept_root_path(value: Any) -> Path:
+    root = value if isinstance(value, (str, os.PathLike)) else value.root
+    return Path(root)
+
+
+def _read_installed_concept_image(
+    concept_root: Path | PreRenderConcept, relative: str
+) -> bytes:
+    concept_root = _concept_root_path(concept_root)
+    path = concept_root / PurePosixPath(relative)
     try:
         before = path.lstat()
         if path.is_symlink() or not stat.S_ISREG(before.st_mode):
@@ -7391,7 +7563,10 @@ def _read_installed_concept_image(concept: PreRenderConcept, relative: str) -> b
     return content
 
 
-def _install_concept_image(concept: PreRenderConcept, relative: str, content: bytes) -> None:
+def _install_concept_image(
+    concept_root: Path | PreRenderConcept, relative: str, content: bytes
+) -> None:
+    concept_root = _concept_root_path(concept_root)
     suffix_media = {
         ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"
     }
@@ -7399,7 +7574,7 @@ def _install_concept_image(concept: PreRenderConcept, relative: str, content: by
     media_type = sniff_image(content)
     if suffix_media.get(relative_path.suffix.casefold()) != media_type:
         raise ArtifactError("Concept image bytes differ from the descriptor suffix")
-    root = concept.root.resolve(strict=True)
+    root = concept_root.resolve(strict=True)
     parent = root
     for part in relative_path.parts[:-1]:
         parent = parent / part
@@ -7412,19 +7587,23 @@ def _install_concept_image(concept: PreRenderConcept, relative: str, content: by
             raise ArtifactError("Concept image output parent is unsafe")
     destination = root / relative_path
     if destination.exists() or destination.is_symlink():
-        observed = _read_installed_concept_image(concept, relative)
+        observed = _read_installed_concept_image(root, relative)
         if observed != content:
             raise StateConflict("Concept image output conflicts with existing bytes")
         return
     _atomic_private_write(destination, content, mode=0o600)
-    if _read_installed_concept_image(concept, relative) != content:
+    if _read_installed_concept_image(root, relative) != content:
         raise StateConflict("installed Concept image differs from provider bytes")
 
 
 def _assert_complete_concept_effect_tree(
-    concept: PreRenderConcept, image_paths: Sequence[str]
+    concept_root: Any,
+    image_paths: Sequence[str],
+    *,
+    include_legacy_sources: bool = True,
 ) -> None:
-    expected_files = set(SOURCE_PATHS) | set(image_paths)
+    concept_root = _concept_root_path(concept_root)
+    expected_files = (set(SOURCE_PATHS) if include_legacy_sources else set()) | set(image_paths)
     expected_directories = {
         PurePosixPath(path).parents[index].as_posix()
         for path in image_paths
@@ -7433,8 +7612,8 @@ def _assert_complete_concept_effect_tree(
     }
     observed_files: set[str] = set()
     observed_directories: set[str] = set()
-    for path in concept.root.rglob("*"):
-        relative = path.relative_to(concept.root).as_posix()
+    for path in concept_root.rglob("*"):
+        relative = path.relative_to(concept_root).as_posix()
         identity = path.lstat()
         if path.is_symlink():
             raise ArtifactError("Concept effect tree must not contain links")
@@ -7456,6 +7635,12 @@ def _complete_marked_invent_effect(
     pre_effect_decision: StageGateDecision,
 ) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
     concept, pre_render_artifact = _read_pre_render_from_proposal(run, proposal, context)
+    concept_root = run.run_root / context["concept_root"]
+    if isinstance(concept, PreRenderConceptV3):
+        source_manifest_sha256 = concept.author_source_manifest["artifact_sha256"]
+    else:
+        concept_root = concept.root
+        source_manifest_sha256 = concept.source_manifest.artifact_sha256
     authorization = _record_authorization(
         NativeRunPaths(run.run_root, run.host_state_root),
         product_id=checkpoint.product_id,
@@ -7474,6 +7659,19 @@ def _complete_marked_invent_effect(
         or client.profile.profile_sha256 != authority.get("profile_sha256")
     ):
         raise _ConceptImageCredentialsUnavailable()
+    if isinstance(concept, PreRenderConceptV3):
+        if context.get("concept_effect_resuming") is True:
+            if not concept_root.is_dir() or concept_root.is_symlink():
+                raise StateConflict(
+                    "resumed simplified Concept effect root is unavailable"
+                )
+        else:
+            try:
+                concept_root.mkdir(mode=0o700)
+            except FileExistsError as exc:
+                raise StateConflict(
+                    "simplified Concept effect root already exists"
+                ) from exc
     plan = _concept_role_plan(concept)
     ledger = _concept_effect_ledger(run)
     aggregate_id = ledger.prepare_aggregate(
@@ -7483,18 +7681,20 @@ def _complete_marked_invent_effect(
         ),
         subject_sha256=proposal.subject_sha256,
         pre_render_sha256=concept.concept_sha256,
-        source_manifest_sha256=concept.source_manifest.artifact_sha256,
+        source_manifest_sha256=source_manifest_sha256,
         required_roles=[item[0] for item in plan],
     )
     completed: dict[str, tuple[str, str, str]] = {}
-    for role, instruction, output_path, reference_roles in plan:
+    for role, instruction, output_path, reference_roles, request_context in plan:
         references: list[ConceptImageReference] = []
         reference_bindings: list[dict[str, str]] = []
         for reference_role in reference_roles:
             if reference_role not in completed:
                 raise StateConflict("Concept role references an incomplete prior role")
             reference_path, reference_sha256, reference_media = completed[reference_role]
-            reference_content = _read_installed_concept_image(concept, reference_path)
+            reference_content = _read_installed_concept_image(
+                concept_root, reference_path
+            )
             if _sha256(reference_content) != reference_sha256:
                 raise StateConflict("Concept reference image changed after completion")
             references.append(
@@ -7508,7 +7708,7 @@ def _complete_marked_invent_effect(
             ),
             "subject_sha256": proposal.subject_sha256,
             "pre_render_sha256": concept.concept_sha256,
-            "source_manifest_sha256": concept.source_manifest.artifact_sha256,
+            "source_manifest_sha256": source_manifest_sha256,
             "role": role,
             "output_path": output_path,
             "instruction_sha256": _sha256(_canonical_json_bytes(instruction)),
@@ -7518,6 +7718,10 @@ def _complete_marked_invent_effect(
             "model": client.profile.model,
             "request_schema_version": client.profile.request_schema_version,
         }
+        if request_context:
+            identity["request_context_sha256"] = _sha256(
+                _canonical_json_bytes(request_context)
+            )
         operation = ledger.prepare_role(aggregate_id=aggregate_id, identity=identity)
         if operation.state == "sending":
             operation = ledger.finish(
@@ -7539,7 +7743,7 @@ def _complete_marked_invent_effect(
                 response = reconciled.response
                 if response is None:  # guarded by the integration contract
                     raise StateConflict("Concept reconciliation lacks image bytes")
-                _install_concept_image(concept, output_path, response.content)
+                _install_concept_image(concept_root, output_path, response.content)
                 image_sha256 = _sha256(response.content)
                 operation = ledger.reconcile_unknown(
                     operation.intent_id,
@@ -7567,7 +7771,10 @@ def _complete_marked_invent_effect(
             else:
                 raise _ConceptImageEffectUnavailable()
         if operation.state == "rejected":
-            operation = ledger.retry_rejected(operation.intent_id)
+            if operation.error_code == "pre-transmission":
+                operation = ledger.retry_rejected(operation.intent_id)
+            else:
+                raise _ConceptImageEffectUnavailable()
         if operation.state == "rejected":
             raise _ConceptImageEffectUnavailable()
         if operation.state == "succeeded":
@@ -7576,7 +7783,7 @@ def _complete_marked_invent_effect(
             media_type = response.get("media_type")
             if not isinstance(image_sha256, str) or not isinstance(media_type, str):
                 raise StateConflict("Concept effect receipt is incomplete")
-            installed = _read_installed_concept_image(concept, output_path)
+            installed = _read_installed_concept_image(concept_root, output_path)
             if _sha256(installed) != image_sha256 or sniff_image(installed) != media_type:
                 raise StateConflict("Concept effect receipt differs from installed bytes")
             completed[role] = (output_path, image_sha256, media_type)
@@ -7588,10 +7795,11 @@ def _complete_marked_invent_effect(
             output_path=output_path,
             idempotency_key=operation.intent_id,
             references=tuple(references),
+            context=request_context,
         )
         try:
             response = client.render(request)
-            _install_concept_image(concept, output_path, response.content)
+            _install_concept_image(concept_root, output_path, response.content)
             image_sha256 = _sha256(response.content)
             operation = ledger.finish(
                 sending.intent_id,
@@ -7635,9 +7843,20 @@ def _complete_marked_invent_effect(
         aggregate_id, observed={role: values[1] for role, values in completed.items()}
     )
     _assert_complete_concept_effect_tree(
-        concept, [values[0] for values in completed.values()]
+        concept_root,
+        [values[0] for values in completed.values()],
+        include_legacy_sources=isinstance(concept, PreRenderConcept),
     )
-    sealed = seal_pre_render_concept(concept)
+    if isinstance(concept, PreRenderConceptV3):
+        sealed = seal_pre_render_concept_v3(
+            concept,
+            {
+                role: _read_installed_concept_image(concept_root, values[0])
+                for role, values in completed.items()
+            },
+        )
+    else:
+        sealed = seal_pre_render_concept(concept)
     sealed_path = context["concept_sealed_path"]
     sealed_bytes = _canonical_json_bytes(sealed.to_dict())
     _atomic_private_write(run.run_root / sealed_path, sealed_bytes, mode=0o600)
@@ -7685,8 +7904,14 @@ def _complete_marked_invent_effect(
     _atomic_private_write(run.run_root / effect_path, effect_bytes, mode=0o600)
     # Reopen every host-created byte before it can support the gate.
     sealed_document, observed_sealed = read_bounded_json_artifact(run.run_root, sealed_path, label="sealed Concept")
-    observed_contract = SealedConcept.from_mapping(sealed_document, root=concept.root)
-    observed_contract.validate_tree()
+    if isinstance(sealed, SealedConceptV3):
+        observed_contract = SealedConceptV3.from_mapping(sealed_document)
+        validate_sealed_concept_v3_tree(observed_contract, concept_root)
+    else:
+        observed_contract = SealedConcept.from_mapping(
+            sealed_document, root=concept_root
+        )
+        observed_contract.validate_tree()
     if observed_sealed != sealed_bytes or observed_contract.to_dict() != sealed.to_dict():
         raise StateConflict("sealed Concept changed before the Invent gate")
     effect_document, observed_effect = read_bounded_json_artifact(run.run_root, effect_path, label="Concept effect evidence")
@@ -7713,7 +7938,11 @@ def _complete_marked_invent_effect(
     }
     evidence = StageGateEvidence(
         stage="invent",
-        gate_id="invent.routed-sealed-concept-v1",
+        gate_id=(
+            "invent.routed-sealed-concept-v2"
+            if isinstance(sealed, SealedConceptV3)
+            else "invent.routed-sealed-concept-v1"
+        ),
         validator_version="1.0.0",
         passed=True,
         checkpoint_sha256=checkpoint.checkpoint_sha256,
@@ -8934,6 +9163,7 @@ def _resume_native_run_locked(
             context["concept_effect_checkpoint_sha256"] = invent_effect_wait[
                 "effect_checkpoint_sha256"
             ]
+            context["concept_effect_resuming"] = True
             proposal = AgentOutcomeProposal(
                 checkpoint_sha256=checkpoint.checkpoint_sha256,
                 subject_sha256=subject,

@@ -118,6 +118,13 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             (
                 assets.skill_root
                 / "references"
+                / "invent-concept-v2.md"
+            ).is_file()
+        )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
                 / "deep-economics-v1.md"
             ).is_file()
         )
@@ -148,6 +155,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "deep-economics-v7.md",
             "deep-economics-v8.md",
             "deep-economics-v9.md",
+            "deep-economics-v14.md",
             "make.md",
             "playtest.md",
         ):
@@ -168,6 +176,10 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         )
         make = " ".join(
             (reference_root / "make.md").read_text(encoding="utf-8").split()
+        )
+        self.assertIn(
+            "never assume front, top, bottom, exploded, or one image per component",
+            make,
         )
         playtest = " ".join(
             (reference_root / "playtest.md").read_text(encoding="utf-8").split()

@@ -12,6 +12,7 @@ from tests.end_to_end.mock_session_harness import (
     ENABLE_ENVIRONMENT,
     HOME_ENVIRONMENT,
     PARTIAL_CONCEPT_ENVIRONMENT,
+    SIMPLIFIED_CONCEPT_ENVIRONMENT,
     preflight_codex,
     run_mock_session_acceptance,
 )
@@ -40,6 +41,9 @@ class RealCodexMockSessionEndToEndTest(unittest.TestCase):
             home,
             effort=str(effort),
             turn_timeout_seconds=timeout,
+            simplified_concept=(
+                os.environ.get(SIMPLIFIED_CONCEPT_ENVIRONMENT) == "1"
+            ),
         )
         self.assertEqual(report.stages, CANONICAL_ROUTES[report.effort])
         self.assertEqual(report.session_starts, 1)
@@ -48,6 +52,27 @@ class RealCodexMockSessionEndToEndTest(unittest.TestCase):
         self.assertEqual(report.final_stage, "release")
         self.assertEqual(report.final_status, "complete")
         self.assertEqual(report.publication_status, "public")
+        if os.environ.get(SIMPLIFIED_CONCEPT_ENVIRONMENT) == "1":
+            evidence = report.simplified_concept_acceptance
+            self.assertIsNotNone(evidence)
+            self.assertEqual(
+                evidence["capability_version"],
+                "invent-concept-v2/concept-v3/deep-economics-v14",
+            )
+            self.assertEqual(
+                evidence["session_continuity"], "one-verified-native-session"
+            )
+            self.assertGreaterEqual(evidence["native_turn_count"], len(report.stages))
+            self.assertEqual(
+                set(evidence["authored_input_sha256s"]),
+                {"source", "visual_plan"},
+            )
+            self.assertGreaterEqual(evidence["visual_role_count"], 2)
+            self.assertLessEqual(evidence["visual_role_count"], 20)
+            self.assertEqual(
+                evidence["make_transition"],
+                "verified-sealed-v3-invent-to-make",
+            )
         print(json.dumps(report.to_dict(include_local_paths=False), sort_keys=True))
 
     def test_forge_partial_concept_effect_wait_reconciles_without_repeating_invent(self):

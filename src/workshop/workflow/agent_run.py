@@ -51,8 +51,13 @@ from workshop.runtime.project_boundary import (
 )
 from workshop.wish import Wish
 from workshop.workflow.effort import (
+    DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V14_CAPABILITY_PATH,
     EFFORT_ROUTE_CAPABILITY_PATH,
     INVENT_CONCEPT_CAPABILITY_PATH,
+    INVENT_CONCEPT_V2_ACTIVATED,
+    INVENT_CONCEPT_V2_ACCEPTANCE_ENVIRONMENT,
+    INVENT_CONCEPT_V2_CAPABILITY_PATH,
     workshop_effort,
 )
 
@@ -756,6 +761,48 @@ class AgentRun:
         skill_files = _source_tree_files(
             skill_root, label="source autonomous-workshop skill"
         )
+        v2_selected = INVENT_CONCEPT_V2_ACTIVATED or os.environ.get(
+            INVENT_CONCEPT_V2_ACCEPTANCE_ENVIRONMENT
+        ) == "1"
+        if not v2_selected:
+            skill_files = [
+                item
+                for item in skill_files
+                if (
+                    PurePosixPath(".agents/skills/autonomous-workshop")
+                    / item[0]
+                ).as_posix()
+                not in {
+                    INVENT_CONCEPT_V2_CAPABILITY_PATH,
+                    DEEP_ECONOMICS_V14_CAPABILITY_PATH,
+                }
+            ]
+        elif selected_effort is not None and selected_effort.includes("invent"):
+            skill_files = [
+                item
+                for item in skill_files
+                if (
+                    PurePosixPath(".agents/skills/autonomous-workshop")
+                    / item[0]
+                ).as_posix()
+                not in {
+                    INVENT_CONCEPT_CAPABILITY_PATH,
+                    DEEP_ECONOMICS_CAPABILITY_PATH,
+                }
+            ]
+        else:
+            skill_files = [
+                item
+                for item in skill_files
+                if (
+                    PurePosixPath(".agents/skills/autonomous-workshop")
+                    / item[0]
+                ).as_posix()
+                not in {
+                    INVENT_CONCEPT_V2_CAPABILITY_PATH,
+                    DEEP_ECONOMICS_V14_CAPABILITY_PATH,
+                }
+            ]
         if not any(relative.as_posix() == "SKILL.md" for relative, _, _ in skill_files):
             raise ArtifactError("source autonomous-workshop skill lacks SKILL.md")
         for relative, content, _ in skill_files:
@@ -1674,8 +1721,10 @@ class AgentRun:
             )
             concept_owned = (
                 outcome.stage == "invent"
-                and INVENT_CONCEPT_CAPABILITY_PATH
-                in {item["path"] for item in payload["inputs"]}
+                and bool(
+                    {INVENT_CONCEPT_CAPABILITY_PATH, INVENT_CONCEPT_V2_CAPABILITY_PATH}
+                    & {item["path"] for item in payload["inputs"]}
+                )
                 and len(parts) >= 4
                 and parts[:2] == ("artifacts", "concept")
                 and re.fullmatch(r"r[0-9]{4}", parts[2]) is not None

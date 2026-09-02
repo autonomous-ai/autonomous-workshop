@@ -340,6 +340,142 @@ def invented_source(*, include_selection: bool) -> dict:
     return value
 
 
+def simplified_invent_source(stage) -> dict:
+    ranking_value = ranking(stage)
+    value = {
+        "selected_inventor_id": ranking_value[0]["inventor_id"],
+        "ranking": ranking_value,
+        "concept": {
+            "title": "Orbit Dog Draughts",
+            "summary": "A pocket orbital board with tactile dog-pack pieces.",
+            "object": "pocket orbital draughts set",
+            "category": "tactile tabletop game",
+            "signature_interaction": "Players move dog-pack pieces between orbital waypoints.",
+            "anti_generic_signature": "The playable grid reads as linked orbital waypoints.",
+            "intended_experience": "A familiar game feels compact and distinctly space-bound.",
+            "non_negotiable_constraints": ["Draughts movement remains legible."],
+            "envelope_mm": {"length": 60.0, "width": 40.0, "height": 4.0},
+            "print_stance": {
+                "orientation": "board down", "supports_required": False,
+                "support_notes": "Self-supporting board and pieces.",
+            },
+            "components": [{
+                "key": "board", "name": "Board", "purpose": "Playing surface",
+                "form": "Rounded orbital waypoint field",
+                "measurements": {
+                    "description": "Pocket board envelope",
+                    "values_mm": {"length": 60.0, "width": 40.0, "height": 4.0},
+                },
+                "placement": "Centered on the table",
+                "interfaces": "Pieces rest on marked waypoints",
+                "assembly_relationship": "One-piece board receives loose pieces",
+                "signature_contribution": "Orbital paths replace a generic square grid",
+            }],
+            "interaction_trace": [{
+                "step": 1, "component_keys": ["board"],
+                "cause": "A player moves a piece diagonally",
+                "effect": "The piece advances between linked orbital waypoints",
+            }],
+            "make_proof_target": {
+                "claim": "Waypoints support a legible draughts move",
+                "method": "Render the exact board with a moved piece",
+                "success_condition": "The diagonal move and destination are unmistakable",
+                "failure_condition": "The orbital decoration obscures legal movement",
+            },
+            "constraints": [{
+                "id": "pocket-envelope", "description": "Pocket board size",
+                "value": "60 x 40 x 4 mm",
+                "basis": {"kind": "decision", "id": "compact-board"},
+            }],
+            "decisions": [{
+                "id": "compact-board", "decision": "Use a 60 mm board",
+                "reason": "Keeps the deterministic fixture small and held-scale",
+            }],
+            "assumptions": ["Players know English draughts."],
+            "unresolved_risks": ["Physical piece feel is not human-tested."],
+        },
+        "research": {"sources": [], "findings": []},
+    }
+    if "multipart" in stage["product_id"]:
+        value["concept"]["components"].append({
+            "key": "pieces", "name": "Dog-pack pieces",
+            "purpose": "Playable tactile markers", "form": "Rounded dog tokens",
+            "measurements": {
+                "description": "Token envelope",
+                "values_mm": {"diameter": 8.0, "height": 3.0},
+            },
+            "placement": "On orbital waypoints",
+            "interfaces": "Flat base rests on the board",
+            "assembly_relationship": "Loose pieces register to waypoint recesses",
+            "signature_contribution": "Dog-pack silhouettes distinguish the sides",
+        })
+        value["concept"]["interaction_trace"][0]["component_keys"].append(
+            "pieces"
+        )
+    return value
+
+
+def simplified_visual_plan(stage) -> dict:
+    plan = {
+        "schema_version": 2,
+        "kind": "autonomous-workshop.concept-visual-plan",
+        "presentation": "Neutral studio treatment at one stable scale.",
+        "roles": [
+            {
+                "id": "orbital-board", "kind": "primary-form",
+                "purpose": "Establishes the compact rounded orbital board volume",
+                "instruction": "Show the whole orbital board with tactile pieces.",
+                "appearance_references": [], "subject_components": ["board"],
+            },
+            {
+                "id": "diagonal-move", "kind": "signature-experience",
+                "purpose": "Shows one causal diagonal move between orbital waypoints",
+                "instruction": "Show before, hand action, and after states for one move.",
+                "appearance_references": ["orbital-board"],
+                "subject_components": ["board"],
+            },
+        ],
+    }
+    if "multipart" in stage["product_id"]:
+        plan["roles"].append({
+            "id": "piece-interface", "kind": "assembly",
+            "purpose": "Shows how loose dog tokens register on orbital waypoints",
+            "instruction": "Show one token lifted above its matching waypoint.",
+            "appearance_references": ["orbital-board"],
+            "subject_components": ["board", "pieces"],
+        })
+    if "twenty-role" in stage["product_id"]:
+        for index in range(len(plan["roles"]), 20):
+            plan["roles"].append({
+                "id": "interface-%02d" % index,
+                "kind": "alternate-view",
+                "purpose": "Communicates distinct waypoint interface number %02d" % index,
+                "instruction": "Show distinct waypoint interface number %02d." % index,
+                "appearance_references": ["orbital-board"],
+                "subject_components": ["board"],
+            })
+    if "over-limit-role" in stage["product_id"]:
+        for index in range(2, 21):
+            plan["roles"].append({
+                "id": "interface-%02d" % index,
+                "kind": "alternate-view",
+                "purpose": "Communicates distinct excessive interface number %02d" % index,
+                "instruction": "Show excessive interface number %02d." % index,
+                "appearance_references": ["orbital-board"],
+                "subject_components": ["board"],
+            })
+    if "invalid-role-dependency" in stage["product_id"]:
+        plan["roles"][1]["appearance_references"] = ["future-role"]
+    if "missing-signature-role" in stage["product_id"]:
+        plan["roles"][1]["kind"] = "alternate-view"
+    if (
+        (stage["inputs"].get("concept_round") or 0) > 1
+        and "revised-role-set" in stage["product_id"]
+    ):
+        plan["roles"][1]["id"] = "revised-diagonal-move"
+    return plan
+
+
 def author_concept_source(root: Path, stage, authored: dict) -> None:
     """Author the exact five-file pre-render tree for marked Invent only."""
 
@@ -481,9 +617,17 @@ def author_invent(root: Path, stage) -> None:
         ):
             if name not in inputs:
                 raise RuntimeError("re-Invent lost %s" % name)
-    source = "authored/invent.json"
-    authored = invented_source(include_selection=assignment is None)
-    if assignment is None:
+    capability = stage["inputs"].get("invent_concept_capability", {})
+    simplified = str(capability.get("path", "")).endswith(
+        "invent-concept-v2.md"
+    )
+    source = "drafts/invent-source.json" if simplified else "authored/invent.json"
+    authored = (
+        simplified_invent_source(stage)
+        if simplified
+        else invented_source(include_selection=assignment is None)
+    )
+    if assignment is None and not simplified:
         authored["ranking"] = ranking(stage)
     scenario = stage["product_id"]
     if "invent-unavailable" in scenario:
@@ -498,7 +642,11 @@ def author_invent(root: Path, stage) -> None:
         authored["concept"].pop("intended_interaction", None)
     write_json(root / source, authored)
     arguments = ["invent", "--source", source]
-    if "invent_concept_capability" in stage["inputs"]:
+    if simplified:
+        visual_path = stage["inputs"]["visual_plan_path"]
+        write_json(root / visual_path, simplified_visual_plan(stage))
+        arguments.extend(("--visual-plan", visual_path))
+    elif "invent_concept_capability" in stage["inputs"]:
         author_concept_source(root, stage, authored)
         arguments.extend(("--concept-root", stage["inputs"]["concept_root"]))
     finalizer(root, *arguments)
@@ -507,11 +655,16 @@ def author_invent(root: Path, stage) -> None:
 def author_make(root: Path, stage) -> None:
     inputs = stage["inputs"]
     if "concept-tree-tamper" in stage["product_id"] and "sealed_concept" in inputs:
+        source = inputs["sealed_concept"]["source"]
+        concept_round = source.get("round", source.get("provenance", {}).get("round"))
         concept_root = root / (
-            "artifacts/concept/r%04d/concept"
-            % inputs["sealed_concept"]["source"]["provenance"]["round"]
+            "artifacts/concept/r%04d/concept" % concept_round
         )
-        first_image = inputs["sealed_concept"]["image_manifest"]["entries"][0]["path"]
+        first_image = (
+            inputs["sealed_concept"]["images"][0]["path"]
+            if inputs["sealed_concept"].get("schema_version") == 3
+            else inputs["sealed_concept"]["image_manifest"]["entries"][0]["path"]
+        )
         target = concept_root / first_image
         target.write_bytes(target.read_bytes() + b"changed")
     creative_source = None

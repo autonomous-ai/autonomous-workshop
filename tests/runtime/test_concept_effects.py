@@ -164,6 +164,33 @@ class ConceptEffectLedgerTest(unittest.TestCase):
             second.evidence_intent_sha256,
         )
 
+    def test_adaptive_request_facts_each_change_the_intent_identity(self):
+        aggregate = self.ledger.prepare_aggregate(
+            **self.bindings, required_roles=("front",)
+        )
+        baseline = {
+            **self.identity(),
+            "request_context_sha256": "7" * 64,
+        }
+        first = self.ledger.prepare_role(
+            aggregate_id=aggregate, identity=baseline
+        )
+        mutations = {
+            "role": "signature",
+            "output_path": "images/signature.png",
+            "instruction_sha256": "8" * 64,
+            "request_context_sha256": "9" * 64,
+            "references": [{"role": "prior", "sha256": "a" * 64}],
+            "profile_sha256": "b" * 64,
+        }
+        for field, value in mutations.items():
+            with self.subTest(field=field):
+                changed = {**baseline, field: value}
+                operation = self.ledger.prepare_role(
+                    aggregate_id=aggregate, identity=changed
+                )
+                self.assertNotEqual(operation.intent_id, first.intent_id)
+
 
 if __name__ == "__main__":
     unittest.main()

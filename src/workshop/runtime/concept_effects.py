@@ -133,6 +133,7 @@ class ConceptRoleIntent:
     role: str
     output_path: str
     instruction_sha256: str
+    request_context_sha256: Optional[str]
     references: tuple[Mapping[str, str], ...]
     profile_id: str
     profile_sha256: str
@@ -162,6 +163,11 @@ class ConceptRoleIntent:
             (self.instruction_sha256, "instruction"), (self.profile_sha256, "profile"),
         ):
             require_sha256(value, "Concept effect %s sha256" % label)
+        if self.request_context_sha256 is not None:
+            require_sha256(
+                self.request_context_sha256,
+                "Concept effect request context sha256",
+            )
         if self.state not in STATES:
             raise StateConflict("Concept effect state is invalid")
         for reference in self.references:
@@ -193,6 +199,8 @@ class ConceptRoleIntent:
             "model": self.model,
             "request_schema_version": self.request_schema_version,
         }
+        if self.request_context_sha256 is not None:
+            identity["request_context_sha256"] = self.request_context_sha256
         return hashlib.sha256(_canonical(identity)).hexdigest()
 
 
@@ -312,8 +320,13 @@ class ConceptEffectLedger:
             "source_manifest_sha256", "role", "output_path", "instruction_sha256",
             "references", "profile_id", "profile_sha256", "model", "request_schema_version",
         }
-        if set(identity) != required:
+        if set(identity) not in (required, required | {"request_context_sha256"}):
             raise ContractError("Concept role intent fields are invalid")
+        if identity.get("request_context_sha256") is not None:
+            require_sha256(
+                identity["request_context_sha256"],
+                "Concept role request context sha256",
+            )
         identity_value = {"aggregate_id": aggregate_id, **dict(identity)}
         intent_id = hashlib.sha256(_canonical(identity_value)).hexdigest()
         now = utc_now()
@@ -343,7 +356,12 @@ class ConceptEffectLedger:
             state=row["state"], response=(json.loads(row["response_json"]) if row["response_json"] else None),
             error_code=row["error_code"], effect_token=row["effect_token"],
             created_at=row["created_at"], updated_at=row["updated_at"],
-            **{key: identity[key] for key in identity if key != "aggregate_id"},
+            request_context_sha256=identity.get("request_context_sha256"),
+            **{
+                key: identity[key]
+                for key in identity
+                if key not in {"aggregate_id", "request_context_sha256"}
+            },
         )
 
     def get(self, intent_id: str) -> ConceptRoleIntent:

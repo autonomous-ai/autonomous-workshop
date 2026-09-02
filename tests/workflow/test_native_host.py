@@ -84,6 +84,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V10_CAPABILITY_PATH,
     DEEP_ECONOMICS_V11_CAPABILITY_PATH,
     DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V14_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -636,11 +637,17 @@ class NativeHostTest(unittest.TestCase):
             "deep-v11": DEEP_ECONOMICS_V11_CAPABILITY_PATH,
             "deep-v12": DEEP_ECONOMICS_V12_CAPABILITY_PATH,
             "deep-v13": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v14": DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        if economics_capability == "deep-v13":
+        if economics_capability == "deep-v14":
+            inputs = {
+                DEEP_ECONOMICS_CAPABILITY_PATH: "d" * 64,
+                DEEP_ECONOMICS_V14_CAPABILITY_PATH: "a" * 64,
+            }
+        elif economics_capability == "deep-v13":
             # A real v13 run materializes the preserved v5-v12 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
@@ -1103,6 +1110,29 @@ class NativeHostTest(unittest.TestCase):
         self.assertIn("first action must check only", recovery)
         self.assertIn("next action must invoke the exact Invent finalizer", recovery)
         self.assertIn("ten-minute boundary is repair reserve", recovery)
+
+    def test_deep_v14_recovery_finalizes_or_repairs_only_two_inputs(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v14", stage="invent"
+        )
+        recovery = _deep_invent_recovery_prompt(checkpoint)
+        self.assertIn("two-input source handoff", recovery)
+        self.assertIn("drafts/invent-source.json", recovery)
+        self.assertIn("visual_plan_path", recovery)
+        self.assertIn("repair only that smallest input", recovery)
+        self.assertIn("--source and --visual-plan", recovery)
+        for forbidden in ("rerank", "research", "delegate"):
+            self.assertIn(forbidden, recovery)
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint, recoverable_continuation=True)
+        launcher_type.assert_called_once_with(
+            reasoning_effort="medium",
+            auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+            runtime_profile_sha256="a" * 64,
+            timeout_seconds=DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
+        )
 
     def test_deep_v12_makes_proof_recovery_a_sealing_handoff(self):
         checkpoint = self._launcher_checkpoint(

@@ -17,6 +17,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V10_CAPABILITY_PATH,
     DEEP_ECONOMICS_V11_CAPABILITY_PATH,
     DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V14_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -32,6 +33,8 @@ from workshop.workflow.effort import (
     DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     INVENT_CONCEPT_CAPABILITY_PATH,
+    INVENT_CONCEPT_V2_ACTIVATED,
+    INVENT_CONCEPT_V2_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -51,6 +54,11 @@ class WorkshopEffortTest(unittest.TestCase):
             ".agents/skills/autonomous-workshop/references/invent-concept-v1.md",
         )
         self.assertEqual(
+            INVENT_CONCEPT_V2_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/invent-concept-v2.md",
+        )
+        self.assertFalse(INVENT_CONCEPT_V2_ACTIVATED)
+        self.assertEqual(
             SPARK_ECONOMICS_CAPABILITY_PATH,
             ".agents/skills/autonomous-workshop/references/spark-economics-v3.md",
         )
@@ -67,6 +75,10 @@ class WorkshopEffortTest(unittest.TestCase):
         self.assertEqual(
             DEEP_ECONOMICS_CAPABILITY_PATH,
             ".agents/skills/autonomous-workshop/references/deep-economics-v13.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v14.md",
         )
         self.assertEqual(
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,

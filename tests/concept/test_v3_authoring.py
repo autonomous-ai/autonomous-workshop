@@ -4,6 +4,8 @@ import copy
 import hashlib
 import json
 import unittest
+import tempfile
+from pathlib import Path
 
 from workshop.concept import (
     VISUAL_PLAN_KIND,
@@ -11,14 +13,21 @@ from workshop.concept import (
     SealedConceptV3,
     normalize_authored_concept,
     normalized_concept_view,
+    seal_pre_render_concept_v3,
+    validate_sealed_concept_v3_tree,
     validate_authored_source,
     validate_visual_plan,
 )
-from workshop.errors import ContractError
+from workshop.errors import ArtifactError, ContractError
 from workshop.invent.native import NativeInvented
 from workshop.match.native import MatchRankingEntry, NativeMatchAssignment
 from workshop.product import ToyBlueprint
 from workshop.wish import Wish
+from workshop.workflow.native_run import (
+    _assert_complete_concept_effect_tree,
+    _concept_role_plan,
+    _install_concept_image,
+)
 
 
 def canonical(value):
@@ -100,11 +109,56 @@ class SimplifiedConceptAuthoringTest(unittest.TestCase):
         first = self.normalize()
         second = self.normalize()
         self.assertEqual(first.to_dict(), second.to_dict())
+        self.assertEqual(first.concept_sha256, "79590d2519597c8bde3e79ab1f77baa44e34abf237cc336697a3dc25425dfc7b")
         self.assertEqual(list(first.descriptor), ["held-form", "star-reveal"])
         self.assertEqual(first.descriptor["star-reveal"]["path"], "images/star-reveal.png")
         self.assertEqual(PreRenderConceptV3.from_mapping(first.to_dict()), first)
         self.assertNotIn("excerpt_sha256", self.source["research"])
         self.assertNotIn("descriptor", self.plan)
+
+    def test_adaptive_effect_plan_preserves_exact_order_and_authored_facts(self):
+        concept = self.normalize()
+        roles = _concept_role_plan(concept)
+        self.assertEqual([item[0] for item in roles], ["held-form", "star-reveal"])
+        self.assertEqual(
+            [item[2] for item in roles],
+            ["images/held-form.png", "images/star-reveal.png"],
+        )
+        self.assertEqual(roles[0][3], ())
+        self.assertEqual(roles[1][3], ("held-form",))
+        self.assertEqual(roles[1][4]["role"]["instruction"], self.plan["roles"][1]["instruction"])
+        self.assertEqual(
+            roles[1][4]["normalized_constraints"],
+            concept.to_dict()["routed_wish"]["constraints"],
+        )
+
+    def test_minimal_and_multipart_fixtures_author_only_two_inputs(self):
+        minimal = {"invent-source.json": self.source, "visual-plan.json": self.plan}
+        multipart_source = copy.deepcopy(self.source)
+        multipart_source["concept"]["components"].append({
+            "key": "core", "name": "Star core", "purpose": "Creates the reveal",
+            "form": "Captive five-point rounded core",
+            "measurements": {"description": "Captive core", "values_mm": {"diameter": 24, "thickness": 8}},
+            "placement": "Inside the shell", "interfaces": "Captured by the helical tracks",
+            "assembly_relationship": "Installed before the shell halves close",
+            "signature_contribution": "Appears only in the open state",
+        })
+        multipart_source["concept"]["interaction_trace"][0]["component_keys"].append("core")
+        multipart_plan = copy.deepcopy(self.plan)
+        multipart_plan["roles"].append({
+            "id": "captive-assembly", "kind": "assembly",
+            "purpose": "Reveals the otherwise hidden captive core relationship",
+            "instruction": "Show shell halves separated just enough to explain core capture.",
+            "appearance_references": ["held-form"], "subject_components": ["shell", "core"],
+        })
+        multipart = {"invent-source.json": multipart_source, "visual-plan.json": multipart_plan}
+        for fixture in (minimal, multipart):
+            self.assertEqual(set(fixture), {"invent-source.json", "visual-plan.json"})
+            validate_authored_source(fixture["invent-source.json"])
+            validate_visual_plan(fixture["visual-plan.json"], component_keys=[item["key"] for item in fixture["invent-source.json"]["concept"]["components"]])
+            encoded = canonical(fixture).lower()
+            for forbidden in (b"descriptor.json", b"derived_wish", b"manifest", b".step", b".stl"):
+                self.assertNotIn(forbidden, encoded)
 
     def test_research_may_be_jointly_empty_but_attribution_cannot_be_fabricated(self):
         validate_authored_source(self.source)
@@ -152,14 +206,47 @@ class SimplifiedConceptAuthoringTest(unittest.TestCase):
 
     def test_sealed_contract_requires_exact_declared_role_set(self):
         source = self.normalize()
-        images = tuple({"id": role_id, **source.descriptor[role_id], "sha256": str(index + 1) * 64} for index, role_id in enumerate(source.descriptor))
-        sealed = SealedConceptV3(source=source, images=images)
+        content = {role_id: (role_id + " image").encode() for role_id in source.descriptor}
+        sealed = seal_pre_render_concept_v3(source, content)
         self.assertEqual(SealedConceptV3.from_mapping(sealed.to_dict()), sealed)
         view = normalized_concept_view(sealed.to_dict())
         self.assertEqual(view.component_keys, ("shell",))
         self.assertEqual([role["id"] for role in view.visual_roles], ["held-form", "star-reveal"])
         with self.assertRaisesRegex(ContractError, "role order"):
-            SealedConceptV3(source=source, images=images[:-1])
+            SealedConceptV3(source=source, images=sealed.images[:-1])
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for role_id, descriptor in source.descriptor.items():
+                path = root / descriptor["path"]
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content[role_id])
+            validate_sealed_concept_v3_tree(sealed, root)
+            (root / "images" / "extra.png").write_bytes(b"extra")
+            with self.assertRaisesRegex(ContractError, "unexpected"):
+                validate_sealed_concept_v3_tree(sealed, root)
+
+    def test_adaptive_effect_tree_supports_partial_then_exact_completion(self):
+        concept = self.normalize()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first, second = tuple(concept.descriptor.values())
+            _install_concept_image(
+                root, first["path"], b"\x89PNG\r\n\x1a\nfirst"
+            )
+            with self.assertRaisesRegex(ArtifactError, "missing or unexpected"):
+                _assert_complete_concept_effect_tree(
+                    root,
+                    [first["path"], second["path"]],
+                    include_legacy_sources=False,
+                )
+            _install_concept_image(
+                root, second["path"], b"\x89PNG\r\n\x1a\nsecond"
+            )
+            _assert_complete_concept_effect_tree(
+                root,
+                [first["path"], second["path"]],
+                include_legacy_sources=False,
+            )
 
 
 if __name__ == "__main__":

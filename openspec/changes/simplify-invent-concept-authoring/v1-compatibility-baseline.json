@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.invent-concept-v1-compatibility-baseline",
+  "git_commit": "7161fb6b0e884ea5c3c88c9a70a7b84b98d44819",
+  "files": [
+    {
+      "role": "marker",
+      "path": ".agents/product-run/.agents/skills/autonomous-workshop/references/invent-concept-v1.md",
+      "sha256": "d1fed19fe9c8b85bf2a40afde73c16a56b94e29891bba91247bcee7ff3d5d80a"
+    },
+    {
+      "role": "finalizer",
+      "path": ".agents/product-run/.agents/skills/autonomous-workshop/scripts/stage_proposal.py",
+      "sha256": "c11e1a49207b00127f597d6cb76d5e11bc20dda8a641aca238d9c1047f129549"
+    },
+    {
+      "role": "validator",
+      "path": ".agents/product-run/.agents/skills/autonomous-workshop/scripts/concept_validator.py",
+      "sha256": "ecb9cbc44a0640d4282699cc5722c1b9354c732cc78953ad5e19739bf5208478"
+    },
+    {
+      "role": "sealed-contract-and-fixed-role-reader",
+      "path": "src/workshop/concept/v2.py",
+      "sha256": "8fc0d95f7dff10742ffee8bf763cd75187fdb0572af7ea1b19d231426538a8a8"
+    },
+    {
+      "role": "packet-and-host-reader",
+      "path": "src/workshop/workflow/native_run.py",
+      "sha256": "1c3aed374e114401b742667cd86a5237abd0b639f6c18ab703f28dd8712db08a"
+    },
+    {
+      "role": "make-reader-guidance",
+      "path": ".agents/product-run/.agents/skills/autonomous-workshop/references/make.md",
+      "sha256": "2c08f0319127981a489813486a3532370f17ae2d2f644cc0f368a2261f9c336c"
+    }
+  ],
+  "claims": [
+    "This records exact accepted v1 source bytes before additive v2 implementation.",
+    "Frozen checkpoints resume from their materialized bytes and are never rewritten to v2."
+  ]
+}

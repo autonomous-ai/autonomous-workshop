@@ -68,6 +68,38 @@ class ConceptImageIntegrationTest(unittest.TestCase):
         )
         self.assertEqual(calls[0][3], DEFAULT_IMAGE_TIMEOUT_SECONDS)
 
+    def test_adapter_serializes_adaptive_role_context_canonically(self):
+        calls = []
+
+        def transport(url, headers, body, timeout):
+            calls.append(json.loads(body))
+            return 200, {}, json.dumps(
+                {"data": [{"b64_json": base64.b64encode(PNG).decode("ascii")}]}
+            ).encode()
+
+        request = ConceptImageRequest(
+            role="signature-open",
+            instruction="Show the held opening action.",
+            output_path="images/signature-open.png",
+            idempotency_key="intent-adaptive",
+            context={
+                "role": {"kind": "signature-experience", "id": "signature-open"},
+                "normalized_constraints": {"wall": {"value": 1.2}},
+            },
+        )
+        OpenRouterConceptImageClient(
+            ConceptImageProfile(), "secret", transport=transport
+        ).render(request)
+        self.assertEqual(
+            calls[0]["prompt"],
+            json.dumps(
+                {"instruction": request.instruction, "context": request.context},
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ),
+        )
+
     def test_adapter_rejects_declared_media_type_mismatching_exact_bytes(self):
         client = OpenRouterConceptImageClient(
             ConceptImageProfile(),

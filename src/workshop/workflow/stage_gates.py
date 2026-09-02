@@ -17,7 +17,13 @@ from workshop._validation import (
     require_sha256,
 )
 from workshop.errors import ContractError, StateConflict
-from workshop.concept import ConceptExpectedContext, PreRenderConcept, evaluate_concept_brief
+from workshop.concept import (
+    ConceptExpectedContext,
+    PreRenderConcept,
+    PreRenderConceptV3,
+    evaluate_concept_brief,
+    normalize_authored_concept,
+)
 from workshop.invent.native import NativeInvented
 from workshop.match.native import NativeMatchAssignment, InventorRoster
 from workshop.workflow.agent_run import (
@@ -524,16 +530,25 @@ def evaluate_routed_invent_stage(
         pre_render_path = concept_context.get("concept_pre_render_path")
         if not isinstance(concept_root, str) or not isinstance(pre_render_path, str):
             raise ContractError("marked Invent gate lacks canonical Concept paths")
-        expected_paths = (
-            invented_artifact_path,
-            assignment_artifact_path,
-            pre_render_path,
-            source_artifact_path,
-            *("%s/%s" % (concept_root, name) for name in (
-                "brief.json", "derived_wish.json", "descriptor.json",
-                "prompts.json", "research.json",
-            )),
-        )
+        if concept_context.get("invent_concept_version") == 2:
+            visual_plan_path = concept_context.get("visual_plan_path")
+            if not isinstance(visual_plan_path, str):
+                raise ContractError("simplified Invent gate lacks its visual-plan path")
+            expected_paths = (
+                invented_artifact_path, assignment_artifact_path, pre_render_path,
+                source_artifact_path, visual_plan_path,
+            )
+        else:
+            expected_paths = (
+                invented_artifact_path,
+                assignment_artifact_path,
+                pre_render_path,
+                source_artifact_path,
+                *("%s/%s" % (concept_root, name) for name in (
+                    "brief.json", "derived_wish.json", "descriptor.json",
+                    "prompts.json", "research.json",
+                )),
+            )
     if (
         proposal.checkpoint_sha256 != expected_checkpoint_sha256
         or proposal.subject_sha256 != expected_subject_sha256
@@ -603,41 +618,80 @@ def evaluate_routed_invent_stage(
             run_root, pre_render_artifact, label="marked pre-render Concept"
         )
         concept_root = concept_context["concept_root"]
-        pre_render = PreRenderConcept.from_mapping(
-            pre_render_document,
-            root=Path(run_root).resolve(strict=True) / concept_root,
-        )
         source_document, source_content = read_bounded_json_artifact(
             run_root, source_artifact.path, label="routed Invent authored source"
         )
         if source_document != source:
             raise StateConflict("routed Invent source changed during validation")
-        expected = ConceptExpectedContext(
-            origin="invent",
-            wish=wish,
-            wish_sha256=wish_sha256,
-            assignment=assignment,
-            invented=invented,
-            creative_source_path=source_artifact.path,
-            creative_source_sha256=hashlib.sha256(source_content).hexdigest(),
-            round=concept_context["concept_round"],
-            standing_concept_sha256=concept_context.get("standing_concept_sha256"),
-            revision_input_sha256=concept_context.get("revision_input_sha256"),
-        )
-        pre_render.assert_context(expected, Path(run_root))
-        pre_render.validate_tree()
-        structural = dict(evaluate_concept_brief(pre_render, wish=wish))
-        concept_checks = {
-            "pre_render_concept_sha256": pre_render.concept_sha256,
-            "pre_render_artifact_sha256": pre_render_artifact.sha256,
-            "source_manifest_sha256": pre_render.source_manifest.artifact_sha256,
-            "derived_wish_sha256": pre_render.derived_wish.derived_wish_sha256,
-            "concept_round": pre_render.provenance.round,
-            "concept_structure": structural,
-        }
+        if concept_context.get("invent_concept_version") == 2:
+            visual_artifact = outcome.artifacts[4]
+            visual_document, visual_content = read_bounded_json_artifact(
+                run_root, visual_artifact.path, label="simplified Invent visual plan"
+            )
+            pre_render = PreRenderConceptV3.from_mapping(pre_render_document)
+            independently_normalized = normalize_authored_concept(
+                source, visual_document, source_path=source_artifact.path,
+                source_bytes=source_content, visual_plan_path=visual_artifact.path,
+                visual_plan_bytes=visual_content, wish=wish, wish_sha256=wish_sha256,
+                assignment=assignment, invented=invented,
+                round=concept_context["concept_round"],
+                standing_concept_sha256=concept_context.get("standing_concept_sha256"),
+                revision_input_sha256=concept_context.get("revision_input_sha256"),
+            )
+            if pre_render.to_dict() != independently_normalized.to_dict():
+                raise ContractError("simplified pre-render Concept differs from host normalization")
+            if (
+                (
+                    (Path(run_root).resolve(strict=True) / concept_root).exists()
+                    or (Path(run_root).resolve(strict=True) / concept_root).is_symlink()
+                )
+                and concept_context.get("concept_effect_resuming") is not True
+            ):
+                raise ContractError("simplified Invent contains native-authored Concept projections")
+            concept_checks = {
+                "pre_render_concept_sha256": pre_render.concept_sha256,
+                "pre_render_artifact_sha256": pre_render_artifact.sha256,
+                "source_manifest_sha256": pre_render.author_source_manifest["artifact_sha256"],
+                "derived_wish_sha256": pre_render.routed_wish["routed_wish_sha256"],
+                "concept_round": pre_render.round,
+                "concept_structure": {"checks_kind": "concept-structure-v2", "role_count": len(pre_render.drawing_instructions)},
+            }
+        else:
+            pre_render = PreRenderConcept.from_mapping(
+                pre_render_document,
+                root=Path(run_root).resolve(strict=True) / concept_root,
+            )
+            expected = ConceptExpectedContext(
+                origin="invent",
+                wish=wish,
+                wish_sha256=wish_sha256,
+                assignment=assignment,
+                invented=invented,
+                creative_source_path=source_artifact.path,
+                creative_source_sha256=hashlib.sha256(source_content).hexdigest(),
+                round=concept_context["concept_round"],
+                standing_concept_sha256=concept_context.get("standing_concept_sha256"),
+                revision_input_sha256=concept_context.get("revision_input_sha256"),
+            )
+            pre_render.assert_context(expected, Path(run_root))
+            pre_render.validate_tree()
+            structural = dict(evaluate_concept_brief(pre_render, wish=wish))
+            concept_checks = {
+                "pre_render_concept_sha256": pre_render.concept_sha256,
+                "pre_render_artifact_sha256": pre_render_artifact.sha256,
+                "source_manifest_sha256": pre_render.source_manifest.artifact_sha256,
+                "derived_wish_sha256": pre_render.derived_wish.derived_wish_sha256,
+                "concept_round": pre_render.provenance.round,
+                "concept_structure": structural,
+            }
     evidence = StageGateEvidence(
         stage="invent",
-        gate_id="invent.routed-concept-v1",
+        gate_id=(
+            "invent.routed-concept-v2"
+            if concept_context is not None
+            and concept_context.get("invent_concept_version") == 2
+            else "invent.routed-concept-v1"
+        ),
         validator_version=VALIDATOR_VERSION,
         passed=True,
         checkpoint_sha256=proposal.checkpoint_sha256,

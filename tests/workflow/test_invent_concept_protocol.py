@@ -6,13 +6,14 @@ from dataclasses import replace
 from pathlib import Path
 from unittest import mock
 
-from workshop.errors import ContractError
+from workshop.errors import ContractError, StateConflict
 from workshop.match.native import InventorRoster, InventorRosterEntry
 from workshop.workflow.agent_run import AgentRunCheckpoint
 from workshop.workflow.agent_run import AgentArtifact
 from workshop.workflow.effort import (
     EFFORT_ROUTE_CAPABILITY_PATH,
     INVENT_CONCEPT_CAPABILITY_PATH,
+    INVENT_CONCEPT_V2_CAPABILITY_PATH,
 )
 from workshop.workflow.native_run import (
     _invent_concept_paths,
@@ -27,10 +28,13 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.run_root = Path(self.temporary.name).resolve()
 
-    def _checkpoint(self, effort="forge", *, marked=True, round_index=1):
+    def _checkpoint(self, effort="forge", *, marked=True, simplified=False, round_index=1):
         inputs = {EFFORT_ROUTE_CAPABILITY_PATH: "a" * 64}
         if marked:
-            inputs[INVENT_CONCEPT_CAPABILITY_PATH] = "b" * 64
+            inputs[
+                INVENT_CONCEPT_V2_CAPABILITY_PATH
+                if simplified else INVENT_CONCEPT_CAPABILITY_PATH
+            ] = "b" * 64
         return AgentRunCheckpoint(
             product_id="invent-concept-packet",
             stage="invent",
@@ -108,6 +112,36 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
         inputs = packet["inputs"]
         self.assertNotIn("concept_root", inputs)
         self.assertNotIn("invent_concept", context)
+
+    def test_simplified_packet_binds_visual_plan_without_changing_route(self):
+        subject, packet, context = _prepare_effort_stage_input(
+            mock.Mock(run_root=self.run_root),
+            self._checkpoint(simplified=True), roster=self._roster(),
+            cad_gate_rejection=None, make_proposal_rejection=None,
+            playtest_proposal_rejection=None,
+        )
+        self.assertRegex(subject, r"^[0-9a-f]{64}$")
+        self.assertEqual(packet["next_transition"], "make")
+        self.assertEqual(packet["inputs"]["visual_plan_path"], "artifacts/invent/visual-plan.json")
+        self.assertEqual(packet["inputs"]["invent_concept_capability"]["path"], INVENT_CONCEPT_V2_CAPABILITY_PATH)
+        self.assertEqual(context["invent_concept_version"], 2)
+
+    def test_checkpoint_cannot_mix_frozen_v1_and_v2_markers(self):
+        checkpoint = self._checkpoint(simplified=True)
+        checkpoint = replace(
+            checkpoint,
+            input_sha256s={
+                **dict(checkpoint.input_sha256s),
+                INVENT_CONCEPT_CAPABILITY_PATH: "9" * 64,
+            },
+        )
+        with self.assertRaisesRegex(StateConflict, "ambiguous"):
+            _prepare_effort_stage_input(
+                mock.Mock(run_root=self.run_root), checkpoint,
+                roster=self._roster(), cad_gate_rejection=None,
+                make_proposal_rejection=None,
+                playtest_proposal_rejection=None,
+            )
 
     def test_concept_paths_are_round_scoped_and_bounded(self):
         self.assertEqual(

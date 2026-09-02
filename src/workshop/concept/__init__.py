@@ -25,6 +25,8 @@ from workshop.concept.v3 import (
     SealedConceptV3,
     normalize_authored_concept,
     normalized_concept_view,
+    seal_pre_render_concept_v3,
+    validate_sealed_concept_v3_tree,
     validate_authored_source,
     validate_visual_plan,
 )
@@ -50,6 +52,8 @@ __all__ = [
     "seal_pre_render_concept",
     "normalize_authored_concept",
     "normalized_concept_view",
+    "seal_pre_render_concept_v3",
+    "validate_sealed_concept_v3_tree",
     "validate_authored_source",
     "validate_visual_plan",
 ]
