@@ -13,7 +13,7 @@
 
 # Autonomous Workshop
 
-Autonomous AI Inventors daydream, invent, and make new toys and games around the clock. Each Inventor reads, researches, learns and watches, keeps a notebook, and leaves with one idea it likes. That idea runs through Invent, Make and Release under a trusted host that seals every step, and lands on the [shop](https://www.autonomous.ai/factory/shop), where you order one and it ships in days. Nothing is made before it is wanted.
+Autonomous AI Inventors daydream, invent, and make new toys and games around the clock. Each Inventor reads, researches, learns and watches, keeps a notebook, and leaves with one thesis an independent Judge accepts. That thesis runs through Invent, Make and Release under a trusted host that seals every step, and lands on the [shop](https://www.autonomous.ai/factory/shop), where you order one and it ships in days. Nothing is made before it is wanted.
 
 [![The Autonomous Workshop loop: Daydream, Invent (optional), Make, Playtest (optional), Release, Shop, Scoreboard](docs/images/inventor-loop.svg)](docs/images/inventor-loop.svg)
 
@@ -21,7 +21,7 @@ Autonomous AI Inventors daydream, invent, and make new toys and games around the
 
 The Workshop is becoming the engine of an AI-native play company. The full plan, the state of the code, and the specifications are kept privately for now; the pieces below land in this repo as they ship.
 
-- **Daydream** is the first stage. `workshop start <inventor>` runs the whole loop; its first step lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. An independent Judge Goal then reads the idea the way Make's blind reviewer will and bets on it; only ideas it would build are built, the rest are remembered and dreamed past. `workshop daydream <inventor>` shows an idea and its verdict without building it. Once started, the loop keeps dreaming, judging, and building until `workshop stop` or Ctrl-C. Outcome feedback comes next.
+- **Daydream** is the first step. `workshop start <inventor>` always begins there unless `--idea` reuses an already completed, Judge-accepted Dream; direct `workshop wish` remains the separate user-authored-Wish path. The Inventor observes the live world, reads exact Taste, specialist skills, prior work, portfolio, Design Vault, notebook, and downstream facts, then writes one creative product thesis rather than an engineering design. An independent Judge checks nine conjunctive dimensions; only a 9/9 thesis becomes immutable Wish intent. Rejections and host-observed outcomes feed the next exact, content-hashed learning loop. `workshop daydream <inventor>` runs this boundary without Make.
 - **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`WISH.json`, and every run id is a Wish id); that name is a contract, not a promise.
 - **Release explains the model**, and the first order prints and photographs the real piece so listings carry real images.
 - **An outcome scoreboard** keyed to each design feeds the Inventors, so next month's toys beat this month's.
@@ -239,7 +239,7 @@ The floorplan of the shop. An Inventor's idea walks one frozen route; Operations
 [![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=daydream-v1)](docs/images/workshop-floorplan.svg)
 
 ```text
-Daydream -> one liked idea -> a frozen effort route:
+Daydream -> one Judge-accepted thesis -> its frozen effort route:
 
 ✨ Spark: Make -> Release                          (default)
 🔥 Forge: Invent <-> Make -> Release
@@ -255,7 +255,7 @@ Every run is keyed by a Wish id. Passed-through stages create no turn, artifact,
 
 **Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Every step is one native Goal, Daydream and its Judge included, and every Goal ends with a run-local finalizer writing `agent-outcome.json`, which is the only completion signal the host trusts. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
 
-**Two sessions, by design.** `workshop start` is a loop: dream, build, dream again. A daydream is its own short native session. It ends when the idea is sealed: linted, hashed, written to the Inventor's notebook, and rendered as the brief. Each liked idea then gets its own persistent build session, one per run, exactly as a typed brief would. The idea is an immutable input to the build, so Make can never quietly rewrite what it is building; daydreams can run on their own cadence; a saved idea can be built later, on any route or Manager, or rebuilt after a failed Make; and a build failure never touches the idea.
+**Two sessions, by design.** `workshop start` is a loop: dream, build, dream again. A daydream and its independent Judge are a pre-Wish boundary; an accepted thesis then gets its own persistent product-run session. The thesis is immutable input, so Invent or Make can solve the exact mechanism without quietly replacing the opportunity, action, payoff, or anti-generic signature. A saved Dream can be reused later with its sealed route and provenance; build outcomes never rewrite it, but they become factual context for a later Dream.
 
 **What Make must prove.** Every printable part passes a fixed print preflight (bed fit, mesh validity, wall thickness at a 0.4 mm nozzle). One independent critic then reviews exact renders blind, before the brief is revealed, and the host rebuilds the CAD in isolation and seals the bytes. When a stage is truly blocked, it records a `Need:` that the receipt and `workshop status` show; nothing waits silently.
 
@@ -280,6 +280,8 @@ docs/               architecture, ADRs, and contributor guides
 Private state stays outside the agent-visible checkout: `$WORKSHOP_HOME/daydreams/<inventor>/`, `$WORKSHOP_HOME/runs/<wish-id>/workspace`, and `$WORKSHOP_HOME/state/<wish-id>/`. Factory credentials live in `$WORKSHOP_HOME/credentials/factory.env` (0600 inside a 0700 directory) and never enter the native agent's session.
 
 Turn budgets, compaction ceilings, recovery windows, and the blind-review protocol are specified in [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md). See also [Workshop architecture](docs/ARCHITECTURE.md), the [publication boundary](docs/PUBLISH_SEALED_PRODUCT.md), and [Playtest evidence](docs/PLAYTEST_EVIDENCE.md).
+Focused Daydream implementation-loop evidence and its explicit limitations are
+recorded in [Daydream evaluation](docs/DAYDREAM_EVALUATION.md).
 
 ## Contributing
 
