@@ -74,7 +74,7 @@ few decisions and checks that make it real.
   receives one decisive 10-minute medium recovery when needed. Make begins
   with one 16-minute medium proof runway and resumes the same Goal at high
   reasoning as soon as its exact proof-ready marker exists. Later turns retain
-  30 minutes, and every stage compacts at 256k. These
+  60 minutes, and every stage compacts at 256k. These
   boundaries and compacted context are focus constraints, not quality waivers. In Make, the
   first persisted deliverable is the smallest exact causal or kinematic proof
   plus neutral held/signature blockout renders under

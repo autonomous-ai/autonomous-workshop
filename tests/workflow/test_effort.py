@@ -57,7 +57,7 @@ class WorkshopEffortTest(unittest.TestCase):
             ".agents/skills/autonomous-workshop/references/spark-economics-v1.md",
         )
         self.assertEqual(SPARK_AUTO_COMPACT_TOKEN_LIMIT, 64_000)
-        self.assertEqual(SPARK_NATIVE_TURN_TIMEOUT_SECONDS, 1_200)
+        self.assertEqual(SPARK_NATIVE_TURN_TIMEOUT_SECONDS, 3_600)
         self.assertEqual(
             DEEP_ECONOMICS_CAPABILITY_PATH,
             ".agents/skills/autonomous-workshop/references/deep-economics-v13.md",

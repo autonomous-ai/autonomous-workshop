@@ -61,7 +61,7 @@ second product-run session or weaken the one-session continuity rule.
 
 New Codex Spark projects freeze `spark-economics-v3.md` and run that one
 session at low reasoning effort with a 64k automatic context-compaction ceiling
-across Make and Release plus a 20-minute boundary per native turn. A timeout
+across Make and Release plus a 60-minute boundary per native turn. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
 waiver. New Forge and Quest projects freeze `deep-economics-v13.md`: Invent
@@ -72,7 +72,7 @@ is the next action. A compact exact-Taste-header index
 covers the complete roster before Codex reads only the strongest three full
 agents. Make starts with one 16-minute medium real-state proof phase at 256k,
 then the same Goal resumes at high reasoning for a 15-minute source handoff
-before normal 30-minute recovery after the host accepts its checkpoint-bound
+before normal 60-minute recovery after the host accepts its checkpoint-bound
 proof marker into a private receipt. An explicit operator resume with that
 valid receipt starts directly in normal recovery rather than replaying the
 source handoff. A current wall-thickness
@@ -274,8 +274,8 @@ turn transcript. Each individual event has a hard byte limit and is decoded,
 validated, classified into safe progress, and then discarded; an oversized or
 malformed record still fails closed. A legitimate long turn may emit more than
 that limit in aggregate because cumulative bytes consume no growing host
-buffer. The frozen per-run process timeout (20 minutes per v3 Codex Spark turn;
-one hour for prior profiles), isolated-process cleanup, per-message limit, and
+buffer. The frozen per-run process timeout (60 minutes per Codex Spark or deep
+turn since 2026-09-03; 20 or 30 minutes for runs frozen before that), isolated-process cleanup, per-message limit, and
 whole-run native-turn budget remain the surrounding resource bounds.
 
 ### Privacy-safe progress status
@@ -784,7 +784,8 @@ private Wish demonstrate that:
 10. the executable Workshop run ends at Release and makes no claim of physical
     printing, delivery, or review.
 11. a v3 Codex Spark run uses frozen low reasoning, its 64k compaction ceiling,
-    and a 20-minute boundary per native turn across both active stages; v2, v1,
+    and a 60-minute boundary per native turn across both active stages (20
+    minutes for v3 runs frozen before 2026-09-03); v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
     bindings; and
 12. a deep-v13 Codex Forge or Quest run uses index-first bounded high Invent
@@ -825,9 +826,10 @@ windows exactly as they stood; newer sections above take precedence where
 they overlap.
 
 New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
-ceiling for their one persistent Make-to-Release session, and a 20-minute
-boundary per native turn. A timeout resumes the exact session and Goal through
-the existing bounded recovery path; it is not a 20-minute stage deadline.
+ceiling for their one persistent Make-to-Release session, and a 60-minute
+boundary per native turn (20 minutes before 2026-09-03). A timeout resumes the
+exact session and Goal through the existing bounded recovery path; it is not a
+stage deadline.
 New Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
 use a 10-minute medium source handoff only when needed: finalize an existing
 source first, or write then finalize before any refinement. A compact index
@@ -835,8 +837,8 @@ covers every exact Taste header before Codex reads only the best three full
 Inventors. Make starts with one 16-minute medium real-state proof runway at 256k
 context; after exact proof bytes are durable, a checkpoint-bound marker returns
 control to the host and the same Make Goal resumes at high reasoning with a
-15-minute source handoff before normal 30-minute recovery. Playtest and Release
-use medium, every stage compacts at 256k,
+15-minute source handoff before normal 60-minute recovery (30 minutes before
+2026-09-03). Playtest and Release use medium, every stage compacts at 256k,
 and one CLI invocation stops after eight native turns. The host binds a private
 writable cache; the proof turn defers the broad CAD skill, batches its required
 reads, makes source the next durable action, and batches generate/export/render
