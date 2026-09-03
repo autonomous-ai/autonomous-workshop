@@ -19,6 +19,7 @@ Workshop. It is authoritative together with
 [ADR 0038](adr/0038-prove-product-states-and-bound-final-source.md),
 [ADR 0039](adr/0039-make-invent-recovery-a-source-handoff.md),
 [ADR 0040](adr/0040-make-proof-recovery-a-sealing-handoff.md),
+[ADR 0041](adr/0041-resume-final-make-at-recovery.md),
 [ADR 0042](adr/0042-taste-governed-world-informed-daydream.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
