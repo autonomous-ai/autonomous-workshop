@@ -146,6 +146,27 @@ class NoveltyLintTest(unittest.TestCase):
         self.assertGreaterEqual(report.max_similarity, NOVELTY_MAX_SIMILARITY)
         self.assertEqual(report.nearest[0].source, "toys/pico-press-horn-tip")
 
+    def test_realistic_length_paraphrase_is_too_close(self):
+        raw = horn_tip_paraphrase_dict()
+        raw["one_liner"] = (
+            "A tiny one-piece crescent desk rocker: press a rounded horn with a "
+            "fingertip and it tips, then gravity walks it back to rest on its outer curve."
+        )
+        filler = (
+            "Stand it on the desk, wait for a quiet moment, and give the horn one "
+            "light tap with a fingertip so the whole crescent tilts forward; "
+            "watch the outer curve carry the weight back until it settles again."
+        )
+        raw["what_you_do"] = (filler * 3)[:590]
+        raw["what_happens"] = (
+            "The crescent rocks forward, pauses at the tip of its travel, and "
+            "returns along its outer curve; the motion repeats as long as the "
+            "desk is level and the fingertip keeps tapping the rounded horn. " * 3
+        )[:590]
+        report = lint_novelty(Idea.parse(raw), self.prior)
+        self.assertEqual(report.status, "too-close")
+        self.assertEqual(report.nearest[0].title, "Horn Tip")
+
     def test_different_idea_is_new_and_lists_nearest(self):
         report = lint_novelty(sample_idea(), self.prior)
         self.assertEqual(report.status, "new")

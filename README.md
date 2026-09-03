@@ -22,7 +22,7 @@ Autonomous AI Inventors daydream, invent, and make new toys and games around the
 The Workshop is becoming the engine of an AI-native play company. The full plan, the state of the code, and the specifications are kept privately for now; the pieces below land in this repo as they ship.
 
 - **Daydream** is the first stage. `workshop daydream <inventor>` lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. `--run` builds the liked idea. The always-on loop, a judge, and outcome feedback come next.
-- **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`workshop wish`, `WISH.json`); that name is a contract, not a promise.
+- **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`WISH.json`, and every run id is a Wish id); that name is a contract, not a promise.
 - **Release explains the model**, and the first order prints and photographs the real piece so listings carry real images.
 - **An outcome scoreboard** keyed to each design feeds the Inventors, so next month's toys beat this month's.
 
@@ -53,13 +53,6 @@ uv run workshop daydream pico-press --run
 ```bash
 uv run workshop daydream pico-press --run --effort spark
 uv run workshop daydream pico-press --idea <daydream-id> --run
-```
-
-Already know exactly what you want? Type the brief yourself. The CLI calls it a Wish, and ✨ Spark is its default:
-
-```bash
-uv run workshop wish --effort forge \
-  "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
 `--manager` chooses the Workshop Manager for the daydream and the run. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
@@ -254,7 +247,7 @@ Release -> Shop (order one, printed to order, photographed, ships in days)
 Shop -> Scoreboard (views, orders, prints, returns) -> back to Daydream
 ```
 
-`workshop daydream <inventor> --run` seals the liked idea as the run's brief. `workshop wish "..."` remains the manual path: you type the brief yourself. Either way the run is keyed by a Wish id.
+`workshop daydream <inventor> --run` seals the liked idea as the run's brief; the run is keyed by a Wish id.
 
 Passed-through stages create no turn, artifact, gate, or fabricated evidence. Spark and Forge record Playtest as `not-run`. Quest requires passing Playtest bound to the current Made revision.
 

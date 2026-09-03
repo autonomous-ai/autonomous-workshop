@@ -40,6 +40,15 @@ class NotebookTest(unittest.TestCase):
             self.assertEqual(len(lines), 2)
             self.assertEqual(json.loads(lines[0]), _entry(1).to_dict())
 
+    def test_append_repairs_a_torn_tail(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "NOTEBOOK.jsonl"
+            append_notebook_entry(path, _entry(1))
+            with open(path, "ab") as handle:
+                handle.write(json.dumps(_entry(2).to_dict()).encode("utf-8")[:-4])
+            append_notebook_entry(path, _entry(3))
+            self.assertEqual(read_notebook(path), (_entry(1), _entry(3)))
+
     def test_malformed_lines_are_skipped_and_limit_keeps_the_newest(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "NOTEBOOK.jsonl"

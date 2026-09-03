@@ -88,7 +88,7 @@ def _parse_line(line: bytes) -> NotebookEntry | None:
         return None
     try:
         raw = json.loads(line.decode("utf-8"))
-    except (UnicodeDecodeError, ValueError):
+    except (UnicodeDecodeError, ValueError, RecursionError):
         return None
     if not isinstance(raw, dict):
         return None

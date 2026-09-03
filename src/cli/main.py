@@ -989,8 +989,7 @@ def parser() -> argparse.ArgumentParser:
             "Start here:\n"
             "  workshop doctor\n"
             "  workshop daydream pico-press\n"
-            "  workshop daydream pico-press --run\n"
-            "  workshop wish \"a wind-up moon that waddles across my desk\""
+            "  workshop daydream pico-press --run"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

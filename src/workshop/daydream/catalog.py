@@ -85,7 +85,7 @@ def _wish_prior_work(source: str, path: Path) -> Optional[PriorWork]:
         return None
     try:
         raw = json.loads(text)
-    except ValueError:
+    except (ValueError, RecursionError):
         return None
     if not isinstance(raw, Mapping):
         return None
@@ -202,6 +202,9 @@ def lint_novelty(idea: Idea, prior: Sequence[PriorWork]) -> NoveltyReport:
     idea_tokens = content_tokens(
         " ".join((idea.title, idea.one_liner, idea.what_you_do, idea.what_happens))
     )
+    # A catalog summary is one or two sentences; compare at that granularity
+    # too, or a long idea could never score high against a short entry.
+    headline_tokens = content_tokens("%s %s" % (idea.title, idea.one_liner))
     scored: list[tuple[float, PriorWork]] = []
     for entry in prior:
         if not isinstance(entry, PriorWork):
@@ -209,8 +212,10 @@ def lint_novelty(idea: Idea, prior: Sequence[PriorWork]) -> NoveltyReport:
         if idea_title == normalize_title(entry.title):
             similarity = 1.0
         else:
-            similarity = _jaccard(
-                idea_tokens, content_tokens("%s %s" % (entry.title, entry.summary))
+            entry_tokens = content_tokens("%s %s" % (entry.title, entry.summary))
+            similarity = max(
+                _jaccard(idea_tokens, entry_tokens),
+                _jaccard(headline_tokens, entry_tokens),
             )
         scored.append((similarity, entry))
     scored.sort(key=lambda item: (-item[0], item[1].title, item[1].source))

@@ -49,7 +49,9 @@ from workshop.daydream.notebook import (
 from workshop.daydream.prompt import DAYDREAM_CONSTITUTION_SHA256, build_daydream_prompt
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
 from workshop.errors import ContractError
+from workshop.runtime.codex import CodexInvocationError, CodexRecoverableInvocationError
 from workshop.runtime.managers import (
+    NativeManagerRecoverableError,
     DEFAULT_MANAGER_ID,
     NativeManagerInvocationError,
     manager_launcher,
@@ -69,6 +71,8 @@ IDEA_FILE_NAME = "IDEA.json"
 REJECTED_FILE_NAME = "REJECTED.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 MAX_SEALED_FILE_BYTES = 256 * 1024
+MAX_ERROR_CHARS = 1_000
+NOTEBOOK_LINT_LIMIT = 1_000_000
 WISH_CONTEXT_SOURCE = "workshop-daydream"
 
 
@@ -268,7 +272,13 @@ def _native_turn(
             prompt=prompt,
             activity_observer=activity_observer,
         )
-    except (NativeManagerInvocationError, ContractError) as exc:
+    except (NativeManagerRecoverableError, CodexRecoverableInvocationError) as exc:
+        # The runtime lost its terminal event or timed out.  A finished idea
+        # file is still the Inventor's work; keep it and record the truth.
+        if (paths.work / IDEA_FILE_NAME).is_file():
+            return {"status": "incomplete", "error": _bounded_error(exc)}
+        raise DaydreamError("Daydream session failed: %s" % exc) from exc
+    except (CodexInvocationError, NativeManagerInvocationError, ContractError) as exc:
         raise DaydreamError("Daydream session failed: %s" % exc) from exc
     to_dict = getattr(outcome, "to_dict", None)
     if not callable(to_dict):
@@ -279,6 +289,11 @@ def _native_turn(
         raise DaydreamError("Daydream session outcome is not a JSON object") from exc
 
 
+def _bounded_error(exc: BaseException) -> str:
+    text = " ".join(str(exc).split())
+    return text[:MAX_ERROR_CHARS] if text else exc.__class__.__name__
+
+
 def _read_idea(path: Path) -> Idea:
     try:
         payload = read_regular_bytes(path, maximum=MAX_IDEA_FILE_BYTES, label="work/IDEA.json")
@@ -286,7 +301,7 @@ def _read_idea(path: Path) -> Idea:
         raise DaydreamError("the Inventor wrote no work/IDEA.json") from exc
     try:
         raw = json.loads(payload.decode("utf-8"))
-    except (UnicodeDecodeError, ValueError) as exc:
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
         raise DaydreamError("work/IDEA.json is not valid UTF-8 JSON: %s" % exc) from exc
     if not isinstance(raw, dict):
         raise DaydreamError("work/IDEA.json must be a JSON object")
@@ -388,9 +403,14 @@ def run_daydream(
         prompt=prompt,
         activity_observer=activity_observer,
     )
+    # The Inventor could write anything below the workspace; only a real,
+    # unlinked work directory and a fresh notebook decide what gets sealed.
+    _existing_real_directory(paths.workspace, label="daydream workspace")
+    _existing_real_directory(paths.work, label="daydream work directory", private=False)
     idea = _read_idea(paths.work / IDEA_FILE_NAME)
+    latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
     novelty = lint_novelty(
-        idea, (*repository_prior, *prior_work_from_notebook(notebook_entries))
+        idea, (*repository_prior, *prior_work_from_notebook(latest_entries))
     )
     created_at = observed.strftime(CREATED_AT_FORMAT)
     if novelty.status != "new":
@@ -439,7 +459,7 @@ def load_sealed_daydream(
         raise DaydreamError("daydream %s has no sealed idea: %s" % (daydream_id, path)) from exc
     try:
         raw = json.loads(payload.decode("utf-8"))
-    except (UnicodeDecodeError, ValueError) as exc:
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
         raise DaydreamError("sealed daydream %s is not valid JSON" % daydream_id) from exc
     if not isinstance(raw, dict):
         raise DaydreamError("sealed daydream %s must be a JSON object" % daydream_id)

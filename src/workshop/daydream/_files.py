@@ -100,7 +100,8 @@ def append_private_line(path: Path, line: bytes, *, label: str) -> None:
             raise DaydreamError("%s must be a regular file: %s" % (label, path))
         if stat.S_IMODE(before.st_mode) != 0o600:
             raise DaydreamError("%s permissions must be 0600: %s" % (label, path))
-    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | _OPEN_FLAGS
+    # Read-write so the previous record's last byte can be checked.
+    flags = os.O_RDWR | os.O_CREAT | os.O_APPEND | _OPEN_FLAGS
     try:
         descriptor = os.open(str(path), flags, 0o600)
     except OSError as exc:
@@ -113,6 +114,9 @@ def append_private_line(path: Path, line: bytes, *, label: str) -> None:
             os.fchmod(descriptor, 0o600)
         elif (opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino):
             raise DaydreamError("%s changed while opening: %s" % (label, path))
+        if opened.st_size > 0 and os.pread(descriptor, 1, opened.st_size - 1) != b"\n":
+            # A torn earlier append must not swallow this record.
+            _write_all(descriptor, b"\n")
         _write_all(descriptor, line)
     finally:
         os.close(descriptor)

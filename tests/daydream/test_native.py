@@ -26,7 +26,11 @@ from workshop.daydream.native import (
 from workshop.daydream.prompt import DAYDREAM_CONSTITUTION_SHA256
 from workshop.daydream.seeds import DaydreamSeed
 from workshop.errors import ContractError
-from workshop.runtime.managers import NativeManagerInvocationError
+from workshop.runtime.codex import CodexInvocationError, CodexRecoverableInvocationError
+from workshop.runtime.managers import (
+    NativeManagerInvocationError,
+    NativeManagerRecoverableError,
+)
 from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER,
     PRODUCT_RUN_ROOT_MARKER_BYTES,
@@ -56,8 +60,18 @@ class _FakeLauncher:
     manager_id = "codex"
     session_checkpoint_name = "codex-session.json"
 
-    def __init__(self, test, *, timeout_seconds, idea=None, error=None, expect_notebook=()):
+    def __init__(
+        self,
+        test,
+        *,
+        timeout_seconds,
+        idea=None,
+        error=None,
+        expect_notebook=(),
+        error_after_idea=False,
+    ):
         self.test = test
+        self.error_after_idea = error_after_idea
         self.timeout_seconds = timeout_seconds
         self.idea = idea
         self.error = error
@@ -83,13 +97,15 @@ class _FakeLauncher:
             self.test.assertIn(expected, notebook)
         if arguments["activity_observer"] is not None:
             arguments["activity_observer"]("reasoning")
-        if self.error is not None:
+        if self.error is not None and not self.error_after_idea:
             raise self.error
         if self.idea is not None:
             (run_root / "work" / "IDEA.json").write_text(
                 self.idea if isinstance(self.idea, str) else json.dumps(self.idea),
                 encoding="utf-8",
             )
+        if self.error is not None:
+            raise self.error
         return _FakeOutcome(arguments)
 
 
@@ -257,6 +273,101 @@ class DaydreamNativeTest(unittest.TestCase):
                 moment=MOMENT,
                 daydream_id="daydream-20260902-101700-00000003",
             )
+
+    def test_codex_failures_become_daydream_errors(self):
+        with self.assertRaisesRegex(DaydreamError, "not installed"):
+            self._run(error=CodexInvocationError("Codex CLI is not installed or on PATH"))
+        with self.assertRaisesRegex(DaydreamError, "timed out"):
+            self._run(
+                daydream_id=SECOND_ID,
+                error=CodexRecoverableInvocationError("Codex native session timed out"),
+            )
+
+    def test_recoverable_failure_after_a_written_idea_is_kept_as_incomplete(self):
+        for index, error in enumerate(
+            (
+                CodexRecoverableInvocationError("terminal event missing"),
+                NativeManagerRecoverableError("provider disconnect"),
+            )
+        ):
+            daydream_id = "daydream-20260902-1018%02d-%08x" % (index, index + 7)
+            sealed, launchers = self._run(
+                daydream_id=daydream_id,
+                idea=sample_idea_dict(),
+                error=error,
+                error_after_idea=True,
+            )
+            self.assertEqual(sealed.session, {"status": "incomplete", "error": str(error)})
+            self.assertEqual(sealed.idea.title, "Ladder Drop")
+            self.assertEqual(load_sealed_daydream("sample", daydream_id), sealed)
+            paths = daydream_paths("sample", daydream_id)
+            (paths.host_state / "IDEA.json").unlink()
+            # The second loop iteration must not see the first as prior work.
+            paths.notebook.unlink()
+
+    def test_overlapping_daydream_by_the_same_inventor_cannot_seal_a_repeat(self):
+        test = self
+        inner_factory, _ = self._factory(idea=sample_idea_dict())
+
+        class _Nesting(_FakeLauncher):
+            def start(self, **arguments):
+                run_daydream(
+                    "sample",
+                    source_root=test.source_root,
+                    repository_root=test.catalog,
+                    launcher_factory=inner_factory,
+                    seed=SEED,
+                    moment=MOMENT,
+                    daydream_id=SECOND_ID,
+                )
+                return super().start(**arguments)
+
+        def factory(manager_id, **kwargs):
+            return _Nesting(test, **kwargs, idea=sample_idea_dict())
+
+        with self.assertRaisesRegex(DaydreamError, "Ladder Drop"):
+            run_daydream(
+                "sample",
+                source_root=self.source_root,
+                repository_root=self.catalog,
+                launcher_factory=factory,
+                seed=SEED,
+                moment=MOMENT,
+                daydream_id=FIRST_ID,
+            )
+        self.assertEqual(
+            [(entry.daydream_id, entry.status) for entry in list_daydreams("sample")],
+            [(SECOND_ID, "dreamed"), (FIRST_ID, "rejected")],
+        )
+
+    def test_work_directory_replaced_by_a_symlink_is_rejected(self):
+        test = self
+        elsewhere = Path(self._temporary.name).resolve() / "elsewhere"
+        elsewhere.mkdir()
+        (elsewhere / "IDEA.json").write_text(json.dumps(sample_idea_dict()), encoding="utf-8")
+
+        class _Swapping(_FakeLauncher):
+            def start(self, **arguments):
+                outcome = super().start(**arguments)
+                work = Path(arguments["run_root"]) / "work"
+                work.rmdir()
+                work.symlink_to(elsewhere)
+                return outcome
+
+        def factory(manager_id, **kwargs):
+            return _Swapping(test, **kwargs)
+
+        with self.assertRaisesRegex(DaydreamError, "work directory"):
+            run_daydream(
+                "sample",
+                source_root=self.source_root,
+                repository_root=self.catalog,
+                launcher_factory=factory,
+                seed=SEED,
+                moment=MOMENT,
+                daydream_id=FIRST_ID,
+            )
+        self.assertEqual(list_daydreams("sample"), ())
 
     def test_unknown_inventor_and_manager_fail_before_any_state_exists(self):
         with self.assertRaisesRegex(DaydreamError, "unknown Inventor: nobody \\(known: sample\\)"):
