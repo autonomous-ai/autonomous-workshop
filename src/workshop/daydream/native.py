@@ -60,6 +60,12 @@ from workshop.daydream.prompt import (
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
 from workshop._validation import require_sha256
 from workshop.errors import ContractError, ManifestError
+from workshop.invent.gamevault import (
+    GameVaultError,
+    GameVaultUnavailable,
+    default_client as default_gamevault_client,
+)
+from workshop.invent.vault import MAX_PACKED_BYTES, Vault
 from workshop.runtime.agent_assets import (
     InventorSkillBinding,
     inventor_custom_agent_bytes,
@@ -73,7 +79,11 @@ from workshop.runtime.managers import (
     manager_launcher,
     manager_spec,
 )
-from workshop.runtime.package_data import default_workshop_home
+from workshop.runtime.package_data import (
+    PackageDataError,
+    default_workshop_home,
+    product_run_domain_skill_roots,
+)
 from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER,
     PRODUCT_RUN_ROOT_MARKER_BYTES,
@@ -95,12 +105,15 @@ VERDICT_FILE_NAME = "VERDICT.json"
 JUDGE_TURN_TIMEOUT_SECONDS = 600
 REJECTED_FILE_NAME = "REJECTED.json"
 INVENTOR_BINDING_FILE_NAME = "INVENTOR.json"
+VAULT_BINDING_FILE_NAME = "VAULT-BINDING.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 MAX_SEALED_FILE_BYTES = 256 * 1024
 MAX_ERROR_CHARS = 1_000
 NOTEBOOK_LINT_LIMIT = 1_000_000
 WISH_CONTEXT_SOURCE = "workshop-daydream"
 MAX_INVENTOR_SOURCE_BYTES = 64 * 1024
+MAX_DAYDREAM_SKILL_FILES = 128
+MAX_DAYDREAM_SKILL_BYTES = 2 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -267,6 +280,135 @@ def schema_bytes() -> bytes:
     )
 
 
+def _materialize_domain_skill(paths: DaydreamPaths, *, name: str, source_root: Path) -> None:
+    """Copy one trusted package-owned skill without following linked content."""
+
+    requested = Path(source_root)
+    if requested.is_symlink():
+        raise DaydreamError("Daydream domain skill %s must not be a symlink" % name)
+    try:
+        root = requested.resolve(strict=True)
+    except OSError as exc:
+        raise DaydreamError("Daydream domain skill %s is unavailable" % name) from exc
+    if root != requested or not root.is_dir():
+        raise DaydreamError("Daydream domain skill %s must be a canonical directory" % name)
+    entries: list[tuple[Path, Path, int]] = []
+    total = 0
+    for source in sorted(root.rglob("*"), key=lambda item: item.as_posix()):
+        relative = source.relative_to(root)
+        if "__pycache__" in relative.parts or source.name == ".DS_Store":
+            continue
+        if source.is_symlink():
+            raise DaydreamError("Daydream domain skill %s contains a symlink" % name)
+        if source.is_dir():
+            continue
+        try:
+            identity = source.lstat()
+        except OSError as exc:
+            raise DaydreamError("Daydream domain skill %s changed while reading" % name) from exc
+        if not stat.S_ISREG(identity.st_mode):
+            raise DaydreamError("Daydream domain skill %s contains a special file" % name)
+        total += identity.st_size
+        entries.append((source, relative, identity.st_mode))
+    if (
+        not entries
+        or len(entries) > MAX_DAYDREAM_SKILL_FILES
+        or total > MAX_DAYDREAM_SKILL_BYTES
+    ):
+        raise DaydreamError("Daydream domain skill %s exceeds its input bounds" % name)
+
+    skills_root = paths.workspace / ".agents" / "skills"
+    for directory, label in (
+        (paths.workspace / ".agents", "Daydream agent inputs"),
+        (skills_root, "Daydream skill inputs"),
+        (skills_root / name, "Daydream %s skill" % name),
+    ):
+        _ensure_private_directory(directory, label=label)
+    target_root = skills_root / name
+    for source, relative, source_mode in entries:
+        content = read_regular_bytes(
+            source,
+            maximum=MAX_DAYDREAM_SKILL_BYTES,
+            label="Daydream %s skill file" % name,
+        )
+        destination = target_root / relative
+        destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        write_private_bytes(
+            destination,
+            content,
+            label="materialized Daydream %s skill" % name,
+        )
+        os.chmod(destination, 0o500 if source_mode & 0o111 else 0o400)
+
+
+def _default_vault_loader() -> Vault:
+    return default_gamevault_client().export()
+
+
+def _materialize_vault(
+    paths: DaydreamPaths, *, vault_loader: Callable[[], Vault]
+) -> tuple[bytes, Mapping[str, Any]]:
+    """Fetch one host-owned advisory Vault snapshot and its offline query skill."""
+
+    try:
+        design_vault_skill = product_run_domain_skill_roots()["design-vault"]
+    except (KeyError, PackageDataError) as exc:
+        raise DaydreamError("the packaged design-vault skill is unavailable") from exc
+    _materialize_domain_skill(paths, name="design-vault", source_root=design_vault_skill)
+    try:
+        vault = vault_loader()
+    except GameVaultUnavailable:
+        binding: Mapping[str, Any] = {"status": "unavailable"}
+        summary = (
+            "# Design Vault advisory context\n\n"
+            "Status: unavailable for this Daydream. Do not claim Vault leads or "
+            "invent missing knowledge. Continue from Taste, world sources, portfolio, "
+            "and prior art.\n"
+        ).encode("utf-8")
+    except GameVaultError as exc:
+        raise DaydreamError("Design Vault returned invalid evidence: %s" % exc) from exc
+    else:
+        if not isinstance(vault, Vault):
+            raise DaydreamError("Design Vault loader returned no typed Vault")
+        packed = vault.packed_bytes()
+        if not 1 <= len(packed) <= MAX_PACKED_BYTES:
+            raise DaydreamError("Design Vault snapshot exceeds its byte bound")
+        digest = hashlib.sha256(packed).hexdigest()
+        binding = {
+            "status": "available",
+            "path": "VAULT.json",
+            "skill": ".agents/skills/design-vault/SKILL.md",
+            "sha256": digest,
+            "nodes": len(vault.nodes),
+        }
+        write_private_bytes(
+            paths.workspace / "VAULT.json", packed, label="Daydream Vault snapshot"
+        )
+        os.chmod(paths.workspace / "VAULT.json", 0o400)
+        write_private_bytes(
+            paths.host_state / "VAULT.json", packed, label="host Daydream Vault snapshot"
+        )
+        summary = (
+            "# Design Vault advisory context\n\n"
+            "Status: available\n"
+            "Snapshot: `VAULT.json`\n"
+            "SHA-256: `%s`\n"
+            "Nodes: %d\n\n"
+            "Query it only through `.agents/skills/design-vault/vault_tools.py`. "
+            "This pre-Wish workspace has no `STAGE.json`; use only the skill's "
+            "offline resolve, node, and guidance queries. "
+            "Treat every result as an advisory mechanism lead or risk, never an "
+            "engineering fact and never Taste authority.\n"
+            % (digest, len(vault.nodes))
+        ).encode("utf-8")
+    write_private_bytes(
+        paths.host_state / VAULT_BINDING_FILE_NAME,
+        (canonical_json(binding) + "\n").encode("utf-8"),
+        label="Daydream Vault binding",
+    )
+    return summary, binding
+
+
 def _materialize_selected_inventor(
     paths: DaydreamPaths, *, manifest: InventorManifest, taste: Taste
 ) -> Mapping[str, Any]:
@@ -369,6 +511,7 @@ def _write_workspace(
     taste: Taste,
     repository_prior: Sequence[PriorWork],
     notebook_entries: Sequence[NotebookEntry],
+    vault_summary: bytes,
 ) -> None:
     files = (
         ("TASTE.md", taste.content.encode("utf-8")),
@@ -380,10 +523,7 @@ def _write_workspace(
             .encode("utf-8"),
         ),
         ("NOTEBOOK.md", render_notebook_markdown(notebook_entries).encode("utf-8")),
-        (
-            "VAULT.md",
-            b"# Design Vault advisory context\n\n(no Vault snapshot available yet)\n",
-        ),
+        ("VAULT.md", vault_summary),
         # The constitution doubles as AGENTS.md so the Manager runtime loads it
         # the same way it loads a product run's constitution.
         ("AGENTS.md", DAYDREAM_CONSTITUTION.encode("utf-8")),
@@ -676,6 +816,7 @@ def run_daydream(
     daydream_id: Optional[str] = None,
     effort: Optional[str] = None,
     judge: bool = True,
+    vault_loader: Callable[[], Vault] = _default_vault_loader,
 ) -> SealedDaydream:
     """Let one Inventor dream one new idea, judge it, and seal it, or explain why not.
 
@@ -699,6 +840,9 @@ def run_daydream(
     catalog_root = repository_root if repository_root is not None else source_checkout_root()
     repository_prior = load_repository_prior_work(catalog_root)
     notebook_entries = read_notebook(paths.notebook)
+    vault_summary, _vault_binding = _materialize_vault(
+        paths, vault_loader=vault_loader
+    )
     inventor_binding = _materialize_selected_inventor(
         paths, manifest=manifest, taste=taste
     )
@@ -712,6 +856,7 @@ def run_daydream(
         taste=taste,
         repository_prior=repository_prior,
         notebook_entries=notebook_entries,
+        vault_summary=vault_summary,
     )
     prompt = build_daydream_prompt(
         inventor_name=taste.name,
@@ -879,6 +1024,7 @@ __all__ = [
     "schema_bytes",
     "REJECTED_FILE_NAME",
     "WISH_CONTEXT_SOURCE",
+    "VAULT_BINDING_FILE_NAME",
     "daydream_paths",
     "list_daydreams",
     "load_sealed_daydream",

@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
+from tests.invent.fake_gamevault import FAKE_TOKEN, FakeGameVaultTransport
 from tests.daydream.support import (
     build_thesis_verdict_dict,
     horn_tip_catalog,
@@ -19,6 +20,7 @@ from workshop.daydream.contracts import DaydreamError, Idea, SealedDaydream
 from workshop.daydream.native import (
     DAYDREAM_TURN_TIMEOUT_SECONDS,
     INVENTOR_BINDING_FILE_NAME,
+    VAULT_BINDING_FILE_NAME,
     daydream_paths,
     list_daydreams,
     load_sealed_daydream,
@@ -35,6 +37,7 @@ from workshop.daydream.prompt import (
 )
 from workshop.daydream.seeds import DaydreamSeed
 from workshop.errors import ContractError
+from workshop.invent.gamevault import GameVaultError, GameVaultUnavailable
 from workshop.runtime.codex import CodexInvocationError, CodexRecoverableInvocationError
 from workshop.runtime.managers import (
     NativeManagerInvocationError,
@@ -125,6 +128,8 @@ class _FakeLauncher:
         self.test.assertTrue((run_root / "work").is_dir())
         self.test.assertEqual(list((run_root / "work").iterdir()), [])
         skill = run_root / ".agents" / "skills" / "sample-inventor" / "SKILL.md"
+        vault_skill = run_root / ".agents" / "skills" / "design-vault" / "SKILL.md"
+        vault_tool = run_root / ".agents" / "skills" / "design-vault" / "vault_tools.py"
         agent = run_root / ".codex" / "agents" / "sample.toml"
         self.test.assertEqual(
             skill.read_bytes(),
@@ -132,6 +137,10 @@ class _FakeLauncher:
         )
         self.test.assertEqual(parse_inventor_custom_agent_bytes(agent.read_bytes()).inventor_id, "sample")
         self.test.assertEqual(stat.S_IMODE(skill.stat().st_mode), 0o400)
+        self.test.assertTrue(vault_skill.is_file())
+        self.test.assertTrue(vault_tool.is_file())
+        self.test.assertEqual(stat.S_IMODE(vault_skill.stat().st_mode), 0o400)
+        self.test.assertEqual(stat.S_IMODE(vault_tool.stat().st_mode), 0o400)
         self.test.assertEqual(stat.S_IMODE(agent.stat().st_mode), 0o400)
         self.test.assertEqual(stat.S_IMODE((run_root / ".agents").stat().st_mode), 0o500)
         self.test.assertEqual(stat.S_IMODE((run_root / ".codex").stat().st_mode), 0o500)
@@ -262,6 +271,7 @@ class DaydreamNativeTest(unittest.TestCase):
         repository_root=None,
         activity_observer=None,
         judge=True,
+        vault_loader=None,
         **options,
     ):
         factory, launchers = self._factory(**options)
@@ -275,8 +285,13 @@ class DaydreamNativeTest(unittest.TestCase):
             moment=MOMENT,
             daydream_id=daydream_id,
             judge=judge,
+            vault_loader=vault_loader or self._unavailable_vault,
         )
         return sealed, launchers
+
+    @staticmethod
+    def _unavailable_vault():
+        raise GameVaultUnavailable("fixture has no Vault")
 
     def test_happy_path_seals_the_idea_and_remembers_it(self):
         activities = []
@@ -327,6 +342,56 @@ class DaydreamNativeTest(unittest.TestCase):
         )
         self.assertEqual(entries[0].idea_sha256, sealed.idea_sha256)
         self.assertEqual(load_sealed_daydream("sample", FIRST_ID), sealed)
+        vault_binding = json.loads(
+            (paths.host_state / VAULT_BINDING_FILE_NAME).read_text(encoding="utf-8")
+        )
+        self.assertEqual(vault_binding, {"status": "unavailable"})
+        self.assertFalse((paths.workspace / "VAULT.json").exists())
+        self.assertIn(
+            "Status: unavailable",
+            (paths.workspace / "VAULT.md").read_text(encoding="utf-8"),
+        )
+
+    def test_available_vault_is_hash_bound_and_materialized_without_credentials(self):
+        vault = FakeGameVaultTransport().vault()
+        sealed, _launchers = self._run(
+            idea=sample_idea_dict(), vault_loader=lambda: vault
+        )
+        paths = daydream_paths("sample", FIRST_ID)
+        packed = vault.packed_bytes()
+        digest = hashlib.sha256(packed).hexdigest()
+        self.assertEqual((paths.workspace / "VAULT.json").read_bytes(), packed)
+        self.assertEqual((paths.host_state / "VAULT.json").read_bytes(), packed)
+        self.assertEqual(stat.S_IMODE((paths.workspace / "VAULT.json").stat().st_mode), 0o400)
+        binding = json.loads(
+            (paths.host_state / VAULT_BINDING_FILE_NAME).read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            binding,
+            {
+                "status": "available",
+                "path": "VAULT.json",
+                "skill": ".agents/skills/design-vault/SKILL.md",
+                "sha256": digest,
+                "nodes": len(vault.nodes),
+            },
+        )
+        self.assertIn(digest, (paths.workspace / "VAULT.md").read_text(encoding="utf-8"))
+        workspace_bytes = b"".join(
+            path.read_bytes()
+            for path in paths.workspace.rglob("*")
+            if path.is_file()
+        )
+        self.assertNotIn(FAKE_TOKEN.encode("utf-8"), workspace_bytes)
+        self.assertEqual(sealed.idea.title, "Ladder Drop")
+
+    def test_invalid_vault_evidence_fails_before_starting_a_native_session(self):
+        def invalid_vault():
+            raise GameVaultError("malformed fixture export")
+
+        with self.assertRaisesRegex(DaydreamError, "invalid evidence"):
+            self._run(idea=sample_idea_dict(), vault_loader=invalid_vault)
+        self.assertEqual(self.factories[-1], [])
 
     def test_second_daydream_sees_the_first_and_may_not_repeat_it(self):
         self._run(idea=sample_idea_dict())
