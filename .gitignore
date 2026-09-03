@@ -51,3 +51,7 @@ __cadgen__/
 /toys/wish-*/
 /toys/.public-example-*/
 /tmp/
+
+# Private planning material (not published)
+/docs/inventor-army/
+/mockups/
