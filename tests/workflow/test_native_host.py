@@ -2746,7 +2746,7 @@ class NativeHostTest(unittest.TestCase):
 
             turns = len(launcher.starts) + len(launcher.resumes)
             # Far past the retired three-unfinished-turn rail, and stopped by
-            # the step clock rather than the run clock or a turn cap.
+            # the step clock rather than the toy clock or a turn cap.
             self.assertGreater(turns, _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS)
             self.assertLess(turns, MAX_BUDGETED_TURNS)
             # It stopped once too little of the step clock remained to be worth

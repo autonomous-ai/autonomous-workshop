@@ -831,6 +831,37 @@ custom-agent file format. Every future adapter must preserve the root Manager
 role, exact Inventor binding, host-owned gates, sandbox, checkpoint, and effect
 authority.
 
+## Timeouts: two clocks per toy
+
+A run frozen with `.agents/skills/autonomous-workshop/references/budgets-v1.md`
+has exactly three numbers and no counters:
+
+| Clock | Limit | Bounds |
+|---|---|---|
+| One native turn | 60 minutes | one stretch of agent work |
+| One step | 120 minutes | all of Invent, or Make, or Playtest, or Release |
+| One toy | 6 hours | its sealed brief through its published page |
+
+A turn is bounded by 60 minutes or whatever its step has left, whichever is
+smaller, so a turn never outlives its step. A step may take as many turns as
+it needs; when a turn ends without the stage finalizer having run, the host
+resumes the same session and the same Goal automatically. A step gets room for
+two maximum-length turns precisely so a slow turn can be resumed rather than
+discarded. When a clock runs out the build stops with one sentence naming the
+clock and the session stays checkpointed; `workshop resume` grants fresh
+clocks.
+
+The Inventor's daydream loop (`workshop start`) is **not** bounded by these
+clocks. They are created once per toy, so the loop dreams and builds until
+`workshop stop` or Ctrl-C, and every toy begins with fresh clocks.
+
+Retired for budgeted runs: the three-unfinished-turn window, the
+two-recoverable-turn window, and the per-command native turn caps. Still in
+force: the Invent-Make-Playtest round budget, the proposal rejection budgets,
+and every deterministic gate, because those are quality rules rather than
+timers. Runs frozen before this capability keep the historical behaviour
+described below.
+
 ## Run profiles, review protocol, and recovery windows
 
 These operator notes moved here from the README architecture section on

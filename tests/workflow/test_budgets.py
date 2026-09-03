@@ -64,7 +64,7 @@ class CommandBudgetTest(unittest.TestCase):
         budget.spend("make", RUN_BUDGET_SECONDS - 10)
         self.assertEqual(budget.exhausted("release"), "run")
         message = budget.exhausted_message("release", "run", "wish-2")
-        self.assertIn("This run used its 360-minute budget", message)
+        self.assertIn("This toy used its 360-minute budget", message)
 
     def test_a_step_with_only_minutes_left_is_treated_as_spent(self):
         budget = CommandBudget()

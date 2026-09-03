@@ -5,7 +5,7 @@
   short first-turn handoffs (Invent 20/10, Make proof 16, final Make 15) and
   the 15-minute Daydream turn are unchanged. Runs frozen before this change
   keep their original boundaries.
-- Give each budgeted step 120 minutes and each command 6 hours, so one
+- Give each budgeted step 120 minutes and each toy 6 hours, so one
   maximum-length turn can never exhaust its own step. The first live budgeted
   run lost an hour of finished Make work to a step budget that equalled the
   turn boundary; a step now has room for the resume that would have finalized
