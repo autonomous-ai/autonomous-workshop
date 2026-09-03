@@ -1,0 +1,18 @@
+{
+  "assembly_offsets_mm": {
+    "front_shell_z": 0.0,
+    "rear_shell_z": 6.2,
+    "shadow_reel_z": 2.7
+  },
+  "kind": "lantern-menagerie.exact-mesh-wall-side-setup-render",
+  "limitations": "Digital exact-mesh view; colors are explanatory and do not claim a multicolor print or human cue discovery.",
+  "mesh_sha256": {
+    "front_shell": "05f5954fe1478cd30668e6bbd592ed14fcbe2b554dd3d1c6030975f66d3f4a29",
+    "rear_shell": "847811e2898dc2f971d7fa2c5539efe13064bb8770b4316cdd8879b9452c1b12",
+    "shadow_reel": "2a14b2ab6030b4dd14b5378262b603927598bfecc7c57700c56a61a58103a62e"
+  },
+  "output": "artifacts/make/r0004/product/cad/snap/setup-wall-side.png",
+  "reel_state_deg": 0,
+  "schema_version": 1,
+  "view": "orthographic wall side from negative Z"
+}

@@ -86,9 +86,71 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         )
         self.assertNotEqual(assets.constitution, (REPOSITORY / "AGENTS.md").resolve())
         self.assertRegex(assets.sha256, r"^[0-9a-f]{64}$")
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "spark-economics-v1.md"
+            ).is_file()
+        )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "spark-economics-v3.md"
+            ).is_file()
+        )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "spark-economics-v2.md"
+            ).is_file()
+        )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "deep-economics-v1.md"
+            ).is_file()
+        )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "deep-economics-v2.md"
+            ).is_file()
+        )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "deep-economics-v3.md"
+            ).is_file()
+        )
+        self.assertTrue(
+            (
+                assets.skill_root
+                / "references"
+                / "deep-economics-v4.md"
+            ).is_file()
+        )
+        for reference in (
+            "deep-economics-v5.md",
+            "deep-economics-v6.md",
+            "deep-economics-v7.md",
+            "deep-economics-v8.md",
+            "deep-economics-v9.md",
+            "make.md",
+            "playtest.md",
+        ):
+            with self.subTest(reference=reference):
+                self.assertTrue(
+                    (assets.skill_root / "references" / reference).is_file()
+                )
 
-    def test_effort_guidance_distinguishes_direct_release_and_quest_playtest(self):
-        guidance = (
+    def test_current_make_and_playtest_guidance_are_stage_scoped(self):
+        reference_root = (
             REPOSITORY
             / ".agents"
             / "product-run"
@@ -96,23 +158,39 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             / "skills"
             / "autonomous-workshop"
             / "references"
-            / "make-playtest.md"
-        ).read_text(encoding="utf-8")
-        normalized = " ".join(guidance.split())
+        )
+        make = " ".join(
+            (reference_root / "make.md").read_text(encoding="utf-8").split()
+        )
+        playtest = " ".join(
+            (reference_root / "playtest.md").read_text(encoding="utf-8").split()
+        )
 
         for required in (
-            "full verifier",
-            "wall thickness",
-            "print-ready eligibility",
-            "Spark and Forge advance directly to Release",
-            "must not simulate Playtest",
-            "Release records that it was not run",
-            "Quest advances to the host-authored Playtest stage",
-            "only for Quest",
+            "smallest viable parametric baseline",
+            "--print-preflight",
+            "0.4 mm nozzle",
+            "one canonical final render family",
+            "independent native critic",
+            "blind held",
+            ".make-proof-ready",
+            "The trusted host owns the isolated fresh rebuild",
+            "Spark and Forge truthfully record Playtest as not run",
         ):
-            with self.subTest(required=required):
-                self.assertIn(required, normalized)
-        self.assertIn("--run-root . playtest", normalized)
+            with self.subTest(reference="make", required=required):
+                self.assertIn(required, make)
+        for required in (
+            "Quest Playtest",
+            "exact sealed Made revision",
+            "product_artifact_sha256",
+            "returning to Make",
+            "returning directly to Invent",
+            "--run-root . playtest",
+        ):
+            with self.subTest(reference="playtest", required=required):
+                self.assertIn(required, playtest)
+        self.assertNotIn("--print-preflight --fresh", make)
+        self.assertNotIn("Make contract", playtest)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

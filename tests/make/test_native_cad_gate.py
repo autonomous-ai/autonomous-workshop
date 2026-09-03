@@ -70,6 +70,13 @@ class NativeCadGateTest(unittest.TestCase):
             json.dumps(product, sort_keys=True, separators=(",", ":")) + "\n"
         ).encode("utf-8")
         (product_root / "product.json").write_bytes(product_bytes)
+        (product_root / "assembled.step").write_bytes(b"ISO-10303-21;\n")
+        (product_root / "assembled.step.json").write_text(
+            '{"assembly":"Moon Nook","parts":1}\n'
+        )
+        (product_root / "assembled.stl").write_bytes(
+            b"solid moon\nendsolid moon\n"
+        )
         (project / "moon.step.py").write_text("def build():\n    return None\n")
         (project / "moon.step").write_bytes(b"ISO-10303-21;\n")
         (project / "moon.stl").write_bytes(b"solid moon\nendsolid moon\n")
@@ -152,6 +159,26 @@ class NativeCadGateTest(unittest.TestCase):
             cad_verification_sha256=_sha(verification_bytes),
         )
 
+    def _rebuild_made_manifest(self):
+        previous = self.made
+        self.made = NativeMade(
+            round=previous.round,
+            wish_sha256=previous.wish_sha256,
+            assignment_sha256=previous.assignment_sha256,
+            taste_sha256=previous.taste_sha256,
+            blueprint_sha256=previous.blueprint_sha256,
+            invented_sha256=previous.invented_sha256,
+            product_root=previous.product_root,
+            cad_project_path=previous.cad_project_path,
+            product_manifest=build_artifact_manifest(
+                self.product_root, created_at="content-addressed"
+            ),
+            product=previous.product,
+            product_json_sha256=previous.product_json_sha256,
+            cad_verification_path=previous.cad_verification_path,
+            cad_verification_sha256=previous.cad_verification_sha256,
+        )
+
     def _verify(self, runner, **overrides):
         arguments = {
             "run_root": self.run_root,
@@ -163,6 +190,24 @@ class NativeCadGateTest(unittest.TestCase):
         }
         arguments.update(overrides)
         return verify_native_made_cad(self.made, **arguments)
+
+    def test_missing_required_root_delivery_file_fails_before_verifier(self):
+        invoked = False
+
+        def runner(*_args, **_kwargs):
+            nonlocal invoked
+            invoked = True
+            raise AssertionError("verifier must not run")
+
+        (self.product_root / "assembled.stl").unlink()
+        self._rebuild_made_manifest()
+
+        with self.assertRaisesRegex(
+            NativeMadeTreeGateError,
+            "lacks required root delivery files: assembled.stl",
+        ):
+            self._verify(runner)
+        self.assertFalse(invoked)
 
     def test_success_runs_final_verifier_only_on_declared_isolated_copy(self):
         before = build_artifact_manifest(
@@ -767,6 +812,64 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             / "src/workshop/make/skills/cad/scripts/verify_project"
         )
 
+    def _write_signature_review(self, *, review_rounds):
+        snap = self.project / "snap"
+        snap.mkdir()
+        iso = b"exact iso fixture"
+        signature = b"exact signature fixture"
+        (snap / "iso.png").write_bytes(iso)
+        (snap / "signature.png").write_bytes(signature)
+        preflight = (
+            b"# Verification pipeline record\n\n"
+            b"- Recorded: content-addressed\n"
+            b"- Mode: `print-preflight`\n"
+            b"- Result: **PASS** (exit 0)\n\n"
+            b"| # | command | result | seconds |\n"
+            b"|---:|---|---:|---:|\n"
+            b"| 1 | `check_mesh part_token.stl` | rc=0 | 0.01 |\n"
+            b"| 2 | `check_thickness part_token.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
+        )
+        (self.project / "measure/print-preflight.md").write_bytes(preflight)
+        review = {
+            "schema_version": 6,
+            "kind": "autonomous-workshop.signature-experience-review",
+            "concept_sha256": "0" * 64,
+            "iso_sha256": _sha(iso),
+            "signature_sha256": _sha(signature),
+            "reviewer": "fixture critic",
+            "blind_held_read": "A compact exact product.",
+            "blind_form_read": "A rounded volumetric exact product.",
+            "blind_subjects_read": "Two exact subjects.",
+            "blind_action_read": "One subject moves.",
+            "blind_relationship_read": "The subject moves through the other.",
+            "anti_generic_signature_read": "A distinct rounded bridge.",
+            "wish_revealed_after_blind_read": True,
+            "held_object_unmistakable": True,
+            "form_matches_wish": True,
+            "subjects_match_wish": True,
+            "action_matches_wish": True,
+            "relationship_matches_wish": True,
+            "anti_generic_signature_visible": True,
+            "signature_experience_unmistakable": True,
+            "finished_product_desirable": True,
+            "review_rounds": review_rounds,
+            "critical_form_requirements": [
+                {
+                    "requirement": "The product must be rounded and volumetric.",
+                    "blind_evidence": "The exact views show rounded depth.",
+                    "matches": True,
+                }
+            ],
+            "blocking_visual_defects": [],
+            "print_preflight_sha256": _sha(preflight),
+            "largest_risk": "The relationship could be subtle.",
+            "resolution": "The exact relationship is visible.",
+        }
+        (snap / "SIGNATURE-REVIEW.json").write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+
     def _plan(self, *extra):
         completed = subprocess.run(
             (
@@ -787,6 +890,118 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         return completed.stdout
+
+    def test_final_plan_refuses_before_geometry_without_signature_review(self):
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--fresh",
+                "--exports",
+                "--strict-fit",
+                "--no-report",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("snap/SIGNATURE-REVIEW.json", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
+
+    def test_boolean_review_round_cannot_unlock_final_geometry(self):
+        self._write_signature_review(review_rounds=True)
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--fresh",
+                "--exports",
+                "--strict-fit",
+                "--no-report",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("one or two review rounds", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
+
+    def test_blocking_form_defect_cannot_unlock_final_geometry(self):
+        self._write_signature_review(review_rounds=1)
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["blocking_visual_defects"] = [
+            "The body is a constant-depth relief instead of the required volume."
+        ]
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--fresh",
+                "--exports",
+                "--strict-fit",
+                "--no-report",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("still has blocking visual defects", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
+
+    def test_weakened_bound_preflight_cannot_unlock_final_geometry(self):
+        self._write_signature_review(review_rounds=1)
+        preflight_path = self.project / "measure/print-preflight.md"
+        preflight = preflight_path.read_bytes().replace(
+            b"--nozzle 0.4", b"--nozzle 0.1"
+        )
+        preflight_path.write_bytes(preflight)
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["print_preflight_sha256"] = _sha(preflight)
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--fresh",
+                "--exports",
+                "--strict-fit",
+                "--no-report",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("standard 0.4 mm thickness", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
 
     def test_non_print_ready_plan_retains_every_other_deterministic_gate(self):
         output = self._plan("--skip-thickness")
@@ -809,6 +1024,54 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
 
     def test_full_plan_still_requires_thickness(self):
         self.assertIn("check_thickness", self._plan())
+
+    def test_print_preflight_checks_every_printable_at_fixed_profile(self):
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--print-preflight",
+                "--fresh",
+                "--dry-run",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("part_token.step.py", completed.stdout)
+        self.assertIn("check_fit", completed.stdout)
+        self.assertIn("--strict", completed.stdout)
+        self.assertIn("check_mesh", completed.stdout)
+        self.assertIn("check_thickness", completed.stdout)
+        self.assertIn("--nozzle 0.4", completed.stdout)
+        self.assertNotIn("inspect batch", completed.stdout)
+        self.assertNotIn("SIGNATURE-REVIEW", completed.stderr)
+
+    def test_print_preflight_refuses_weakened_nozzle(self):
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--print-preflight",
+                "--nozzle",
+                "0.1",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("fixed 0.4 mm nozzle profile", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
 
 
 if __name__ == "__main__":

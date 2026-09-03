@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "check_id": "agent-playtest",
+  "product_artifact_sha256": "3c7abf41a4aed6005216e14ad42c5c027e7560ff8cd887f3c991917141d1f7cd",
+  "seed": 20260829,
+  "method": "Two independent native visual/artifact reviews of exact indexed projection PNGs, the 72-state contact sheet, shadow-sweep JSON, product render, and sealed interaction claims.",
+  "inspection_targets": [
+    "evidence/shadows/state-rabbit-000.png",
+    "evidence/shadows/state-fox-120.png",
+    "evidence/shadows/state-owl-240.png",
+    "evidence/shadows/motion-contact-sheet.png",
+    "evidence/shadows/shadow-sweep.json",
+    "cad/snap/iso.png",
+    "assembled.step.json"
+  ],
+  "acceptance": [
+    "Rabbit, fox, and owl must each be unmistakable in the exact indexed projection.",
+    "The 5-degree cycle must truthfully expose the complete transition rather than imply an untested morph.",
+    "The large wheel, light direction, indexed states, and rabbit reset must be discoverable from modeled cues.",
+    "No human recognition, delight, room-light, finite-emitter, or physical-use claim may be inferred from digital evidence."
+  ]
+}

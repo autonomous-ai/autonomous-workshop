@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "artifact": "assembled.step",
+  "source_entry": "cad/pocket_eclipse/pocket_eclipse.step.py",
+  "verification_report": "cad/pocket_eclipse/measure/verification-pipeline.md",
+  "result": "pass",
+  "facts": {"units":"mm","solid_count":1,"shell_count":1,"bbox_mm":[88.5,55.9,77.9],"volume_cm3":23.77,"minimum_designed_slab_mm":4.0,"nozzle_mm":0.4},
+  "passed_checks":["check_layout","check_fit --strict","authored check_spec","inspect refs","inspect validate","inspect interfere","check_mesh","check_thickness"],
+  "projection_evidence":{"rabbit":"cad/pocket_eclipse/evidence/projections/front.png","owl":"cad/pocket_eclipse/evidence/projections/right.png","kind":"exact STEP orthographic binary silhouettes"},
+  "physical_evidence":"not-run"
+}

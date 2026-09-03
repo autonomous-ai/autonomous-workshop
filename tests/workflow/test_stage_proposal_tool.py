@@ -254,6 +254,17 @@ class StageProposalToolTest(unittest.TestCase):
         path = self.run_root / "STAGE.json"
         if path.exists() or path.is_symlink():
             path.unlink()
+        inputs = dict(inputs)
+        if stage == "make":
+            inputs.setdefault(
+                "required_root_files",
+                [
+                    "product.json",
+                    "assembled.step",
+                    "assembled.step.json",
+                    "assembled.stl",
+                ],
+            )
         document = {
             "schema_version": 1,
             "kind": "autonomous-workshop.stage-input",
@@ -459,14 +470,32 @@ class StageProposalToolTest(unittest.TestCase):
         (product_root / "cad/project").mkdir(parents=True)
         (product_root / "cad/project/snap").mkdir()
         (product_root / "exports/stl").mkdir(parents=True)
-        (product_root / "validation").mkdir()
+        (product_root / "cad/project/validation").mkdir()
         product = {
             "title": "Moon Nook",
             "summary": "A tiny lunar observatory.",
             "components": ["observatory"],
         }
         product_bytes = canonical_json(product) + b"\n"
-        verification = b'{"ok":true,"validator":"cad-final"}\n'
+        verification = (
+            b"# Verification pipeline record\n\n"
+            b"- Recorded: content-addressed\n"
+            b"- Mode: `final`\n"
+            b"- Result: **PASS** (exit 0)\n\n"
+            b"| # | command | result | seconds |\n"
+            b"|---:|---|---:|---:|\n"
+            b"| 1 | `check_thickness exact.stl` | rc=0 | 0.01 |\n"
+        )
+        preflight = (
+            b"# Verification pipeline record\n\n"
+            b"- Recorded: content-addressed\n"
+            b"- Mode: `print-preflight`\n"
+            b"- Result: **PASS** (exit 0)\n\n"
+            b"| # | command | result | seconds |\n"
+            b"|---:|---|---:|---:|\n"
+            b"| 1 | `check_mesh exact.stl` | rc=0 | 0.01 |\n"
+            b"| 2 | `check_thickness exact.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
+        )
         (product_root / "product.json").write_bytes(product_bytes)
         (product_root / "cad/project/moon.step.py").write_text("pass\n")
         (product_root / "assembled.step").write_bytes(b"ISO-10303-21;\n")
@@ -478,7 +507,11 @@ class StageProposalToolTest(unittest.TestCase):
         )
         (product_root / "assembled.stl").write_bytes(assembled_stl)
         (product_root / "exports/stl/assembled.stl").write_bytes(assembled_stl)
-        (product_root / "validation/cad-build.json").write_bytes(verification)
+        (product_root / "cad/project/validation/cad-build.json").write_bytes(verification)
+        (product_root / "cad/project/measure").mkdir()
+        (product_root / "cad/project/measure/print-preflight.md").write_bytes(
+            preflight
+        )
         write_parts(product_root, self.invented.to_dict()["concept"])
         for group in self.invented.to_dict()["concept"]["build_plan"]:
             seal_group(product_root, self.invented.to_dict()["concept"], group["group"])
@@ -487,6 +520,57 @@ class StageProposalToolTest(unittest.TestCase):
         pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
         pen.polygon(((450, 230), (700, 690), (200, 690)), fill="#ffb445")
         render.save(product_root / "cad/project/snap/iso.png", format="PNG")
+        signature = Image.new("RGB", (1800, 900), "#fff4df")
+        signature_pen = ImageDraw.Draw(signature)
+        for offset, color in ((0, "#35aeb8"), (600, "#ffb445"), (1200, "#35aeb8")):
+            signature_pen.ellipse(
+                (offset + 110, 160, offset + 490, 700), fill=color
+            )
+        signature.save(
+            product_root / "cad/project/snap/signature.png", format="PNG"
+        )
+        review = {
+            "schema_version": 6,
+            "kind": "autonomous-workshop.signature-experience-review",
+            "concept_sha256": self.invented.concept_sha256,
+            "iso_sha256": sha256(
+                (product_root / "cad/project/snap/iso.png").read_bytes()
+            ),
+            "signature_sha256": sha256(
+                (product_root / "cad/project/snap/signature.png").read_bytes()
+            ),
+            "reviewer": "independent-native-visual-critic",
+            "blind_held_read": "A compact moon observatory with a clear opening.",
+            "blind_form_read": "A rounded observatory body with a deep opening.",
+            "blind_subjects_read": "A moon observatory, opening, and rotating mask.",
+            "blind_action_read": "The mask rotates through three exact states.",
+            "blind_relationship_read": "The opening aligns with the observatory window.",
+            "anti_generic_signature_read": "A deep lunar opening frames the mask.",
+            "wish_revealed_after_blind_read": True,
+            "held_object_unmistakable": True,
+            "form_matches_wish": True,
+            "subjects_match_wish": True,
+            "action_matches_wish": True,
+            "relationship_matches_wish": True,
+            "anti_generic_signature_visible": True,
+            "signature_experience_unmistakable": True,
+            "finished_product_desirable": True,
+            "review_rounds": 1,
+            "critical_form_requirements": [
+                {
+                    "requirement": "The observatory must be rounded and volumetric.",
+                    "blind_evidence": "The exact views show rounded depth.",
+                    "matches": True,
+                }
+            ],
+            "blocking_visual_defects": [],
+            "print_preflight_sha256": sha256(preflight),
+            "largest_risk": "The three states need a stronger direction cue.",
+            "resolution": "The final sheet uses separated contrasting states.",
+        }
+        (product_root / "cad/project/snap/SIGNATURE-REVIEW.json").write_bytes(
+            canonical_json(review)
+        )
         return product_root, product, product_bytes, verification
 
     def create_made(self):
@@ -505,7 +589,7 @@ class StageProposalToolTest(unittest.TestCase):
             ),
             product=product,
             product_json_sha256=sha256(product_bytes),
-            cad_verification_path="validation/cad-build.json",
+            cad_verification_path="cad/project/validation/cad-build.json",
             cad_verification_sha256=sha256(verification),
         )
 
@@ -643,7 +727,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
 
         made_document, made_bytes = self.assert_canonical_file(made_path)
@@ -698,7 +782,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
 
@@ -859,7 +943,7 @@ class StageProposalToolTest(unittest.TestCase):
         shutil.rmtree(product_root / "groups")
         completed = self.run_tool(
             "make", "--product-root", "artifacts/make/r0001/product",
-            "--cad-project-path", "cad/project", "--cad-verification-path", "validation/cad-build.json",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("build group body has no sealed outcome", completed.stderr)
@@ -872,14 +956,14 @@ class StageProposalToolTest(unittest.TestCase):
         (product_root / "parts" / "dome.stl").write_bytes(b"solid dome v2\nendsolid\n")
         completed = self.run_tool(
             "make", "--product-root", "artifacts/make/r0001/product",
-            "--cad-project-path", "cad/project", "--cad-verification-path", "validation/cad-build.json",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("body was sealed against different part bytes: dome", completed.stderr)
         self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "body")
         self.run_tool(
             "make", "--product-root", "artifacts/make/r0001/product",
-            "--cad-project-path", "cad/project", "--cad-verification-path", "validation/cad-build.json",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json",
         )
         completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "ghost", expected=2)
         self.assertIn("not in the sealed build_plan", completed.stderr)
@@ -924,7 +1008,7 @@ class StageProposalToolTest(unittest.TestCase):
                 self.assertEqual(
                     tool.main(["--run-root", str(self.run_root), "make", "--product-root",
                                "artifacts/make/r0001/product", "--cad-project-path", "cad/project",
-                               "--cad-verification-path", "validation/cad-build.json"]),
+                               "--cad-verification-path", "cad/project/validation/cad-build.json"]),
                     0,
                 )
         for kwargs, pattern in (
@@ -974,7 +1058,11 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("declares no build_plan", completed.stderr)
 
     def test_make_accepts_a_sealed_legacy_schema_3_invent(self):
-        self.create_product()
+        product_root, _, _, _ = self.create_product()
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["concept_sha256"] = self.legacy_invented.concept_sha256
+        review_path.write_bytes(canonical_json(review))
         self.write_stage(
             "make",
             {
@@ -991,7 +1079,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
         made_document, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
         NativeMade.from_mapping(made_document).assert_context(
@@ -1016,7 +1104,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
         made_document, made_bytes = self.assert_canonical_file(
             "artifacts/make/r0001/made.json"
@@ -1036,6 +1124,42 @@ class StageProposalToolTest(unittest.TestCase):
             made_bytes,
             "playtest",
         )
+
+    def test_make_rejects_missing_required_root_delivery_files(self):
+        product_root, _, _, _ = self.create_product()
+        for required in ("assembled.step", "assembled.step.json", "assembled.stl"):
+            with self.subTest(required=required):
+                path = product_root / required
+                content = path.read_bytes()
+                path.unlink()
+                self.write_stage(
+                    "make",
+                    {
+                        "assignment": self.assignment.to_dict(),
+                        "invented": self.invented.to_dict(),
+                        "feedback": [],
+                    },
+                    round_index=1,
+                )
+
+                result = self.run_tool(
+                    "make",
+                    "--product-root",
+                    "artifacts/make/r0001/product",
+                    "--cad-project-path",
+                    "cad/project",
+                    "--cad-verification-path",
+                    "cad/project/validation/cad-build.json",
+                    expected=2,
+                )
+
+                self.assertIn("lacks required root files", result.stderr)
+                self.assertIn(required, result.stderr)
+                self.assertFalse((self.run_root / "agent-outcome.json").exists())
+                self.assertFalse(
+                    (self.run_root / "artifacts/make/r0001/made.json").exists()
+                )
+                path.write_bytes(content)
 
     def test_make_requires_explicit_chromatic_product_render(self):
         product_root, _, _, _ = self.create_product()
@@ -1058,7 +1182,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("requires a product render", missing.stderr)
@@ -1073,10 +1197,448 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("diagnostic grayscale image", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        valid = Image.new("RGB", (900, 900), "#fff4df")
+        ImageDraw.Draw(valid).ellipse((180, 160, 720, 700), fill="#35aeb8")
+        valid.save(render, format="PNG")
+        signature = product_root / "cad/project/snap/signature.png"
+        signature.unlink()
+        missing_signature = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("requires a signature render", missing_signature.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+        invalid_signature = Image.new("L", (1800, 900), 255)
+        ImageDraw.Draw(invalid_signature).rectangle((120, 120, 1680, 780), fill=0)
+        invalid_signature.save(signature, format="PNG")
+        rejected_signature = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("signature render", rejected_signature.stderr)
+        self.assertIn("diagnostic grayscale image", rejected_signature.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_requires_one_unambiguous_combined_cad_entry(self):
+        product_root, _, _, _ = self.create_product()
+        (product_root / "cad/project/presentation.step.py").write_text(
+            "pass\n", encoding="utf-8"
+        )
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+
+        rejected = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("exactly one non-part *.step.py", rejected.stderr)
+        self.assertIn("moon.step.py, presentation.step.py", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_requires_review_bound_to_final_signature_images(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+
+        review_path.unlink()
+        missing = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("requires a signature review", missing.stderr)
+
+        review_path.write_text(json.dumps(review, indent=2), encoding="utf-8")
+        noncanonical = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("must use canonical JSON encoding", noncanonical.stderr)
+
+        review["concept_sha256"] = "f" * 64
+        review_path.write_bytes(canonical_json(review))
+        stale_concept = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("signature review identity is invalid", stale_concept.stderr)
+        review["concept_sha256"] = self.invented.concept_sha256
+
+        review["blind_held_read"] = ""
+        review_path.write_bytes(canonical_json(review))
+        no_blind_read = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn(
+            "Make blind held read must be bounded non-empty text",
+            no_blind_read.stderr,
+        )
+        review["blind_held_read"] = (
+            "A compact moon observatory with a clear opening."
+        )
+
+        review["held_object_unmistakable"] = False
+        review_path.write_bytes(canonical_json(review))
+        unreadable = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("final held object is unmistakable", unreadable.stderr)
+
+        review["held_object_unmistakable"] = True
+        review["form_matches_wish"] = False
+        review_path.write_bytes(canonical_json(review))
+        wrong_form = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("visible form matches the Wish and concept", wrong_form.stderr)
+
+        review["form_matches_wish"] = True
+        review["anti_generic_signature_visible"] = False
+        review_path.write_bytes(canonical_json(review))
+        generic = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("anti-generic signature is visible", generic.stderr)
+
+        review["anti_generic_signature_visible"] = True
+        review["finished_product_desirable"] = False
+        review_path.write_bytes(canonical_json(review))
+        undesirable = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("product looks finished and desirable", undesirable.stderr)
+
+        review["finished_product_desirable"] = True
+        review["relationship_matches_wish"] = False
+        review_path.write_bytes(canonical_json(review))
+        wrong_relationship = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn(
+            "blind spatial relationship matches the Wish",
+            wrong_relationship.stderr,
+        )
+
+        review["relationship_matches_wish"] = True
+        review["review_rounds"] = 3
+        review_path.write_bytes(canonical_json(review))
+        unbounded_review = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("one or two review rounds", unbounded_review.stderr)
+
+        review["review_rounds"] = 1
+        review["critical_form_requirements"][0]["matches"] = False
+        review_path.write_bytes(canonical_json(review))
+        missing_form = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("critical form requirement 1 does not visibly match", missing_form.stderr)
+
+        review["critical_form_requirements"][0]["matches"] = True
+        review["blocking_visual_defects"] = [
+            "The exact view is a constant-depth relief instead of a rounded body."
+        ]
+        review_path.write_bytes(canonical_json(review))
+        blocked_form = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("still has blocking visual defects", blocked_form.stderr)
+
+        review["blocking_visual_defects"] = []
+        review["signature_sha256"] = "f" * 64
+        review_path.write_bytes(canonical_json(review))
+        stale = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("not bound to the final signature.png", stale.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_requires_current_full_tier_verification_report(self):
+        product_root, _, _, _ = self.create_product()
+        report = product_root / "cad/project/validation/cad-build.json"
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        report.write_text(
+            "# Verification pipeline record\n\n"
+            "- Mode: `final`\n"
+            "- Result: **PASS** (exit 0)\n\n"
+            "| # | command | result | seconds |\n"
+            "|---:|---|---:|---:|\n"
+            "| 1 | `check_mesh exact.stl` | rc=0 | 0.01 |\n",
+            encoding="utf-8",
+        )
+        omitted = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("passing final full-tier report", omitted.stderr)
+
+        report.write_text(
+            "# Verification pipeline record\n\n"
+            "- Mode: `final`\n"
+            "- Result: **FAIL** (exit 1)\n\n"
+            "| # | command | result | seconds |\n"
+            "|---:|---|---:|---:|\n"
+            "| 1 | `check_thickness exact.stl` | rc=1 | 0.01 |\n\n"
+            "---\n\n## Previous pipeline record\n\n"
+            "# Verification pipeline record\n\n"
+            "- Mode: `final`\n"
+            "- Result: **PASS** (exit 0)\n\n"
+            "| 1 | `check_thickness old.stl` | rc=0 | 0.01 |\n",
+            encoding="utf-8",
+        )
+        failed_current = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("passing final full-tier report", failed_current.stderr)
+
+    def test_make_requires_hash_bound_standard_print_preflight(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        preflight = product_root / "cad/project/measure/print-preflight.md"
+        preflight.write_text(
+            "# Verification pipeline record\n\n"
+            "- Mode: `print-preflight`\n"
+            "- Result: **PASS** (exit 0)\n\n"
+            "| # | command | result | seconds |\n"
+            "|---:|---|---:|---:|\n"
+            "| 1 | `check_mesh exact.stl` | rc=0 | 0.01 |\n"
+            "| 2 | `check_thickness exact.stl --nozzle 0.1` | rc=0 | 0.01 |\n",
+            encoding="utf-8",
+        )
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["print_preflight_sha256"] = sha256(preflight.read_bytes())
+        review_path.write_bytes(canonical_json(review))
+
+        completed = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+
+        self.assertIn("standard 0.4 mm thickness", completed.stderr)
+
+    def test_make_verification_must_belong_to_declared_cad_project(self):
+        product_root, _, _, verification = self.create_product()
+        outside = product_root / "validation/cad-build.json"
+        outside.parent.mkdir()
+        outside.write_bytes(verification)
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        rejected = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn(
+            "CAD verification must live inside the declared CAD project",
+            rejected.stderr,
+        )
+
+    def test_make_rejects_duplicate_final_snap_family(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        duplicate = product_root / "snap"
+        duplicate.mkdir()
+        (duplicate / "iso.png").write_bytes(
+            (product_root / "cad/project/snap/iso.png").read_bytes()
+        )
+        rejected = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("duplicate final snap family", rejected.stderr)
+        self.assertIn("snap/iso.png", rejected.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_make_rejects_invalid_required_product_metadata_before_outputs(self):
@@ -1146,7 +1708,7 @@ class StageProposalToolTest(unittest.TestCase):
                     "--cad-project-path",
                     "cad/project",
                     "--cad-verification-path",
-                    "validation/cad-build.json",
+                    "cad/project/validation/cad-build.json",
                     expected=2,
                 )
                 self.assertIn(error_label, result.stderr)
@@ -1187,7 +1749,7 @@ class StageProposalToolTest(unittest.TestCase):
                     "--cad-project-path",
                     "cad/project",
                     "--cad-verification-path",
-                    "validation/cad-build.json",
+                    "cad/project/validation/cad-build.json",
                     expected=2,
                 )
                 self.assertIn("editor, backup, or patch debris", result.stderr)
@@ -1201,7 +1763,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
 
     def test_make_prunes_empty_directories_before_writing_a_proposal(self):
@@ -1225,7 +1787,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
 
         self.assertFalse((product_root / "cad/spec").exists())
@@ -1257,7 +1819,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
         )
 
         self.assertFalse((product_root / "cad/project/__cadgen__").exists())
@@ -1296,7 +1858,7 @@ class StageProposalToolTest(unittest.TestCase):
                 "--cad-project-path",
                 "cad/project",
                 "--cad-verification-path",
-                "validation/cad-build.json",
+                "cad/project/validation/cad-build.json",
             )
         finally:
             project.chmod(0o700)
@@ -1337,7 +1899,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
 
@@ -2338,7 +2900,7 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-project-path",
             "cad/project",
             "--cad-verification-path",
-            "validation/cad-build.json",
+            "cad/project/validation/cad-build.json",
             expected=2,
         )
         self.assertIn("not a symlink", result.stderr)

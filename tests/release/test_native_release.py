@@ -42,7 +42,11 @@ from workshop.release.native import (
     read_native_release,
     validate_release_product,
 )
-from workshop.release.public_example import _public_hero_path, materialize_public_example
+from workshop.release.public_example import (
+    _public_hero_path,
+    _public_token_summary,
+    materialize_public_example,
+)
 from workshop.release.public_archive import (
     _redact_public_local_paths,
     build_public_archive_manifest,
@@ -74,21 +78,67 @@ def _sha(value):
 
 
 def _token_summary():
+    stages = {}
+    for name in ("match", "invent", "make", "playtest", "release"):
+        turns = 1 if name == "make" else 0
+        status = "measured" if name == "make" else "pending"
+        stages[name] = {
+            "status": status,
+            "turns": turns,
+            "measured_turns": turns,
+            "unmeasured_turns": 0,
+            "input_tokens": 100 if name == "make" else 0,
+            "output_tokens": 25 if name == "make" else 0,
+            "economics": {
+                "status": status,
+                "turns": {
+                    "total": turns,
+                    "measured": turns,
+                    "unmeasured": 0,
+                },
+                "input_tokens": 100 if name == "make" else 0,
+                "cached_input_tokens": 80 if name == "make" else 0,
+                "uncached_input_tokens": 20 if name == "make" else 0,
+                "cache_write_input_tokens": 5 if name == "make" else 0,
+                "output_tokens": 25 if name == "make" else 0,
+                "reasoning_output_tokens": 20 if name == "make" else 0,
+                "non_reasoning_output_tokens": 5 if name == "make" else 0,
+            },
+        }
     return {
-        "schema_version": 1,
+        "schema_version": 3,
         "kind": "autonomous-workshop.native-token-summary",
         "status": "measured",
         "turns": {"total": 1, "measured": 1, "unmeasured": 0},
-        "total_tokens": 125,
+        "input_tokens": 100,
+        "output_tokens": 25,
+        "economics": {
+            "status": "measured",
+            "turns": {"total": 1, "measured": 1, "unmeasured": 0},
+            "input_tokens": 100,
+            "cached_input_tokens": 80,
+            "uncached_input_tokens": 20,
+            "cache_write_input_tokens": 5,
+            "output_tokens": 25,
+            "reasoning_output_tokens": 20,
+            "non_reasoning_output_tokens": 5,
+        },
+        "stages": stages,
+    }
+
+
+def _legacy_token_summary():
+    current = _token_summary()
+    return {
+        **{key: value for key, value in current.items() if key != "economics"},
+        "schema_version": 2,
         "stages": {
             name: {
-                "status": "measured" if name == "make" else "pending",
-                "turns": 1 if name == "make" else 0,
-                "measured_turns": 1 if name == "make" else 0,
-                "unmeasured_turns": 0,
-                "tokens": 125 if name == "make" else 0,
+                key: value
+                for key, value in stage.items()
+                if key != "economics"
             }
-            for name in ("match", "invent", "make", "playtest", "release")
+            for name, stage in current["stages"].items()
         },
     }
 
@@ -188,6 +238,14 @@ def _manual_pdf(
 
 
 class NativeReleaseTest(unittest.TestCase):
+    def test_public_token_summary_keeps_legacy_gross_counts_without_guessing(self):
+        legacy = _public_token_summary(_legacy_token_summary())
+        self.assertEqual(legacy["schema_version"], 2)
+        self.assertEqual(legacy["input_tokens"], 100)
+        self.assertEqual(legacy["output_tokens"], 25)
+        self.assertNotIn("economics", legacy)
+        self.assertNotIn("economics", legacy["stages"]["make"])
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -1391,7 +1449,8 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertTrue((target / "MANIFEST.json").is_file())
         tokens = json.loads((target / "TOKENS.json").read_text(encoding="utf-8"))
         self.assertEqual(tokens["status"], "measured")
-        self.assertEqual(tokens["stages"]["make"]["tokens"], 125)
+        self.assertEqual(tokens["stages"]["make"]["input_tokens"], 100)
+        self.assertEqual(tokens["stages"]["make"]["output_tokens"], 25)
         timing = json.loads((target / "TIMING.json").read_text(encoding="utf-8"))
         self.assertEqual(timing["status"], "measured")
         self.assertEqual(timing["elapsed_seconds"], 1)
@@ -1417,9 +1476,17 @@ class NativeReleaseTest(unittest.TestCase):
         )
         self.assertIn("[customer manual](release/MANUAL.md)", readme)
         self.assertIn("## Run cost", readme)
-        self.assertIn("| Native Manager tokens | 125 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Native Manager input tokens | 100 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Native Manager cached input tokens | 80 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Native Manager uncached input tokens | 20 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Native Manager cache-write input tokens | 5 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Native Manager output tokens | 25 (measured; 1/1 turns measured) |", readme)
+        self.assertIn("| Native Manager reasoning output tokens | 20 (measured; 1/1 turns measured) |", readme)
         self.assertIn("| Wish to verified publication | 1s", readme)
-        self.assertIn("| Make | 125 | 1 | measured |", readme)
+        self.assertIn(
+            "| Make | 100 | 80 | 20 | 25 | 1 | measured; economics measured |",
+            readme,
+        )
         public_manifest = json.loads(
             (target / "MANIFEST.json").read_text(encoding="utf-8")
         )

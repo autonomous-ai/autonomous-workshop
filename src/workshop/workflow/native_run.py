@@ -155,7 +155,41 @@ from workshop.workflow.agent_run import (
     DeterministicGateReceipt,
 )
 from workshop.workflow.effort import (
+    DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V1_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V2_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V3_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V4_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V5_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V6_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V7_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+    DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_NATIVE_TURN_LIMIT,
+    DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+    DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_V1_NATIVE_TURN_LIMIT,
+    DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
+    DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
+    SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+    SPARK_ECONOMICS_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V1_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+    SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
     workshop_effort,
 )
 from workshop.workflow.proposals import (
@@ -200,6 +234,24 @@ _PLAYTEST_PROPOSAL_REJECTION_HEAD_KIND = (
     "autonomous-workshop.playtest-proposal-rejection-head"
 )
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
+_MAKE_PROOF_READY_NAME = ".make-proof-ready.json"
+_MAKE_PROOF_ACCEPTANCES_DIRECTORY = "make-proof-acceptances"
+_MAKE_PROOF_ACCEPTANCE_KIND = "autonomous-workshop.make-proof-acceptance"
+_MAKE_PROOF_ARTIFACT_NAMES = (
+    "proof.py",
+    "state-0.step.py",
+    "state-1.step.py",
+    "state-2.step.py",
+    "state-0.step",
+    "state-1.step",
+    "state-2.step",
+    "state-0.stl",
+    "state-1.stl",
+    "state-2.stl",
+    "held.png",
+    "signature.png",
+    "finding.json",
+)
 _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
 _SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _MAX_STAGE_INPUT_BYTES = 512 * 1024
@@ -3067,6 +3119,46 @@ def _artifact_binding(artifact: AgentArtifact) -> dict[str, str]:
     return {"path": artifact.path, "sha256": artifact.sha256}
 
 
+def _inventor_discovery_index(
+    run: AgentRun,
+    roster: InventorRoster,
+) -> Mapping[str, Any]:
+    """Derive the complete cheap-routing index from bound custom-agent bytes."""
+
+    inventors: list[dict[str, str]] = []
+    for entry in roster.inventors:
+        path = run.run_root / entry.agent_path
+        try:
+            content = path.read_bytes()
+        except OSError as exc:
+            raise StateConflict("materialized Inventor agent cannot be read") from exc
+        if _sha256(content) != entry.agent_sha256:
+            raise StateConflict("materialized Inventor agent differs from its binding")
+        binding = parse_inventor_custom_agent_bytes(content)
+        taste = parse_taste_bytes(
+            binding.taste_bytes,
+            path=(
+                run.run_root
+                / ".codex"
+                / "inventor-discovery"
+                / entry.inventor_id
+                / "TASTE.md"
+            ),
+        )
+        inventors.append({
+            "inventor_id": entry.inventor_id,
+            "agent_path": entry.agent_path,
+            "name": taste.name,
+            "description": taste.description,
+        })
+    return {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.inventor-discovery-index",
+        "roster_sha256": roster.roster_sha256,
+        "inventors": inventors,
+    }
+
+
 def _prepare_effort_stage_input(
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
@@ -3113,6 +3205,7 @@ def _prepare_effort_stage_input(
         }
         inputs: dict[str, Any] = {
             **base,
+            "inventor_discovery_index": _inventor_discovery_index(run, roster),
             "assignment_contract_path": assignment_path,
             "contract_path": invented_path,
         }
@@ -3287,6 +3380,9 @@ def _prepare_effort_stage_input(
             common = dict(base)
             common.update(
                 {
+                    "inventor_discovery_index": _inventor_discovery_index(
+                        run, roster
+                    ),
                     "creative_source_required": True,
                     "assignment_contract_path": assignment_path,
                     "invented_contract_path": invented_path,
@@ -4086,16 +4182,1091 @@ def _prepare_stage_input(
     return subject, packet, context
 
 
-def _native_launcher(manager_id: str) -> NativeSessionLauncher:
+def _phased_deep_capability_path(
+    checkpoint: AgentRunCheckpoint,
+) -> Optional[str]:
+    """Return the exact frozen phased-deep profile path, newest first."""
+
+    for path in (
+        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V7_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V6_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V5_CAPABILITY_PATH,
+    ):
+        if path in checkpoint.input_sha256s:
+            return path
+    return None
+
+
+def _phased_deep_profile_name(checkpoint: AgentRunCheckpoint) -> str:
+    """Return the frozen deep profile's human-readable version label."""
+
+    path = _phased_deep_capability_path(checkpoint)
+    names = {
+        DEEP_ECONOMICS_CAPABILITY_PATH: "v13",
+        DEEP_ECONOMICS_V12_CAPABILITY_PATH: "v12",
+        DEEP_ECONOMICS_V11_CAPABILITY_PATH: "v11",
+        DEEP_ECONOMICS_V10_CAPABILITY_PATH: "v10",
+        DEEP_ECONOMICS_V9_CAPABILITY_PATH: "v9",
+        DEEP_ECONOMICS_V8_CAPABILITY_PATH: "v8",
+        DEEP_ECONOMICS_V7_CAPABILITY_PATH: "v7",
+        DEEP_ECONOMICS_V6_CAPABILITY_PATH: "v6",
+        DEEP_ECONOMICS_V5_CAPABILITY_PATH: "v5",
+    }
+    return names.get(path, "deep")
+
+
+def _uses_dynamic_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
+    return (
+        checkpoint.manager_id == DEFAULT_MANAGER_ID
+        and checkpoint.effort in ("forge", "quest")
+        and (
+            _phased_deep_capability_path(checkpoint) is not None
+            or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
+    )
+
+
+def _native_launcher(
+    checkpoint: AgentRunCheckpoint,
+    *,
+    initial_make_proof_boundary: bool = False,
+    recoverable_continuation: bool = False,
+) -> NativeSessionLauncher:
     """Construct the frozen Manager launcher.
 
     Codex stays constructed here so existing host tests can patch the concrete
-    class without going through the registry. Other Managers load by id.
+    class without going through the registry. Other Managers load by id. New
+    Marked Spark runs use Codex's low economics profile. Marked Forge and Quest
+    v11 through v3 runs shape reasoning and turn boundaries while
+    binding their whole frozen profile to one persistent session. Deep-v2
+    retains its effective all-high session binding; deep-v1 retains its
+    historical all-high profile.
+    Older runs lack those markers and retain their historical profile on resume.
     """
 
-    if manager_id == DEFAULT_MANAGER_ID:
-        return CodexNativeSessionLauncher()
-    return manager_launcher(manager_id)
+    if checkpoint.manager_id == DEFAULT_MANAGER_ID:
+        phased_deep_path = _phased_deep_capability_path(checkpoint)
+        if checkpoint.effort in ("forge", "quest") and phased_deep_path:
+            if checkpoint.stage == "invent":
+                reasoning_effort = (
+                    "medium" if recoverable_continuation else "high"
+                )
+                timeout_seconds = (
+                    DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS
+                    if recoverable_continuation
+                    else DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS
+                )
+            elif checkpoint.stage == "make":
+                reasoning_effort = (
+                    "medium" if initial_make_proof_boundary else "high"
+                )
+                if initial_make_proof_boundary:
+                    timeout_seconds = (
+                        DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                        if phased_deep_path in (
+                            DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+                        )
+                        else DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                    )
+                elif (
+                    phased_deep_path in (
+                        DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+                    )
+                    and not recoverable_continuation
+                ):
+                    timeout_seconds = (
+                        DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                        if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                        else (
+                            DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                            if phased_deep_path
+                            == DEEP_ECONOMICS_V12_CAPABILITY_PATH
+                            else (
+                                DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                                if phased_deep_path
+                                == DEEP_ECONOMICS_V11_CAPABILITY_PATH
+                                else DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
+                            )
+                        )
+                    )
+                else:
+                    timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+            else:
+                reasoning_effort = "medium"
+                timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+            return CodexNativeSessionLauncher(
+                reasoning_effort=reasoning_effort,
+                auto_compact_token_limit=(
+                    DEEP_AUTO_COMPACT_TOKEN_LIMIT
+                    if phased_deep_path in (
+                        DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+                    )
+                    else DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT
+                ),
+                runtime_profile_sha256=checkpoint.input_sha256s[phased_deep_path],
+                timeout_seconds=timeout_seconds,
+            )
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                reasoning_effort=(
+                    "high" if checkpoint.stage in ("invent", "make") else "medium"
+                ),
+                auto_compact_token_limit=(
+                    DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT
+                    if checkpoint.stage == "make"
+                    else DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT
+                ),
+                runtime_profile_sha256=checkpoint.input_sha256s[
+                    DEEP_ECONOMICS_V4_CAPABILITY_PATH
+                ],
+                timeout_seconds=(
+                    DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                    if checkpoint.stage == "make" and initial_make_proof_boundary
+                    else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+                ),
+            )
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                reasoning_effort=(
+                    "high" if checkpoint.stage == "invent" else "medium"
+                ),
+                auto_compact_token_limit=DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
+                runtime_profile_sha256=checkpoint.input_sha256s[
+                    DEEP_ECONOMICS_V3_CAPABILITY_PATH
+                ],
+                timeout_seconds=(
+                    DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
+                    if checkpoint.stage == "make" and initial_make_proof_boundary
+                    else DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+                ),
+            )
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                # V2 bound the first stage's exact turn configuration to the
+                # persistent thread before stage-shaped resume was supported.
+                # Keep its effective all-high policy so a stopped historical
+                # run can resume without same-version runtime-policy drift.
+                reasoning_effort="high",
+                auto_compact_token_limit=DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
+                timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+            )
+        if (
+            checkpoint.effort in ("forge", "quest")
+            and DEEP_ECONOMICS_V1_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                reasoning_effort="high",
+                auto_compact_token_limit=DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
+                timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+            )
+        if (
+            checkpoint.effort == "spark"
+            and SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                reasoning_effort="low",
+                auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+                timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+            )
+        if (
+            checkpoint.effort == "spark"
+            and SPARK_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            return CodexNativeSessionLauncher(
+                reasoning_effort="low",
+                auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+            )
+        reasoning_effort = (
+            "low"
+            if checkpoint.effort == "spark"
+            and SPARK_ECONOMICS_V1_CAPABILITY_PATH in checkpoint.input_sha256s
+            else "high"
+        )
+        return CodexNativeSessionLauncher(reasoning_effort=reasoning_effort)
+    return manager_launcher(checkpoint.manager_id)
+
+
+def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
+    """Return the per-invocation turn cap frozen into this Manager run."""
+
+    if (
+        checkpoint.manager_id == DEFAULT_MANAGER_ID
+        and checkpoint.effort in ("forge", "quest")
+        and (
+            _phased_deep_capability_path(checkpoint) is not None
+            or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
+    ):
+        return DEEP_NATIVE_TURN_LIMIT
+    if (
+        checkpoint.manager_id == DEFAULT_MANAGER_ID
+        and checkpoint.effort in ("forge", "quest")
+        and DEEP_ECONOMICS_V1_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        return DEEP_V1_NATIVE_TURN_LIMIT
+    return _MAX_NATIVE_TURNS
+
+
+def _deep_make_critical_path_prompt(
+    checkpoint: AgentRunCheckpoint,
+    *,
+    proof_boundary: bool = True,
+) -> str:
+    """Return the versioned first-proof instruction for an initial Make turn."""
+
+    if not (
+        checkpoint.stage == "make"
+        and checkpoint.effort in ("forge", "quest")
+        and (
+            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V9_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
+    ):
+        return ""
+    if (
+        _phased_deep_capability_path(checkpoint) is not None
+        and not proof_boundary
+    ):
+        if (
+            _phased_deep_capability_path(checkpoint)
+            in (
+                DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+            )
+        ):
+            profile_name = _phased_deep_profile_name(checkpoint)
+            return (
+                f" The checkpoint-bound {profile_name} proof marker is valid. This first "
+                "final-product continuation has a 15-minute source handoff "
+                "boundary. Keep the same Make Goal. In one bounded first call, "
+                "read STAGE.json, the exact early-proof source/finding, the "
+                "current Make reference, and the CAD SKILL.md. Your next action "
+                "must write the complete final product source by reusing the "
+                "proof geometry and parameters. Before that edit, do not call "
+                "update_plan or get_goal, search APIs, inspect tool source, read "
+                "optional CAD references, invoke --help, or rediscover assembly "
+                "helpers. Prefer direct build123d shapes and labeled Compound "
+                "children. After source exists, run check_layout, generation, "
+                "preflight, actual-state renders, the final independent hash-bound "
+                "review, one integrated verifier, and the Make finalizer. The "
+                "boundary preserves every byte for normal recovery; only "
+                "agent-outcome.json completes this Goal."
+            )
+        return (
+            " The checkpoint-bound phased-deep proof marker is already valid. Do not "
+            "rewrite it, repeat early exploration, or restart the proof. "
+            "Reuse the exact proof source and parameters, persist the "
+            "smallest complete product baseline, finish print preflight and "
+            "the final hash-bound blind review, make at most one focused "
+            "repair, run the integrated verifier once, and invoke the Make "
+            "finalizer. Only agent-outcome.json completes this Goal."
+        )
+    prompt = (
+        "\n\nThis run uses the frozen deep-economics critical path. "
+        "Your first Make deliverable must be the smallest exact causal "
+        "or kinematic proof plus neutral held/signature blockout renders, "
+        "saved under the declared CAD project at review/early-proof/. "
+        "Create, run, inspect, and record that proof before authoring the "
+        "complete part tree or detailing final geometry. Do not batch-write "
+        "the whole product first. If the proof fails, simplify or repair "
+        "the relationship immediately. Reuse the passing proof source in "
+        "the final product and preserve the proof files in the product tree."
+    )
+    if (
+        DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V9_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V7_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V6_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V5_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V4_CAPABILITY_PATH not in checkpoint.input_sha256s
+    ):
+        return prompt
+    if (
+        DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V9_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V8_CAPABILITY_PATH not in checkpoint.input_sha256s
+    ):
+        prompt += (
+            " Before treating the held/signature blockout as passing, ask one "
+            "independent native visual critic to inspect only those exact images "
+            "without the Wish or concept. Record its unprompted object, form, "
+            "control, and relationship read. Then reveal the Wish and concept, "
+            "compare every positive and negative held-form requirement, and fail "
+            "the proof on any generic, plaque-like, box-like, or exposed-mechanism "
+            "reading. Repair and rerender the proof before expanding final parts."
+        )
+    if _phased_deep_capability_path(checkpoint) is None:
+        return prompt
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_V5_CAPABILITY_PATH
+    ):
+        return prompt + (
+            " This v5 proof turn is action-only. After reading the mandatory "
+            "root instructions and current-stage reference once, do not "
+            "enumerate or reread skill trees, open optional CAD references, "
+            "invoke --help, or delegate before a working proof source exists. "
+            "The materialized CAD commands are exactly "
+            ".agents/skills/cad/scripts/gen <source.step.py> --write, "
+            ".agents/skills/cad/scripts/export <source.step> --stl, and "
+            ".agents/skills/cad/scripts/render_product <source.stl> -o "
+            "<cad-project>/review/early-proof/held.png --motion-sheet "
+            "<cad-project>/review/early-proof/signature.png "
+            "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json, "
+            "write source first, then run only those commands. Once exact "
+            "proof source, results, held/signature images, and the blind "
+            "review are durable under review/early-proof/, write %s as "
+            "canonical JSON containing exactly {\"checkpoint_sha256\":\"%s\","
+            "\"kind\":\"autonomous-workshop.make-proof-ready\","
+            "\"schema_version\":1} followed by one newline. The host uses "
+            "that marker only to end this proof turn and resume the same "
+            "Make Goal at high reasoning; it does not advance or waive the "
+            "Make gate."
+            % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+        )
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_V6_CAPABILITY_PATH
+    ):
+        return prompt + (
+            " This v6 proof turn is action-only. After reading the mandatory root "
+            "instructions and current-stage reference once, do not enumerate or "
+            "reread skill trees, open optional CAD references, invoke --help, or "
+            "delegate before a working proof source exists. The materialized CAD "
+            "source must define exactly one module-scope def gen_step() that "
+            "returns the build123d shape. The materialized CAD commands are "
+            "exactly \"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/gen "
+            "<source.step.py> --write, \"$WORKSHOP_PYTHON\" "
+            ".agents/skills/cad/scripts/export <source.step> --stl, and "
+            "\"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/render_product "
+            "<source.stl> -o "
+            "<cad-project>/review/early-proof/held.png --motion-sheet "
+            "<cad-project>/review/early-proof/signature.png "
+            "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json, "
+            "write source first, then run only those commands. Once exact proof "
+            "source, results, held/signature images, "
+            "and the blind review are durable under review/early-proof/, write "
+            "%s as canonical JSON containing exactly {\"checkpoint_sha256\":\"%s\","
+            "\"kind\":\"autonomous-workshop.make-proof-ready\","
+            "\"schema_version\":1} followed by one newline. The host uses that "
+            "marker only to "
+            "end this proof turn and resume the same Make Goal at high reasoning; "
+            "it does not advance or waive the Make gate."
+            % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+        )
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_V7_CAPABILITY_PATH
+    ):
+        return prompt + (
+        " This v7 proof turn is action-only. Read the mandatory root, Workshop "
+        "skill, and current Make reference once in separate bounded reads. The "
+        "broad CAD skill is deliberately not applicable until the proof marker "
+        "exists; do not open it, enumerate skill trees, read optional references, "
+        "invoke --help, or delegate product creation before then. Define exactly "
+        "one module-scope def gen_step() returning the build123d shape. Before "
+        "running CAD, spawn one blind critic with no Wish or concept and tell it "
+        "to wait for the exact held/signature paths, then inspect only those "
+        "images. Run generate, export, and render together in one foreground "
+        "tool call using the three exact \"$WORKSHOP_PYTHON\" commands below. "
+        "Do not set up a cache: the host already binds XDG_CACHE_HOME to a private "
+        "writable run directory. The commands are \"$WORKSHOP_PYTHON\" "
+        ".agents/skills/cad/scripts/gen <source.step.py> --write, "
+        "\"$WORKSHOP_PYTHON\" .agents/skills/cad/scripts/export <source.step> "
+        "--stl, and \"$WORKSHOP_PYTHON\" "
+        ".agents/skills/cad/scripts/render_product <source.stl> -o "
+        "<cad-project>/review/early-proof/held.png --motion-sheet "
+        "<cad-project>/review/early-proof/signature.png "
+        "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json. "
+        "After the critic returns its unprompted object, form, control, action, "
+        "and relationship read, compare that read yourself against every Wish "
+        "and concept requirement; do not spend a second child turn on reveal. "
+        "Repair and rerun the one batch at most once. Once exact proof source, "
+        "results, held/signature images, and the blind review are durable under "
+        "review/early-proof/, write %s as canonical JSON containing exactly "
+        "{\"checkpoint_sha256\":\"%s\","
+        "\"kind\":\"autonomous-workshop.make-proof-ready\","
+        "\"schema_version\":1} followed by one newline. The host uses that "
+        "marker only to end this proof turn and resume the same Make Goal at "
+        "high reasoning; it does not advance or waive the Make gate."
+        % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+        )
+    if (
+        _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+        )
+    ):
+        profile_name = (
+            "v9"
+            if _phased_deep_capability_path(checkpoint)
+            == DEEP_ECONOMICS_V9_CAPABILITY_PATH
+            else "v8"
+        )
+        return prompt + (
+        f" This {profile_name} proof turn has one 16-minute medium runway. The production v7 "
+        "trace proved that separate reads consume the whole phase, so do not "
+        "read stable instructions in separate tool calls and do not call get_goal. "
+        "Create or continue the current Make Goal immediately, then use one "
+        "bounded batch to inspect only the root instructions, Workshop skill, "
+        "current Make reference, STAGE.json, and sealed concept fields needed "
+        "for source. The broad CAD skill is deliberately not applicable until "
+        "the proof marker exists. Do not enumerate skills, open optional "
+        "references, invoke --help, inspect an empty product tree, create empty "
+        "directories as a separate action, or spawn an early critic. Author the "
+        "proof source and its parent directories together in the very next file "
+        "edit. Define exactly one module-scope def gen_step() returning the "
+        "build123d shape. Then run generate, export, and render together in one "
+        "foreground tool call using the exact three \"$WORKSHOP_PYTHON\" commands: "
+        ".agents/skills/cad/scripts/gen <source.step.py> --write; "
+        ".agents/skills/cad/scripts/export <source.step> --stl; and "
+        ".agents/skills/cad/scripts/render_product <source.stl> -o "
+        "<cad-project>/review/early-proof/held.png --motion-sheet "
+        "<cad-project>/review/early-proof/signature.png "
+        "--motion-angles=-12,0,12. Replace bracketed paths from STAGE.json. "
+        "The host already binds a private writable XDG_CACHE_HOME. Inspect the "
+        "exact images yourself immediately; this early direction check is not "
+        "the final independent blind-review gate. If the form is generic, flat, "
+        "box-like, or the interaction is ambiguous, make at most one focused "
+        "source repair and rerun the same batch. Once source, STEP, STL, held, "
+        "signature, and a compact root proof finding are durable under "
+        "review/early-proof/, write %s as canonical JSON containing exactly "
+        "{\"checkpoint_sha256\":\"%s\","
+        "\"kind\":\"autonomous-workshop.make-proof-ready\","
+        "\"schema_version\":1} followed by one newline. The host uses that "
+        "marker only to resume the same Make Goal at high reasoning; the final "
+        "independent critic and every Make gate remain mandatory."
+        % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+        )
+    profile_name = _phased_deep_profile_name(checkpoint)
+    return prompt + (
+        f" This {profile_name} proof turn has one 16-minute medium runway. Create or continue "
+        "the Make Goal immediately without get_goal, then batch the mandatory "
+        "root, Workshop, Make, STAGE, and sealed-concept reads once. Do not open "
+        "the broad CAD skill, optional references, --help, an empty tree, or an "
+        "early critic. In the next file edit create review/early-proof/proof.py "
+        "plus state-0.step.py, state-1.step.py, and state-2.step.py. The helper "
+        "must build three materially different exact product states from shared "
+        "parameters; every state entry defines one module-scope gen_step(). "
+        "Generate and export all three states in one foreground call. Then run "
+        "render_product on state-0.stl for held.png with --state-sheet "
+        "signature.png and three --state-stl arguments naming state-0.stl, "
+        "state-1.stl, and state-2.stl. A viewpoint-only motion sheet is not state "
+        "evidence. Inspect the held image and every actual-state frame yourself. "
+        "Fail or make one focused source repair if the object is generic, flat, "
+        "box-like, exposed, or if the promised action/subjects/relationship are "
+        "not unmistakably different across frames. Persist finding.json with the "
+        "root read of each frame. Once proof.py, all three state sources, STEP and "
+        "STL outputs, held.png, signature.png, and finding.json are durable, write "
+        "%s as canonical JSON containing exactly {\"checkpoint_sha256\":\"%s\","
+        "\"kind\":\"autonomous-workshop.make-proof-ready\",\"schema_version\":1} "
+        "followed by one newline. The marker only resumes the same Goal; the final "
+        "independent critic and every Make gate remain mandatory."
+        % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
+    )
+
+
+def _deep_make_recovery_prompt(
+    checkpoint: AgentRunCheckpoint,
+    *,
+    proof_boundary: bool = True,
+) -> str:
+    """Return the versioned proof-review instruction for Make recovery."""
+
+    if not (
+        checkpoint.stage == "make"
+        and checkpoint.effort in ("forge", "quest")
+        and (
+            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V9_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V8_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V7_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V6_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V5_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
+    ):
+        return ""
+    if (
+        _phased_deep_capability_path(checkpoint) is not None
+        and not proof_boundary
+    ):
+        if (
+            _phased_deep_capability_path(checkpoint)
+            in (
+                DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+            )
+        ):
+            profile_name = _phased_deep_profile_name(checkpoint)
+            targeted_repair = ""
+            if (
+                _phased_deep_capability_path(checkpoint)
+                == DEEP_ECONOMICS_CAPABILITY_PATH
+            ):
+                targeted_repair = (
+                    " If the current print-preflight failure is wall thickness, "
+                    "read that report's complete region table and only the "
+                    "CAD reference references/print-optimisation.md before one "
+                    "source repair. Repair all named regions together; use "
+                    "constant-wall construction for a shell instead of blind "
+                    "scalar changes or repeated full-preflight probes."
+                )
+            return (
+                f" The {profile_name} proof marker remains valid. Continue final-product "
+                "recovery from the exact source and generated bytes already on "
+                "disk. Do not rewrite the marker, restart proof, call update_plan, "
+                "search APIs, inspect tool source, or read unrelated optional references. "
+                "If the complete product source is not yet durable, write it in "
+                "the next action from proof.py. Then repair only concrete "
+                "preflight/render/review failures and invoke the Make finalizer."
+                + targeted_repair
+            )
+        return (
+            " The phased-deep proof marker remains valid, so this is final-product "
+            "recovery. Do not rewrite the marker, reread optional references, "
+            "or restart the proof. Reuse the durable proof and complete only "
+            "the remaining baseline, preflight, final renders and review, "
+            "single integrated verification, and Make finalizer work."
+        )
+    prompt = (
+        " Before expanding the final part tree, complete the frozen "
+        "early-proof blind review: one independent native critic sees "
+        "only the exact held/signature blockout images first, records "
+        "its unprompted read, then receives the Wish and concept and "
+        "checks every positive and negative held-form constraint. A "
+        "generic, box-like, plaque-like, or exposed-mechanism reading "
+        "fails the proof and must be repaired now. After a passing "
+        "proof, persist the smallest complete product source "
+        "immediately and keep all later work on that one baseline."
+    )
+    if _phased_deep_capability_path(checkpoint) is None:
+        return prompt
+    if (
+        _phased_deep_capability_path(checkpoint)
+        in (
+            DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+        )
+    ):
+        return (
+            f" This {_phased_deep_profile_name(checkpoint)} proof recovery is a "
+            "sealing handoff, not a design turn. "
+            "Do not call update_plan or get_goal, research, delegate, create "
+            "measurement meshes, generate variants, or edit proof geometry "
+            "before sealing. In one bounded first action inspect only whether "
+            "proof.py, the three state sources/STEP/STL files, held.png, "
+            "signature.png, and finding.json exist. If they all exist, your "
+            "next action must write the exact checkpoint marker. If only "
+            "finding.json is missing, write it from the current exact renders, "
+            "then write the marker. If generated evidence is missing or stale, "
+            "regenerate the current source without editing it, render, write "
+            "the finding, then the marker. Only a concrete deterministic "
+            "generation or renderer error permits one focused source repair."
+        )
+    if (
+        _phased_deep_capability_path(checkpoint)
+        in (
+            DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+        )
+    ):
+        profile_name = (
+            "v11" if _phased_deep_capability_path(checkpoint)
+            == DEEP_ECONOMICS_V11_CAPABILITY_PATH else "v10"
+        )
+        return (
+            f" This {profile_name} proof recovery reuses every durable byte. Do not call "
+            "get_goal, reread stable instructions, inspect an empty tree, spawn "
+            "an early critic, or open optional references. Complete proof.py and "
+            "the three state entry sources in the next edit, generate/export all "
+            "three states in one foreground call, and use render_product "
+            "--state-sheet with the three state STL inputs. Inspect all real "
+            "state frames, persist finding.json, and write the exact checkpoint "
+            "marker from the initial instruction. A viewpoint-only sheet cannot "
+            "complete this boundary."
+        )
+    if (
+        _phased_deep_capability_path(checkpoint)
+        == DEEP_ECONOMICS_V7_CAPABILITY_PATH
+    ):
+        return prompt + (
+            " This v7 recovery stays on the proof fast path: do not load the "
+            "broad CAD skill or optional references, configure a cache, or "
+            "rediscover commands. Reuse any existing source and exact outputs. "
+            "If the three CAD outputs are incomplete, run the supplied generate, "
+            "export, and render commands together in one foreground tool call. "
+            "Start the blind critic before that batch if it is not already "
+            "running, then persist its unprompted read, perform the revealed "
+            "comparison yourself, and write the exact marker."
+        )
+    phased_deep_path = _phased_deep_capability_path(checkpoint)
+    if phased_deep_path in (
+        DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+    ):
+        profile_name = (
+            "v9" if phased_deep_path == DEEP_ECONOMICS_V9_CAPABILITY_PATH else "v8"
+        )
+        return prompt + (
+            f" This {profile_name} recovery stays on one proof runway. Do not call get_goal, "
+            "reread stable instructions separately, inspect an empty tree, spawn "
+            "an early critic, or create empty directories alone. Batch any still "
+            "necessary bounded reads once, then make the next action an authored "
+            "proof source with its parent directories. Run the supplied generate, "
+            "export, and render commands together in one foreground call, inspect "
+            "the images yourself, persist the compact root finding, and write the "
+            "exact marker. Reuse every existing byte."
+        )
+    return prompt + (
+        " This proof boundary still has no valid phased-deep ready marker. Do not "
+        "survey tools, invoke --help, reread instructions, or delegate. "
+        "Write and run the smallest proof source now. After the proof and "
+        "blind review files exist, write %s with the exact checkpoint-bound "
+        "canonical JSON specified in the initial Make instruction."
+        % _MAKE_PROOF_READY_NAME
+    )
+
+
+def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
+    """Return the frozen phased-deep decisive Invent recovery instruction."""
+
+    if not (
+        checkpoint.stage == "invent"
+        and checkpoint.effort in ("forge", "quest")
+        and _phased_deep_capability_path(checkpoint) is not None
+    ):
+        return ""
+    if (
+        _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+        )
+    ):
+        profile_name = _phased_deep_profile_name(checkpoint)
+        return (
+            f" This {profile_name} Invent recovery is a source handoff, not a creative "
+            "continuation. Do not call update_plan or get_goal, read or edit "
+            "an existing source, wait for children, research, compare, review, "
+            "or refine before finalization. Your first action must check only "
+            "whether work/invent-source.json exists. If it exists, your next "
+            "action must invoke the exact Invent finalizer on that file. Repair "
+            "only a concrete deterministic finalizer error, then invoke it "
+            "again. If the source does not exist, make the first file edit the "
+            "smallest contract-complete source from the strongest decision "
+            "already in context, and make the next action the exact finalizer. "
+            "The ten-minute boundary is repair reserve; agent-outcome.json is "
+            "the only stopping condition."
+        )
+    return (
+        " Do not restart roster comparison, research, exploration, or "
+        "subagent work. If the routed Invent source already exists, validate "
+        "that one source and invoke the Invent finalizer immediately. If it "
+        "does not exist, select the strongest current concept, write one "
+        "compact complete source, and finalize it. Optional refinement is "
+        "strictly lower priority than sealing the current viable concept."
+    )
+
+
+def _make_proof_ready_path(paths: NativeRunPaths) -> Path:
+    return paths.workspace / _MAKE_PROOF_READY_NAME
+
+
+def _v10_make_proof_artifact_bindings(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+) -> Optional[list[dict[str, str]]]:
+    """Return exact durable real-state proof bindings for a v10+ marker."""
+
+    product = (
+        paths.workspace
+        / "artifacts"
+        / "make"
+        / ("r%04d" % checkpoint.round_index)
+        / "product"
+    )
+    candidates = [product / "review" / "early-proof"]
+    cad = product / "cad"
+    try:
+        cad_identity = cad.lstat()
+    except FileNotFoundError:
+        pass
+    except OSError:
+        return None
+    else:
+        if cad.is_symlink() or not stat.S_ISDIR(cad_identity.st_mode):
+            return None
+        # ``cad`` may itself be the self-contained CAD project.  Keep the
+        # nested-project scan below for products that collect several CAD
+        # projects under that directory.
+        candidates.append(cad / "review" / "early-proof")
+        try:
+            projects = tuple(cad.iterdir())
+        except OSError:
+            return None
+        for project in projects:
+            try:
+                identity = project.lstat()
+            except OSError:
+                return None
+            if project.is_symlink():
+                return None
+            if stat.S_ISDIR(identity.st_mode):
+                candidates.append(project / "review" / "early-proof")
+    existing = []
+    for candidate in candidates:
+        if not candidate.exists() and not candidate.is_symlink():
+            continue
+        try:
+            existing.append(
+                _existing_real_directory(candidate, label="Make proof directory")
+            )
+        except StateConflict:
+            return None
+    if len(existing) != 1:
+        return None
+    proof = existing[0]
+    required = _MAKE_PROOF_ARTIFACT_NAMES
+    contents: dict[str, bytes] = {}
+    mtimes: dict[str, int] = {}
+    for name in required:
+        path = proof / name
+        try:
+            before = path.lstat()
+            if path.is_symlink() or not stat.S_ISREG(before.st_mode):
+                return None
+            if not 1 <= before.st_size <= 64 * 1024 * 1024:
+                return None
+            content = path.read_bytes()
+            after = path.lstat()
+        except OSError:
+            return None
+        if (
+            (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+            != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+            or len(content) != before.st_size
+        ):
+            return None
+        contents[name] = content
+        mtimes[name] = before.st_mtime_ns
+    state_hashes = {
+        _sha256(contents["state-%d.stl" % index]) for index in range(3)
+    }
+    if len(state_hashes) != 3:
+        return None
+    if _phased_deep_capability_path(checkpoint) in (
+        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+    ):
+        source_time = max(
+            mtimes["proof.py"],
+            *(mtimes["state-%d.step.py" % index] for index in range(3)),
+        )
+        generated = tuple(
+            "state-%d.%s" % (index, suffix)
+            for index in range(3)
+            for suffix in ("step", "stl")
+        )
+        if any(mtimes[name] < source_time for name in generated):
+            return None
+        if mtimes["held.png"] < mtimes["state-0.stl"]:
+            return None
+        if mtimes["signature.png"] < max(
+            mtimes["state-%d.stl" % index] for index in range(3)
+        ):
+            return None
+        if mtimes["finding.json"] < max(
+            mtimes["held.png"], mtimes["signature.png"]
+        ):
+            return None
+    return [
+        {
+            "path": (proof / name).relative_to(paths.workspace).as_posix(),
+            "sha256": _sha256(contents[name]),
+        }
+        for name in required
+    ]
+
+
+def _make_proof_acceptance_path(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    create_parent: bool = False,
+) -> Path:
+    parent = paths.host_state / _MAKE_PROOF_ACCEPTANCES_DIRECTORY
+    try:
+        identity = parent.lstat()
+    except FileNotFoundError:
+        if not create_parent:
+            return parent / (checkpoint.checkpoint_sha256 + ".json")
+        try:
+            parent.mkdir(mode=0o700)
+            identity = parent.lstat()
+        except OSError as exc:
+            raise StateConflict("Make proof acceptance directory is unavailable") from exc
+    except OSError as exc:
+        raise StateConflict("Make proof acceptance directory is unavailable") from exc
+    if (
+        parent.is_symlink()
+        or not stat.S_ISDIR(identity.st_mode)
+        or stat.S_IMODE(identity.st_mode) != 0o700
+    ):
+        raise StateConflict("Make proof acceptance directory must be private")
+    return parent / (checkpoint.checkpoint_sha256 + ".json")
+
+
+def _make_proof_acceptance_identity(
+    checkpoint: AgentRunCheckpoint,
+    marker_sha256: str,
+    proof_artifacts: Sequence[Mapping[str, str]],
+) -> dict[str, Any]:
+    capability_path = _phased_deep_capability_path(checkpoint)
+    if capability_path is None:
+        raise StateConflict("Make proof acceptance requires a phased-deep capability")
+    capability_sha256 = checkpoint.input_sha256s.get(capability_path)
+    if (
+        not isinstance(capability_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", capability_sha256) is None
+    ):
+        raise StateConflict("Make proof acceptance capability binding is invalid")
+    return {
+        "schema_version": 1,
+        "kind": _MAKE_PROOF_ACCEPTANCE_KIND,
+        "product_id": checkpoint.product_id,
+        "stage": "make",
+        "round": checkpoint.round_index,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "capability_path": capability_path,
+        "capability_sha256": capability_sha256,
+        "marker_sha256": marker_sha256,
+        "proof_artifacts": [dict(item) for item in proof_artifacts],
+    }
+
+
+def _read_make_proof_acceptance(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+) -> bool:
+    path = _make_proof_acceptance_path(paths, checkpoint)
+    if not path.exists() and not path.is_symlink():
+        return False
+    value = _read_stable_private_json(
+        path,
+        label="Make proof acceptance",
+        maximum_bytes=16 * 1024,
+    )
+    marker_sha256 = value.get("marker_sha256")
+    proof_artifacts = value.get("proof_artifacts")
+    requires_artifacts = _phased_deep_capability_path(checkpoint) in (
+        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+    )
+    valid_artifacts = (
+        isinstance(proof_artifacts, list)
+        and len(proof_artifacts) == (13 if requires_artifacts else 0)
+        and all(
+            isinstance(item, Mapping)
+            and set(item) == {"path", "sha256"}
+            and isinstance(item.get("path"), str)
+            and item["path"].startswith("artifacts/make/")
+            and "/review/early-proof/" in item["path"]
+            and isinstance(item.get("sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) is not None
+            for item in proof_artifacts
+        )
+        and (
+            not requires_artifacts
+            or tuple(item["path"].rsplit("/", 1)[-1] for item in proof_artifacts)
+            == _MAKE_PROOF_ARTIFACT_NAMES
+        )
+        and (
+            not requires_artifacts
+            or len({item["path"].rsplit("/", 1)[0] for item in proof_artifacts})
+            == 1
+        )
+    )
+    if (
+        not isinstance(marker_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", marker_sha256) is None
+        or not valid_artifacts
+        or value
+        != _make_proof_acceptance_identity(
+            checkpoint, marker_sha256, proof_artifacts
+        )
+        or path.read_bytes() != _canonical_json_bytes(dict(value)) + b"\n"
+    ):
+        raise StateConflict("Make proof acceptance binding is invalid")
+    return True
+
+
+def _consume_make_proof_marker(path: Path) -> None:
+    try:
+        before = path.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise StateConflict("Make proof turn marker cannot be inspected") from exc
+    if path.is_symlink() or not stat.S_ISREG(before.st_mode):
+        raise StateConflict("Make proof turn marker must be a regular file")
+    try:
+        path.unlink()
+    except OSError as exc:
+        raise StateConflict("Make proof turn marker cannot be consumed") from exc
+
+
+def _make_proof_ready(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+) -> bool:
+    """Accept the untrusted marker once and use host-private state thereafter."""
+
+    if not (
+        checkpoint.stage == "make"
+        and checkpoint.effort in ("forge", "quest")
+        and _phased_deep_capability_path(checkpoint) is not None
+    ):
+        return False
+    path = _make_proof_ready_path(paths)
+    if _read_make_proof_acceptance(paths, checkpoint):
+        # A crash may leave the marker beside a durable receipt, and an agent
+        # may recreate it later. Neither event reopens the proof boundary.
+        _consume_make_proof_marker(path)
+        return True
+    try:
+        before = path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise StateConflict("Make proof turn marker cannot be inspected") from exc
+    if path.is_symlink() or not stat.S_ISREG(before.st_mode):
+        raise StateConflict("Make proof turn marker must be a regular file")
+    try:
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict("Make proof turn marker cannot be read") from exc
+    stable = (
+        1 <= len(content) <= 1_024
+        and (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        == (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+    )
+    expected = {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.make-proof-ready",
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+    }
+    valid = False
+    if stable:
+        try:
+            marker = _strict_json_bytes(content, label="Make proof turn marker")
+        except ContractError:
+            marker = None
+        valid = (
+            marker == expected
+            and content == _canonical_json_bytes(expected) + b"\n"
+        )
+    if (
+        valid
+        and _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+        )
+    ):
+        proof_artifacts = _v10_make_proof_artifact_bindings(paths, checkpoint)
+        valid = proof_artifacts is not None
+    else:
+        proof_artifacts = []
+    if valid:
+        receipt = _make_proof_acceptance_identity(
+            checkpoint, _sha256(content), proof_artifacts
+        )
+        receipt_path = _make_proof_acceptance_path(
+            paths, checkpoint, create_parent=True
+        )
+        _write_private_json(receipt_path, receipt, mode=0o600)
+        _consume_make_proof_marker(path)
+        return True
+    try:
+        path.unlink()
+    except OSError as exc:
+        raise StateConflict("invalid Make proof turn marker cannot be removed") from exc
+    return False
+
+
+def _v13_operator_resume_recovery(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    first_method: str,
+) -> bool:
+    """Skip a replayed final-source phase on explicit v13 Make resume."""
+
+    return (
+        first_method == "resume"
+        and checkpoint.stage == "make"
+        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and _make_proof_ready(paths, checkpoint)
+    )
 
 
 def _launcher_call(
@@ -4106,10 +5277,23 @@ def _launcher_call(
     paths: NativeRunPaths,
     unfinished_continuation: bool = False,
     recoverable_continuation: bool = False,
+    make_proof_boundary: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = native_stage_prompt(checkpoint.stage)
+    phased_make = (
+        checkpoint.stage == "make"
+        and _phased_deep_capability_path(checkpoint) is not None
+    )
+    if (
+        not unfinished_continuation
+        and not recoverable_continuation
+    ) or phased_make:
+        prompt += _deep_make_critical_path_prompt(
+            checkpoint,
+            proof_boundary=make_proof_boundary,
+        )
     if unfinished_continuation:
         prompt += (
             "\n\nYour previous native turn returned without "
@@ -4121,7 +5305,8 @@ def _launcher_call(
     if recoverable_continuation:
         prompt += (
             "\n\nThe immediately previous native turn ended at the host's "
-            "timeout or provider-transport recovery boundary. Continue the "
+            "timeout or provider-transport recovery boundary, or this explicit "
+            "operator resume found a v13 final-Make recovery checkpoint. Continue the "
             "same active Goal from the exact existing files and STAGE.json; "
             "do not restart broad exploration. Inspect and reuse completed "
             "work before launching anything new. Keep the root Manager on "
@@ -4131,6 +5316,11 @@ def _launcher_call(
             "finalizer as soon as its contract is satisfied, and return "
             "after it writes agent-outcome.json."
         )
+        prompt += _deep_make_recovery_prompt(
+            checkpoint,
+            proof_boundary=make_proof_boundary,
+        )
+        prompt += _deep_invent_recovery_prompt(checkpoint)
     arguments = {
         "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256,
@@ -4139,7 +5329,11 @@ def _launcher_call(
         "host_state_root": paths.host_state,
         "prompt": prompt,
         "activity_observer": activity_observer,
-        "finalization_marker": paths.workspace / _AGENT_OUTCOME_NAME,
+        "finalization_marker": (
+            _make_proof_ready_path(paths)
+            if make_proof_boundary
+            else paths.workspace / _AGENT_OUTCOME_NAME
+        ),
     }
     try:
         return getattr(launcher, method)(**arguments)
@@ -4608,7 +5802,7 @@ def _native_token_aggregate(
     if (
         set(value)
         != {"schema_version", "kind", "product_id", "wish_sha256", "stages"}
-        or value.get("schema_version") != 1
+        or value.get("schema_version") not in (1, 2, 3)
         or value.get("kind") != _NATIVE_TOKEN_USAGE_KIND
         or value.get("product_id") != checkpoint.product_id
         or value.get("wish_sha256") != checkpoint.wish_sha256
@@ -4618,20 +5812,129 @@ def _native_token_aggregate(
         raise StateConflict("native token usage binding is invalid")
     stages: dict[str, Any] = {}
     for stage_name, stage in value["stages"].items():
-        if (
-            not isinstance(stage, Mapping)
-            or set(stage) != {"turns", "measured_turns", "tokens"}
-            or type(stage.get("turns")) is not int
-            or type(stage.get("measured_turns")) is not int
-            or not 0 <= stage["measured_turns"] <= stage["turns"] <= 100_000
-        ):
+        if not isinstance(stage, Mapping):
             raise StateConflict("native token stage aggregate is invalid")
-        if type(stage.get("tokens")) is not int or not 0 <= stage["tokens"] <= 10**18:
-            raise StateConflict("native token stage counter is invalid")
+        if value["schema_version"] == 1:
+            if (
+                set(stage) != {"turns", "measured_turns", "tokens"}
+                or type(stage.get("turns")) is not int
+                or type(stage.get("measured_turns")) is not int
+                or not 0 <= stage["measured_turns"] <= stage["turns"] <= 100_000
+                or type(stage.get("tokens")) is not int
+                or not 0 <= stage["tokens"] <= 10**18
+            ):
+                raise StateConflict("native token stage aggregate is invalid")
+            # Schema v1 collapsed input and output. Preserve its turn coverage,
+            # but never guess how the historical total should be split.
+            measured_turns = 0
+            input_tokens = 0
+            output_tokens = 0
+            breakdown_turns = 0
+            breakdown_input_tokens = 0
+            cached_input_tokens = 0
+            cache_write_input_tokens = 0
+            breakdown_output_tokens = 0
+            reasoning_output_tokens = 0
+        elif value["schema_version"] == 2:
+            if (
+                set(stage)
+                != {"turns", "measured_turns", "input_tokens", "output_tokens"}
+                or type(stage.get("turns")) is not int
+                or type(stage.get("measured_turns")) is not int
+                or not 0 <= stage["measured_turns"] <= stage["turns"] <= 100_000
+                or any(
+                    type(stage.get(name)) is not int
+                    or not 0 <= stage[name] <= 10**18
+                    for name in ("input_tokens", "output_tokens")
+                )
+            ):
+                raise StateConflict("native token stage aggregate is invalid")
+            measured_turns = stage["measured_turns"]
+            input_tokens = stage["input_tokens"]
+            output_tokens = stage["output_tokens"]
+            breakdown_turns = 0
+            breakdown_input_tokens = 0
+            cached_input_tokens = 0
+            cache_write_input_tokens = 0
+            breakdown_output_tokens = 0
+            reasoning_output_tokens = 0
+        else:
+            if (
+                set(stage)
+                != {
+                    "turns",
+                    "measured_turns",
+                    "breakdown_turns",
+                    "input_tokens",
+                    "breakdown_input_tokens",
+                    "cached_input_tokens",
+                    "cache_write_input_tokens",
+                    "output_tokens",
+                    "breakdown_output_tokens",
+                    "reasoning_output_tokens",
+                }
+                or any(
+                    type(stage.get(name)) is not int
+                    for name in (
+                        "turns",
+                        "measured_turns",
+                        "breakdown_turns",
+                        "input_tokens",
+                        "breakdown_input_tokens",
+                        "cached_input_tokens",
+                        "cache_write_input_tokens",
+                        "output_tokens",
+                        "breakdown_output_tokens",
+                        "reasoning_output_tokens",
+                    )
+                )
+                or not 0
+                <= stage["breakdown_turns"]
+                <= stage["measured_turns"]
+                <= stage["turns"]
+                <= 100_000
+                or any(
+                    not 0 <= stage[name] <= 10**18
+                    for name in (
+                        "input_tokens",
+                        "breakdown_input_tokens",
+                        "cached_input_tokens",
+                        "cache_write_input_tokens",
+                        "output_tokens",
+                        "breakdown_output_tokens",
+                        "reasoning_output_tokens",
+                    )
+                )
+                or stage["breakdown_input_tokens"] > stage["input_tokens"]
+                or stage["cached_input_tokens"]
+                > stage["breakdown_input_tokens"]
+                or stage["cache_write_input_tokens"]
+                > stage["breakdown_input_tokens"]
+                or stage["breakdown_output_tokens"] > stage["output_tokens"]
+                or stage["reasoning_output_tokens"]
+                > stage["breakdown_output_tokens"]
+            ):
+                raise StateConflict("native token stage aggregate is invalid")
+            measured_turns = stage["measured_turns"]
+            breakdown_turns = stage["breakdown_turns"]
+            input_tokens = stage["input_tokens"]
+            breakdown_input_tokens = stage["breakdown_input_tokens"]
+            cached_input_tokens = stage["cached_input_tokens"]
+            cache_write_input_tokens = stage["cache_write_input_tokens"]
+            output_tokens = stage["output_tokens"]
+            breakdown_output_tokens = stage["breakdown_output_tokens"]
+            reasoning_output_tokens = stage["reasoning_output_tokens"]
         stages[stage_name] = {
             "turns": stage["turns"],
-            "measured_turns": stage["measured_turns"],
-            "tokens": stage["tokens"],
+            "measured_turns": measured_turns,
+            "breakdown_turns": breakdown_turns,
+            "input_tokens": input_tokens,
+            "breakdown_input_tokens": breakdown_input_tokens,
+            "cached_input_tokens": cached_input_tokens,
+            "cache_write_input_tokens": cache_write_input_tokens,
+            "output_tokens": output_tokens,
+            "breakdown_output_tokens": breakdown_output_tokens,
+            "reasoning_output_tokens": reasoning_output_tokens,
         }
     return stages
 
@@ -4645,7 +5948,35 @@ def _record_native_token_usage(
 
     if checkpoint.stage not in _NATIVE_TOKEN_STAGES:
         return
-    measured = usage if type(usage) is int and usage >= 0 else None
+    measured = None
+    breakdown = None
+    if (
+        isinstance(usage, tuple)
+        and len(usage) == 2
+        and all(type(count) is int and 0 <= count <= 10**18 for count in usage)
+    ):
+        measured = usage
+    elif isinstance(usage, Mapping):
+        base = (usage.get("input_tokens"), usage.get("output_tokens"))
+        if all(
+            type(count) is int and 0 <= count <= 10**18 for count in base
+        ):
+            measured = base
+            detail = (
+                usage.get("cached_input_tokens"),
+                usage.get("cache_write_input_tokens"),
+                usage.get("reasoning_output_tokens"),
+            )
+            if (
+                all(
+                    type(count) is int and 0 <= count <= 10**18
+                    for count in detail
+                )
+                and detail[0] <= base[0]
+                and detail[1] <= base[0]
+                and detail[2] <= base[1]
+            ):
+                breakdown = (base[0], detail[0], detail[1], base[1], detail[2])
     stages = _native_token_aggregate(paths, checkpoint)
     previous = stages.get(checkpoint.stage)
     stages[checkpoint.stage] = {
@@ -4654,13 +5985,39 @@ def _record_native_token_usage(
             (0 if previous is None else previous["measured_turns"])
             + (1 if measured is not None else 0)
         ),
-        "tokens": (0 if previous is None else previous["tokens"])
-        + (0 if measured is None else measured),
+        "breakdown_turns": (
+            (0 if previous is None else previous["breakdown_turns"])
+            + (1 if breakdown is not None else 0)
+        ),
+        "input_tokens": (0 if previous is None else previous["input_tokens"])
+        + (0 if measured is None else measured[0]),
+        "breakdown_input_tokens": (
+            0 if previous is None else previous["breakdown_input_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[0]),
+        "cached_input_tokens": (
+            0 if previous is None else previous["cached_input_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[1]),
+        "cache_write_input_tokens": (
+            0 if previous is None else previous["cache_write_input_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[2]),
+        "output_tokens": (0 if previous is None else previous["output_tokens"])
+        + (0 if measured is None else measured[1]),
+        "breakdown_output_tokens": (
+            0 if previous is None else previous["breakdown_output_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[3]),
+        "reasoning_output_tokens": (
+            0 if previous is None else previous["reasoning_output_tokens"]
+        )
+        + (0 if breakdown is None else breakdown[4]),
     }
     _write_private_json(
         paths.host_state / _NATIVE_TOKEN_USAGE_NAME,
         {
-            "schema_version": 1,
+            "schema_version": 3,
             "kind": _NATIVE_TOKEN_USAGE_KIND,
             "product_id": checkpoint.product_id,
             "wish_sha256": checkpoint.wish_sha256,
@@ -4671,7 +6028,7 @@ def _record_native_token_usage(
 
 def _unavailable_native_token_summary() -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": 3,
         "kind": _NATIVE_TOKEN_SUMMARY_KIND,
         "status": "unavailable",
         "reason": "Native token usage was not reported for this run.",
@@ -4688,18 +6045,51 @@ def _native_token_summary(
     if not observed_stages:
         return _unavailable_native_token_summary()
 
-    total_tokens = 0
+    input_tokens = 0
+    output_tokens = 0
+    breakdown_input_tokens = 0
+    cached_input_tokens = 0
+    cache_write_input_tokens = 0
+    breakdown_output_tokens = 0
+    reasoning_output_tokens = 0
     recorded_turns = 0
     measured_turns = 0
+    breakdown_turns = 0
     stages: dict[str, Any] = {}
     for stage_name in _NATIVE_TOKEN_STAGES:
         observed = observed_stages.get(stage_name)
         turns = 0 if observed is None else observed["turns"]
         measured = 0 if observed is None else observed["measured_turns"]
-        tokens = 0 if observed is None else observed["tokens"]
+        stage_breakdown_turns = (
+            0 if observed is None else observed["breakdown_turns"]
+        )
+        stage_input_tokens = 0 if observed is None else observed["input_tokens"]
+        stage_output_tokens = 0 if observed is None else observed["output_tokens"]
+        stage_breakdown_input = (
+            0 if observed is None else observed["breakdown_input_tokens"]
+        )
+        stage_cached_input = (
+            0 if observed is None else observed["cached_input_tokens"]
+        )
+        stage_cache_write_input = (
+            0 if observed is None else observed["cache_write_input_tokens"]
+        )
+        stage_breakdown_output = (
+            0 if observed is None else observed["breakdown_output_tokens"]
+        )
+        stage_reasoning_output = (
+            0 if observed is None else observed["reasoning_output_tokens"]
+        )
         recorded_turns += turns
         measured_turns += measured
-        total_tokens += tokens
+        breakdown_turns += stage_breakdown_turns
+        input_tokens += stage_input_tokens
+        output_tokens += stage_output_tokens
+        breakdown_input_tokens += stage_breakdown_input
+        cached_input_tokens += stage_cached_input
+        cache_write_input_tokens += stage_cache_write_input
+        breakdown_output_tokens += stage_breakdown_output
+        reasoning_output_tokens += stage_reasoning_output
         status = "pending"
         if checkpoint.effort is not None and stage_name == "match":
             status = "folded"
@@ -4714,7 +6104,39 @@ def _native_token_summary(
             "turns": turns,
             "measured_turns": measured,
             "unmeasured_turns": turns - measured,
-            "tokens": tokens,
+            "input_tokens": stage_input_tokens,
+            "output_tokens": stage_output_tokens,
+            "economics": {
+                "status": (
+                    status
+                    if turns == 0
+                    else (
+                        "unavailable"
+                        if stage_breakdown_turns == 0
+                        else (
+                            "measured"
+                            if stage_breakdown_turns == turns
+                            else "partial"
+                        )
+                    )
+                ),
+                "turns": {
+                    "total": turns,
+                    "measured": stage_breakdown_turns,
+                    "unmeasured": turns - stage_breakdown_turns,
+                },
+                "input_tokens": stage_breakdown_input,
+                "cached_input_tokens": stage_cached_input,
+                "uncached_input_tokens": (
+                    stage_breakdown_input - stage_cached_input
+                ),
+                "cache_write_input_tokens": stage_cache_write_input,
+                "output_tokens": stage_breakdown_output,
+                "reasoning_output_tokens": stage_reasoning_output,
+                "non_reasoning_output_tokens": (
+                    stage_breakdown_output - stage_reasoning_output
+                ),
+            },
         }
     try:
         durable_turns = native_progress_turn_floor(
@@ -4724,8 +6146,10 @@ def _native_token_summary(
         durable_turns = recorded_turns
     missing_turns = max(0, durable_turns - recorded_turns)
     unmeasured_turns = recorded_turns - measured_turns + missing_turns
+    economics_total_turns = recorded_turns + missing_turns
+    economics_unmeasured_turns = economics_total_turns - breakdown_turns
     return {
-        "schema_version": 1,
+        "schema_version": 3,
         "kind": _NATIVE_TOKEN_SUMMARY_KIND,
         "status": (
             "unavailable"
@@ -4737,7 +6161,31 @@ def _native_token_summary(
             "measured": measured_turns,
             "unmeasured": unmeasured_turns,
         },
-        "total_tokens": total_tokens,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "economics": {
+            "status": (
+                "unavailable"
+                if breakdown_turns == 0
+                else (
+                    "partial" if economics_unmeasured_turns else "measured"
+                )
+            ),
+            "turns": {
+                "total": economics_total_turns,
+                "measured": breakdown_turns,
+                "unmeasured": economics_unmeasured_turns,
+            },
+            "input_tokens": breakdown_input_tokens,
+            "cached_input_tokens": cached_input_tokens,
+            "uncached_input_tokens": breakdown_input_tokens
+            - cached_input_tokens,
+            "cache_write_input_tokens": cache_write_input_tokens,
+            "output_tokens": breakdown_output_tokens,
+            "reasoning_output_tokens": reasoning_output_tokens,
+            "non_reasoning_output_tokens": breakdown_output_tokens
+            - reasoning_output_tokens,
+        },
         "stages": stages,
     }
 
@@ -6082,7 +7530,7 @@ def _run_native_session(
     run: AgentRun,
     paths: NativeRunPaths,
     *,
-    launcher: NativeSessionLauncher,
+    launcher: Optional[NativeSessionLauncher],
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
@@ -6099,8 +7547,15 @@ def _run_native_session(
     unfinished_continuation = False
     consecutive_unfinished_turns = 0
     consecutive_recoverable_turns = 0
-    recoverable_continuation = False
-    while turns < _MAX_NATIVE_TURNS:
+    initial_checkpoint = run.snapshot()
+    recoverable_continuation = _v13_operator_resume_recovery(
+        paths,
+        initial_checkpoint,
+        first_method=first_method,
+    )
+    native_turn_limit = _native_turn_limit(run.snapshot())
+    initial_make_boundaries: set[str] = set()
+    while turns < native_turn_limit:
         checkpoint = run.snapshot()
         if checkpoint.status in ("waiting", "failed", "complete"):
             return checkpoint, last_session, turns, action
@@ -6162,6 +7617,29 @@ def _run_native_session(
             activity_observer,
         )
         launcher_failure: Optional[WorkshopError] = None
+        turn_launcher = launcher
+        make_proof_boundary = False
+        if turn_launcher is None:
+            if (
+                checkpoint.stage == "make"
+                and _phased_deep_capability_path(checkpoint) is not None
+            ):
+                initial_make_proof_boundary = not _make_proof_ready(
+                    paths, checkpoint
+                )
+                make_proof_boundary = initial_make_proof_boundary
+            else:
+                initial_make_proof_boundary = (
+                    checkpoint.stage == "make"
+                    and checkpoint.checkpoint_sha256 not in initial_make_boundaries
+                )
+            turn_launcher = _native_launcher(
+                checkpoint,
+                initial_make_proof_boundary=initial_make_proof_boundary,
+                recoverable_continuation=recoverable_continuation,
+            )
+            if initial_make_proof_boundary and not make_proof_boundary:
+                initial_make_boundaries.add(checkpoint.checkpoint_sha256)
         try:
             with wish_run_timing_span(
                 timing_observer,
@@ -6170,12 +7648,13 @@ def _run_native_session(
                 operation="session.%s" % method,
             ):
                 last_session = _launcher_call(
-                    launcher,
+                    turn_launcher,
                     method,
                     checkpoint=checkpoint,
                     paths=paths,
                     unfinished_continuation=unfinished_continuation,
                     recoverable_continuation=recoverable_continuation,
+                    make_proof_boundary=make_proof_boundary,
                     activity_observer=turn_activity_observer,
                 )
         except WorkshopError as exc:
@@ -6202,7 +7681,23 @@ def _run_native_session(
                 paths,
                 checkpoint,
                 (
-                    getattr(last_session, "token_count", None)
+                    {
+                        "input_tokens": getattr(
+                            last_session, "input_tokens", None
+                        ),
+                        "cached_input_tokens": getattr(
+                            last_session, "cached_input_tokens", None
+                        ),
+                        "cache_write_input_tokens": getattr(
+                            last_session, "cache_write_input_tokens", None
+                        ),
+                        "output_tokens": getattr(
+                            last_session, "output_tokens", None
+                        ),
+                        "reasoning_output_tokens": getattr(
+                            last_session, "reasoning_output_tokens", None
+                        ),
+                    }
                     if launcher_failure is None
                     else None
                 ),
@@ -6269,7 +7764,7 @@ def _run_native_session(
                                 checkpoint.product_id,
                             )
                         )
-                    if turns < _MAX_NATIVE_TURNS:
+                    if turns < native_turn_limit:
                         time.sleep(
                             _recoverable_native_turn_backoff_seconds(
                                 checkpoint,
@@ -6585,7 +8080,7 @@ def _native_receipt(
             _native_token_summary(paths, checkpoint)
             if paths is not None
             else {
-                "schema_version": 1,
+                "schema_version": 2,
                 "kind": "autonomous-workshop.native-token-summary",
                 "status": "unavailable",
                 "reason": "Host token state was not provided.",
@@ -6668,6 +8163,17 @@ def _prune_empty_make_product_directories(
             continue
 
 
+def _reject_grid_keepalive_wish_start() -> None:
+    service_name = os.environ.get("XPC_SERVICE_NAME", "")
+    if service_name.startswith("grid.serve."):
+        raise StateConflict(
+            "refusing to create a new Wish from Grid's persistent-service "
+            "launcher %r; Workshop Wish commands are finite jobs, so run this "
+            "command with Grid's bounded one-shot runner instead of service start"
+            % service_name
+        )
+
+
 def start_native_run(
     wish: Wish,
     *,
@@ -6703,6 +8209,8 @@ def start_native_run(
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
     """
+
+    _reject_grid_keepalive_wish_start()
 
     selected_effort = workshop_effort(effort) if effort is not None else None
     selected_manager = manager_spec(
@@ -6759,7 +8267,10 @@ def start_native_run(
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
-        launcher = _native_launcher(checkpoint.manager_id)
+        launcher = (
+            None if _uses_dynamic_deep_profile(checkpoint)
+            else _native_launcher(checkpoint)
+        )
         checkpoint, session, turns, action = _run_native_session(
             run,
             paths,
@@ -6940,7 +8451,10 @@ def _resume_native_run_locked(
             action="inspected-terminal",
         )
     _prune_empty_make_product_directories(paths.workspace, checkpoint)
-    launcher = _native_launcher(checkpoint.manager_id)
+    launcher = (
+        None if _uses_dynamic_deep_profile(checkpoint)
+        else _native_launcher(checkpoint)
+    )
     checkpoint, session, turns, action = _run_native_session(
         run,
         paths,

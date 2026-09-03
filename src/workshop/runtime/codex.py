@@ -36,6 +36,7 @@ ALLOWED_WORKSHOP_MODELS = frozenset(
 )
 CODEX_PERMISSION_PROFILE = "workshop-product-run"
 MINIMUM_CODEX_NATIVE_RUNTIME_VERSION = (0, 145, 0)
+MINIMUM_CODEX_AUTO_COMPACT_VERSION = (0, 150, 0)
 DEFAULT_CODEX_TIMEOUT_SECONDS = 3_600
 # A hard bound for one JSONL event record.  Native turns can legitimately emit
 # many events while tools and subagents work; those records are reduced and
@@ -372,6 +373,9 @@ def _runtime_config_sha256(
     reasoning_effort: str,
     run_policy: _CodexRunPolicy,
     *,
+    auto_compact_token_limit: Optional[int] = None,
+    timeout_seconds: Optional[int] = None,
+    runtime_profile_sha256: Optional[str] = None,
     include_codex_runtime_paths: bool = True,
 ) -> str:
     """Bind a checkpoint to the exact non-secret policy used to launch it."""
@@ -381,7 +385,6 @@ def _runtime_config_sha256(
         "cli_version": cli_version,
         "event_protocol": "jsonl-turn-terminal-v2",
         "model": model,
-        "reasoning_effort": reasoning_effort,
         "ignore_rules": False,
         "ignore_user_config": True,
         "native_web_search": True,
@@ -410,6 +413,17 @@ def _runtime_config_sha256(
             identity.to_dict()
             for identity in run_policy.trusted_codex_runtime_paths
         ]
+    if runtime_profile_sha256 is None:
+        payload["reasoning_effort"] = reasoning_effort
+        if auto_compact_token_limit is not None:
+            payload["auto_compact_token_limit"] = auto_compact_token_limit
+        if timeout_seconds is not None:
+            payload["timeout_seconds"] = timeout_seconds
+    else:
+        payload["runtime_profile_sha256"] = _require_sha256(
+            runtime_profile_sha256,
+            "Codex runtime profile sha256",
+        )
     return _sha256_json(payload)
 
 
@@ -443,6 +457,37 @@ def _run_policy_before_workshop_python(
             entry
             for entry in run_policy.environment_overrides
             if entry != workshop_python
+        ),
+    )
+
+
+def _run_policy_before_private_cache(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Return the exact policy from before run-local cache isolation.
+
+    Native CAD imports write font and renderer caches. Product runs deny the
+    user's home tree, so inheriting ``$HOME/.cache`` makes the first exact CAD
+    command fail before any geometry is evaluated. New sessions bind a private
+    cache inside the writable run; this reconstructs only the immediately
+    preceding policy so already-checkpointed sessions remain resumable.
+    """
+
+    private_cache = ("XDG_CACHE_HOME", str(run_root / ".cache"))
+    if run_policy.environment_overrides.count(private_cache) != 1:
+        raise CodexInvocationError(
+            "Codex runtime policy has no unique private cache binding"
+        )
+    return _CodexRunPolicy(
+        permission_config_arguments=run_policy.permission_config_arguments,
+        trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
+        trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
+        environment_allowlist=run_policy.environment_allowlist,
+        environment_overrides=tuple(
+            entry
+            for entry in run_policy.environment_overrides
+            if entry != private_cache
         ),
     )
 
@@ -826,10 +871,12 @@ def _codex_run_policy(run_root: Path, binary: str) -> _CodexRunPolicy:
     trusted_python_paths = _python_runtime_permission_identities()
     trusted_codex_paths = _codex_runtime_permission_identities(binary)
     private_temp = str(run_root / ".tmp")
+    private_cache = str(run_root / ".cache")
     overrides = (
         ("TMPDIR", private_temp),
         ("TMP", private_temp),
         ("TEMP", private_temp),
+        ("XDG_CACHE_HOME", private_cache),
         ("WORKSHOP_PYTHON", str(Path(sys.executable).absolute())),
         *_CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES,
     )
@@ -846,24 +893,24 @@ def _codex_run_policy(run_root: Path, binary: str) -> _CodexRunPolicy:
     )
 
 
-def _private_run_temp(run_root: Path) -> Path:
-    """Return a real 0700 temp directory contained by the exact run root."""
+def _private_run_directory(run_root: Path, name: str, label: str) -> Path:
+    """Return one real 0700 runtime directory inside the exact run root."""
 
-    path = run_root / ".tmp"
+    path = run_root / name
     try:
         path.mkdir(mode=0o700)
     except FileExistsError:
         pass
     except OSError as exc:
         raise CodexInvocationError(
-            "Codex product-run temp directory could not be created"
+            "Codex product-run %s directory could not be created" % label
         ) from exc
     try:
         identity = path.lstat()
         resolved = path.resolve(strict=True)
     except OSError as exc:
         raise CodexInvocationError(
-            "Codex product-run temp directory is unavailable"
+            "Codex product-run %s directory is unavailable" % label
         ) from exc
     if (
         path.is_symlink()
@@ -872,9 +919,18 @@ def _private_run_temp(run_root: Path) -> Path:
         or stat.S_IMODE(identity.st_mode) != 0o700
     ):
         raise CodexInvocationError(
-            "Codex product-run temp directory must be a real 0700 directory"
+            "Codex product-run %s directory must be a real 0700 directory"
+            % label
         )
     return path
+
+
+def _private_run_temp(run_root: Path) -> Path:
+    return _private_run_directory(run_root, ".tmp", "temp")
+
+
+def _private_run_cache(run_root: Path) -> Path:
+    return _private_run_directory(run_root, ".cache", "cache")
 
 
 def _codex_run_environment(
@@ -882,11 +938,14 @@ def _codex_run_environment(
     run_policy: _CodexRunPolicy,
 ) -> Mapping[str, str]:
     private_temp = str(_private_run_temp(run_root))
+    private_cache = str(_private_run_cache(run_root))
     overrides = dict(run_policy.environment_overrides)
     if any(
         overrides.get(name) != private_temp
         for name in ("TMPDIR", "TMP", "TEMP")
-    ) or overrides.get("WORKSHOP_PYTHON") != str(
+    ) or overrides.get("XDG_CACHE_HOME") != private_cache or overrides.get(
+        "WORKSHOP_PYTHON"
+    ) != str(
         Path(sys.executable).absolute()
     ):
         raise CodexInvocationError(
@@ -956,7 +1015,11 @@ class CodexNativeSessionOutcome:
     binding: CodexNativeSessionBinding
     used_web_search: bool
     status: str = "completed"
-    token_count: Optional[int] = None
+    input_tokens: Optional[int] = None
+    cached_input_tokens: Optional[int] = None
+    cache_write_input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    reasoning_output_tokens: Optional[int] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.binding, CodexNativeSessionBinding):
@@ -965,11 +1028,34 @@ class CodexNativeSessionOutcome:
             raise ContractError("Codex native session outcome status is invalid")
         if type(self.used_web_search) is not bool:
             raise ContractError("Codex native session search status must be boolean")
-        if self.token_count is not None and (
-            type(self.token_count) is not int
-            or not 0 <= self.token_count <= 2_000_000_000_000
+        if (self.input_tokens is None) != (self.output_tokens is None):
+            raise ContractError("Codex native session token usage is incomplete")
+        details = (
+            self.cached_input_tokens,
+            self.cache_write_input_tokens,
+            self.reasoning_output_tokens,
+        )
+        if any(count is None for count in details) and not all(
+            count is None for count in details
         ):
-            raise ContractError("Codex native session token count is invalid")
+            raise ContractError("Codex native session token detail is incomplete")
+        if details[0] is not None and self.input_tokens is None:
+            raise ContractError("Codex native session token detail lacks usage")
+        if any(
+            count is not None
+            and (type(count) is not int or not 0 <= count <= 1_000_000_000_000)
+            for count in (self.input_tokens, self.output_tokens, *details)
+        ):
+            raise ContractError("Codex native session token usage is invalid")
+        if (
+            self.cached_input_tokens is not None
+            and (
+                self.cached_input_tokens > self.input_tokens
+                or self.cache_write_input_tokens > self.input_tokens
+                or self.reasoning_output_tokens > self.output_tokens
+            )
+        ):
+            raise ContractError("Codex native session token detail is invalid")
 
     def to_dict(self) -> Mapping[str, Any]:
         value = {
@@ -977,8 +1063,13 @@ class CodexNativeSessionOutcome:
             "session": self.binding.to_dict(),
             "used_web_search": self.used_web_search,
         }
-        if self.token_count is not None:
-            value["token_count"] = self.token_count
+        if self.input_tokens is not None:
+            value["input_tokens"] = self.input_tokens
+            value["output_tokens"] = self.output_tokens
+        if self.cached_input_tokens is not None:
+            value["cached_input_tokens"] = self.cached_input_tokens
+            value["cache_write_input_tokens"] = self.cache_write_input_tokens
+            value["reasoning_output_tokens"] = self.reasoning_output_tokens
         return value
 
 
@@ -1018,7 +1109,7 @@ def _validated_finalization_marker(
     value: Optional[Path],
     run_root: Path,
 ) -> Optional[Path]:
-    """Bind liveness monitoring to the one exact run-local proposal path."""
+    """Bind liveness monitoring to one trusted run-local turn marker."""
 
     if value is None:
         return None
@@ -1026,14 +1117,15 @@ def _validated_finalization_marker(
         marker = Path(value)
     except TypeError as exc:
         raise ContractError(
-            "Codex finalization marker must be the exact in-run "
-            "agent-outcome.json path"
+            "Codex finalization marker must be an exact trusted in-run path"
         ) from exc
-    expected = run_root / "agent-outcome.json"
-    if not marker.is_absolute() or marker != expected:
+    expected = {
+        run_root / "agent-outcome.json",
+        run_root / ".make-proof-ready.json",
+    }
+    if not marker.is_absolute() or marker not in expected:
         raise ContractError(
-            "Codex finalization marker must be the exact in-run "
-            "agent-outcome.json path"
+            "Codex finalization marker must be an exact trusted in-run path"
         )
     return marker
 
@@ -1466,6 +1558,8 @@ class CodexNativeSessionLauncher:
         *,
         model: str = "gpt-5.6-sol",
         reasoning_effort: str = "high",
+        auto_compact_token_limit: Optional[int] = None,
+        runtime_profile_sha256: Optional[str] = None,
         binary: Optional[str] = None,
         timeout_seconds: int = DEFAULT_CODEX_TIMEOUT_SECONDS,
         popen_factory: Any = subprocess.Popen,
@@ -1479,6 +1573,21 @@ class CodexNativeSessionLauncher:
             )
         if reasoning_effort not in ("low", "medium", "high", "xhigh"):
             raise ValueError("unsupported Codex reasoning effort")
+        if (
+            auto_compact_token_limit is not None
+            and (
+                type(auto_compact_token_limit) is not int
+                or not 16_000 <= auto_compact_token_limit <= 1_000_000
+            )
+        ):
+            raise ValueError(
+                "Codex auto_compact_token_limit must be from 16,000 to 1,000,000"
+            )
+        if runtime_profile_sha256 is not None:
+            _require_sha256(
+                runtime_profile_sha256,
+                "Codex runtime profile sha256",
+            )
         if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600:
             raise ValueError("Codex timeout_seconds must be from 1 to 3,600")
         self.binary = _resolved_codex_binary(
@@ -1486,6 +1595,8 @@ class CodexNativeSessionLauncher:
         )
         self.model = model
         self.reasoning_effort = reasoning_effort
+        self.auto_compact_token_limit = auto_compact_token_limit
+        self.runtime_profile_sha256 = runtime_profile_sha256
         self.timeout_seconds = timeout_seconds
         self._popen_factory = popen_factory
         self._version_runner = version_runner
@@ -1498,6 +1609,20 @@ class CodexNativeSessionLauncher:
                 "Workshop requires Codex CLI %s or newer for native goals, "
                 "subagents, and credential-isolated permission profiles" % minimum
             )
+        if self.binary and auto_compact_token_limit is not None:
+            parsed_version = _codex_native_version_tuple(self.cli_version)
+            if (
+                parsed_version is None
+                or parsed_version < MINIMUM_CODEX_AUTO_COMPACT_VERSION
+            ):
+                minimum = ".".join(
+                    str(part) for part in MINIMUM_CODEX_AUTO_COMPACT_VERSION
+                )
+                raise CodexInvocationError(
+                    "Workshop Spark compaction requires Codex CLI %s or newer"
+                    % minimum
+                )
+
     def _read_cli_version(self) -> str:
         if not self.binary:
             return "0.0.0"
@@ -1553,6 +1678,13 @@ class CodexNativeSessionLauncher:
             self.model,
             self.reasoning_effort,
             run_policy,
+            auto_compact_token_limit=self.auto_compact_token_limit,
+            runtime_profile_sha256=self.runtime_profile_sha256,
+            timeout_seconds=(
+                self.timeout_seconds
+                if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
+                else None
+            ),
         )
         persisted_sha256: Optional[str] = None
 
@@ -1577,7 +1709,7 @@ class CodexNativeSessionLauncher:
                 {**identity, "checkpoint_sha256": persisted_sha256},
             )
 
-        used_web_search, observed_thread_id, token_count = self._stream(
+        used_web_search, observed_thread_id, token_usage = self._stream(
             command=self._start_command(root, run_policy),
             prompt=prompt,
             run_root=root,
@@ -1602,7 +1734,15 @@ class CodexNativeSessionLauncher:
                 checkpoint_sha256=persisted_sha256,
             ),
             used_web_search,
-            token_count=token_count,
+            input_tokens=None if token_usage is None else token_usage[0],
+            cached_input_tokens=None if token_usage is None else token_usage[1],
+            cache_write_input_tokens=(
+                None if token_usage is None else token_usage[2]
+            ),
+            output_tokens=None if token_usage is None else token_usage[3],
+            reasoning_output_tokens=(
+                None if token_usage is None else token_usage[4]
+            ),
         )
 
     def resume(
@@ -1638,12 +1778,26 @@ class CodexNativeSessionLauncher:
             self.model,
             self.reasoning_effort,
             run_policy,
+            auto_compact_token_limit=self.auto_compact_token_limit,
+            runtime_profile_sha256=self.runtime_profile_sha256,
+            timeout_seconds=(
+                self.timeout_seconds
+                if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
+                else None
+            ),
+        )
+        policy_before_private_cache = _run_policy_before_private_cache(
+            root,
+            run_policy,
         )
         policy_before_venv_directory = (
-            _run_policy_before_venv_launcher_directory(root, run_policy)
+            _run_policy_before_venv_launcher_directory(
+                root,
+                policy_before_private_cache,
+            )
         )
         historical_policy = (
-            run_policy
+            policy_before_private_cache
             if policy_before_venv_directory is None
             else policy_before_venv_directory
         )
@@ -1652,6 +1806,7 @@ class CodexNativeSessionLauncher:
             historical_policy,
         )
         predecessor_policies: list[tuple[_CodexRunPolicy, bool]] = [
+            (policy_before_private_cache, True),
             (
                 _run_policy_before_workshop_python(historical_policy),
                 True,
@@ -1676,6 +1831,13 @@ class CodexNativeSessionLauncher:
                     self.model,
                     self.reasoning_effort,
                     policy,
+                    auto_compact_token_limit=self.auto_compact_token_limit,
+                    runtime_profile_sha256=self.runtime_profile_sha256,
+                    timeout_seconds=(
+                        self.timeout_seconds
+                        if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
+                        else None
+                    ),
                     include_codex_runtime_paths=include_codex_runtime_paths,
                 )
                 for policy, include_codex_runtime_paths in predecessor_policies
@@ -1691,7 +1853,7 @@ class CodexNativeSessionLauncher:
             runtime_config_sha256=runtime_config_sha256,
             predecessor_runtime_config_sha256s=predecessor_runtime_config_sha256s,
         )
-        used_web_search, unused_observed_thread_id, token_count = self._stream(
+        used_web_search, unused_observed_thread_id, token_usage = self._stream(
             command=self._resume_command(thread_id, root, run_policy),
             prompt=prompt,
             run_root=root,
@@ -1712,7 +1874,15 @@ class CodexNativeSessionLauncher:
                 checkpoint_sha256=checkpoint_sha256,
             ),
             used_web_search,
-            token_count=token_count,
+            input_tokens=None if token_usage is None else token_usage[0],
+            cached_input_tokens=None if token_usage is None else token_usage[1],
+            cache_write_input_tokens=(
+                None if token_usage is None else token_usage[2]
+            ),
+            output_tokens=None if token_usage is None else token_usage[3],
+            reasoning_output_tokens=(
+                None if token_usage is None else token_usage[4]
+            ),
         )
 
     def _binding_paths(
@@ -1909,6 +2079,7 @@ class CodexNativeSessionLauncher:
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
+            *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
             "-C",
             str(run_root),
@@ -1942,12 +2113,22 @@ class CodexNativeSessionLauncher:
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
+            *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
             "--model",
             self.model,
             thread_id,
             "-",
         ]
+
+    def _auto_compact_config_arguments(self) -> tuple[str, ...]:
+        if self.auto_compact_token_limit is None:
+            return ()
+        return (
+            "--config",
+            "model_auto_compact_token_limit=%d"
+            % self.auto_compact_token_limit,
+        )
 
     def _stream(
         self,
@@ -1963,7 +2144,7 @@ class CodexNativeSessionLauncher:
         _process_guard: Optional[_NativeProcessGuard] = None,
         _finalization_watch: Optional[_FinalizationMarkerWatch] = None,
         _deadline: Optional[float] = None,
-    ) -> tuple[bool, Optional[str], Optional[int]]:
+    ) -> tuple[bool, Optional[str], Optional[tuple[int, int]]]:
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
         deadline = (
@@ -2101,7 +2282,7 @@ class CodexNativeSessionLauncher:
 
         used_web_search = False
         observed_thread_id: Optional[str] = None
-        token_count: Optional[int] = None
+        token_usage: Optional[tuple[int, int]] = None
         turn_completed = False
         stream_failure: Optional[BaseException] = None
         try:
@@ -2165,7 +2346,7 @@ class CodexNativeSessionLauncher:
                 ):
                     _validate_agent_message(item.get("text"))
                 if event_type == "turn.completed":
-                    token_count = _native_token_count(event.get("usage"))
+                    token_usage = _native_token_usage(event.get("usage"))
                     turn_completed = True
                     if finalization_watch is not None:
                         finalization_watch.observe_turn_completed()
@@ -2317,7 +2498,7 @@ class CodexNativeSessionLauncher:
         if finalized_without_terminal:
             activity_reporter.observe("completed")
         activity_reporter.close()
-        return used_web_search, observed_thread_id, token_count
+        return used_web_search, observed_thread_id, token_usage
 
 
 def _stream_text(value: Any) -> str:
@@ -2433,8 +2614,10 @@ def _decode_native_event(line: str) -> Mapping[str, Any]:
     return event
 
 
-def _native_token_count(value: Any) -> Optional[int]:
-    """Return input plus output for one completed turn, or unavailable."""
+def _native_token_usage(
+    value: Any,
+) -> Optional[tuple[int, Optional[int], Optional[int], int, Optional[int]]]:
+    """Return exact base counters plus optional economic detail."""
 
     if not isinstance(value, Mapping):
         return None
@@ -2445,7 +2628,32 @@ def _native_token_count(value: Any) -> Optional[int]:
         for count in (input_tokens, output_tokens)
     ):
         return None
-    return input_tokens + output_tokens
+    detail = (
+        value.get("cached_input_tokens"),
+        value.get("cache_write_input_tokens"),
+        value.get("reasoning_output_tokens"),
+    )
+    if all(count is None for count in detail):
+        return (input_tokens, None, None, output_tokens, None)
+    cached_input, cache_write_input, reasoning_output = detail
+    if (
+        any(
+            type(count) is not int or not 0 <= count <= 1_000_000_000_000
+            for count in detail
+        )
+        or
+        cached_input > input_tokens
+        or cache_write_input > input_tokens
+        or reasoning_output > output_tokens
+    ):
+        return (input_tokens, None, None, output_tokens, None)
+    return (
+        input_tokens,
+        cached_input,
+        cache_write_input,
+        output_tokens,
+        reasoning_output,
+    )
 
 
 def _dedicated_process_group_id(process: Any) -> Optional[int]:
@@ -2812,6 +3020,7 @@ __all__ = [
     "MAX_CODEX_PROMPT_BYTES",
     "MAX_CODEX_SESSION_CHECKPOINT_BYTES",
     "MAX_CODEX_STDERR_BYTES",
+    "MINIMUM_CODEX_AUTO_COMPACT_VERSION",
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
     "CodexFinalizedWithoutTerminalError",
     "CodexInvocationError",

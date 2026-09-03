@@ -40,6 +40,13 @@ All implementation and product-run work must preserve these boundaries:
   no turn, artifact, gate, or evidence. Spark/Forge Release explicitly records
   Playtest `not-run`; Quest requires passing Playtest evidence. Frozen older
   runs retain their materialized protocol when resumed.
+- New Codex Spark runs also freeze their versioned economics capability and use
+  one low-reasoning native session across Make and Release. Current v3 runs add
+  a 64k automatic-compaction ceiling and a 20-minute boundary per native turn;
+  same-session recovery remains bounded. Forge, Quest, other Managers, and
+  older Spark runs retain their frozen runtime profile. This changes cognitive
+  spend only; every deterministic product and publication gate remains
+  identical.
 - A capable Forge or Quest Make attempt may return directly to Invent only when
   exact preserved evidence proves that the sealed concept prevents any
   conforming build. Quest Playtest returns directly to Make for implementation
@@ -94,14 +101,36 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0013-manual-first-release.md`, and
 `docs/adr/0014-terminal-published-release.md`, and
 `docs/adr/0015-defer-playtest.md`, and
-`docs/adr/0016-selectable-effort-routes.md` before changing the CLI, runtime,
+`docs/adr/0016-selectable-effort-routes.md`, and
+`docs/adr/0019-frozen-spark-economics-profile.md`, and
+`docs/adr/0020-signature-experience-evidence.md`, and
+`docs/adr/0021-compacted-spark-and-signature-review.md`, and
+`docs/adr/0022-blind-review-before-final-verification.md`, and
+`docs/adr/0023-bounded-spark-turn-and-semantic-review.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
 active Playtest stage while preserving truthful omission and frozen-run
 compatibility. ADR 0016 supersedes ADR 0015's fixed topology for new runs while
 preserving its truthful omission contract for Spark and Forge. The
-native-session path is the production architecture.
+native-session path is the production architecture. ADR 0019 freezes a
+lower-cost Codex profile only for new marked Spark runs without changing their
+gates or upgrading older sessions. ADR 0020 adds exact signature-experience
+evidence and batched manual review without adding a host-side judge. ADR 0021
+adds a frozen Spark compaction ceiling, final signature-review evidence, and a
+bounded simple-manual path without splitting the Wish-wide session. ADR 0022
+makes the review blind, places it before one final integrated verifier, rejects
+duplicate final render families, and distinguishes core creative ownership from
+carrier mechanics.
+ADR 0023 adds a frozen 20-minute Spark native-turn boundary, requires the blind
+critic to agree separately on subjects, action, and relationship, bounds that
+critic to two rounds, and makes the integrated final CAD verifier refuse to run
+before the hash-bound review exists.
+ADR 0024 treats “10x quality at 0.1x cost” as a comparative North Star rather
+than a literal lifecycle threshold. ADR 0025 extends the blind review to exact
+form and the concept's anti-generic signature, binds it to the canonical concept
+hash, and requires the final verification report inside the declared
+self-contained CAD project.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

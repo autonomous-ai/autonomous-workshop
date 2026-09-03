@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""Render a complete manual review packet in one deterministic process.
+
+The packet contains every page in color and grayscale plus compact contact
+sheets.  It makes exact-PDF inspection cheaper; it does not judge the design.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import io
+import json
+import tempfile
+from pathlib import Path
+
+import pypdfium2
+from PIL import Image, ImageDraw
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _save(image: Image.Image, path: Path) -> dict[str, object]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path, format="PNG", optimize=True)
+    return {
+        "path": path.name,
+        "sha256": _sha256(path),
+        "width": image.width,
+        "height": image.height,
+    }
+
+
+def _contact_sheet(images: list[Image.Image]) -> Image.Image:
+    if not images:
+        raise ValueError("manual has no pages")
+    columns = min(3, len(images))
+    rows = (len(images) + columns - 1) // columns
+    target_width = 720 if len(images) <= 6 else 480 if len(images) <= 18 else 360
+    gap = 24
+    label_height = 38
+    frames: list[Image.Image] = []
+    frame_heights: list[int] = []
+    for image in images:
+        height = max(1, round(image.height * target_width / image.width))
+        frames.append(image.resize((target_width, height), Image.Resampling.LANCZOS))
+        frame_heights.append(height + label_height)
+    row_heights = [
+        max(frame_heights[row * columns : (row + 1) * columns])
+        for row in range(rows)
+    ]
+    sheet = Image.new(
+        "RGB",
+        (
+            columns * target_width + (columns + 1) * gap,
+            sum(row_heights) + (rows + 1) * gap,
+        ),
+        "#d8d8d8",
+    )
+    pen = ImageDraw.Draw(sheet)
+    y = gap
+    for row in range(rows):
+        x = gap
+        for column in range(columns):
+            index = row * columns + column
+            if index >= len(frames):
+                break
+            frame = frames[index]
+            sheet.paste(frame, (x, y + label_height))
+            pen.text((x + 8, y + 8), "PAGE %d" % (index + 1), fill="#202020")
+            x += target_width + gap
+        y += row_heights[row] + gap
+    return sheet
+
+
+def review_manual(pdf_path: Path, output_dir: Path, *, scale: float) -> dict[str, object]:
+    if not pdf_path.is_file() or pdf_path.is_symlink():
+        raise ValueError("manual must be a real PDF file")
+    if not 1.0 <= scale <= 4.0:
+        raise ValueError("render scale must be between 1 and 4")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    document = pypdfium2.PdfDocument(str(pdf_path))
+    try:
+        if not 1 <= len(document) <= 64:
+            raise ValueError("manual must contain between 1 and 64 pages")
+        color_images: list[Image.Image] = []
+        grayscale_images: list[Image.Image] = []
+        pages: list[dict[str, object]] = []
+        for index in range(len(document)):
+            page = document[index]
+            try:
+                bitmap = page.render(scale=scale, rev_byteorder=True)
+                try:
+                    color = bitmap.to_pil().convert("RGB").copy()
+                finally:
+                    bitmap.close()
+            finally:
+                page.close()
+            grayscale = color.convert("L").convert("RGB")
+            color_name = "page-%02d-color.png" % (index + 1)
+            grayscale_name = "page-%02d-grayscale.png" % (index + 1)
+            color_meta = _save(color, output_dir / color_name)
+            grayscale_meta = _save(grayscale, output_dir / grayscale_name)
+            pages.append(
+                {
+                    "page": index + 1,
+                    "color": color_meta,
+                    "grayscale": grayscale_meta,
+                }
+            )
+            color_images.append(color)
+            grayscale_images.append(grayscale)
+    finally:
+        document.close()
+
+    color_sheet = _save(
+        _contact_sheet(color_images), output_dir / "contact-sheet-color.png"
+    )
+    grayscale_sheet = _save(
+        _contact_sheet(grayscale_images),
+        output_dir / "contact-sheet-grayscale.png",
+    )
+    return {
+        "schema_version": 1,
+        "manual_sha256": _sha256(pdf_path),
+        "page_count": len(pages),
+        "render_scale": scale,
+        "pages": pages,
+        "contact_sheets": {
+            "color": color_sheet,
+            "grayscale": grayscale_sheet,
+        },
+    }
+
+
+def _self_check() -> None:
+    from reportlab.pdfgen.canvas import Canvas
+
+    with tempfile.TemporaryDirectory() as temporary:
+        root = Path(temporary)
+        manual = root / "MANUAL.pdf"
+        buffer = io.BytesIO()
+        canvas = Canvas(buffer, pagesize=(288, 432), pageCompression=1)
+        for page_number in (1, 2):
+            canvas.setFillColorRGB(0.08, 0.18, 0.35)
+            canvas.rect(0, 0, 288, 432, fill=1, stroke=0)
+            canvas.setFillColorRGB(1.0, 0.72, 0.18)
+            canvas.circle(144, 250, 62, fill=1, stroke=0)
+            canvas.setFillColorRGB(1, 1, 1)
+            canvas.drawString(28, 390, "Workshop manual page %d" % page_number)
+            canvas.showPage()
+        canvas.save()
+        manual.write_bytes(buffer.getvalue())
+        result = review_manual(manual, root / "review", scale=1.25)
+        if result["page_count"] != 2:
+            raise RuntimeError("self-check rendered the wrong page count")
+        for name in ("contact-sheet-color.png", "contact-sheet-grayscale.png"):
+            with Image.open(root / "review" / name) as observed:
+                observed.verify()
+    print("review_manual self-check passed")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("manual", nargs="?", type=Path)
+    parser.add_argument("-o", "--output-dir", type=Path)
+    parser.add_argument("--scale", type=float, default=2.0)
+    parser.add_argument("--self-check", action="store_true")
+    args = parser.parse_args()
+    if args.self_check:
+        _self_check()
+        return
+    if args.manual is None or args.output_dir is None:
+        parser.error("manual and --output-dir are required unless --self-check is used")
+    result = review_manual(args.manual, args.output_dir, scale=args.scale)
+    print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+
+
+if __name__ == "__main__":
+    main()

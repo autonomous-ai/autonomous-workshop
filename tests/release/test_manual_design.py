@@ -1,6 +1,8 @@
 import hashlib
 import io
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,6 +19,13 @@ from workshop.release.manual_design import (
     MANUAL_DESIGN_EVIDENCE_KIND,
     MANUAL_DESIGN_EVIDENCE_PATH,
     validate_manual_design_evidence,
+)
+
+
+REPOSITORY = Path(__file__).resolve().parents[2]
+REVIEW_MANUAL = (
+    REPOSITORY
+    / "src/workshop/release/skills/manual-design/scripts/review_manual"
 )
 
 
@@ -223,6 +232,34 @@ class ManualDesignEvidenceTest(unittest.TestCase):
                 manual=manual,
                 made=self.made,
             )
+
+    def test_batched_manual_review_renders_color_grayscale_and_sheets(self):
+        review_root = self.run_root / "manual-review"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(REVIEW_MANUAL),
+                str(self.package / "MANUAL.pdf"),
+                "--output-dir",
+                str(review_root),
+                "--scale",
+                "1.25",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        packet = json.loads(result.stdout)
+
+        self.assertEqual(packet["schema_version"], 1)
+        self.assertEqual(packet["page_count"], 2)
+        self.assertEqual(packet["manual_sha256"], _sha(self.manual))
+        self.assertEqual([entry["page"] for entry in packet["pages"]], [1, 2])
+        for entry in packet["pages"]:
+            self.assertTrue((review_root / entry["color"]["path"]).is_file())
+            self.assertTrue((review_root / entry["grayscale"]["path"]).is_file())
+        for entry in packet["contact_sheets"].values():
+            self.assertTrue((review_root / entry["path"]).is_file())
 
 
 if __name__ == "__main__":

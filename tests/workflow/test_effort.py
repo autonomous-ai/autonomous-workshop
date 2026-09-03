@@ -3,6 +3,39 @@ import unittest
 from workshop.errors import ContractError
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
+    DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V1_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V2_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V3_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V4_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V5_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V6_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V7_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+    DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_NATIVE_TURN_LIMIT,
+    DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
+    DEEP_V1_NATIVE_TURN_LIMIT,
+    DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
+    DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS,
+    DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
+    DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
+    SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+    SPARK_ECONOMICS_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V1_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+    SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
     WORKSHOP_EFFORTS,
     workshop_effort,
 )
@@ -11,6 +44,87 @@ from workshop.workflow.effort import (
 class WorkshopEffortTest(unittest.TestCase):
     def test_named_efforts_have_exact_passthrough_lifecycles(self):
         self.assertEqual(DEFAULT_WORKSHOP_EFFORT, "spark")
+        self.assertEqual(
+            SPARK_ECONOMICS_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/spark-economics-v3.md",
+        )
+        self.assertEqual(
+            SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/spark-economics-v2.md",
+        )
+        self.assertEqual(
+            SPARK_ECONOMICS_V1_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/spark-economics-v1.md",
+        )
+        self.assertEqual(SPARK_AUTO_COMPACT_TOKEN_LIMIT, 64_000)
+        self.assertEqual(SPARK_NATIVE_TURN_TIMEOUT_SECONDS, 1_200)
+        self.assertEqual(
+            DEEP_ECONOMICS_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v13.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v12.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V11_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v11.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V10_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v10.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V9_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v9.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V8_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v8.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V7_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v7.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V6_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v6.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V5_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v5.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V4_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v4.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V3_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v3.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V2_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v2.md",
+        )
+        self.assertEqual(
+            DEEP_ECONOMICS_V1_CAPABILITY_PATH,
+            ".agents/skills/autonomous-workshop/references/deep-economics-v1.md",
+        )
+        self.assertEqual(DEEP_AUTO_COMPACT_TOKEN_LIMIT, 256_000)
+        self.assertEqual(DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT, 24_000)
+        self.assertEqual(DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT, 16_000)
+        self.assertEqual(DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS, 720)
+        self.assertEqual(DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS, 1_200)
+        self.assertEqual(DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS, 600)
+        self.assertEqual(DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS, 480)
+        self.assertEqual(DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS, 960)
+        self.assertEqual(DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS, 900)
+        self.assertEqual(DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS, 900)
+        self.assertEqual(DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS, 900)
+        self.assertEqual(DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS, 900)
+        self.assertEqual(DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT, 32_000)
+        self.assertEqual(DEEP_NATIVE_TURN_LIMIT, 8)
+        self.assertEqual(DEEP_V1_NATIVE_TURN_LIMIT, 8)
         self.assertEqual(
             {name: effort.lifecycle for name, effort in WORKSHOP_EFFORTS.items()},
             {

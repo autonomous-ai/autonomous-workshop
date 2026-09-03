@@ -315,7 +315,11 @@ class _SessionOutcome:
             "playtest": 300,
             "release": 400,
         }[stage]
-        self.token_count = stage_input + stage_input // 10
+        self.input_tokens = stage_input
+        self.cached_input_tokens = stage_input * 3 // 4
+        self.cache_write_input_tokens = stage_input // 20
+        self.output_tokens = stage_input // 10
+        self.reasoning_output_tokens = stage_input // 20
 
     def to_dict(self):
         return {
@@ -535,7 +539,7 @@ class _OneSessionProductAgent:
         product_root = run_root / product_root_value
         (product_root / "cad" / "project").mkdir(parents=True, exist_ok=True)
         _write_fixture_render(product_root / "cad" / "project")
-        (product_root / "validation").mkdir(exist_ok=True)
+        (product_root / "cad" / "project" / "validation").mkdir(exist_ok=True)
         wish = _read_json(run_root / "WISH.json")
         invented = inputs.get("invented")
         spark_source = None
@@ -632,6 +636,10 @@ class _OneSessionProductAgent:
             "def build():\n    return 'orbit-dog-draughts'\n",
             encoding="utf-8",
         )
+        (product_root / "cad" / "project" / "assembled.step.py").write_text(
+            "from build import build\n",
+            encoding="utf-8",
+        )
         render_path = product_root / "cad" / "project" / "snap" / "iso.png"
         render_path.parent.mkdir(parents=True, exist_ok=True)
         render = Image.new("RGB", (800, 800), (244, 238, 224))
@@ -644,15 +652,80 @@ class _OneSessionProductAgent:
                 width=5,
             )
         render.save(render_path, format="PNG", optimize=False)
+        signature_path = render_path.with_name("signature.png")
+        signature = Image.new("RGB", (1800, 900), (244, 238, 224))
+        signature_drawing = ImageDraw.Draw(signature)
+        for offset, color in (
+            (0, (49, 129, 176)),
+            (600, (235, 160, 55)),
+            (1200, (49, 129, 176)),
+        ):
+            signature_drawing.ellipse(
+                (offset + 110, 160, offset + 490, 700), fill=color
+            )
+        signature.save(signature_path, format="PNG", optimize=False)
+        preflight = (
+            b"# Verification pipeline record\n\n"
+            b"- Recorded: content-addressed\n"
+            b"- Mode: `print-preflight`\n"
+            b"- Result: **PASS** (exit 0)\n\n"
+            b"| # | command | result | seconds |\n"
+            b"|---:|---|---:|---:|\n"
+            b"| 1 | `check_mesh assembled.stl` | rc=0 | 0.01 |\n"
+            b"| 2 | `check_thickness assembled.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
+        )
+        preflight_path = product_root / "cad/project/measure/print-preflight.md"
+        preflight_path.parent.mkdir(parents=True, exist_ok=True)
+        preflight_path.write_bytes(preflight)
         _write_json(
-            product_root / "validation" / "cad-verification.json",
+            signature_path.with_name("SIGNATURE-REVIEW.json"),
             {
-                "schema_version": 1,
-                "validator": "materialized-cad-final",
-                "validator_version": "1.0.0",
-                "passed": True,
-                "checks": ["fresh-export", "strict-fit", "printable-mesh"],
+                "schema_version": 6,
+                "kind": "autonomous-workshop.signature-experience-review",
+                "concept_sha256": _sha256(_canonical_json(invented["concept"])),
+                "iso_sha256": _sha256(render_path.read_bytes()),
+                "signature_sha256": _sha256(signature_path.read_bytes()),
+                "reviewer": "independent-native-visual-critic",
+                "blind_held_read": "A compact orbital play object with a strong ring.",
+                "blind_form_read": "A rounded volumetric ring with a deep center.",
+                "blind_subjects_read": "A ring, orbiting token, and central play field.",
+                "blind_action_read": "The token moves through three distinct ring states.",
+                "blind_relationship_read": "The token crosses and returns around the ring.",
+                "anti_generic_signature_read": "Orbital waypoints shape the play field.",
+                "wish_revealed_after_blind_read": True,
+                "held_object_unmistakable": True,
+                "form_matches_wish": True,
+                "subjects_match_wish": True,
+                "action_matches_wish": True,
+                "relationship_matches_wish": True,
+                "anti_generic_signature_visible": True,
+                "signature_experience_unmistakable": True,
+                "finished_product_desirable": True,
+                "review_rounds": 1,
+                "critical_form_requirements": [
+                    {
+                        "requirement": "The play object must be rounded and volumetric.",
+                        "blind_evidence": "The exact views show a deep rounded ring.",
+                        "matches": True,
+                    }
+                ],
+                "blocking_visual_defects": [],
+                "print_preflight_sha256": _sha256(preflight),
+                "largest_risk": "The three play states could read as decoration.",
+                "resolution": "Separated color and position make the state change explicit.",
             },
+        )
+        (
+            product_root / "cad" / "project" / "validation" / "cad-verification.json"
+        ).write_text(
+            "# Verification pipeline record\n\n"
+            "- Recorded: content-addressed\n"
+            "- Mode: `final`\n"
+            "- Result: **PASS** (exit 0)\n\n"
+            "| # | command | result | seconds |\n"
+            "|---:|---|---:|---:|\n"
+            "| 1 | `check_thickness exact.stl` | rc=0 | 0.01 |\n",
+            encoding="utf-8",
         )
         for required in inputs["required_root_files"]:
             if not (product_root / required).is_file():
@@ -682,7 +755,7 @@ class _OneSessionProductAgent:
                 "--cad-project-path",
                 "cad/project",
                 "--cad-verification-path",
-                "validation/cad-verification.json",
+                "cad/project/validation/cad-verification.json",
             )
         )
         self._run_finalizer(run_root, *arguments)
@@ -1558,10 +1631,21 @@ class NativeFullRunTest(unittest.TestCase):
                 receipt["tokens"]["turns"],
                 {"total": 4, "measured": 4, "unmeasured": 0},
             )
-            self.assertEqual(receipt["tokens"]["total_tokens"], 825)
+            self.assertEqual(receipt["tokens"]["input_tokens"], 750)
+            self.assertEqual(receipt["tokens"]["output_tokens"], 75)
+            self.assertEqual(receipt["tokens"]["economics"]["status"], "measured")
+            self.assertEqual(receipt["tokens"]["economics"]["input_tokens"], 750)
+            self.assertEqual(receipt["tokens"]["economics"]["cached_input_tokens"], 562)
+            self.assertEqual(receipt["tokens"]["economics"]["uncached_input_tokens"], 188)
+            self.assertEqual(receipt["tokens"]["economics"]["output_tokens"], 75)
+            self.assertEqual(receipt["tokens"]["economics"]["reasoning_output_tokens"], 37)
             self.assertEqual(
-                receipt["tokens"]["stages"]["make"]["tokens"],
-                220,
+                receipt["tokens"]["stages"]["make"]["input_tokens"],
+                200,
+            )
+            self.assertEqual(
+                receipt["tokens"]["stages"]["make"]["output_tokens"],
+                20,
             )
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
@@ -2139,7 +2223,14 @@ class NativeFullRunTest(unittest.TestCase):
         self.assertEqual(checkpoint.status, "complete")
         self.assertEqual(len(launcher.starts), 1)
         self.assertEqual(len(launcher.resumes), 5)
-        backoff.assert_called_once()
+        recovery_delays = [
+            call.args[0]
+            for call in backoff.call_args_list
+            if call.args and call.args[0] >= 0.75
+        ]
+        self.assertEqual(len(recovery_delays), 1)
+        self.assertGreaterEqual(recovery_delays[0], 0.75)
+        self.assertLessEqual(recovery_delays[0], 30)
         self.assertEqual(
             [packet["stage"] for packet in launcher.stage_packets],
             ["match", "invent", "make", "playtest", "release"],
@@ -2382,14 +2473,14 @@ class NativeFullRunTest(unittest.TestCase):
             home.mkdir()
             first = _OneSessionProductAgent(playtest_plan=[("block", [finding])], confirm_first_lead=True)
             second = _OneSessionProductAgent()
-            launchers = iter((first, second))
+            active_launcher = {"agent": first}
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
             ), mock.patch(
                 "workshop.workflow.native_run._source_checkout_root", return_value=None
             ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
-                side_effect=lambda *a, **k: next(launchers),
+                side_effect=lambda *a, **k: active_launcher["agent"],
             ), mock.patch(
                 "workshop.workflow.native_run.verify_native_made_cad", side_effect=verify_cad
             ), mock.patch(
@@ -2408,6 +2499,7 @@ class NativeFullRunTest(unittest.TestCase):
                     context={"source": "native-ledger-test"},
                 )
                 receipt_a = start_native_run(wish_a, effort="quest")
+                active_launcher["agent"] = second
                 wish_b = Wish.create(
                     "orbit-dog-b",
                     "Build a pocket draughts set for my other dog.",
@@ -3136,7 +3228,7 @@ class NativeFullRunTest(unittest.TestCase):
                     "artifacts/make/r0001/product/assembled.step.json",
                     "artifacts/make/r0001/product/assembled.stl",
                     "artifacts/make/r0001/product/cad/project/build.py",
-                    "artifacts/make/r0001/product/validation/cad-verification.json",
+                    "artifacts/make/r0001/product/cad/project/validation/cad-verification.json",
                 },
                 "release": {
                     "artifacts/release/release.json",

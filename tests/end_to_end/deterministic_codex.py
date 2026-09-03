@@ -444,6 +444,11 @@ def author_make(root: Path, stage) -> None:
     pen.ellipse((150, 130, 750, 730), fill="#35aeb8")
     pen.polygon(((450, 190), (730, 720), (180, 720)), fill="#ff9f43")
     render.save(render_path, format="PNG")
+    signature = Image.new("RGB", (1800, 900), "#fff4df")
+    signature_pen = ImageDraw.Draw(signature)
+    for offset, color in ((0, "#35aeb8"), (600, "#ffb445"), (1200, "#35aeb8")):
+        signature_pen.ellipse((offset + 110, 160, offset + 490, 700), fill=color)
+    signature.save(project / "snap/signature.png", format="PNG")
     write_json(
         product_root / "assembled.step.json",
         {

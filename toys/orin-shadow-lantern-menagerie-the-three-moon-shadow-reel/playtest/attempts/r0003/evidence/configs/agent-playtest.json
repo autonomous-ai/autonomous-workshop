@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "check_id": "agent-playtest",
+  "product_artifact_sha256": "7670e30199d25813d015f1b36cf8962e78a01722cff02524ee3240b938793d00",
+  "seed": 20260829,
+  "method": "Independent native-agent and root visual review of the exact three indexed projections, all 12 distance corners, all 15 state/alignment cases, the 72-pose motion sheet, exact point-source metrics, assembled product views, isolated setup-side views, and modeled reset/beam cues.",
+  "inspection_targets": [
+    "evidence/shadows/state-rabbit-000.png",
+    "evidence/shadows/state-fox-120.png",
+    "evidence/shadows/state-owl-240.png",
+    "evidence/shadows/distance-corners-contact-sheet.png",
+    "evidence/shadows/alignment-sweep-contact-sheet.png",
+    "evidence/shadows/motion-contact-sheet.png",
+    "evidence/shadows/shadow-sweep.json",
+    "cad/snap/iso.png",
+    "cad/snap/front.png",
+    "cad/snap/setup-phone-side.png",
+    "cad/snap/setup-wall-side.png",
+    "cad/features/profiles.py",
+    "cad/parts/shells.py"
+  ],
+  "acceptance": [
+    "Rabbit, fox, and owl must each read unmistakably without captions in the exact indexed projections and every tested distance/alignment case.",
+    "All three states must be challenged at centered and plus-or-minus two-degree yaw and pitch, and at every source/wall distance corner.",
+    "The 5-degree cycle must expose the complete transition truthfully as an eclipse wipe rather than imply continuous animal recognition.",
+    "An assembled view must demonstrate the fixed rabbit-home pointer together with its matching reel mark, and the phone-side cue must unambiguously communicate light direction.",
+    "Digital judgment must not be represented as human recognition, delight, room-light, finite-emitter, physical-use, or durability evidence."
+  ]
+}

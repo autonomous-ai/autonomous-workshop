@@ -81,6 +81,29 @@
   the intended model name and originating-system metadata while making fresh,
   equivalent exports byte-identical. A real build123d solid round-trip test
   covers both reproducibility and valid geometry.
+- Adapted locally on 2026-08-30 so Workshop's integrated final CAD pipeline
+  requires the canonical hash-bound blind signature review before it spends a
+  complete verification pass. Quick iteration remains available. The final
+  pipeline records the exact schema and review hash; the shared workflow and
+  CAD guidance limit the native critic to two rounds and require separate
+  agreement on the Wish's subjects, action, and spatial or causal relationship.
+- Adapted locally on 2026-08-31 so a frozen Workshop deep-v5 Make proof turn
+  follows host-supplied exact `gen`, `export`, and `render_product` commands
+  before optional CAD references or help discovery. The exception ends at the
+  proof-turn marker and does not change any final CAD gate.
+- Adapted locally again on 2026-08-31 after the first deep-v5 production proof
+  exposed that `scripts/gen` is a Python package directory rather than a shell
+  executable. Deep-v6 instructions require the exact Workshop interpreter for
+  every CAD entry point and explicitly require one module-scope `gen_step()`;
+  final CAD behavior remains unchanged.
+- Adapted locally again on 2026-08-31 after the deep-v6 production proof
+  generated valid CAD and renders but exhausted its turn before blind review.
+  Deep-v7 defers this broad skill until the proof marker because the host
+  supplies the complete narrow interface; final CAD behavior remains unchanged.
+- Adapted locally again on 2026-08-31 after the deep-v7 production proof spent
+  both bounded turns on preparatory agent cycles without source. Deep-v8 keeps
+  broad-skill deferral while batching stable reads and reserving independent
+  blind critique for the mandatory final review; final CAD behavior is unchanged.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do
@@ -104,3 +127,10 @@ The repository-authored `product-to-cad` skill was removed on 2026-08-26. The
 Invent now owns the build spec, selected visual direction, and researched
 physical facts it used to restate, and Make reaches CAD through the `cad`,
 `image-to-cad`, `design-reference`, and `step-parts` skills directly.
+
+Workshop's local CAD adaptation also adds fixed-camera exact-state signature
+sheets. `render_product --state-sheet` accepts two to five state STLs and
+rejects visually indistinguishable frames, while the older motion sheet remains
+truthfully documented as viewpoint presentation of one unchanged mesh. This
+closes the production gap where repeated camera angles were mistaken for
+evidence of a toy's promised transformation.

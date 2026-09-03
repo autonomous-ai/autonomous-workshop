@@ -1,6 +1,6 @@
 # Horn Tip
 
-![Horn Tip](../../docs/images/horn-tip.jpg)
+![Horn Tip](renders/public-hero.jpg)
 
 A tiny one-piece crescent desk rocker. Press a rounded horn with a fingertip and it tips, then gravity walks it back to rest on its outer curve.
 
@@ -49,7 +49,8 @@ Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no 
 
 | Measure | Value |
 |---|---|
-| Native Manager tokens | unavailable — this run predates token telemetry |
+| Native Manager input tokens | unavailable — this run predates split token telemetry |
+| Native Manager output tokens | unavailable — this run predates split token telemetry |
 | Wish to verified publication | unavailable — the archived snapshot has no trustworthy Wish-start timestamp |
 
 No dollar cost is inferred.
@@ -81,6 +82,7 @@ Manager and Spark route, not a replay of these exact CAD bytes.
 - `release/MANUAL.pdf` — the exact sealed printable in-box manual.
 - `release/` — accepted Release contract and exact package bytes.
 - `publication/PUBLICATION.json` — sanitized public readback identities.
+- `renders/` — an archive-local copy of the already-public product photo, with source provenance; it was recovered after the sealed run and is not represented as Make gate evidence.
 - `MANIFEST.json` — hashes every workflow file except itself and this README.
 - Playtest was not run; Release records that omission explicitly.
 

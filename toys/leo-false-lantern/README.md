@@ -1,5 +1,7 @@
 # False Lantern
 
+![False Lantern](renders/public-hero.png)
+
 A compact two-player firefly signaling duel invented by Leo and completed by
 the Codex-orchestrated Workshop flow: Wish → Match → Invent → Make ↔ Playtest →
 Release.
@@ -49,7 +51,8 @@ This is a legacy snapshot, so it preserves the finished public bytes but not the
 
 | Measure | Value |
 |---|---|
-| Native Manager tokens | unavailable — this run predates token telemetry |
+| Native Manager input tokens | unavailable — this run predates split token telemetry |
+| Native Manager output tokens | unavailable — this run predates split token telemetry |
 | Wish to verified publication | unavailable — the archived snapshot has no trustworthy Wish-start timestamp |
 
 No dollar cost is inferred.
@@ -63,3 +66,4 @@ No dollar cost is inferred.
 - `print/*.stl` — the six exact printable game components.
 - `calibration/clearance-coupon.stl` — the exact clearance coupon referenced by
   the manual; it is not a seventh game component.
+- `renders/` — an archive-local copy of the already-public Factory hero image, with source provenance; it was recovered after this legacy workflow projection and is not represented as sealed Make evidence.

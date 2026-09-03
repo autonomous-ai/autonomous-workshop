@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "check_id": "mechanical-check",
+  "product_artifact_sha256": "9ff89565b9c5aa91e7338007c641607da1c3afa0ba9a3cafe749ef9d2cc20403",
+  "seed": 20260829,
+  "method": "Independent sealed-source audit plus isolated exact-source replay of the 21-condition fit audit, 24-condition specification audit, and 10-condition motion manifest covering two-way reel clearance, four latch entry corridors, shell capture, stand arc, and both endpoint stops.",
+  "inspection_targets": [
+    "assembled.step",
+    "assembled.step.json",
+    "cad/params.py",
+    "cad/parts/reel.py",
+    "cad/parts/shells.py",
+    "cad/parts/stand.py",
+    "cad/measure/check_fit.py",
+    "cad/measure/check_spec.py",
+    "cad/measure/motion.json",
+    "cad/measure/verification-pipeline.md"
+  ],
+  "acceptance": [
+    "All 21 shared nominal-fit checks and all 24 specification checks must pass from an isolated copy of the sealed source.",
+    "Clockwise and counterclockwise hard-part reel cycles must each clear 73 samples; all four latch lead paths must clear; retained shell pullout must block separately.",
+    "The stand must implement the authored 112-degree endpoint, clear 57 arc samples, block both overtravel directions, and remain within the authored about-82-mm depth target.",
+    "Rigid and algebraic checks must not be represented as proof of elastic force, strain, detent feel, snap retention, tipping, strength, printed fit, or cycle life."
+  ]
+}

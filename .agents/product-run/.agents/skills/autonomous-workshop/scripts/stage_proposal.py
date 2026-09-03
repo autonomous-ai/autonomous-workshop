@@ -75,6 +75,12 @@ STAGE_FIELDS = {
 
 MATCH_PATH = "artifacts/match/assignment.json"
 INVENT_PATH = "artifacts/invent/invented.json"
+MAKE_REQUIRED_ROOT_FILES = (
+    "product.json",
+    "assembled.step",
+    "assembled.step.json",
+    "assembled.stl",
+)
 
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_STAGE_BYTES = 4 * 1024 * 1024
@@ -83,6 +89,7 @@ MAX_CONTRACT_BYTES = 16 * 1024 * 1024
 MAX_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
 MAX_RELEASE_MANUAL_BYTES = 16 * 1024 * 1024
 MAX_MANUAL_DESIGN_EVIDENCE_BYTES = 64 * 1024
+MAX_SIGNATURE_REVIEW_BYTES = 64 * 1024
 MAX_RELEASE_PDF_VALIDATOR_OUTPUT_BYTES = 4 * 1024
 RELEASE_PDF_VALIDATION_TIMEOUT_SECONDS = 15
 MAX_FILE_BYTES = 95 * 1024 * 1024
@@ -211,6 +218,8 @@ QUANTITY_HEDGE_RE = re.compile(
 VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
 MANUAL_DESIGN_EVIDENCE_PATH = "MANUAL-DESIGN.json"
 MANUAL_DESIGN_EVIDENCE_KIND = "autonomous-workshop.manual-design-evidence"
+SIGNATURE_REVIEW_PATH = "snap/SIGNATURE-REVIEW.json"
+SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
 MANUAL_VISUAL_SUFFIXES = frozenset(
     (".3mf", ".glb", ".jpeg", ".jpg", ".obj", ".png", ".step", ".stl", ".svg", ".webp")
 )
@@ -1739,51 +1748,292 @@ def _make_group(
     }
 
 def _validate_make_product_render(project: Path) -> None:
-    """Require one explicit, inspectable presentation render from Make.
+    """Require explicit hero and signature presentation renders from Make.
 
     Geometry comparison masks are intentionally grayscale.  Requiring a
-    chromatic RGB/RGBA image at the exact ``snap/iso.png`` path keeps those
-    diagnostic images from silently becoming the public product hero while
-    leaving creative composition and palette choices with the native agent.
+    chromatic RGB/RGBA hero plus a wider exact-product signature sheet keeps
+    those diagnostic images from silently becoming public product imagery while
+    leaving creative composition, poses, and palette with the native agent.
     """
-    render = project / "snap" / "iso.png"
+    specifications = (
+        (
+            "iso.png",
+            "product render",
+            800,
+            800,
+            "Make requires a product render at <cad-project>/snap/iso.png",
+        ),
+        (
+            "signature.png",
+            "signature render",
+            1200,
+            800,
+            "Make requires a signature render at <cad-project>/snap/signature.png",
+        ),
+    )
+    for filename, label, minimum_width, minimum_height, missing_message in specifications:
+        render = project / "snap" / filename
+        try:
+            identity = render.lstat()
+            resolved = render.resolve(strict=True)
+        except OSError as exc:
+            raise ProposalError(missing_message) from exc
+        if (
+            render != resolved
+            or render.is_symlink()
+            or not stat.S_ISREG(identity.st_mode)
+        ):
+            raise ProposalError("Make %s must be a real in-project file" % label)
+        try:
+            from PIL import Image
+
+            with Image.open(render) as image:
+                image.verify()
+            with Image.open(render) as image:
+                if image.format != "PNG":
+                    raise ProposalError("Make %s must be a PNG" % label)
+                width, height = image.size
+                if not (
+                    minimum_width <= width <= 4096
+                    and minimum_height <= height <= 4096
+                ):
+                    raise ProposalError(
+                        "Make %s must be between %dx%d and 4096x4096 pixels"
+                        % (label, minimum_width, minimum_height)
+                    )
+                if image.mode not in ("RGB", "RGBA"):
+                    raise ProposalError(
+                        "Make %s must be RGB/RGBA, not a diagnostic grayscale image"
+                        % label
+                    )
+                sampled = image.convert("RGB").resize((64, 64))
+                pixels = tuple(sampled.get_flattened_data())
+        except ProposalError:
+            raise
+        except Exception as exc:
+            raise ProposalError("Make %s is not a valid PNG" % label) from exc
+        chromatic = sum(max(pixel) - min(pixel) >= 10 for pixel in pixels)
+        if chromatic < 32 or len(set(pixels)) < 16:
+            raise ProposalError(
+                "Make %s must be a chromatic presentation image with useful tonal variation"
+                % label
+            )
+
+
+def _validate_signature_review(
+    run_root: Path,
+    *,
+    product_root_value: str,
+    cad_project_path: PurePosixPath,
+    concept_sha256: str,
+) -> None:
+    review_relative = (
+        PurePosixPath(product_root_value) / cad_project_path / SIGNATURE_REVIEW_PATH
+    )
+    review_path = run_root.joinpath(*review_relative.parts)
     try:
-        identity = render.lstat()
-        resolved = render.resolve(strict=True)
+        review_identity = review_path.lstat()
     except OSError as exc:
         raise ProposalError(
-            "Make requires a product render at <cad-project>/snap/iso.png"
+            "Make requires a signature review at <cad-project>/snap/SIGNATURE-REVIEW.json"
         ) from exc
-    if render != resolved or render.is_symlink() or not stat.S_ISREG(identity.st_mode):
-        raise ProposalError("Make product render must be a real in-project file")
-    try:
-        from PIL import Image
-
-        with Image.open(render) as image:
-            image.verify()
-        with Image.open(render) as image:
-            if image.format != "PNG":
-                raise ProposalError("Make product render must be a PNG")
-            width, height = image.size
-            if not (800 <= width <= 4096 and 800 <= height <= 4096):
-                raise ProposalError(
-                    "Make product render must be between 800 and 4096 pixels per side"
-                )
-            if image.mode not in ("RGB", "RGBA"):
-                raise ProposalError(
-                    "Make product render must be RGB/RGBA, not a diagnostic grayscale image"
-                )
-            sampled = image.convert("RGB").resize((64, 64))
-            pixels = tuple(sampled.getdata())
-    except ProposalError:
-        raise
-    except Exception as exc:
-        raise ProposalError("Make product render is not a valid PNG") from exc
-    chromatic = sum(max(pixel) - min(pixel) >= 10 for pixel in pixels)
-    if chromatic < 32 or len(set(pixels)) < 16:
-        raise ProposalError(
-            "Make product render must be a chromatic presentation image with useful tonal variation"
+    if review_path.is_symlink() or not stat.S_ISREG(review_identity.st_mode):
+        raise ProposalError("Make signature review must be a real in-project file")
+    review, content, _ = _read_json(
+        run_root,
+        review_relative.as_posix(),
+        "Make signature review",
+        maximum=MAX_SIGNATURE_REVIEW_BYTES,
+    )
+    review = _fields(
+        review,
+        {
+            "schema_version",
+            "kind",
+            "concept_sha256",
+            "iso_sha256",
+            "signature_sha256",
+            "reviewer",
+            "blind_held_read",
+            "blind_form_read",
+            "blind_subjects_read",
+            "blind_action_read",
+            "blind_relationship_read",
+            "anti_generic_signature_read",
+            "wish_revealed_after_blind_read",
+            "held_object_unmistakable",
+            "form_matches_wish",
+            "subjects_match_wish",
+            "action_matches_wish",
+            "relationship_matches_wish",
+            "anti_generic_signature_visible",
+            "signature_experience_unmistakable",
+            "finished_product_desirable",
+            "review_rounds",
+            "critical_form_requirements",
+            "blocking_visual_defects",
+            "print_preflight_sha256",
+            "largest_risk",
+            "resolution",
+        },
+        "Make signature review",
+    )
+    if (
+        type(review["schema_version"]) is not int
+        or review["schema_version"] != 6
+        or review["kind"] != SIGNATURE_REVIEW_KIND
+        or review["concept_sha256"] != concept_sha256
+    ):
+        raise ProposalError("Make signature review identity is invalid")
+    if content != canonical_json(review):
+        raise ProposalError("Make signature review must use canonical JSON encoding")
+    _bounded_text(review["reviewer"], "Make signature reviewer", 200)
+    _bounded_text(review["blind_held_read"], "Make blind held read", 1_000)
+    for field, label in (
+        ("blind_form_read", "Make blind form read"),
+        ("blind_subjects_read", "Make blind subjects read"),
+        ("blind_action_read", "Make blind action read"),
+        ("blind_relationship_read", "Make blind relationship read"),
+        ("anti_generic_signature_read", "Make anti-generic signature read"),
+    ):
+        _bounded_text(review[field], label, 1_000)
+    _bounded_text(review["largest_risk"], "Make signature largest_risk", 2_000)
+    _bounded_text(review["resolution"], "Make signature resolution", 2_000)
+    requirements = _array(
+        review["critical_form_requirements"],
+        "Make critical form requirements",
+        nonempty=True,
+    )
+    if len(requirements) > 16:
+        raise ProposalError("Make critical form requirements exceed the limit")
+    for index, raw_requirement in enumerate(requirements, 1):
+        requirement = _fields(
+            raw_requirement,
+            {"requirement", "blind_evidence", "matches"},
+            "Make critical form requirement %d" % index,
         )
+        _bounded_text(
+            requirement["requirement"],
+            "Make critical form requirement %d text" % index,
+            1_000,
+        )
+        _bounded_text(
+            requirement["blind_evidence"],
+            "Make critical form requirement %d evidence" % index,
+            1_000,
+        )
+        if requirement["matches"] is not True:
+            raise ProposalError(
+                "Make critical form requirement %d does not visibly match" % index
+            )
+    blockers = _array(
+        review["blocking_visual_defects"], "Make blocking visual defects"
+    )
+    if blockers:
+        raise ProposalError("Make signature review still has blocking visual defects")
+    expected_preflight = _sha256(
+        review["print_preflight_sha256"],
+        "Make signature review print_preflight_sha256",
+    )
+    preflight_relative = review_relative.parent.parent / "measure/print-preflight.md"
+    actual_preflight, _, _ = _hash_regular(
+        run_root,
+        preflight_relative.as_posix(),
+        "Make print preflight",
+    )
+    if actual_preflight != expected_preflight:
+        raise ProposalError(
+            "Make signature review is not bound to the passing print preflight"
+        )
+    preflight_bytes, _ = _read_regular(
+        run_root,
+        preflight_relative.as_posix(),
+        "Make print preflight",
+        maximum=1_000_000,
+    )
+    try:
+        preflight_text = preflight_bytes.decode("utf-8")
+    except UnicodeError as exc:
+        raise ProposalError("Make print preflight must be UTF-8 text") from exc
+    if (
+        not preflight_text.startswith("# Verification pipeline record\n")
+        or "- Mode: `print-preflight`\n" not in preflight_text
+        or "- Result: **PASS** (exit 0)\n" not in preflight_text
+        or "check_mesh" not in preflight_text
+        or "check_thickness" not in preflight_text
+        or "--nozzle 0.4" not in preflight_text
+    ):
+        raise ProposalError(
+            "Make print preflight must pass mesh and standard 0.4 mm thickness"
+        )
+    project_relative = PurePosixPath(product_root_value) / cad_project_path
+    project_path = run_root.joinpath(*project_relative.parts)
+    printable_names = sorted(
+        path.name.removesuffix(".step.py") + ".stl"
+        for path in project_path.glob("part_*.step.py")
+        if path.is_file() and not path.is_symlink()
+    )
+    preflight_lines = preflight_text.splitlines()
+    for printable_name in printable_names:
+        if not any(
+            "check_mesh" in line
+            and printable_name in line
+            and "| rc=0 |" in line
+            for line in preflight_lines
+        ) or not any(
+            "check_thickness" in line
+            and printable_name in line
+            and "--nozzle 0.4" in line
+            and "| rc=0 |" in line
+            for line in preflight_lines
+        ):
+            raise ProposalError(
+                "Make print preflight does not cover %s" % printable_name
+            )
+    for field, label in (
+        ("wish_revealed_after_blind_read", "Wish was revealed only after the blind read"),
+        ("held_object_unmistakable", "held object is unmistakable"),
+        ("form_matches_wish", "visible form matches the Wish and concept"),
+        ("subjects_match_wish", "blind subjects match the Wish"),
+        ("action_matches_wish", "blind action matches the Wish"),
+        (
+            "relationship_matches_wish",
+            "blind spatial relationship matches the Wish",
+        ),
+        (
+            "signature_experience_unmistakable",
+            "signature experience is unmistakable",
+        ),
+        (
+            "anti_generic_signature_visible",
+            "anti-generic signature is visible in the exact product",
+        ),
+        ("finished_product_desirable", "product looks finished and desirable"),
+    ):
+        if type(review[field]) is not bool or not review[field]:
+            raise ProposalError(
+                "Make signature review must confirm the final %s"
+                % label
+            )
+    if type(review["review_rounds"]) is not int or review["review_rounds"] not in (
+        1,
+        2,
+    ):
+        raise ProposalError("Make signature review must record one or two review rounds")
+    for filename, field in (
+        ("iso.png", "iso_sha256"),
+        ("signature.png", "signature_sha256"),
+    ):
+        expected = _sha256(review[field], "Make signature review %s" % field)
+        actual, _, _ = _hash_regular(
+            run_root,
+            (review_relative.parent / filename).as_posix(),
+            "Make reviewed %s" % filename,
+        )
+        if actual != expected:
+            raise ProposalError(
+                "Make signature review is not bound to the final %s" % filename
+            )
 
 
 def _make_contract(
@@ -1797,6 +2047,13 @@ def _make_contract(
     invented_value: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+    required_root_files = _array(
+        inputs.get("required_root_files"),
+        "Make required_root_files",
+        nonempty=True,
+    )
+    if tuple(required_root_files) != MAKE_REQUIRED_ROOT_FILES:
+        raise ProposalError("Make required_root_files contract is invalid")
     if assignment_value is None or invented_value is None:
         required = _required_fields(
             inputs, {"assignment", "invented"}, "Make STAGE inputs"
@@ -1826,10 +2083,31 @@ def _make_contract(
     ):
         raise ProposalError("CAD project path must be a real in-product directory")
     _prune_derived_cad_caches(project, "Make CAD project")
+    combined_entries = sorted(
+        path.name
+        for path in project.glob("*.step.py")
+        if not path.name.startswith("part_")
+    )
+    if len(combined_entries) != 1:
+        raise ProposalError(
+            "Make CAD project must contain exactly one non-part *.step.py "
+            "combined entry for the isolated host verifier; found %d (%s)"
+            % (len(combined_entries), ", ".join(combined_entries) or "none")
+        )
     _validate_make_product_render(project)
+    _validate_signature_review(
+        run_root,
+        product_root_value=product_root_value,
+        cad_project_path=project_relative,
+        concept_sha256=invented["concept_sha256"],
+    )
     verification_relative = _safe_relative(
         cad_verification_path, "CAD verification path"
     )
+    if verification_relative.parts[: len(project_relative.parts)] != project_relative.parts:
+        raise ProposalError(
+            "CAD verification must live inside the declared CAD project"
+        )
     product_document, product_bytes, _ = _read_json(
         run_root,
         "%s/product.json" % product_root_value,
@@ -1843,17 +2121,75 @@ def _make_contract(
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
         "CAD verification",
     )
+    verification_bytes, _ = _read_regular(
+        run_root,
+        "%s/%s" % (product_root_value, verification_relative.as_posix()),
+        "CAD verification",
+        maximum=1_000_000,
+    )
+    try:
+        verification_text = verification_bytes.decode("utf-8")
+    except UnicodeError as exc:
+        raise ProposalError("CAD verification must be UTF-8 text") from exc
+    current_record = verification_text.split(
+        "\n---\n\n## Previous pipeline record", 1
+    )[0]
+    if (
+        not current_record.startswith("# Verification pipeline record\n")
+        or "- Mode: `final`\n" not in current_record
+        or "- Result: **PASS** (exit 0)\n" not in current_record
+        or not any(
+            "check_thickness" in line and "| rc=0 |" in line
+            for line in current_record.splitlines()
+        )
+        or "--skip-thickness" in current_record
+    ):
+        raise ProposalError(
+            "CAD verification must be the current passing final full-tier report "
+            "with a successful thickness check"
+        )
     _prune_empty_directories(product_root, "Make product tree")
     manifest = _tree_manifest(run_root, product_root_value, "Make product tree")
     paths = {entry["path"] for entry in manifest["entries"]}
-    if "product.json" not in paths:
-        raise ProposalError("Make product manifest lacks product.json")
+    entries = {entry["path"]: entry for entry in manifest["entries"]}
+    missing_root_files = [path for path in required_root_files if path not in paths]
+    if missing_root_files:
+        raise ProposalError(
+            "Make product manifest lacks required root files: %s"
+            % ", ".join(missing_root_files)
+        )
+    empty_root_files = [
+        path for path in required_root_files if entries[path]["bytes"] == 0
+    ]
+    if empty_root_files:
+        raise ProposalError(
+            "Make required root files must not be empty: %s"
+            % ", ".join(empty_root_files)
+        )
     if verification_relative.as_posix() not in paths:
         raise ProposalError("Make product manifest lacks CAD verification")
     if not any(path.endswith(".step") for path in paths):
         raise ProposalError("Make product manifest lacks a STEP artifact")
     if not any(path.endswith(".stl") for path in paths):
         raise ProposalError("Make product manifest lacks a printable STL")
+    canonical_snap_paths = {
+        (project_relative / "snap" / filename).as_posix()
+        for filename in ("iso.png", "signature.png", "SIGNATURE-REVIEW.json")
+    }
+    duplicate_snap_paths = sorted(
+        path
+        for path in paths
+        if any(
+            path.endswith("snap/%s" % filename)
+            for filename in ("iso.png", "signature.png", "SIGNATURE-REVIEW.json")
+        )
+        and path not in canonical_snap_paths
+    )
+    if duplicate_snap_paths:
+        raise ProposalError(
+            "Make product contains a duplicate final snap family outside the "
+            "declared CAD project: %s" % ", ".join(duplicate_snap_paths)
+        )
     _validate_build_groups(invented["concept"], product_root)
     identity = {
         "schema_version": 1,

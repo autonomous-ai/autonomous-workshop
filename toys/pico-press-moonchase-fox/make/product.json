@@ -1,0 +1,15 @@
+{
+  "title": "Moonchase Fox",
+  "summary": "A palm-sized sleeping fox whose curled tail becomes a gentle rocking track, circling a real crescent window before settling upright.",
+  "product_id": "wish-20260830-054400-532b9f7d",
+  "interaction": "Nudge the fox lightly from either side and let the tail arc carry a short chase before gravity returns the crescent upright.",
+  "included_parts": 1,
+  "materials": ["Rigid FDM filament such as PLA or PETG"],
+  "assembly_required": false,
+  "support_material_required": false,
+  "electronics": false,
+  "limitations": [
+    "Digital checks do not prove real rocking duration, surface friction, durability, or print quality.",
+    "Use on a level, hard desk away from edges; this is not intended for young children."
+  ]
+}

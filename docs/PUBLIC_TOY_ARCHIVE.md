@@ -76,6 +76,20 @@ host-owned authenticated effect, not agent-authored Release evidence.
   `make/product/` (or the corresponding historical Make attempt). Release's
   exact `MANUAL.pdf` and `MANUAL-DESIGN.json` preserve the approved manual and
   its visual-review findings; unsealed scratch renders remain private work.
+  A legacy projection that omitted its Make render tree may separately carry
+  a root `renders/` copy of an already-public Factory hero. Its provenance file
+  records the public source and SHA-256 and labels it as recovered presentation
+  evidence, never as sealed Make evidence.
+- New Made snapshots include `iso.png` for the hero and `signature.png` for the
+  exact-product interaction, reveal, or anti-generic views. Both remain in the
+  toy rather than a shared render directory so later reviewers can study what
+  Make actually inspected. `SIGNATURE-REVIEW.json` sits beside them and binds
+  the final hashes and canonical concept, the critic's unprompted object, form,
+  subject, action, and relationship reads before the Wish was revealed, the
+  exact anti-generic and semantic comparison after reveal, bounded review-round
+  count, and recorded resolution. New runs seal
+  exactly one such final family under the declared CAD project; iteration
+  renders are not public artifacts.
 - The exact Wish is withheld by default. Publishing its text requires the
   caller to opt in explicitly; either form retains the exact Wish hash.
 - Agent prompts, transcripts, reasoning, session data, host state,

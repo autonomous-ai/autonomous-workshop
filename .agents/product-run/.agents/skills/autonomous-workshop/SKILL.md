@@ -27,8 +27,8 @@ skill is your workflow playbook, not a separate agent process.
    finalizing. Never resubmit unchanged rejected bytes.
 4. Read only the reference for the current stage:
    - Invent: [references/invent.md](references/invent.md)
-   - Make: [references/make-playtest.md](references/make-playtest.md)
-   - Playtest: [references/make-playtest.md](references/make-playtest.md)
+   - Make: [references/make.md](references/make.md)
+   - Playtest: [references/playtest.md](references/playtest.md)
    - Release:
      [references/release-deliver.md](references/release-deliver.md)
 5. Read [references/effects-and-recovery.md](references/effects-and-recovery.md)
@@ -36,6 +36,56 @@ skill is your workflow playbook, not a separate agent process.
 
 One Wish uses one native session. Continue or resume this exact session across
 stages; do not create stage-specific sessions or impersonate Python workers.
+
+## Spend cognition where it changes the product
+
+The successful run is not the run with the most research, commands, agents, or
+prose. Concentrate the native session on one memorable product promise and the
+few decisions and checks that make it real.
+
+- Read manifests and bounded summaries first. Do not recursively dump the
+  workspace, reopen every stable upstream source, or paste large logs into the
+  conversation. Open a detailed file only to answer a current design, repair,
+  claim, or gate question.
+- Batch independent reads, searches, renders, and checks in one native
+  code-mode action. Do not spend a new reasoning cycle on each file or command
+  when their inputs are already known and their results can be evaluated
+  together.
+- Use search and subagents only for a concrete uncertainty. For Spark, prefer
+  one selected Inventor delegation and the shortest complete build path; avoid
+  candidate fan-out after the signature interaction is chosen.
+- Establish a complete, inspectable baseline early. During iteration, rerun
+  only the narrow check affected by the edit. Run the integrated final suite
+  once after the product stabilizes, then finalize instead of repeating passed
+  work for reassurance.
+- At a new stage, trust sealed contracts and manifests. Do not redo an accepted
+  earlier Goal. Release must not rebuild Make or resurvey unrelated CAD source;
+  it reads the exact product facts, inventory, hero render, verification, and
+  only the specific geometry needed for truthful customer guidance.
+- Prefer one complete artifact followed by one evidence-driven revision over
+  many partial drafts. Save concise findings with the artifact; do not preserve
+  raw transcripts or internal reasoning.
+- For Spark, treat the low reasoning profile as a focus constraint rather than
+  a quality waiver: choose the signature interaction early, keep one complete
+  build on the critical path, batch independent tool work, and spend additional
+  cycles only on a concrete failing check or visible product defect.
+- For Forge and Quest, spend high reasoning where it changes the concept and
+  exact final product. Invent begins with a 20-minute high-reasoning turn and
+  receives one decisive 10-minute medium recovery when needed. Make begins
+  with one 16-minute medium proof runway and resumes the same Goal at high
+  reasoning as soon as its exact proof-ready marker exists. Later turns retain
+  30 minutes, and every stage compacts at 256k. These
+  boundaries and compacted context are focus constraints, not quality waivers. In Make, the
+  first persisted deliverable is the smallest exact causal or kinematic proof
+  plus neutral held/signature blockout renders under
+  `<cad-project>/review/early-proof/`. Inspect it before authoring the complete
+  part tree or detailed final geometry. Batch mandatory reads, author source as
+  the next durable action, and use root inspection for this cheap early
+  direction check. One independent native critic must still blindly review the
+  canonical final images before learning the Wish, then compare every exact
+  positive and negative held-form requirement. Self-review cannot pass that
+  final boundary. If the early proof is expensive or
+  ambiguous, simplify the mechanism while preserving the signature magic.
 
 ## Run one native Goal for the current stage
 
@@ -88,6 +138,13 @@ Quest select during Invent; Spark selects during Make. Use the exact selected
 Inventor agent. Its host-materialized instructions
 bind its exact source manifest, full Taste, and skill artifacts under
 `.agents/skills/`.
+
+Name the Wish's hardest-to-fake magic before ranking the roster: the perceptual
+reveal, motion, rule, transformation, or emotional moment whose loss would make
+the toy generic. Select the Inventor whose Taste and primary method own that
+magic. Do not choose a specialist merely because its usual fabrication method
+matches constraints such as one-piece or support-free printing; the shared
+domain skills can solve fabrication after creative ownership is correct.
 
 - “Inventor” is the Workshop name for a standard project-scoped Codex custom
   subagent, not a separate agent framework.

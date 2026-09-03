@@ -1,0 +1,9 @@
+{
+  "title": "Comet Pebble",
+  "summary": "A palm-size, one-piece skew-keel rattleback designed to turn a flick into a looping wobble and reveal a smiling star at rest.",
+  "interaction": "Flick or roll a long shoulder; the misaligned lower rail is designed to couple roll, pitch, and yaw before the pebble reaches its star-up landing sole.",
+  "materials": ["FDM-printable PLA or PETG"],
+  "included_parts": 1,
+  "status": "digitally-verified-print-ready",
+  "physical_validation": "not-run"
+}

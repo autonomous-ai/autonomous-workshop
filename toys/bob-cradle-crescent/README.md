@@ -1,5 +1,7 @@
 # Cradle Crescent
 
+![Cradle Crescent](renders/public-hero.png)
+
 Cradle Crescent is a palm-sized, one-piece crescent desk rocker with two choose-either horn tap pockets and an integral centered star; it is designed for a gentle lateral tap and a point-up rest cue.
 
 [View the verified public product page](https://www.autonomous.ai/factory/product/cradle-crescent)
@@ -19,7 +21,8 @@ This is a legacy snapshot, so it preserves the finished public bytes but not the
 
 | Measure | Value |
 |---|---|
-| Native Manager tokens | unavailable — this run predates token telemetry |
+| Native Manager input tokens | unavailable — this run predates split token telemetry |
+| Native Manager output tokens | unavailable — this run predates split token telemetry |
 | Wish to verified publication | unavailable — the archived snapshot has no trustworthy Wish-start timestamp |
 
 No dollar cost is inferred.
@@ -30,5 +33,6 @@ No dollar cost is inferred.
 - `MANUAL.pdf` — the exact sealed printable in-box manual.
 - `PUBLICATION.json` — sanitized public readback and byte identities.
 - `model/` — the exact public primary STL.
+- `renders/` — an archive-local copy of the already-public Factory hero image, with source provenance; it was recovered after this legacy workflow projection and is not represented as sealed Make evidence.
 
 This snapshot contains no private Wish, agent session, host state, credentials, raw receipt, or internal evidence tree. Publication is not proof of physical manufacture, fit, durability, or delivery.

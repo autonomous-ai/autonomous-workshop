@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "review_kind": "independent-review-with-manager-final-byte-reconciliation",
+  "concept_sha256": "e701b29dbee56d139b955362e78c7e9a63054e91f22193d8b7a3bec6a3e09a9a",
+  "reviewed_images": ["cad/snap/iso.png", "cad/snap/signature.png"],
+  "independent_review": {
+    "reviewer": "Helmholtz",
+    "rounds": 2,
+    "stable_findings": [
+      "Recognizable storm-cloud and lightning composition",
+      "Strong open arch and crisp bolt focal point",
+      "Coherent one-color holdable-object presentation"
+    ]
+  },
+  "host_rejection_repair": {
+    "authoritative_failure": "Minimum printable thickness failed on the prior proposal.",
+    "changed_geometry": [
+      "Converted the storm silhouette to common-depth relief geometry",
+      "Rebuilt the connector as a finite-width S ribbon with finite lands",
+      "Truncated and rounded acute lightning-bolt corners"
+    ],
+    "manager_exact_byte_inspection": "The regenerated ISO and three-state signature views preserve the reviewed storm silhouette, open cradle, visible lightning focal point, and rocker action read."
+  },
+  "remaining_caveat": "Rendered pose states do not prove physical rocking performance; no such claim is made.",
+  "manager_disposition": "Accepted the exact changed candidate for deterministic final verification."
+}

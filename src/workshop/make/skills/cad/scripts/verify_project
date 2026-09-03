@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a CAD project through a sequential quick or final workflow.
+"""Run a CAD project through a sequential preflight, quick, or final workflow.
 
 The runner removes orchestration overhead, not validation.  It batches explicit
 generation targets, runs inspect JSONL in one process, and keeps every geometry
@@ -7,6 +7,7 @@ consumer sequential so the single-request warm daemon never becomes a hidden
 queue.
 
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --quick
+    python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --print-preflight
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --dry-run
 
@@ -32,6 +33,13 @@ rows.  A gate missing from the record is indistinguishable from one that passed.
 Image-derived final verification requires an explicit power classification:
 pass `--powered` for any functional electrical load, which requires
 `measure/power.json`, or `--unpowered` when there is none.
+
+Print-preflight mode is the one cheap gate allowed before visual review. It
+generates every declared printable entry, runs strict bed fit, exports each
+STL, and checks every mesh and wall thickness using the same fixed 0.4 mm
+nozzle profile as the normal final gate. It writes
+`measure/print-preflight.md`; lowering the nozzle is refused rather than
+turning an ordinary-FDM failure into a local pass.
 """
 
 from __future__ import annotations
@@ -39,12 +47,14 @@ from __future__ import annotations
 import argparse
 import ast
 from datetime import datetime, timezone
+import errno
 import hashlib
 import json
 import os
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -66,6 +76,7 @@ DEFAULT_PREVIEW_TOLERANCE = 0.1
 LIKENESS_FLOOR = 0.90
 LIKENESS_STALL_STREAK = 3
 DEFAULT_BED = (220.0, 220.0, 220.0)
+PRINT_PREFLIGHT_NOZZLE = 0.4
 BED_DECLARATION = re.compile(
     r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)"
 )
@@ -77,6 +88,91 @@ MATING_ACTION = re.compile(
     r"attach|fasten|lock|bond|glue|feed|mate)\w*\b",
     re.IGNORECASE,
 )
+SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
+
+
+def _remove_generation_cache(cache: Path) -> None:
+    """Delete generated cache bytes while tolerating protected empty dirs.
+
+    The product-run sandbox permits generated-file cleanup but can refuse
+    ``rmdir`` for directories it protects. Fresh verification needs byte-free
+    state, not the absence of empty directory entries. Fall back only for that
+    narrow case; an undeletable file, symlink, or special entry still fails.
+    """
+
+    try:
+        shutil.rmtree(cache)
+        return
+    except OSError as exc:
+        if exc.errno not in (errno.EACCES, errno.EPERM):
+            raise
+        original = exc
+
+    if not cache.exists():
+        return
+    for current, directories, files in os.walk(cache, topdown=False, followlinks=False):
+        root = Path(current)
+        for name in files:
+            (root / name).unlink()
+        for name in directories:
+            child = root / name
+            if child.is_symlink():
+                child.unlink()
+                continue
+            try:
+                child.rmdir()
+            except OSError as exc:
+                if exc.errno == errno.ENOENT:
+                    continue
+                if exc.errno not in (errno.EACCES, errno.EPERM):
+                    raise
+        try:
+            root.rmdir()
+        except OSError as exc:
+            if exc.errno == errno.ENOENT:
+                continue
+            if exc.errno not in (errno.EACCES, errno.EPERM):
+                raise
+
+    if not cache.exists():
+        return
+    for current, directories, files in os.walk(cache, followlinks=False):
+        if files:
+            raise original
+        root = Path(current)
+        if any((root / name).is_symlink() for name in directories):
+            raise original
+SIGNATURE_REVIEW_RELATIVE = Path("snap/SIGNATURE-REVIEW.json")
+SIGNATURE_REVIEW_FIELDS = {
+    "schema_version",
+    "kind",
+    "concept_sha256",
+    "iso_sha256",
+    "signature_sha256",
+    "reviewer",
+    "blind_held_read",
+    "blind_form_read",
+    "blind_subjects_read",
+    "blind_action_read",
+    "blind_relationship_read",
+    "anti_generic_signature_read",
+    "wish_revealed_after_blind_read",
+    "held_object_unmistakable",
+    "form_matches_wish",
+    "subjects_match_wish",
+    "action_matches_wish",
+    "relationship_matches_wish",
+    "anti_generic_signature_visible",
+    "signature_experience_unmistakable",
+    "finished_product_desirable",
+    "review_rounds",
+    "critical_form_requirements",
+    "blocking_visual_defects",
+    "print_preflight_sha256",
+    "largest_risk",
+    "resolution",
+}
+SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _path_arg(path: Path, cwd: Path) -> str:
@@ -101,6 +197,175 @@ def _resolve_inside_project(raw: str | None, project: Path, cwd: Path) -> Path |
     except ValueError as exc:
         raise ValueError(f"path must stay inside {project}: {candidate}") from exc
     return candidate
+
+
+def _required_print_preflight(project: Path, printables: list[Path]) -> str:
+    """Require a passing standard-profile report for every printable entry."""
+
+    report_path = project / "measure" / "print-preflight.md"
+    try:
+        identity = report_path.lstat()
+        if report_path.is_symlink() or not stat.S_ISREG(identity.st_mode):
+            raise ValueError("print preflight must be one bounded regular file")
+        if identity.st_size > 1_000_000:
+            raise ValueError("print preflight must be one bounded regular file")
+        content = report_path.read_bytes()
+    except OSError as exc:
+        raise ValueError(
+            "final verification requires a passing measure/print-preflight.md "
+            "before visual review"
+        ) from exc
+    if len(content) != identity.st_size:
+        raise ValueError("print preflight must be one bounded regular file")
+    try:
+        text = content.decode("utf-8")
+    except UnicodeError as exc:
+        raise ValueError("print preflight must be UTF-8 text") from exc
+    if (
+        not text.startswith("# Verification pipeline record\n")
+        or "- Mode: `print-preflight`\n" not in text
+        or "- Result: **PASS** (exit 0)\n" not in text
+    ):
+        raise ValueError("print preflight is not a passing print-preflight record")
+    lines = text.splitlines()
+    for printable in printables:
+        stl_name = _stl_for_entry(printable).name
+        mesh_passed = any(
+            "check_mesh" in line and stl_name in line and "| rc=0 |" in line
+            for line in lines
+        )
+        thickness_passed = any(
+            "check_thickness" in line
+            and stl_name in line
+            and "--nozzle 0.4" in line
+            and "| rc=0 |" in line
+            for line in lines
+        )
+        if not mesh_passed or not thickness_passed:
+            raise ValueError(
+                "print preflight does not pass mesh and standard 0.4 mm thickness "
+                f"for {stl_name}"
+            )
+    return hashlib.sha256(content).hexdigest()
+
+
+def _required_signature_review(project: Path, printables: list[Path]) -> str:
+    """Bind the expensive final workflow to an already completed blind review."""
+
+    review_path = project / SIGNATURE_REVIEW_RELATIVE
+    try:
+        identity = review_path.lstat()
+        if review_path.is_symlink() or not stat.S_ISREG(identity.st_mode):
+            raise ValueError("signature review must be one bounded regular file")
+        if identity.st_size > 64 * 1024:
+            raise ValueError("signature review must be one bounded regular file")
+        content = review_path.read_bytes()
+    except OSError as exc:
+        raise ValueError(
+            "final verification requires snap/SIGNATURE-REVIEW.json before the "
+            "integrated CAD gate"
+        ) from exc
+    if len(content) != identity.st_size:
+        raise ValueError("signature review must be one bounded regular file")
+    try:
+        review = json.loads(content.decode("utf-8"))
+    except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError("signature review must be valid JSON") from exc
+    canonical = json.dumps(
+        review,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    if content != canonical or not isinstance(review, dict):
+        raise ValueError("signature review must use canonical JSON encoding")
+    if set(review) != SIGNATURE_REVIEW_FIELDS:
+        raise ValueError("signature review fields do not match schema 6")
+    if review.get("schema_version") != 6 or review.get("kind") != SIGNATURE_REVIEW_KIND:
+        raise ValueError("signature review identity is invalid")
+    preflight_sha256 = review.get("print_preflight_sha256")
+    if not isinstance(preflight_sha256, str) or not SHA256_TEXT.fullmatch(
+        preflight_sha256
+    ):
+        raise ValueError("signature review print preflight hash is invalid")
+    if preflight_sha256 != _required_print_preflight(project, printables):
+        raise ValueError("signature review is not bound to the passing print preflight")
+    for key in (
+        "reviewer",
+        "blind_held_read",
+        "blind_form_read",
+        "blind_subjects_read",
+        "blind_action_read",
+        "blind_relationship_read",
+        "anti_generic_signature_read",
+        "largest_risk",
+        "resolution",
+    ):
+        value = review.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"signature review {key} must be non-empty text")
+    for key in (
+        "wish_revealed_after_blind_read",
+        "held_object_unmistakable",
+        "form_matches_wish",
+        "subjects_match_wish",
+        "action_matches_wish",
+        "relationship_matches_wish",
+        "anti_generic_signature_visible",
+        "signature_experience_unmistakable",
+        "finished_product_desirable",
+    ):
+        if review.get(key) is not True:
+            raise ValueError(f"signature review must affirm {key}")
+    concept_sha256 = review.get("concept_sha256")
+    if not isinstance(concept_sha256, str) or not SHA256_TEXT.fullmatch(
+        concept_sha256
+    ):
+        raise ValueError("signature review concept_sha256 is invalid")
+    if type(review.get("review_rounds")) is not int or review.get(
+        "review_rounds"
+    ) not in (1, 2):
+        raise ValueError("signature review must record one or two review rounds")
+    requirements = review.get("critical_form_requirements")
+    if not isinstance(requirements, list) or not 1 <= len(requirements) <= 16:
+        raise ValueError("signature review must enumerate critical form requirements")
+    for requirement in requirements:
+        if not isinstance(requirement, dict) or set(requirement) != {
+            "requirement",
+            "blind_evidence",
+            "matches",
+        }:
+            raise ValueError("signature review critical form requirement is invalid")
+        for field in ("requirement", "blind_evidence"):
+            value = requirement.get(field)
+            if not isinstance(value, str) or not value.strip() or len(value) > 1000:
+                raise ValueError(
+                    f"signature review critical form requirement {field} is invalid"
+                )
+        if requirement.get("matches") is not True:
+            raise ValueError("signature review critical form requirement must match")
+    if review.get("blocking_visual_defects") != []:
+        raise ValueError("signature review still has blocking visual defects")
+    for filename, field in (("iso.png", "iso_sha256"), ("signature.png", "signature_sha256")):
+        expected = review.get(field)
+        if not isinstance(expected, str) or not SHA256_TEXT.fullmatch(expected):
+            raise ValueError(f"signature review {field} is invalid")
+        image_path = review_path.parent / filename
+        try:
+            image_identity = image_path.lstat()
+            if image_path.is_symlink() or not stat.S_ISREG(image_identity.st_mode):
+                raise ValueError(
+                    f"signature review snap/{filename} must be a regular file"
+                )
+            image_bytes = image_path.read_bytes()
+        except OSError as exc:
+            raise ValueError(f"signature review requires snap/{filename}") from exc
+        if len(image_bytes) != image_identity.st_size:
+            raise ValueError(f"signature review snap/{filename} must be a regular file")
+        if hashlib.sha256(image_bytes).hexdigest() != expected:
+            raise ValueError(f"signature review is stale for snap/{filename}")
+    return hashlib.sha256(content).hexdigest()
 
 
 def _discover_entries(project: Path, assembly_arg: str | None, cwd: Path) -> tuple[Path, list[Path]]:
@@ -689,6 +954,82 @@ def _quick(
     return 0
 
 
+def _print_preflight(
+    runner: Runner,
+    project: Path,
+    printables: list[Path],
+    *,
+    bed: tuple[float, float, float],
+) -> int:
+    """Prove every printable mesh at the fixed final manufacturing profile."""
+
+    printable_args = [_path_arg(path, runner.cwd) for path in printables]
+    if not _run_or_stop(
+        runner,
+        [sys.executable, SCRIPTS_DIR / "gen", *printable_args, "--write", "--json"],
+        warm=True,
+    ):
+        return 1
+    fit_args: list[str | Path] = [
+        sys.executable,
+        SCRIPTS_DIR / "check_fit",
+        _path_arg(project, runner.cwd),
+        "--bed",
+        str(bed[0]),
+        str(bed[1]),
+        "--strict",
+    ]
+    for printable in printables:
+        fit_args.extend(["--entry", _path_arg(printable, runner.cwd)])
+    if not _run_or_stop(runner, fit_args):
+        return 1
+    for printable in printables:
+        part_step = _step_for_entry(printable)
+        part_stl = _stl_for_entry(printable)
+        if not _run_or_stop(
+            runner,
+            [
+                sys.executable,
+                SCRIPTS_DIR / "export",
+                _path_arg(part_step, runner.cwd),
+                "--stl",
+                "--json",
+            ],
+            warm=True,
+        ):
+            return 1
+        if not _run_or_stop(
+            runner,
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_mesh",
+                _path_arg(part_stl, runner.cwd),
+                "--bed",
+                f"{bed[0]:g}x{bed[1]:g}x{bed[2]:g}",
+            ],
+        ):
+            return 1
+        role = printable.name.removesuffix(ENTRY_SUFFIX)
+        if role.startswith(PART_PREFIX):
+            role = role.removeprefix(PART_PREFIX)
+        if not _run_or_stop(
+            runner,
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_thickness",
+                _path_arg(part_stl, runner.cwd),
+                "--nozzle",
+                str(PRINT_PREFLIGHT_NOZZLE),
+                "--report",
+                _path_arg(
+                    project / "measure" / f"thickness-{role}.md", runner.cwd
+                ),
+            ],
+        ):
+            return 1
+    return 0
+
+
 def _final(
     runner: Runner,
     project: Path,
@@ -1007,10 +1348,80 @@ def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
     (project / "measure" / "check_spec.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
     (project / "measure" / "check_landmarks.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
     (project / "ref" / "hero.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    (project / "snap").mkdir()
     for rel, body in (extra or {}).items():
         target = project / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(body, encoding="utf-8")
+    iso = b"fixture iso"
+    signature = b"fixture signature"
+    (project / "snap" / "iso.png").write_bytes(iso)
+    (project / "snap" / "signature.png").write_bytes(signature)
+    printable_stems = [
+        "widget",
+        *sorted(
+            path.name.removesuffix(ENTRY_SUFFIX)
+            for path in project.glob(f"{PART_PREFIX}*{ENTRY_SUFFIX}")
+        ),
+    ]
+    preflight_rows = []
+    for index, stem in enumerate(printable_stems, 1):
+        preflight_rows.extend(
+            (
+                f"| {index * 2 - 1} | `check_mesh {stem}.stl` | rc=0 | 0.01 |",
+                f"| {index * 2} | `check_thickness {stem}.stl --nozzle 0.4` | rc=0 | 0.01 |",
+            )
+        )
+    preflight = (
+        "# Verification pipeline record\n\n"
+        "- Recorded: content-addressed\n"
+        "- Mode: `print-preflight`\n"
+        "- Result: **PASS** (exit 0)\n\n"
+        "| # | command | result | seconds |\n"
+        "|---:|---|---:|---:|\n"
+        + "\n".join(preflight_rows)
+        + "\n"
+    ).encode("utf-8")
+    (project / "measure" / "print-preflight.md").write_bytes(preflight)
+    review = {
+        "schema_version": 6,
+        "kind": SIGNATURE_REVIEW_KIND,
+        "concept_sha256": "0" * 64,
+        "iso_sha256": hashlib.sha256(iso).hexdigest(),
+        "signature_sha256": hashlib.sha256(signature).hexdigest(),
+        "reviewer": "fixture-critic",
+        "blind_held_read": "A fixture product.",
+        "blind_form_read": "A rounded volumetric fixture form.",
+        "blind_subjects_read": "A fixture and its exact parts.",
+        "blind_action_read": "The fixture changes state.",
+        "blind_relationship_read": "The parts align into the promised state.",
+        "anti_generic_signature_read": "A distinct rounded bridge.",
+        "wish_revealed_after_blind_read": True,
+        "held_object_unmistakable": True,
+        "form_matches_wish": True,
+        "subjects_match_wish": True,
+        "action_matches_wish": True,
+        "relationship_matches_wish": True,
+        "anti_generic_signature_visible": True,
+        "signature_experience_unmistakable": True,
+        "finished_product_desirable": True,
+        "review_rounds": 1,
+        "critical_form_requirements": [
+            {
+                "requirement": "The fixture must be rounded and volumetric.",
+                "blind_evidence": "The exact views show depth and rounded faces.",
+                "matches": True,
+            }
+        ],
+        "blocking_visual_defects": [],
+        "print_preflight_sha256": hashlib.sha256(preflight).hexdigest(),
+        "largest_risk": "Fixture risk.",
+        "resolution": "Fixture resolution.",
+    }
+    (project / SIGNATURE_REVIEW_RELATIVE).write_text(
+        json.dumps(review, sort_keys=True, separators=(",", ":")),
+        encoding="utf-8",
+    )
     return project
 
 
@@ -1344,6 +1755,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("project", help="project directory containing *.step.py entries")
     parser.add_argument("--assembly", help="combined entry; inferred when exactly one non-part entry exists")
     parser.add_argument("--quick", action="store_true", help="combined-entry preview generation only")
+    parser.add_argument("--print-preflight", action="store_true", help="before visual review: generate every printable, run strict fit, and check each mesh and 0.4 mm-nozzle wall thickness")
     parser.add_argument("--fresh", action="store_true", help="delete only this project's __cadgen__ cache before running")
     parser.add_argument("--exports", action="store_true", help="final mode: write assembly GLB and printable-entry STLs, then check each mesh and wall thickness")
     parser.add_argument("--strict-fit", action="store_true", help="final mode: promote check_fit advisory notes to failures")
@@ -1464,6 +1876,32 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--powered is a final-mode option and cannot be combined with --quick")
     if args.quick and args.unpowered:
         parser.error("--unpowered is a final-mode option and cannot be combined with --quick")
+    if args.print_preflight and args.quick:
+        parser.error("--print-preflight and --quick are mutually exclusive")
+    if args.print_preflight and any(
+        (
+            args.exports,
+            args.strict_fit,
+            args.strict_mount,
+            args.powered,
+            args.unpowered,
+            args.skip_thickness,
+            args.image_derived,
+            bool(args.likeness_ref),
+            bool(args.likeness_accept_mismatch),
+            bool(args.likeness_accept_regression),
+            bool(args.motion_manifest),
+        )
+    ):
+        parser.error(
+            "--print-preflight is a fixed cheap gate and cannot use final-only options"
+        )
+    if args.print_preflight and args.nozzle != PRINT_PREFLIGHT_NOZZLE:
+        parser.error("--print-preflight requires the fixed 0.4 mm nozzle profile")
+    if args.print_preflight and (args.report or args.no_report):
+        parser.error(
+            "--print-preflight always writes measure/print-preflight.md"
+        )
     if args.powered and args.unpowered:
         parser.error("--powered and --unpowered are mutually exclusive")
     if args.unpowered and not args.image_derived:
@@ -1482,6 +1920,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--skip-thickness only applies with --exports")
     if args.report and args.no_report:
         parser.error("--report and --no-report are mutually exclusive")
+    signature_review_sha256 = None
     try:
         assembly, parts = _discover_entries(project, args.assembly, cwd)
         printables = _printable_entries(assembly, parts)
@@ -1494,6 +1933,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (OSError, SyntaxError, ValueError) as exc:
         refuse(str(exc))
 
+    if not args.quick and not args.print_preflight and not args.dry_run:
+        try:
+            signature_review_sha256 = _required_signature_review(
+                project, printables
+            )
+        except ValueError as exc:
+            refuse(str(exc))
+
     labels = [label for label, _reference in likeness_refs]
     if len(labels) != len(set(labels)):
         refuse("--likeness-ref labels must be unique within one final run")
@@ -1504,6 +1951,64 @@ def main(argv: Sequence[str] | None = None) -> int:
             "are printable; logical entries set PRINTABLE = False and a combined "
             "one-piece print target sets PRINTABLE = True"
         )
+    if args.print_preflight and not printables:
+        refuse(
+            "--print-preflight requires at least one declared printable entry"
+        )
+
+    if args.print_preflight:
+        bed = args.bed or _declared_bed(project) or DEFAULT_BED
+        runner = Runner(cwd=cwd, dry_run=bool(args.dry_run), verbose=bool(args.verbose))
+        workflow_started = time.perf_counter()
+        result = runner.command(
+            [sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)]
+        )
+        cache = project / "__cadgen__"
+        if result == 0 and args.fresh and cache.exists():
+            print(f"[verify_project] delete cache {cache}", flush=True)
+            if args.dry_run:
+                runner.records.append(
+                    {
+                        "command": f"delete cache {cache}",
+                        "status": "planned",
+                        "seconds": 0.0,
+                    }
+                )
+            else:
+                cache_started = time.perf_counter()
+                _remove_generation_cache(cache)
+                runner.records.append(
+                    {
+                        "command": f"delete cache {cache}",
+                        "status": "rc=0",
+                        "seconds": time.perf_counter() - cache_started,
+                    }
+                )
+        if result == 0:
+            result = _print_preflight(
+                runner,
+                project,
+                printables,
+                bed=bed,
+            )
+        elapsed = time.perf_counter() - workflow_started
+        if not args.dry_run:
+            preflight_report = project / "measure" / "print-preflight.md"
+            _write_report(
+                preflight_report,
+                runner,
+                mode="print-preflight",
+                result=result,
+                elapsed=elapsed,
+                bed=bed,
+            )
+            print(f"[verify_project] wrote report {preflight_report}", flush=True)
+        print(
+            f"[verify_project] print-preflight workflow: rc={result} "
+            f"in {elapsed:.2f}s",
+            flush=True,
+        )
+        return result
 
     motion_manifest = explicit_motion
     if motion_manifest is None and (project / "measure" / "motion.json").is_file():
@@ -1628,6 +2133,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
     bed = args.bed or _declared_bed(project) or DEFAULT_BED
     runner = Runner(cwd=cwd, dry_run=bool(args.dry_run), verbose=bool(args.verbose))
+    if signature_review_sha256 is not None:
+        runner.note(
+            "signature review",
+            f"schema=6 sha256={signature_review_sha256}",
+        )
     workflow_started = time.perf_counter()
     result = runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)])
 
@@ -1640,7 +2150,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         else:
             cache_started = time.perf_counter()
-            shutil.rmtree(cache)
+            _remove_generation_cache(cache)
             runner.records.append(
                 {
                     "command": f"delete cache {cache}",

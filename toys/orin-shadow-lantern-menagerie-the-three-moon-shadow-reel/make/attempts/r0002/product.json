@@ -1,0 +1,19 @@
+{
+  "title": "Lantern Menagerie: The Three-Moon Shadow Reel",
+  "summary": "A palm-scale four-part moon gate whose captured hand wheel places connected positive rabbit, fox, and broad facial-disc owl occluders in an ordinary phone-flashlight beam. Round 2 adds a visible double-V rabbit home, 0.25 mm differential detent travel, printable snap lead-ins, two stand stops, and exact distance/alignment shadow evidence.",
+  "category": "hand-powered cast-shadow theatre",
+  "part_count": 4,
+  "materials": [
+    "Common rigid FFF filament; PLA or PETG candidates are not physically qualified in Make."
+  ],
+  "setup_design_band_mm": {
+    "phone_to_mask": [400, 500],
+    "mask_to_wall": [600, 900]
+  },
+  "limitations": [
+    "Digital geometry and projection checks do not prove a successful print, snap fit, detent feel, cycle life, child recognition, phone brightness, finite-emitter edge softness, or performance in a particular room.",
+    "The full transition is an intentional eclipse wipe of cropped and overlapping direct profiles; only the 0, 120, and 240 degree indexed states promise rabbit, fox, and owl.",
+    "The front-shell leaf detent is a compliant printed feature; rigid-body motion evidence excludes its intended contact and Playtest must verify it physically.",
+    "The snap entry and detent values are nominal source-derived geometry; digital checks do not prove elastic strain, insertion force, retention force, or repeated-cycle life."
+  ]
+}

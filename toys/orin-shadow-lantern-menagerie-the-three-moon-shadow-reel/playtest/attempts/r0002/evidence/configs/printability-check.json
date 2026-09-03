@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "check_id": "printability-check",
+  "product_artifact_sha256": "28e8a417d8ffe4e4c702c5eea1ca336dab843d950149ef768fc1f5d9da66787f",
+  "seed": 20260829,
+  "method": "Independent exact-STL mesh and bed review, standard 0.4 mm-nozzle wall replays for all four parts, and explicit requested-0.16 mm voxel rear-shell replay from an isolated work-area copy.",
+  "mesh_sha256": {
+    "front_shell": "05417964e8cf29613e23620e2526d5f8bf86962702c59241cef1b8bb27de376b",
+    "kickstand": "018a1b9d6e2e87e0374139efe30241a24807ac26a1910f266ce83e45b622ccff",
+    "rear_shell": "ea582d960736f93bcd1ec1b42e2ffbb1c2a4507e48514472bcc14db31ee7f3c4",
+    "shadow_reel": "b2e3557dca2e3f450b975b0767fdefdffc0e5173d6a5cf486304ae83afc7907c"
+  },
+  "bed_mm": [220, 220, 220],
+  "nozzle_mm": 0.4,
+  "minimum_wall_mm": 0.8,
+  "rear_requested_voxel_mm": 0.16,
+  "acceptance": [
+    "Every sealed STL must be one connected, watertight, manifold, positively wound shell that fits the declared bed.",
+    "The standard wall-thickness replay must pass for all four parts and the explicit fine rear-shell replay must pass the 0.8 mm threshold.",
+    "Support-free intent remains documentary unless backed by a slicer or physical print.",
+    "No successful print, fit, snap compliance, warping, strength, or cycle-life claim may be inferred."
+  ]
+}

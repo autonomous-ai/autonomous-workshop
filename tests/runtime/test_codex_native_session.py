@@ -22,6 +22,7 @@ from workshop.runtime.codex import (
     MAX_CODEX_EVENT_BYTES,
     MAX_CODEX_MESSAGE_BYTES,
     MAX_CODEX_STDERR_BYTES,
+    MINIMUM_CODEX_AUTO_COMPACT_VERSION,
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     CodexFinalizedWithoutTerminalError,
     CodexInvocationError,
@@ -296,17 +297,23 @@ class CodexNativeSessionTest(unittest.TestCase):
         model="gpt-5.6-sol",
         effort="high",
         binary=TEST_CODEX_BINARY,
-        timeout_seconds=30,
+        timeout_seconds=DEFAULT_CODEX_TIMEOUT_SECONDS,
+        auto_compact_token_limit=None,
     ):
         factory = FakePopenFactory(scripts)
         return (
             CodexNativeSessionLauncher(
                 model=model,
                 reasoning_effort=effort,
+                auto_compact_token_limit=auto_compact_token_limit,
                 binary=binary,
                 timeout_seconds=timeout_seconds,
                 popen_factory=factory,
-                cli_version="0.145.0",
+                cli_version=(
+                    "0.150.0"
+                    if auto_compact_token_limit is not None
+                    else "0.145.0"
+                ),
             ),
             factory,
         )
@@ -461,6 +468,9 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(call["env"]["TMPDIR"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TMP"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TEMP"], str(root / ".tmp"))
+            self.assertEqual(
+                call["env"]["XDG_CACHE_HOME"], str(root / ".cache")
+            )
             self.assertEqual(call["env"]["PYTHONHASHSEED"], "0")
             self.assertEqual(call["env"]["PYTHONDONTWRITEBYTECODE"], "1")
             self.assertEqual(call["env"]["PYTHONNOUSERSITE"], "1")
@@ -469,6 +479,9 @@ class CodexNativeSessionTest(unittest.TestCase):
                 str(Path(sys.executable).absolute()),
             )
             self.assertEqual(stat.S_IMODE((root / ".tmp").stat().st_mode), 0o700)
+            self.assertEqual(
+                stat.S_IMODE((root / ".cache").stat().st_mode), 0o700
+            )
             self.assertNotIn(str(state_root), command)
             self.assertEqual(call["env"]["OPENAI_API_KEY"], "codex-auth")
             self.assertNotIn("FACTORY_PASSWORD", call["env"])
@@ -567,17 +580,58 @@ class CodexNativeSessionTest(unittest.TestCase):
                     }
                 )
             )
+            base_only = self.start_events(terminal=False)
+            base_only.append(
+                event(
+                    {
+                        "type": "turn.completed",
+                        "usage": {
+                            "input_tokens": 42,
+                            "output_tokens": 7,
+                        },
+                    }
+                )
+            )
             launcher, unused_factory = self.launcher(
-                [{"stdout": completed}, {"stdout": malformed}]
+                [
+                    {"stdout": completed},
+                    {"stdout": malformed},
+                    {"stdout": base_only},
+                ]
             )
 
             started = self.start(launcher, root)
-            resumed = self.resume(launcher, root)
+            malformed_outcome = self.resume(launcher, root)
+            base_only_outcome = self.resume(launcher, root)
 
-            self.assertEqual(started.token_count, 11_554)
-            self.assertEqual(started.to_dict()["token_count"], 11_554)
-            self.assertIsNone(resumed.token_count)
-            self.assertNotIn("token_count", resumed.to_dict())
+            self.assertEqual(started.input_tokens, 11_288)
+            self.assertEqual(started.cached_input_tokens, 8_960)
+            self.assertEqual(started.cache_write_input_tokens, 0)
+            self.assertEqual(started.output_tokens, 266)
+            self.assertEqual(started.reasoning_output_tokens, 255)
+            self.assertEqual(started.to_dict()["input_tokens"], 11_288)
+            self.assertEqual(started.to_dict()["cached_input_tokens"], 8_960)
+            self.assertEqual(started.to_dict()["cache_write_input_tokens"], 0)
+            self.assertEqual(started.to_dict()["output_tokens"], 266)
+            self.assertEqual(started.to_dict()["reasoning_output_tokens"], 255)
+            self.assertIsNone(malformed_outcome.input_tokens)
+            self.assertIsNone(malformed_outcome.cached_input_tokens)
+            self.assertIsNone(malformed_outcome.cache_write_input_tokens)
+            self.assertIsNone(malformed_outcome.output_tokens)
+            self.assertIsNone(malformed_outcome.reasoning_output_tokens)
+            self.assertEqual(base_only_outcome.input_tokens, 42)
+            self.assertEqual(base_only_outcome.output_tokens, 7)
+            self.assertIsNone(base_only_outcome.cached_input_tokens)
+            self.assertIsNone(base_only_outcome.cache_write_input_tokens)
+            self.assertIsNone(base_only_outcome.reasoning_output_tokens)
+            self.assertNotIn("input_tokens", malformed_outcome.to_dict())
+            self.assertNotIn("cached_input_tokens", malformed_outcome.to_dict())
+            self.assertNotIn("output_tokens", malformed_outcome.to_dict())
+            self.assertEqual(base_only_outcome.to_dict()["input_tokens"], 42)
+            self.assertEqual(base_only_outcome.to_dict()["output_tokens"], 7)
+            self.assertNotIn(
+                "cached_input_tokens", base_only_outcome.to_dict()
+            )
 
     def test_permission_profile_trusts_only_the_exact_codex_helper_executable(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1027,6 +1081,61 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
             self.assertNotIn(THREAD_ID, json.dumps(resumed.to_dict()))
 
+    def test_resume_accepts_exact_private_cache_policy_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            started = self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
+            predecessor_policy = codex_runtime._run_policy_before_private_cache(
+                root,
+                current_policy,
+            )
+            payload["runtime_config_sha256"] = codex_runtime._runtime_config_sha256(
+                launcher.cli_version,
+                launcher.model,
+                launcher.reasoning_effort,
+                predecessor_policy,
+            )
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            resumed = self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 2)
+            self.assertEqual(
+                factory.calls[1][1]["env"]["XDG_CACHE_HOME"],
+                str(root / ".cache"),
+            )
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+            self.assertEqual(
+                resumed.binding.checkpoint_sha256,
+                payload["checkpoint_sha256"],
+            )
+
     def test_resume_accepts_only_the_exact_workshop_python_policy_predecessor(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1044,12 +1153,18 @@ class CodexNativeSessionTest(unittest.TestCase):
                 root,
                 launcher.binary,
             )
-            historical_policy = (
-                codex_runtime._run_policy_before_venv_launcher_directory(
+            policy_before_private_cache = (
+                codex_runtime._run_policy_before_private_cache(
                     root,
                     current_policy,
                 )
-                or current_policy
+            )
+            historical_policy = (
+                codex_runtime._run_policy_before_venv_launcher_directory(
+                    root,
+                    policy_before_private_cache,
+                )
+                or policy_before_private_cache
             )
             predecessor_policy = (
                 codex_runtime._run_policy_before_workshop_python(
@@ -1145,10 +1260,16 @@ class CodexNativeSessionTest(unittest.TestCase):
                     str(launcher_path),
                 )
 
+                policy_before_private_cache = (
+                    codex_runtime._run_policy_before_private_cache(
+                        root,
+                        current_policy,
+                    )
+                )
                 predecessor_policy = (
                     codex_runtime._run_policy_before_venv_launcher_directory(
                         root,
-                        current_policy,
+                        policy_before_private_cache,
                     )
                 )
                 self.assertIsNotNone(predecessor_policy)
@@ -1303,12 +1424,18 @@ class CodexNativeSessionTest(unittest.TestCase):
                 root,
                 launcher.binary,
             )
-            historical_policy = (
-                codex_runtime._run_policy_before_venv_launcher_directory(
+            policy_before_private_cache = (
+                codex_runtime._run_policy_before_private_cache(
                     root,
                     current_policy,
                 )
-                or current_policy
+            )
+            historical_policy = (
+                codex_runtime._run_policy_before_venv_launcher_directory(
+                    root,
+                    policy_before_private_cache,
+                )
+                or policy_before_private_cache
             )
             predecessor_policy = (
                 codex_runtime._run_policy_before_codex_fs_helper(
@@ -1418,6 +1545,21 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             with self.assertRaisesRegex(
                 CodexInvocationError, "temp directory must be a real 0700"
+            ):
+                self.start(launcher, root)
+            self.assertEqual(factory.calls, [])
+
+    def test_rejects_product_cache_symlink_before_launch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            outside = root.parent / "outside-cache"
+            outside.mkdir()
+            (root / ".cache").symlink_to(outside, target_is_directory=True)
+            launcher, factory = self.launcher([{"stdout": self.start_events()}])
+
+            with self.assertRaisesRegex(
+                CodexInvocationError, "cache directory must be a real 0700"
             ):
                 self.start(launcher, root)
             self.assertEqual(factory.calls, [])
@@ -1769,6 +1911,182 @@ class CodexNativeSessionTest(unittest.TestCase):
         self.assertFalse(codex_supports_native_workshop("0.144.9"))
         self.assertTrue(codex_supports_native_workshop("0.145.0"))
 
+    def test_auto_compaction_is_bound_and_passed_to_start_and_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed compactly")},
+                ],
+                auto_compact_token_limit=64_000,
+            )
+
+            started = self.start(launcher, root)
+            resumed = self.resume(launcher, root)
+
+            expected = "model_auto_compact_token_limit=64000"
+            self.assertIn(expected, factory.calls[0][0])
+            self.assertIn(expected, factory.calls[1][0])
+            self.assertEqual(
+                started.binding.runtime_config_sha256,
+                resumed.binding.runtime_config_sha256,
+            )
+
+    def test_compaction_policy_drift_fails_closed_before_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            factory = FakePopenFactory(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="must not launch")},
+                ]
+            )
+            original = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                auto_compact_token_limit=64_000,
+            )
+            changed = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                auto_compact_token_limit=48_000,
+            )
+
+            self.start(original, root)
+            with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                self.resume(changed, root)
+            self.assertEqual(len(factory.calls), 1)
+
+    def test_frozen_runtime_profile_allows_bound_stage_turn_policy_changes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            factory = FakePopenFactory(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="made at medium")},
+                ]
+            )
+            profile_sha256 = "a" * 64
+            invent = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                reasoning_effort="high",
+                auto_compact_token_limit=24_000,
+                timeout_seconds=1_800,
+                runtime_profile_sha256=profile_sha256,
+            )
+            make = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                reasoning_effort="medium",
+                auto_compact_token_limit=24_000,
+                timeout_seconds=720,
+                runtime_profile_sha256=profile_sha256,
+            )
+
+            started = self.start(invent, root)
+            resumed = self.resume(make, root)
+
+            self.assertEqual(
+                started.binding.runtime_config_sha256,
+                resumed.binding.runtime_config_sha256,
+            )
+            self.assertIn('model_reasoning_effort="high"', factory.calls[0][0])
+            self.assertIn('model_reasoning_effort="medium"', factory.calls[1][0])
+
+    def test_frozen_runtime_profile_identity_drift_fails_before_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            factory = FakePopenFactory(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="must not launch")},
+                ]
+            )
+            original = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                runtime_profile_sha256="a" * 64,
+            )
+            changed = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                runtime_profile_sha256="b" * 64,
+            )
+
+            self.start(original, root)
+            with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                self.resume(changed, root)
+            self.assertEqual(len(factory.calls), 1)
+
+    def test_shortened_timeout_is_bound_and_drift_fails_before_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            factory = FakePopenFactory(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="must not launch")},
+                ]
+            )
+            original = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                auto_compact_token_limit=64_000,
+                timeout_seconds=1_200,
+            )
+            changed = CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                popen_factory=factory,
+                cli_version="0.150.0",
+                auto_compact_token_limit=64_000,
+                timeout_seconds=900,
+            )
+
+            started = self.start(original, root)
+            expected = codex_runtime._runtime_config_sha256(
+                original.cli_version,
+                original.model,
+                original.reasoning_effort,
+                codex_runtime._codex_run_policy(root, original.binary),
+                auto_compact_token_limit=64_000,
+                timeout_seconds=1_200,
+            )
+            self.assertEqual(started.binding.runtime_config_sha256, expected)
+            with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                self.resume(changed, root)
+            self.assertEqual(len(factory.calls), 1)
+
+    def test_auto_compaction_requires_supported_codex_and_bounded_limit(self):
+        self.assertEqual(MINIMUM_CODEX_AUTO_COMPACT_VERSION, (0, 150, 0))
+        with self.assertRaisesRegex(CodexInvocationError, "0.150.0 or newer"):
+            CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                cli_version="0.149.9",
+                auto_compact_token_limit=64_000,
+            )
+        for invalid in (True, 15_999, 1_000_001):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(
+                ValueError, "16,000 to 1,000,000"
+            ):
+                CodexNativeSessionLauncher(
+                    binary=TEST_CODEX_BINARY,
+                    cli_version="0.150.0",
+                    auto_compact_token_limit=invalid,
+                )
+
     def test_native_turn_defaults_to_the_maximum_supported_hour(self):
         self.assertEqual(DEFAULT_CODEX_TIMEOUT_SECONDS, 3_600)
         launcher = CodexNativeSessionLauncher(
@@ -1892,44 +2210,45 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             self.assertTrue(factory.processes[0].terminated)
 
-    def test_new_finalization_marker_reaps_missing_terminal_and_returns_to_host(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve() / "run"
-            root.mkdir()
-            marker = root / "agent-outcome.json"
+    def test_new_trusted_turn_markers_reap_missing_terminal_and_return_to_host(self):
+        for marker_name in ("agent-outcome.json", ".make-proof-ready.json"):
+            with self.subTest(marker_name=marker_name), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                marker = root / marker_name
 
-            def finalize():
-                marker.write_text("{}\n", encoding="utf-8")
+                def finalize():
+                    marker.write_text("{}\n", encoding="utf-8")
 
-            launcher, factory = self.launcher(
-                [
-                    {
-                        "stdout": self.start_events(terminal=False),
-                        "stdout_callbacks": {2: finalize},
-                        "block_stdout_after_values": True,
-                        "hang_until_terminated": True,
-                    }
-                ]
-            )
-
-            with mock.patch.object(
-                codex_runtime,
-                "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
-                0.05,
-            ), mock.patch.object(
-                codex_runtime,
-                "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
-                0.005,
-            ):
-                outcome = self.start(
-                    launcher,
-                    root,
-                    finalization_marker=marker,
+                launcher, factory = self.launcher(
+                    [
+                        {
+                            "stdout": self.start_events(terminal=False),
+                            "stdout_callbacks": {2: finalize},
+                            "block_stdout_after_values": True,
+                            "hang_until_terminated": True,
+                        }
+                    ]
                 )
 
-            self.assertEqual(outcome.status, "completed")
-            self.assertTrue(marker.is_file())
-            self.assertTrue(factory.processes[0].terminated)
+                with mock.patch.object(
+                    codex_runtime,
+                    "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
+                    0.05,
+                ), mock.patch.object(
+                    codex_runtime,
+                    "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
+                    0.005,
+                ):
+                    outcome = self.start(
+                        launcher,
+                        root,
+                        finalization_marker=marker,
+                    )
+
+                self.assertEqual(outcome.status, "completed")
+                self.assertTrue(marker.is_file())
+                self.assertTrue(factory.processes[0].terminated)
 
     def test_finalization_marker_fail_open_cannot_extend_turn_timeout(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -2165,7 +2484,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
             with self.assertRaisesRegex(
                 ContractError,
-                "exact in-run agent-outcome.json",
+                "exact trusted in-run path",
             ):
                 self.start(
                     launcher,

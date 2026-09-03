@@ -9,7 +9,11 @@ cache. Every writer renames atomically, so a killed build leaves `__cadgen__/`
 holding a mix of new and old files that are each individually complete: exactly
 the staleness `step-generation.md` describes under "Shared-library cache
 defect", and every deterministic check will agree with it. So after killing a
-build, `rm -rf <project-dir>/__cadgen__` before the retry.
+build outside a restricted product run, clear only that project's `__cadgen__`
+before the retry. Inside a Workshop product run, do not delete protected cache
+directories: regenerate every affected target explicitly with `scripts/gen
+<targets...> --write --force`, then use the non-`--fresh` iterative preflight.
+The trusted host performs the authoritative isolated fresh rebuild.
 
 ## What a run actually costs
 

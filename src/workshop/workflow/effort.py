@@ -18,6 +18,72 @@ from workshop.errors import ContractError
 EFFORT_ROUTE_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/effort-routes-v1.md"
 )
+SPARK_ECONOMICS_V1_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/spark-economics-v1.md"
+)
+SPARK_ECONOMICS_V2_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/spark-economics-v2.md"
+)
+SPARK_ECONOMICS_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/spark-economics-v3.md"
+)
+DEEP_ECONOMICS_V1_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v1.md"
+)
+DEEP_ECONOMICS_V2_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v2.md"
+)
+DEEP_ECONOMICS_V3_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v3.md"
+)
+DEEP_ECONOMICS_V4_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v4.md"
+)
+DEEP_ECONOMICS_V5_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v5.md"
+)
+DEEP_ECONOMICS_V6_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v6.md"
+)
+DEEP_ECONOMICS_V7_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v7.md"
+)
+DEEP_ECONOMICS_V8_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v8.md"
+)
+DEEP_ECONOMICS_V9_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v9.md"
+)
+DEEP_ECONOMICS_V10_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v10.md"
+)
+DEEP_ECONOMICS_V11_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v11.md"
+)
+DEEP_ECONOMICS_V12_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v12.md"
+)
+DEEP_ECONOMICS_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v13.md"
+)
+SPARK_AUTO_COMPACT_TOKEN_LIMIT = 64_000
+SPARK_NATIVE_TURN_TIMEOUT_SECONDS = 20 * 60
+DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT = 32_000
+DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT = 24_000
+DEEP_AUTO_COMPACT_TOKEN_LIMIT = 256_000
+DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT = 16_000
+DEEP_NATIVE_TURN_TIMEOUT_SECONDS = 30 * 60
+DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS = 12 * 60
+DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS = 20 * 60
+DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS = 10 * 60
+DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS = 8 * 60
+DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS = 16 * 60
+DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS = 15 * 60
+DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS = 15 * 60
+DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS = 15 * 60
+DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS = 15 * 60
+DEEP_V1_NATIVE_TURN_LIMIT = 8
+DEEP_NATIVE_TURN_LIMIT = 8
 DEFAULT_WORKSHOP_EFFORT = "spark"
 _CANONICAL_OPTIONAL_SEQUENCE = ("invent", "make", "playtest", "release")
 
@@ -122,7 +188,41 @@ def workshop_effort(value: Any) -> WorkshopEffort:
 
 __all__ = [
     "DEFAULT_WORKSHOP_EFFORT",
+    "DEEP_AUTO_COMPACT_TOKEN_LIMIT",
+    "DEEP_ECONOMICS_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V1_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V2_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V3_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V4_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V5_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V6_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V7_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V8_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V9_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V10_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V11_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V12_CAPABILITY_PATH",
+    "DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS",
+    "DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT",
+    "DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT",
+    "DEEP_NATIVE_TURN_LIMIT",
+    "DEEP_NATIVE_TURN_TIMEOUT_SECONDS",
+    "DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT",
+    "DEEP_V1_NATIVE_TURN_LIMIT",
+    "DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS",
+    "DEEP_V5_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS",
+    "DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS",
+    "DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS",
+    "DEEP_V10_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS",
+    "DEEP_V11_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS",
+    "DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS",
+    "DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS",
     "EFFORT_ROUTE_CAPABILITY_PATH",
+    "SPARK_AUTO_COMPACT_TOKEN_LIMIT",
+    "SPARK_ECONOMICS_CAPABILITY_PATH",
+    "SPARK_ECONOMICS_V1_CAPABILITY_PATH",
+    "SPARK_ECONOMICS_V2_CAPABILITY_PATH",
+    "SPARK_NATIVE_TURN_TIMEOUT_SECONDS",
     "WORKSHOP_EFFORTS",
     "WorkshopEffort",
     "workshop_effort",

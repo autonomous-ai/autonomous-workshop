@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "check_id": "mechanical-check",
+  "product_artifact_sha256": "3c7abf41a4aed6005216e14ad42c5c027e7560ff8cd887f3c991917141d1f7cd",
+  "seed": 20260829,
+  "method": "Independent source and sealed-evidence audit plus replay of the project fit audit and declared 29-step stand/73-step reel rigid-body motion checks from a work-area copy.",
+  "inspection_targets": [
+    "cad/lantern_menagerie_lib.py",
+    "cad/measure/check_fit.py",
+    "cad/measure/motion.json",
+    "cad/measure/verification-pipeline.md",
+    "assembled.step.json"
+  ],
+  "acceptance": [
+    "Both declared joint sweeps must pass at their sealed sample counts.",
+    "Rabbit home must be geometrically unique and capable of different detent travel from fox and owl.",
+    "Shell hooks must have a modeled insertion lead-in and auditable closure path before containment is claimed.",
+    "Digital checks must not be represented as proof of snap force, retention, tipping, pinch safety, strength, or cycle life."
+  ]
+}

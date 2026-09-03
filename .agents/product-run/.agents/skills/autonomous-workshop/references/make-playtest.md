@@ -42,6 +42,17 @@ with exactly `selected_inventor_id`, roster-covering `ranking`, `concept`, and
 `research`. The Make finalizer seals those bindings together with the Made
 contract, so Spark still has exact creative provenance without another turn.
 
+For Spark, scan the roster's bounded agent descriptions in one pass, rank the
+complete roster, and open the full Taste and skill bundle only for the selected
+Inventor. First name the hardest-to-fake magic: the perception, motion, rule,
+transformation, or emotional moment whose loss would make the Wish generic.
+Select the Inventor whose Taste owns that magic, not merely the specialist whose
+usual fabrication method matches one-piece, support-free, or similar
+constraints. Shared domain skills solve fabrication after creative ownership
+is correct. Define one signature interaction and one anti-generic visual or
+mechanical signature before CAD. A compact toy with one extraordinary moment
+is stronger than a feature list whose parts receive shallow treatment.
+
 While pursuing the Goal:
 
 1. **Observe:** Inspect the sealed Invent concept and research, the selected
@@ -83,6 +94,82 @@ before progressing. Once required checks and direct inspection pass, prioritize
 the finalizer over optional additional exploration. A recovery turn after a
 host timeout must inspect and reuse existing product bytes rather than restart
 the design or repeat completed subagent work.
+
+Use one deliberate verification funnel. During source edits, build the smallest
+entry that exposes the changed relationship and run only its relevant narrow
+check. As soon as plausible exact draft geometry exists, run
+`verify_project <cad-project> --print-preflight`. This fixed cheap gate
+generates **every declared printable part**, runs strict bed fit, exports every
+STL, and checks every mesh and wall thickness at the same standard 0.4 mm
+nozzle profile used by the final gate. Do not substitute an assembly-only STL,
+omit a printable, invoke `check_thickness` with a smaller nozzle, or weaken a
+threshold to manufacture a pass. Repair and regenerate until the canonical
+`measure/print-preflight.md` passes. Then render the candidate and perform the blind
+signature review below **before** the expensive integrated final verifier.
+Resolve at most one largest visual defect coherently, rebuild, rerun those two
+narrow artifact checks, and rerender the exact final candidate; then batch
+exports and run the integrated final verifier once. A full verifier must not be
+used as the inner visual-design loop. Do not repeatedly run it or regenerate
+unchanged exports between small edits.
+
+The native product-run sandbox owns source and generated files but may protect
+empty generated-cache directories from removal. Do not manually delete
+`__cadgen__` or add `--fresh` to the iterative preflight. Source-closure checks
+regenerate changed entries; the trusted host alone performs the authoritative
+isolated `--fresh --exports --strict-fit` rebuild after the proposal. Generate
+STEP with `scripts/gen <targets...> --write`; `scripts/gen` has no `--stl`
+option. Export mesh formats from the fresh STEP with
+`scripts/export <target.step> --stl`.
+
+For Forge and Quest, begin Make by proving the Invented concept's hardest
+causal or kinematic relationship with the smallest exact geometry that can
+falsify it. Do not detail every part first. If the proof fails, repair the
+minimal relationship or use the evidence-bound Make-to-Invent route when the
+sealed concept itself is impossible; do not bury the failure under added parts
+or decorative geometry. Once it passes, reuse that exact source and expand only
+the parts required for the signature experience.
+
+For a run with `deep-economics-v2.md`, `deep-economics-v3.md`, or
+`deep-economics-v4.md`, this is the first persisted Make
+deliverable. Save the exact causal/kinematic result, a concise finding, and the
+neutral held/signature blockout renders inside the declared CAD project at
+`review/early-proof/` before writing the complete part tree. The proof may use
+one minimal helper/source path and rough geometry, but it must exercise the
+actual defining relationship and actual planned outer form. Inspect it now;
+do not create a retrospective proof after the final product. Reuse its
+parameters and source when expanding the passing design, and keep the entire
+directory in the final product snapshot.
+
+For `deep-economics-v4.md`, self-review cannot pass the held/signature proof.
+Use one bounded independent native visual critic. First show it only the exact
+blockout images and record its unprompted object, volumetric form, control,
+action, and relationship read. Then reveal the Wish and sealed concept and
+compare every positive and negative held-form requirement. A generic,
+plaque-like, board-like, box-like, container-like, or exposed-mechanism reading
+fails. Repair and rerender once at most before expanding the final part tree.
+Bind the reviewed image hashes in the early-proof report and preserve it.
+
+Prove the held form just as early as the mechanism. Before detailed parts,
+create the cheapest exact volumetric blockout that shows the required held view
+and signature view, render both, and inspect their actual pixels without the
+product name or Wish. The blockout must already read as the named object and
+show the promised view-specific relationship. A blob attached to a board, a
+flat plaque standing in for a volumetric body, floating presentation pieces,
+or a silhouette recognizable only from explanatory copy fails this falsifier.
+Repair or simplify it before spending on detail, exports, or the full assembly.
+
+Keep exactly one non-part `*.step.py` combined entry in the declared CAD
+project. The isolated host verifier infers that entry and cannot accept an
+agent-only `--assembly` choice. Put presentation, signature, state, or other
+auxiliary generators in ordinary helper modules and call them from the sole
+combined entry; `part_*.step.py` remains reserved for part entries.
+
+For Spark, the compact Invented packet is still subordinate to the exact Wish.
+Do not rewrite a Wish-critical positive or negative form constraint to describe
+whatever geometry happened to pass CAD. If a repair changes the construction
+family—for example, a fully rounded body becomes a constant-depth relief—the
+candidate no longer matches and must be repaired rather than normalized in the
+concept prose.
 
 If a concrete operator or environment condition makes safe Make progress
 impossible, use the main skill's `need` finalizer for the current `make` stage
@@ -158,6 +245,15 @@ outputs, and deterministic CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions.
 
+The `--cad-project-path` value is the self-contained project the trusted host
+will copy into isolation and rebuild. Put its combined generator/import entry,
+local helper source, `snap/` family, and final `measure/verification-pipeline.md`
+inside that exact directory. Root-level assembled STEP/STL files are delivery
+copies, not a substitute for a build entry inside the declared project. Run the
+final verifier against that exact directory, and pass its in-project report as
+`--cad-verification-path`; the finalizer rejects a report outside the declared
+project before the host spends another isolated verification.
+
 Keep stable exported STEP/STL/GLB files, product PNG renders, source, and
 measurements in the product tree. Do not preserve `__cadgen__` runtime caches,
 generation locks/progress files, `__pycache__`, or temporary work trees there:
@@ -169,16 +265,130 @@ are ignored by both the finalizer and the host's exact-file gate. Frozen older
 finalizers may rely on the trusted host to prune that empty residue before a
 later resume; do not treat the directory itself as product evidence.
 
-Create and inspect an actual presentation render at
-`<cad-project>/snap/iso.png` before finalizing. Use the CAD skill's
-`scripts/render_product` on an exact verified STL, or another deterministic
-renderer that writes the same path. The image must be a valid chromatic
-RGB/RGBA PNG at least 800 px on each side. Choose a palette and view that make
-the product's form and play affordance legible. Binary silhouettes from
+Create and inspect both required exact-product presentation renders before
+finalizing:
+
+- `<cad-project>/snap/iso.png` is the chromatic hero, at least 800×800 px;
+- `<cad-project>/snap/signature.png` is a chromatic signature-experience sheet,
+  at least 1200×800 px, showing two to five exact STL poses or views that make
+  the promised interaction, reveal, or anti-generic detail legible without its
+  title.
+
+Use the CAD skill's `scripts/render_product` on an exact verified STL, or
+another deterministic renderer that writes those exact paths. Choose a palette,
+views, and poses that expose the form and play affordance. If a reader cannot
+identify the signature experience from the sheet alone, repair the geometry;
+copy cannot substitute for missing product magic. Binary silhouettes from
 `image-to-cad/render_views.py` are measurement evidence, not product renders;
 keep them in a clearly named review/evidence directory. The finalizer rejects
-a missing, grayscale, flat, or undersized presentation image, and the public
-snapshot promotes only this explicit `snap/` render family as its local hero.
+missing, grayscale, flat, or undersized presentation images, and the public
+snapshot preserves this explicit `snap/` render family.
+
+The signature sheet is outcome evidence, not a turntable. Its first panel must
+make the held object itself readable without copy. Remaining panels show the
+exact promised states: before/action/after for a mechanism, exact projections
+for a shadow or optical reveal, or setup/choice/result for a rules toy. Repeated
+camera angles that do not reveal the promise do not satisfy this requirement.
+
+Once the candidate exists, give one bounded independent native visual critic
+only `snap/iso.png` and `snap/signature.png`. Use exactly one critic and at most
+two total review rounds: the initial blind review and, only after a failed first
+read, one focused blind rereview. Do **not** reveal the Wish, title,
+concept, desired nouns, Inventor, or intended answer. First ask what physical
+object it sees; which subjects it identifies; what action occurs; what spatial
+or causal relationship connects those subjects; what volumetric form,
+cross-section, and surface language it sees; and whether it looks like a
+desirable finished product rather than a flat cutout, generic primitive,
+technical test, or repeated turntable. Preserve those unprompted reads. Only
+then reveal the Wish and exact compact Invented concept to that same critic.
+Require the critic—not the root Manager—to compare the blind form, subjects,
+action, relationship, and concept's anti-generic signature separately with the
+exact promise. Sharing nouns is not enough: `beside` does not satisfy
+`through`, a static fish does not satisfy a leaping whale, and a turntable does
+not satisfy a state change. A constant extrusion does not satisfy a promised
+pillow-rounded cabochon merely because its front silhouette uses the right
+nouns.
+
+If any form, subject, action, relationship, or anti-generic signature does not
+match, or the product does not look finished and desirable, repair the single largest geometry/composition
+defect, rerender both exact images, and request the one permitted focused blind
+rereview. Do not coordinate a third critic or review round. Do not proceed to
+the integrated final verifier or Release on copy alone. If the first candidate
+passes, do not invent a repair merely to create activity.
+
+After reveal, enumerate every explicit positive and negative held-form
+requirement from the Wish. Preserve its exact meaning in
+`critical_form_requirements` and cite concrete evidence visible in the blind
+images. A missing or contradicted critical requirement is a blocking visual
+defect. Do not hide it in `largest_risk`, `resolution`, or concept prose while
+setting the aggregate booleans true.
+
+Fail closed on presentation quality. A blind read of “prototype,” “device,” or
+the wrong ordinary object; dominant exposed working geometry; a signature
+detail that needs zoom; raw or jagged faceting; an unclear state transition;
+or a visible caveat in `largest_risk` is a blocking visual defect even when the
+CAD is technically valid. `largest_risk` may describe a nonvisual physical
+unknown after a visual pass, but it may not launder a visible defect while
+`blocking_visual_defects` stays empty. Do not set `finished_product_desirable`
+or aggregate match booleans true merely to advance the workflow.
+
+Preserve the final review as canonical JSON at
+`<cad-project>/snap/SIGNATURE-REVIEW.json` with exactly these fields:
+
+```json
+{
+  "schema_version": 6,
+  "kind": "autonomous-workshop.signature-experience-review",
+  "concept_sha256": "<exact canonical Invented concept hash>",
+  "iso_sha256": "<lowercase SHA-256 of final iso.png>",
+  "signature_sha256": "<lowercase SHA-256 of final signature.png>",
+  "reviewer": "<bounded independent reviewer identity>",
+  "blind_held_read": "<what the reviewer saw before learning the Wish>",
+  "blind_form_read": "<volumetric form, cross-section, and surface language seen blindly>",
+  "blind_subjects_read": "<subjects seen before learning the Wish>",
+  "blind_action_read": "<action or transformation seen before learning the Wish>",
+  "blind_relationship_read": "<spatial or causal relationship seen before learning the Wish>",
+  "anti_generic_signature_read": "<exact distinctive concept feature visible after reveal>",
+  "wish_revealed_after_blind_read": true,
+  "held_object_unmistakable": true,
+  "form_matches_wish": true,
+  "subjects_match_wish": true,
+  "action_matches_wish": true,
+  "relationship_matches_wish": true,
+  "anti_generic_signature_visible": true,
+  "signature_experience_unmistakable": true,
+  "finished_product_desirable": true,
+  "review_rounds": 1,
+  "critical_form_requirements": [
+    {
+      "requirement": "<one exact positive or negative held-form requirement from the Wish>",
+      "blind_evidence": "<what in the exact images visibly proves it>",
+      "matches": true
+    }
+  ],
+  "blocking_visual_defects": [],
+  "print_preflight_sha256": "<lowercase SHA-256 of passing measure/print-preflight.md>",
+  "largest_risk": "<strongest concrete final finding>",
+  "resolution": "<specific geometry, pose, or composition resolution>"
+}
+```
+
+The finalizer requires every confirmation, all unprompted reads, at least one
+explicit critical-form check, no blocking visual defect, the exact passing
+all-printable 0.4 mm preflight hash, the exact Invented
+concept binding, one or two review rounds, and exact final-image hashes. It also
+requires the current CAD report to be a passing final full-tier run containing
+a successful thickness row; omitting a failed check cannot reach the host's
+isolated gate. This is review evidence, not a numeric beauty score; never claim
+an independent or blind review that did not occur. Any geometry change
+invalidates the review: rerender and obtain a fresh blind read instead of
+copying old prose and replacing hashes. The public toy archive keeps the review
+beside the reviewed renders.
+
+Keep the one final `snap/` family only under the declared CAD project. Do not
+copy it to the product root or preserve identical presentation families in two
+locations. Iteration renders stay outside the sealed product tree; the public
+archive captures the one exact final family and its review.
 
 The root `product.json` must be a JSON object containing at least these exact
 metadata keys (additional product-specific fields are allowed):
@@ -268,6 +478,84 @@ Keep transient work under `work/playtest/rNNNN/` and only canonical configs and
 final cited outputs under the exact `evidence_root`. Write one authored JSON
 source with exactly `checks`, `feedback`, and `verdict`. Every failing check
 must name a concrete area and repair.
+
+The complete authored-input shape is:
+
+```json
+{
+  "checks": [
+    {
+      "check_id": "mechanical-check",
+      "passed": true,
+      "evaluator": "workshop mechanical evaluator",
+      "evaluator_version": "1.0.0",
+      "config_ref": "configs/mechanical-check.json",
+      "evidence_ref": "results/mechanical-check.json",
+      "observed_at": "2026-08-31T04:00:00Z",
+      "observations": {
+        "evidence_class": "AI-simulated",
+        "claims": ["The seeded simulation completed without a collision."]
+      }
+    }
+  ],
+  "feedback": [],
+  "verdict": "pass"
+}
+```
+
+The source object accepts no other top-level fields. `checks` is a non-empty
+array containing each id from `STAGE.json.inputs.required_check_ids` exactly
+once. Every check is a strict object with exactly these eight fields:
+
+- `check_id`: the matching required id; 1–128 lowercase letters, digits,
+  periods, underscores, or hyphens, beginning with a letter or digit;
+- `passed`: a JSON boolean;
+- `evaluator`: non-empty text naming the actual evaluator, at most 1,000
+  characters and not `self-report` or `trust-me`;
+- `evaluator_version`: an exact, non-floating version such as `1.0.0`, not a
+  moving name such as `latest`, `main`, `head`, or `snapshot`;
+- `config_ref`: the evidence-root-relative canonical
+  `configs/<check_id>.json` path described above;
+- `evidence_ref`: a safe evidence-root-relative path to a regular static
+  evidence file;
+- `observed_at`: an ISO-8601 timestamp with an explicit UTC offset; and
+- `observations`: a non-empty JSON object containing the evaluator's concrete
+  results. Use `evidence_class` and `claims` when the result supports a later
+  Release claim, while preserving any additional finite JSON needed to explain
+  the check.
+
+Both referenced files must already exist inside `evidence_root`. The finalizer
+derives and seals their SHA-256 values; do not add authored hash fields to a
+check.
+
+`feedback` is an array. Every item is a strict object with exactly these seven
+fields:
+
+```json
+{
+  "code": "mechanism-binds",
+  "area": "mechanism",
+  "severity": "improve",
+  "finding": "The simulated slider binds before reaching its end state.",
+  "change": "Increase the guide clearance and rerun the mechanical check.",
+  "evidence_refs": ["results/mechanical-check.json"],
+  "invalidates": ["playtest", "release"]
+}
+```
+
+- `code` and `area` are non-empty text of at most 200 characters;
+- `severity` is exactly `note`, `improve`, or `block`;
+- `finding` and `change` are non-empty text;
+- `evidence_refs` is an array of non-empty string references; and
+- `invalidates` is a non-empty, duplicate-free array. It must be exactly
+  `["playtest","release"]` for an implementation repair, or contain exactly
+  `invent`, `make`, `playtest`, and `release` for a concept revision. Concept
+  revision requires `improve` or `block` severity.
+
+`verdict` is exactly `pass`, `improve`, or `block`. A `pass` requires every
+check to pass and forbids actionable (`improve` or `block`) feedback. Any other
+verdict requires at least one feedback item and either a failed check or
+actionable feedback.
 
 When `STAGE.json` carries `vault_leads`, the `agent-playtest` check's
 `observations` must answer every lead once under `vault_leads`:

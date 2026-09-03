@@ -407,6 +407,11 @@ class MockSessionContextRecordTest(unittest.TestCase):
 class MockSessionArchitectureTest(unittest.TestCase):
     def test_generic_directive_contains_no_route_or_finalizer_recipe(self):
         validate_generic_directive(DIRECTIVE)
+        self.assertIn("bounded native child agent", DIRECTIVE)
+        self.assertIn("production instructions require", DIRECTIVE)
+        self.assertIn("Keep stage authority and final synthesis", DIRECTIVE)
+        self.assertIn("No outputs path may contain an evidence", DIRECTIVE)
+        self.assertIn("derived or finalizer", DIRECTIVE)
         for forbidden in (
             "Spark",
             "stage_proposal.py",
@@ -489,6 +494,7 @@ class MockSessionArchitectureTest(unittest.TestCase):
                 {
                     "stage": "invent",
                     "agent_writes": [
+                        "design/invent-source.json",
                         "sources/invent-source.json",
                         "agent-outcome.json",
                     ],
@@ -496,6 +502,8 @@ class MockSessionArchitectureTest(unittest.TestCase):
                 {
                     "stage": "make",
                     "agent_writes": [
+                        ".local-cache/ezdxf/font_manager_cache.json",
+                        ".workshop-cache/ezdxf/font_manager_cache.json",
                         ".workshop-cache/xdg/ezdxf/font_manager_cache.json",
                         ".work-cache/ezdxf/font_manager_cache.json",
                         "artifacts/make/r0001/product/source.py",
@@ -566,6 +574,9 @@ class MockSessionArchitectureTest(unittest.TestCase):
         self.assertIn("PRINTABLE = False", prompt)
         self.assertIn("single tile generator printable", prompt)
         self.assertIn("--fresh --exports --strict-fit", prompt)
+        self.assertIn("twice in succession", prompt)
+        self.assertIn("byte-identical", prompt)
+        self.assertIn("make no later CAD source or declaration edits", prompt)
 
     def test_product_run_playtest_reference_matches_host_config_contract(self):
         repository = Path(__file__).resolve().parents[2]
@@ -573,9 +584,46 @@ class MockSessionArchitectureTest(unittest.TestCase):
             repository
             / ".agents/product-run/.agents/skills/autonomous-workshop/references/make-playtest.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("<evidence_root>/configs/<check-id>.json", reference)
+        playtest_reference = reference.split(
+            "## Playtest Goal and independent evidence loop", 1
+        )[1]
+        self.assertIn(
+            "<evidence_root>/configs/<check-id>.json", playtest_reference
+        )
         for field in ("schema_version", "check_id", "seed", "artifact_sha256"):
-            self.assertIn(field, reference)
+            self.assertIn(field, playtest_reference)
+        for field in (
+            "passed",
+            "evaluator",
+            "evaluator_version",
+            "config_ref",
+            "evidence_ref",
+            "observed_at",
+            "observations",
+        ):
+            self.assertIn("`%s`" % field, playtest_reference)
+        for field in (
+            "code",
+            "area",
+            "severity",
+            "finding",
+            "change",
+            "evidence_refs",
+            "invalidates",
+        ):
+            self.assertIn("`%s`" % field, playtest_reference)
+        self.assertIn(
+            "Every check is a strict object with exactly these eight fields",
+            playtest_reference,
+        )
+        self.assertIn(
+            "Every item is a strict object with exactly these seven\nfields",
+            playtest_reference,
+        )
+        self.assertIn(
+            '`verdict` is exactly `pass`, `improve`, or `block`',
+            playtest_reference,
+        )
 
 
 def _multipart(fields: dict[str, list[bytes]]) -> tuple[str, bytes]:

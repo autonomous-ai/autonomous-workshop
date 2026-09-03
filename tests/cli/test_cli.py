@@ -11,6 +11,9 @@ from unittest import mock
 
 from cli.main import main, parser
 from workshop.runtime.progress import WishRunTimingEvent
+from workshop.daydream import DaydreamError
+
+from tests.daydream.support import sample_sealed
 
 
 cli_main = importlib.import_module("cli.main")
@@ -56,6 +59,9 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(
             set(subparsers.choices),
             {
+                "start",
+                "stop",
+                "daydream",
                 "wish",
                 "status",
                 "resume",
@@ -478,6 +484,362 @@ class NativeCommandTest(unittest.TestCase):
             command.parse_args(("wish", "a moon", "--publish"))
         with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
             command.parse_args(("resume", "wish-one", "--publish"))
+
+
+class DaydreamCommandTest(unittest.TestCase):
+    def setUp(self):
+        self._temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self._temporary.cleanup)
+        self.home = Path(self._temporary.name).resolve() / "home"
+        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
+        environment.start()
+        self.addCleanup(environment.stop)
+
+    def _loop_folder(self):
+        return self.home / "daydreams" / "sample"
+
+    def test_parser_defaults(self):
+        args = parser().parse_args(("start", "pico-press"))
+        self.assertEqual(args.inventor, "pico-press")
+        self.assertEqual(args.effort, "spark")
+        self.assertEqual(args.manager, "codex")
+        self.assertIsNone(args.idea)
+        self.assertFalse(args.json)
+        self.assertFalse(args.strict)
+        self.assertFalse(args.github)
+        self.assertFalse(args.once)
+        self.assertIsNone(args.max_ideas)
+        self.assertEqual(args.max_failures, 3)
+        stop = parser().parse_args(("stop", "pico-press", "--now"))
+        self.assertTrue(stop.now)
+        args = parser().parse_args(("daydream", "pico-press"))
+        self.assertEqual(args.manager, "codex")
+        self.assertIsNone(args.idea)
+        for arguments in (
+            ("daydream", "pico-press", "--run"),
+            ("daydream", "pico-press", "--effort", "spark"),
+            ("daydream", "pico-press", "--strict"),
+            ("start", "pico-press", "--run"),
+        ):
+            with self.subTest(arguments=arguments), redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+                parser().parse_args(arguments)
+
+    def test_daydream_prints_the_card_and_never_starts_a_run(self):
+        sealed = sample_sealed()
+        observed = {}
+
+        def dream(inventor_id, *, source_root, manager_id, activity_observer, effort):
+            observed["inventor_id"] = inventor_id
+            observed["source_root"] = source_root
+            observed["manager_id"] = manager_id
+            observed["effort"] = effort
+            activity_observer("starting")
+            activity_observer("completed")
+            return sealed
+
+        stdout = StringIO()
+        stderr = StringIO()
+        with mock.patch("cli.main.run_daydream", side_effect=dream) as run, mock.patch(
+            "cli.main.start_native_run"
+        ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(("daydream", "sample"))
+
+        self.assertEqual(result, 0)
+        run.assert_called_once()
+        start.assert_not_called()
+        self.assertEqual(observed["inventor_id"], "sample")
+        self.assertEqual(observed["manager_id"], "codex")
+        self.assertIsNone(observed["effort"])
+        self.assertTrue(Path(observed["source_root"]).is_dir())
+        output = stdout.getvalue()
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertIn("Daydreaming one brand-new idea", output)
+        self.assertIn("starting the current stage", output)
+        self.assertIn("Daydream: %s" % sealed.daydream_id, output)
+        self.assertIn("Title: Ladder Drop", output)
+        self.assertIn("What it looks like: A palm-sized", output)
+        self.assertIn("Closest existing things: Jacob's ladder", output)
+        self.assertIn("Taste fit: honors Motion comes from geometry", output)
+        self.assertIn("Printed parts: 2", output)
+        self.assertIn("Novelty lint: new (no prior work to compare against)", output)
+        self.assertIn(
+            "workshop start sample --idea %s" % sealed.daydream_id, output
+        )
+
+    def test_daydream_json_emits_one_object_and_keeps_stdout_clean(self):
+        sealed = sample_sealed()
+        stdout = StringIO()
+        stderr = StringIO()
+        with mock.patch("cli.main.run_daydream", return_value=sealed), redirect_stdout(
+            stdout
+        ), redirect_stderr(stderr):
+            result = main(("daydream", "sample", "--json"))
+        self.assertEqual(result, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(set(payload), {"daydream"})
+        self.assertEqual(payload["daydream"], sealed.to_dict())
+        self.assertIn("Daydreaming", stderr.getvalue())
+        self.assertNotIn("Title:", stderr.getvalue())
+
+    def test_start_dreams_then_builds_from_the_sealed_brief(self):
+        sealed = sample_sealed()
+        observed = {}
+
+        def start(
+            wish,
+            *,
+            effort,
+            manager_id,
+            github_publish_requested,
+            max_rounds,
+            activity_observer,
+            timing_observer,
+        ):
+            observed["wish"] = wish
+            observed["effort"] = effort
+            observed["manager_id"] = manager_id
+            observed["github"] = github_publish_requested
+            observed["max_rounds"] = max_rounds
+            activity_observer("completed")
+            timing_observer(timing_event())
+            return native_receipt()
+
+        stdout = StringIO()
+        stderr = StringIO()
+        with mock.patch("cli.main.run_daydream", return_value=sealed) as run, mock.patch(
+            "workshop.daydream.native.generate_wish_id", return_value="wish-one"
+        ), mock.patch(
+            "cli.main.start_native_run", side_effect=start
+        ) as native_start, redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(("start", "sample", "--once", "--json"))
+
+        self.assertEqual(result, 0)
+        run.assert_called_once()
+        native_start.assert_called_once()
+        self.assertEqual(run.call_args.kwargs["manager_id"], "codex")
+        self.assertEqual(run.call_args.kwargs["effort"], "spark")
+        wish = observed["wish"]
+        self.assertEqual(wish.product_id, "wish-one")
+        self.assertEqual(wish.objective, sealed.brief)
+        self.assertEqual(wish.context["source"], "workshop-daydream")
+        self.assertEqual(wish.context["daydream_id"], sealed.daydream_id)
+        self.assertEqual(wish.context["idea_sha256"], sealed.idea_sha256)
+        self.assertEqual(observed["effort"], "spark")
+        self.assertEqual(observed["manager_id"], "codex")
+        self.assertFalse(observed["github"])
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(set(payload), {"daydream", "run"})
+        self.assertEqual(payload["run"]["stage"], "match")
+        self.assertIn("Sealing the idea as this run's brief", stderr.getvalue())
+        self.assertIn("Starting one native Codex session for Make", stderr.getvalue())
+        self.assertNotIn(sealed.brief, stderr.getvalue())
+
+    def test_start_passes_effort_manager_github_and_strict(self):
+        sealed = sample_sealed()
+        with mock.patch("cli.main.run_daydream", return_value=sealed) as run, mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(
+                (
+                    "start",
+                    "sample",
+                    "--once",
+                    "--effort",
+                    "forge",
+                    "--manager",
+                    "grok",
+                    "--github",
+                    "--strict",
+                )
+            )
+        self.assertEqual(result, 1)
+        self.assertEqual(run.call_args.kwargs["manager_id"], "grok")
+        self.assertEqual(run.call_args.kwargs["effort"], "forge")
+        self.assertEqual(start.call_args.kwargs["effort"], "forge")
+        self.assertEqual(start.call_args.kwargs["manager_id"], "grok")
+        self.assertTrue(start.call_args.kwargs["github_publish_requested"])
+
+    def test_start_with_a_saved_idea_never_redreams(self):
+        sealed = sample_sealed()
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main.load_sealed_daydream", return_value=sealed
+        ) as load, mock.patch("cli.main.run_daydream") as run, mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("start", "sample", "--idea", sealed.daydream_id))
+        self.assertEqual(result, 0)
+        load.assert_called_once_with("sample", sealed.daydream_id)
+        run.assert_not_called()
+        start.assert_called_once()
+        self.assertEqual(start.call_args.kwargs["effort"], "spark")
+        self.assertIn("(saved idea)", stdout.getvalue())
+        self.assertNotIn("Build it:", stdout.getvalue())
+        self.assertIn("Wish: wish-", stdout.getvalue())
+
+    def test_daydream_with_a_saved_idea_only_prints_it(self):
+        sealed = sample_sealed()
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main.load_sealed_daydream", return_value=sealed
+        ), mock.patch("cli.main.run_daydream") as run, mock.patch(
+            "cli.main.start_native_run"
+        ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("daydream", "sample", "--idea", sealed.daydream_id))
+        self.assertEqual(result, 0)
+        run.assert_not_called()
+        start.assert_not_called()
+        self.assertIn("Title: Ladder Drop", stdout.getvalue())
+        self.assertIn("Build it: workshop start sample --idea", stdout.getvalue())
+
+    def test_loop_dreams_and_builds_until_workshop_stop(self):
+        sealed = sample_sealed()
+        calls = []
+
+        def start(wish, **kwargs):
+            calls.append(wish.product_id)
+            if len(calls) == 2:
+                (self._loop_folder() / "STOP").write_text("stop\n")
+            return native_receipt(status="completed", stage="release", published=True)
+
+        stdout = StringIO()
+        with mock.patch("cli.main.run_daydream", return_value=sealed) as run, mock.patch(
+            "cli.main.start_native_run", side_effect=start
+        ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("start", "sample"))
+        self.assertEqual(result, 0)
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(len(calls), 2)
+        output = stdout.getvalue()
+        self.assertIn("Loop: sample dreams and builds until you stop it", output)
+        self.assertIn("workshop stop sample", output)
+        self.assertIn(
+            "Loop stopped (stopped by workshop stop). Ideas: 2. Builds: 2. Published: 2.",
+            output,
+        )
+        record = json.loads((self._loop_folder() / "LOOP.json").read_text())
+        self.assertEqual(record["status"], "stopped")
+        self.assertEqual(record["published"], 2)
+        self.assertEqual(record["last_wish_id"], calls[-1])
+        self.assertFalse((self._loop_folder() / "STOP").exists())
+
+    def test_loop_stops_after_consecutive_failures_with_exit_one(self):
+        sealed = sample_sealed()
+        with mock.patch("cli.main.run_daydream", return_value=sealed) as run, mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt(status="failed")
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("start", "sample"))
+        self.assertEqual(result, 1)
+        self.assertEqual(run.call_count, 3)
+        self.assertEqual(start.call_count, 3)
+        record = json.loads((self._loop_folder() / "LOOP.json").read_text())
+        self.assertEqual(record["stop_reason"], "3 consecutive failures")
+
+    def test_loop_survives_a_failed_daydream_and_honours_max_ideas(self):
+        sealed = sample_sealed()
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main.run_daydream",
+            side_effect=[DaydreamError("too close to Horn Tip"), sealed, sealed],
+        ) as run, mock.patch(
+            "cli.main.start_native_run",
+            return_value=native_receipt(status="completed", stage="release", published=True),
+        ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("start", "sample", "--max-ideas", "2", "--max-failures", "2"))
+        self.assertEqual(result, 0)
+        self.assertEqual(run.call_count, 3)
+        self.assertEqual(start.call_count, 2)
+        self.assertIn("Daydream failed: too close to Horn Tip", stdout.getvalue())
+        self.assertIn("Loop stopped (reached --max-ideas 2). Ideas: 2.", stdout.getvalue())
+
+    def test_loop_json_emits_one_object_per_idea(self):
+        sealed = sample_sealed()
+        stdout = StringIO()
+        with mock.patch("cli.main.run_daydream", return_value=sealed), mock.patch(
+            "cli.main.start_native_run",
+            return_value=native_receipt(status="completed", stage="release", published=True),
+        ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("start", "sample", "--max-ideas", "2", "--json"))
+        self.assertEqual(result, 0)
+        lines = [json.loads(line) for line in stdout.getvalue().splitlines() if line.strip()]
+        self.assertEqual(len(lines), 2)
+        self.assertEqual({tuple(sorted(line)) for line in lines}, {("daydream", "run")})
+
+    def test_ctrl_c_stops_the_loop_and_keeps_the_run_resumable(self):
+        sealed = sample_sealed()
+        stdout = StringIO()
+        with mock.patch("cli.main.run_daydream", return_value=sealed), mock.patch(
+            "cli.main.start_native_run", side_effect=KeyboardInterrupt
+        ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("start", "sample"))
+        self.assertEqual(result, 130)
+        self.assertIn("Loop stopped (stopped by Ctrl-C). Ideas: 1. Builds: 0.", stdout.getvalue())
+        record = json.loads((self._loop_folder() / "LOOP.json").read_text())
+        self.assertEqual(record["status"], "stopped")
+        self.assertEqual(record["stop_reason"], "stopped by Ctrl-C")
+
+    def test_second_loop_for_the_same_inventor_is_refused(self):
+        from workshop.daydream import acquire_loop
+
+        acquire_loop("sample", pid=os.getpid() + 1, alive=lambda pid: True)
+        stderr = StringIO()
+        with mock.patch("cli.main.acquire_loop", side_effect=DaydreamError(
+            "a daydream loop for sample is already running (pid 7); stop it with `workshop stop sample`"
+        )), mock.patch("cli.main.run_daydream") as run, redirect_stdout(
+            StringIO()
+        ), redirect_stderr(stderr):
+            result = main(("start", "sample"))
+        self.assertEqual(result, 2)
+        run.assert_not_called()
+        self.assertIn("already running", stderr.getvalue())
+
+    def test_stop_command_reports_the_running_loop_or_fails(self):
+        from workshop.daydream import acquire_loop
+
+        stderr = StringIO()
+        with redirect_stdout(StringIO()), redirect_stderr(stderr):
+            self.assertEqual(main(("stop", "sample")), 2)
+        self.assertIn("no daydream loop is running for sample", stderr.getvalue())
+        lease = acquire_loop("sample")
+        lease.update(ideas=3, builds=2, published=1)
+        stdout = StringIO()
+        with redirect_stdout(stdout), redirect_stderr(StringIO()):
+            self.assertEqual(main(("stop", "sample")), 0)
+        self.assertIn("Stop requested for sample (pid %d)" % os.getpid(), stdout.getvalue())
+        self.assertIn("So far: 3 idea(s), 2 build(s), 1 published.", stdout.getvalue())
+        self.assertTrue(lease.stop_requested())
+        signals = []
+        stdout = StringIO()
+        with mock.patch("cli.main.request_stop", wraps=lambda inventor, now: (
+            signals.append(now) or lease.state
+        )), redirect_stdout(stdout), redirect_stderr(StringIO()):
+            self.assertEqual(main(("stop", "sample", "--now")), 0)
+        self.assertEqual(signals, [True])
+        self.assertIn("Interrupting the daydream loop for sample", stdout.getvalue())
+
+    def test_daydream_failure_reports_on_stderr_with_exit_two(self):
+        stderr = StringIO()
+        with mock.patch(
+            "cli.main.run_daydream",
+            side_effect=DaydreamError("idea is too close to Horn Tip"),
+        ), mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+            StringIO()
+        ), redirect_stderr(stderr):
+            result = main(("start", "sample", "--once"))
+        self.assertEqual(result, 2)
+        start.assert_not_called()
+        self.assertIn("workshop: idea is too close to Horn Tip", stderr.getvalue())
+
+    def test_unknown_inventor_source_root_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            stderr = StringIO()
+            with mock.patch("cli.main.run_daydream") as run, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(stderr):
+                result = main(("start", "sample", "--once", "--root", temp))
+            self.assertEqual(result, 2)
+            run.assert_not_called()
+            self.assertIn("no native Inventor bundles", stderr.getvalue())
 
 
 class DoctorTest(unittest.TestCase):

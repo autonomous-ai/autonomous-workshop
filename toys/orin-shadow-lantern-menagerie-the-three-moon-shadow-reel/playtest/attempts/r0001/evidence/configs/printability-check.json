@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "check_id": "printability-check",
+  "product_artifact_sha256": "3c7abf41a4aed6005216e14ad42c5c027e7560ff8cd887f3c991917141d1f7cd",
+  "seed": 20260829,
+  "method": "Independent sealed-STL mesh/bed review and explicit fine wall-thickness replay on the exact rear-shell STL.",
+  "mesh_sha256": "082ad8cd13cb5bdba33e0a171d9356f8627e1817fbf929ee69bef233ad66b6e1",
+  "bed_mm": [220, 220, 220],
+  "nozzle_mm": 0.4,
+  "minimum_wall_mm": 0.8,
+  "requested_voxel_mm": 0.16,
+  "acceptance": [
+    "Every one of the four sealed STL files must be one connected, watertight, manifold, positively wound shell that fits the declared bed.",
+    "Both the standard and explicit fine wall-thickness checks must pass for every printable part.",
+    "Support intent is documentary only unless backed by slicer or physical print evidence.",
+    "No successful print, fit, snap compliance, warping, material strength, or cycle-life claim may be inferred."
+  ]
+}

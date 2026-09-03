@@ -1,9 +1,14 @@
 # Invent contract
 
-Read `STAGE.json`. It binds the exact Wish, immutable Inventor roster,
-universal blueprint, canonical assignment and Invented output paths, frozen
-effort, and current checkpoint. Verify those bytes before acting. The blueprint
-is an open-ended shared contract, not a product classification.
+Read `STAGE.json`. It binds the exact Wish, immutable Inventor roster, compact
+`inventor_discovery_index`, universal blueprint, canonical assignment and
+Invented output paths, frozen effort, and current checkpoint. Verify those
+bytes before acting. Rank the complete roster from the index first, then read
+only the full custom-agent TOMLs for the best three candidates before choosing.
+Do not dump, reread, or batch-load every full TOML: the host derives the index
+from the exact bound Taste headers specifically to make complete-roster routing
+cheap. The blueprint is an open-ended shared contract, not a product
+classification.
 
 ## Invent Goal and improvement loop
 
@@ -14,14 +19,28 @@ exact Taste and method.
 Its stopping condition is a successful `invent` finalizer for the current
 checkpoint.
 
-Compare every roster entry before selecting. Use the selected project-scoped
-custom agent for specialist work. The root Workshop Manager reviews and
-synthesizes its output and remains responsible for the one stage proposal.
+Before exploring broadly, name the concept's **signature interaction**: the
+single physical moment that makes the Wish feel surprising, playful, or
+magical, and the **anti-generic signature** that prevents it from collapsing
+into an ordinary themed object. Spend depth on making those two ideas coherent
+with a feasible mechanism. Additional features earn their place only when they
+strengthen that core.
+
+Before ranking, also name the **hardest-to-fake magic**: the perceptual reveal,
+motion, rule, transformation, or emotional moment whose loss would make the
+Wish generic. Compare every roster entry and select the Inventor whose Taste
+and primary method own that magic. Manufacturing convenience is not creative
+ownership: one-piece, support-free, or familiar CAD constraints can be solved
+with the shared domain skills. Treat selecting only for those conveniences as
+a red flag when another Inventor owns the promised perception, movement, rules,
+or reveal. Use the selected project-scoped custom agent for specialist work.
+The root Workshop Manager reviews and synthesizes its output and remains
+responsible for the one stage proposal.
 
 While pursuing the Goal:
 
-1. **Observe:** Read the Wish, complete roster and custom-agent instructions,
-   relevant skill resources, and any exact upstream evidence. Identify what
+1. **Observe:** Read the Wish, complete roster index, the top three full
+   custom-agent instructions, relevant skill resources, and any exact upstream evidence. Identify what
    needs factual research and what needs creative exploration. When
    `STAGE.json` names a `design_vault` (the host-written `VAULT.json` at the
    run root, fetched live for this phase), brief yourself on candidate
@@ -35,13 +54,31 @@ While pursuing the Goal:
    Before selecting, specify each viable direction deeply enough to compare
    form, envelope, component breakdown, construction, interaction,
    feasibility, assumptions, and risks.
-3. **Evaluate:** Compare concepts against the Wish, full Taste, novelty,
+3. **Evaluate:** Compare concepts against the Wish, signature interaction,
+   anti-generic signature, full Taste, novelty,
    coherent play, mechanical feasibility, printability, and inspectability.
    Ask independent native subagents to judge bounded questions when subjective
    tradeoffs matter; synthesize their evidence rather than averaging votes.
 4. **Improve:** Address the largest weakness, challenge unsupported
    assumptions, and refine or replace the concept. Repeat research or review
    only when it can resolve a concrete gap.
+
+Use bounded breadth: develop a few materially different directions far enough
+to expose their mechanisms, choose once the evidence distinguishes them, then
+stop generating alternatives. Do not browse when the remaining decisions are
+deliberate design choices rather than factual uncertainties.
+
+For Forge and Quest, earn every component before sealing the concept. Identify
+the one hardest causal or kinematic relationship and describe the smallest
+exact geometry that can falsify it at the start of Make. Prefer a concept whose
+signature magic survives with fewer independent parts, contacts, and coupled
+motions. Complexity is justified only when removing it destroys the promised
+experience; decorative detail, duplicated mechanisms, and extra simultaneous
+motions are not depth. A concept that cannot name a cheap decisive proof is not
+ready to seal—simplify it while preserving the anti-generic signature.
+Also name the minimum held-view and signature-view blockout that would falsify
+the intended form. It must prove volumetric identity and the view-specific
+composition without labels, product copy, color, or decorative detail.
 
 Codex owns the research strategy, concept generation, judging, and iteration.
 Do not implement deep research, candidate fan-out, model judging, scoring,

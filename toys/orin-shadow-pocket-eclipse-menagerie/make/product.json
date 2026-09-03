@@ -1,0 +1,13 @@
+{
+  "title": "Pocket Eclipse Menagerie",
+  "summary": "A palm-sized one-piece sleeping fox beneath a crescent that reveals an owl shadow, then a leaping rabbit after one quarter-turn.",
+  "interaction": "Hold Z vertical, aim an ordinary phone flashlight squarely through one broad face, then rotate the entire object 90 degrees about Z for the second story.",
+  "light_setup": {
+    "source_distance_mm": [250, 600],
+    "wall_distance_beyond_toy_mm": [300, 1000],
+    "owl_light_direction": "+X",
+    "rabbit_light_direction": "+Y",
+    "alignment_cue": "Keep the flat feet on a level surface and one broad silhouette face parallel to the wall."
+  },
+  "evidence_limit": "Shadow outlines are derived digitally from exact CAD geometry; no physical print, phone-light cast, brightness, edge softness, or human recognition has been observed."
+}

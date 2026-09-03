@@ -40,7 +40,7 @@ import sys
 from pathlib import Path
 
 if sys.argv[1:] == ["--version"]:
-    print("codex-cli 0.145.0")
+    print("codex-cli 0.150.0")
     raise SystemExit(0)
 
 run_root = Path.cwd()
@@ -151,6 +151,10 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
                     observed["arguments"][feature_index - 1], "--enable"
                 )
             self.assertIn("--strict-config", observed["arguments"])
+            self.assertIn(
+                "model_auto_compact_token_limit=64000",
+                observed["arguments"],
+            )
             self.assertNotIn("--sandbox", observed["arguments"])
             self.assertIn(
                 'default_permissions="workshop-product-run"',

@@ -72,8 +72,23 @@ class PackageDataTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("smallest complete physical format", manual_skill)
-        self.assertIn("two to four small pages", manual_skill)
+        self.assertIn("Default a simple one-piece Spark toy", manual_skill)
         self.assertIn("not fixed page-count gates", manual_skill)
+        self.assertIn("keep customer text ASCII", manual_skill)
+        self.assertIn("review-v1", manual_skill)
+        self.assertIn("review-final", manual_skill)
+        self.assertIn("Two complete render packets is the", manual_skill)
+        manual_review = roots["manual-design"] / "scripts" / "review_manual"
+        self.assertTrue(manual_review.is_file())
+        self.assertTrue(manual_review.stat().st_mode & 0o111)
+        visual_system = (
+            roots["manual-design"]
+            / "references"
+            / "product-manual-visual-system.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("One emotional promise", visual_system)
+        self.assertIn("default A4 report styling", visual_system)
+        self.assertIn("Fast composition sequence", visual_system)
 
     def test_every_schema_is_owned_by_its_architecture_component(self):
         expected = {
