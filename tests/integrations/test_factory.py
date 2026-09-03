@@ -16,8 +16,10 @@ from workshop.errors import (
     ReceiptError,
     StateConflict,
 )
+from tests.make.step_documents import step_document
 from workshop.integrations.factory import (
     DEFAULT_FACTORY_API,
+    FACTORY_PART_COLORS_MAPPING,
     FACTORY_TOY_CATEGORY_SLUG,
     FACTORY_USER_AGENT,
     FactoryAgentCredentials,
@@ -246,6 +248,8 @@ class FactoryTransport:
         include_thumbnails=True,
         manual_bytes=PDF_MANUAL,
         category_slug=FACTORY_TOY_CATEGORY_SLUG,
+        assembly_parts=None,
+        part_colors_status=200,
     ):
         self.product_id = product_id
         self.fail_get = fail_get
@@ -261,6 +265,13 @@ class FactoryTransport:
         self.use_case_writes = 0
         self.story_block_writes = 0
         self.project_file_reads = 0
+        self.assembly_parts = (
+            [dict(part) for part in assembly_parts]
+            if assembly_parts is not None
+            else None
+        )
+        self.part_colors_status = part_colors_status
+        self.part_color_writes = []
 
     def design(self):
         design = {
@@ -297,6 +308,8 @@ class FactoryTransport:
         }
         if self.include_thumbnails:
             design["thumbnail_urls"] = ["https://cdn.example/cover.png"]
+        if self.assembly_parts is not None:
+            design["assembly_parts"] = [dict(part) for part in self.assembly_parts]
         return design
 
     def __call__(self, method, url, headers, body, timeout):
@@ -319,6 +332,22 @@ class FactoryTransport:
             if self.fail_get:
                 raise RuntimeError("readback unavailable")
             return HttpResponse(200, {}, json.dumps(self.design()).encode())
+        if method == "PATCH" and url.endswith("/part-colors"):
+            written = json.loads(body.decode("utf-8"))["assembly_parts"]
+            self.part_color_writes.append(written)
+            if self.part_colors_status != 200:
+                return HttpResponse(
+                    self.part_colors_status, {}, b'{"error":"request rejected"}'
+                )
+            merged = {part["order"]: part["color"] for part in written}
+            for part in self.assembly_parts or ():
+                if part["order"] in merged:
+                    part["color"] = merged[part["order"]]
+            return HttpResponse(
+                200,
+                {},
+                canonical_json({"assembly_parts": self.assembly_parts or []}),
+            )
         if method == "PATCH" and url.endswith("/use-case"):
             self.use_case_writes += 1
             self.use_case = json.loads(body.decode("utf-8"))
@@ -922,6 +951,198 @@ class FactoryReleaseTest(unittest.TestCase):
             sidecar = json.loads(archive.read("assembled.step.json"))
             self.assertEqual(sidecar["parts"][0]["name"], "stone_rook_a1")
             self.assertEqual(sidecar["parts"][0]["stlPath"], occurrence_path)
+
+    def _seal_two_coloured_parts(self):
+        """Seal an occurrence family whose STEP carries one colour per part."""
+
+        product = self.made.artifact_root
+        (product / "assembled.stl").write_bytes(TETRA_STL)
+        (product / "owl.stl").write_bytes(TETRA_STL)
+        (product / "chick.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step").write_bytes(
+            step_document([("owl", "#d8dee9"), ("chick", "#d89b3c")])
+        )
+        (product / "assembled.step.json").write_bytes(
+            canonical_json(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {"name": "owl", "stlPath": "owl.stl"},
+                        {"name": "chick", "stlPath": "chick.stl"},
+                    ],
+                }
+            )
+            + b"\n"
+        )
+        self._reseal_product()
+
+    def test_sealed_step_colours_recolour_the_imported_draft(self):
+        self._seal_two_coloured_parts()
+        transport = FactoryTransport(
+            assembly_parts=[
+                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
+                {
+                    "order": 1,
+                    "mesh_name": "chick",
+                    "part": "chick.stl",
+                    "color": "#111111",
+                },
+            ]
+        )
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(
+            transport.part_color_writes,
+            [
+                [
+                    {"order": 0, "color": "#d8dee9"},
+                    {"order": 1, "color": "#d89b3c"},
+                ]
+            ],
+        )
+        intent = self.ledger.latest("verified-toy", "factory-part-colors")
+        self.assertEqual(intent.state, "succeeded")
+        self.assertEqual(
+            intent.receipt.details["part_colors"],
+            {"chick": "#d89b3c", "owl": "#d8dee9"},
+        )
+        self.assertEqual(
+            intent.receipt.details["factory_part_colors_mapping"],
+            FACTORY_PART_COLORS_MAPPING,
+        )
+
+    def test_a_draft_already_in_the_sealed_colours_is_not_rewritten(self):
+        self._seal_two_coloured_parts()
+        transport = FactoryTransport(
+            assembly_parts=[
+                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": "#D8DEE9"},
+                {
+                    "order": 1,
+                    "mesh_name": "chick",
+                    "part": "chick.stl",
+                    "color": "#d89b3c",
+                },
+            ]
+        )
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.part_color_writes, [])
+        intent = self.ledger.latest("verified-toy", "factory-part-colors")
+        self.assertEqual(intent.state, "succeeded")
+
+    def test_an_equivalent_hex_form_reads_back_as_the_same_colour(self):
+        self._seal_two_coloured_parts()
+        transport = FactoryTransport(
+            assembly_parts=[
+                {
+                    "order": 0,
+                    "mesh_name": "owl",
+                    "part": "owl.stl",
+                    "color": "#d8dee9ff",
+                },
+                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+            ]
+        )
+
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertEqual(
+            transport.part_color_writes, [[{"order": 1, "color": "#d89b3c"}]]
+        )
+
+    def test_one_rendered_mesh_takes_the_single_sealed_colour(self):
+        product = self.made.artifact_root
+        (product / "assembled.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step").write_bytes(
+            step_document([("crescent_rocker", "#7c838c")])
+        )
+        self._reseal_product()
+        transport = FactoryTransport(
+            assembly_parts=[
+                {
+                    "order": 0,
+                    "mesh_name": "assembled",
+                    "part": "assembled.stl",
+                    "color": None,
+                }
+            ]
+        )
+
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertEqual(
+            transport.part_color_writes, [[{"order": 0, "color": "#7c838c"}]]
+        )
+
+    def test_an_unstyled_step_leaves_the_draft_colours_alone(self):
+        self._seal_two_coloured_parts()
+        product = self.made.artifact_root
+        (product / "assembled.step").write_bytes(
+            step_document([("owl", None), ("chick", None)])
+        )
+        self._reseal_product()
+        transport = FactoryTransport(
+            assembly_parts=[
+                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+            ]
+        )
+
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertEqual(transport.part_color_writes, [])
+        self.assertIsNone(self.ledger.latest("verified-toy", "factory-part-colors"))
+
+    def test_a_design_with_no_addressable_mesh_owes_no_colour_write(self):
+        self._seal_two_coloured_parts()
+        transport = FactoryTransport()
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.part_color_writes, [])
+        self.assertIsNone(self.ledger.latest("verified-toy", "factory-part-colors"))
+
+    def test_a_rejected_part_colour_write_is_not_retried(self):
+        self._seal_two_coloured_parts()
+        transport = FactoryTransport(
+            assembly_parts=[
+                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+            ],
+            part_colors_status=400,
+        )
+
+        with self.assertRaises(EffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+
+        intent = self.ledger.latest("verified-toy", "factory-part-colors")
+        self.assertEqual(intent.state, "rejected")
+        with self.assertRaises(EffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(len(transport.part_color_writes), 2)
+
+    def test_an_ambiguous_part_colour_write_strands_the_intent(self):
+        self._seal_two_coloured_parts()
+        transport = FactoryTransport(
+            assembly_parts=[
+                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+            ],
+            part_colors_status=503,
+        )
+
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+
+        intent = self.ledger.latest("verified-toy", "factory-part-colors")
+        self.assertEqual(intent.state, "unknown")
 
     def test_product_specific_assembly_json_falls_back_to_sealed_primary_stl(self):
         product = self.made.artifact_root
