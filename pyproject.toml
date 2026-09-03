@@ -36,6 +36,7 @@ include = ["workshop*", "cli*"]
 
 [tool.setuptools.package-data]
 workshop = [
+  "daydream/*.json",
   "artifacts/schemas/*.json",
   "contributors/schemas/*.json",
   "runtime/schemas/*.json",

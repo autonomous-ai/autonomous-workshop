@@ -10,6 +10,8 @@ from workshop.daydream.catalog import (
     PriorWork,
     content_tokens,
     lint_novelty,
+    load_bundled_prior_work,
+    load_prior_work,
     load_repository_prior_work,
     normalize_title,
     render_prior_work_markdown,
@@ -97,6 +99,25 @@ class RepositoryPriorWorkTest(unittest.TestCase):
         self.assertEqual(source_checkout_root(), REPOSITORY)
         entries = load_repository_prior_work(source_checkout_root())
         self.assertIn("Horn Tip", [entry.title for entry in entries])
+
+    def test_bundled_catalog_exactly_matches_the_release_checkout(self):
+        bundled = load_bundled_prior_work()
+        repository = load_repository_prior_work(REPOSITORY)
+        self.assertEqual(bundled, repository)
+        self.assertGreater(len(bundled), 20)
+        self.assertEqual(load_prior_work(None), bundled)
+
+    def test_source_entries_extend_or_replace_the_bundled_release_view(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fresh = _toy(root, "z-fresh")
+            (fresh / "README.md").write_text(
+                "# Fresh Interaction\n\nA newly released physical interaction.\n",
+                encoding="utf-8",
+            )
+            merged = load_prior_work(root)
+            self.assertEqual(merged[-1].source, "toys/z-fresh")
+            self.assertIn("Horn Tip", [entry.title for entry in merged])
 
 
 class TokenTest(unittest.TestCase):

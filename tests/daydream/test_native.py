@@ -704,8 +704,18 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(load_sealed_daydream("sample", FIRST_ID), sealed)
         self.assertEqual([entry.status for entry in list_daydreams("sample")], ["dreamed"])
 
+        raw = sample_idea_dict()
+        raw["title"] = "Turn Pact"
+        raw["one_liner"] = "Two players rotate paired dials and try to reveal the same hidden window."
+        raw["experience"]["action"] = "Each player rotates one dial without seeing the other dial."
+        raw["experience"]["response"] = "The paired shutters reveal one of several shared windows."
+        raw["experience"]["payoff"] = "Matching windows create a simultaneous tactile click."
+        raw["experience"]["anti_generic_signature"] = (
+            "Two blind rotations resolve as one visible window and one shared click."
+        )
+        raw["keywords"] = ["paired-dials", "shutters", "matching", "shared-click"]
         sealed, _ = self._run(
-            daydream_id=SECOND_ID, idea=horn_tip_paraphrase_dict(), verdict="dream-again"
+            daydream_id=SECOND_ID, idea=raw, verdict="dream-again"
         )
         self.assertEqual(sealed.verdict.decision, "dream-again")
         self.assertEqual(sealed.verdict.risks[0].kind, "proof-mismatch")

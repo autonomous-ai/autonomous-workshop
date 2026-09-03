@@ -193,6 +193,7 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
                 raise AssertionError("wheel contains stale build output %s" % forbidden)
         for required in (
             "cli/main.py",
+            "workshop/daydream/prior_work.json",
             "workshop/runtime/_agent_assets/.agents/product-run/AGENTS.md",
             (
                 "workshop/runtime/_agent_assets/.agents/product-run/.agents/skills/"
@@ -201,6 +202,12 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
         ):
             if required not in members:
                 raise AssertionError("wheel is missing %s" % required)
+
+        prior_work_member = "workshop/daydream/prior_work.json"
+        if archive.read(prior_work_member) != (
+            repository / "src" / "workshop" / "daydream" / "prior_work.json"
+        ).read_bytes():
+            raise AssertionError("wheel Daydream prior-work catalog differs")
 
         _audit_zip_tree(
             archive,
@@ -276,6 +283,7 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
             if name.startswith("workshop/")
             and not info.is_dir()
             and not name.endswith(".py")
+            and name != "workshop/daydream/prior_work.json"
             and not name.startswith(runtime_data_roots)
         }
         if unexpected_data:

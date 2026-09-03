@@ -24,7 +24,7 @@ from workshop.daydream._files import read_regular_bytes, write_private_bytes
 from workshop.daydream.catalog import (
     PriorWork,
     lint_novelty,
-    load_repository_prior_work,
+    load_prior_work,
     render_prior_work_markdown,
     source_checkout_root,
 )
@@ -960,7 +960,7 @@ def run_daydream(
     )
     paths = daydream_paths(manifest.inventor_id, selected_id, home=home, create=True)
     catalog_root = repository_root if repository_root is not None else source_checkout_root()
-    repository_prior = load_repository_prior_work(catalog_root)
+    repository_prior = load_prior_work(catalog_root)
     notebook_entries = read_notebook(paths.notebook)
     outcome_entries = read_outcomes(paths.outcomes)
     portfolio_entries = load_portfolio(
