@@ -18,6 +18,7 @@ DAYDREAM_IDEA_KIND = "autonomous-workshop.daydream-idea"
 DAYDREAM_SEAL_KIND = "autonomous-workshop.daydream-seal"
 MAX_TITLE_CHARS = 60
 MAX_ONE_LINER_CHARS = 200
+MAX_HELD_FORM_CHARS = 240
 MAX_PARAGRAPH_CHARS = 600
 MAX_PRIOR_ART_NAME_CHARS = 80
 MAX_PRIOR_ART_DIFFERENCE_CHARS = 300
@@ -58,6 +59,7 @@ _IDEA_KEYS = frozenset(
         "keywords",
     )
 )
+_IDEA_OPTIONAL_KEYS = frozenset(("held_form",))
 _NEIGHBOR_KEYS = frozenset(("source", "title", "similarity"))
 _NOVELTY_KEYS = frozenset(("status", "max_similarity", "nearest", "reason"))
 _SEAL_KEYS = frozenset(
@@ -284,12 +286,15 @@ class Idea:
     taste_fit: TasteFit
     parts_estimate: int
     keywords: tuple[str, ...]
+    held_form: Optional[str] = None
 
     def __post_init__(self) -> None:
         if type(self.schema_version) is not int or self.schema_version != 1:
             raise ContractError("idea schema_version must be 1")
         bounded_line(self.title, "idea title", MAX_TITLE_CHARS)
         bounded_line(self.one_liner, "idea one_liner", MAX_ONE_LINER_CHARS)
+        if self.held_form is not None:
+            bounded_line(self.held_form, "idea held_form", MAX_HELD_FORM_CHARS)
         for name in ("what_you_do", "what_happens", "why_it_is_new"):
             bounded_paragraph(getattr(self, name), "idea %s" % name, MAX_PARAGRAPH_CHARS)
         if isinstance(self.prior_art, (str, Mapping)) or not isinstance(
@@ -334,7 +339,13 @@ class Idea:
 
     @classmethod
     def parse(cls, raw: Mapping[str, Any]) -> "Idea":
-        _exact_keys(raw, _IDEA_KEYS, "idea")
+        if not isinstance(raw, Mapping):
+            raise ContractError("idea must be a JSON object")
+        _exact_keys(
+            {key: value for key, value in raw.items() if key not in _IDEA_OPTIONAL_KEYS},
+            _IDEA_KEYS,
+            "idea",
+        )
         if raw["kind"] != DAYDREAM_IDEA_KIND:
             raise ContractError("idea kind must be %s" % DAYDREAM_IDEA_KIND)
         if isinstance(raw["prior_art"], (str, Mapping)) or not isinstance(
@@ -353,14 +364,21 @@ class Idea:
             taste_fit=TasteFit.parse(raw["taste_fit"]),
             parts_estimate=raw["parts_estimate"],
             keywords=raw["keywords"],
+            held_form=raw.get("held_form"),
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        value: Dict[str, Any] = {
             "schema_version": self.schema_version,
             "kind": DAYDREAM_IDEA_KIND,
             "title": self.title,
             "one_liner": self.one_liner,
+        }
+        if self.held_form is not None:
+            # Older sealed ideas have no held form; leaving the key out keeps
+            # their canonical bytes and sha256 unchanged.
+            value["held_form"] = self.held_form
+        value.update({
             "what_you_do": self.what_you_do,
             "what_happens": self.what_happens,
             "why_it_is_new": self.why_it_is_new,
@@ -368,7 +386,8 @@ class Idea:
             "taste_fit": self.taste_fit.to_dict(),
             "parts_estimate": self.parts_estimate,
             "keywords": list(self.keywords),
-        }
+        })
+        return value
 
     def canonical_bytes(self) -> bytes:
         return canonical_json(self.to_dict()).encode("utf-8")
@@ -390,6 +409,10 @@ def render_brief(idea: Idea, *, inventor_name: str, inventor_id: str) -> str:
         "",
         "Title: %s" % idea.title,
         "In one line: %s" % idea.one_liner,
+    ]
+    if idea.held_form is not None:
+        lines.append("What it looks like: %s" % idea.held_form)
+    lines += [
         "What you do: %s" % idea.what_you_do,
         "What happens: %s" % idea.what_happens,
         "Why it is new: %s" % idea.why_it_is_new,

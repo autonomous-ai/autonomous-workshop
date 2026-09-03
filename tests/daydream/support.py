@@ -28,6 +28,10 @@ def sample_idea_dict() -> Dict[str, Any]:
             "Flip a printed ladder and a captive bead clicks down every rung by "
             "gravity alone."
         ),
+        "held_form": (
+            "A palm-sized wooden-looking ladder with a bead that lives inside its rails, "
+            "round-shouldered like a toy from a rug."
+        ),
         "what_you_do": "Hold the ladder upright, flip it end over end, and set it down.",
         "what_happens": (
             "The bead tumbles rung by rung with an audible click at each step, "

@@ -78,6 +78,13 @@ stop.
 - One clear action and one clear payoff. A first-time player must know what to
   do within seconds and feel the answer immediately. Describe both concretely:
   what pivots, slides, rolls, drops, nests, balances, latches, or counts.
+- Give it a body. The mechanism must live inside a held form a stranger can
+  name at a glance: an animal, a vehicle, a moon, a lantern, a creature, a
+  little building, a tool with a face. One silhouette that reads as a toy on
+  a shelf, not as a mechanism demo, a jig, or a device. Put that form in
+  `held_form`. The next stage's blind reviewer rejects anything that reads as
+  a prototype, a bare exposed mechanism, or fragmented geometry, and it does
+  so before it reads a word of your description.
 - It must be buildable by the Workshop's next stages from your words alone.
   Prefer geometry the next stage can draw over mood it must guess at.
 
@@ -109,6 +116,7 @@ and no fewer:
   "kind": "autonomous-workshop.daydream-idea",
   "title": "one line, at most 60 characters: a real name, not a description",
   "one_liner": "one line, at most 200 characters: what it is and what it does",
+  "held_form": "one line, at most 240 characters: what it looks like held at arm's length: subject, silhouette, size, and how the mechanism hides inside the form",
   "what_you_do": "at most 600 characters: the player's action, concretely",
   "what_happens": "at most 600 characters: the payoff, the motion, the moment",
   "why_it_is_new": "at most 600 characters: the mechanism or play nobody has shipped",
@@ -128,6 +136,7 @@ and no fewer:
 
 Rules for the file:
 
+- `held_form` is required. An idea without a nameable form is not finished.
 - `prior_art` holds 2 to 5 entries.
 - `parts_estimate` is an integer from 1 to 12 (or lower if your Taste says so).
 - Every keyword matches `^[a-z0-9][a-z0-9-]{1,31}$`; there are 3 to 8 and they
@@ -147,9 +156,10 @@ ROUTE_BUDGETS = {
         "Route budget: SPARK. There is no Invent stage; Make must build and "
         "prove this idea alone in one short session. Keep it to one to three "
         "printed parts, one action, and one payoff that a single before/after "
-        "render pair proves at a glance. If the payoff needs several distinct "
-        "states, hidden internals, or fine timing to be believed, it is too big "
-        "for Spark: dream something smaller and sharper."
+        "render pair proves at a glance, inside one held form a stranger can "
+        "name. If the payoff needs several distinct states, hidden internals, or "
+        "fine timing to be believed, it is too big for Spark: dream something "
+        "smaller and sharper."
     ),
     "forge": (
         "Route budget: FORGE. Invent will research and specify the concept "

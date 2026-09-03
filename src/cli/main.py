@@ -380,6 +380,10 @@ def _print_daydream_card(sealed, *, stream: TextIO, offer_build: bool) -> None:
         "Inventor: %s (%s)" % (sealed.inventor_name, sealed.inventor_id),
         "Title: %s" % idea.title,
         "In one line: %s" % idea.one_liner,
+    ]
+    if idea.held_form is not None:
+        lines.append("What it looks like: %s" % idea.held_form)
+    lines += [
         "What you do: %s" % idea.what_you_do,
         "What happens: %s" % idea.what_happens,
         "Why it is new: %s" % idea.why_it_is_new,

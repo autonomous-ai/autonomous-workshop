@@ -177,6 +177,8 @@ class RenderBriefTest(unittest.TestCase):
             "Title: Ladder Drop\n"
             "In one line: Flip a printed ladder and a captive bead clicks down every "
             "rung by gravity alone.\n"
+            "What it looks like: A palm-sized wooden-looking ladder with a bead that "
+            "lives inside its rails, round-shouldered like a toy from a rug.\n"
             "What you do: Hold the ladder upright, flip it end over end, and set it "
             "down.\n"
             "What happens: The bead tumbles rung by rung with an audible click at "
@@ -283,3 +285,37 @@ class SealedDaydreamTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HeldFormTest(unittest.TestCase):
+    def test_held_form_is_optional_and_absent_ideas_keep_their_identity(self):
+        from tests.daydream.support import sample_idea_dict
+        from workshop.daydream.contracts import Idea, render_brief
+
+        with_form = sample_idea_dict()
+        without = dict(with_form)
+        del without["held_form"]
+        parsed = Idea.parse(without)
+        self.assertIsNone(parsed.held_form)
+        self.assertNotIn("held_form", parsed.to_dict())
+        self.assertEqual(Idea.parse(parsed.to_dict()), parsed)
+        self.assertNotEqual(parsed.sha256, Idea.parse(with_form).sha256)
+        brief = render_brief(Idea.parse(with_form), inventor_name="Sample", inventor_id="sample")
+        self.assertIn("\nWhat it looks like: A palm-sized", brief)
+        self.assertNotIn("What it looks like", render_brief(parsed, inventor_name="Sample", inventor_id="sample"))
+
+    def test_held_form_is_bounded(self):
+        from tests.daydream.support import sample_idea_dict
+        from workshop.daydream.contracts import Idea
+        from workshop.errors import ContractError
+
+        raw = sample_idea_dict()
+        raw["held_form"] = "x" * 241
+        with self.assertRaisesRegex(ContractError, "held_form"):
+            Idea.parse(raw)
+        raw["held_form"] = "two\nlines"
+        with self.assertRaisesRegex(ContractError, "held_form"):
+            Idea.parse(raw)
+        raw["held_form"] = ""
+        with self.assertRaisesRegex(ContractError, "held_form"):
+            Idea.parse(raw)

@@ -491,6 +491,7 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertIn("starting the current stage", output)
         self.assertIn("Daydream: %s" % sealed.daydream_id, output)
         self.assertIn("Title: Ladder Drop", output)
+        self.assertIn("What it looks like: A palm-sized", output)
         self.assertIn("Closest existing things: Jacob's ladder", output)
         self.assertIn("Taste fit: honors Motion comes from geometry", output)
         self.assertIn("Printed parts: 2", output)
