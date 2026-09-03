@@ -74,6 +74,7 @@ class NativeCommandTest(unittest.TestCase):
                 "plan-pack",
                 "skills",
                 "schemas",
+                "vault",
             },
         )
         for removed in (
@@ -134,6 +135,7 @@ class NativeCommandTest(unittest.TestCase):
             *,
             effort,
             manager_id,
+            max_rounds,
             github_publish_requested,
             activity_observer,
             timing_observer,
@@ -207,6 +209,7 @@ class NativeCommandTest(unittest.TestCase):
             *,
             effort,
             manager_id,
+            max_rounds,
             github_publish_requested,
             activity_observer,
             timing_observer,
@@ -266,6 +269,37 @@ class NativeCommandTest(unittest.TestCase):
             result = main(("wish", "a moon", "--manager", "grok", "--json"))
         self.assertEqual(result, 0)
         self.assertEqual(start.call_args.kwargs["manager_id"], "grok")
+
+    def test_wish_passes_round_budget_to_the_native_host(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-rounds"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--max-rounds", "8", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["max_rounds"], 8)
+
+    def test_wish_defaults_the_round_budget_to_four(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-default-rounds"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["max_rounds"], 4)
+
+    def test_wish_rejects_an_out_of_range_round_budget(self):
+        for value in ("0", "101", "four"):
+            with self.subTest(value=value), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(
+                StringIO()
+            ), self.assertRaises(SystemExit) as caught:
+                main(("wish", "a moon", "--max-rounds", value, "--json"))
+            self.assertEqual(caught.exception.code, 2)
+            start.assert_not_called()
 
     def test_live_native_activity_repeats_only_throttled_running_updates(self):
         output = StringIO()
@@ -334,6 +368,21 @@ class NativeCommandTest(unittest.TestCase):
             "2026-08-26T15:00:00.000Z)",
             stdout.getvalue(),
         )
+
+    def test_status_text_prints_one_line_per_scored_round(self):
+        stdout = StringIO()
+        receipt = native_receipt(status="active", stage="make")
+        receipt["rounds"] = [
+            {"round": 1, "verdict": "block", "score_median": {"play": 8, "wish_fit": 7.5},
+             "score_spread": {"play": 1, "wish_fit": 4}},
+            {"round": 2, "verdict": "pass", "score_median": None, "score_spread": None},
+            "not a mapping",
+        ]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            self.assertEqual(main(("status", "wish-one")), 0)
+        text = stdout.getvalue()
+        self.assertIn("Round 1: block — play 8 wish_fit 7.5 (readers disagree on wish_fit)", text)
+        self.assertIn("Round 2: pass — unscored", text)
 
     def test_status_text_surfaces_actionable_publication_need(self):
         stdout = StringIO()
@@ -542,6 +591,7 @@ class DaydreamCommandTest(unittest.TestCase):
             effort,
             manager_id,
             github_publish_requested,
+            max_rounds,
             activity_observer,
             timing_observer,
         ):
@@ -549,6 +599,7 @@ class DaydreamCommandTest(unittest.TestCase):
             observed["effort"] = effort
             observed["manager_id"] = manager_id
             observed["github"] = github_publish_requested
+            observed["max_rounds"] = max_rounds
             activity_observer("completed")
             timing_observer(timing_event())
             return native_receipt()
@@ -1132,6 +1183,77 @@ class ArtifactCommandTest(unittest.TestCase):
             packed = json.loads(output.getvalue())
             self.assertEqual(len(packed["pack_sha256"]), 64)
             self.assertTrue(pack_path.is_file())
+
+class VaultCommandTest(unittest.TestCase):
+    def run_cli(self, *argv):
+        stdout, stderr = StringIO(), StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            code = main(argv)
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    def test_vault_lint_and_check_read_a_local_checkout(self):
+        from tests.invent.test_vault import write_vault
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = write_vault(Path(temporary) / "vault")
+            code, out, _ = self.run_cli("vault", "lint", "--root", str(root))
+            self.assertEqual(code, 0)
+            self.assertIn("error(s)", out)
+            code, out, _ = self.run_cli("vault", "lint", "--root", str(root), "--json")
+            self.assertEqual(json.loads(out)["errors"], [])
+            code, out, _ = self.run_cli(
+                "vault", "check", "mechanisms/card-hand", "constraints/fdm-only", "--root", str(root)
+            )
+            self.assertEqual(code, 0)
+            self.assertIn("CONFLICT", out)
+            self.assertIn("fix:", out)
+            code, out, _ = self.run_cli(
+                "vault", "check", "mechanisms/card-hand", "constraints/fdm-only", "--root", str(root), "--json"
+            )
+            self.assertEqual(json.loads(out)[0]["kind"], "conflict")
+            (root / "mechanisms" / "bad.md").write_text(
+                "---\ntype: widget\nname: Bad\n---\n## Relations\n- risks:: [[anti-patterns/none]]\n",
+                encoding="utf-8",
+            )
+            code, out, _ = self.run_cli("vault", "lint", "--root", str(root))
+            self.assertEqual(code, 2)
+            self.assertIn("ERROR mechanisms/bad", out)
+            code, _, err = self.run_cli("vault", "lint", "--root", str(Path(temporary) / "nowhere"))
+            self.assertEqual(code, 2)
+            self.assertIn("no design vault directory", err)
+
+    def test_vault_reads_the_vault_api_and_fails_closed_without_a_token(self):
+        from tests.invent.fake_gamevault import FakeGameVaultTransport, install_fake_gamevault
+        from workshop.invent.gamevault import default_client as real_default_client
+
+        transport = install_fake_gamevault(
+            self, FakeGameVaultTransport(), targets=("cli.main.default_gamevault_client",)
+        )
+        code, out, _ = self.run_cli("vault", "lint", "--json")
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(out)["nodes"], len(transport.nodes))
+        self.assertTrue(transport.calls[-1][1].endswith("/api/gamevault/export"))
+        code, out, _ = self.run_cli("vault", "check", "mechanisms/hand-off", "--json")
+        self.assertEqual(json.loads(out)[0]["kind"], "risk")
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(
+            os.environ, {"WORKSHOP_HOME": temporary}, clear=True
+        ), mock.patch("cli.main.default_gamevault_client", side_effect=real_default_client):
+            code, _, err = self.run_cli("vault", "lint")
+            self.assertEqual(code, 2)
+            self.assertIn("no game vault URL", err)
+            self.assertIn("gamevault.env", err)
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(
+            os.environ,
+            {
+                "WORKSHOP_HOME": temporary,
+                "WORKSHOP_GAMEVAULT_URL": "http://vault.test",
+            },
+            clear=True,
+        ), mock.patch("cli.main.default_gamevault_client", side_effect=real_default_client):
+            code, _, err = self.run_cli("vault", "lint")
+            self.assertEqual(code, 2)
+            self.assertIn("no game vault token", err)
+            self.assertIn("gamevault.env", err)
 
 
 if __name__ == "__main__":

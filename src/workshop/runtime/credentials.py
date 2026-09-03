@@ -166,6 +166,22 @@ def _parse_credential_file(
     return result
 
 
+def private_credential_values(
+    path: Path,
+    name_pattern: "re.Pattern[str]",
+    *,
+    label: str,
+    max_bytes: int = MAX_FACTORY_CREDENTIAL_FILE_BYTES,
+) -> dict[str, str]:
+    """Read one private ``NAME=value`` file under the Factory file's rules."""
+
+    return _parse_credential_file(
+        _read_private_credential_file(path, label=label, max_bytes=max_bytes),
+        name_pattern,
+        label=label,
+    )
+
+
 def factory_credential_environment(
     environment: Optional[Mapping[str, str]] = None,
 ) -> Mapping[str, str]:
@@ -334,6 +350,7 @@ def factory_service_credential_environment(
 
 
 __all__ = [
+    "private_credential_values",
     "MAX_FACTORY_CREDENTIAL_FILE_BYTES",
     "factory_credential_environment",
     "factory_credential_file",

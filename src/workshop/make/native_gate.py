@@ -28,10 +28,12 @@ from workshop.artifacts import ArtifactEntry
 from workshop.errors import ArtifactError, ContractError
 from workshop.make.native import NativeMade
 from workshop.runtime.execution import minimal_tool_environment
+from workshop.make.step_canonical import StepCanonicalError, canonical_step_equal
 
 
 NATIVE_CAD_GATE_KIND = "autonomous-workshop.native-cad-gate-evidence"
 NATIVE_CAD_VERIFIER_PATH = ".agents/skills/cad/scripts/verify_project"
+MAX_NATIVE_CAD_STEP_COMPARE_BYTES = 256 * 1024 * 1024
 NATIVE_MADE_REQUIRED_ROOT_FILES = (
     "product.json",
     "assembled.step",
@@ -458,9 +460,28 @@ def _is_verifier_authored_volatile_report(path: str) -> bool:
     return bool(role) and "/" not in role
 
 
+def _is_step_exchange_file(path: str) -> bool:
+    return path.lower().endswith((".step", ".stp"))
+
+
 def _assert_copied_inputs_unchanged(
-    project_root: Path, entries: Sequence[ArtifactEntry]
+    project_root: Path,
+    entries: Sequence[ArtifactEntry],
+    *,
+    sealed_root: Optional[Path] = None,
 ) -> None:
+    """Fail unless the verifier left every declared file as it found it.
+
+    STEP exchange files are compared by their numbering-independent entity
+    graph (``canonical_step_digest``) rather than by bytes: Open CASCADE hands
+    out presentation-style entity ids in pointer order, so a faithful fresh
+    re-export of the same model can differ byte-for-byte while describing the
+    identical geometry, colours, and assembly. Every other declared file, and a
+    STEP file whose graph changed, still fails closed. ``sealed_root`` is the
+    exact sealed project the isolated copy was made from; without it STEP
+    files stay byte-compared.
+    """
+
     for entry in entries:
         relative = _safe_relative(entry.path, "native CAD project entry")
         if _is_verifier_authored_volatile_report(entry.path):
@@ -474,6 +495,40 @@ def _assert_copied_inputs_unchanged(
             if bool(identity.st_mode & stat.S_IXUSR) != entry.executable:
                 raise ArtifactError(
                     "CAD verifier changed a declared report mode: %s" % entry.path
+                )
+            continue
+        if sealed_root is not None and _is_step_exchange_file(entry.path):
+            content, identity = _read_regular(
+                project_root.joinpath(*relative.parts),
+                "isolated CAD project entry %s" % entry.path,
+                MAX_NATIVE_CAD_STEP_COMPARE_BYTES,
+            )
+            if bool(identity.st_mode & stat.S_IXUSR) != entry.executable:
+                raise ArtifactError(
+                    "CAD verifier changed a declared project file: %s" % entry.path
+                )
+            if (
+                len(content) == entry.bytes
+                and hashlib.sha256(content).hexdigest() == entry.sha256
+            ):
+                continue
+            sealed, _ = _read_regular(
+                sealed_root.joinpath(*relative.parts),
+                "sealed CAD project entry %s" % entry.path,
+                entry.bytes,
+            )
+            if (
+                len(sealed) != entry.bytes
+                or hashlib.sha256(sealed).hexdigest() != entry.sha256
+            ):
+                raise ArtifactError("sealed CAD project entry changed: %s" % entry.path)
+            try:
+                same_graph = canonical_step_equal(sealed, content)
+            except StepCanonicalError:
+                same_graph = False
+            if not same_graph:
+                raise ArtifactError(
+                    "CAD verifier changed a declared project file: %s" % entry.path
                 )
             continue
         content, identity = _read_regular(
@@ -1041,7 +1096,9 @@ def verify_native_made_cad(
             failure_code = "sealed-product-changed"
         if source_unchanged:
             try:
-                _assert_copied_inputs_unchanged(isolated_project, entries)
+                _assert_copied_inputs_unchanged(
+                    isolated_project, entries, sealed_root=project_root
+                )
             except (ArtifactError, ContractError):
                 failure_code = "declared-cad-output-changed"
         if failure_code is None:

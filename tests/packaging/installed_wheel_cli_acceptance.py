@@ -28,6 +28,7 @@ SCHEMA_OWNERS = {
 SKILL_PATHS = {
     "cad": "make/skills/cad",
     "design-reference": "make/skills/design-reference",
+    "design-vault": "invent/skills/design-vault",
     "electromechanical-integration": "make/skills/electromechanical-integration",
     "image-to-cad": "make/skills/image-to-cad",
     "manual-design": "release/skills/manual-design",
@@ -261,6 +262,7 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
             "workshop/artifacts/schemas/",
             "workshop/contributors/_inventors/",
             "workshop/contributors/schemas/",
+            "workshop/invent/skills/",
             "workshop/make/schemas/",
             "workshop/make/skills/",
             "workshop/release/skills/",

@@ -43,6 +43,8 @@ from workshop.daydream import (
     wish_from_daydream,
 )
 from workshop.errors import WorkshopError
+from workshop.invent.gamevault import default_client as default_gamevault_client
+from workshop.invent.vault import Vault, VaultError
 from workshop.make.skill_registry import (
     discover_skills,
     fingerprint_skill_tree,
@@ -66,6 +68,7 @@ from workshop.runtime.managers import (
     manager_spec,
 )
 from workshop.runtime.package_data import (
+    default_workshop_home,
     packaged_inventors_root,
     product_run_domain_skill_roots,
 )
@@ -274,6 +277,33 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     last_activity,
                 )
             )
+    rounds = receipt.get("rounds")
+    if isinstance(rounds, (list, tuple)):
+        for entry in rounds:
+            if not isinstance(entry, Mapping):
+                continue
+            median = entry.get("score_median")
+            if isinstance(median, Mapping):
+                spread = entry.get("score_spread") or {}
+                ambiguous = sorted(
+                    dim
+                    for dim, value in spread.items()
+                    if isinstance(value, (int, float)) and value >= 3
+                )
+                scores = " ".join(
+                    "%s %g" % (dim, value) for dim, value in sorted(median.items())
+                )
+                print(
+                    "Round %s: %s — %s%s"
+                    % (
+                        entry.get("round", "?"),
+                        entry.get("verdict", "?"),
+                        scores,
+                        " (readers disagree on %s)" % ", ".join(ambiguous) if ambiguous else "",
+                    )
+                )
+            else:
+                print("Round %s: %s — unscored" % (entry.get("round", "?"), entry.get("verdict", "?")))
     publication = receipt.get("publication")
     publication_reason = None
     if isinstance(publication, Mapping):
@@ -310,12 +340,29 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
         print("Resume: %s" % _shell_command("workshop", "resume", product_id))
 
 
+DEFAULT_MAX_ROUNDS = 4
+MAX_ROUND_BUDGET = 100
+
+
+def _round_budget(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("round budget must be an integer")
+    if not 1 <= parsed <= MAX_ROUND_BUDGET:
+        raise argparse.ArgumentTypeError(
+            "round budget must be between 1 and %d" % MAX_ROUND_BUDGET
+        )
+    return parsed
+
+
 def _start_run(
     wish: Wish,
     *,
     effort,
     manager,
     github: bool,
+    max_rounds: int = DEFAULT_MAX_ROUNDS,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
 ) -> Mapping[str, Any]:
@@ -346,6 +393,7 @@ def _start_run(
         wish,
         effort=effort.name,
         manager_id=manager.manager_id,
+        max_rounds=max_rounds,
         github_publish_requested=github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -367,6 +415,7 @@ def _wish(args: argparse.Namespace) -> int:
         effort=effort,
         manager=manager,
         github=args.github,
+        max_rounds=args.max_rounds,
         progress=progress,
         live_progress=live_progress,
     )
@@ -1154,6 +1203,42 @@ def _schemas(args: argparse.Namespace) -> int:
     return 0
 
 
+def _vault(args: argparse.Namespace) -> int:
+    if args.root is not None:
+        root = Path(args.root).expanduser()
+        if not root.is_dir():
+            raise VaultError("no design vault directory at %s" % root)
+        vault = Vault.from_directory(root)
+    else:
+        vault = default_gamevault_client().export()
+    if args.action == "lint":
+        errors, warnings = vault.lint()
+        if args.json:
+            _print_json(
+                {"nodes": len(vault.nodes), "errors": errors, "warnings": warnings}
+            )
+        else:
+            for line in errors:
+                print("ERROR %s" % line)
+            for line in warnings:
+                print("WARN  %s" % line)
+            print(
+                "%d nodes, %d error(s), %d warning(s)"
+                % (len(vault.nodes), len(errors), len(warnings))
+            )
+        return 2 if errors else 1 if warnings else 0
+    findings = vault.check_compatibility(args.paths)
+    if args.json:
+        _print_json(findings)
+    else:
+        for finding in findings:
+            print("%-17s %s" % (finding["kind"].upper(), " -> ".join(finding["nodes"])))
+            for fix in finding["suggested_fixes"]:
+                print("    fix: %s" % fix)
+        print("%d finding(s) for %s" % (len(findings), ", ".join(args.paths)))
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(
         prog="workshop",
@@ -1313,6 +1398,17 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     wish.add_argument(
+        "--max-rounds",
+        type=_round_budget,
+        default=DEFAULT_MAX_ROUNDS,
+        metavar="N",
+        help=(
+            "Invent-Make-Playtest round budget, 1-100 (default: %d); "
+            "frozen for the run and cannot be changed on resume"
+            % DEFAULT_MAX_ROUNDS
+        ),
+    )
+    wish.add_argument(
         "--github",
         action="store_true",
         help=(
@@ -1409,6 +1505,19 @@ def parser() -> argparse.ArgumentParser:
     schemas.add_argument("--root", type=Path)
     schemas.add_argument("--json", action="store_true")
     schemas.set_defaults(handler=_schemas)
+
+    vault = subcommands.add_parser(
+        "vault", help="lint or query the game design vault served by the vault API"
+    )
+    vault.add_argument("action", choices=("lint", "check"))
+    vault.add_argument("paths", nargs="*", help="node paths for `check`")
+    vault.add_argument(
+        "--root",
+        type=Path,
+        help="a local vault checkout to read instead of the vault API",
+    )
+    vault.add_argument("--json", action="store_true")
+    vault.set_defaults(handler=_vault)
     return command
 
 

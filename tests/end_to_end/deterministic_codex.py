@@ -295,19 +295,27 @@ def invented_source(*, include_selection: bool) -> dict:
                 "Every playable square is an orbital waypoint while movement "
                 "and capture rules remain unchanged."
             ),
-            "intended_interaction": (
-                "Two players move tactile pieces across the marked waypoints."
+            "interaction": (
+                "Two players move tactile pieces across the board's marked waypoints."
             ),
             "envelope_mm": {
                 "length_mm": 60.0,
                 "width_mm": 40.0,
                 "height_mm": 4.0,
             },
+            "mechanisms": ["square-grid"],
+            "build_plan": [
+                {
+                    "group": "board",
+                    "parts": ["board"],
+                    "exit_criteria": "The board prints flat with every waypoint marked.",
+                }
+            ],
             "components": [
                 {
                     "key": "board",
                     "name": "Board",
-                    "purpose": "playing surface",
+                    "duty": "the playing surface that holds every waypoint",
                     "form": "single printable rounded block",
                     "dimensions_mm": {
                         "length_mm": 60.0,
@@ -316,6 +324,8 @@ def invented_source(*, include_selection: bool) -> dict:
                     },
                     "placement": "centered on the table",
                     "interfaces": "pieces rest on marked waypoints",
+                    "mates_with": [],
+                    "signature": True,
                 }
             ],
             "assumptions": ["Players already know English draughts rules."],
@@ -369,9 +379,20 @@ def author_invent(root: Path, stage) -> None:
     if "invent-concept" in scenario:
         authored["concept"].pop("title", None)
     if "invent-physical" in scenario:
-        authored["concept"].pop("intended_interaction", None)
+        authored["concept"].pop("interaction", None)
     write_json(root / source, authored)
     finalizer(root, "invent", "--source", source)
+
+
+def write_render(project: Path) -> None:
+    """Make must ship one chromatic presentation render at snap/iso.png."""
+    snap = project / "snap"
+    snap.mkdir(exist_ok=True)
+    render = Image.new("RGB", (900, 900), "#fff4df")
+    pen = ImageDraw.Draw(render)
+    pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
+    pen.polygon(((450, 230), (700, 690), (200, 690)), fill="#ffb445")
+    render.save(snap / "iso.png", format="PNG")
 
 
 def author_make(root: Path, stage) -> None:
@@ -394,6 +415,7 @@ def author_make(root: Path, stage) -> None:
     validation = product_root / "validation"
     project.mkdir(parents=True, exist_ok=True)
     validation.mkdir(parents=True, exist_ok=True)
+    write_render(project)
     product = {
         "schema_version": 1,
         "product_id": stage["product_id"],
@@ -463,6 +485,15 @@ def author_make(root: Path, stage) -> None:
             "checks": ["fresh-export", "strict-fit", "printable-mesh"],
             "final_pipeline": {"print_ready_claim": True},
         },
+    )
+    parts = product_root / "parts"
+    parts.mkdir(exist_ok=True)
+    (parts / "board.stl").write_bytes(tetrahedron_stl())
+    group_arguments = ["make-group"]
+    if creative_source is not None:
+        group_arguments.extend(("--source", creative_source))
+    finalizer(
+        root, *group_arguments, "--product-root", product_root_value, "--group", "board"
     )
     arguments = ["make"]
     if creative_source is not None:
@@ -576,6 +607,31 @@ def author_playtest(root: Path, stage) -> None:
     if "playtest-mismatched-verdict" in stage["product_id"]:
         verdict = "improve"
         feedback = []
+    # Every host-issued vault lead is answered once (dismissed against the sealed
+    # revision) and, when the packet scores, enough blind reads sit at the floor.
+    answers = [
+        {
+            "lead": lead["id"],
+            "verdict": "dismissed",
+            "why": "The deterministic revision has no %s exposure." % lead["nodes"][-1],
+            "feedback_code": None,
+        }
+        for lead in inputs.get("vault_leads", [])
+    ]
+    score = min(10, max(8, int(inputs.get("score_floor", 8))))
+    reads = [
+        {
+            "reader": "reader-%d" % index,
+            "scores": {dimension: score for dimension in inputs.get("score_dimensions", [])},
+            "one_change": "Deepen the waypoint recesses by 0.5 mm.",
+        }
+        for index in range(int(inputs.get("score_minimum_reads", 3)))
+    ]
+    for check in checks:
+        if check["check_id"] == "agent-playtest":
+            check["observations"]["vault_leads"] = answers
+            if "score_dimensions" in inputs:
+                check["observations"]["reads"] = reads
     source = "authored/playtest.json"
     write_json(
         root / source,

@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from workshop.artifacts.core import assert_packable_content
 from workshop.artifacts.core import MAX_PACK_BYTES
 from workshop.errors import ArtifactError
 from workshop.artifacts.pack import (
@@ -118,6 +119,22 @@ class PackPlanTest(unittest.TestCase):
             self.assertEqual(plan.pack_bytes, destination.stat().st_size)
             self.assertEqual(plan.pack_bytes, packed.bytes)
             self.assertEqual(plan.artifact_sha256, packed.artifact_sha256)
+
+
+class PackableContentSecretBoundaryTest(unittest.TestCase):
+    def test_key_prefixes_need_a_left_boundary(self):
+        prose = (
+            b"- sources: https://example.test/ask-the-league-of-game-makers-about-catch-up/\n"
+            b"  https://example.test/desk-anthology-of-mechanisms-and-their-failures/\n"
+        )
+        assert_packable_content("vault/anti-patterns/decided-early.md", prose)
+        for name, blob in (
+            ("openai-key", b"token=sk-" + b"a" * 40 + b"\n"),
+            ("anthropic-key", b"token=sk-ant-" + b"b" * 30 + b"\n"),
+        ):
+            with self.subTest(rule=name):
+                with self.assertRaisesRegex(ArtifactError, "matches secret rule " + name):
+                    assert_packable_content("notes.md", blob)
 
 
 if __name__ == "__main__":

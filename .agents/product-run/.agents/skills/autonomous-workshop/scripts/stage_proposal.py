@@ -29,7 +29,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path, PurePosixPath
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
 
 STAGE_KIND = "autonomous-workshop.stage-input"
@@ -175,6 +175,46 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 INVENTOR_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 PRODUCT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 CHECK_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
+
+# Invent concept contract (Invented schema 4).  Schema 3 is the legacy shape
+# that only bound `title` and `summary`; sealed runs that predate the contract
+# keep resuming on it.  New Invent finalizations always emit schema 4.
+INVENTED_SCHEMA_VERSIONS = (3, 4, 5)
+BUILD_GROUP_FIELDS = frozenset(("group", "parts", "exit_criteria"))
+MAX_BUILD_GROUPS = 16
+MAKE_GROUP_KIND = "autonomous-workshop.make-group"
+PARTS_DIRECTORY = "parts"
+GROUPS_DIRECTORY = "groups"
+CONCEPT_CONTRACT_FIELDS = frozenset(
+    ("title", "summary", "interaction", "envelope_mm", "mechanisms", "components")
+)
+COMPONENT_CONTRACT_FIELDS = frozenset(
+    (
+        "key",
+        "name",
+        "form",
+        "duty",
+        "dimensions_mm",
+        "placement",
+        "interfaces",
+        "mates_with",
+        "signature",
+    )
+)
+DIMENSION_KEYS = ("length_mm", "width_mm", "height_mm")
+HEDGED_COMPONENT_FIELDS = ("form", "duty", "placement", "interfaces")
+MAX_CONCEPT_COMPONENTS = 64
+MAX_CONCEPT_MECHANISMS = 16
+MAX_DIMENSION_MM = 2000.0
+CONCEPT_SLUG_RE = re.compile(r"^[a-z][a-z0-9_-]{0,62}$")
+# A physical description that hedges a quantity is a wish, not a contract.
+NUMERIC_HEDGE_RE = re.compile(
+    r"(?i)\b(?:roughly|about|approximately|around|circa)\s+\d|~\s*\d"
+)
+QUANTITY_HEDGE_RE = re.compile(
+    r"(?i)\b(?:some|several|a few|a number of|a couple of|multiple|various|"
+    r"enough|as needed|or so)\b"
+)
 VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
 MANUAL_DESIGN_EVIDENCE_PATH = "MANUAL-DESIGN.json"
 MANUAL_DESIGN_EVIDENCE_KIND = "autonomous-workshop.manual-design-evidence"
@@ -1139,6 +1179,216 @@ def _validate_assignment(value: Any) -> dict[str, Any]:
     return dict(assignment)
 
 
+def _dimensions_mm(value: Any, label: str) -> list[float]:
+    if not isinstance(value, Mapping) or set(value) != set(DIMENSION_KEYS):
+        raise ProposalError(
+            "%s must contain exactly length_mm, width_mm, and height_mm" % label
+        )
+    result: list[float] = []
+    for key in DIMENSION_KEYS:
+        item = value[key]
+        if (
+            isinstance(item, bool)
+            or not isinstance(item, (int, float))
+            or not math.isfinite(item)
+            or not 0 < item <= MAX_DIMENSION_MM
+        ):
+            raise ProposalError(
+                "%s %s must be a finite millimetre value within (0, %d]"
+                % (label, key, int(MAX_DIMENSION_MM))
+            )
+        result.append(float(item))
+    return result
+
+
+def _hedged(text: str) -> Optional[str]:
+    match = NUMERIC_HEDGE_RE.search(text) or QUANTITY_HEDGE_RE.search(text)
+    return match.group(0) if match else None
+
+
+RUN_VAULT_PATH = "VAULT.json"
+RUN_VAULT_TOOL_PATH = ".agents/skills/design-vault/vault_tools.py"
+
+
+def _design_vault(run_root: Path):
+    """Load the host-written phase snapshot through the design-vault tool, or None.
+
+    The host writes ``VAULT.json`` before every Invent, Make, and Playtest
+    phase; a stage without one finalizes without vault rules.  A snapshot
+    that is present but unreadable, or whose tool is missing, is a broken run
+    tree, not a legacy run.
+    """
+
+    vault_path = run_root / RUN_VAULT_PATH
+    tool_path = run_root / RUN_VAULT_TOOL_PATH
+    if not vault_path.is_file() and not vault_path.is_symlink():
+        return None
+    if vault_path.is_symlink() or tool_path.is_symlink() or not tool_path.is_file():
+        raise ProposalError("design vault snapshot or tool is missing from the run")
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("workshop_run_vault_tools", tool_path)
+    if spec is None or spec.loader is None:  # pragma: no cover - a .py path always loads
+        raise ProposalError("design vault tool cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        return module, module.PackedVault.load(vault_path)
+    except module.VaultToolError as exc:
+        raise ProposalError("design vault snapshot is invalid: %s" % exc) from exc
+
+
+def _assert_concept_vault_compatible(run_root: Path, concept: Mapping[str, Any]) -> None:
+    loaded = _design_vault(run_root)
+    if loaded is None:
+        return
+    module, vault = loaded
+    try:
+        module.assert_concept_compatible(vault, concept)
+    except module.VaultToolError as exc:
+        raise ProposalError("Invent concept is refused by the design vault: %s" % exc) from exc
+
+
+def _validate_concept_contract(concept: Mapping[str, Any]) -> None:
+    """Deterministic buildability checks on an Invent concept (schema 4).
+
+    Every rule here is one an agent asked to self-check its own concept will
+    report as satisfied: unbound quantities, orphaned mates, decoration parts,
+    a missing or duplicated signature part, and parts larger than the envelope.
+    """
+
+    missing = sorted(CONCEPT_CONTRACT_FIELDS - set(concept))
+    if missing:
+        raise ProposalError(
+            "Invented concept lacks required contract fields: %s" % ", ".join(missing)
+        )
+    _bounded_text(concept["title"], "Invented concept title", 2_000)
+    _bounded_text(concept["summary"], "Invented concept summary", 2_000)
+    interaction = _bounded_text(
+        concept["interaction"], "Invented concept interaction", 4_000
+    ).casefold()
+    envelope = sorted(_dimensions_mm(concept["envelope_mm"], "Invented concept envelope_mm"))
+    mechanisms = _array(concept["mechanisms"], "Invented concept mechanisms")
+    if (
+        len(mechanisms) > MAX_CONCEPT_MECHANISMS
+        or any(
+            not isinstance(item, str) or CONCEPT_SLUG_RE.fullmatch(item) is None
+            for item in mechanisms
+        )
+        or len(set(mechanisms)) != len(mechanisms)
+    ):
+        raise ProposalError(
+            "Invented concept mechanisms must be at most %d unique slugs"
+            % MAX_CONCEPT_MECHANISMS
+        )
+    components = _array(concept["components"], "Invented concept components", nonempty=True)
+    if len(components) > MAX_CONCEPT_COMPONENTS:
+        raise ProposalError(
+            "Invented concept components exceed %d entries" % MAX_CONCEPT_COMPONENTS
+        )
+    parsed: dict[str, dict[str, Any]] = {}
+    for raw in components:
+        item = _fields(raw, COMPONENT_CONTRACT_FIELDS, "Invented component")
+        key = item["key"]
+        if (
+            not isinstance(key, str)
+            or CONCEPT_SLUG_RE.fullmatch(key) is None
+            or key in parsed
+        ):
+            raise ProposalError("Invented component key must be a unique slug")
+        name = _bounded_text(item["name"], "Invented component %s name" % key, 200)
+        for field_name in HEDGED_COMPONENT_FIELDS:
+            text = _bounded_text(
+                item[field_name], "Invented component %s %s" % (key, field_name), 4_000
+            )
+            hedge = _hedged(text)
+            if hedge is not None:
+                raise ProposalError(
+                    "Invented component %s %s uses an unbound quantity %r; "
+                    "state the number (unbound)" % (key, field_name, hedge)
+                )
+        dims = sorted(
+            _dimensions_mm(item["dimensions_mm"], "Invented component %s dimensions_mm" % key)
+        )
+        if any(dim > limit for dim, limit in zip(dims, envelope)):
+            raise ProposalError(
+                "Invented component %s exceeds the concept envelope (envelope)" % key
+            )
+        if type(item["signature"]) is not bool:
+            raise ProposalError("Invented component %s signature must be boolean" % key)
+        mates = _array(item["mates_with"], "Invented component %s mates_with" % key)
+        parsed[key] = {"name": name, "mates": mates, "signature": item["signature"]}
+    for key, component in parsed.items():
+        mates = component["mates"]
+        if len(set(mates)) != len(mates) or any(
+            not isinstance(mate, str) or mate == key or mate not in parsed
+            for mate in mates
+        ):
+            raise ProposalError(
+                "Invented component %s mates_with must name other existing "
+                "components exactly once (component-orphan)" % key
+            )
+    signatures = [key for key, component in parsed.items() if component["signature"]]
+    if len(signatures) != 1:
+        raise ProposalError(
+            "Invented concept must flag exactly one signature component, found %d "
+            "(signature)" % len(signatures)
+        )
+    mated: set[str] = set()
+    for key, component in parsed.items():
+        if component["mates"]:
+            mated.add(key)
+            mated.update(component["mates"])
+    for key, component in parsed.items():
+        spoken = (key, key.replace("_", " ").replace("-", " "), component["name"].casefold())
+        if key not in mated and not any(term in interaction for term in spoken):
+            raise ProposalError(
+                "Invented component %s is decoration: nothing mates with it and "
+                "the interaction never uses it (decoration)" % key
+            )
+
+
+def _validate_build_plan(concept: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """A complete partition of components into build groups (schema 5)."""
+
+    plan = _array(concept.get("build_plan"), "Invented concept build_plan", nonempty=True)
+    if len(plan) > MAX_BUILD_GROUPS:
+        raise ProposalError("Invented concept build_plan exceeds %d groups" % MAX_BUILD_GROUPS)
+    components = {item["key"]: item for item in concept["components"]}
+    placed: dict[str, int] = {}
+    groups: list[dict[str, Any]] = []
+    for index, raw in enumerate(plan):
+        group = _fields(raw, BUILD_GROUP_FIELDS, "Invented build group")
+        name = group["group"]
+        if (
+            not isinstance(name, str)
+            or CONCEPT_SLUG_RE.fullmatch(name) is None
+            or any(item["group"] == name for item in groups)
+        ):
+            raise ProposalError("Invented build group name must be a unique slug")
+        _bounded_text(group["exit_criteria"], "Invented build group %s exit_criteria" % name, 2_000)
+        parts = _array(group["parts"], "Invented build group %s parts" % name, nonempty=True)
+        for part in parts:
+            if not isinstance(part, str) or part not in components:
+                raise ProposalError(
+                    "Invented build group %s names an unknown component %r (build-plan)"
+                    % (name, part)
+                )
+            if part in placed:
+                raise ProposalError(
+                    "Invented component %s is placed in more than one build group (build-plan)"
+                    % part
+                )
+            placed[part] = index
+        groups.append({"group": name, "parts": list(parts), "exit_criteria": group["exit_criteria"]})
+    missing = sorted(set(components) - set(placed))
+    if missing:
+        raise ProposalError(
+            "Invented build_plan leaves components unplaced: %s (build-plan)" % ", ".join(missing)
+        )
+    return groups
+
+
 def _validate_invented(value: Any, assignment: Mapping[str, Any]) -> dict[str, Any]:
     expected = {
         "schema_version",
@@ -1154,14 +1404,22 @@ def _validate_invented(value: Any, assignment: Mapping[str, Any]) -> dict[str, A
         "invented_sha256",
     }
     invented = _fields(value, expected, "Invented")
-    if type(invented["schema_version"]) is not int or invented["schema_version"] != 3:
-        raise ProposalError("Invented schema_version must be 3")
+    if (
+        type(invented["schema_version"]) is not int
+        or invented["schema_version"] not in INVENTED_SCHEMA_VERSIONS
+    ):
+        raise ProposalError("Invented schema_version must be 3, 4, or 5")
     if invented["kind"] != INVENTED_KIND:
         raise ProposalError("Invented kind is invalid")
     concept = _mapping(invented["concept"], "Invented concept", nonempty=True)
     research = _mapping(invented["research"], "Invented research", nonempty=True)
-    _bounded_text(concept.get("title"), "Invented concept title", 2_000)
-    _bounded_text(concept.get("summary"), "Invented concept summary", 2_000)
+    if invented["schema_version"] >= 4:
+        _validate_concept_contract(concept)
+        if invented["schema_version"] >= 5:
+            _validate_build_plan(concept)
+    else:
+        _bounded_text(concept.get("title"), "Invented concept title", 2_000)
+        _bounded_text(concept.get("summary"), "Invented concept summary", 2_000)
     if invented["concept_sha256"] != json_sha256(concept):
         raise ProposalError("Invented concept_sha256 is invalid")
     if invented["research_sha256"] != json_sha256(research):
@@ -1310,80 +1568,28 @@ def _match_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dict
     return {**identity, "assignment_sha256": json_sha256(identity)}
 
 
-def _invent_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dict[str, Any]:
+def _invent_contract(
+    run_root: Path, stage: Mapping[str, Any], source: Mapping[str, Any]
+) -> dict[str, Any]:
     inputs = _required_fields(
         stage["inputs"], {"assignment"}, "Invent STAGE inputs"
     )
     assignment = _validate_assignment(inputs["assignment"])
-    return _invent_contract_for_assignment(assignment, source)
+    return _invent_contract_for_assignment(run_root, assignment, source)
 
 
 def _invent_contract_for_assignment(
-    assignment: Mapping[str, Any],
-    source: Mapping[str, Any],
-    *,
-    require_physical: bool = False,
+    run_root: Path, assignment: Mapping[str, Any], source: Mapping[str, Any]
 ) -> dict[str, Any]:
     assignment = _validate_assignment(assignment)
     authored = _fields(source, {"concept", "research"}, "Invent authored source")
     concept = _mapping(authored["concept"], "Invent concept", nonempty=True)
     research = _mapping(authored["research"], "Invent research", nonempty=True)
-    _bounded_text(concept.get("title"), "Invent concept title", 2_000)
-    _bounded_text(concept.get("summary"), "Invent concept summary", 2_000)
-    if require_physical:
-        for key in ("signature_decision", "intended_interaction"):
-            _bounded_text(
-                concept.get(key), "Invent concept %s" % key, 4_000
-            )
-        envelope = _mapping(
-            concept.get("envelope_mm"), "Invent concept envelope_mm", nonempty=True
-        )
-        for key in ("length_mm", "width_mm", "height_mm"):
-            value = envelope.get(key)
-            if type(value) not in (int, float) or not 0 < value <= 10_000:
-                raise ProposalError("Invent concept envelope_mm.%s is invalid" % key)
-        components = _array(
-            concept.get("components"), "Invent concept components", nonempty=True
-        )
-        for index, component_value in enumerate(components):
-            component = _mapping(
-                component_value,
-                "Invent concept component %d" % index,
-                nonempty=True,
-            )
-            for key in (
-                "key",
-                "name",
-                "purpose",
-                "form",
-                "placement",
-                "interfaces",
-            ):
-                _bounded_text(
-                    component.get(key),
-                    "Invent concept component %d %s" % (index, key),
-                    2_000,
-                )
-            dimensions = _mapping(
-                component.get("dimensions_mm"),
-                "Invent concept component %d dimensions_mm" % index,
-                nonempty=True,
-            )
-            for key in ("length_mm", "width_mm", "height_mm"):
-                value = dimensions.get(key)
-                if type(value) not in (int, float) or not 0 < value <= 10_000:
-                    raise ProposalError(
-                        "Invent concept component %d dimensions_mm.%s is invalid"
-                        % (index, key)
-                    )
-        for key in ("assumptions", "unresolved_risks"):
-            values = _array(concept.get(key), "Invent concept %s" % key)
-            for index, value in enumerate(values):
-                _bounded_text(
-                    value, "Invent concept %s %d" % (key, index), 2_000
-                )
+    _validate_concept_contract(concept)
+    _validate_build_plan(concept)
+    _assert_concept_vault_compatible(run_root, concept)
     identity = {
-        "schema_version": 3,
+        "schema_version": 5,
         "kind": INVENTED_KIND,
         "wish_sha256": assignment["wish_sha256"],
         "assignment_sha256": assignment["assignment_sha256"],
@@ -1399,6 +1605,147 @@ def _invent_contract_for_assignment(
         raise ProposalError("Invented exceeds its byte limit")
     return result
 
+
+def _part_hashes(product_root: Path, concept: Mapping[str, Any]) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for item in concept.get("components", ()):
+        key = item["key"]
+        path = product_root / PARTS_DIRECTORY / ("%s.stl" % key)
+        if path.is_symlink() or not path.is_file():
+            raise ProposalError("Make product tree lacks part %s at %s/%s.stl" % (key, PARTS_DIRECTORY, key))
+        content = path.read_bytes()
+        if not content:
+            raise ProposalError("Make part %s is empty" % key)
+        hashes[key] = hashlib.sha256(content).hexdigest()
+    return hashes
+
+
+def _validate_build_groups(concept: Mapping[str, Any], product_root: Path) -> dict[str, int]:
+    """Every planned group must be sealed against the exact part files (host mirror)."""
+
+    plan = concept.get("build_plan")
+    if not isinstance(plan, (list, tuple)) or not plan:
+        return {"groups": 0, "parts": 0}
+    hashes = _part_hashes(product_root, concept)
+    for group in plan:
+        name = group["group"]
+        path = product_root / GROUPS_DIRECTORY / ("%s.json" % name)
+        if path.is_symlink() or not path.is_file():
+            raise ProposalError(
+                "Make build group %s has no sealed outcome; run make-group --group %s first"
+                % (name, name)
+            )
+        try:
+            document = json.loads(path.read_bytes().decode("utf-8"), object_pairs_hook=_strict_object)
+        except (UnicodeError, ValueError) as exc:
+            raise ProposalError("Make build group %s outcome is not strict JSON" % name) from exc
+        if not isinstance(document, dict) or set(document) != {
+            "schema_version", "kind", "group", "parts", "files"
+        }:
+            raise ProposalError("Make build group %s outcome fields are invalid" % name)
+        if (
+            document["schema_version"] != 1
+            or document["kind"] != MAKE_GROUP_KIND
+            or document["group"] != name
+            or document["parts"] != list(group["parts"])
+        ):
+            raise ProposalError("Make build group %s outcome does not match the sealed plan" % name)
+        files = document["files"]
+        if not isinstance(files, dict) or set(files) != set(group["parts"]):
+            raise ProposalError("Make build group %s outcome must hash exactly its parts" % name)
+        stale = sorted(key for key in group["parts"] if files[key] != hashes[key])
+        if stale:
+            raise ProposalError(
+                "Make build group %s was sealed against different part bytes: %s; "
+                "re-run make-group --group %s" % (name, ", ".join(stale), name)
+            )
+    return {"groups": len(plan), "parts": len(hashes)}
+
+
+def _spark_creative_contracts(
+    run_root: Path, stage: Mapping[str, Any], source_value: str | None
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Seal the Spark Make turn's own Match assignment and Invented contract."""
+
+    if not source_value:
+        raise ProposalError("Spark Make requires --source creative JSON")
+    source, _, _ = _read_json(run_root, source_value, "Spark Make authored source")
+    authored = _fields(
+        source,
+        {"selected_inventor_id", "ranking", "concept", "research"},
+        "Spark Make authored source",
+    )
+    assignment = _match_contract(
+        stage,
+        {
+            "selected_inventor_id": authored["selected_inventor_id"],
+            "ranking": authored["ranking"],
+        },
+    )
+    invented = _invent_contract_for_assignment(
+        run_root,
+        assignment,
+        {"concept": authored["concept"], "research": authored["research"]},
+    )
+    return assignment, invented
+
+
+def _make_group(
+    run_root: Path,
+    stage: Mapping[str, Any],
+    *,
+    product_root_value: str,
+    group_name: str,
+    assignment_value: Mapping[str, Any] | None = None,
+    invented_value: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Seal one build group: its parts exist and their exact bytes are recorded."""
+
+    inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+    if assignment_value is None or invented_value is None:
+        required = _required_fields(inputs, {"assignment", "invented"}, "Make STAGE inputs")
+        assignment_value = required["assignment"]
+        invented_value = required["invented"]
+    assignment = _validate_assignment(assignment_value)
+    invented = _validate_invented(invented_value, assignment)
+    concept = invented["concept"]
+    plan = concept.get("build_plan") if invented["schema_version"] >= 5 else None
+    if not plan:
+        raise ProposalError("this Invent contract declares no build_plan; seal Make directly")
+    expected_root = "artifacts/make/r%04d/product" % stage["round"]
+    if product_root_value != expected_root:
+        raise ProposalError("Make product root must be %s" % expected_root)
+    _, product_root = _existing_directory(run_root, product_root_value, "Make product root")
+    group = next((item for item in plan if item["group"] == group_name), None)
+    if group is None:
+        raise ProposalError("build group %r is not in the sealed build_plan" % group_name)
+    files: dict[str, str] = {}
+    for key in group["parts"]:
+        path = product_root / PARTS_DIRECTORY / ("%s.stl" % key)
+        if path.is_symlink() or not path.is_file():
+            raise ProposalError(
+                "build group %s part %s is missing at %s/%s.stl" % (group_name, key, PARTS_DIRECTORY, key)
+            )
+        content = path.read_bytes()
+        if not content:
+            raise ProposalError("build group %s part %s is empty" % (group_name, key))
+        files[key] = hashlib.sha256(content).hexdigest()
+    document = {
+        "schema_version": 1,
+        "kind": MAKE_GROUP_KIND,
+        "group": group_name,
+        "parts": list(group["parts"]),
+        "files": files,
+    }
+    target = product_root / GROUPS_DIRECTORY / ("%s.json" % group_name)
+    target.parent.mkdir(exist_ok=True)
+    target.write_bytes(canonical_json(document))
+    return {
+        "group": group_name,
+        "outcome_path": "%s/%s/%s.json" % (product_root_value, GROUPS_DIRECTORY, group_name),
+        "files": files,
+        "exit_criteria": group["exit_criteria"],
+    }
 
 def _validate_make_product_render(project: Path) -> None:
     """Require explicit hero and signature presentation renders from Make.
@@ -1843,6 +2190,7 @@ def _make_contract(
             "Make product contains a duplicate final snap family outside the "
             "declared CAD project: %s" % ", ".join(duplicate_snap_paths)
         )
+    _validate_build_groups(invented["concept"], product_root)
     identity = {
         "schema_version": 1,
         "kind": MADE_KIND,
@@ -2362,6 +2710,155 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
     return validated
 
 
+VAULT_LEAD_CHECK_ID = "agent-playtest"
+VAULT_LEAD_VERDICTS = ("confirmed", "dismissed")
+MAX_VAULT_LEAD_WHY = 1_000
+LEAD_ID_RE = re.compile(r"^[0-9a-f]{16}$")
+
+
+def _validate_vault_lead_answers(
+    leads: Sequence[Mapping[str, Any]],
+    checks: Sequence[Mapping[str, Any]],
+    feedback: Sequence[Mapping[str, Any]],
+) -> dict[str, int]:
+    """Every issued design-vault lead must be answered exactly once (host mirror)."""
+
+    issued = {}
+    for lead in leads:
+        identifier = lead.get("id") if isinstance(lead, Mapping) else None
+        if not isinstance(identifier, str) or LEAD_ID_RE.fullmatch(identifier) is None:
+            raise ProposalError("issued vault lead id is invalid")
+        issued[identifier] = lead
+    answers: list[Any] = []
+    for check in checks:
+        if check.get("check_id") == VAULT_LEAD_CHECK_ID:
+            raw = (check.get("observations") or {}).get("vault_leads", [])
+            if not isinstance(raw, (list, tuple)):
+                raise ProposalError("vault_leads answers must be a list")
+            answers = list(raw)
+    if not issued:
+        if answers:
+            raise ProposalError("Playtest answers vault leads that were never issued")
+        return {"answered": 0, "confirmed": 0, "dismissed": 0}
+    codes = {item.get("code") for item in feedback if isinstance(item, Mapping)}
+    seen: set[str] = set()
+    confirmed = 0
+    for answer in answers:
+        if not isinstance(answer, Mapping) or set(answer) != {
+            "lead",
+            "verdict",
+            "why",
+            "feedback_code",
+        }:
+            raise ProposalError("vault lead answers need exactly lead, verdict, why, feedback_code")
+        identifier = answer["lead"]
+        if identifier not in issued:
+            raise ProposalError(
+                "vault lead answer names a lead that was not issued: %r" % (identifier,)
+            )
+        if identifier in seen:
+            raise ProposalError("vault lead %s is answered more than once" % identifier)
+        seen.add(identifier)
+        if answer["verdict"] not in VAULT_LEAD_VERDICTS:
+            raise ProposalError("vault lead %s verdict must be confirmed or dismissed" % identifier)
+        why = answer["why"]
+        if not isinstance(why, str) or not why.strip() or len(why) > MAX_VAULT_LEAD_WHY:
+            raise ProposalError("vault lead %s needs a bounded non-empty why" % identifier)
+        code = answer["feedback_code"]
+        if answer["verdict"] == "confirmed":
+            if not isinstance(code, str) or code not in codes:
+                raise ProposalError(
+                    "confirmed vault lead %s must name an existing feedback code" % identifier
+                )
+            confirmed += 1
+        elif code is not None:
+            raise ProposalError("dismissed vault lead %s must not name feedback" % identifier)
+    missing = sorted(set(issued) - seen)
+    if missing:
+        raise ProposalError("Playtest left vault leads unanswered: %s" % ", ".join(missing))
+    return {"answered": len(seen), "confirmed": confirmed, "dismissed": len(seen) - confirmed}
+
+
+SCORE_READ_FIELDS = frozenset(("reader", "scores", "one_change"))
+MAX_SCORE_READS = 16
+MAX_SCORE_ONE_CHANGE = 1_000
+
+
+def _median(values: Sequence[int]) -> float:
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return float(ordered[middle])
+    return (ordered[middle - 1] + ordered[middle]) / 2.0
+
+
+def _score_summary(
+    dimensions: Sequence[str],
+    checks: Sequence[Mapping[str, Any]],
+    *,
+    minimum_reads: int,
+    maximum: int = 10,
+) -> dict[str, Any]:
+    """Median and spread of the agent-playtest reads (host mirror)."""
+
+    dims = tuple(dimensions)
+    if not dims or len(set(dims)) != len(dims):
+        raise ProposalError("score dimensions must be unique and non-empty")
+    reads: Any = None
+    for check in checks:
+        if check.get("check_id") == VAULT_LEAD_CHECK_ID:
+            reads = (check.get("observations") or {}).get("reads")
+    if not isinstance(reads, (list, tuple)):
+        raise ProposalError("agent-playtest observations must carry a reads list")
+    if not minimum_reads <= len(reads) <= MAX_SCORE_READS:
+        raise ProposalError(
+            "agent-playtest needs %d to %d independent reads" % (minimum_reads, MAX_SCORE_READS)
+        )
+    readers: set[str] = set()
+    per_dimension: dict[str, list[int]] = {dim: [] for dim in dims}
+    changes: list[str] = []
+    for read in reads:
+        if not isinstance(read, Mapping) or set(read) != SCORE_READ_FIELDS:
+            raise ProposalError("each read needs exactly reader, scores, and one_change")
+        reader = read["reader"]
+        if not isinstance(reader, str) or not reader.strip() or reader in readers:
+            raise ProposalError("each read needs a distinct non-empty reader name")
+        readers.add(reader)
+        scores = read["scores"]
+        if not isinstance(scores, Mapping) or set(scores) != set(dims):
+            raise ProposalError("read %r must score exactly the issued dimensions" % reader)
+        for dim in dims:
+            value = scores[dim]
+            if isinstance(value, bool) or type(value) is not int or not 0 <= value <= maximum:
+                raise ProposalError(
+                    "read %r scores %s outside 0..%d" % (reader, dim, maximum)
+                )
+            per_dimension[dim].append(value)
+        change = read["one_change"]
+        if not isinstance(change, str) or not change.strip() or len(change) > MAX_SCORE_ONE_CHANGE:
+            raise ProposalError("read %r needs a bounded non-empty one_change" % reader)
+        changes.append(change.strip())
+    return {
+        "reads": len(reads),
+        "median": {dim: _median(per_dimension[dim]) for dim in dims},
+        "spread": {dim: max(per_dimension[dim]) - min(per_dimension[dim]) for dim in dims},
+        "one_change": changes,
+    }
+
+
+def _assert_scored(inputs: Mapping[str, Any], checks: Sequence[Mapping[str, Any]], verdict: str) -> None:
+    if "score_dimensions" not in inputs:
+        return
+    dimensions = _array(inputs["score_dimensions"], "Playtest STAGE score_dimensions", nonempty=True)
+    floor = _positive_int(inputs.get("score_floor"), "Playtest STAGE score_floor", 10)
+    minimum = _positive_int(inputs.get("score_minimum_reads"), "Playtest STAGE score_minimum_reads", 16)
+    summary = _score_summary(dimensions, checks, minimum_reads=minimum)
+    if verdict == "pass":
+        low = sorted(dim for dim, value in summary["median"].items() if value < floor)
+        if low:
+            raise ProposalError(
+                "passing Playtest medians sit below the floor of %d: %s" % (floor, ", ".join(low))
+            )
 def _manual_design_text_list(
     value: Any,
     label: str,
@@ -2761,6 +3258,12 @@ def _playtest_contract(
     if len(observed_ids) != len(set(observed_ids)) or set(observed_ids) != set(required_ids):
         raise ProposalError("Playtest checks must cover the required check ids exactly")
     feedback = [_feedback(item) for item in _array(authored["feedback"], "Playtest feedback")]
+    _validate_vault_lead_answers(
+        _array(inputs.get("vault_leads", []), "Playtest STAGE vault_leads"),
+        checks,
+        feedback,
+    )
+    _assert_scored(inputs, checks, verdict)
     failing = any(not item["passed"] for item in checks)
     actionable = any(item["severity"] in ("improve", "block") for item in feedback)
     if verdict == "pass" and (failing or actionable):
@@ -3252,6 +3755,15 @@ def _parser() -> argparse.ArgumentParser:
         help="CAD verification file relative to the product tree.",
     )
 
+    make_group = subparsers.add_parser(
+        "make-group", help="Seal one build group of the current Make attempt."
+    )
+    make_group.add_argument(
+        "--source", help="Run-local Spark creative JSON (Spark Make only)."
+    )
+    make_group.add_argument("--product-root", required=True, help="Run-local product tree.")
+    make_group.add_argument("--group", required=True, help="Group name from the sealed build_plan.")
+
     playtest = subparsers.add_parser(
         "playtest", help="Seal authored checks and exact evidence tree."
     )
@@ -3290,6 +3802,23 @@ def _parser() -> argparse.ArgumentParser:
 def run(args: argparse.Namespace) -> dict[str, Any]:
     _workshop_python()
     run_root = _canonical_root(args.run_root)
+    if args.command == "make-group":
+        stage = _load_stage(run_root, "make")
+        inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
+        assignment = invented = None
+        source_value = getattr(args, "source", None)
+        if inputs.get("creative_source_required") is True:
+            assignment, invented = _spark_creative_contracts(run_root, stage, source_value)
+        elif source_value is not None:
+            raise ProposalError("this Make stage does not accept --source")
+        return _make_group(
+            run_root,
+            stage,
+            product_root_value=args.product_root,
+            group_name=args.group,
+            assignment_value=assignment,
+            invented_value=invented,
+        )
     if args.command == "need":
         expected_stage = args.stage
     elif args.command == "make-revision":
@@ -3318,7 +3847,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
         inputs = _mapping(stage["inputs"], "Invent STAGE inputs", nonempty=True)
         if "assignment" in inputs:
-            contract = _invent_contract(stage, source)
+            contract = _invent_contract(run_root, stage, source)
         else:
             authored = _fields(
                 source,
@@ -3333,9 +3862,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 },
             )
             contract = _invent_contract_for_assignment(
+                run_root,
                 assignment,
                 {"concept": authored["concept"], "research": authored["research"]},
-                require_physical=True,
             )
             assignment_path = _safe_relative(
                 inputs.get("assignment_contract_path"),
@@ -3355,28 +3884,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         inputs = _mapping(stage["inputs"], "Make STAGE inputs", nonempty=True)
         assignment = invented = None
         if inputs.get("creative_source_required") is True:
-            if not args.source:
-                raise ProposalError("Spark Make requires --source creative JSON")
-            source, _, _ = _read_json(
-                run_root, args.source, "Spark Make authored source"
-            )
-            authored = _fields(
-                source,
-                {"selected_inventor_id", "ranking", "concept", "research"},
-                "Spark Make authored source",
-            )
-            assignment = _match_contract(
-                stage,
-                {
-                    "selected_inventor_id": authored["selected_inventor_id"],
-                    "ranking": authored["ranking"],
-                },
-            )
-            invented = _invent_contract_for_assignment(
-                assignment,
-                {"concept": authored["concept"], "research": authored["research"]},
-                require_physical=True,
-            )
+            assignment, invented = _spark_creative_contracts(run_root, stage, args.source)
             assignment_path = _safe_relative(
                 inputs.get("assignment_contract_path"),
                 "Spark Make assignment_contract_path",

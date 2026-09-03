@@ -78,6 +78,156 @@ def _safe_relative(value: Any, label: str) -> PurePosixPath:
     return candidate
 
 
+VAULT_LEAD_CHECK_ID = "agent-playtest"
+VAULT_LEAD_VERDICTS = ("confirmed", "dismissed")
+MAX_VAULT_LEAD_WHY = 1_000
+_LEAD_ID = re.compile(r"^[0-9a-f]{16}$")
+
+
+def validate_vault_lead_answers(
+    leads: Sequence[Mapping[str, Any]],
+    checks: Sequence[Mapping[str, Any]],
+    feedback: Sequence[Mapping[str, Any]],
+) -> dict[str, int]:
+    """Every issued design-vault lead must be answered exactly once.
+
+    Answers live in the ``agent-playtest`` check's observations as
+    ``vault_leads``: ``{"lead", "verdict", "why", "feedback_code"}``.  A
+    ``confirmed`` lead must name a feedback item by ``code`` so the risk it
+    confirmed becomes a repair; a ``dismissed`` lead must say why and names
+    no feedback.  With no issued leads nothing is required and nothing may be
+    answered.
+    """
+
+    issued = {}
+    for lead in leads:
+        identifier = lead.get("id") if isinstance(lead, Mapping) else None
+        if not isinstance(identifier, str) or _LEAD_ID.fullmatch(identifier) is None:
+            raise ContractError("issued vault lead id is invalid")
+        issued[identifier] = lead
+    answers: list[Any] = []
+    for check in checks:
+        if check.get("check_id") == VAULT_LEAD_CHECK_ID:
+            observations = check.get("observations") or {}
+            raw = observations.get("vault_leads", [])
+            if not isinstance(raw, (list, tuple)):
+                raise ContractError("vault_leads answers must be a list")
+            answers = list(raw)
+    if not issued:
+        if answers:
+            raise ContractError("Playtest answers vault leads that were never issued")
+        return {"answered": 0, "confirmed": 0, "dismissed": 0}
+    codes = {item.get("code") for item in feedback if isinstance(item, Mapping)}
+    seen: set[str] = set()
+    confirmed = 0
+    for answer in answers:
+        if not isinstance(answer, Mapping) or set(answer) != {
+            "lead",
+            "verdict",
+            "why",
+            "feedback_code",
+        }:
+            raise ContractError("vault lead answers need exactly lead, verdict, why, feedback_code")
+        identifier = answer["lead"]
+        if identifier not in issued:
+            raise ContractError("vault lead answer names a lead that was not issued: %r" % (identifier,))
+        if identifier in seen:
+            raise ContractError("vault lead %s is answered more than once" % identifier)
+        seen.add(identifier)
+        if answer["verdict"] not in VAULT_LEAD_VERDICTS:
+            raise ContractError("vault lead %s verdict must be confirmed or dismissed" % identifier)
+        why = answer["why"]
+        if not isinstance(why, str) or not why.strip() or len(why) > MAX_VAULT_LEAD_WHY:
+            raise ContractError("vault lead %s needs a bounded non-empty why" % identifier)
+        code = answer["feedback_code"]
+        if answer["verdict"] == "confirmed":
+            if not isinstance(code, str) or code not in codes:
+                raise ContractError(
+                    "confirmed vault lead %s must name an existing feedback code" % identifier
+                )
+            confirmed += 1
+        elif code is not None:
+            raise ContractError("dismissed vault lead %s must not name feedback" % identifier)
+    missing = sorted(set(issued) - seen)
+    if missing:
+        raise ContractError("Playtest left vault leads unanswered: %s" % ", ".join(missing))
+    return {"answered": len(seen), "confirmed": confirmed, "dismissed": len(seen) - confirmed}
+
+
+SCORE_READ_FIELDS = frozenset(("reader", "scores", "one_change"))
+MAX_SCORE_READS = 16
+MAX_SCORE_ONE_CHANGE = 1_000
+
+
+def _median(values: Sequence[int]) -> float:
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return float(ordered[middle])
+    return (ordered[middle - 1] + ordered[middle]) / 2.0
+
+
+def score_summary(
+    dimensions: Sequence[str],
+    checks: Sequence[Mapping[str, Any]],
+    *,
+    minimum_reads: int,
+    maximum: int = 10,
+) -> dict[str, Any]:
+    """Median and spread of the independent reads in the agent-playtest check.
+
+    ``reads`` is a list of ``{"reader", "scores", "one_change"}``: at least
+    ``minimum_reads`` distinctly named readers, each scoring exactly the issued
+    dimensions with integers 0..``maximum``.  Three readers agreeing 8/8/8 and
+    three saying 2/4/7 are different facts about the same revision, so the
+    spread is kept beside the median rather than averaged away.
+    """
+
+    dims = tuple(dimensions)
+    if not dims or len(set(dims)) != len(dims):
+        raise ContractError("score dimensions must be unique and non-empty")
+    reads: Any = None
+    for check in checks:
+        if check.get("check_id") == VAULT_LEAD_CHECK_ID:
+            reads = (check.get("observations") or {}).get("reads")
+    if not isinstance(reads, (list, tuple)):
+        raise ContractError("agent-playtest observations must carry a reads list")
+    if not minimum_reads <= len(reads) <= MAX_SCORE_READS:
+        raise ContractError(
+            "agent-playtest needs %d to %d independent reads" % (minimum_reads, MAX_SCORE_READS)
+        )
+    readers: set[str] = set()
+    per_dimension: dict[str, list[int]] = {dim: [] for dim in dims}
+    changes: list[str] = []
+    for read in reads:
+        if not isinstance(read, Mapping) or set(read) != SCORE_READ_FIELDS:
+            raise ContractError("each read needs exactly reader, scores, and one_change")
+        reader = read["reader"]
+        if not isinstance(reader, str) or not reader.strip() or reader in readers:
+            raise ContractError("each read needs a distinct non-empty reader name")
+        readers.add(reader)
+        scores = read["scores"]
+        if not isinstance(scores, Mapping) or set(scores) != set(dims):
+            raise ContractError("read %r must score exactly the issued dimensions" % reader)
+        for dim in dims:
+            value = scores[dim]
+            if isinstance(value, bool) or type(value) is not int or not 0 <= value <= maximum:
+                raise ContractError(
+                    "read %r scores %s outside 0..%d" % (reader, dim, maximum)
+                )
+            per_dimension[dim].append(value)
+        change = read["one_change"]
+        if not isinstance(change, str) or not change.strip() or len(change) > MAX_SCORE_ONE_CHANGE:
+            raise ContractError("read %r needs a bounded non-empty one_change" % reader)
+        changes.append(change.strip())
+    return {
+        "reads": len(reads),
+        "median": {dim: _median(per_dimension[dim]) for dim in dims},
+        "spread": {dim: max(per_dimension[dim]) - min(per_dimension[dim]) for dim in dims},
+        "one_change": changes,
+    }
+
+
 @dataclass(frozen=True)
 class NativePlaytestCheck:
     """One exact evidence file and its bounded evaluator observation."""
@@ -330,6 +480,35 @@ class NativePlaytested:
         ):
             raise ContractError("native Playtested belongs to different or incomplete inputs")
 
+    def assert_scored(
+        self, dimensions: Sequence[str], *, floor: int, minimum_reads: int
+    ) -> dict[str, Any]:
+        """Host mirror of the run-local read rule; a pass needs every median at the floor."""
+
+        summary = score_summary(
+            dimensions,
+            [check.to_dict() for check in self.checks],
+            minimum_reads=minimum_reads,
+        )
+        if self.verdict == "pass":
+            low = sorted(dim for dim, value in summary["median"].items() if value < floor)
+            if low:
+                raise ContractError(
+                    "passing Playtest medians sit below the floor of %d: %s" % (floor, ", ".join(low))
+                )
+        return summary
+
+    def assert_vault_leads_answered(
+        self, leads: Sequence[Mapping[str, Any]]
+    ) -> dict[str, int]:
+        """Host mirror of the run-local lead-answer rule for this contract."""
+
+        return validate_vault_lead_answers(
+            leads,
+            [check.to_dict() for check in self.checks],
+            [item.to_dict() for item in self.feedback],
+        )
+
     def validate_evidence_tree(
         self, run_root: Path, made: NativeMade
     ) -> Playtested:
@@ -371,6 +550,10 @@ class NativePlaytested:
 
 __all__ = [
     "NATIVE_PLAYTESTED_KIND",
+    "VAULT_LEAD_CHECK_ID",
+    "VAULT_LEAD_VERDICTS",
+    "validate_vault_lead_answers",
+    "score_summary",
     "PLAYTEST_VERDICTS",
     "NativePlaytestCheck",
     "NativePlaytested",

@@ -18,6 +18,7 @@ from workshop._validation import (
 )
 from workshop.errors import ContractError, StateConflict
 from workshop.invent.native import NativeInvented
+from workshop.invent.vault import Vault, VaultError, assert_concept_compatible
 from workshop.match.native import NativeMatchAssignment, InventorRoster
 from workshop.workflow.agent_run import (
     AGENT_RUN_STAGES,
@@ -411,6 +412,23 @@ def evaluate_match_stage(
     return StageGateDecision(evidence=evidence, transition="invent")
 
 
+def _vault_checks(vault: Optional[Vault], concept: Mapping[str, Any]) -> dict[str, Any]:
+    """Re-apply the run-local design vault rules to a sealed Invent concept.
+
+    With a vault snapshot every mechanism resolves or is declared novel, and no
+    declared conflict or unmet requirement survives.  Without one (a run that
+    predates the vault) the gate is unchanged.
+    """
+
+    if vault is None:
+        return {"design_vault_sha256": None, "vault_leads": 0}
+    try:
+        binding = assert_concept_compatible(vault, concept)
+    except VaultError as exc:
+        raise ContractError("Invent concept is refused by the design vault: %s" % exc) from exc
+    return {"design_vault_sha256": vault.sha256, "vault_leads": len(binding["leads"])}
+
+
 def evaluate_invent_stage(
     proposal: AgentOutcomeProposal,
     *,
@@ -419,8 +437,9 @@ def evaluate_invent_stage(
     assignment: NativeMatchAssignment,
     expected_subject_sha256: Optional[str] = None,
     expected_artifact_path: str = INVENTED_PATH,
+    vault: Optional[Vault] = None,
 ) -> StageGateDecision:
-    """Validate Invented against the accepted Match assignment."""
+    """Validate Invented against the accepted Match assignment and the vault."""
 
     if not isinstance(assignment, NativeMatchAssignment):
         raise ContractError("Invent gate requires a native Match assignment")
@@ -456,6 +475,7 @@ def evaluate_invent_stage(
         _artifact_document(run_root, artifact, label="Invented artifact")
     )
     invented.assert_context(assignment)
+    vault_checks = _vault_checks(vault, invented.concept)
     source_artifact = outcome.artifacts[1] if len(outcome.artifacts) == 2 else None
     if source_artifact is not None:
         source = _artifact_document(
@@ -488,6 +508,7 @@ def evaluate_invent_stage(
             "source_bound": source_artifact is not None,
             "taste_sha256": invented.taste_sha256,
             "wish_bound": True,
+            **vault_checks,
         },
     )
     return StageGateDecision(evidence=evidence, transition="make")
@@ -503,6 +524,7 @@ def evaluate_routed_invent_stage(
     roster: InventorRoster,
     assignment_artifact_path: str,
     invented_artifact_path: str,
+    vault: Optional[Vault] = None,
 ) -> StageGateDecision:
     """Validate combined selection + invention from one routed Invent turn."""
 
@@ -542,6 +564,7 @@ def evaluate_routed_invent_stage(
         _artifact_document(run_root, invented_artifact, label="routed Invented artifact")
     )
     invented.assert_context(assignment)
+    vault_checks = _vault_checks(vault, invented.concept)
     source = _artifact_document(
         run_root, source_artifact, label="routed Invent authored source"
     )
@@ -581,6 +604,7 @@ def evaluate_routed_invent_stage(
             "source_bound": True,
             "selected_taste_sha256": assignment.selected_taste_sha256,
             "wish_bound": True,
+            **vault_checks,
         },
     )
     return StageGateDecision(evidence=evidence, transition="make")

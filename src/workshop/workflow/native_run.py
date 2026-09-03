@@ -51,7 +51,20 @@ from workshop.integrations.git import (
     push_toy_directory,
 )
 from workshop.invent.native import NativeInvented
-from workshop.make.native import NativeMade
+from workshop.invent.gamevault import (
+    GameVaultClient,
+    GameVaultError,
+    GameVaultUnavailable,
+    default_client as default_gamevault_client,
+)
+from workshop.invent.vault import (
+    MAX_PACKED_BYTES,
+    RUN_VAULT_PATH,
+    RUN_VAULT_TOOL_PATH,
+    Vault,
+    VaultError,
+)
+from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.revision import (
     MAKE_INVENT_REVISION_CAPABILITY_PATH,
     NativeMakeInventRevision,
@@ -71,7 +84,14 @@ from workshop.match.native import (
     InventorRosterEntry,
 )
 from workshop.playtest.native import NativePlaytested
+from workshop.playtest.vault_evidence import (
+    build_rows,
+    gamevault_design,
+    gamevault_dismissals,
+    gamevault_rows,
+)
 from workshop.product import ToyBlueprint
+from workshop.product.blueprints import SCORE_AMBIGUOUS_SPREAD
 from workshop.release.contracts import ProductRelease, ReleaseContext
 from workshop.release.manual_design import (
     MANUAL_DESIGN_EVIDENCE_PATH,
@@ -1907,6 +1927,418 @@ def _materialized_release_contract(
     }
 
 
+_VAULT_STAGES = ("invent", "make", "playtest")
+_VAULT_STATE_DIRECTORY = "vault"
+_VAULT_PENDING_DIRECTORY = "pending"
+_VAULT_UNAVAILABLE_SUFFIX = ".unavailable"
+_VAULT_REJECTED_SUFFIX = ".rejected"
+_MAX_PENDING_VAULT_WRITE_BYTES = 4 * 1024 * 1024
+
+
+def _gamevault_client() -> GameVaultClient:
+    """The host's vault client; a missing token fails closed before any phase."""
+
+    return default_gamevault_client()
+
+
+def _vault_state_directory(run: AgentRun, *, create: bool) -> Path:
+    directory = run.host_state_root / _VAULT_STATE_DIRECTORY
+    if create:
+        directory.mkdir(mode=0o700, exist_ok=True)
+    if directory.is_symlink():
+        raise StateConflict("vault host state must not be a symlink")
+    return directory
+
+
+def _read_stable_private_bytes(path: Path, *, label: str, maximum_bytes: int) -> bytes:
+    try:
+        before = path.lstat()
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict("%s is unavailable" % label) from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(before.st_mode)
+        or stat.S_IMODE(before.st_mode) != 0o600
+        or not 1 <= len(content) <= maximum_bytes
+        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+    ):
+        raise StateConflict("%s is not a stable private file" % label)
+    return content
+
+
+def _phase_design_vault(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> tuple[Optional[Vault], Optional[dict[str, Any]]]:
+    """Fetch, once per checkpoint, the vault snapshot this phase works from.
+
+    The host calls the game vault API live before every Invent, Make, and
+    Playtest phase and caches the packed snapshot per checkpoint under host
+    state, so a resumed checkpoint sees exactly the bytes its agent saw and
+    the gate re-verifies against the same graph.  The snapshot is written to
+    the run root as ``VAULT.json`` (read-only to the agent) and bound by hash
+    in STAGE.json.  Stages without design knowledge (Match, Release) fetch
+    nothing.
+
+    An unreachable vault, or a host without a token, is bypassed for that
+    checkpoint: the phase runs exactly like a run without a vault (no
+    snapshot, no leads, no vault rules) and a marker under host state keeps
+    the agent's and the gate's view identical if the checkpoint is resumed
+    after the vault returns.  The next checkpoint tries again.
+    """
+
+    if checkpoint.stage not in _VAULT_STAGES:
+        return None, None
+    directory = _vault_state_directory(run, create=True)
+    cache = directory / (checkpoint.checkpoint_sha256 + ".json")
+    marker = directory / (checkpoint.checkpoint_sha256 + _VAULT_UNAVAILABLE_SUFFIX)
+    snapshot = run.run_root / RUN_VAULT_PATH
+    if snapshot.is_symlink():
+        raise StateConflict("run vault snapshot must be a regular file")
+    if marker.exists() or marker.is_symlink():
+        _remove_run_vault_snapshot(snapshot)
+        return None, None
+    if cache.exists() or cache.is_symlink():
+        content = _read_stable_private_bytes(
+            cache, label="cached vault snapshot", maximum_bytes=MAX_PACKED_BYTES
+        )
+        try:
+            vault = Vault.from_packed_bytes(content)
+        except VaultError as exc:
+            raise StateConflict("cached vault snapshot is malformed") from exc
+    else:
+        try:
+            client = _gamevault_client()
+            _flush_pending_vault_writes(run, client)
+            vault = client.export()
+        except GameVaultUnavailable:
+            _atomic_private_write(marker, b"unavailable\n", mode=0o600)
+            _remove_run_vault_snapshot(snapshot)
+            return None, None
+        content = vault.packed_bytes()
+        _atomic_private_write(cache, content, mode=0o600)
+    try:
+        current: Optional[bytes] = snapshot.read_bytes() if snapshot.is_file() else None
+    except OSError:
+        current = None
+    if current != content:
+        _atomic_private_write(snapshot, content, mode=0o400)
+    binding = {
+        "path": RUN_VAULT_PATH,
+        "tool": RUN_VAULT_TOOL_PATH,
+        "sha256": hashlib.sha256(content).hexdigest(),
+        "nodes": len(vault.nodes),
+    }
+    return vault, binding
+
+
+def _remove_run_vault_snapshot(snapshot: Path) -> None:
+    """A snapshot from an earlier phase must not outlive its STAGE.json binding."""
+
+    try:
+        snapshot.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        raise StateConflict("run vault snapshot could not be removed") from exc
+
+
+def _pending_vault_writes_directory(run: AgentRun, *, create: bool) -> Path:
+    directory = _vault_state_directory(run, create=create) / _VAULT_PENDING_DIRECTORY
+    if create:
+        directory.mkdir(mode=0o700, exist_ok=True)
+    return directory
+
+
+def _send_vault_writes(client: GameVaultClient, payload: Mapping[str, Any]) -> None:
+    label = payload["label"]
+    design = payload.get("design")
+    if payload["rows"] or design is not None:
+        client.post_evidence(payload["rows"], label=label, design=design)
+    if payload["dismissals"]:
+        client.post_review(payload["dismissals"], label=label)
+
+
+def _flush_pending_vault_writes(run: AgentRun, client: GameVaultClient) -> int:
+    """Send every queued write-back before a phase fetches fresh knowledge.
+
+    An unreachable vault leaves the queue as it is.  A payload the vault
+    refuses outright is set aside as ``*.rejected`` for a human and never
+    blocks a run.
+    """
+
+    directory = _pending_vault_writes_directory(run, create=False)
+    if not directory.is_dir():
+        return 0
+    sent = 0
+    for path in sorted(directory.iterdir()):
+        if (
+            path.is_symlink()
+            or not path.is_file()
+            or path.name.endswith(_VAULT_REJECTED_SUFFIX)
+        ):
+            continue
+        payload = _read_stable_private_json(
+            path,
+            label="pending vault write %s" % path.name,
+            maximum_bytes=_MAX_PENDING_VAULT_WRITE_BYTES,
+        )
+        # the same shape _record_playtest_evidence queues: the design page is optional
+        required = {"label", "rows", "dismissals"}
+        if not required <= set(payload) <= required | {"design"}:
+            raise StateConflict("pending vault write %s is malformed" % path.name)
+        try:
+            _send_vault_writes(client, payload)
+        except GameVaultUnavailable:
+            raise  # the queue waits for the vault; the caller runs this phase without one
+        except GameVaultError:
+            path.rename(path.with_name(path.name + _VAULT_REJECTED_SUFFIX))
+            continue
+        path.unlink()
+        sent += 1
+    return sent
+
+
+def _playtest_score_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """Per-round Playtest scores read back from the host's own gate receipts.
+
+    Each Playtest gate receipt the host wrote carries the round, verdict, read
+    count, and the median and spread per dimension.  Rounds sealed before
+    scores existed appear without them.  Receipts are host state; a receipt
+    that cannot be read is a broken host, not a missing round.
+    """
+
+    gates = Path(host_state_root) / "gates"
+    if not gates.is_dir():
+        return []
+    history: list[dict[str, Any]] = []
+    for path in sorted(gates.iterdir()):
+        if not path.name.endswith("-playtest.json") or path.is_symlink():
+            continue
+        try:
+            document = json.loads(path.read_bytes().decode("utf-8"))
+            checks = document["evidence"]["checks"]
+        except (OSError, UnicodeError, ValueError, KeyError, TypeError) as exc:
+            raise StateConflict("Playtest gate receipt is unreadable: %s" % path.name) from exc
+        if not isinstance(checks, Mapping):
+            raise StateConflict("Playtest gate receipt is malformed: %s" % path.name)
+        failing = checks.get("failing_checks")
+        actionable = checks.get("actionable_feedback")
+        history.append(
+            {
+                "round": checks.get("round"),
+                "verdict": checks.get("verdict"),
+                "score_reads": checks.get("score_reads"),
+                "score_median": checks.get("score_median"),
+                "score_spread": checks.get("score_spread"),
+                "vault_leads_confirmed": checks.get("vault_leads_confirmed"),
+                "machine_failures": (
+                    failing + actionable
+                    if isinstance(failing, int) and isinstance(actionable, int)
+                    else None
+                ),
+            }
+        )
+    return history
+
+
+def _best_round(history: Sequence[Mapping[str, Any]]) -> Optional[Mapping[str, Any]]:
+    """The round a repair should start from: fewest machine failures first.
+
+    Ties break on the higher score sum, then the earlier round.  Rounds sealed
+    without machine counts are not candidates.  Reader scores never outrank a
+    deterministic count; they only separate rounds the counts cannot.
+    """
+
+    candidates = [
+        item
+        for item in history
+        if isinstance(item.get("machine_failures"), int) and isinstance(item.get("round"), int)
+    ]
+    if not candidates:
+        return None
+
+    def key(item: Mapping[str, Any]) -> tuple[int, float, int]:
+        median = item.get("score_median")
+        total = (
+            sum(value for value in median.values() if isinstance(value, (int, float)))
+            if isinstance(median, Mapping)
+            else 0.0
+        )
+        return (item["machine_failures"], -total, item["round"])
+
+    return min(candidates, key=key)
+
+
+def _sealed_make_binding(
+    run: AgentRun, round_index: int
+) -> Optional[dict[str, Any]]:
+    """The host's own Make receipt for one round, re-verified against the sealed file."""
+
+    gates = run.host_state_root / "gates"
+    if not gates.is_dir():
+        return None
+    for path in sorted(gates.iterdir()):
+        if not path.name.endswith("-make.json") or path.is_symlink():
+            continue
+        try:
+            document = json.loads(path.read_bytes().decode("utf-8"))
+            evidence = document["evidence"]
+            checks = evidence["checks"]
+            if checks.get("round") != round_index:
+                continue
+            artifact_path = evidence["artifact_path"]
+            artifact_sha256 = evidence["artifact_sha256"]
+            made_sha256 = checks["made_sha256"]
+        except (OSError, UnicodeError, ValueError, KeyError, TypeError) as exc:
+            raise StateConflict("Make gate receipt is unreadable: %s" % path.name) from exc
+        sealed = run.run_root / _safe_relative_posix(artifact_path)
+        try:
+            content = sealed.read_bytes()
+        except OSError as exc:
+            raise StateConflict("sealed Make contract for round %d is missing" % round_index) from exc
+        if hashlib.sha256(content).hexdigest() != artifact_sha256:
+            raise StateConflict("sealed Make contract for round %d differs from its receipt" % round_index)
+        return {
+            "round": round_index,
+            "product_root": "artifacts/make/r%04d/product" % round_index,
+            "made_sha256": made_sha256,
+            "made_artifact": {"path": artifact_path, "sha256": artifact_sha256},
+        }
+    return None
+
+
+def _safe_relative_posix(value: Any) -> Path:
+    if not isinstance(value, str) or not value or value.startswith("/") or ".." in value.split("/"):
+        raise StateConflict("Make gate receipt artifact path is unsafe")
+    return Path(*value.split("/"))
+
+
+def _repair_base(
+    run: AgentRun, history: Sequence[Mapping[str, Any]]
+) -> Optional[dict[str, Any]]:
+    """Name the best sealed round when the last round scored worse than it.
+
+    The loop otherwise repairs the last revision, and the last revision is not
+    always the best one: a repair can trade one cited failure for two new
+    ones.  Only a strictly worse last round redirects the next Make; a
+    better-or-equal last round carries earlier fixes forward.
+    """
+
+    if not history:
+        return None
+    last = history[-1]
+    best = _best_round(history)
+    if (
+        best is None
+        or not isinstance(last.get("machine_failures"), int)
+        or best["round"] == last.get("round")
+        or last["machine_failures"] <= best["machine_failures"]
+    ):
+        return None
+    return _sealed_make_binding(run, best["round"])
+
+
+def _score_trend(history: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Deltas between the last two scored rounds and the dimensions readers disagree on."""
+
+    scored = [item for item in history if isinstance(item.get("score_median"), Mapping)]
+    regression: dict[str, float] = {}
+    ambiguous: list[str] = []
+    if scored:
+        last = scored[-1]
+        ambiguous = sorted(
+            dim
+            for dim, spread in (last.get("score_spread") or {}).items()
+            if isinstance(spread, (int, float)) and spread >= SCORE_AMBIGUOUS_SPREAD
+        )
+        if len(scored) >= 2:
+            previous = scored[-2]["score_median"]
+            for dim, value in last["score_median"].items():
+                before = previous.get(dim)
+                if isinstance(before, (int, float)) and isinstance(value, (int, float)) and value < before:
+                    regression[dim] = value - before
+    return {"regression": regression, "ambiguous": ambiguous}
+
+
+def _record_playtest_evidence(
+    run: AgentRun, checkpoint: AgentRunCheckpoint, context: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Bank the sealed round's feedback in the game vault; never before sealing.
+
+    The gate receipt and checkpoint are already durable.  A vault that cannot
+    be reached right now must not undo them, so the payload is queued under
+    host state and sent before a later phase fetches its snapshot.
+    """
+
+    sealed = context.get("sealed_playtest")
+    if not sealed:  # pragma: no cover - playtest evaluation always stashes it
+        return {"rows": 0, "dismissals": 0, "sent": False}
+    playtested: NativePlaytested = sealed["playtested"]
+    document = playtested.to_dict()
+    rows = gamevault_rows(
+        build_rows(
+            checkpoint.product_id,
+            checkpoint.round_index,
+            document,
+            sealed["leads"],
+            sealed["mechanisms"],
+        )
+    )
+    lead_by_id = {lead["id"]: lead for lead in sealed["leads"]}
+    dismissals = []
+    for check in document["checks"]:
+        if check["check_id"] != "agent-playtest":
+            continue
+        for answer in check["observations"].get("vault_leads", []):
+            if answer.get("verdict") == "dismissed" and answer.get("lead") in lead_by_id:
+                dismissals.append(
+                    {
+                        "lead": answer["lead"],
+                        "nodes": list(lead_by_id[answer["lead"]]["nodes"]),
+                        "why": answer.get("why", ""),
+                    }
+                )
+    payload: dict[str, Any] = {
+        "label": "workshop %s r%d" % (checkpoint.product_id, checkpoint.round_index),
+        "rows": rows,
+        "dismissals": gamevault_dismissals(
+            dismissals,
+            product_id=checkpoint.product_id,
+            round_index=checkpoint.round_index,
+        ),
+    }
+    concept = sealed.get("concept")
+    if isinstance(concept, Mapping):
+        payload["design"] = gamevault_design(
+            checkpoint.product_id,
+            checkpoint.round_index,
+            concept=concept,
+            mechanisms=sealed["mechanisms"],
+            verdict=str(sealed.get("verdict", "")),
+            scores=sealed.get("scores"),
+            rows=rows,
+        )
+    report = {
+        "rows": len(payload["rows"]),
+        "dismissals": len(payload["dismissals"]),
+        "design": "design" in payload,
+    }
+    if not payload["rows"] and not payload["dismissals"] and "design" not in payload:
+        return {**report, "sent": True}
+    try:
+        _send_vault_writes(_gamevault_client(), payload)
+    except GameVaultUnavailable:
+        pending = _pending_vault_writes_directory(run, create=True) / (
+            checkpoint.checkpoint_sha256 + ".json"
+        )
+        _atomic_private_write(pending, _canonical_json_bytes(payload) + b"\n", mode=0o600)
+        return {**report, "sent": False}
+    return {**report, "sent": True}
+
+
 def _checkpoint_effort(checkpoint: AgentRunCheckpoint):
     """Return the exact frozen effort, or ``None`` for historical runs."""
 
@@ -2757,6 +3189,10 @@ def _prepare_effort_stage_input(
         "blueprint": blueprint.to_dict(),
         "blueprint_sha256": blueprint.sha256,
     }
+    vault, vault_binding = _phase_design_vault(run, checkpoint)
+    context["design_vault"] = vault
+    if vault_binding is not None:
+        base["design_vault"] = vault_binding
 
     if stage == "invent":
         assignment_path, invented_path = _routed_invent_contract_paths(checkpoint)
@@ -2911,6 +3347,21 @@ def _prepare_effort_stage_input(
                         "feedback_sha256": failing_playtested.feedback_sha256,
                     }
                 )
+        # Vault leads reach Invent too (2026-08-29): round one answers for the
+        # mechanisms the Wish itself names, a repair round for the sealed
+        # concept Make or Playtest just refused -- the same findings Make sees,
+        # so the revision is written against them instead of discovering them
+        # one stage later.
+        if vault is not None:
+            if prior_paths:
+                lead_concept: Mapping[str, Any] = prior_invented.concept
+            else:
+                lead_concept = {
+                    "mechanisms": list(
+                        vault.mechanisms_named_in(_load_wish(run.run_root).objective)
+                    )
+                }
+            inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
         subject = _stage_subject("invent", subject_inputs)
         context.update(
             {
@@ -2981,6 +3432,9 @@ def _prepare_effort_stage_input(
                     "taste_sha256": assignment.selected_taste_sha256,
                 },
             }
+            common["vault_leads"] = (
+                vault.leads_for_concept(invented.concept) if vault is not None else []
+            )
         feedback_artifact: Optional[AgentArtifact] = None
         prior = checkpoint.stage_artifacts.get("playtest")
         if prior and "playtest" in checkpoint.invalidated_stages:
@@ -3018,6 +3472,7 @@ def _prepare_effort_stage_input(
                 make_proposal_rejection["rejection_sha256"]
             )
         subject = _stage_subject("make", subject_inputs)
+        score_history = _playtest_score_history(run.host_state_root)
         inputs = {
             **common,
             "round": checkpoint.round_index,
@@ -3026,6 +3481,9 @@ def _prepare_effort_stage_input(
                 if feedback_artifact is not None
                 else None
             ),
+            "score_history": score_history,
+            **_score_trend(score_history),
+            "repair_base": _repair_base(run, score_history),
             "host_cad_gate_rejection": cad_gate_rejection,
             "product_root": "artifacts/make/r%04d/product"
             % checkpoint.round_index,
@@ -3107,6 +3565,9 @@ def _prepare_effort_stage_input(
                 "source_manifest_sha256": assignment.selected_source_manifest_sha256,
                 "taste_sha256": assignment.selected_taste_sha256,
             },
+            "vault_leads": (
+                vault.leads_for_concept(invented.concept) if vault is not None else []
+            ),
         }
         if stage == "playtest":
             subject_inputs = {
@@ -3131,6 +3592,15 @@ def _prepare_effort_stage_input(
                 "round": checkpoint.round_index,
                 "host_cad_gate_rejection": cad_gate_rejection,
                 "required_check_ids": list(blueprint.required_playtest_checks()),
+                **(
+                    {
+                        "score_dimensions": list(blueprint.score_dimensions()),
+                        "score_floor": blueprint.score_floor(),
+                        "score_minimum_reads": blueprint.score_minimum_reads(),
+                    }
+                    if vault is not None
+                    else {}
+                ),
                 "evidence_root": "artifacts/playtest/r%04d/evidence"
                 % checkpoint.round_index,
                 "contract_path": "artifacts/playtest/r%04d/playtested.json"
@@ -3347,6 +3817,9 @@ def _prepare_stage_input(
             "blueprint": blueprint.to_dict(),
             "blueprint_sha256": blueprint.sha256,
         }
+        vault, vault_binding = _phase_design_vault(run, checkpoint)
+        common["design_vault"] = vault_binding
+        context["design_vault"] = vault
         if stage == "invent":
             prior_invented_paths = checkpoint.stage_artifacts.get("invent")
             if prior_invented_paths:
@@ -3449,6 +3922,21 @@ def _prepare_stage_input(
                     "contract_path": "artifacts/invent/invented.json",
                 }
                 context["invent_contract_path"] = inputs["contract_path"]
+            # Vault leads reach Invent too (2026-08-29): round one for the
+            # mechanisms the Wish names outright, a repair round for the
+            # sealed concept Playtest just refused -- the findings Make saw.
+            if vault is not None:
+                if prior_invented_paths:
+                    lead_concept: Mapping[str, Any] = prior_invented.concept
+                else:
+                    lead_concept = {
+                        "mechanisms": list(
+                            vault.mechanisms_named_in(
+                                _load_wish(run.run_root).objective
+                            )
+                        )
+                    }
+                inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
         else:
             invented_artifact = _stage_primary(checkpoint, "invent")
             invented = _read_contract(
@@ -3460,6 +3948,9 @@ def _prepare_stage_input(
             invented.assert_context(assignment)
             context["invented"] = invented
             common["invented"] = invented.to_dict()
+            common["vault_leads"] = (
+                vault.leads_for_concept(invented.concept) if vault is not None else []
+            )
             common["invented_artifact"] = {
                 **_artifact_binding(invented_artifact),
                 "invented_sha256": invented.invented_sha256,
@@ -3494,6 +3985,7 @@ def _prepare_stage_input(
                             make_proposal_rejection["rejection_sha256"]
                         )
                     subject = _stage_subject("make", subject_inputs)
+                    score_history = _playtest_score_history(run.host_state_root)
                     inputs = {
                         **common,
                         "round": checkpoint.round_index,
@@ -3502,6 +3994,9 @@ def _prepare_stage_input(
                             if feedback_artifact is not None
                             else None
                         ),
+                        "score_history": score_history,
+                        **_score_trend(score_history),
+                        "repair_base": _repair_base(run, score_history),
                         "host_cad_gate_rejection": cad_gate_rejection,
                         "product_root": "artifacts/make/r%04d/product"
                         % checkpoint.round_index,
@@ -3560,6 +4055,15 @@ def _prepare_stage_input(
                             "host_cad_gate_rejection": cad_gate_rejection,
                             "required_check_ids": list(
                                 blueprint.required_playtest_checks()
+                            ),
+                            **(
+                                {
+                                    "score_dimensions": list(blueprint.score_dimensions()),
+                                    "score_floor": blueprint.score_floor(),
+                                    "score_minimum_reads": blueprint.score_minimum_reads(),
+                                }
+                                if vault is not None
+                                else {}
                             ),
                             "evidence_root": "artifacts/playtest/r%04d/evidence"
                             % checkpoint.round_index,
@@ -5202,6 +5706,9 @@ def _evaluate_make_stage(
             assignment, invented, expected_round=checkpoint.round_index
         )
         canonical = made.validate_product_tree(run.run_root)
+        build_groups = validate_build_groups(
+            invented.concept, run.run_root / Path(*made.product_root.split("/"))
+        )
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -5238,9 +5745,12 @@ def _evaluate_make_stage(
         artifact_path=artifact.path,
         artifact_sha256=artifact.sha256,
         checks={
+            "round": checkpoint.round_index,
             "made_sha256": made.made_sha256,
             "product_artifact_sha256": canonical.artifact_sha256,
             "product_tree_rehashed": True,
+            "build_groups": build_groups["groups"],
+            "build_parts": build_groups["parts"],
             "upstream_bindings_valid": True,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verifier_sha256": cad_evidence.verifier_sha256,
@@ -5903,6 +6413,41 @@ def _evaluate_playtest_stage(
         evidence_stage="playtest",
         require_print_ready=playtested.verdict == "pass",
     )
+    vault = context.get("design_vault")
+    leads = (
+        vault.leads_for_concept(context["invented"].concept) if vault is not None else []
+    )
+    answered = playtested.assert_vault_leads_answered(leads)
+    mechanisms = (
+        sorted(
+            node
+            for node in vault.resolve_concept_mechanisms(context["invented"].concept).values()
+            if node is not None
+        )
+        if vault is not None
+        else []
+    )
+    context["sealed_playtest"] = {
+        "playtested": playtested,
+        "leads": leads,
+        "mechanisms": mechanisms,
+        "concept": context["invented"].concept,
+        "verdict": playtested.verdict,
+        "scores": None,
+    }
+    scores: dict[str, Any] = {"score_reads": None, "score_median": None, "score_spread": None}
+    if vault is not None:
+        summary = playtested.assert_scored(
+            blueprint.score_dimensions(),
+            floor=blueprint.score_floor(),
+            minimum_reads=blueprint.score_minimum_reads(),
+        )
+        scores = {
+            "score_reads": summary["reads"],
+            "score_median": summary["median"],
+            "score_spread": summary["spread"],
+        }
+        context["sealed_playtest"]["scores"] = summary["median"]
     passed = playtested.verdict == "pass"
     transition = playtested.proposed_transition
     if proposal.outcome.proposed_transition != transition:
@@ -5936,6 +6481,19 @@ def _evaluate_playtest_stage(
             ),
             "cad_verification_passed": cad_evidence.passed,
             "verdict": playtested.verdict,
+            "round": checkpoint.round_index,
+            "failing_checks": sum(1 for check in playtested.checks if not check.passed),
+            "actionable_feedback": sum(
+                1 for item in playtested.feedback if item.severity in ("improve", "block")
+            ),
+            "vault_leads_answered": answered["answered"],
+            "vault_leads_confirmed": answered["confirmed"],
+            "vault_leads": [
+                {"id": lead["id"], "kind": lead["kind"], "nodes": list(lead["nodes"])}
+                for lead in leads
+            ],
+            "mechanisms": mechanisms,
+            **scores,
         },
     )
     return StageGateDecision(evidence=evidence, transition=transition), additional
@@ -6779,6 +7337,7 @@ def _process_agent_outcome_inner(
                         "assignment_contract_path"
                     ],
                     invented_artifact_path=context["invent_contract_path"],
+                    vault=context.get("design_vault"),
                 )
             else:
                 decision = evaluate_invent_stage(
@@ -6788,6 +7347,7 @@ def _process_agent_outcome_inner(
                     expected_subject_sha256=subject_sha256,
                     expected_artifact_path=context["invent_contract_path"],
                     assignment=context["assignment"],
+                    vault=context.get("design_vault"),
                 )
     elif checkpoint.stage == "make":
         try:
@@ -6933,6 +7493,13 @@ def _process_agent_outcome_inner(
         raise TransitionError("native stage cannot consume an agent proposal")
 
     _persist_gate_decision(run, checkpoint, decision)
+    if checkpoint.stage == "playtest":
+        # Bank what Playtest found BEFORE the transition is applied: a refused
+        # transition (2026-08-29: "round budget is exhausted" on the last
+        # round) used to discard the sealed lead answers the vault exists to
+        # remember. The gate decision is already persisted, so the rows are
+        # backed by the same evidence either way.
+        _record_playtest_evidence(run, checkpoint, context)
     updated = run.apply_outcome(
         proposal.outcome,
         gate=decision.receipt,
@@ -7341,6 +7908,7 @@ def _native_receipt(
         ),
     }
     needs: list[str] = list(checkpoint.needs)
+    rounds = _playtest_score_history(paths.host_state) if paths is not None else []
     if paths is not None:
         if checkpoint.stage == "release" and checkpoint.status == "waiting":
             wait_run = AgentRun.open(
@@ -7491,6 +8059,7 @@ def _native_receipt(
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",
+        "rounds": rounds,
         "product_id": checkpoint.product_id,
         "status": visible_status,
         "stage": visible_stage,
@@ -7612,6 +8181,7 @@ def start_native_run(
     manager_id: Optional[str] = None,
     publish_requested: Optional[bool] = None,
     github_publish_requested: bool = False,
+    max_rounds: int = 4,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -7632,6 +8202,10 @@ def start_native_run(
     push the sanitized public snapshot after verified Factory readback. It is
     false by default and frozen for the run.
 
+    ``max_rounds`` freezes the Invent-Make-Playtest round budget (1-100). Every
+    Make revision request and every Playtest ``improve`` verdict spends one
+    round, so a mechanism-heavy Wish may need more than the default four.
+
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
     """
@@ -7646,6 +8220,8 @@ def start_native_run(
         raise ContractError("legacy publication option must be boolean")
     if type(github_publish_requested) is not bool:
         raise ContractError("GitHub publication option must be boolean")
+    if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
+        raise ContractError("round budget must be an integer between 1 and 100")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -7670,7 +8246,7 @@ def start_native_run(
                 skill_root=assets.skill_root,
                 domain_skill_roots=domain_skill_roots,
                 inventor_source_root=inventor_source_root,
-                max_rounds=4,
+                max_rounds=max_rounds,
                 effort=(selected_effort.name if selected_effort is not None else None),
                 manager_id=selected_manager.manager_id,
             )

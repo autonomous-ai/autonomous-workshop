@@ -44,6 +44,8 @@ workshop = [
   "make/skills/**/*",
   "release/skills/*",
   "release/skills/**/*",
+  "invent/skills/*",
+  "invent/skills/**/*",
 ]
 
 [tool.setuptools.exclude-package-data]
@@ -54,4 +56,7 @@ workshop = [
   "release/skills/**/__pycache__/*",
   "release/skills/**/*.pyc",
   "release/skills/**/*.pyo",
+  "invent/skills/**/__pycache__/*",
+  "invent/skills/**/*.pyc",
+  "invent/skills/**/*.pyo",
 ]

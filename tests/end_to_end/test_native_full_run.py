@@ -3,6 +3,7 @@ import io
 import json
 import os
 import shutil
+import socket
 import stat
 import subprocess
 import sys
@@ -25,6 +26,10 @@ from workshop.workflow.native_run import (
     resume_native_run,
     start_native_run,
 )
+from workshop.errors import ArtifactError, StateConflict
+from workshop.invent.gamevault import GameVaultClient, GameVaultConfig
+from workshop.invent.vault import RUN_VAULT_PATH, Vault
+from tests.invent.fake_gamevault import E2E_NODES, FakeGameVaultTransport, install_fake_gamevault
 from workshop.errors import ArtifactError, EffectError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.integrations.factory import FACTORY_CONTENT_MAPPING
@@ -83,6 +88,10 @@ def _canonical_json(value):
 def _write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(_canonical_json(value))
+
+
+def stage_round(run_root):
+    return _read_json(Path(run_root) / "STAGE.json")["round"]
 
 
 def _read_json(path):
@@ -281,6 +290,21 @@ def _failed_cad_gate(
     return NativeCadGateError(failure_code, evidence, evidence_path)
 
 
+def _write_fixture_render(project):
+    """Make must ship one chromatic presentation render at snap/iso.png.
+
+    Mirrors the render checked by ``test_stage_proposal_tool``: a real RGB PNG
+    with tonal variation, so the finalizer's grayscale-mask guard passes.
+    """
+    snap = project / "snap"
+    snap.mkdir(exist_ok=True)
+    render = Image.new("RGB", (900, 900), "#fff4df")
+    pen = ImageDraw.Draw(render)
+    pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
+    pen.polygon(((450, 230), (700, 690), (200, 690)), fill="#ffb445")
+    render.save(snap / "iso.png", format="PNG")
+
+
 class _SessionOutcome:
     def __init__(self, arguments, stage):
         self.arguments = dict(arguments)
@@ -314,19 +338,23 @@ def _fixture_components():
     return {
         "board": {
             "name": "Board",
-            "purpose": "the playing surface",
-            "form": "flat concentric-ringed square panel",
+            "duty": "the playing surface that holds every waypoint",
+            "form": "flat concentric-ringed 200 mm square panel",
             "dimensions_mm": {"length_mm": 200.0, "width_mm": 200.0, "height_mm": 5.0},
             "placement": "centered on the table",
-            "interfaces": "pieces rest in orbital waypoint recesses",
+            "interfaces": "pieces rest in 1 mm deep orbital waypoint recesses",
+            "mates_with": ["pieces"],
+            "signature": False,
         },
         "pieces": {
             "name": "Pieces",
-            "purpose": "the two draughts piece families",
+            "duty": "the two draughts piece families that are moved and captured",
             "form": "stackable dog-silhouette discs",
             "dimensions_mm": {"length_mm": 20.0, "width_mm": 20.0, "height_mm": 8.0},
             "placement": "set out on the board's waypoints",
             "interfaces": "seat into the board's waypoint recesses",
+            "mates_with": ["board"],
+            "signature": True,
         },
     }
 
@@ -334,12 +362,15 @@ def _fixture_components():
 class _OneSessionProductAgent:
     """A deterministic stand-in for one resumed native Codex session."""
 
-    def __init__(self, *, playtest_plan=None, product_contract_name_collisions=False):
+    def __init__(
+        self, *, playtest_plan=None, confirm_first_lead=False, product_contract_name_collisions=False
+    ):
         self.starts = []
         self.resumes = []
         self.stage_packets = []
         self.finalizer_commands = []
         self.playtest_plan = list(playtest_plan) if playtest_plan else []
+        self.confirm_first_lead = confirm_first_lead
         self.product_contract_name_collisions = product_contract_name_collisions
 
     @staticmethod
@@ -392,8 +423,12 @@ class _OneSessionProductAgent:
                 % (completed.returncode, completed.stderr)
             )
         result = json.loads(completed.stdout)
-        if result["outcome_path"] != "agent-outcome.json":
-            raise AssertionError("finalizer did not author the compact proposal")
+        expected_outcome = (
+            "artifacts/make/r%04d/product/groups/%s.json" % (stage_round(run_root), arguments[-1])
+            if arguments[0] == "make-group"
+            else "agent-outcome.json"
+        )
+        assert result["outcome_path"] == expected_outcome, "finalizer authored an unexpected outcome"
 
     def _author_match(self, run_root, stage):
         ranking = self._ranking(stage)
@@ -453,14 +488,20 @@ class _OneSessionProductAgent:
                         "Every playable square is an orbital waypoint and each side uses "
                         "a distinct dog-pack silhouette without changing draughts rules."
                     ),
-                    "intended_interaction": (
-                        "Two players move tactile pieces between orbital waypoints."
+                    "interaction": (
+                        "Two players move dog pieces along the board's orbital "
+                        "waypoints, capture by jumping, and stack a piece to crown it."
                     ),
                     "envelope_mm": {
                         "length_mm": 200.0,
                         "width_mm": 200.0,
                         "height_mm": 20.0,
                     },
+                    "mechanisms": ["stacking-and-balancing", "square-grid"],
+                    "build_plan": [
+                        {"group": "board", "parts": ["board"], "exit_criteria": "Recesses are 1 mm deep."},
+                        {"group": "pieces", "parts": ["pieces"], "exit_criteria": "Pieces seat and stack."},
+                    ],
                     "components": [
                         {"key": key, **fields}
                         for key, fields in _fixture_components().items()
@@ -497,6 +538,7 @@ class _OneSessionProductAgent:
         product_root_value = inputs["product_root"]
         product_root = run_root / product_root_value
         (product_root / "cad" / "project").mkdir(parents=True, exist_ok=True)
+        _write_fixture_render(product_root / "cad" / "project")
         (product_root / "cad" / "project" / "validation").mkdir(exist_ok=True)
         wish = _read_json(run_root / "WISH.json")
         invented = inputs.get("invented")
@@ -516,14 +558,20 @@ class _OneSessionProductAgent:
                         "Every playable square is an orbital waypoint without changing "
                         "the familiar rules."
                     ),
-                    "intended_interaction": (
-                        "Two players move tactile pieces between orbital waypoints."
+                    "interaction": (
+                        "Two players move dog pieces along the board's orbital "
+                        "waypoints, capture by jumping, and stack a piece to crown it."
                     ),
                     "envelope_mm": {
                         "length_mm": 200.0,
                         "width_mm": 200.0,
                         "height_mm": 20.0,
                     },
+                    "mechanisms": ["stacking-and-balancing", "square-grid"],
+                    "build_plan": [
+                        {"group": "board", "parts": ["board"], "exit_criteria": "Recesses are 1 mm deep."},
+                        {"group": "pieces", "parts": ["pieces"], "exit_criteria": "Pieces seat and stack."},
+                    ],
                     "components": [
                         {"key": key, **fields}
                         for key, fields in _fixture_components().items()
@@ -682,6 +730,21 @@ class _OneSessionProductAgent:
         for required in inputs["required_root_files"]:
             if not (product_root / required).is_file():
                 raise AssertionError("Make omitted a host-required root file")
+        (product_root / "parts").mkdir(exist_ok=True)
+        for group in invented["concept"]["build_plan"]:
+            for key in group["parts"]:
+                (product_root / "parts" / ("%s.stl" % key)).write_bytes(
+                    b"solid %s\nendsolid %s\n" % (key.encode(), key.encode())
+                )
+            self._run_finalizer(
+                run_root,
+                "make-group",
+                *(("--source", spark_source) if spark_source is not None else ()),
+                "--product-root",
+                product_root_value,
+                "--group",
+                group["group"],
+            )
         arguments = ["make"]
         if spark_source is not None:
             arguments.extend(("--source", spark_source))
@@ -771,6 +834,39 @@ class _OneSessionProductAgent:
             verdict, feedback = self.playtest_plan.pop(0)
         else:
             verdict, feedback = "pass", []
+        answers = [
+            {
+                "lead": lead["id"],
+                "verdict": "dismissed",
+                "why": "The fixture revision has no %s exposure." % lead["nodes"][1],
+                "feedback_code": None,
+            }
+            for lead in inputs.get("vault_leads", [])
+        ]
+        if self.confirm_first_lead and answers and feedback:
+            answers[0] = {
+                "lead": answers[0]["lead"],
+                "verdict": "confirmed",
+                "why": "Observed in this revision's seeded games.",
+                "feedback_code": feedback[0]["code"],
+            }
+        base = {1: 8, 2: 6}.get(stage["round"], 7)
+        reads = [
+            {
+                "reader": reader,
+                "scores": {
+                    dimension: min(10, base + offset)
+                    for dimension in inputs.get("score_dimensions", [])
+                },
+                "one_change": "Deepen the waypoint recesses by 0.5 mm.",
+            }
+            for reader, offset in (("first-time", 0), ("optimizing", 0), ("adversarial", 1))
+        ]
+        for check in checks:
+            if check["check_id"] == "agent-playtest":
+                check["observations"]["vault_leads"] = answers
+                if "score_dimensions" in inputs:
+                    check["observations"]["reads"] = reads
         source = "authored/playtest.json"
         _write_json(
             run_root / source,
@@ -1402,6 +1498,9 @@ class _FactoryEffects:
 
 
 class NativeFullRunTest(unittest.TestCase):
+    def setUp(self):
+        self.gamevault = install_fake_gamevault(self, FakeGameVaultTransport(E2E_NODES))
+
     def test_permanent_factory_error_is_visible_and_not_an_outage_wait(self):
         launcher = _OneSessionProductAgent()
 
@@ -1587,7 +1686,13 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(
                 list((paths.host_state / "gates").glob("*-release.json")), []
             )
-            self.assertEqual(len(launcher.finalizer_commands), 4)
+            stage_finalizers = [
+                command for command in launcher.finalizer_commands if command[4] != "make-group"
+            ]
+            self.assertEqual(len(stage_finalizers), 4)
+            self.assertEqual(
+                sum(1 for command in launcher.finalizer_commands if command[4] == "make-group"), 2
+            )
             self.assertEqual(effects.writer_calls, [])
             self.assertEqual(effects.publish_calls, [])
             factory_events = [
@@ -2091,7 +2196,8 @@ class NativeFullRunTest(unittest.TestCase):
         )
         self.assertEqual(
             [command[4] for command in launcher.finalizer_commands],
-            ["invent", "make-revision", "invent", "make", "playtest", "release"],
+            # the revised concept's two build groups are sealed before Make itself
+            ["invent", "make-revision", "invent", "make-group", "make-group", "make", "playtest", "release"],
         )
         self.assertEqual(
             [path for path, unused_bytes in launcher.invent_outputs],
@@ -2182,6 +2288,12 @@ class NativeFullRunTest(unittest.TestCase):
         )
         first_invent_packet = launcher.stage_packets[1]
         reinvent_packet = launcher.stage_packets[4]
+        # The repair round is written against the very leads Make refused on.
+        self.assertEqual(
+            reinvent_packet["inputs"]["vault_leads"],
+            launcher.stage_packets[2]["inputs"]["vault_leads"],
+        )
+        self.assertTrue(reinvent_packet["inputs"]["vault_leads"])
         self.assertIsNone(first_invent_packet["round"])
         self.assertIsNone(reinvent_packet["round"])
         self.assertNotEqual(
@@ -2318,6 +2430,239 @@ class NativeFullRunTest(unittest.TestCase):
             if packet["stage"] == "make"
         ]
         self.assertEqual([packet["round"] for packet in make_packets], [1, 2, 3, 4])
+        self.assertEqual(
+            [len(packet["inputs"]["score_history"]) for packet in make_packets],
+            [0, 1, 2, 3],
+        )
+        self.assertEqual(make_packets[1]["inputs"]["regression"], {})
+        # round 2 scored 6 against round 1's 8: the next Make is told so
+        self.assertEqual(
+            make_packets[2]["inputs"]["regression"],
+            {"wish_fit": -2, "play": -2, "legibility": -2, "build_confidence": -2},
+        )
+        self.assertEqual(
+            [entry["verdict"] for entry in make_packets[3]["inputs"]["score_history"]],
+            ["block", "block", "block"],
+        )
+
+    def test_confirmed_leads_and_dismissals_reach_the_game_vault(self):
+        finding = {
+            "code": "idle-seat",
+            "area": "play",
+            "severity": "block",
+            "finding": "One seat idles while the other resolves captures.",
+            "change": "Resolve captures simultaneously.",
+            "evidence_refs": ["results/agent-playtest.json"],
+            "invalidates": ["playtest", "release"],
+        }
+        effects = _FactoryEffects()
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            home.mkdir()
+            first = _OneSessionProductAgent(playtest_plan=[("block", [finding])], confirm_first_lead=True)
+            second = _OneSessionProductAgent()
+            active_launcher = {"agent": first}
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root", return_value=None
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                side_effect=lambda *a, **k: active_launcher["agent"],
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad", side_effect=verify_cad
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials", side_effect=effects.credentials
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter", side_effect=effects.writer
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession", side_effect=effects.session
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition", side_effect=effects.transition
+            ):
+                wish_a = Wish.create(
+                    "orbit-dog-a",
+                    "Build a pocket draughts set inspired by my orbit-loving dog.",
+                    constraints={"audience": "14+"},
+                    context={"source": "native-ledger-test"},
+                )
+                receipt_a = start_native_run(wish_a, effort="quest")
+                active_launcher["agent"] = second
+                wish_b = Wish.create(
+                    "orbit-dog-b",
+                    "Build a pocket draughts set for my other dog.",
+                    constraints={"audience": "14+"},
+                    context={"source": "native-ledger-test"},
+                )
+                receipt_b = start_native_run(wish_b, effort="quest")
+
+                self.assertEqual((receipt_a["stage"], receipt_b["stage"]), ("release", "release"))
+                self.assertEqual((receipt_a["status"], receipt_b["status"]), ("complete", "complete"))
+                first_leads = [p for p in first.stage_packets if p["stage"] == "playtest"][0]["inputs"]["vault_leads"]
+                confirmed_symptom = first_leads[0]["nodes"][1]
+                posted = [item for item in self.gamevault.evidence if item["label"] == "workshop orbit-dog-a r1"]
+                self.assertEqual(len(posted), 1)
+                self.assertEqual([row["id"] for row in posted[0]["rows"]], ["r0001-idle-seat"])
+                self.assertEqual(posted[0]["rows"][0]["symptom"], confirmed_symptom)
+                self.assertEqual(posted[0]["rows"][0]["severity"], "high")
+                reviewed = [item for item in self.gamevault.review if item["label"] == "workshop orbit-dog-a r1"]
+                self.assertEqual(len(reviewed), 1)
+                self.assertEqual(
+                    sorted(item["symptom"] for item in reviewed[0]["dismissals"]),
+                    sorted(lead["nodes"][1] for lead in first_leads[1:]),
+                )
+                self.assertFalse((home / "state" / "orbit-dog-a" / "vault" / "pending").exists())
+                # every phase that needs design knowledge fetched it live
+                exports = [call for call in self.gamevault.calls if call[1].endswith("/api/gamevault/export")]
+                self.assertGreaterEqual(len(exports), 6)
+                second_make = [p for p in second.stage_packets if p["stage"] == "make"][0]
+                self.assertTrue(second_make["inputs"]["vault_leads"])
+                self.assertEqual(receipt_a["rounds"][0]["vault_leads_confirmed"], 1)
+
+    def test_full_run_completes_and_queues_write_backs_when_the_vault_is_down(self):
+        """A dead game vault never blocks a run.
+
+        The real HTTP client is pointed at a closed local port: every phase
+        records an ``unavailable`` marker and proceeds without design
+        knowledge, and the sealed Playtest write-backs wait in the host's
+        pending queue instead of failing the round.
+        """
+        finding = {
+            "code": "idle-seat",
+            "area": "play",
+            "severity": "block",
+            "finding": "One seat idles while the other resolves captures.",
+            "change": "Resolve captures simultaneously.",
+            "evidence_refs": ["results/agent-playtest.json"],
+            "invalidates": ["playtest", "release"],
+        }
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            closed_port = probe.getsockname()[1]
+        dead_vault = GameVaultClient(
+            GameVaultConfig("http://127.0.0.1:%d" % closed_port, "fixture-token")
+        )
+        effects = _FactoryEffects()
+        launcher = _OneSessionProductAgent(playtest_plan=[("block", [finding])])
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            home.mkdir()
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root", return_value=None
+            ), mock.patch(
+                "workshop.workflow.native_run._gamevault_client", return_value=dead_vault
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad", side_effect=verify_cad
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials", side_effect=effects.credentials
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter", side_effect=effects.writer
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession", side_effect=effects.session
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition", side_effect=effects.transition
+            ):
+                wish = Wish.create(
+                    "orbit-dog-offline",
+                    "Build a pocket draughts set inspired by my orbit-loving dog.",
+                    constraints={"audience": "14+"},
+                    context={"source": "native-vault-down-test"},
+                )
+                receipt = start_native_run(wish, effort="quest")
+                paths = native_run_paths(wish.product_id)
+
+                self.assertEqual((receipt["stage"], receipt["status"]), ("release", "complete"))
+                self.assertEqual(receipt["publication"]["status"], "public")
+                self.assertEqual(len(receipt["rounds"]), 2)
+                # no phase ever received design knowledge, and none paused for it
+                self.assertFalse((paths.workspace / RUN_VAULT_PATH).exists())
+                for packet in launcher.stage_packets:
+                    self.assertNotIn("design_vault", packet["inputs"], packet["stage"])
+                    self.assertFalse(packet["inputs"].get("vault_leads"), packet["stage"])
+                self.assertEqual(
+                    [packet["stage"] for packet in launcher.stage_packets],
+                    ["invent", "make", "playtest", "make", "playtest", "release"],
+                )
+                vault_state = paths.host_state / "vault"
+                self.assertGreaterEqual(len(list(vault_state.glob("*.unavailable"))), 1)
+                self.assertEqual(list(vault_state.glob("*.json")), [])
+                # sealed Playtest findings wait for the vault instead of failing the round
+                pending = sorted((vault_state / "pending").glob("*.json"))
+                self.assertGreaterEqual(len(pending), 1)
+                # an unreachable vault is not a refusal: nothing is set aside as rejected
+                self.assertEqual(list((vault_state / "pending").glob("*.rejected")), [])
+                queued = [json.loads(path.read_text(encoding="utf-8")) for path in pending]
+                self.assertEqual(
+                    {payload["label"] for payload in queued} & {"workshop orbit-dog-offline r1"},
+                    {"workshop orbit-dog-offline r1"},
+                )
+                for payload in queued:
+                    self.assertEqual(set(payload), {"label", "rows", "dismissals", "design"})
+                    self.assertEqual(payload["dismissals"], [])
+                self.assertEqual(self.gamevault.calls, [])
+
+    def test_a_worse_round_redirects_the_next_make_to_the_best_sealed_round(self):
+        one = {
+            "code": "waypoint-misalignment",
+            "area": "make",
+            "severity": "block",
+            "finding": "Waypoints miss the grid.",
+            "change": "Center every waypoint on a playable square.",
+            "evidence_refs": ["results/mechanical-check.json"],
+            "invalidates": ["playtest", "release"],
+        }
+        two = {**one, "code": "piece-wobble", "finding": "Pieces wobble in the recess.",
+               "change": "Deepen the recess by 0.5 mm."}
+        launcher, checkpoint = self._run_playtest_routing_case(
+            playtest_plan=[("block", [one]), ("block", [one, two])],
+            wish_name="orbit-dog-worse-round",
+            context_source="native-repair-base-test",
+        )
+        self.assertEqual(checkpoint.round_index, 3)
+        make_packets = [p for p in launcher.stage_packets if p["stage"] == "make"]
+        self.assertEqual([p["round"] for p in make_packets], [1, 2, 3])
+        self.assertIsNone(make_packets[0]["inputs"]["repair_base"])
+        self.assertIsNone(make_packets[1]["inputs"]["repair_base"])
+        base = make_packets[2]["inputs"]["repair_base"]
+        self.assertEqual(base["round"], 1)
+        self.assertEqual(base["product_root"], "artifacts/make/r0001/product")
+        self.assertEqual(
+            [entry["machine_failures"] for entry in make_packets[2]["inputs"]["score_history"]],
+            [1, 2],
+        )
+        playtest_packets = [p for p in launcher.stage_packets if p["stage"] == "playtest"]
+        self.assertEqual(base["made_sha256"], playtest_packets[0]["inputs"]["made"]["made_sha256"])
+        self.assertNotEqual(base["made_sha256"], playtest_packets[1]["inputs"]["made"]["made_sha256"])
+        self.assertEqual(base["made_artifact"]["path"], "artifacts/make/r0001/made.json")
 
     def test_cad_gate_rejections_resume_with_hash_bound_same_stage_feedback(self):
         launcher = _OneSessionProductAgent()
@@ -2773,7 +3118,13 @@ class NativeFullRunTest(unittest.TestCase):
                 [packet["stage"] for packet in launcher.stage_packets],
                 ["match", "invent", "make", "release"],
             )
-            self.assertEqual(len(launcher.finalizer_commands), 4)
+            stage_finalizers = [
+                command for command in launcher.finalizer_commands if command[4] != "make-group"
+            ]
+            self.assertEqual(len(stage_finalizers), 4)
+            self.assertEqual(
+                sum(1 for command in launcher.finalizer_commands if command[4] == "make-group"), 2
+            )
             self.assertEqual(
                 len({packet["checkpoint_sha256"] for packet in launcher.stage_packets}),
                 4,
@@ -2957,7 +3308,35 @@ class NativeFullRunTest(unittest.TestCase):
             )
             make_gate = _read_json(paths.host_state / "gates/0003-make.json")
             release_gate = _read_json(paths.host_state / "gates/0004-release.json")
+            invent_gate = _read_json(paths.host_state / "gates/0002-invent.json")
+            by_stage = {packet["stage"]: packet for packet in launcher.stage_packets}
+            design_vault = by_stage["invent"]["inputs"]["design_vault"]
+            self.assertEqual(design_vault["path"], "VAULT.json")
+            self.assertEqual(design_vault["nodes"], len(E2E_NODES))
+            self.assertEqual(
+                invent_gate["evidence"]["checks"]["design_vault_sha256"],
+                Vault.from_packed_bytes(
+                    (paths.workspace / design_vault["path"]).read_bytes()
+                ).sha256,
+            )
+            leads = by_stage["make"]["inputs"]["vault_leads"]
+            self.assertTrue(leads)
+            self.assertTrue(all(lead["kind"] == "risk" for lead in leads))
+            # Round one: the Wish names no vault mechanism, so Invent gets the
+            # constraint-only findings (a list, never absent while the vault is up).
+            self.assertIsInstance(by_stage["invent"]["inputs"]["vault_leads"], list)
+            self.assertEqual(
+                invent_gate["evidence"]["checks"]["vault_leads"], len(leads)
+            )
+            self.assertEqual(by_stage["make"]["inputs"]["score_history"], [])
+            self.assertEqual(by_stage["make"]["inputs"]["regression"], {})
+            self.assertEqual(by_stage["make"]["inputs"]["ambiguous"], [])
             self.assertTrue(make_gate["evidence"]["checks"]["cad_verification_passed"])
+            self.assertEqual(make_gate["evidence"]["checks"]["build_groups"], 2)
+            self.assertEqual(make_gate["evidence"]["checks"]["build_parts"], 2)
+            self.assertTrue(
+                (paths.workspace / "artifacts/make/r0001/product/groups/pieces.json").is_file()
+            )
             self.assertTrue(
                 release_gate["evidence"]["checks"]["cad_print_ready_eligible"]
             )
@@ -3066,6 +3445,27 @@ class NativeFullRunTest(unittest.TestCase):
                     )
                 )
                 self.assertEqual(release.schema_version, 2 if effort == "quest" else 3)
+                if effort == "quest":
+                    by_stage = {
+                        packet["stage"]: packet for packet in launcher.stage_packets
+                    }
+                    leads = by_stage["make"]["inputs"]["vault_leads"]
+                    self.assertTrue(leads)
+                    self.assertEqual(by_stage["playtest"]["inputs"]["vault_leads"], leads)
+                    checks = _read_json(
+                        next((paths.host_state / "gates").glob("*-playtest.json"))
+                    )["evidence"]["checks"]
+                    self.assertEqual(checks["vault_leads_answered"], len(leads))
+                    self.assertEqual(checks["vault_leads_confirmed"], 0)
+                    self.assertEqual(checks["score_reads"], 3)
+                    self.assertEqual(
+                        checks["score_median"],
+                        {"wish_fit": 8, "play": 8, "legibility": 8, "build_confidence": 8},
+                    )
+                    self.assertEqual(
+                        checks["score_spread"],
+                        {"wish_fit": 1, "play": 1, "legibility": 1, "build_confidence": 1},
+                    )
 
 
 if __name__ == "__main__":

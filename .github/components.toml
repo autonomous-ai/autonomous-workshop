@@ -219,7 +219,7 @@ backup_github = []
 backup_status = "vacant"
 risk = "standard"
 source = ["inventors/**"]
-tests = []
+tests = ["inventors/*/skills/*/scripts/tests/**"]
 docs = ["inventors/README.md"]
 
 [[components]]

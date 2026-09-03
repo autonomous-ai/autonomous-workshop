@@ -2,6 +2,7 @@ import os
 import stat
 import tempfile
 import unittest
+from tests.invent.fake_gamevault import E2E_NODES, FakeGameVaultTransport, install_fake_gamevault
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -169,6 +170,9 @@ def _verified_cad(made, **arguments):
 
 
 class NativeMakeProposalRecoveryTest(unittest.TestCase):
+    def setUp(self):
+        install_fake_gamevault(self, FakeGameVaultTransport(E2E_NODES))
+
     def _base_patches(self, home, launcher, effects):
         assets = _product_run_assets_without_direct_release(Path(home).parent)
         return (

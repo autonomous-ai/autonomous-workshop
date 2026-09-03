@@ -72,6 +72,7 @@ _IMMUTABLE_PRODUCT_RUN_PATHS = (
     PRODUCT_RUN_ROOT_MARKER,
     "AGENTS.md",
     "STAGE.json",
+    "VAULT.json",
     "WISH.json",
 )
 _CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES = (
@@ -2513,19 +2514,21 @@ def _stream_text(value: Any) -> str:
     raise CodexInvocationError("Codex native session event stream was invalid")
 
 
-def _validated_native_event_line(raw: Any) -> str:
-    text = _stream_text(raw)
-    try:
-        size = len(text.encode("utf-8"))
-    except UnicodeError:
-        raise CodexInvocationError(
-            "Codex native session event stream was invalid"
-        ) from None
-    if size > MAX_CODEX_EVENT_BYTES:
-        raise CodexInvocationError(
-            "Codex native event stream record exceeded its safe size limit"
-        )
-    return text
+def _native_event_bytes(raw: Any) -> int:
+    if isinstance(raw, bytes):
+        return len(raw)
+    if isinstance(raw, str):
+        try:
+            return len(raw.encode("utf-8"))
+        except UnicodeError:
+            raise CodexInvocationError(
+                "Codex native session event stream was invalid"
+            ) from None
+    raise CodexInvocationError("Codex native session event stream was invalid")
+
+
+def _ends_native_event_line(raw: Any) -> bool:
+    return raw.endswith(b"\n") if isinstance(raw, bytes) else raw.endswith("\n")
 
 
 def _bounded_native_event_lines(stream: Any) -> Iterator[str]:
@@ -2537,6 +2540,12 @@ def _bounded_native_event_lines(stream: Any) -> Iterator[str]:
     ``readline(size)`` is important here: ordinary file iteration may allocate
     an attacker-sized line before the caller gets a chance to measure it.
 
+    A record beyond the bound — in practice a tool result that echoed a large
+    file such as the packed ``VAULT.json`` — is drained in bounded chunks and
+    discarded rather than ending the session: Codex already holds that output
+    in its own context, and the host reads stage outcomes from the run root,
+    never from the event channel.
+
     Deterministic stream doubles used by embedders may expose only iteration;
     retain that narrow compatibility path while applying the same per-record
     byte check after every yielded value.
@@ -2544,20 +2553,39 @@ def _bounded_native_event_lines(stream: Any) -> Iterator[str]:
 
     readline = getattr(stream, "readline", None)
     if callable(readline):
-        while True:
+
+        def read_chunk() -> Any:
             try:
                 # Text streams bound characters rather than encoded bytes.
                 # UTF-8 uses at most four bytes per character, so this still
                 # gives a small fixed allocation ceiling; the exact byte bound
                 # below remains authoritative.
-                raw = readline(MAX_CODEX_EVENT_BYTES + 1)
+                return readline(MAX_CODEX_EVENT_BYTES + 1)
             except (OSError, ValueError, UnicodeError):
                 raise CodexInvocationError(
                     "Codex native session event stream was invalid"
                 ) from None
+
+        while True:
+            raw = read_chunk()
             if raw in ("", b""):
                 return
-            yield _validated_native_event_line(raw)
+            if not _ends_native_event_line(raw):
+                # Either the stream ended without a trailing newline or the
+                # record continues past the chunk and is oversized.
+                following = read_chunk()
+                if following in ("", b""):
+                    if _native_event_bytes(raw) <= MAX_CODEX_EVENT_BYTES:
+                        yield _stream_text(raw)
+                    return
+                while not _ends_native_event_line(following):
+                    following = read_chunk()
+                    if following in ("", b""):
+                        return
+                continue
+            if _native_event_bytes(raw) > MAX_CODEX_EVENT_BYTES:
+                continue
+            yield _stream_text(raw)
         return
 
     try:
@@ -2567,7 +2595,9 @@ def _bounded_native_event_lines(stream: Any) -> Iterator[str]:
             "Codex native session event stream was invalid"
         ) from None
     for raw in iterator:
-        yield _validated_native_event_line(raw)
+        if _native_event_bytes(raw) > MAX_CODEX_EVENT_BYTES:
+            continue
+        yield _stream_text(raw)
 
 
 def _decode_native_event(line: str) -> Mapping[str, Any]:
