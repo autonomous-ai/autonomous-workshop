@@ -8,7 +8,7 @@ import os
 import stat
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 from workshop.contributors import (
@@ -19,6 +19,7 @@ from workshop.contributors import (
     load_taste,
     validate_inventor_collection,
 )
+from workshop.contributors.extensions import load_inventor_extension_bundles
 from workshop.daydream._files import read_regular_bytes, write_private_bytes
 from workshop.daydream.catalog import (
     PriorWork,
@@ -58,7 +59,12 @@ from workshop.daydream.prompt import (
 )
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
 from workshop._validation import require_sha256
-from workshop.errors import ContractError
+from workshop.errors import ContractError, ManifestError
+from workshop.runtime.agent_assets import (
+    InventorSkillBinding,
+    inventor_custom_agent_bytes,
+    parse_inventor_custom_agent_bytes,
+)
 from workshop.runtime.codex import CodexInvocationError, CodexRecoverableInvocationError
 from workshop.runtime.managers import (
     NativeManagerRecoverableError,
@@ -88,11 +94,13 @@ JUDGE_STATE_NAME = "judge-state"
 VERDICT_FILE_NAME = "VERDICT.json"
 JUDGE_TURN_TIMEOUT_SECONDS = 600
 REJECTED_FILE_NAME = "REJECTED.json"
+INVENTOR_BINDING_FILE_NAME = "INVENTOR.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 MAX_SEALED_FILE_BYTES = 256 * 1024
 MAX_ERROR_CHARS = 1_000
 NOTEBOOK_LINT_LIMIT = 1_000_000
 WISH_CONTEXT_SOURCE = "workshop-daydream"
+MAX_INVENTOR_SOURCE_BYTES = 64 * 1024
 
 
 @dataclass(frozen=True)
@@ -257,6 +265,102 @@ def schema_bytes() -> bytes:
         maximum=MAX_OUTCOME_FILE_BYTES * 8,
         label="daydream schema source",
     )
+
+
+def _materialize_selected_inventor(
+    paths: DaydreamPaths, *, manifest: InventorManifest, taste: Taste
+) -> Mapping[str, Any]:
+    """Project the selected Inventor's exact agent and skill trees read-only."""
+
+    try:
+        bundles = load_inventor_extension_bundles(manifest)
+    except ManifestError as exc:
+        raise DaydreamError("selected Inventor skills are invalid: %s" % exc) from exc
+    if not bundles:
+        raise DaydreamError("selected Inventor declares no specialist skill")
+    manifest_bytes = read_regular_bytes(
+        manifest.path,
+        maximum=MAX_INVENTOR_SOURCE_BYTES,
+        label="selected Inventor manifest",
+    )
+    taste_path = manifest.path.parent / "TASTE.md"
+    taste_bytes = read_regular_bytes(
+        taste_path,
+        maximum=MAX_INVENTOR_SOURCE_BYTES,
+        label="selected Inventor Taste",
+    )
+    if hashlib.sha256(taste_bytes).hexdigest() != taste.sha256:
+        raise DaydreamError("selected Inventor Taste changed after validation")
+    skills = tuple(
+        InventorSkillBinding(
+            name=bundle.extension.name,
+            path=bundle.extension.path,
+            artifact_sha256=bundle.extension.artifact_sha256,
+        )
+        for bundle in bundles
+    )
+    try:
+        agent_bytes = inventor_custom_agent_bytes(
+            manifest.inventor_id,
+            manifest_bytes,
+            taste_bytes,
+            skills=skills,
+        )
+    except ContractError as exc:
+        raise DaydreamError("selected Inventor custom agent is invalid: %s" % exc) from exc
+
+    agents_root = paths.workspace / ".agents"
+    skills_root = agents_root / "skills"
+    codex_root = paths.workspace / ".codex"
+    codex_agents = codex_root / "agents"
+    for directory, label in (
+        (agents_root, "Daydream agent inputs"),
+        (skills_root, "Daydream skill inputs"),
+        (codex_root, "Daydream Codex inputs"),
+        (codex_agents, "Daydream custom agents"),
+    ):
+        _ensure_private_directory(directory, label=label)
+
+    for bundle in bundles:
+        target_root = skills_root / bundle.extension.name
+        _ensure_private_directory(target_root, label="Inventor skill %s" % bundle.extension.name)
+        for entry in bundle.manifest.entries:
+            relative = PurePosixPath(entry.path)
+            source = bundle.root.joinpath(*relative.parts)
+            content = read_regular_bytes(
+                source,
+                maximum=entry.bytes,
+                label="Inventor skill %s" % relative.as_posix(),
+            )
+            if len(content) != entry.bytes or hashlib.sha256(content).hexdigest() != entry.sha256:
+                raise DaydreamError(
+                    "Inventor skill %s changed after validation" % relative.as_posix()
+                )
+            destination = target_root.joinpath(*relative.parts)
+            destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+            write_private_bytes(
+                destination,
+                content,
+                label="materialized Inventor skill %s" % relative.as_posix(),
+            )
+            os.chmod(destination, 0o500 if entry.executable else 0o400)
+
+    agent_path = codex_agents / (manifest.inventor_id + ".toml")
+    write_private_bytes(agent_path, agent_bytes, label="materialized Inventor custom agent")
+    os.chmod(agent_path, 0o400)
+    try:
+        binding = parse_inventor_custom_agent_bytes(agent_bytes)
+    except ContractError as exc:  # pragma: no cover - compiler and parser share a contract
+        raise DaydreamError("materialized Inventor custom agent is invalid") from exc
+    for root in (agents_root, codex_root):
+        for directory in sorted(
+            (path for path in root.rglob("*") if path.is_dir()),
+            key=lambda path: len(path.parts),
+            reverse=True,
+        ):
+            os.chmod(directory, 0o500)
+        os.chmod(root, 0o500)
+    return binding.to_host_dict()
 
 
 def _write_workspace(
@@ -595,6 +699,14 @@ def run_daydream(
     catalog_root = repository_root if repository_root is not None else source_checkout_root()
     repository_prior = load_repository_prior_work(catalog_root)
     notebook_entries = read_notebook(paths.notebook)
+    inventor_binding = _materialize_selected_inventor(
+        paths, manifest=manifest, taste=taste
+    )
+    write_private_bytes(
+        paths.host_state / INVENTOR_BINDING_FILE_NAME,
+        (canonical_json(inventor_binding) + "\n").encode("utf-8"),
+        label="Daydream Inventor binding",
+    )
     _write_workspace(
         paths,
         taste=taste,
@@ -758,6 +870,7 @@ __all__ = [
     "FINALIZER_FILE_NAME",
     "SCHEMA_FILE_NAME",
     "IDEA_FILE_NAME",
+    "INVENTOR_BINDING_FILE_NAME",
     "JUDGE_TURN_TIMEOUT_SECONDS",
     "OUTCOME_FILE_NAME",
     "VERDICT_FILE_NAME",

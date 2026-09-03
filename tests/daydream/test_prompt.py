@@ -28,6 +28,8 @@ class PromptTest(unittest.TestCase):
             "a bus stop in the cold",
             "it counts something",
             "TASTE.md",
+            ".codex/agents/pico-press.toml",
+            ".agents/skills/",
             "PRIOR-WORK.md",
             "PORTFOLIO.md",
             "NOTEBOOK.md",

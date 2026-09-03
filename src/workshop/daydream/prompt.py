@@ -353,7 +353,8 @@ def build_daydream_prompt(
         "Run one Daydream Goal with %s (Inventor id `%s`).\n\n"
         "Exact world-scan observation time: `%s`. Copy it into every "
         "`observed_at` field. The target route is `%s`.\n\n"
-        "Read `TASTE.md`, the selected skills in `.agents/skills/`, "
+        "Read `TASTE.md`, the selected custom agent `.codex/agents/%s.toml`, "
+        "the selected skills in `.agents/skills/`, "
         "`PRIOR-WORK.md` (%d entries), `PORTFOLIO.md`, `NOTEBOOK.md` (%d entries), "
         "and `VAULT.md` before committing a thesis.\n\n"
         "Lateral seed (a push, never a rule or evidence):\n"
@@ -368,6 +369,7 @@ def build_daydream_prompt(
         inventor_id,
         observation_time,
         route,
+        inventor_id,
         prior_work_count,
         notebook_count,
         seed.moment,

@@ -18,6 +18,7 @@ from tests.daydream.support import (
 from workshop.daydream.contracts import DaydreamError, Idea, SealedDaydream
 from workshop.daydream.native import (
     DAYDREAM_TURN_TIMEOUT_SECONDS,
+    INVENTOR_BINDING_FILE_NAME,
     daydream_paths,
     list_daydreams,
     load_sealed_daydream,
@@ -25,6 +26,7 @@ from workshop.daydream.native import (
     run_daydream,
     wish_from_daydream,
 )
+from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
 from workshop.daydream.prompt import (
     DAYDREAM_CONSTITUTION,
     DAYDREAM_CONSTITUTION_SHA256,
@@ -122,6 +124,17 @@ class _FakeLauncher:
         )
         self.test.assertTrue((run_root / "work").is_dir())
         self.test.assertEqual(list((run_root / "work").iterdir()), [])
+        skill = run_root / ".agents" / "skills" / "sample-inventor" / "SKILL.md"
+        agent = run_root / ".codex" / "agents" / "sample.toml"
+        self.test.assertEqual(
+            skill.read_bytes(),
+            (self.test.source_root / "sample" / "skills" / "sample-inventor" / "SKILL.md").read_bytes(),
+        )
+        self.test.assertEqual(parse_inventor_custom_agent_bytes(agent.read_bytes()).inventor_id, "sample")
+        self.test.assertEqual(stat.S_IMODE(skill.stat().st_mode), 0o400)
+        self.test.assertEqual(stat.S_IMODE(agent.stat().st_mode), 0o400)
+        self.test.assertEqual(stat.S_IMODE((run_root / ".agents").stat().st_mode), 0o500)
+        self.test.assertEqual(stat.S_IMODE((run_root / ".codex").stat().st_mode), 0o500)
         self.test.assertEqual(stat.S_IMODE(host_state.stat().st_mode), 0o700)
         self.test.assertEqual(stat.S_IMODE(run_root.stat().st_mode), 0o700)
         self.test.assertFalse(host_state.is_relative_to(run_root))
@@ -298,6 +311,14 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(
             (paths.workspace / "TASTE.md").read_bytes(),
             (self.source_root / "sample" / "TASTE.md").read_bytes(),
+        )
+        binding = json.loads(
+            (paths.host_state / INVENTOR_BINDING_FILE_NAME).read_text(encoding="utf-8")
+        )
+        self.assertEqual(binding["inventor_id"], "sample")
+        self.assertEqual(binding["taste_sha256"], sealed.taste_sha256)
+        self.assertEqual(
+            [skill["name"] for skill in binding["skills"]], ["sample-inventor"]
         )
         entries = list_daydreams("sample")
         self.assertEqual(
