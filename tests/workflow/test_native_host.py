@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import socket
 import stat
 import tempfile
 import unittest
@@ -2101,6 +2102,56 @@ class NativeHostTest(unittest.TestCase):
             self.assertNotIn("vault_leads", stage["inputs"])
             markers = list((home / "state" / receipt["product_id"] / "vault").glob("*.unavailable"))
             self.assertEqual(len(markers), 1)
+
+    def test_wish_runs_vault_bypassed_with_real_config_and_transport(self):
+        # Real config resolution and real HTTP transport (overriding the
+        # class fake): the run must survive a host with no vault credentials
+        # at all, and a host whose configured vault is down.
+        from workshop.invent.gamevault import default_client
+
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            dead_port = probe.getsockname()[1]
+        for label, extra_environment in (
+            ("no credentials", {}),
+            (
+                "vault down",
+                {
+                    "WORKSHOP_GAMEVAULT_URL": "http://127.0.0.1:%d" % dead_port,
+                    "WORKSHOP_GAMEVAULT_TOKEN": "fixture-token",
+                },
+            ),
+        ):
+            with self.subTest(label=label):
+                launcher = _FakeLauncher()
+                with tempfile.TemporaryDirectory() as temporary:
+                    home = Path(temporary).resolve() / "workshop-home"
+                    stdout = StringIO()
+                    with mock.patch.dict(
+                        os.environ,
+                        {"WORKSHOP_HOME": str(home), **extra_environment},
+                        clear=True,
+                    ), mock.patch(
+                        "workshop.workflow.native_run._source_checkout_root",
+                        return_value=None,
+                    ), mock.patch(
+                        "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                        return_value=launcher,
+                    ), mock.patch(
+                        "workshop.workflow.native_run._gamevault_client",
+                        side_effect=default_client,
+                    ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+                        result = main(("wish", "a", "quiet", "orrery", "--json"))
+                    self.assertEqual(result, 0)
+                    receipt = json.loads(stdout.getvalue())
+                    self.assertEqual(len(launcher.starts), 1)
+                    workspace = home / "runs" / receipt["product_id"] / "workspace"
+                    self.assertFalse((workspace / RUN_VAULT_PATH).exists())
+                    stage = json.loads(
+                        (workspace / "STAGE.json").read_text(encoding="utf-8")
+                    )
+                    self.assertNotIn("design_vault", stage["inputs"])
+                    self.assertNotIn("vault_leads", stage["inputs"])
 
     def test_phase_snapshot_is_fetched_once_per_checkpoint_and_bound(self):
         with tempfile.TemporaryDirectory() as temporary:
