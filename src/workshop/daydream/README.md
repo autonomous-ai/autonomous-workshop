@@ -41,6 +41,15 @@ enforced today as follows.
     $WORKSHOP_HOME/daydreams/<inventor-id>/<daydream-id>/host-state/
         IDEA.json (sealed)  or  REJECTED.json
 
+Daydream is one native Goal, like every product stage. The host also drops
+the constitution into the workspace as `AGENTS.md` and copies the run-local
+finalizer `finalize_daydream.py` beside it. The Inventor opens one Goal
+(objective: one new, Taste-fitting idea in `work/IDEA.json`), runs the
+finalizer, which validates the file's shape and hashes its exact bytes into
+`agent-outcome.json`, and completes the Goal. The host passes that marker to
+the runtime as the turn's finalization marker and refuses an idea whose
+marker is missing or whose bytes no longer match it.
+
 Every directory is created 0700 with no symlinks; every host file is 0600.
 The native Manager session (Codex by default) may write only inside
 `workspace/`; under Codex the network is off and web search is on. The

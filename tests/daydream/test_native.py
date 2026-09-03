@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import stat
@@ -23,7 +24,7 @@ from workshop.daydream.native import (
     run_daydream,
     wish_from_daydream,
 )
-from workshop.daydream.prompt import DAYDREAM_CONSTITUTION_SHA256
+from workshop.daydream.prompt import DAYDREAM_CONSTITUTION, DAYDREAM_CONSTITUTION_SHA256
 from workshop.daydream.seeds import DaydreamSeed
 from workshop.errors import ContractError
 from workshop.runtime.codex import CodexInvocationError, CodexRecoverableInvocationError
@@ -69,9 +70,13 @@ class _FakeLauncher:
         error=None,
         expect_notebook=(),
         error_after_idea=False,
+        finalize=True,
+        outcome_sha256=None,
     ):
         self.test = test
         self.error_after_idea = error_after_idea
+        self.finalize = finalize
+        self.outcome_sha256 = outcome_sha256
         self.timeout_seconds = timeout_seconds
         self.idea = idea
         self.error = error
@@ -82,8 +87,21 @@ class _FakeLauncher:
         self.starts.append(dict(arguments))
         run_root = Path(arguments["run_root"])
         host_state = Path(arguments["host_state_root"])
-        for name in ("TASTE.md", "PRIOR-WORK.md", "NOTEBOOK.md", PRODUCT_RUN_ROOT_MARKER):
+        for name in (
+            "TASTE.md",
+            "PRIOR-WORK.md",
+            "NOTEBOOK.md",
+            "AGENTS.md",
+            "finalize_daydream.py",
+            PRODUCT_RUN_ROOT_MARKER,
+        ):
             self.test.assertTrue((run_root / name).is_file(), name)
+        self.test.assertEqual(
+            (run_root / "AGENTS.md").read_text(encoding="utf-8"), DAYDREAM_CONSTITUTION
+        )
+        self.test.assertEqual(
+            arguments["finalization_marker"], run_root / "agent-outcome.json"
+        )
         self.test.assertEqual(
             (run_root / PRODUCT_RUN_ROOT_MARKER).read_bytes(), PRODUCT_RUN_ROOT_MARKER_BYTES
         )
@@ -100,10 +118,28 @@ class _FakeLauncher:
         if self.error is not None and not self.error_after_idea:
             raise self.error
         if self.idea is not None:
-            (run_root / "work" / "IDEA.json").write_text(
+            idea_path = run_root / "work" / "IDEA.json"
+            idea_path.write_text(
                 self.idea if isinstance(self.idea, str) else json.dumps(self.idea),
                 encoding="utf-8",
             )
+            if self.finalize:
+                digest = self.outcome_sha256 or hashlib.sha256(idea_path.read_bytes()).hexdigest()
+                (run_root / "agent-outcome.json").write_text(
+                    json.dumps(
+                        {
+                            "schema_version": 1,
+                            "kind": "autonomous-workshop.daydream-outcome",
+                            "status": "ready",
+                            "idea_path": "work/IDEA.json",
+                            "idea_bytes": idea_path.stat().st_size,
+                            "idea_sha256": digest,
+                            "title": "fixture",
+                            "written_at": "2026-09-02T10:16:00Z",
+                        }
+                    ),
+                    encoding="utf-8",
+                )
         if self.error is not None:
             raise self.error
         return _FakeOutcome(arguments)
@@ -222,8 +258,15 @@ class DaydreamNativeTest(unittest.TestCase):
         with self.assertRaisesRegex(DaydreamError, "rejected"):
             self._run(daydream_id="daydream-20260902-101700-00000003", idea=sample_idea_dict())
 
+    def test_unfinalized_goal_is_rejected(self):
+        with self.assertRaisesRegex(DaydreamError, "did not finalize its Daydream Goal"):
+            self._run(idea=sample_idea_dict(), finalize=False)
+        with self.assertRaisesRegex(DaydreamError, "do not match agent-outcome.json"):
+            self._run(daydream_id=SECOND_ID, idea=sample_idea_dict(), outcome_sha256="0" * 64)
+        self.assertEqual(list_daydreams("sample"), ())
+
     def test_missing_idea_file_fails(self):
-        with self.assertRaisesRegex(DaydreamError, "wrote no work/IDEA.json"):
+        with self.assertRaisesRegex(DaydreamError, "did not finalize its Daydream Goal"):
             self._run()
         self.assertEqual(list_daydreams("sample"), ())
 

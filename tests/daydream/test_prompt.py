@@ -95,6 +95,18 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class GoalTest(unittest.TestCase):
+    def test_constitution_makes_daydream_one_native_goal_with_a_finalizer(self):
+        from workshop.daydream.prompt import DAYDREAM_CONSTITUTION
+
+        self.assertIn("Daydream is one native Goal", DAYDREAM_CONSTITUTION)
+        self.assertIn("create one native Goal named `Daydream`", DAYDREAM_CONSTITUTION)
+        self.assertIn('"$WORKSHOP_PYTHON" finalize_daydream.py', DAYDREAM_CONSTITUTION)
+        self.assertIn("writes `agent-outcome.json`", DAYDREAM_CONSTITUTION)
+        self.assertIn("`agent-outcome.json` by hand", DAYDREAM_CONSTITUTION)
+        self.assertIn("you run the finalizer, you stop", DAYDREAM_CONSTITUTION)
+
+
 class RouteBudgetTest(unittest.TestCase):
     def _prompt(self, effort):
         from workshop.daydream.prompt import build_daydream_prompt

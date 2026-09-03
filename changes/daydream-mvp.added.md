@@ -14,6 +14,10 @@
   `workshop stop <inventor-id>` (after the current step; `--now` interrupts),
   Ctrl-C, `--max-ideas N`, or three consecutive failures. One loop per
   Inventor at a time (`LOOP.json` lease, `STOP` marker).
+- Daydream is one native Goal like every product stage: the workspace carries
+  the constitution as `AGENTS.md` and the run-local `finalize_daydream.py`,
+  which validates `work/IDEA.json` and writes the bound `agent-outcome.json`
+  that completes the Goal; the host requires that marker.
 - Under `workshop start`, the daydream prompt names the route budget (Spark: one to
   three parts, one action, one payoff a before/after render proves) so the
   Inventor dreams to the size Make can prove on that route.

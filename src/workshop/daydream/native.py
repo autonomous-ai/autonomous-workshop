@@ -46,8 +46,13 @@ from workshop.daydream.notebook import (
     read_notebook,
     render_notebook_markdown,
 )
-from workshop.daydream.prompt import DAYDREAM_CONSTITUTION_SHA256, build_daydream_prompt
+from workshop.daydream.prompt import (
+    DAYDREAM_CONSTITUTION,
+    DAYDREAM_CONSTITUTION_SHA256,
+    build_daydream_prompt,
+)
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
+from workshop._validation import require_sha256
 from workshop.errors import ContractError
 from workshop.runtime.codex import CodexInvocationError, CodexRecoverableInvocationError
 from workshop.runtime.managers import (
@@ -68,6 +73,10 @@ from workshop.wish import Wish, generate_wish_id
 DAYDREAM_TURN_TIMEOUT_SECONDS = 900
 DAYDREAM_REJECTION_KIND = "autonomous-workshop.daydream-rejection"
 IDEA_FILE_NAME = "IDEA.json"
+OUTCOME_FILE_NAME = "agent-outcome.json"
+FINALIZER_FILE_NAME = "finalize_daydream.py"
+DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
+MAX_OUTCOME_FILE_BYTES = 64 * 1024
 REJECTED_FILE_NAME = "REJECTED.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 MAX_SEALED_FILE_BYTES = 256 * 1024
@@ -220,6 +229,16 @@ def _utc_moment(moment: Optional[datetime]) -> datetime:
     return observed.astimezone(timezone.utc)
 
 
+def finalizer_bytes() -> bytes:
+    """The exact run-local finalizer the host copies into every workspace."""
+
+    return read_regular_bytes(
+        Path(__file__).with_name(FINALIZER_FILE_NAME),
+        maximum=MAX_OUTCOME_FILE_BYTES * 4,
+        label="daydream finalizer source",
+    )
+
+
 def _write_workspace(
     paths: DaydreamPaths,
     *,
@@ -231,6 +250,10 @@ def _write_workspace(
         ("TASTE.md", taste.content.encode("utf-8")),
         ("PRIOR-WORK.md", render_prior_work_markdown(repository_prior).encode("utf-8")),
         ("NOTEBOOK.md", render_notebook_markdown(notebook_entries).encode("utf-8")),
+        # The constitution doubles as AGENTS.md so the Manager runtime loads it
+        # the same way it loads a product run's constitution.
+        ("AGENTS.md", DAYDREAM_CONSTITUTION.encode("utf-8")),
+        (FINALIZER_FILE_NAME, finalizer_bytes()),
         (PRODUCT_RUN_ROOT_MARKER, PRODUCT_RUN_ROOT_MARKER_BYTES),
     )
     for name, payload in files:
@@ -271,11 +294,15 @@ def _native_turn(
             host_state_root=paths.host_state,
             prompt=prompt,
             activity_observer=activity_observer,
+            finalization_marker=paths.workspace / OUTCOME_FILE_NAME,
         )
     except (NativeManagerRecoverableError, CodexRecoverableInvocationError) as exc:
-        # The runtime lost its terminal event or timed out.  A finished idea
-        # file is still the Inventor's work; keep it and record the truth.
-        if (paths.work / IDEA_FILE_NAME).is_file():
+        # The runtime lost its terminal event or timed out after the Goal was
+        # finalized.  The finalized idea is still the Inventor's work; keep it
+        # and record the truth.
+        if (paths.work / IDEA_FILE_NAME).is_file() and (
+            paths.workspace / OUTCOME_FILE_NAME
+        ).is_file():
             return {"status": "incomplete", "error": _bounded_error(exc)}
         raise DaydreamError("Daydream session failed: %s" % exc) from exc
     except (CodexInvocationError, NativeManagerInvocationError, ContractError) as exc:
@@ -292,6 +319,49 @@ def _native_turn(
 def _bounded_error(exc: BaseException) -> str:
     text = " ".join(str(exc).split())
     return text[:MAX_ERROR_CHARS] if text else exc.__class__.__name__
+
+
+def _read_outcome(paths: DaydreamPaths) -> Mapping[str, Any]:
+    """Require the finalizer's Goal marker and bind it to the exact idea bytes."""
+
+    try:
+        payload = read_regular_bytes(
+            paths.workspace / OUTCOME_FILE_NAME,
+            maximum=MAX_OUTCOME_FILE_BYTES,
+            label="agent-outcome.json",
+        )
+    except FileNotFoundError as exc:
+        raise DaydreamError(
+            "the Inventor did not finalize its Daydream Goal: agent-outcome.json is missing"
+        ) from exc
+    try:
+        raw = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
+        raise DaydreamError("agent-outcome.json is not valid UTF-8 JSON: %s" % exc) from exc
+    if (
+        not isinstance(raw, dict)
+        or raw.get("schema_version") != 1
+        or raw.get("kind") != DAYDREAM_OUTCOME_KIND
+        or raw.get("status") != "ready"
+        or raw.get("idea_path") != "work/%s" % IDEA_FILE_NAME
+    ):
+        raise DaydreamError("agent-outcome.json is not a ready Daydream outcome")
+    try:
+        require_sha256(raw.get("idea_sha256"), "daydream outcome idea_sha256")
+    except ContractError as exc:
+        raise DaydreamError("agent-outcome.json carries no idea sha256") from exc
+    try:
+        idea_bytes = read_regular_bytes(
+            paths.work / IDEA_FILE_NAME, maximum=MAX_IDEA_FILE_BYTES, label="work/IDEA.json"
+        )
+    except FileNotFoundError as exc:
+        raise DaydreamError("the Inventor wrote no work/IDEA.json") from exc
+    if hashlib.sha256(idea_bytes).hexdigest() != raw["idea_sha256"]:
+        raise DaydreamError(
+            "work/IDEA.json changed after the finalizer ran; its bytes do not match "
+            "agent-outcome.json"
+        )
+    return raw
 
 
 def _read_idea(path: Path) -> Idea:
@@ -409,6 +479,7 @@ def run_daydream(
     # unlinked work directory and a fresh notebook decide what gets sealed.
     _existing_real_directory(paths.workspace, label="daydream workspace")
     _existing_real_directory(paths.work, label="daydream work directory", private=False)
+    _read_outcome(paths)
     idea = _read_idea(paths.work / IDEA_FILE_NAME)
     latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
     novelty = lint_novelty(
@@ -509,7 +580,11 @@ __all__ = [
     "DAYDREAM_REJECTION_KIND",
     "DAYDREAM_TURN_TIMEOUT_SECONDS",
     "DaydreamPaths",
+    "DAYDREAM_OUTCOME_KIND",
+    "FINALIZER_FILE_NAME",
     "IDEA_FILE_NAME",
+    "OUTCOME_FILE_NAME",
+    "finalizer_bytes",
     "REJECTED_FILE_NAME",
     "WISH_CONTEXT_SOURCE",
     "daydream_paths",
