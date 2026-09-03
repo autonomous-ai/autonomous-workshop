@@ -39,6 +39,15 @@ publication gates.
 
 ## Lifecycle
 
+Daydream is an optional autonomous pre-Wish loop, not another product-run
+stage. Each iteration uses a separate short native session to observe current
+signals, apply one Inventor's exact Taste and specialist method, and seal one
+creative product thesis. A thesis accepted by its independent Judge becomes
+the immutable Wish for a new product run. It owns the opportunity, intended
+physical experience, anti-generic signature, and proof target; Invent still
+owns the exact engineering solution. See
+[ADR 0042](adr/0042-taste-governed-world-informed-daydream.md).
+
 ```text
 Spark: Wish -> Make -> Release
 Forge: Wish -> Invent <-> Make -> Release

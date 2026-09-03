@@ -18,7 +18,8 @@ Workshop. It is authoritative together with
 [ADR 0037](adr/0037-raise-deep-compaction-ceiling.md),
 [ADR 0038](adr/0038-prove-product-states-and-bound-final-source.md),
 [ADR 0039](adr/0039-make-invent-recovery-a-source-handoff.md),
-[ADR 0040](adr/0040-make-proof-recovery-a-sealing-handoff.md), and the repository
+[ADR 0040](adr/0040-make-proof-recovery-a-sealing-handoff.md),
+[ADR 0042](adr/0042-taste-governed-world-informed-daydream.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -36,6 +37,13 @@ constitution is copied into a separate toy project as that run's `AGENTS.md`; it
 does not govern ordinary source-repository work.
 
 ## Runtime boundary
+
+Daydream is a separate pre-Wish creative-research boundary governed by
+[ADR 0042](adr/0042-taste-governed-world-informed-daydream.md). It gives one
+selected Inventor a short native Manager session to observe the current world,
+apply its exact Taste and specialist method, and seal one creative product
+thesis. An accepted thesis becomes immutable Wish intent; it does not join or
+replace the product run's one persistent Wish-to-Release session.
 
 Every `workshop wish` first creates and populates one persistent toy project,
 freezes its effort, then launches one native Codex session in that directory
