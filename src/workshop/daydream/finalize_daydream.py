@@ -22,13 +22,29 @@ from typing import Any, Mapping, Sequence
 
 DAYDREAM_IDEA_KIND = "autonomous-workshop.daydream-idea"
 DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
+DAYDREAM_VERDICT_KIND = "autonomous-workshop.daydream-verdict"
 IDEA_RELATIVE_PATH = "work/IDEA.json"
+VERDICT_RELATIVE_PATH = "work/VERDICT.json"
+_VERDICT_KEYS = frozenset(("schema_version", "kind", "decision", "confidence", "risks", "advice"))
+_RISK_KINDS = (
+    "generic-form",
+    "exposed-mechanism",
+    "hidden-signature",
+    "unclear-state-change",
+    "too-many-parts",
+    "tight-tolerance",
+    "print-preflight",
+    "taste-fit",
+    "not-desirable",
+    "other",
+)
 OUTCOME_FILE_NAME = "agent-outcome.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 _LINE_BOUNDS = {
     "title": 60,
     "one_liner": 200,
     "held_form": 240,
+    "before_after": 300,
 }
 _PARAGRAPH_BOUNDS = {
     "what_you_do": 600,
@@ -42,6 +58,7 @@ _REQUIRED_KEYS = frozenset(
         "title",
         "one_liner",
         "held_form",
+        "before_after",
         "what_you_do",
         "what_happens",
         "why_it_is_new",
@@ -141,29 +158,73 @@ def _is_slug(value: str) -> bool:
     return all(character.isdigit() or character.islower() or character == "-" for character in value)
 
 
-def finalize(run_root: Path, out=sys.stdout, err=sys.stderr) -> int:
-    """Validate the idea file and write the outcome marker; return an exit code."""
+def verdict_problems(raw: Any) -> list[str]:
+    """Return every shape or bound problem in a parsed verdict; empty means valid."""
 
-    idea_path = run_root / IDEA_RELATIVE_PATH
+    if not isinstance(raw, Mapping):
+        return ["VERDICT.json must be one JSON object"]
+    missing = sorted(_VERDICT_KEYS - set(raw))
+    unknown = sorted(set(raw) - _VERDICT_KEYS)
+    problems = []
+    if missing:
+        problems.append("missing keys: %s" % ", ".join(missing))
+    if unknown:
+        problems.append("unknown keys: %s" % ", ".join(unknown))
+    if problems:
+        return problems
+    if raw["schema_version"] != 1:
+        problems.append("schema_version must be 1")
+    if raw["kind"] != DAYDREAM_VERDICT_KIND:
+        problems.append("kind must be %s" % DAYDREAM_VERDICT_KIND)
+    if raw["decision"] not in ("build", "dream-again"):
+        problems.append("decision must be build or dream-again")
+    confidence = raw["confidence"]
+    if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0.0 <= confidence <= 1.0:
+        problems.append("confidence must be a number from 0.0 to 1.0")
+    risks = raw["risks"]
+    if not isinstance(risks, list) or len(risks) > 6:
+        problems.append("risks must be a list of at most 6 entries")
+    else:
+        if raw["decision"] == "dream-again" and not risks:
+            problems.append("a dream-again verdict must name at least one risk")
+        for index, risk in enumerate(risks):
+            if not isinstance(risk, Mapping) or set(risk) != {"kind", "detail"}:
+                problems.append("risks[%d] needs exactly kind and detail" % index)
+                continue
+            if risk["kind"] not in _RISK_KINDS:
+                problems.append("risks[%d].kind must be one of %s" % (index, ", ".join(_RISK_KINDS)))
+            problems.extend(_line_problems(risk["detail"], "risks[%d].detail" % index, 400, allow_newlines=False))
+    problems.extend(_line_problems(raw["advice"], "advice", 400, allow_newlines=False))
+    return problems
+
+
+def finalize(run_root: Path, out=sys.stdout, err=sys.stderr, *, role: str = "inventor") -> int:
+    """Validate the role's file and write the outcome marker; return an exit code."""
+
+    if role == "judge":
+        relative, checker, label = VERDICT_RELATIVE_PATH, verdict_problems, "verdict"
+    else:
+        relative, checker, label = IDEA_RELATIVE_PATH, idea_problems, "idea"
+    file_path = run_root / relative
     try:
-        payload = idea_path.read_bytes()
+        payload = file_path.read_bytes()
     except FileNotFoundError:
-        print("finalize_daydream: %s is missing; write your idea first" % IDEA_RELATIVE_PATH, file=err)
+        print("finalize_daydream: %s is missing; write your %s first" % (relative, label), file=err)
         return 1
     except OSError as exc:
-        print("finalize_daydream: cannot read %s: %s" % (IDEA_RELATIVE_PATH, exc), file=err)
+        print("finalize_daydream: cannot read %s: %s" % (relative, exc), file=err)
         return 1
     if len(payload) > MAX_IDEA_FILE_BYTES:
-        print("finalize_daydream: %s exceeds %d bytes" % (IDEA_RELATIVE_PATH, MAX_IDEA_FILE_BYTES), file=err)
+        print("finalize_daydream: %s exceeds %d bytes" % (relative, MAX_IDEA_FILE_BYTES), file=err)
         return 1
     try:
         raw = json.loads(payload.decode("utf-8"))
     except (UnicodeDecodeError, ValueError) as exc:
-        print("finalize_daydream: %s is not valid UTF-8 JSON: %s" % (IDEA_RELATIVE_PATH, exc), file=err)
+        print("finalize_daydream: %s is not valid UTF-8 JSON: %s" % (relative, exc), file=err)
         return 1
-    problems = idea_problems(raw)
+    problems = checker(raw)
     if problems:
-        print("finalize_daydream: %s is not a valid idea:" % IDEA_RELATIVE_PATH, file=err)
+        print("finalize_daydream: %s is not a valid %s:" % (relative, label), file=err)
         for problem in problems:
             print("  - %s" % problem, file=err)
         print("Fix the file and run the finalizer again.", file=err)
@@ -172,10 +233,11 @@ def finalize(run_root: Path, out=sys.stdout, err=sys.stderr) -> int:
         "schema_version": 1,
         "kind": DAYDREAM_OUTCOME_KIND,
         "status": "ready",
-        "idea_path": IDEA_RELATIVE_PATH,
+        "role": role,
+        "idea_path": relative,
         "idea_bytes": len(payload),
         "idea_sha256": hashlib.sha256(payload).hexdigest(),
-        "title": raw["title"],
+        "title": raw["title"] if role != "judge" else raw["decision"],
         "written_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     outcome_path = run_root / OUTCOME_FILE_NAME
@@ -194,7 +256,7 @@ def finalize(run_root: Path, out=sys.stdout, err=sys.stderr) -> int:
         return 1
     print(
         "finalize_daydream: %s is valid (%s, %d bytes); wrote %s. Mark the Goal complete and stop."
-        % (IDEA_RELATIVE_PATH, raw["title"], len(payload), OUTCOME_FILE_NAME),
+        % (relative, outcome["title"], len(payload), OUTCOME_FILE_NAME),
         file=out,
     )
     return 0
@@ -210,8 +272,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=".",
         help="the daydream workspace (default: the current directory)",
     )
+    parser.add_argument(
+        "--role",
+        choices=("inventor", "judge"),
+        default="inventor",
+        help="inventor validates work/IDEA.json (default); judge validates work/VERDICT.json",
+    )
     args = parser.parse_args(argv)
-    return finalize(Path(args.run_root).resolve())
+    return finalize(Path(args.run_root).resolve(), role=args.role)
 
 
 if __name__ == "__main__":

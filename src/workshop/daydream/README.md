@@ -50,6 +50,21 @@ finalizer, which validates the file's shape and hashes its exact bytes into
 the runtime as the turn's finalization marker and refuses an idea whose
 marker is missing or whose bytes no longer match it.
 
+## The judge
+
+Every sealed idea is judged before it is built. The Judge Goal is a second,
+short native session in `<daydream-id>/judge-workspace/` with `IDEA.json`,
+`TASTE.md`, `ROUTE.md`, the judge constitution as `AGENTS.md`, and the same
+finalizer (`--role judge`). It reads the idea the way Make's blind critic
+will see two still renders: held object, form, subject, action, relationship,
+no exposed mechanism, no hidden signature, no promised feature a render
+cannot show, and a size that fits the route. It writes `work/VERDICT.json`
+(`build` or `dream-again`, a confidence, named risks, advice) and the host
+seals the verdict into the idea record and `host-state/VERDICT.json`. The loop
+builds only `build` verdicts; a `dream-again` idea is remembered as `judged`
+so the Inventor does not repeat it, and `workshop start --idea` can still
+build it on purpose.
+
 Every directory is created 0700 with no symlinks; every host file is 0600.
 The native Manager session (Codex by default) may write only inside
 `workspace/`; under Codex the network is off and web search is on. The

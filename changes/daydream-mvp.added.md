@@ -18,6 +18,12 @@
   the constitution as `AGENTS.md` and the run-local `finalize_daydream.py`,
   which validates `work/IDEA.json` and writes the bound `agent-outcome.json`
   that completes the Goal; the host requires that marker.
+- An independent Judge Goal bets on every sealed idea before a build: it
+  reads the idea as Make's blind reviewer will see two still renders and
+  writes a `build` or `dream-again` verdict with named risks. The loop builds
+  only `build` verdicts; five judged-out ideas in a row stop it. Ideas now
+  carry `before_after`, the two visibly different states a fixed camera must
+  show, and the constitution forbids hidden signatures.
 - Under `workshop start`, the daydream prompt names the route budget (Spark: one to
   three parts, one action, one payoff a before/after render proves) so the
   Inventor dreams to the size Make can prove on that route.

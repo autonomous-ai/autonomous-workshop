@@ -179,6 +179,9 @@ class RenderBriefTest(unittest.TestCase):
             "rung by gravity alone.\n"
             "What it looks like: A palm-sized wooden-looking ladder with a bead that "
             "lives inside its rails, round-shouldered like a toy from a rug.\n"
+            "Before and after, as a render must show them: Before: the bead rests in "
+            "the top cup of the upright ladder. After: the ladder is flipped and the "
+            "bead rests in the cup at the other end.\n"
             "What you do: Hold the ladder upright, flip it end over end, and set it "
             "down.\n"
             "What happens: The bead tumbles rung by rung with an audible click at "
@@ -319,3 +322,34 @@ class HeldFormTest(unittest.TestCase):
         raw["held_form"] = ""
         with self.assertRaisesRegex(ContractError, "held_form"):
             Idea.parse(raw)
+
+
+class VerdictTest(unittest.TestCase):
+    def test_verdict_round_trip_and_bounds(self):
+        from tests.daydream.support import build_verdict_dict, sample_sealed, sample_verdict
+        from workshop.daydream.contracts import SealedDaydream, Verdict
+        from workshop.errors import ContractError
+
+        for decision in ("build", "dream-again"):
+            verdict = sample_verdict(decision)
+            self.assertEqual(Verdict.parse(verdict.to_dict()), verdict)
+            sealed = sample_sealed(verdict=verdict)
+            self.assertEqual(SealedDaydream.parse(sealed.to_dict()), sealed)
+            self.assertEqual(sealed.to_dict()["verdict"]["decision"], decision)
+        self.assertNotIn("verdict", sample_sealed().to_dict())
+        bad = build_verdict_dict("dream-again")
+        bad["risks"] = []
+        with self.assertRaisesRegex(ContractError, "at least one risk"):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        bad["confidence"] = 1.5
+        with self.assertRaises(ContractError):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        bad["decision"] = "maybe"
+        with self.assertRaises(ContractError):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        bad["extra"] = 1
+        with self.assertRaisesRegex(ContractError, "unknown keys"):
+            Verdict.parse(bad)

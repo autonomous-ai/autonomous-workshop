@@ -7,9 +7,12 @@ from typing import Any, Dict
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.daydream.contracts import (
     DAYDREAM_IDEA_KIND,
+    DAYDREAM_VERDICT_KIND,
     Idea,
     NoveltyReport,
     SealedDaydream,
+    Verdict,
+    VerdictRisk,
     render_brief,
 )
 
@@ -31,6 +34,10 @@ def sample_idea_dict() -> Dict[str, Any]:
         "held_form": (
             "A palm-sized wooden-looking ladder with a bead that lives inside its rails, "
             "round-shouldered like a toy from a rug."
+        ),
+        "before_after": (
+            "Before: the bead rests in the top cup of the upright ladder. After: the "
+            "ladder is flipped and the bead rests in the cup at the other end."
         ),
         "what_you_do": "Hold the ladder upright, flip it end over end, and set it down.",
         "what_happens": (
@@ -94,6 +101,24 @@ def sample_novelty() -> NoveltyReport:
         nearest=(),
         reason="no prior work to compare against",
     )
+
+
+def build_verdict_dict(decision: str = "build") -> Dict[str, Any]:
+    risks = [] if decision == "build" else [
+        {"kind": "hidden-signature", "detail": "The bead's cam rungs are inside the rails."}
+    ]
+    return {
+        "schema_version": 1,
+        "kind": DAYDREAM_VERDICT_KIND,
+        "decision": decision,
+        "confidence": 0.8 if decision == "build" else 0.25,
+        "risks": risks,
+        "advice": "Keep the ladder body; put the bead on the outside of the rails.",
+    }
+
+
+def sample_verdict(decision: str = "build") -> Verdict:
+    return Verdict.parse(build_verdict_dict(decision))
 
 
 def sample_sealed(**overrides: Any) -> SealedDaydream:

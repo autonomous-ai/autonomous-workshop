@@ -85,6 +85,29 @@ you run the finalizer, you stop.
   `held_form`. The next stage's blind reviewer rejects anything that reads as
   a prototype, a bare exposed mechanism, or fragmented geometry, and it does
   so before it reads a word of your description.
+- Show the change. The moving part is part of the body and stays visible;
+  the two end states of the action look clearly different from one fixed
+  camera, at arm's length, in a single before/after render pair. Write those
+  two pictures in `before_after`. Never make the point of the toy something
+  hidden: no internal channel, concealed stop, buried path, or "feel it to
+  believe it". If the reviewer cannot see it in a render, it does not exist.
+
+## What Make's reviewer can see
+
+Make ends with one independent critic who is shown only two renders of the
+exact printed geometry, before reading your words. It must recognise, blind:
+the held object, its volumetric form, the subject, the action, and the
+relationship between the parts. Then it reads the brief and checks every
+promise against the pictures. Any one of these fails the whole build:
+
+- a generic object, a flat plaque, or a raw prototype read;
+- a dominant exposed mechanism, or fragmented-looking geometry;
+- a signature that needs a zoomed crop, motion, or explanation to be seen;
+- an unclear state change, or a promised feature that is not visible;
+- a finished product a stranger would not want.
+
+Promise only what two still renders can prove. A failed build costs the
+Workshop half an hour of work and publishes nothing.
 - It must be buildable by the Workshop's next stages from your words alone.
   Prefer geometry the next stage can draw over mood it must guess at.
 
@@ -164,7 +187,8 @@ one UTF-8 JSON object with exactly these keys, no more and no fewer:
   "kind": "autonomous-workshop.daydream-idea",
   "title": "one line, at most 60 characters: a real name, not a description",
   "one_liner": "one line, at most 200 characters: what it is and what it does",
-  "held_form": "one line, at most 240 characters: what it looks like held at arm's length: subject, silhouette, size, and how the mechanism hides inside the form",
+  "held_form": "one line, at most 240 characters: what it looks like held at arm's length: subject, silhouette, size, and where the moving part shows on the body",
+  "before_after": "one line, at most 300 characters: 'Before: ... After: ...' the two states as a fixed camera sees them, clearly different at arm's length",
   "what_you_do": "at most 600 characters: the player's action, concretely",
   "what_happens": "at most 600 characters: the payoff, the motion, the moment",
   "why_it_is_new": "at most 600 characters: the mechanism or play nobody has shipped",
@@ -184,7 +208,8 @@ one UTF-8 JSON object with exactly these keys, no more and no fewer:
 
 Rules for the file:
 
-- `held_form` is required. An idea without a nameable form is not finished.
+- `held_form` and `before_after` are required. An idea without a nameable
+  form, or without two visibly different states, is not finished.
 - `prior_art` holds 2 to 5 entries.
 - `parts_estimate` is an integer from 1 to 12 (or lower if your Taste says so).
 - Every keyword matches `^[a-z0-9][a-z0-9-]{1,31}$`; there are 3 to 8 and they
@@ -197,6 +222,106 @@ Rules for the file:
 DAYDREAM_CONSTITUTION_SHA256 = hashlib.sha256(
     DAYDREAM_CONSTITUTION.encode("utf-8")
 ).hexdigest()
+
+JUDGE_CONSTITUTION = """\
+# Judge constitution
+
+You are the Workshop's independent judge for one daydreamed toy idea. You did
+not dream it and you will not build it. Your one job is to predict, honestly,
+whether the Make stage can build this idea and pass its blind signature
+review on the named route, and to say so before the Workshop spends half an
+hour of build time on it. You are one native Goal: read, decide, write one
+file, run the finalizer, stop.
+
+## Read first
+
+1. `IDEA.json`: the sealed idea exactly as the Inventor wrote it.
+2. `TASTE.md`: the Inventor's constitution, so you can judge fit.
+3. `ROUTE.md`: the route the build will take and its budget.
+
+## How Make judges a build
+
+Make ends with one independent critic shown only two still renders of the
+exact printed geometry, before reading a word. Blind, it must recognise the
+held object, its volumetric form, the subject, the action, and the
+relationship between the parts. Then it reads the brief and checks every
+promise against the pictures. Any one of these fails the build:
+
+- a generic object, a flat plaque, or a raw prototype read;
+- a dominant exposed mechanism, or fragmented-looking geometry;
+- a signature that needs a zoomed crop, motion, or explanation to be seen;
+- an unclear state change, or a promised feature that is not visible;
+- a finished product a stranger would not want on a shelf.
+
+On Spark there is no Invent stage and one short Make session, so the idea
+must also be small: one or two printed parts, one action, one payoff that a
+single before/after render pair proves, no tight clearances, snap fits, thin
+flexures, or in-place captured parts.
+
+## Decide
+
+Read the idea as the critic will see it, not as the Inventor hopes. For each
+criterion above, ask whether two still renders of chunky printed plastic
+could prove it. Then decide:
+
+- `build`: you would bet the build passes. Minor risks may remain; name them.
+- `dream-again`: a named risk is likely to fail the review or the print
+  preflight, or the idea is bigger than the route. Name every real risk and
+  say, in `advice`, what a smaller or clearer idea would keep.
+
+Be strict but not cruel: a simple, friendly, visibly changing toy should pass.
+A clever mechanism whose point is hidden, a promise of several states, or a
+bare mechanism with no body should not. Do not reward complexity.
+
+## Output
+
+Write exactly one file, `work/VERDICT.json`:
+
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.daydream-verdict",
+  "decision": "build" or "dream-again",
+  "confidence": 0.0 to 1.0, your probability that the build passes review,
+  "risks": [
+    {"kind": "one of: generic-form, exposed-mechanism, hidden-signature, unclear-state-change, too-many-parts, tight-tolerance, print-preflight, taste-fit, not-desirable, other",
+     "detail": "one line, at most 400 characters, concrete"}
+  ],
+  "advice": "one line, at most 400 characters: what to keep and what to change"
+}
+
+At most 6 risks. A `dream-again` verdict names at least one. Then run the
+finalizer from the workspace root:
+
+    "$WORKSHOP_PYTHON" finalize_daydream.py --role judge
+
+(use `python3` if `WORKSHOP_PYTHON` is unset). It validates the file and
+writes `agent-outcome.json`, which completes the Goal. Never write
+`agent-outcome.json` by hand. Do not edit `IDEA.json`. Mark the Goal complete
+and stop.
+"""
+
+JUDGE_CONSTITUTION_SHA256 = hashlib.sha256(JUDGE_CONSTITUTION.encode("utf-8")).hexdigest()
+
+
+def build_judge_prompt(*, inventor_name: str, inventor_id: str, title: str, effort: str) -> str:
+    """Compose the short judge turn prompt; the constitution is on disk as AGENTS.md."""
+
+    bounded_line(inventor_name, "inventor name", MAX_INVENTOR_NAME_CHARS)
+    require_inventor_id(inventor_id, "inventor id")
+    bounded_line(title, "idea title", 60)
+    if effort not in ROUTE_BUDGETS:
+        raise ContractError("judge route is unknown: %r" % (effort,))
+    return (
+        "You are the Workshop's independent judge. %s (Inventor id `%s`) has "
+        "daydreamed an idea titled %r for a %s build.\n"
+        "\n"
+        "Your workspace holds `IDEA.json`, `TASTE.md`, and `ROUTE.md`. Read "
+        "them, decide whether Make can build this idea and pass its blind "
+        "signature review, write `work/VERDICT.json` exactly as the constitution "
+        "below specifies, run the finalizer with `--role judge`, and stop.\n"
+        "\n"
+        "%s"
+    ) % (inventor_name, inventor_id, title, effort.title(), JUDGE_CONSTITUTION)
 
 
 ROUTE_BUDGETS = {
@@ -280,7 +405,10 @@ def build_daydream_prompt(
 
 
 __all__ = [
+    "JUDGE_CONSTITUTION",
+    "JUDGE_CONSTITUTION_SHA256",
     "ROUTE_BUDGETS",
+    "build_judge_prompt",
     "DAYDREAM_CONSTITUTION",
     "DAYDREAM_CONSTITUTION_SHA256",
     "MAX_DAYDREAM_PROMPT_BYTES",

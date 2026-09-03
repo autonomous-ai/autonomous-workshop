@@ -19,6 +19,11 @@ DAYDREAM_SEAL_KIND = "autonomous-workshop.daydream-seal"
 MAX_TITLE_CHARS = 60
 MAX_ONE_LINER_CHARS = 200
 MAX_HELD_FORM_CHARS = 240
+MAX_BEFORE_AFTER_CHARS = 300
+MAX_VERDICT_TEXT_CHARS = 400
+MAX_VERDICT_RISKS = 6
+VERDICT_DECISIONS = ("build", "dream-again")
+DAYDREAM_VERDICT_KIND = "autonomous-workshop.daydream-verdict"
 MAX_PARAGRAPH_CHARS = 600
 MAX_PRIOR_ART_NAME_CHARS = 80
 MAX_PRIOR_ART_DIFFERENCE_CHARS = 300
@@ -59,7 +64,10 @@ _IDEA_KEYS = frozenset(
         "keywords",
     )
 )
-_IDEA_OPTIONAL_KEYS = frozenset(("held_form",))
+_IDEA_OPTIONAL_KEYS = frozenset(("held_form", "before_after"))
+_VERDICT_KEYS = frozenset(("schema_version", "kind", "decision", "confidence", "risks", "advice"))
+_RISK_KEYS = frozenset(("kind", "detail"))
+_SEAL_OPTIONAL_KEYS = frozenset(("verdict",))
 _NEIGHBOR_KEYS = frozenset(("source", "title", "similarity"))
 _NOVELTY_KEYS = frozenset(("status", "max_similarity", "nearest", "reason"))
 _SEAL_KEYS = frozenset(
@@ -287,6 +295,7 @@ class Idea:
     parts_estimate: int
     keywords: tuple[str, ...]
     held_form: Optional[str] = None
+    before_after: Optional[str] = None
 
     def __post_init__(self) -> None:
         if type(self.schema_version) is not int or self.schema_version != 1:
@@ -295,6 +304,8 @@ class Idea:
         bounded_line(self.one_liner, "idea one_liner", MAX_ONE_LINER_CHARS)
         if self.held_form is not None:
             bounded_line(self.held_form, "idea held_form", MAX_HELD_FORM_CHARS)
+        if self.before_after is not None:
+            bounded_line(self.before_after, "idea before_after", MAX_BEFORE_AFTER_CHARS)
         for name in ("what_you_do", "what_happens", "why_it_is_new"):
             bounded_paragraph(getattr(self, name), "idea %s" % name, MAX_PARAGRAPH_CHARS)
         if isinstance(self.prior_art, (str, Mapping)) or not isinstance(
@@ -365,6 +376,7 @@ class Idea:
             parts_estimate=raw["parts_estimate"],
             keywords=raw["keywords"],
             held_form=raw.get("held_form"),
+            before_after=raw.get("before_after"),
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -378,6 +390,8 @@ class Idea:
             # Older sealed ideas have no held form; leaving the key out keeps
             # their canonical bytes and sha256 unchanged.
             value["held_form"] = self.held_form
+        if self.before_after is not None:
+            value["before_after"] = self.before_after
         value.update({
             "what_you_do": self.what_you_do,
             "what_happens": self.what_happens,
@@ -412,6 +426,8 @@ def render_brief(idea: Idea, *, inventor_name: str, inventor_id: str) -> str:
     ]
     if idea.held_form is not None:
         lines.append("What it looks like: %s" % idea.held_form)
+    if idea.before_after is not None:
+        lines.append("Before and after, as a render must show them: %s" % idea.before_after)
     lines += [
         "What you do: %s" % idea.what_you_do,
         "What happens: %s" % idea.what_happens,
@@ -432,6 +448,82 @@ def render_brief(idea: Idea, *, inventor_name: str, inventor_id: str) -> str:
         )
     )
     return "\n".join(lines)
+
+
+@dataclass(frozen=True)
+class VerdictRisk:
+    """One risk the judge saw, named by the Make review criterion it threatens."""
+
+    kind: str
+    detail: str
+
+    def __post_init__(self) -> None:
+        bounded_line(self.kind, "verdict risk kind", 60)
+        bounded_line(self.detail, "verdict risk detail", MAX_VERDICT_TEXT_CHARS)
+
+    @classmethod
+    def parse(cls, raw: Mapping[str, Any]) -> "VerdictRisk":
+        _exact_keys(raw, _RISK_KEYS, "verdict risk")
+        return cls(kind=raw["kind"], detail=raw["detail"])
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {"kind": self.kind, "detail": self.detail}
+
+
+@dataclass(frozen=True, kw_only=True)
+class Verdict:
+    """An independent judge's call on whether Make can prove this idea."""
+
+    schema_version: int = 1
+    decision: str
+    confidence: float
+    risks: tuple[VerdictRisk, ...]
+    advice: str
+
+    def __post_init__(self) -> None:
+        if type(self.schema_version) is not int or self.schema_version != 1:
+            raise ContractError("verdict schema_version must be 1")
+        if self.decision not in VERDICT_DECISIONS:
+            raise ContractError("verdict decision must be one of %s" % (VERDICT_DECISIONS,))
+        object.__setattr__(
+            self, "confidence", _finite_unit_float(self.confidence, "verdict confidence")
+        )
+        if isinstance(self.risks, (str, Mapping)) or not isinstance(self.risks, Sequence):
+            raise ContractError("verdict risks must be a list")
+        risks = tuple(self.risks)
+        if len(risks) > MAX_VERDICT_RISKS or any(
+            not isinstance(risk, VerdictRisk) for risk in risks
+        ):
+            raise ContractError("verdict risks must hold at most %d entries" % MAX_VERDICT_RISKS)
+        if self.decision == "dream-again" and not risks:
+            raise ContractError("a dream-again verdict must name at least one risk")
+        object.__setattr__(self, "risks", risks)
+        bounded_line(self.advice, "verdict advice", MAX_VERDICT_TEXT_CHARS)
+
+    @classmethod
+    def parse(cls, raw: Mapping[str, Any]) -> "Verdict":
+        _exact_keys(raw, _VERDICT_KEYS, "verdict")
+        if raw["kind"] != DAYDREAM_VERDICT_KIND:
+            raise ContractError("verdict kind must be %s" % DAYDREAM_VERDICT_KIND)
+        if isinstance(raw["risks"], (str, Mapping)) or not isinstance(raw["risks"], Sequence):
+            raise ContractError("verdict risks must be a list")
+        return cls(
+            schema_version=raw["schema_version"],
+            decision=raw["decision"],
+            confidence=raw["confidence"],
+            risks=tuple(VerdictRisk.parse(entry) for entry in raw["risks"]),
+            advice=raw["advice"],
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "kind": DAYDREAM_VERDICT_KIND,
+            "decision": self.decision,
+            "confidence": self.confidence,
+            "risks": [risk.to_dict() for risk in self.risks],
+            "advice": self.advice,
+        }
 
 
 @dataclass(frozen=True)
@@ -538,10 +630,13 @@ class SealedDaydream:
     novelty: NoveltyReport
     session: Mapping[str, Any]
     brief: str
+    verdict: Optional[Verdict] = None
 
     def __post_init__(self) -> None:
         if type(self.schema_version) is not int or self.schema_version != 1:
             raise ContractError("sealed daydream schema_version must be 1")
+        if self.verdict is not None and not isinstance(self.verdict, Verdict):
+            raise ContractError("sealed daydream verdict must be a Verdict")
         if self.kind != DAYDREAM_SEAL_KIND:
             raise ContractError("sealed daydream kind must be %s" % DAYDREAM_SEAL_KIND)
         require_daydream_id(self.daydream_id, "sealed daydream daydream_id")
@@ -576,8 +671,16 @@ class SealedDaydream:
 
     @classmethod
     def parse(cls, raw: Mapping[str, Any]) -> "SealedDaydream":
-        _exact_keys(raw, _SEAL_KEYS, "sealed daydream")
+        if not isinstance(raw, Mapping):
+            raise ContractError("sealed daydream must be a JSON object")
+        _exact_keys(
+            {key: value for key, value in raw.items() if key not in _SEAL_OPTIONAL_KEYS},
+            _SEAL_KEYS,
+            "sealed daydream",
+        )
+        verdict = raw.get("verdict")
         return cls(
+            verdict=None if verdict is None else Verdict.parse(verdict),
             schema_version=raw["schema_version"],
             kind=raw["kind"],
             daydream_id=raw["daydream_id"],
@@ -595,7 +698,7 @@ class SealedDaydream:
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        value: Dict[str, Any] = {
             "schema_version": self.schema_version,
             "kind": self.kind,
             "daydream_id": self.daydream_id,
@@ -611,6 +714,9 @@ class SealedDaydream:
             "session": copy_json_mapping(self.session, "sealed daydream session"),
             "brief": self.brief,
         }
+        if self.verdict is not None:
+            value["verdict"] = self.verdict.to_dict()
+        return value
 
     @property
     def sha256(self) -> str:
@@ -621,6 +727,7 @@ __all__ = [
     "CREATED_AT_FORMAT",
     "DAYDREAM_IDEA_KIND",
     "DAYDREAM_SEAL_KIND",
+    "DAYDREAM_VERDICT_KIND",
     "DaydreamError",
     "Idea",
     "NOVELTY_STATUSES",
@@ -629,6 +736,9 @@ __all__ = [
     "PriorArt",
     "SealedDaydream",
     "TasteFit",
+    "VERDICT_DECISIONS",
+    "Verdict",
+    "VerdictRisk",
     "bounded_line",
     "bounded_paragraph",
     "canonical_json",

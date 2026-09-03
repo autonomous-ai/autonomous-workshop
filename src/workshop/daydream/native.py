@@ -28,6 +28,7 @@ from workshop.daydream.catalog import (
     source_checkout_root,
 )
 from workshop.daydream.contracts import (
+    Verdict,
     CREATED_AT_FORMAT,
     DaydreamError,
     Idea,
@@ -49,7 +50,11 @@ from workshop.daydream.notebook import (
 from workshop.daydream.prompt import (
     DAYDREAM_CONSTITUTION,
     DAYDREAM_CONSTITUTION_SHA256,
+    JUDGE_CONSTITUTION,
+    JUDGE_CONSTITUTION_SHA256,
+    ROUTE_BUDGETS,
     build_daydream_prompt,
+    build_judge_prompt,
 )
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
 from workshop._validation import require_sha256
@@ -77,6 +82,10 @@ OUTCOME_FILE_NAME = "agent-outcome.json"
 FINALIZER_FILE_NAME = "finalize_daydream.py"
 DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
 MAX_OUTCOME_FILE_BYTES = 64 * 1024
+JUDGE_WORKSPACE_NAME = "judge-workspace"
+JUDGE_STATE_NAME = "judge-state"
+VERDICT_FILE_NAME = "VERDICT.json"
+JUDGE_TURN_TIMEOUT_SECONDS = 600
 REJECTED_FILE_NAME = "REJECTED.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 MAX_SEALED_FILE_BYTES = 256 * 1024
@@ -275,45 +284,48 @@ def _daydream_wish_sha256(
 def _native_turn(
     launcher_factory: Callable[..., Any],
     manager_id: str,
-    paths: DaydreamPaths,
     *,
+    run_root: Path,
+    host_state_root: Path,
     product_id: str,
     wish_sha256: str,
+    constitution_sha256: str,
     prompt: str,
     activity_observer: Optional[Callable[[str], None]],
+    finalized_files: Sequence[Path],
+    label: str,
+    launcher_kwargs: Mapping[str, Any],
 ) -> Mapping[str, Any]:
     try:
-        launcher = launcher_factory(
-            manager_id, timeout_seconds=DAYDREAM_TURN_TIMEOUT_SECONDS
-        )
+        launcher = launcher_factory(manager_id, **launcher_kwargs)
         outcome = launcher.start(
             product_id=product_id,
             wish_sha256=wish_sha256,
-            constitution_sha256=DAYDREAM_CONSTITUTION_SHA256,
-            run_root=paths.workspace,
-            host_state_root=paths.host_state,
+            constitution_sha256=constitution_sha256,
+            run_root=run_root,
+            host_state_root=host_state_root,
             prompt=prompt,
             activity_observer=activity_observer,
-            finalization_marker=paths.workspace / OUTCOME_FILE_NAME,
+            finalization_marker=run_root / OUTCOME_FILE_NAME,
         )
     except (NativeManagerRecoverableError, CodexRecoverableInvocationError) as exc:
         # The runtime lost its terminal event or timed out after the Goal was
-        # finalized.  The finalized idea is still the Inventor's work; keep it
+        # finalized.  The finalized file is still the agent's work; keep it
         # and record the truth.
-        if (paths.work / IDEA_FILE_NAME).is_file() and (
-            paths.workspace / OUTCOME_FILE_NAME
+        if all(path.is_file() for path in finalized_files) and (
+            run_root / OUTCOME_FILE_NAME
         ).is_file():
             return {"status": "incomplete", "error": _bounded_error(exc)}
-        raise DaydreamError("Daydream session failed: %s" % exc) from exc
+        raise DaydreamError("%s session failed: %s" % (label, exc)) from exc
     except (CodexInvocationError, NativeManagerInvocationError, ContractError) as exc:
-        raise DaydreamError("Daydream session failed: %s" % exc) from exc
+        raise DaydreamError("%s session failed: %s" % (label, exc)) from exc
     to_dict = getattr(outcome, "to_dict", None)
     if not callable(to_dict):
-        raise DaydreamError("Daydream session returned no redacted outcome")
+        raise DaydreamError("%s session returned no redacted outcome" % label)
     try:
         return json.loads(canonical_json(dict(to_dict())))
     except (TypeError, ValueError) as exc:
-        raise DaydreamError("Daydream session outcome is not a JSON object") from exc
+        raise DaydreamError("%s session outcome is not a JSON object" % label) from exc
 
 
 def _bounded_error(exc: BaseException) -> str:
@@ -321,18 +333,21 @@ def _bounded_error(exc: BaseException) -> str:
     return text[:MAX_ERROR_CHARS] if text else exc.__class__.__name__
 
 
-def _read_outcome(paths: DaydreamPaths) -> Mapping[str, Any]:
-    """Require the finalizer's Goal marker and bind it to the exact idea bytes."""
+def _read_outcome(
+    workspace: Path, *, file_name: str, who: str, goal: str
+) -> Mapping[str, Any]:
+    """Require the finalizer's Goal marker and bind it to the exact finalized bytes."""
 
+    relative = "work/%s" % file_name
     try:
         payload = read_regular_bytes(
-            paths.workspace / OUTCOME_FILE_NAME,
+            workspace / OUTCOME_FILE_NAME,
             maximum=MAX_OUTCOME_FILE_BYTES,
             label="agent-outcome.json",
         )
     except FileNotFoundError as exc:
         raise DaydreamError(
-            "the Inventor did not finalize its Daydream Goal: agent-outcome.json is missing"
+            "the %s did not finalize its %s Goal: agent-outcome.json is missing" % (who, goal)
         ) from exc
     try:
         raw = json.loads(payload.decode("utf-8"))
@@ -343,23 +358,23 @@ def _read_outcome(paths: DaydreamPaths) -> Mapping[str, Any]:
         or raw.get("schema_version") != 1
         or raw.get("kind") != DAYDREAM_OUTCOME_KIND
         or raw.get("status") != "ready"
-        or raw.get("idea_path") != "work/%s" % IDEA_FILE_NAME
+        or raw.get("idea_path") != relative
     ):
-        raise DaydreamError("agent-outcome.json is not a ready Daydream outcome")
+        raise DaydreamError("agent-outcome.json is not a ready %s outcome" % goal)
     try:
-        require_sha256(raw.get("idea_sha256"), "daydream outcome idea_sha256")
+        require_sha256(raw.get("idea_sha256"), "%s outcome sha256" % goal)
     except ContractError as exc:
-        raise DaydreamError("agent-outcome.json carries no idea sha256") from exc
+        raise DaydreamError("agent-outcome.json carries no sha256") from exc
     try:
-        idea_bytes = read_regular_bytes(
-            paths.work / IDEA_FILE_NAME, maximum=MAX_IDEA_FILE_BYTES, label="work/IDEA.json"
+        finalized = read_regular_bytes(
+            workspace / "work" / file_name, maximum=MAX_IDEA_FILE_BYTES, label=relative
         )
     except FileNotFoundError as exc:
-        raise DaydreamError("the Inventor wrote no work/IDEA.json") from exc
-    if hashlib.sha256(idea_bytes).hexdigest() != raw["idea_sha256"]:
+        raise DaydreamError("the %s wrote no %s" % (who, relative)) from exc
+    if hashlib.sha256(finalized).hexdigest() != raw["idea_sha256"]:
         raise DaydreamError(
-            "work/IDEA.json changed after the finalizer ran; its bytes do not match "
-            "agent-outcome.json"
+            "%s changed after the finalizer ran; its bytes do not match agent-outcome.json"
+            % relative
         )
     return raw
 
@@ -379,6 +394,95 @@ def _read_idea(path: Path) -> Idea:
         return Idea.parse(raw)
     except ContractError as exc:
         raise DaydreamError("work/IDEA.json is invalid: %s" % exc) from exc
+
+
+def _read_verdict(path: Path) -> Verdict:
+    try:
+        payload = read_regular_bytes(path, maximum=MAX_IDEA_FILE_BYTES, label="work/VERDICT.json")
+    except FileNotFoundError as exc:
+        raise DaydreamError("the judge wrote no work/VERDICT.json") from exc
+    try:
+        raw = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
+        raise DaydreamError("work/VERDICT.json is not valid UTF-8 JSON: %s" % exc) from exc
+    if not isinstance(raw, dict):
+        raise DaydreamError("work/VERDICT.json must be a JSON object")
+    try:
+        return Verdict.parse(raw)
+    except ContractError as exc:
+        raise DaydreamError("work/VERDICT.json is invalid: %s" % exc) from exc
+
+
+def judge_idea(
+    paths: DaydreamPaths,
+    *,
+    idea: Idea,
+    taste: Taste,
+    inventor_id: str,
+    manager_id: str,
+    effort: str,
+    daydream_id: str,
+    launcher_factory: Callable[..., Any] = manager_launcher,
+    activity_observer: Optional[Callable[[str], None]] = None,
+) -> tuple[Verdict, Mapping[str, Any]]:
+    """Run the independent Judge Goal on a sealed idea and return its verdict."""
+
+    if effort not in ROUTE_BUDGETS:
+        raise ContractError("judge route is unknown: %r" % (effort,))
+    workspace = _exclusive_private_directory(
+        paths.container / JUDGE_WORKSPACE_NAME, label="judge workspace"
+    )
+    _ensure_private_directory(workspace / "work", label="judge work directory")
+    state = _exclusive_private_directory(paths.container / JUDGE_STATE_NAME, label="judge host state")
+    files = (
+        ("IDEA.json", (canonical_json(idea.to_dict()) + "\n").encode("utf-8")),
+        ("TASTE.md", taste.content.encode("utf-8")),
+        ("ROUTE.md", ("# Route\n\n%s\n" % ROUTE_BUDGETS[effort]).encode("utf-8")),
+        ("AGENTS.md", JUDGE_CONSTITUTION.encode("utf-8")),
+        (FINALIZER_FILE_NAME, finalizer_bytes()),
+        (PRODUCT_RUN_ROOT_MARKER, PRODUCT_RUN_ROOT_MARKER_BYTES),
+    )
+    for name, payload in files:
+        write_private_bytes(workspace / name, payload, label="judge %s" % name)
+    launcher_kwargs: dict[str, Any] = {"timeout_seconds": JUDGE_TURN_TIMEOUT_SECONDS}
+    if manager_id == "codex":
+        # The judge reads one small file; medium reasoning is enough and fast.
+        launcher_kwargs["reasoning_effort"] = "medium"
+    session = _native_turn(
+        launcher_factory,
+        manager_id,
+        run_root=workspace,
+        host_state_root=state,
+        product_id="%s-judge" % daydream_id,
+        wish_sha256=hashlib.sha256(
+            canonical_json(
+                {"daydream_id": daydream_id, "idea_sha256": idea.sha256, "effort": effort}
+            ).encode("utf-8")
+        ).hexdigest(),
+        constitution_sha256=JUDGE_CONSTITUTION_SHA256,
+        prompt=build_judge_prompt(
+            inventor_name=taste.name,
+            inventor_id=inventor_id,
+            title=idea.title,
+            effort=effort,
+        ),
+        activity_observer=activity_observer,
+        finalized_files=(workspace / "work" / VERDICT_FILE_NAME,),
+        label="Judge",
+        launcher_kwargs=launcher_kwargs,
+    )
+    _existing_real_directory(workspace, label="judge workspace")
+    _existing_real_directory(workspace / "work", label="judge work directory", private=False)
+    _read_outcome(workspace, file_name=VERDICT_FILE_NAME, who="judge", goal="Judge")
+    verdict = _read_verdict(workspace / "work" / VERDICT_FILE_NAME)
+    write_private_bytes(
+        paths.host_state / VERDICT_FILE_NAME,
+        (
+            canonical_json({"verdict": verdict.to_dict(), "session": dict(session)}) + "\n"
+        ).encode("utf-8"),
+        label="judge verdict",
+    )
+    return verdict, session
 
 
 def _remember(
@@ -434,8 +538,15 @@ def run_daydream(
     moment: Optional[datetime] = None,
     daydream_id: Optional[str] = None,
     effort: Optional[str] = None,
+    judge: bool = True,
 ) -> SealedDaydream:
-    """Let one Inventor dream one new idea and seal it, or explain why not."""
+    """Let one Inventor dream one new idea, judge it, and seal it, or explain why not.
+
+    With ``judge`` the idea is handed to the independent Judge Goal before it
+    is sealed; a ``dream-again`` verdict is sealed too, so it can be inspected
+    or built on purpose, but it is remembered as ``judged`` and callers skip
+    the build.  The judge assumes the Spark route unless ``effort`` names one.
+    """
 
     spec = manager_spec(manager_id)
     manifest, taste = resolve_inventor(inventor_id, source_root=source_root)
@@ -467,19 +578,24 @@ def run_daydream(
     session = _native_turn(
         launcher_factory,
         spec.manager_id,
-        paths,
+        run_root=paths.workspace,
+        host_state_root=paths.host_state,
         product_id=selected_id,
         wish_sha256=_daydream_wish_sha256(
             selected_id, manifest.inventor_id, taste.sha256, selected_seed
         ),
+        constitution_sha256=DAYDREAM_CONSTITUTION_SHA256,
         prompt=prompt,
         activity_observer=activity_observer,
+        finalized_files=(paths.work / IDEA_FILE_NAME,),
+        label="Daydream",
+        launcher_kwargs={"timeout_seconds": DAYDREAM_TURN_TIMEOUT_SECONDS},
     )
     # The Inventor could write anything below the workspace; only a real,
     # unlinked work directory and a fresh notebook decide what gets sealed.
     _existing_real_directory(paths.workspace, label="daydream workspace")
     _existing_real_directory(paths.work, label="daydream work directory", private=False)
-    _read_outcome(paths)
+    _read_outcome(paths.workspace, file_name=IDEA_FILE_NAME, who="Inventor", goal="Daydream")
     idea = _read_idea(paths.work / IDEA_FILE_NAME)
     latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
     novelty = lint_novelty(
@@ -489,7 +605,21 @@ def run_daydream(
     if novelty.status != "new":
         _reject(paths, daydream_id=selected_id, created_at=created_at, idea=idea, novelty=novelty)
         raise DaydreamError("Daydream %s rejected: %s" % (selected_id, novelty.reason))
+    verdict: Optional[Verdict] = None
+    if judge:
+        verdict, _judge_session = judge_idea(
+            paths,
+            idea=idea,
+            taste=taste,
+            inventor_id=manifest.inventor_id,
+            manager_id=spec.manager_id,
+            effort=effort if effort is not None else "spark",
+            daydream_id=selected_id,
+            launcher_factory=launcher_factory,
+            activity_observer=activity_observer,
+        )
     sealed = SealedDaydream(
+        verdict=verdict,
         daydream_id=selected_id,
         inventor_id=manifest.inventor_id,
         inventor_name=taste.name,
@@ -508,7 +638,13 @@ def run_daydream(
         (canonical_json(sealed.to_dict()) + "\n").encode("utf-8"),
         label="sealed daydream",
     )
-    _remember(paths, daydream_id=selected_id, created_at=created_at, idea=idea, status="dreamed")
+    _remember(
+        paths,
+        daydream_id=selected_id,
+        created_at=created_at,
+        idea=idea,
+        status="judged" if verdict is not None and verdict.decision != "build" else "dreamed",
+    )
     return sealed
 
 
@@ -583,7 +719,10 @@ __all__ = [
     "DAYDREAM_OUTCOME_KIND",
     "FINALIZER_FILE_NAME",
     "IDEA_FILE_NAME",
+    "JUDGE_TURN_TIMEOUT_SECONDS",
     "OUTCOME_FILE_NAME",
+    "VERDICT_FILE_NAME",
+    "judge_idea",
     "finalizer_bytes",
     "REJECTED_FILE_NAME",
     "WISH_CONTEXT_SOURCE",

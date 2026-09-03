@@ -21,7 +21,7 @@ from workshop.errors import ContractError
 from workshop._validation import require_sha256
 
 
-NOTEBOOK_STATUSES = ("dreamed", "rejected")
+NOTEBOOK_STATUSES = ("dreamed", "rejected", "judged")
 MAX_NOTEBOOK_BYTES = 8 * 1024 * 1024
 MAX_NOTEBOOK_LINE_BYTES = 8 * 1024
 DEFAULT_NOTEBOOK_LIMIT = 200
