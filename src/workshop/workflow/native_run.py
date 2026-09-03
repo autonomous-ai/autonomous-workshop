@@ -10103,6 +10103,7 @@ def start_native_phase_test(
     model: str = "gpt-5.6-sol",
     reasoning_effort: str = "medium",
     stop_after: str = "make",
+    invent_concept_v3_acceptance: bool = True,
     max_rounds: int = 4,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
@@ -10110,14 +10111,18 @@ def start_native_phase_test(
     """Run real Forge phases through the selected Concept or Make boundary.
 
     This is an operator acceptance seam, not a fourth production lifecycle.
-    It grants Concept-render authority, but never grants Release, Factory, or
-    GitHub publication authority. The chosen Codex profile is persisted in
-    private host state and must be reused by ``resume_native_phase_test``.
+    New tests select Invent Concept v3 acceptance by default, with an explicit
+    override retained for deterministic compatibility fixtures. It grants
+    Concept-render authority, but never grants Release, Factory, or GitHub
+    publication authority. The chosen Codex profile is persisted in private
+    host state and must be reused by ``resume_native_phase_test``.
     """
 
     _reject_grid_keepalive_wish_start()
     if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
         raise ContractError("round budget must be an integer between 1 and 100")
+    if type(invent_concept_v3_acceptance) is not bool:
+        raise ContractError("Invent Concept v3 acceptance must be boolean")
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
     if stop_after not in ("concept", "make"):
@@ -10152,6 +10157,7 @@ def start_native_phase_test(
                 max_rounds=max_rounds,
                 effort=effort.name,
                 manager_id=DEFAULT_MANAGER_ID,
+                invent_concept_v3_acceptance=invent_concept_v3_acceptance,
             )
         except Exception:
             try:

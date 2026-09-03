@@ -35,8 +35,10 @@ def arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Run only Workshop Invent (including Concept) and Make for one fixed "
-            "Wish. The run uses real native Codex and deterministic host gates, "
-            "then stops before Release or publication."
+            "Wish. New tests use the Invent Concept v3 acceptance protocol with "
+            "fixed front/top/bottom/exploded/component views. The run uses real "
+            "native Codex and deterministic host gates, then stops before Release "
+            "or publication."
         )
     )
     parser.add_argument(

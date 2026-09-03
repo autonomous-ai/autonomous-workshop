@@ -806,12 +806,15 @@ installed sibling under `src/`; tests remain under top-level `tests/`.
 
 The checkout-only `tools/run_invent_make.py` operator harness is a deliberately
 non-production acceptance seam. It materializes the normal current Forge
-inputs, runs the real Invent/Concept and optionally Make host boundaries in one
-native Codex session, and halts after the selected accepted transition. A
-private marker freezes its explicit model and reasoning effort and prevents ordinary
+inputs, explicitly opts fresh focused runs into Invent Concept v3 acceptance,
+runs the real Invent/Concept and optionally Make host boundaries in one native
+Codex session, and halts after the selected accepted transition. V3 derives the
+fixed front, top, bottom, exploded, and stable-component image family. A private
+marker freezes its explicit model and reasoning effort and prevents ordinary
 `workshop resume` from entering Release. It grants Concept image authority but
-records no Factory, GitHub, or Release-publication authority. This does not add
-a fourth effort route or reinterpret a resumable production run.
+records no Factory, GitHub, or Release-publication authority. Existing focused
+runs retain their frozen Concept protocol. This does not add a fourth effort
+route, change ordinary Wish defaults, or reinterpret a resumable production run.
 
 The native-runtime cutover is healthy only when deterministic tests and a real
 private Wish demonstrate that:

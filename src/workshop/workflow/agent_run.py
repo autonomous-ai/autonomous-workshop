@@ -697,9 +697,12 @@ class AgentRun:
         max_rounds: int = 4,
         effort: Optional[str] = None,
         manager_id: str = DEFAULT_MANAGER_ID,
+        invent_concept_v3_acceptance: bool = False,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
+        if type(invent_concept_v3_acceptance) is not bool:
+            raise ContractError("Invent Concept v3 acceptance must be boolean")
         selected_effort = workshop_effort(effort) if effort is not None else None
         selected_manager = manager_spec(manager_id)
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
@@ -766,9 +769,11 @@ class AgentRun:
         skill_files = _source_tree_files(
             skill_root, label="source autonomous-workshop skill"
         )
-        v3_selected = INVENT_CONCEPT_V3_ACTIVATED or os.environ.get(
-            INVENT_CONCEPT_V3_ACCEPTANCE_ENVIRONMENT
-        ) == "1"
+        v3_selected = (
+            invent_concept_v3_acceptance
+            or INVENT_CONCEPT_V3_ACTIVATED
+            or os.environ.get(INVENT_CONCEPT_V3_ACCEPTANCE_ENVIRONMENT) == "1"
+        )
         v2_selected = INVENT_CONCEPT_V2_ACTIVATED or os.environ.get(
             INVENT_CONCEPT_V2_ACCEPTANCE_ENVIRONMENT
         ) == "1"

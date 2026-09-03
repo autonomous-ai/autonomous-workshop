@@ -1948,6 +1948,7 @@ class NativeFullRunTest(unittest.TestCase):
                     wish,
                     model="gpt-5.6-terra",
                     reasoning_effort="medium",
+                    invent_concept_v3_acceptance=False,
                 )
                 paths = native_run_paths(wish.product_id)
                 checkpoint = AgentRun.open(
@@ -2009,7 +2010,11 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ):
-                receipt = start_native_phase_test(wish, stop_after="concept")
+                receipt = start_native_phase_test(
+                    wish,
+                    stop_after="concept",
+                    invent_concept_v3_acceptance=False,
+                )
                 paths = native_run_paths(wish.product_id)
                 checkpoint = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state

@@ -145,7 +145,9 @@ response. Full product validation remains separate.
 ## Focused Invent/Concept/Make run
 
 `tools/run_invent_make.py` runs a real private Forge-shaped acceptance slice:
-Wish, Invent (including the active host-rendered Concept contract), and Make.
+Wish, Invent (including the host-rendered Concept contract), and Make. Fresh
+focused runs opt into Invent Concept v3 acceptance by default, so the host
+derives the fixed front, top, bottom, exploded, and per-component image family.
 It stops after the real Make gate and never starts Release, loads Factory
 credentials, or grants publication authority. The default fixed Wish is the Ho
 Chi Minh City landmark chess set used to evaluate the direct deep-Make profile.
@@ -180,3 +182,7 @@ uv run --frozen python tools/run_invent_make.py --resume <wish-id>
 Concept image credentials must already be configured exactly as for a normal
 Forge run. A missing credential produces the ordinary durable Invent wait;
 after configuring it, use `--resume`.
+
+The v3 choice is frozen when a focused run is created. Resuming an older
+phase-test run preserves its original Concept protocol rather than retrofitting
+the new default.

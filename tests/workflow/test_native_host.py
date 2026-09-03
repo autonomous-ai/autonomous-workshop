@@ -66,6 +66,7 @@ from workshop.workflow.native_run import (
     native_run_paths,
     native_run_status,
     resume_native_run,
+    start_native_phase_test,
     start_native_run,
 )
 from workshop.runtime import (
@@ -116,6 +117,7 @@ from workshop.workflow.effort import (
     DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS,
     EFFORT_ROUTE_CAPABILITY_PATH,
     INVENT_CONCEPT_CAPABILITY_PATH,
+    INVENT_CONCEPT_V3_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -921,6 +923,43 @@ class NativeHostTest(unittest.TestCase):
                 ).hexdigest(),
                 timeout_seconds=DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
             )
+
+    def test_focused_phase_test_selects_invent_concept_v3_by_default(self):
+        launcher = _FakeLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "focused-concept-v3-default"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ):
+                receipt = start_native_phase_test(
+                    Wish.create(product_id, "a fixed-view Concept fixture"),
+                    stop_after="concept",
+                )
+
+            workspace = home / "runs" / product_id / "workspace"
+            packet = json.loads((workspace / "STAGE.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["stage"], "invent")
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(
+                packet["inputs"]["invent_concept_capability"]["path"],
+                INVENT_CONCEPT_V3_CAPABILITY_PATH,
+            )
+            self.assertTrue((workspace / INVENT_CONCEPT_V3_CAPABILITY_PATH).is_file())
+            self.assertFalse(
+                (
+                    workspace
+                    / ".agents/skills/autonomous-workshop/references/invent-concept-v2.md"
+                ).exists()
+            )
+            self.assertIn("visual_instructions_path", packet["inputs"])
+            self.assertNotIn("visual_plan_path", packet["inputs"])
 
     def test_deep_v9_shapes_each_stage_under_one_frozen_runtime_profile(self):
         for effort in ("forge", "quest"):
