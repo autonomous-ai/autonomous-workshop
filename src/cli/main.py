@@ -33,6 +33,11 @@ from workshop.contributors import (
     validate_contribution,
     validate_inventor_collection,
 )
+from workshop.daydream import (
+    load_sealed_daydream,
+    run_daydream,
+    wish_from_daydream,
+)
 from workshop.errors import WorkshopError
 from workshop.make.skill_registry import (
     discover_skills,
@@ -301,16 +306,17 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
         print("Resume: %s" % _shell_command("workshop", "resume", product_id))
 
 
-def _wish(args: argparse.Namespace) -> int:
-    effort = workshop_effort(args.effort)
-    wish = Wish.create(
-        generate_wish_id(),
-        " ".join(args.objective),
-        context={"source": "workshop-cli"},
-    )
-    progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
-    manager = manager_spec(args.manager)
+def _start_run(
+    wish: Wish,
+    *,
+    effort,
+    manager,
+    github: bool,
+    progress: TextIO,
+    live_progress: "_LiveWishProgress",
+) -> Mapping[str, Any]:
+    """Announce and start one native run; callers print the receipt."""
+
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
     print(
         "Effort: %s — %s" % (effort.title, effort.description),
@@ -332,16 +338,145 @@ def _wish(args: argparse.Namespace) -> int:
         file=progress,
         flush=True,
     )
-    receipt = start_native_run(
+    return start_native_run(
         wish,
         effort=effort.name,
         manager_id=manager.manager_id,
-        github_publish_requested=args.github,
+        github_publish_requested=github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
+
+
+def _wish(args: argparse.Namespace) -> int:
+    effort = workshop_effort(args.effort)
+    wish = Wish.create(
+        generate_wish_id(),
+        " ".join(args.objective),
+        context={"source": "workshop-cli"},
+    )
+    progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
+    manager = manager_spec(args.manager)
+    receipt = _start_run(
+        wish,
+        effort=effort,
+        manager=manager,
+        github=args.github,
+        progress=progress,
+        live_progress=live_progress,
+    )
     if args.json:
         _print_json(receipt)
+    else:
+        _print_native_receipt(receipt, verb="Run")
+    return _native_exit_code(receipt, strict=args.strict)
+
+
+def _print_daydream_card(sealed, *, stream: TextIO, offer_build: bool) -> None:
+    idea = sealed.idea
+    lines = [
+        "Daydream: %s" % sealed.daydream_id,
+        "Inventor: %s (%s)" % (sealed.inventor_name, sealed.inventor_id),
+        "Title: %s" % idea.title,
+        "In one line: %s" % idea.one_liner,
+        "What you do: %s" % idea.what_you_do,
+        "What happens: %s" % idea.what_happens,
+        "Why it is new: %s" % idea.why_it_is_new,
+        "Closest existing things: %s"
+        % "; ".join(
+            "%s (%s)" % (entry.name, entry.how_this_differs)
+            for entry in idea.prior_art
+        ),
+        "Taste fit: honors %s; steers clear of %s"
+        % (
+            "; ".join(idea.taste_fit.honors),
+            "; ".join(idea.taste_fit.steers_clear_of),
+        ),
+        "Printed parts: %d" % idea.parts_estimate,
+    ]
+    nearest = ", ".join(
+        "%s %.2f" % (neighbor.title, neighbor.similarity)
+        for neighbor in sealed.novelty.nearest
+    )
+    lines.append(
+        "Novelty lint: %s (%s)"
+        % (
+            sealed.novelty.status,
+            "nearest: %s" % nearest if nearest else sealed.novelty.reason,
+        )
+    )
+    if offer_build:
+        lines.append(
+            "Build it: %s"
+            % _shell_command(
+                "workshop",
+                "daydream",
+                sealed.inventor_id,
+                "--idea",
+                sealed.daydream_id,
+                "--run",
+            )
+        )
+    for line in lines:
+        print(line, file=stream, flush=True)
+
+
+def _daydream(args: argparse.Namespace) -> int:
+    if not args.run and (args.github or args.strict):
+        raise WorkshopError("--github and --strict apply only with --run")
+    root = _inventor_source_root(args.root)
+    manager = manager_spec(args.manager)
+    progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
+    if args.idea is not None:
+        sealed = load_sealed_daydream(args.inventor, args.idea)
+        print("Daydream: %s (saved idea)" % sealed.daydream_id, file=progress, flush=True)
+    else:
+        print("Inventor: %s" % args.inventor, file=progress, flush=True)
+        print(
+            "Manager: %s%s"
+            % (
+                manager.display_name,
+                " (experimental)" if manager.experimental else "",
+            ),
+            file=progress,
+            flush=True,
+        )
+        print(
+            "Daydreaming one brand-new idea that fits %s's Taste..." % args.inventor,
+            file=progress,
+            flush=True,
+        )
+        sealed = run_daydream(
+            args.inventor,
+            source_root=root,
+            manager_id=manager.manager_id,
+            activity_observer=live_progress.activity,
+        )
+    if not args.json:
+        _print_daydream_card(sealed, stream=progress, offer_build=not args.run)
+    if not args.run:
+        if args.json:
+            _print_json({"daydream": sealed.to_dict()})
+        return 0
+    effort = workshop_effort(args.effort)
+    wish = wish_from_daydream(sealed)
+    print(
+        "Liked. Sealing the idea as this run's brief.",
+        file=progress,
+        flush=True,
+    )
+    receipt = _start_run(
+        wish,
+        effort=effort,
+        manager=manager,
+        github=args.github,
+        progress=progress,
+        live_progress=live_progress,
+    )
+    if args.json:
+        _print_json({"daydream": sealed.to_dict(), "run": receipt})
     else:
         _print_native_receipt(receipt, verb="Run")
     return _native_exit_code(receipt, strict=args.strict)
@@ -846,12 +981,15 @@ def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(
         prog="workshop",
         description=(
-            "Turn one Wish into a product through one native Codex session and "
-            "host-verified Workshop gates."
+            "Let AI Inventors daydream new toys, then turn each liked idea into a "
+            "product through one native Manager session and host-verified "
+            "Workshop gates."
         ),
         epilog=(
             "Start here:\n"
             "  workshop doctor\n"
+            "  workshop daydream pico-press\n"
+            "  workshop daydream pico-press --run\n"
             "  workshop wish \"a wind-up moon that waddles across my desk\""
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -859,6 +997,62 @@ def parser() -> argparse.ArgumentParser:
     subcommands = command.add_subparsers(
         dest="command", required=True, metavar="COMMAND"
     )
+
+    daydream = subcommands.add_parser(
+        "daydream",
+        help="let one Inventor dream one brand-new toy idea; --run builds it",
+    )
+    daydream.add_argument(
+        "inventor",
+        metavar="INVENTOR",
+        help="Inventor id such as pico-press (see `workshop inventors`)",
+    )
+    daydream.add_argument(
+        "--run",
+        action="store_true",
+        help="seal the idea as this run's brief and start its native Manager session",
+    )
+    daydream.add_argument(
+        "--effort",
+        choices=tuple(WORKSHOP_EFFORTS),
+        default="forge",
+        metavar="MODE",
+        help=(
+            "creative depth for --run: forge (Invent->Make->Release; default), "
+            "spark (Make->Release), or quest (Invent->Make->Playtest->Release)"
+        ),
+    )
+    daydream.add_argument(
+        "--manager",
+        choices=tuple(SUPPORTED_MANAGER_IDS),
+        default=DEFAULT_MANAGER_ID,
+        metavar="RUNTIME",
+        help=(
+            "native Manager runtime for the daydream and the run: codex (default), "
+            "claude, or grok"
+        ),
+    )
+    daydream.add_argument(
+        "--idea",
+        metavar="DAYDREAM_ID",
+        help="use a saved idea instead of dreaming a new one",
+    )
+    daydream.add_argument(
+        "--root", type=Path, help="Workshop checkout or inventor catalog"
+    )
+    daydream.add_argument(
+        "--github",
+        action="store_true",
+        help=(
+            "commit and push the generated toy folder after Release "
+            "(default: disabled)"
+        ),
+    )
+    daydream.add_argument("--json", action="store_true", help="emit one JSON receipt")
+    daydream.add_argument(
+        "--strict", action="store_true", help="exit 1 when the run waits"
+    )
+    daydream.set_defaults(handler=_daydream)
 
     wish = subcommands.add_parser(
         "wish", help="persist one Wish and start its native Manager session"

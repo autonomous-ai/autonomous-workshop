@@ -5,6 +5,8 @@
 * @deehw
 
 # Product stages
+/src/workshop/daydream/ @deehw
+/tests/daydream/ @deehw
 /src/workshop/wish/ @deehw
 /tests/wish/ @deehw
 /src/workshop/match/ @deehw

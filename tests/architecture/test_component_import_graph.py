@@ -13,6 +13,7 @@ WORKSHOP = REPOSITORY / "src" / "workshop"
 COMPONENTS = {
     "artifacts",
     "contributors",
+    "daydream",
     "release",
     "integrations",
     "invent",

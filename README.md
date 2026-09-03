@@ -21,7 +21,7 @@ Autonomous AI Inventors daydream, invent, and make new toys and games around the
 
 The Workshop is becoming the engine of an AI-native play company. The full plan, the state of the code, and the specifications are kept privately for now; the pieces below land in this repo as they ship.
 
-- **Daydream** is the new first stage: an always-running Goal per Inventor with a persistent notebook that emits a concept card when the Inventor likes an idea. It is in development; today a run still starts from a typed brief with `workshop wish`.
+- **Daydream** is the first stage. `workshop daydream <inventor>` lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. `--run` builds the liked idea. The always-on loop, a judge, and outcome feedback come next.
 - **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`workshop wish`, `WISH.json`); that name is a contract, not a promise.
 - **Release explains the model**, and the first order prints and photographs the real piece so listings carry real images.
 - **An outcome scoreboard** keyed to each design feeds the Inventors, so next month's toys beat this month's.
@@ -36,30 +36,40 @@ codex login
 uv run workshop doctor
 ```
 
-A run starts from a brief. The CLI still calls it a Wish. The default uses Codex as the Workshop Manager and ✨ Spark as the effort (`Make -> Release`):
+Let an Inventor daydream one brand-new toy idea. It reads its own Taste, searches for prior art, and the host rejects anything too close to a toy already made:
 
 ```bash
-uv run workshop wish \
-  "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
+uv run workshop daydream pico-press
 ```
 
-`--effort` chooses how deep the shop goes. 🔥 Forge adds Invent. 🗺️ Quest adds Invent and Playtest:
+Like it? Build it. `--run` seals the idea as the run's brief and starts 🔥 Forge (`Invent -> Make -> Release`) with Codex as the Workshop Manager:
 
 ```bash
-uv run workshop wish \
-  --effort forge \
+uv run workshop daydream pico-press --run
+```
+
+`--effort spark` is the fast route (`Make -> Release`): the idea is already the concept. 🗺️ Quest adds Playtest. A saved idea can be built later:
+
+```bash
+uv run workshop daydream pico-press --run --effort spark
+uv run workshop daydream pico-press --idea <daydream-id> --run
+```
+
+Already know exactly what you want? Type the brief yourself. The CLI calls it a Wish, and ✨ Spark is its default:
+
+```bash
+uv run workshop wish --effort forge \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-`--manager` chooses the Workshop Manager. This ✨ Spark run on Grok produced [Horn Tip](toys/pico-press-horn-tip/):
+`--manager` chooses the Workshop Manager for the daydream and the run. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
-uv run workshop wish --manager grok --effort spark \
-  "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
+uv run workshop daydream pico-press --manager grok --run --effort spark
 ```
 
-The command prints a run ID (a Wish ID). Check on it or continue the same session:
+Every run prints a run ID (a Wish ID). Check on it or continue the same session:
 
 ```bash
 uv run workshop status <wish-id>
@@ -77,9 +87,9 @@ unknown failed turns still stop safely for an explicit operator resume.
 One run is one native coding-agent session — the shop lead. Resume cannot switch Managers.
 
 ```bash
-uv run workshop wish --manager codex --effort spark "I wish for …"   # default
-uv run workshop wish --manager claude --effort spark "I wish for …"  # experimental
-uv run workshop wish --manager grok --effort spark "I wish for …"    # experimental
+uv run workshop daydream pico-press --manager codex --run    # default
+uv run workshop daydream pico-press --manager claude --run   # experimental
+uv run workshop daydream pico-press --manager grok --run     # experimental
 ```
 
 | Manager | CLI | Status |
@@ -234,7 +244,7 @@ The floorplan of the shop. An Inventor's idea walks a frozen effort, then Operat
 [![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=daydream-v1)](docs/images/workshop-floorplan.svg)
 
 ```text
-Daydream (always on, every Inventor) -> one liked idea -> a frozen effort route:
+Daydream (one idea per call today; always on next) -> one liked idea -> a frozen effort route:
 
 ✨ Spark: Make -> Release                          (default)
 🔥 Forge: Invent <-> Make -> Release
@@ -244,7 +254,7 @@ Release -> Shop (order one, printed to order, photographed, ships in days)
 Shop -> Scoreboard (views, orders, prints, returns) -> back to Daydream
 ```
 
-Daydream is in development; until it lands, `workshop wish` seals a typed brief as the run's starting point.
+`workshop daydream <inventor> --run` seals the liked idea as the run's brief. `workshop wish "..."` remains the manual path: you type the brief yourself. Either way the run is keyed by a Wish id.
 
 Passed-through stages create no turn, artifact, gate, or fabricated evidence. Spark and Forge record Playtest as `not-run`. Quest requires passing Playtest bound to the current Made revision.
 
