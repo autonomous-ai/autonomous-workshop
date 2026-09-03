@@ -545,14 +545,38 @@ def _start(args: argparse.Namespace) -> int:
                 _print_daydream_card(sealed, stream=progress, offer_build=False)
             wish = wish_from_daydream(sealed)
             print("Sealing the idea as this run's brief.", file=progress, flush=True)
-            receipt = _start_run(
-                wish,
-                effort=effort,
-                manager=manager,
-                github=args.github,
-                progress=progress,
-                live_progress=live_progress,
-            )
+            try:
+                receipt = _start_run(
+                    wish,
+                    effort=effort,
+                    manager=manager,
+                    github=args.github,
+                    progress=progress,
+                    live_progress=live_progress,
+                )
+            except (WorkshopError, RuntimeError) as exc:
+                # The build session ended without a verdict (timeout, provider
+                # failure, host refusal).  The run stays checkpointed; the loop
+                # counts the failure and moves on to the next idea.
+                if once:
+                    raise
+                failures += 1
+                lease.update(consecutive_failures=failures, last_wish_id=wish.product_id)
+                print("Build failed: %s" % exc, file=progress, flush=True)
+                print(
+                    "Resume it later: %s"
+                    % _shell_command("workshop", "resume", wish.product_id),
+                    file=progress,
+                    flush=True,
+                )
+                if failures >= args.max_failures:
+                    reason = "%d consecutive failures" % failures
+                    exit_code = 1
+                    break
+                if lease.stop_requested():
+                    reason = "stopped by workshop stop"
+                    break
+                continue
             builds += 1
             publication = receipt.get("publication")
             if isinstance(publication, Mapping) and publication.get("status") == "public":
@@ -595,6 +619,9 @@ def _start(args: argparse.Namespace) -> int:
     except KeyboardInterrupt:
         reason = "stopped by Ctrl-C"
         exit_code = 130
+    except Exception as exc:
+        reason = "error: %s" % " ".join(str(exc).split())[:400]
+        raise
     finally:
         state = lease.release(reason=reason)
     if not once or exit_code == 130:

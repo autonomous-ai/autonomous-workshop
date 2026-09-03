@@ -701,6 +701,37 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertIn("Daydream failed: too close to Horn Tip", stdout.getvalue())
         self.assertIn("Loop stopped (reached --max-ideas 2). Ideas: 2.", stdout.getvalue())
 
+    def test_loop_counts_a_build_session_error_and_moves_on(self):
+        from workshop.errors import WorkshopError
+
+        sealed = sample_sealed()
+        stdout = StringIO()
+        with mock.patch("cli.main.run_daydream", return_value=sealed) as run, mock.patch(
+            "cli.main.start_native_run",
+            side_effect=[
+                WorkshopError("native Codex session did not complete"),
+                native_receipt(status="completed", stage="release", published=True),
+            ],
+        ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("start", "sample", "--max-ideas", "2"))
+        self.assertEqual(result, 0)
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(start.call_count, 2)
+        output = stdout.getvalue()
+        self.assertIn("Build failed: native Codex session did not complete", output)
+        self.assertIn("Resume it later: workshop resume wish-", output)
+        self.assertIn("Loop stopped (reached --max-ideas 2). Ideas: 2. Builds: 1. Published: 1.", output)
+        record = json.loads((self._loop_folder() / "LOOP.json").read_text())
+        self.assertEqual(record["consecutive_failures"], 0)
+        with mock.patch("cli.main.run_daydream", return_value=sealed), mock.patch(
+            "cli.main.start_native_run",
+            side_effect=WorkshopError("native Codex session did not complete"),
+        ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            self.assertEqual(main(("start", "sample", "--once")), 2)
+        record = json.loads((self._loop_folder() / "LOOP.json").read_text())
+        self.assertEqual(record["status"], "stopped")
+        self.assertTrue(record["stop_reason"].startswith("error: native Codex session"))
+
     def test_loop_json_emits_one_object_per_idea(self):
         sealed = sample_sealed()
         stdout = StringIO()
