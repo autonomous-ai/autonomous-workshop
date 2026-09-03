@@ -21,7 +21,7 @@ Autonomous AI Inventors daydream, invent, and make new toys and games around the
 
 The Workshop is becoming the engine of an AI-native play company. The full plan, the state of the code, and the specifications are kept privately for now; the pieces below land in this repo as they ship.
 
-- **Daydream** is the first stage. `workshop start <inventor>` runs the whole loop; its first step lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. An independent Judge Goal then reads the idea the way Make's blind reviewer will and bets on it; only ideas it would build are built, the rest are remembered and dreamed past. `workshop daydream <inventor>` shows an idea and its verdict without building it. Once started, the loop keeps dreaming, judging, and building until `workshop stop` or Ctrl-C. Outcome feedback comes next.
+- **Daydream** is the first stage. `workshop start <inventor>` runs the whole loop; its first step lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. The Inventor is shown the toys that passed the build review and the ones that failed, with the reason, so it aims at what can actually be made. `workshop daydream <inventor>` shows an idea without building it. Once started, the loop keeps dreaming and building until `workshop stop` or Ctrl-C. Outcome feedback comes next.
 - **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`WISH.json`, and every run id is a Wish id); that name is a contract, not a promise.
 - **Release explains the model**, and the first order prints and photographs the real piece so listings carry real images.
 - **An outcome scoreboard** keyed to each design feeds the Inventors, so next month's toys beat this month's.
@@ -36,9 +36,16 @@ codex login
 uv run workshop doctor
 ```
 
-Every Inventor publishes to the shop as its own account, so a toy is credited to the Inventor that dreamed it. Create that account once, at [autonomous.ai/toys](https://www.autonomous.ai/toys), using the Inventor's id as its name. The first `workshop start` for an Inventor asks for that username and password and stores them on this host only, owner-readable, never inside a run workspace and never given to an agent. `workshop create inventor` prints the same reminder.
+Every Inventor publishes to the shop as its own account, so a toy is credited to the Inventor that dreamed it. Create that account once at [autonomous.ai/toys](https://www.autonomous.ai/toys), using the Inventor's id as its name, then store it on this host:
 
-One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, an independent judge rejects anything Make's blind review would fail, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
+```bash
+uv run workshop login pico-press                      # asks for the username and password
+echo "$PASSWORD" | uv run workshop login pico-press --username pico-press
+```
+
+Credentials live in `$WORKSHOP_HOME/credentials/inventors/<id>.env`, owner-readable, never inside a run workspace and never given to an agent. The first `workshop start` for an Inventor asks for them too when it is run in a terminal.
+
+One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
 
 ```bash
 uv run workshop start pico-press
@@ -287,7 +294,7 @@ artifact, gate, or evidence; Spark and Forge record Playtest as `not-run`. The
 reverse arrows are evidence-bound repair routes that spend a shared revision
 budget, not free retries.
 
-**Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Every step is one native Goal, Daydream and its Judge included, and every Goal ends with a run-local finalizer writing `agent-outcome.json`, which is the only completion signal the host trusts. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
+**Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Every step is one native Goal, Daydream included, and every Goal ends with a run-local finalizer writing `agent-outcome.json`, which is the only completion signal the host trusts. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
 
 **Two sessions, by design.** `workshop start` is a loop: dream, build, dream again. A daydream is its own short native session. It ends when the idea is sealed: linted, hashed, written to the Inventor's notebook, and rendered as the brief. Each liked idea then gets its own persistent build session, one per run, exactly as a typed brief would. The idea is an immutable input to the build, so Make can never quietly rewrite what it is building; daydreams can run on their own cadence; a saved idea can be built later, on any route or Manager, or rebuilt after a failed Make; and a build failure never touches the idea.
 

@@ -12,10 +12,12 @@ the installed `workshop` command.
 Spark is the default. Status and resume read that durable choice rather than
 accepting a new effort value.
 
-`workshop start <inventor-id>` first makes sure this host holds that
-Inventor's shop account, prompting for its username and password once and
-storing them under `$WORKSHOP_HOME/credentials/inventors/<id>.env`
-(owner-only). Release then publishes as that account, so the shop credits the
+`workshop login <inventor-id>` stores that Inventor's shop account: it prompts
+in a terminal and reads the password from stdin when one is piped, so a
+password never reaches shell history or the process table. `workshop start
+<inventor-id>` refuses to begin without that account and prompts for it when
+it is interactive. Both write
+`$WORKSHOP_HOME/credentials/inventors/<id>.env` (owner-only). Release then publishes as that account, so the shop credits the
 Inventor that dreamed the toy. `WORKSHOP_SHOP_SIGNUP_URL` overrides the
 sign-up link the CLI prints.
 

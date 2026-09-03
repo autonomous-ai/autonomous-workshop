@@ -86,7 +86,6 @@ from workshop.workflow.effort import (
 
 
 _INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
-MAX_JUDGED_OUT_IN_A_ROW = 5
 _DEFAULT_SHOP_SIGNUP_URL = "https://www.autonomous.ai/toys"
 
 
@@ -134,9 +133,14 @@ def _ensure_publishing_account(inventor_id: str, progress: TextIO) -> None:
     if not sys.stdin.isatty():
         raise WorkshopError(
             "%s has no shop account on this host, and this is not a terminal. "
-            "Run `workshop start %s` in a terminal to enter its username and "
-            "password, or set FACTORY_USERNAME and FACTORY_PASSWORD. %s"
-            % (inventor_id, inventor_id, signup)
+            "Store one with %s, or pipe the password in with "
+            "`echo <password> | workshop login %s --username <name>`. %s"
+            % (
+                inventor_id,
+                _shell_command("workshop", "login", inventor_id),
+                inventor_id,
+                signup,
+            )
         )
     print(
         "%s publishes to the shop as its own account, and this host does not "
@@ -539,24 +543,6 @@ def _print_daydream_card(sealed, *, stream: TextIO, offer_build: bool) -> None:
             "nearest: %s" % nearest if nearest else sealed.novelty.reason,
         )
     )
-    verdict = sealed.verdict
-    if verdict is not None:
-        risks = "; ".join("%s: %s" % (risk.kind, risk.detail) for risk in verdict.risks)
-        if verdict.decision == "build":
-            lines.append(
-                "Judge: build (confidence %.2f). %s%s"
-                % (verdict.confidence, verdict.advice, " Risks: %s" % risks if risks else "")
-            )
-        else:
-            lines.append(
-                "Judge: dream again (confidence %.2f). Failed: %s. %s Advice: %s"
-                % (
-                    verdict.confidence,
-                    ", ".join(verdict.failed_checks) or "none",
-                    risks,
-                    verdict.advice,
-                )
-            )
     if offer_build:
         lines.append(
             "Build it: %s"
@@ -609,6 +595,37 @@ def _dream_or_load(
     )
 
 
+def _login(args: argparse.Namespace) -> int:
+    """Store one Inventor's shop account, interactively or from a pipe."""
+
+    inventor_id = args.inventor
+    username = (args.username or "").strip()
+    interactive = sys.stdin.isatty()
+    if not username:
+        if not interactive:
+            raise WorkshopError(
+                "--username is required when the password is piped in"
+            )
+        print(
+            "Create %s's account at %s if it does not exist yet."
+            % (inventor_id, _shop_signup_url())
+        )
+        username = input("Shop username for %s: " % inventor_id).strip()
+    if interactive:
+        password = getpass.getpass("Shop password for %s: " % inventor_id).strip()
+    else:
+        # A pipe is the only way to pass a password without putting it in shell
+        # history or the process table.
+        password = sys.stdin.readline().strip()
+    if not username or not password:
+        raise WorkshopError("both a username and a password are required")
+    path = store_factory_credentials(username, password, inventor_id=inventor_id)
+    print("Stored %s's shop account as %s." % (inventor_id, username))
+    print("Credentials: %s (owner-only)" % path)
+    print("Next: %s" % _shell_command("workshop", "start", inventor_id))
+    return 0
+
+
 def _daydream(args: argparse.Namespace) -> int:
     root = _inventor_source_root(args.root)
     manager = manager_spec(args.manager)
@@ -654,7 +671,6 @@ def _start(args: argparse.Namespace) -> int:
         )
     ideas = builds = published = 0
     failures = 0
-    judged_out = 0
     exit_code = 0
     reason = "finished"
     try:
@@ -686,31 +702,6 @@ def _start(args: argparse.Namespace) -> int:
                 continue
             ideas += 1
             lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
-            verdict = sealed.verdict
-            if args.idea is None and verdict is not None and verdict.decision != "build":
-                # The judge would bet against this build.  Skip it, remember
-                # it, and dream again; --idea builds a saved idea on purpose.
-                if not args.json:
-                    _print_daydream_card(sealed, stream=progress, offer_build=True)
-                else:
-                    _print_json({"daydream": sealed.to_dict()})
-                print(
-                    "Judge says dream again; not building this one.",
-                    file=progress,
-                    flush=True,
-                )
-                if once:
-                    return 1
-                judged_out += 1
-                if judged_out >= MAX_JUDGED_OUT_IN_A_ROW:
-                    reason = "%d ideas judged out in a row" % judged_out
-                    exit_code = 1
-                    break
-                if lease.stop_requested():
-                    reason = "stopped by workshop stop"
-                    break
-                continue
-            judged_out = 0
             if not once and lease.stop_requested():
                 # A stop that arrived during the daydream lands here, before a
                 # 20-minute build starts; the sealed idea stays buildable.
@@ -1400,9 +1391,7 @@ def parser() -> argparse.ArgumentParser:
 
     start = subcommands.add_parser(
         "start",
-        help=(
-            "let one Inventor daydream, judge, and build brand-new toys until stopped"
-        ),
+        help="let one Inventor daydream and build brand-new toys until stopped",
     )
     start.add_argument(
         "inventor",
@@ -1475,6 +1464,21 @@ def parser() -> argparse.ArgumentParser:
     )
     start.set_defaults(handler=_start)
 
+    login = subcommands.add_parser(
+        "login",
+        help="store one Inventor's shop account so its toys publish under its name",
+    )
+    login.add_argument("inventor", metavar="INVENTOR")
+    login.add_argument(
+        "--username",
+        metavar="NAME",
+        help=(
+            "the Inventor's shop username; required when the password is piped "
+            "in rather than typed"
+        ),
+    )
+    login.set_defaults(handler=_login)
+
     stop = subcommands.add_parser(
         "stop", help="stop an Inventor's daydream loop after its current step"
     )
@@ -1488,7 +1492,7 @@ def parser() -> argparse.ArgumentParser:
 
     daydream = subcommands.add_parser(
         "daydream",
-        help="let one Inventor dream and judge one brand-new toy idea without building it",
+        help="let one Inventor dream one brand-new toy idea without building it",
     )
     daydream.add_argument(
         "inventor",

@@ -7,13 +7,9 @@ from typing import Any, Dict
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.daydream.contracts import (
     DAYDREAM_IDEA_KIND,
-    DAYDREAM_VERDICT_KIND,
     Idea,
     NoveltyReport,
     SealedDaydream,
-    VERDICT_CHECKS,
-    Verdict,
-    VerdictRisk,
     render_brief,
 )
 
@@ -102,28 +98,6 @@ def sample_novelty() -> NoveltyReport:
         nearest=(),
         reason="no prior work to compare against",
     )
-
-
-def build_verdict_dict(decision: str = "build") -> Dict[str, Any]:
-    risks = [] if decision == "build" else [
-        {"kind": "hidden-signature", "detail": "The bead's cam rungs are inside the rails."}
-    ]
-    checks = {name: True for name in VERDICT_CHECKS}
-    if decision != "build":
-        checks["moving_part_visible_in_both_states"] = False
-    return {
-        "schema_version": 1,
-        "kind": DAYDREAM_VERDICT_KIND,
-        "decision": decision,
-        "checks": checks,
-        "confidence": 0.8 if decision == "build" else 0.25,
-        "risks": risks,
-        "advice": "Keep the ladder body; put the bead on the outside of the rails.",
-    }
-
-
-def sample_verdict(decision: str = "build") -> Verdict:
-    return Verdict.parse(build_verdict_dict(decision))
 
 
 def sample_sealed(**overrides: Any) -> SealedDaydream:
