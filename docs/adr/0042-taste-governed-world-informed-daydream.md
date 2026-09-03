@@ -221,9 +221,12 @@ single score conceals blocking failures and creates an easy optimization target.
 
 ## Compatibility and migration
 
-Existing sealed Daydreams, notebooks, saved `--idea` builds, and product runs
-remain valid. New fields use new schema versions; parsers dispatch by version
-instead of changing the canonical representation of historical objects.
+Existing schema-v1 sealed Daydreams, notebooks, saved `--idea` builds, and
+product runs remain valid. New schema-v2 Daydreams always carry an independent
+Judge verdict: `build` is required before the thesis can become Wish intent;
+`dream-again` remains inspectable and feeds repair memory but cannot be built
+through `--idea`. Parsers dispatch by version instead of changing the canonical
+representation of historical objects.
 
 The current CLI names remain. A saved new thesis still becomes an ordinary
 Wish through `wish_from_daydream`, preserving status/resume and the two-session

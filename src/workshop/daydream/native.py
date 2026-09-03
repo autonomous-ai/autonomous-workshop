@@ -610,7 +610,6 @@ def _build_provenance(
     workspace_sha256s: Mapping[str, str],
     inventor_binding: Mapping[str, Any],
     vault_binding: Mapping[str, Any],
-    judge: bool,
 ) -> DaydreamProvenance:
     assert idea.opportunity is not None
     vault_snapshot = vault_binding.get("sha256")
@@ -621,7 +620,7 @@ def _build_provenance(
         input_sha256s={
             "daydream_prompt": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
             "daydream_constitution": workspace_sha256s["AGENTS.md"],
-            "judge_constitution": JUDGE_CONSTITUTION_SHA256 if judge else None,
+            "judge_constitution": JUDGE_CONSTITUTION_SHA256,
             "taste": workspace_sha256s["TASTE.md"],
             "inventor_binding": _json_line_sha256(inventor_binding),
             "vault_binding": _json_line_sha256(vault_binding),
@@ -937,15 +936,13 @@ def run_daydream(
     moment: Optional[datetime] = None,
     daydream_id: Optional[str] = None,
     effort: Optional[str] = None,
-    judge: bool = True,
     vault_loader: Callable[[], Vault] = _default_vault_loader,
 ) -> SealedDaydream:
-    """Let one Inventor dream one new idea, judge it, and seal it, or explain why not.
+    """Dream, independently judge, and seal one thesis, or explain why not.
 
-    With ``judge`` the idea is handed to the independent Judge Goal before it
-    is sealed; a ``dream-again`` verdict is sealed too, so it can be inspected
-    or built on purpose, but it is remembered as ``judged`` and callers skip
-    the build.  The judge assumes the Spark route unless ``effort`` names one.
+    A ``dream-again`` verdict remains inspectable and informs the next Dream,
+    but only a ``build`` verdict can become Wish intent.  The Judge assumes the
+    Spark route unless ``effort`` names one.
     """
 
     spec = manager_spec(manager_id)
@@ -1039,21 +1036,19 @@ def run_daydream(
     if novelty.status != "new":
         _reject(paths, daydream_id=selected_id, created_at=created_at, idea=idea, novelty=novelty)
         raise DaydreamError("Daydream %s rejected: %s" % (selected_id, novelty.reason))
-    verdict: Optional[Verdict] = None
-    if judge:
-        verdict, _judge_session = judge_idea(
-            paths,
-            idea=idea,
-            taste=taste,
-            inventor_id=manifest.inventor_id,
-            manager_id=spec.manager_id,
-            effort=effort if effort is not None else "spark",
-            daydream_id=selected_id,
-            launcher_factory=launcher_factory,
-            activity_observer=activity_observer,
-        )
-        if verdict.schema_version != 2:
-            raise DaydreamError("new Judge Goals must finalize a verdict with schema_version 2")
+    verdict, _judge_session = judge_idea(
+        paths,
+        idea=idea,
+        taste=taste,
+        inventor_id=manifest.inventor_id,
+        manager_id=spec.manager_id,
+        effort=effort if effort is not None else "spark",
+        daydream_id=selected_id,
+        launcher_factory=launcher_factory,
+        activity_observer=activity_observer,
+    )
+    if verdict.schema_version != 2:
+        raise DaydreamError("new Judge Goals must finalize a verdict with schema_version 2")
     route = effort if effort is not None else "spark"
     provenance = _build_provenance(
         route=route,
@@ -1063,7 +1058,6 @@ def run_daydream(
         workspace_sha256s=workspace_sha256s,
         inventor_binding=inventor_binding,
         vault_binding=vault_binding,
-        judge=judge,
     )
     write_private_bytes(
         paths.host_state / PROVENANCE_FILE_NAME,
@@ -1097,7 +1091,7 @@ def run_daydream(
         daydream_id=selected_id,
         created_at=created_at,
         idea=idea,
-        status="judged" if verdict is not None and verdict.decision != "build" else "dreamed",
+        status="judged" if verdict.decision != "build" else "dreamed",
         verdict=verdict,
     )
     return sealed
@@ -1154,6 +1148,12 @@ def wish_from_daydream(sealed: SealedDaydream, *, wish_id: Optional[str] = None)
 
     if not isinstance(sealed, SealedDaydream):
         raise ContractError("wish_from_daydream requires a SealedDaydream")
+    if sealed.schema_version == 2 and (
+        sealed.verdict is None or sealed.verdict.decision != "build"
+    ):
+        raise ContractError(
+            "only a Judge-accepted Daydream can become Wish intent"
+        )
     context = {
         "source": WISH_CONTEXT_SOURCE,
         "inventor_id": sealed.inventor_id,

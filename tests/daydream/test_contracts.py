@@ -15,6 +15,7 @@ from tests.daydream.support import (
 from workshop.daydream.contracts import (
     DAYDREAM_IDEA_KIND,
     DAYDREAM_SEAL_KIND,
+    DaydreamProvenance,
     Idea,
     NoveltyNeighbor,
     NoveltyReport,
@@ -350,6 +351,18 @@ class SealedDaydreamTest(unittest.TestCase):
             provenance=sample_provenance(),
         )
         self.assertEqual(SealedDaydream.parse(sealed.to_dict()), sealed)
+        with self.assertRaisesRegex(ContractError, "Judge verdict"):
+            sample_sealed(
+                schema_version=2,
+                idea=idea,
+                idea_sha256=idea.sha256,
+                verdict=None,
+                provenance=sample_provenance(),
+            )
+        provenance = sample_provenance().to_dict()
+        provenance["input_sha256s"]["judge_constitution"] = None
+        with self.assertRaisesRegex(ContractError, "judge_constitution cannot be null"):
+            DaydreamProvenance.parse(provenance)
         raw = sealed.to_dict()
         raw["provenance"]["input_sha256s"]["portfolio"] = "0" * 64
         changed = SealedDaydream.parse(raw)

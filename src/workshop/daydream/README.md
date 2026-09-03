@@ -67,8 +67,10 @@ and the host both reject a `build` that contradicts its own checks, so the
 judge cannot wave through an idea while naming the reason it will fail. The
 host seals the verdict into the idea record and `host-state/VERDICT.json`. The loop
 builds only `build` verdicts; a `dream-again` idea is remembered as `judged`
-so the Inventor does not repeat it, and `workshop start --idea` can still
-build it on purpose.
+so the Inventor can repair rather than repeat it. A new schema-v2
+`dream-again` record remains inspectable but cannot become Wish intent, even
+through `workshop start --idea`; historical schema-v1 records retain their
+frozen behavior.
 
 Every directory is created 0700 with no symlinks; every host file is 0600.
 The native Manager session (Codex by default) may write only inside

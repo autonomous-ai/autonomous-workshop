@@ -484,7 +484,10 @@ def _print_daydream_card(sealed, *, stream: TextIO, offer_build: bool) -> None:
                     verdict.advice,
                 )
             )
-    if offer_build:
+    if offer_build and (
+        sealed.schema_version == 1
+        or (sealed.verdict is not None and sealed.verdict.decision == "build")
+    ):
         lines.append(
             "Build it: %s"
             % _shell_command(
@@ -622,9 +625,13 @@ def _start(args: argparse.Namespace) -> int:
             ideas += 1
             lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
             verdict = sealed.verdict
-            if args.idea is None and verdict is not None and verdict.decision != "build":
-                # The judge would bet against this build.  Skip it, remember
-                # it, and dream again; --idea builds a saved idea on purpose.
+            if (
+                verdict is not None
+                and verdict.decision != "build"
+                and (args.idea is None or sealed.schema_version == 2)
+            ):
+                # A new creative thesis is complete only after Judge acceptance.
+                # Historical schema-v1 saved builds retain their frozen behavior.
                 if not args.json:
                     _print_daydream_card(sealed, stream=progress, offer_build=True)
                 else:

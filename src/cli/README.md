@@ -21,6 +21,7 @@ holds the Inventor's loop lease and checks the stop marker between steps, so
 sends SIGINT) and Ctrl-C ends it at once with the current run resumable.
 Three consecutive failures stop it; `--once` and `--max-ideas` bound it.
 `workshop daydream <inventor-id>` dreams and prints the card without building;
-`workshop start <inventor-id> --idea <daydream-id>` builds a saved idea. The
+`workshop start <inventor-id> --idea <daydream-id>` builds a saved,
+Judge-accepted idea. The
 CLI never judges or edits the idea; novelty and Taste fit are the Daydream
 component's job.

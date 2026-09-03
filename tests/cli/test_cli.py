@@ -14,7 +14,14 @@ from workshop.runtime.progress import WishRunTimingEvent
 from workshop.daydream import DaydreamError
 from workshop.daydream.outcomes import outcome_path, read_outcomes
 
-from tests.daydream.support import sample_sealed, sample_verdict
+from tests.daydream.support import (
+    build_thesis_verdict_dict,
+    sample_provenance,
+    sample_sealed,
+    sample_thesis,
+    sample_verdict,
+)
+from workshop.daydream.contracts import Verdict
 
 
 cli_main = importlib.import_module("cli.main")
@@ -764,7 +771,7 @@ class DaydreamCommandTest(unittest.TestCase):
         record = json.loads((self._loop_folder() / "LOOP.json").read_text())
         self.assertEqual(record["stop_reason"], "5 ideas judged out in a row")
 
-    def test_saved_idea_is_built_even_if_the_judge_said_dream_again(self):
+    def test_legacy_saved_idea_retains_its_frozen_build_behavior(self):
         rejected = sample_sealed(verdict=sample_verdict("dream-again"))
         with mock.patch("cli.main.load_sealed_daydream", return_value=rejected), mock.patch(
             "cli.main.start_native_run", return_value=native_receipt()
@@ -772,6 +779,33 @@ class DaydreamCommandTest(unittest.TestCase):
             result = main(("start", "sample", "--idea", rejected.daydream_id))
         self.assertEqual(result, 0)
         start.assert_called_once()
+
+    def test_new_saved_thesis_cannot_bypass_a_dream_again_verdict(self):
+        idea = sample_thesis()
+        verdict = Verdict.parse(
+            build_thesis_verdict_dict(
+                "dream-again",
+                idea_sha256=idea.sha256,
+            )
+        )
+        rejected = sample_sealed(
+            schema_version=2,
+            idea=idea,
+            idea_sha256=idea.sha256,
+            verdict=verdict,
+            provenance=sample_provenance(),
+        )
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main.load_sealed_daydream", return_value=rejected
+        ), mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+            stdout
+        ), redirect_stderr(StringIO()):
+            result = main(("start", "sample", "--idea", rejected.daydream_id))
+        self.assertEqual(result, 1)
+        start.assert_not_called()
+        self.assertNotIn("Build it:", stdout.getvalue())
+        self.assertIn("Judge says dream again; not building", stdout.getvalue())
 
     def test_stop_requested_during_a_daydream_lands_before_the_build(self):
         sealed = sample_sealed()

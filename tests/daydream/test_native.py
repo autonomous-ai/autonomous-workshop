@@ -281,7 +281,6 @@ class DaydreamNativeTest(unittest.TestCase):
         daydream_id=FIRST_ID,
         repository_root=None,
         activity_observer=None,
-        judge=True,
         vault_loader=None,
         **options,
     ):
@@ -295,7 +294,6 @@ class DaydreamNativeTest(unittest.TestCase):
             seed=SEED,
             moment=MOMENT,
             daydream_id=daydream_id,
-            judge=judge,
             vault_loader=vault_loader or self._unavailable_vault,
         )
         return sealed, launchers
@@ -727,8 +725,10 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(
             [entry.status for entry in list_daydreams("sample")], ["dreamed", "judged"]
         )
-        # A judged-out idea is still sealed, so it can be built on purpose.
+        # A judged-out thesis stays inspectable and feeds repair memory.
         self.assertEqual(load_sealed_daydream("sample", SECOND_ID).verdict.decision, "dream-again")
+        with self.assertRaisesRegex(ContractError, "Judge-accepted"):
+            wish_from_daydream(sealed)
 
     def test_judge_repair_advice_reaches_the_next_daydream_workspace(self):
         rejected, _launchers = self._run(
@@ -755,16 +755,12 @@ class DaydreamNativeTest(unittest.TestCase):
             ),
         )
 
-    def test_judge_can_be_skipped_and_its_failures_fail_closed(self):
-        sealed, launchers = self._run(idea=sample_idea_dict(), judge=False)
-        self.assertIsNone(sealed.verdict)
-        self.assertEqual(len(launchers), 1)
-        daydream_paths("sample", FIRST_ID).notebook.unlink()
+    def test_judge_failures_fail_closed(self):
         with self.assertRaisesRegex(DaydreamError, "did not finalize its Judge Goal"):
-            self._run(daydream_id=SECOND_ID, idea=sample_idea_dict(), verdict=None)
+            self._run(idea=sample_idea_dict(), verdict=None)
         with self.assertRaisesRegex(DaydreamError, "Judge session failed"):
             self._run(
-                daydream_id="daydream-20260902-101700-00000003",
+                daydream_id=SECOND_ID,
                 idea=sample_idea_dict(),
                 judge_error=NativeManagerInvocationError("judge disconnect"),
             )

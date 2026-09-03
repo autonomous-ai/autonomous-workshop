@@ -99,7 +99,7 @@ DAYDREAM_PROVENANCE_INPUTS = (
     "prior_art",
     "manager_spec",
 )
-_OPTIONAL_PROVENANCE_INPUTS = frozenset(("judge_constitution", "vault_snapshot"))
+_OPTIONAL_PROVENANCE_INPUTS = frozenset(("vault_snapshot",))
 _PROVENANCE_KEYS = frozenset(
     ("schema_version", "kind", "route", "input_sha256s")
 )
@@ -1090,6 +1090,8 @@ class SealedDaydream:
             raise ContractError("sealed daydream schema 1 cannot carry provenance")
         if self.schema_version == 2 and not isinstance(self.provenance, DaydreamProvenance):
             raise ContractError("sealed daydream schema 2 requires provenance")
+        if self.schema_version == 2 and not isinstance(self.verdict, Verdict):
+            raise ContractError("sealed daydream schema 2 requires a Judge verdict")
         if self.kind != DAYDREAM_SEAL_KIND:
             raise ContractError("sealed daydream kind must be %s" % DAYDREAM_SEAL_KIND)
         require_daydream_id(self.daydream_id, "sealed daydream daydream_id")
