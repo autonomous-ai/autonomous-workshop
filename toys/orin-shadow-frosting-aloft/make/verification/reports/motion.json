@@ -1,0 +1,19 @@
+{
+  "assembly": "frosting_aloft.step.py",
+  "conditions": [
+    {
+      "id": "raised-to-lowered-slide",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "The frosting cap must slide the full 27 mm reveal travel without intersecting the fixed cupcake base.",
+      "inputs": {
+        "moving_part": "cap_raised",
+        "obstacle_parts": ["base_fixed"],
+        "translation": [0, 0, -27],
+        "steps": 14,
+        "allow_seated_contact": true
+      },
+      "thresholds": {"maxOverlapMm3": 0.001}
+    }
+  ]
+}
