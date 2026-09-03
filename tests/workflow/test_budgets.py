@@ -24,26 +24,31 @@ class _Clock:
 
 
 class CommandBudgetTest(unittest.TestCase):
-    def test_defaults_are_one_hour_per_step_and_three_hours_per_command(self):
+    def test_a_step_affords_more_than_one_full_length_turn(self):
         budget = CommandBudget()
-        self.assertEqual(budget.step_seconds, 60 * 60)
-        self.assertEqual(budget.run_seconds, 3 * 60 * 60)
-        self.assertEqual(STEP_BUDGET_SECONDS, 3_600)
-        self.assertEqual(RUN_BUDGET_SECONDS, 10_800)
-        self.assertEqual(budget.turn_timeout_seconds("make"), MAX_TURN_SECONDS)
+        self.assertEqual(budget.step_seconds, 2 * 60 * 60)
+        self.assertEqual(budget.run_seconds, 6 * 60 * 60)
+        self.assertEqual(STEP_BUDGET_SECONDS, 7_200)
+        self.assertEqual(RUN_BUDGET_SECONDS, 21_600)
+        # One maximum-length turn must never exhaust its own step.
+        budget.spend("make", MAX_TURN_SECONDS)
         self.assertIsNone(budget.exhausted("make"))
-        self.assertEqual(budget.to_dict()["run"], {"used_seconds": 0, "limit_seconds": 10_800})
-        self.assertEqual(budget.to_dict()["steps"], {})
+        self.assertEqual(budget.turn_timeout_seconds("make"), MAX_TURN_SECONDS)
+        fresh = CommandBudget()
+        self.assertEqual(fresh.turn_timeout_seconds("make"), MAX_TURN_SECONDS)
+        self.assertIsNone(fresh.exhausted("make"))
+        self.assertEqual(fresh.to_dict()["run"], {"used_seconds": 0, "limit_seconds": 21_600})
+        self.assertEqual(fresh.to_dict()["steps"], {})
 
     def test_a_turn_never_outlives_its_step_or_the_run(self):
         budget = CommandBudget()
-        budget.spend("make", 40 * 60)
+        budget.spend("make", 100 * 60)
         self.assertEqual(budget.turn_timeout_seconds("make"), 20 * 60)
-        # A different step still has its own full hour, bounded by the run.
+        # A different step still has its own full turn, bounded by the run.
         self.assertEqual(budget.turn_timeout_seconds("release"), MAX_TURN_SECONDS)
-        budget.spend("invent", 60 * 60)
-        budget.spend("playtest", 55 * 60)
-        # 40 + 60 + 55 = 155 minutes of 180 leaves 25 for any step.
+        budget.spend("invent", 120 * 60)
+        budget.spend("playtest", 115 * 60)
+        # 100 + 120 + 115 = 335 minutes of 360 leaves 25 for any step.
         self.assertEqual(budget.turn_timeout_seconds("release"), 25 * 60)
 
     def test_a_step_clock_and_the_run_clock_each_end_the_command(self):
@@ -52,14 +57,22 @@ class CommandBudgetTest(unittest.TestCase):
         self.assertEqual(budget.exhausted("make"), "step")
         self.assertIsNone(budget.exhausted("release"))
         message = budget.exhausted_message("make", "step", "wish-1")
-        self.assertIn("Make used its 60-minute budget (59 minutes spent)", message)
+        self.assertIn("Make used its 120-minute budget (119 minutes spent)", message)
         self.assertIn("workshop resume wish-1", message)
 
         budget = CommandBudget()
         budget.spend("make", RUN_BUDGET_SECONDS - 10)
         self.assertEqual(budget.exhausted("release"), "run")
         message = budget.exhausted_message("release", "run", "wish-2")
-        self.assertIn("This run used its 180-minute budget", message)
+        self.assertIn("This run used its 360-minute budget", message)
+
+    def test_a_step_with_only_minutes_left_is_treated_as_spent(self):
+        budget = CommandBudget()
+        budget.spend("make", STEP_BUDGET_SECONDS - (9 * 60))
+        self.assertEqual(budget.exhausted("make"), "step")
+        budget = CommandBudget()
+        budget.spend("make", STEP_BUDGET_SECONDS - (11 * 60))
+        self.assertIsNone(budget.exhausted("make"))
 
     def test_a_turn_timeout_never_falls_below_the_floor(self):
         budget = CommandBudget()

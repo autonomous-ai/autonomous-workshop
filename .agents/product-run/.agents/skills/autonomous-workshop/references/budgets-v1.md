@@ -3,9 +3,10 @@
 This run measures work in wall-clock time, not in turns. There are exactly two
 clocks and nothing else stops the command.
 
-- **Each step gets 60 minutes** of one command: Invent, Make, Playtest, and
-  Release each have their own hour.
-- **The command gets 3 hours** in total across all of its steps.
+- **Each step gets 120 minutes** of one command: Invent, Make, Playtest, and
+  Release each have their own. That is room for two maximum-length turns, so a
+  turn that ends at the boundary can be resumed rather than lost.
+- **The command gets 6 hours** in total across all of its steps.
 
 Inside those clocks you may take as many native turns as the work needs. When a
 turn ends without your stage finalizer having run, the host continues the exact

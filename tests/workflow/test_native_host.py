@@ -23,7 +23,11 @@ from workshop.invent.vault import RUN_VAULT_PATH, Vault
 from tests.invent.fake_gamevault import FakeGameVaultTransport, fake_client, install_fake_gamevault
 from tests.invent.test_vault import write_vault
 from types import SimpleNamespace
-from workshop.workflow.budgets import MAX_BUDGETED_TURNS, CommandBudget
+from workshop.workflow.budgets import (
+    MAX_BUDGETED_TURNS,
+    MIN_USEFUL_TURN_SECONDS,
+    CommandBudget,
+)
 from workshop.workflow.native_run import (
     _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
     _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
@@ -2711,7 +2715,7 @@ class NativeHostTest(unittest.TestCase):
                 return self.now
 
         budget = CommandBudget(
-            step_seconds=30 * 60, run_seconds=60 * 60, clock=_Clock()
+            step_seconds=30 * 60, run_seconds=120 * 60, clock=_Clock()
         )
         launcher = _AlwaysUnfinishedLauncher()
         with tempfile.TemporaryDirectory() as temporary:
@@ -2745,7 +2749,14 @@ class NativeHostTest(unittest.TestCase):
             # the step clock rather than the run clock or a turn cap.
             self.assertGreater(turns, _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS)
             self.assertLess(turns, MAX_BUDGETED_TURNS)
-            self.assertGreaterEqual(budget.spent("match"), 30 * 60 - 360)
+            # It stopped once too little of the step clock remained to be worth
+            # another turn, not on a counter.
+            self.assertLess(
+                budget.step_seconds - budget.spent("match"), MIN_USEFUL_TURN_SECONDS
+            )
+            self.assertGreaterEqual(
+                budget.spent("match"), 30 * 60 - MIN_USEFUL_TURN_SECONDS - 180
+            )
             with mock.patch.dict(os.environ, environment, clear=True):
                 status = native_run_status(product_id)
             self.assertEqual(status["status"], "active")

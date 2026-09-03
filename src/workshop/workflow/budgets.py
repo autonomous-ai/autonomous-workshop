@@ -4,7 +4,8 @@ A run frozen with :data:`BUDGETS_CAPABILITY_PATH` replaces every turn counter
 and recovery window with two wall clocks:
 
 * each step (Invent, Make, Playtest, Release) may spend
-  :data:`STEP_BUDGET_SECONDS` of one command;
+  :data:`STEP_BUDGET_SECONDS` of one command, which is room for two
+  maximum-length turns so a timeout can be resumed rather than lost;
 * the command as a whole may spend :data:`RUN_BUDGET_SECONDS`.
 
 Inside its clocks a step may take as many native turns as it needs and the
@@ -29,11 +30,16 @@ from workshop.errors import ContractError
 BUDGETS_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/budgets-v1.md"
 )
-STEP_BUDGET_SECONDS = 60 * 60
-RUN_BUDGET_SECONDS = 3 * 60 * 60
+# A step must afford more than one maximum-length turn, or a single timeout
+# ends it and throws away work a resume would have finalized.  Two full turns
+# matches the ceiling the retired two-timeout rail allowed.
+STEP_BUDGET_SECONDS = 2 * 60 * 60
+RUN_BUDGET_SECONDS = 6 * 60 * 60
 # The runtime launchers refuse anything longer, so no turn may exceed it.
 MAX_TURN_SECONDS = 60 * 60
 MIN_TURN_SECONDS = 60
+# Starting a turn with only minutes left spends them and finalizes nothing.
+MIN_USEFUL_TURN_SECONDS = 10 * 60
 # A clock, not a counter, ends a budgeted command; this only stops a pathological
 # loop of instant turns from spinning forever.
 MAX_BUDGETED_TURNS = 200
@@ -81,9 +87,9 @@ class CommandBudget:
     def exhausted(self, step: str) -> Optional[str]:
         """Return ``step`` or ``run`` when a clock has no usable time left."""
 
-        if self.run_seconds - self._spent_total < MIN_TURN_SECONDS:
+        if self.run_seconds - self._spent_total < MIN_USEFUL_TURN_SECONDS:
             return "run"
-        if self.step_seconds - self.spent(step) < MIN_TURN_SECONDS:
+        if self.step_seconds - self.spent(step) < MIN_USEFUL_TURN_SECONDS:
             return "step"
         return None
 
@@ -152,6 +158,7 @@ __all__ = [
     "MAX_BUDGETED_TURNS",
     "MAX_TURN_SECONDS",
     "MIN_TURN_SECONDS",
+    "MIN_USEFUL_TURN_SECONDS",
     "RUN_BUDGET_SECONDS",
     "STEP_BUDGET_SECONDS",
     "CommandBudget",
