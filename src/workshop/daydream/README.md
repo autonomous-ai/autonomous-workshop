@@ -49,8 +49,23 @@ lints it, and seals a
 `SealedDaydream` (idea, seed, Taste identity, Manager id, lint verdict,
 redacted session outcome, and the rendered brief) into `host-state/IDEA.json`.
 
+## The loop
+
+`workshop start <inventor>` dreams, builds, and dreams again until it is
+stopped. `loop.py` owns the two files that make that safe:
+
+    $WORKSHOP_HOME/daydreams/<inventor-id>/LOOP.json   one lease per Inventor
+    $WORKSHOP_HOME/daydreams/<inventor-id>/STOP        stop marker
+
+`acquire_loop` refuses a second loop while the recorded pid is alive, and a
+stale record from a dead process is replaced. `request_stop` writes the
+marker (and sends SIGINT with `--now`); the loop checks the marker between
+steps, so a stop lands after the current daydream or build, never inside one.
+The daydream session and each build session stay separate by design: the
+idea is sealed and hashed before any build exists.
+
 ## Deliberately not in the MVP
 
-No always-on loop: one call dreams one idea. No judge or scoring model: the
-novelty lint is a deterministic floor, not taste. No outcome feedback: sales,
-playtests, and reviews do not yet flow back into the notebook.
+No judge or scoring model: the novelty lint is a deterministic floor, not
+taste. No outcome feedback: sales, playtests, and reviews do not yet flow back
+into the notebook.

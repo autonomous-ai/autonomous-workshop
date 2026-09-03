@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 1064" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 1082" role="img" aria-labelledby="title description">
   <title id="title">The Autonomous Workshop loop: Daydream, Invent, Make, Playtest, Release, Shop, Scoreboard</title>
   <desc id="description">Two sessions by design: the daydream session ends with one sealed idea, and each liked idea gets its own persistent build session. Autonomous AI Inventors daydream: each reads its own Taste, searches for prior art, and leaves with one brand-new idea it likes. A liked idea starts a run down one frozen route. Invent and Playtest are optional stages: Invent runs on Forge and Quest, Playtest on Quest only; Make and Release run on every route. Release lists the product on the shop, where a buyer orders one and it ships in days. The scoreboard records every view, order, print and return and feeds the Inventors, so next month's toys beat this month's.</desc>
   <defs>
@@ -23,7 +23,7 @@
       .bracketlabel { font: 500 10px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #151515; letter-spacing: 0.08em; }
     </style>
   </defs>
-  <rect x="0" y="0" width="680" height="1064" fill="#ffffff"/>
+  <rect x="0" y="0" width="680" height="1082" fill="#ffffff"/>
   <g transform="translate(60,0)">
 
   <text class="h" x="30" y="40">Autonomous AI Inventors invent new toys around the clock.</text>
@@ -32,7 +32,7 @@
 
   <!-- Daydream -->
   <rect class="box strong" x="140" y="104" width="340" height="118" rx="8"/>
-  <text class="k" x="156" y="128">EVERY INVENTOR · ONE IDEA PER CALL</text>
+  <text class="k" x="156" y="128">EVERY INVENTOR · LOOPS UNTIL STOPPED</text>
   <text class="h" x="156" y="152">DAYDREAM</text>
   <text class="t" x="156" y="174">Read its own Taste. Search for prior art.</text>
   <text class="t" x="156" y="191">Keep a notebook. Leave with one brand-new</text>
@@ -104,12 +104,13 @@
 
   <text class="note" x="30" y="1000">Spark: Daydream → Make → Release. Forge adds Invent. Quest adds Invent and Playtest.</text>
   <text class="note" x="30" y="1018">Every route ends in the shop and feeds the scoreboard.</text>
-  <text class="note" x="30" y="1036">Two sessions by design: the daydream session ends with one sealed idea; each liked idea gets its own build session.</text>
+  <text class="note" x="30" y="1036">Two sessions by design: each daydream ends with one sealed idea; each idea gets its own build session.</text>
+  <text class="note" x="30" y="1054">Once started, an Inventor keeps dreaming and building until workshop stop or Ctrl-C.</text>
   </g>
 
   <!-- session brackets (absolute coordinates) -->
   <path class="bracket" d="M160 104 L150 104 L150 222 L160 222"/>
-  <text class="bracketlabel" x="174" y="150" text-anchor="middle" transform="rotate(-90 174 150)">SESSION 1 · DREAM</text>
+  <text class="bracketlabel" x="174" y="150" text-anchor="middle" transform="rotate(-90 174 150)">SESSION 1</text>
   <path class="bracket" d="M160 250 L150 250 L150 718 L160 718"/>
-  <text class="bracketlabel" x="174" y="484" text-anchor="middle" transform="rotate(-90 174 484)">SESSION 2 · BUILD · ONE PERSISTENT SESSION PER RUN</text>
+  <text class="bracketlabel" x="174" y="484" text-anchor="middle" transform="rotate(-90 174 484)">SESSION 2 · ONE PERSISTENT BUILD SESSION PER RUN</text>
 </svg>

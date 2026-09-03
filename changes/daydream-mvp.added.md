@@ -10,6 +10,10 @@
   by default; `--effort forge` adds Invent and `--effort quest` adds Playtest;
   `--idea <daydream-id>` builds a previously saved idea. `workshop daydream
   <inventor-id>` dreams and prints the card without building.
+- `workshop start` is a loop: after each build it dreams the next idea, until
+  `workshop stop <inventor-id>` (after the current step; `--now` interrupts),
+  Ctrl-C, `--max-ideas N`, or three consecutive failures. One loop per
+  Inventor at a time (`LOOP.json` lease, `STOP` marker).
 - Under `workshop start`, the daydream prompt names the route budget (Spark: one to
   three parts, one action, one payoff a before/after render proves) so the
   Inventor dreams to the size Make can prove on that route.

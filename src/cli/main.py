@@ -34,7 +34,11 @@ from workshop.contributors import (
     validate_inventor_collection,
 )
 from workshop.daydream import (
+    DEFAULT_MAX_CONSECUTIVE_FAILURES,
+    DaydreamError,
+    acquire_loop,
     load_sealed_daydream,
+    request_stop,
     run_daydream,
     wish_from_daydream,
 )
@@ -483,36 +487,149 @@ def _daydream(args: argparse.Namespace) -> int:
 
 
 def _start(args: argparse.Namespace) -> int:
+    """Dream and build until stopped; ``--once`` or ``--idea`` does one idea."""
+
     root = _inventor_source_root(args.root)
     manager = manager_spec(args.manager)
     effort = workshop_effort(args.effort)
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
-    sealed = _dream_or_load(
-        args,
-        root=root,
-        manager=manager,
-        progress=progress,
-        live_progress=live_progress,
-        effort=effort.name,
-    )
-    if not args.json:
-        _print_daydream_card(sealed, stream=progress, offer_build=False)
-    wish = wish_from_daydream(sealed)
-    print("Sealing the idea as this run's brief.", file=progress, flush=True)
-    receipt = _start_run(
-        wish,
-        effort=effort,
-        manager=manager,
-        github=args.github,
-        progress=progress,
-        live_progress=live_progress,
-    )
-    if args.json:
-        _print_json({"daydream": sealed.to_dict(), "run": receipt})
+    once = args.once or args.idea is not None
+    if args.max_ideas is not None and args.max_ideas < 1:
+        raise WorkshopError("--max-ideas must be at least 1")
+    if args.max_failures < 1:
+        raise WorkshopError("--max-failures must be at least 1")
+    lease = acquire_loop(args.inventor)
+    if not once:
+        print(
+            "Loop: %s dreams and builds until you stop it (Ctrl-C, or "
+            "%s from another terminal)."
+            % (args.inventor, _shell_command("workshop", "stop", args.inventor)),
+            file=progress,
+            flush=True,
+        )
+    ideas = builds = published = 0
+    failures = 0
+    exit_code = 0
+    reason = "finished"
+    try:
+        while True:
+            if lease.stop_requested():
+                reason = "stopped by workshop stop"
+                break
+            if not once and ideas:
+                print("", file=progress, flush=True)
+            try:
+                sealed = _dream_or_load(
+                    args,
+                    root=root,
+                    manager=manager,
+                    progress=progress,
+                    live_progress=live_progress,
+                    effort=effort.name,
+                )
+            except DaydreamError as exc:
+                if once:
+                    raise
+                failures += 1
+                lease.update(consecutive_failures=failures)
+                print("Daydream failed: %s" % exc, file=progress, flush=True)
+                if failures >= args.max_failures:
+                    reason = "%d consecutive failures" % failures
+                    exit_code = 1
+                    break
+                continue
+            ideas += 1
+            lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
+            if not args.json:
+                _print_daydream_card(sealed, stream=progress, offer_build=False)
+            wish = wish_from_daydream(sealed)
+            print("Sealing the idea as this run's brief.", file=progress, flush=True)
+            receipt = _start_run(
+                wish,
+                effort=effort,
+                manager=manager,
+                github=args.github,
+                progress=progress,
+                live_progress=live_progress,
+            )
+            builds += 1
+            publication = receipt.get("publication")
+            if isinstance(publication, Mapping) and publication.get("status") == "public":
+                published += 1
+            if receipt.get("status") in ("failed", "waiting"):
+                failures += 1
+            else:
+                failures = 0
+            lease.update(
+                builds=builds,
+                published=published,
+                consecutive_failures=failures,
+                last_wish_id=wish.product_id,
+            )
+            if args.json:
+                print(
+                    json.dumps(
+                        {"daydream": sealed.to_dict(), "run": receipt},
+                        sort_keys=True,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
+            else:
+                _print_native_receipt(receipt, verb="Run")
+            if once:
+                exit_code = _native_exit_code(receipt, strict=args.strict)
+                break
+            if args.max_ideas is not None and ideas >= args.max_ideas:
+                reason = "reached --max-ideas %d" % args.max_ideas
+                break
+            if failures >= args.max_failures:
+                reason = "%d consecutive failures" % failures
+                exit_code = 1
+                break
+            if lease.stop_requested():
+                reason = "stopped by workshop stop"
+                break
+    except KeyboardInterrupt:
+        reason = "stopped by Ctrl-C"
+        exit_code = 130
+    finally:
+        state = lease.release(reason=reason)
+    if not once or exit_code == 130:
+        print(
+            "Loop stopped (%s). Ideas: %d. Builds: %d. Published: %d."
+            % (reason, state.ideas, state.builds, state.published),
+            file=progress,
+            flush=True,
+        )
+        if state.last_wish_id and exit_code == 130:
+            print(
+                "Last run: %s" % _shell_command("workshop", "status", state.last_wish_id),
+                file=progress,
+                flush=True,
+            )
+    return exit_code
+
+
+def _stop(args: argparse.Namespace) -> int:
+    state = request_stop(args.inventor, now=args.now)
+    if args.now:
+        print(
+            "Interrupting the daydream loop for %s (pid %d) now; its current run "
+            "stays resumable." % (args.inventor, state.pid)
+        )
     else:
-        _print_native_receipt(receipt, verb="Run")
-    return _native_exit_code(receipt, strict=args.strict)
+        print(
+            "Stop requested for %s (pid %d): the loop ends after its current step. "
+            "Use --now to interrupt it." % (args.inventor, state.pid)
+        )
+    print(
+        "So far: %d idea(s), %d build(s), %d published."
+        % (state.ideas, state.builds, state.published)
+    )
+    return 0
 
 
 def _status(args: argparse.Namespace) -> int:
@@ -1032,7 +1149,7 @@ def parser() -> argparse.ArgumentParser:
 
     start = subcommands.add_parser(
         "start",
-        help="let one Inventor daydream a brand-new toy and build it end to end",
+        help="let one Inventor daydream and build brand-new toys until stopped",
     )
     start.add_argument(
         "inventor",
@@ -1075,9 +1192,46 @@ def parser() -> argparse.ArgumentParser:
             "(default: disabled)"
         ),
     )
-    start.add_argument("--json", action="store_true", help="emit one JSON receipt")
-    start.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
+    start.add_argument(
+        "--once",
+        action="store_true",
+        help="dream and build one idea, then stop (default: loop until stopped)",
+    )
+    start.add_argument(
+        "--max-ideas",
+        type=int,
+        default=None,
+        metavar="N",
+        help="stop the loop after N ideas",
+    )
+    start.add_argument(
+        "--max-failures",
+        type=int,
+        default=DEFAULT_MAX_CONSECUTIVE_FAILURES,
+        metavar="N",
+        help="stop the loop after N consecutive failed daydreams or builds (default: %d)"
+        % DEFAULT_MAX_CONSECUTIVE_FAILURES,
+    )
+    start.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one JSON object per idea (one line each)",
+    )
+    start.add_argument(
+        "--strict", action="store_true", help="with --once: exit 1 when the run waits"
+    )
     start.set_defaults(handler=_start)
+
+    stop = subcommands.add_parser(
+        "stop", help="stop an Inventor's daydream loop after its current step"
+    )
+    stop.add_argument("inventor", metavar="INVENTOR")
+    stop.add_argument(
+        "--now",
+        action="store_true",
+        help="also interrupt the loop immediately; its current run stays resumable",
+    )
+    stop.set_defaults(handler=_stop)
 
     daydream = subcommands.add_parser(
         "daydream",
