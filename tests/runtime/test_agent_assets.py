@@ -141,6 +141,11 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "deep-economics-v7.md",
             "deep-economics-v8.md",
             "deep-economics-v9.md",
+            "deep-economics-v10.md",
+            "deep-economics-v11.md",
+            "deep-economics-v12.md",
+            "deep-economics-v13.md",
+            "deep-economics-v14.md",
             "make.md",
             "playtest.md",
         ):
@@ -191,6 +196,24 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
                 self.assertIn(required, playtest)
         self.assertNotIn("--print-preflight --fresh", make)
         self.assertNotIn("Make contract", playtest)
+
+    def test_current_product_run_guidance_uses_direct_make(self):
+        product_run = REPOSITORY / ".agents" / "product-run"
+        constitution = " ".join(
+            (product_run / "AGENTS.md").read_text(encoding="utf-8").split()
+        )
+        workflow = " ".join(
+            (
+                product_run
+                / ".agents/skills/autonomous-workshop/SKILL.md"
+            ).read_text(encoding="utf-8").split()
+        )
+        self.assertIn("direct high-reasoning Make", constitution)
+        self.assertIn("Make begins directly at high reasoning", workflow)
+        for value in (constitution, workflow):
+            self.assertIn("coherent complete self-contained CAD baseline", value)
+            self.assertIn("Frozen deep-v13 and older", value)
+            self.assertIn("no early-proof marker", value)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

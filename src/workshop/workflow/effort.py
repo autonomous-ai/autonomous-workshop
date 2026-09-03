@@ -63,8 +63,11 @@ DEEP_ECONOMICS_V11_CAPABILITY_PATH = (
 DEEP_ECONOMICS_V12_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/deep-economics-v12.md"
 )
-DEEP_ECONOMICS_CAPABILITY_PATH = (
+DEEP_ECONOMICS_V13_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/deep-economics-v13.md"
+)
+DEEP_ECONOMICS_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v14.md"
 )
 SPARK_AUTO_COMPACT_TOKEN_LIMIT = 64_000
 SPARK_NATIVE_TURN_TIMEOUT_SECONDS = 60 * 60
@@ -190,6 +193,7 @@ __all__ = [
     "DEFAULT_WORKSHOP_EFFORT",
     "DEEP_AUTO_COMPACT_TOKEN_LIMIT",
     "DEEP_ECONOMICS_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V13_CAPABILITY_PATH",
     "DEEP_ECONOMICS_V1_CAPABILITY_PATH",
     "DEEP_ECONOMICS_V2_CAPABILITY_PATH",
     "DEEP_ECONOMICS_V3_CAPABILITY_PATH",

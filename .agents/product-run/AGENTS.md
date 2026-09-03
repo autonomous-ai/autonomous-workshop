@@ -16,15 +16,14 @@ Quest: Wish -> Invent -> Make -> Playtest -> Release
 For a new Codex run, the host may freeze a versioned economics profile for this
 entire session. Spark uses its low-reasoning fast profile. Current Forge and
 Quest runs use an index-first bounded high-reasoning Invent turn with decisive
-medium recovery, then one 16-minute medium real-state Make proof runway followed
-by a 15-minute source-first high-reasoning final-Make handoff and normal recovery;
-Playtest and Release use medium. Make's minimal exact mechanism/form evidence
-is the first persisted deliverable. Its proof-ready marker ends only that
-native turn, while recovery stays inside the same Goal. A later explicit
-operator resume with valid proof continues normal final-Make recovery without
-replaying the source handoff. Treat every profile
-as a focus constraint, not permission to make
-a generic product or skip proof. Other Managers and frozen older runs keep
+medium recovery, then direct high-reasoning Make with a normal 30-minute turn
+and 256k compaction from its first turn; Playtest and Release use medium. Make
+persists one coherent complete self-contained CAD baseline early. It has no
+early-proof marker or receipt. Optional narrow engineering coupons may test a
+specific uncertain fact, but they do not become mandatory final geometry.
+Frozen deep-v13 and older runs retain their original proof and source-handoff
+protocol. Treat every profile as a focus constraint, not permission to make
+a generic product or skip final evidence. Other Managers and frozen older runs keep
 their own bound runtime profile.
 
 The Workshop is a thin harness around you. Codex performs the research,

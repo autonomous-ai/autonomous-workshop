@@ -163,6 +163,7 @@ from workshop.workflow.budgets import (
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V13_CAPABILITY_PATH,
     DEEP_ECONOMICS_V1_CAPABILITY_PATH,
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
@@ -4193,8 +4194,10 @@ def _phased_deep_capability_path(
 ) -> Optional[str]:
     """Return the exact frozen phased-deep profile path, newest first."""
 
+    if DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s:
+        return None
     for path in (
-        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -4214,7 +4217,7 @@ def _phased_deep_profile_name(checkpoint: AgentRunCheckpoint) -> str:
 
     path = _phased_deep_capability_path(checkpoint)
     names = {
-        DEEP_ECONOMICS_CAPABILITY_PATH: "v13",
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH: "v13",
         DEEP_ECONOMICS_V12_CAPABILITY_PATH: "v12",
         DEEP_ECONOMICS_V11_CAPABILITY_PATH: "v11",
         DEEP_ECONOMICS_V10_CAPABILITY_PATH: "v10",
@@ -4227,11 +4230,21 @@ def _phased_deep_profile_name(checkpoint: AgentRunCheckpoint) -> str:
     return names.get(path, "deep")
 
 
+def _uses_direct_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
+    return (
+        checkpoint.manager_id == DEFAULT_MANAGER_ID
+        and checkpoint.effort in ("forge", "quest")
+        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    )
+
+
 def _uses_dynamic_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
     return (
         checkpoint.manager_id == DEFAULT_MANAGER_ID
         and checkpoint.effort in ("forge", "quest")
         and (
+            _uses_direct_deep_profile(checkpoint)
+            or
             _phased_deep_capability_path(checkpoint) is not None
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4313,6 +4326,30 @@ def _native_launcher(
     """
 
     if checkpoint.manager_id == DEFAULT_MANAGER_ID:
+        if _uses_direct_deep_profile(checkpoint):
+            if checkpoint.stage == "invent":
+                reasoning_effort = (
+                    "medium" if recoverable_continuation else "high"
+                )
+                timeout_seconds = (
+                    DEEP_V5_INVENT_RECOVERY_TIMEOUT_SECONDS
+                    if recoverable_continuation
+                    else DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS
+                )
+            elif checkpoint.stage == "make":
+                reasoning_effort = "high"
+                timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+            else:
+                reasoning_effort = "medium"
+                timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
+            return CodexNativeSessionLauncher(
+                reasoning_effort=reasoning_effort,
+                auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                runtime_profile_sha256=checkpoint.input_sha256s[
+                    DEEP_ECONOMICS_CAPABILITY_PATH
+                ],
+                timeout_seconds=timeout_seconds,
+            )
         phased_deep_path = _phased_deep_capability_path(checkpoint)
         if checkpoint.effort in ("forge", "quest") and phased_deep_path:
             if checkpoint.stage == "invent":
@@ -4332,7 +4369,7 @@ def _native_launcher(
                     timeout_seconds = (
                         DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                         if phased_deep_path in (
-                            DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -4343,7 +4380,7 @@ def _native_launcher(
                     )
                 elif (
                     phased_deep_path in (
-                        DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -4352,7 +4389,7 @@ def _native_launcher(
                 ):
                     timeout_seconds = (
                         DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
-                        if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                        if phased_deep_path == DEEP_ECONOMICS_V13_CAPABILITY_PATH
                         else (
                             DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
                             if phased_deep_path
@@ -4375,7 +4412,7 @@ def _native_launcher(
                 auto_compact_token_limit=(
                     DEEP_AUTO_COMPACT_TOKEN_LIMIT
                     if phased_deep_path in (
-                        DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -4482,7 +4519,8 @@ def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
         checkpoint.manager_id == DEFAULT_MANAGER_ID
         and checkpoint.effort in ("forge", "quest")
         and (
-            _phased_deep_capability_path(checkpoint) is not None
+            _uses_direct_deep_profile(checkpoint)
+            or _phased_deep_capability_path(checkpoint) is not None
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4503,13 +4541,14 @@ def _deep_make_critical_path_prompt(
     *,
     proof_boundary: bool = True,
 ) -> str:
-    """Return the versioned first-proof instruction for an initial Make turn."""
+    """Return the versioned critical-path instruction for a deep Make turn."""
 
     if not (
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V13_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4524,6 +4563,24 @@ def _deep_make_critical_path_prompt(
         )
     ):
         return ""
+    if _uses_direct_deep_profile(checkpoint):
+        return (
+            "\n\nThis run uses the frozen deep-economics v14 direct Make path. "
+            "There is no early-proof turn, proof-ready marker, proof receipt, or "
+            "proof-to-source handoff. Create or continue the current Make Goal "
+            "immediately. In one bounded batch read only the root instructions, "
+            "Workshop skill, exact WISH.json and STAGE.json, sealed NativeInvented "
+            "contract, selected Inventor guidance, current Make reference, and CAD "
+            "SKILL.md. Do not assume a separate Concept-stage image tree. Persist "
+            "one coherent complete self-contained CAD baseline early, then improve "
+            "that same baseline against generated final artifacts. A narrow "
+            "engineering coupon may falsify an uncertain fit or geometry fact, but "
+            "a disposable generic blockout is not mandatory final form and must not "
+            "override the Wish or sealed Invent result. Complete print preflight, "
+            "final renders, the independent hash-bound semantic review, one "
+            "integrated verifier, and the normal Make finalizer. Only the "
+            "checkpoint-bound agent-outcome.json completes this Goal."
+        )
     if (
         _phased_deep_capability_path(checkpoint) is not None
         and not proof_boundary
@@ -4531,7 +4588,7 @@ def _deep_make_critical_path_prompt(
         if (
             _phased_deep_capability_path(checkpoint)
             in (
-                DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -4576,7 +4633,7 @@ def _deep_make_critical_path_prompt(
         "the final product and preserve the proof files in the product tree."
     )
     if (
-        DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -4589,7 +4646,7 @@ def _deep_make_critical_path_prompt(
     ):
         return prompt
     if (
-        DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -4783,11 +4840,13 @@ def _deep_make_recovery_prompt(
 ) -> str:
     """Return the versioned proof-review instruction for Make recovery."""
 
+    if _uses_direct_deep_profile(checkpoint):
+        return ""
     if not (
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
         and (
-            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            DEEP_ECONOMICS_V13_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4807,7 +4866,7 @@ def _deep_make_recovery_prompt(
         if (
             _phased_deep_capability_path(checkpoint)
             in (
-                DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -4817,7 +4876,7 @@ def _deep_make_recovery_prompt(
             targeted_repair = ""
             if (
                 _phased_deep_capability_path(checkpoint)
-                == DEEP_ECONOMICS_CAPABILITY_PATH
+                == DEEP_ECONOMICS_V13_CAPABILITY_PATH
             ):
                 targeted_repair = (
                     " If the current print-preflight failure is wall thickness, "
@@ -4860,7 +4919,7 @@ def _deep_make_recovery_prompt(
     if (
         _phased_deep_capability_path(checkpoint)
         in (
-            DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V13_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         )
     ):
@@ -4949,17 +5008,25 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
     if not (
         checkpoint.stage == "invent"
         and checkpoint.effort in ("forge", "quest")
-        and _phased_deep_capability_path(checkpoint) is not None
+        and (
+            _uses_direct_deep_profile(checkpoint)
+            or _phased_deep_capability_path(checkpoint) is not None
+        )
     ):
         return ""
     if (
-        _phased_deep_capability_path(checkpoint) in (
-            DEEP_ECONOMICS_CAPABILITY_PATH,
+        _uses_direct_deep_profile(checkpoint)
+        or _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_V13_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
         )
     ):
-        profile_name = _phased_deep_profile_name(checkpoint)
+        profile_name = (
+            "v14"
+            if _uses_direct_deep_profile(checkpoint)
+            else _phased_deep_profile_name(checkpoint)
+        )
         return (
             f" This {profile_name} Invent recovery is a source handoff, not a creative "
             "continuation. Do not call update_plan or get_goal, read or edit "
@@ -5071,7 +5138,7 @@ def _v10_make_proof_artifact_bindings(
     if len(state_hashes) != 3:
         return None
     if _phased_deep_capability_path(checkpoint) in (
-        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
     ):
         source_time = max(
@@ -5175,7 +5242,7 @@ def _read_make_proof_acceptance(
     marker_sha256 = value.get("marker_sha256")
     proof_artifacts = value.get("proof_artifacts")
     requires_artifacts = _phased_deep_capability_path(checkpoint) in (
-        DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -5287,7 +5354,7 @@ def _make_proof_ready(
     if (
         valid
         and _phased_deep_capability_path(checkpoint) in (
-            DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V13_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
             DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -5325,7 +5392,7 @@ def _v13_operator_resume_recovery(
     return (
         first_method == "resume"
         and checkpoint.stage == "make"
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V13_CAPABILITY_PATH in checkpoint.input_sha256s
         and _make_proof_ready(paths, checkpoint)
     )
 
@@ -7696,7 +7763,9 @@ def _run_native_session(
         turn_launcher = launcher
         make_proof_boundary = False
         if turn_launcher is None:
-            if (
+            if _uses_direct_deep_profile(checkpoint):
+                initial_make_proof_boundary = False
+            elif (
                 checkpoint.stage == "make"
                 and _phased_deep_capability_path(checkpoint) is not None
             ):

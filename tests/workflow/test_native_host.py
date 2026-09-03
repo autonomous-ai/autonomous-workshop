@@ -76,6 +76,7 @@ from workshop.workflow.proposals import AgentOutcomeProposal
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V13_CAPABILITY_PATH,
     DEEP_ECONOMICS_V1_CAPABILITY_PATH,
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
@@ -469,12 +470,26 @@ class NativeHostTest(unittest.TestCase):
             "deep-v10": DEEP_ECONOMICS_V10_CAPABILITY_PATH,
             "deep-v11": DEEP_ECONOMICS_V11_CAPABILITY_PATH,
             "deep-v12": DEEP_ECONOMICS_V12_CAPABILITY_PATH,
-            "deep-v13": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v13": DEEP_ECONOMICS_V13_CAPABILITY_PATH,
+            "deep-v14": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        if economics_capability == "deep-v13":
+        if economics_capability == "deep-v14":
+            inputs = {
+                DEEP_ECONOMICS_V5_CAPABILITY_PATH: "e" * 64,
+                DEEP_ECONOMICS_V6_CAPABILITY_PATH: "d" * 64,
+                DEEP_ECONOMICS_V7_CAPABILITY_PATH: "c" * 64,
+                DEEP_ECONOMICS_V8_CAPABILITY_PATH: "b" * 64,
+                DEEP_ECONOMICS_V9_CAPABILITY_PATH: "9" * 64,
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH: "0" * 64,
+                DEEP_ECONOMICS_V11_CAPABILITY_PATH: "1" * 64,
+                DEEP_ECONOMICS_V12_CAPABILITY_PATH: "2" * 64,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH: "3" * 64,
+                DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+            }
+        elif economics_capability == "deep-v13":
             # A real v13 run materializes the preserved v5-v12 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
@@ -487,7 +502,7 @@ class NativeHostTest(unittest.TestCase):
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH: "0" * 64,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH: "1" * 64,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH: "2" * 64,
-                DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH: "a" * 64,
             }
         elif economics_capability == "deep-v12":
             inputs = {
@@ -623,6 +638,106 @@ class NativeHostTest(unittest.TestCase):
             _native_launcher(checkpoint)
 
         launcher_type.assert_called_once_with(reasoning_effort="low")
+
+    def test_deep_v14_make_starts_directly_at_full_depth(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="forge", economics_capability="deep-v14", stage="make"
+        )
+        for recoverable in (False, True):
+            with self.subTest(recoverable=recoverable), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher"
+            ) as launcher_type:
+                _native_launcher(
+                    checkpoint,
+                    initial_make_proof_boundary=True,
+                    recoverable_continuation=recoverable,
+                )
+                launcher_type.assert_called_once_with(
+                    reasoning_effort="high",
+                    auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                    runtime_profile_sha256="a" * 64,
+                    timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+                )
+        self.assertEqual(_native_turn_limit(checkpoint), DEEP_NATIVE_TURN_LIMIT)
+        prompt = _deep_make_critical_path_prompt(checkpoint)
+        self.assertIn("v14 direct Make path", prompt)
+        self.assertIn("sealed NativeInvented", prompt)
+        self.assertIn("coherent complete self-contained CAD baseline", prompt)
+        self.assertIn("narrow engineering coupon", prompt)
+        self.assertIn("agent-outcome.json completes", prompt)
+        self.assertNotIn("review/early-proof/", prompt)
+        self.assertNotIn(".make-proof-ready.json", prompt)
+        self.assertEqual(_deep_make_recovery_prompt(checkpoint), "")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            paths = NativeRunPaths(
+                workspace=root / "workspace",
+                host_state=root / "host-state",
+            )
+            paths.workspace.mkdir()
+            paths.host_state.mkdir()
+            marker = _make_proof_ready_path(paths)
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.make-proof-ready",
+                        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertFalse(_make_proof_ready(paths, checkpoint))
+            self.assertTrue(marker.is_file())
+            self.assertFalse(_make_proof_acceptance_path(paths, checkpoint).exists())
+
+    def test_new_forge_materializes_and_selects_deep_v14(self):
+        launcher = _FakeLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "new-forge-direct-profile"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ) as launcher_type:
+                start_native_run(
+                    Wish.create(product_id, "a direct profile fixture"),
+                    effort="forge",
+                )
+
+            capability = (
+                home
+                / "runs"
+                / product_id
+                / "workspace"
+                / DEEP_ECONOMICS_CAPABILITY_PATH
+            )
+            historical = (
+                home
+                / "runs"
+                / product_id
+                / "workspace"
+                / DEEP_ECONOMICS_V13_CAPABILITY_PATH
+            )
+            self.assertTrue(capability.is_file())
+            self.assertTrue(historical.is_file())
+            launcher_type.assert_called_once_with(
+                reasoning_effort="high",
+                auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                runtime_profile_sha256=hashlib.sha256(
+                    capability.read_bytes()
+                ).hexdigest(),
+                timeout_seconds=DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
+            )
 
     def test_deep_v9_shapes_each_stage_under_one_frozen_runtime_profile(self):
         for effort in ("forge", "quest"):
