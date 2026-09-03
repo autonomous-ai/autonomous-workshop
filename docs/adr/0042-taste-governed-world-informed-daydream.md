@@ -98,6 +98,11 @@ distinctive when transient theme words are removed. An evergreen opportunity
 is valid when the scan finds no current signal worth following, but the scan
 and its scope are still recorded truthfully.
 
+World evidence earns the durable tension, not a pre-existing demand for the
+exact novel mechanism. The Inventor may make an original physical leap from a
+supported tension through its Taste, but may not search backward to rationalize
+a seed or ignore evidence that contradicts the proposed setting or payoff.
+
 Future host connectors may materialize a content-addressed world snapshot with
 source, publication and fetch time, region, language, expiry, and trust class.
 The host may fetch, normalize, bound, deduplicate, and hash those records. It
@@ -123,6 +128,11 @@ different interaction families, strips theme from promising candidates,
 falsifies them against Taste, prior art, the portfolio, Vault leads, proof
 requirements, and route capability, then commits exactly one thesis. These are
 native work instructions, not host stages or a Python prompt chain.
+
+Before commitment it privately pre-mortems the selected candidate against the
+same eight dimensions the independent Judge will inspect. This is native
+self-repair, not a self-score: no candidate list or shadow verdict becomes a
+host gate, and the independent Judge still decides whether build time is earned.
 
 ### Knowledge and memory planes
 

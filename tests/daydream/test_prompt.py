@@ -58,6 +58,14 @@ class PromptTest(unittest.TestCase):
             "PRIOR-WORK.md",
             "NOTEBOOK.md",
             "live web search",
+            "at least four candidates",
+            "at least three meaningfully",
+            "Do not search\nbackward for evidence",
+            "Drop it without apology",
+            "Pre-commit thesis audit",
+            "same\neight independent dimensions",
+            "lucky frame",
+            "reject a candidate that needs a higher route",
             "world_scan",
             "human_tension",
             "anti_generic_signature",
@@ -150,3 +158,15 @@ class RouteBudgetTest(unittest.TestCase):
 
         with self.assertRaises(ContractError):
             self._prompt("turbo")
+
+
+class JudgeCalibrationTest(unittest.TestCase):
+    def test_judge_requires_grounding_without_penalizing_novelty(self):
+        from workshop.daydream.prompt import JUDGE_CONSTITUTION
+
+        self.assertIn("contextual contradiction", JUDGE_CONSTITUTION)
+        self.assertIn(
+            "Do not require evidence that people already demand the exact novel",
+            JUDGE_CONSTITUTION,
+        )
+        self.assertIn("do not substitute market familiarity", JUDGE_CONSTITUTION)

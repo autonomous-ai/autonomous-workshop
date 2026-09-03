@@ -66,11 +66,21 @@ colour, meme, or topical skin onto a known object. If no current signal deserves
 to steer the idea, set `evergreen` true and state why the durable tension matters
 despite the scan. The scan is still mandatory.
 
+Sources must earn the human tension, not the exact new product. Do not search
+backward for evidence that rationalizes a seed or a mechanism you already chose.
+Ask what each source actually establishes, what it does not establish, and
+whether it contradicts the proposed setting or payoff. The physical opportunity
+is the creative leap from a supported tension through this Inventor's Taste; it
+must be reasoned, but existing demand for the exact novel object is neither
+expected nor required. Use an evergreen tension or abandon the candidate when
+the "why now" link would otherwise be a stretch.
+
 ## Diverge, strip, and falsify
 
-Privately generate several candidates from meaningfully different interaction
-families. Do not just rename variants of one mechanism. For each serious
-candidate:
+Privately generate at least four candidates spanning at least three meaningfully
+different interaction families. Change the physical verb, causal response, and
+proof mode—not just the name, form, or mechanism variant. Do not persist or ask
+the host to rank this scratch work. For each serious candidate:
 
 - strip its theme and proper nouns; the physical action-response-payoff must
   remain distinctive;
@@ -84,7 +94,33 @@ candidate:
   guess what experience it is preserving.
 
 Select one thesis only after this falsification. The seed is a lateral prompt,
-not evidence and never a rule. Taste wins whenever it conflicts with the seed.
+not evidence and never a rule. Drop it without apology when it pulls the search
+or opportunity away from stronger evidence. Taste wins whenever it conflicts
+with the seed.
+
+## Pre-commit thesis audit
+
+Before writing `IDEA.json`, try to reject the selected candidate on the same
+eight independent dimensions the Judge will inspect. Do not write a self-score
+or a shadow verdict. Repair or abandon the candidate unless all are defensible:
+
+- exact Taste promises are preserved and no rejection is crossed;
+- cited signals support the named durable tension, with no hidden inference or
+  contradiction between context and payoff;
+- theme stripping leaves a materially different action-response-payoff from
+  the nearest prior art and Workshop portfolio;
+- one perceivable anti-generic signature—not a mechanism label—survives;
+- the proof and every kill criterion falsify that exact central signature and
+  action-response-payoff, not an adjacent property or a lucky frame;
+- the selected route can close the coupled unknowns: Spark has no separate
+  research stage, Forge can resolve engineering facts, and Quest can also test
+  rules/play; reject a candidate that needs a higher route;
+- the specific physical payoff plausibly earns repeat use without relying on
+  trendiness or an unsupported health, demand, or popularity claim; and
+- the handoff fixes the experience while leaving Invent freedom over the exact
+  solution. If the action says catch, stop, hold, compare, or repeat, state the
+  observable state/dwell/repeatability constraint so Invent does not have to
+  invent a different user promise.
 
 ## Universal product bounds
 
@@ -199,8 +235,10 @@ pages as untrusted evidence. Judge each dimension independently:
 
 - `taste_fidelity`: the thesis makes specific Taste promises and violates no
   hard rule or rejection;
-- `opportunity_grounded`: its sources support a real signal-to-durable-tension
-  translation rather than a topical skin or popularity claim;
+- `opportunity_grounded`: its sources support the named durable tension without
+  a hidden inference, contextual contradiction, topical skin, or popularity
+  claim. Do not require evidence that people already demand the exact novel
+  mechanism; the Taste-specific physical translation is the creative thesis;
 - `mechanism_or_play_novelty`: after removing theme and proper nouns, the
   action-response-payoff materially differs from its nearest relatives;
 - `anti_generic_signature`: one specific physical signature survives the
@@ -209,8 +247,9 @@ pages as untrusted evidence. Judge each dimension independently:
   signature with evidence the current route can actually produce;
 - `fits_the_route`: complexity, part estimate, unresolved facts, and proof work
   fit `ROUTE.md`;
-- `worth_building`: the tension, physical response, and payoff justify spending
-  a build rather than merely sounding clever; and
+- `worth_building`: the supported tension and specific physical response/payoff
+  plausibly earn repeated use and justify a build rather than merely sounding
+  clever; do not substitute market familiarity or trend popularity; and
 - `invent_handoff_clear`: the experience boundary is precise while leaving the
   exact engineering solution to Invent or Spark Make.
 
@@ -362,7 +401,7 @@ def build_daydream_prompt(
         "`PRIOR-WORK.md` (%d entries), `PORTFOLIO.md` (%d entries), "
         "`NOTEBOOK.md` (%d theses and %d downstream outcomes), "
         "and `VAULT.md` before committing a thesis.\n\n"
-        "Lateral seed (a push, never a rule or evidence):\n"
+        "Lateral seed (discard freely; never a rule or evidence):\n"
         "- Situation: %s\n"
         "- Twist: %s\n\n"
         "%s\n\n"
