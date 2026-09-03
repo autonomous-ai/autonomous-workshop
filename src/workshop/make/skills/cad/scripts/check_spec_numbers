@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""Every number a spec attributes to a named parameter must be that parameter's value.
+
+A project's spec and README are full of claims like
+
+    | `POST_D` 10.0 | `BORE_D` 10.8 | `slot_for(POST_D, "free")` | 0.40 mm |
+
+and nothing reads them. A per-project `check_spec.py` proves the relations it was
+written to prove; it does not notice that the table beside them still quotes the
+diameter from two repairs ago. That drift is silent in exactly the situation it
+matters: after a geometry fix, when the source moved and the document did not.
+
+The convention this gate relies on is one every spec in this repo already
+follows: a bare identifier in backticks, immediately followed by a number, is a
+claim about the module-level constant of that name.
+
+    `POST_D` 10.0            a claim -- checked
+    `SWING_DEG` +/-18.6629   a claim, sign ignored -- checked
+    | `PLATE_T` | 6 |        a claim across a table cell -- checked
+    `slot_for(POST_D, ...)`  not a bare identifier -- ignored
+    `LEVER_Z0` is derived    no number -- ignored
+
+Tolerance comes from how the number was written: "10" is checked to +/-0.5 and
+"10.8" to +/-0.05, so a spec may round as far as it likes and still be held to
+what it actually wrote.
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import re
+import sys
+from pathlib import Path
+
+# `NAME` then, optionally across a table cell boundary, a signed number.
+# Same-line whitespace only. A name ending a table row and a numbered paragraph
+# starting the next one are not a claim, and `\s` would happily join them.
+CLAIM = re.compile(
+    r"`(?P<name>[A-Z][A-Z0-9_]*)`"      # a bare ALL_CAPS identifier in backticks
+    r"(?:[ \t]*\|)?[ \t]*"               # possibly the next table cell
+    r"(?:=|is|:)?[ \t]*"                 # possibly a copula
+    r"(?:\+/-|±)?[ \t]*"                 # possibly a tolerance sign
+    r"(?P<value>-?\d+(?:\.\d+)?)"        # the number
+    r"(?![\d.]*[ \t]*(?:%|x\b))"          # not a percentage or an "A x B" size
+)
+
+
+def load_constants(project: Path) -> tuple[dict[str, float], list[str]]:
+    """Module-level numbers from the project's parameter modules.
+
+    Tier 2 keeps them in `<name>_lib.py`, Tier 3 in `params.py`. Both are read,
+    and a name defined in more than one module is dropped rather than guessed at.
+    """
+    modules = sorted(
+        path for path in project.glob("*.py")
+        if not path.name.endswith(".step.py") and not path.name.startswith("_")
+    )
+    modules += sorted(project.glob("params.py")) + sorted(project.glob("*/params.py"))
+
+    values: dict[str, float] = {}
+    clashing: set[str] = set()
+    read: list[str] = []
+    for path in modules:
+        spec = importlib.util.spec_from_file_location(f"_specnum_{path.stem}", path)
+        if spec is None or spec.loader is None:
+            continue
+        module = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(module)
+        except Exception as error:                       # noqa: BLE001
+            print(f"  note  could not import {path.name}: "
+                  f"{type(error).__name__}: {error}")
+            continue
+        read.append(path.name)
+        for name in dir(module):
+            if not re.fullmatch(r"[A-Z][A-Z0-9_]*", name):
+                continue
+            value = getattr(module, name)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            if name in values and abs(values[name] - float(value)) > 1e-9:
+                clashing.add(name)
+            values[name] = float(value)
+    for name in clashing:
+        values.pop(name, None)
+    return values, read
+
+
+def tolerance(written: str) -> float:
+    decimals = len(written.split(".")[1]) if "." in written else 0
+    return 0.5 * 10.0 ** -decimals
+
+
+def scan(text: str, values: dict[str, float]):
+    """(name, written, actual, ok) for every claim that names a known constant."""
+    for match in CLAIM.finditer(text):
+        name = match.group("name")
+        if name not in values:
+            continue
+        written = match.group("value")
+        claimed = abs(float(written))
+        actual = values[name]
+        yield name, written, actual, abs(claimed - abs(actual)) <= tolerance(written)
+
+
+def check(project: Path, documents: list[Path], strict: bool) -> int:
+    values, read = load_constants(project)
+    if not values:
+        print(f"check_spec_numbers: {project} has no importable parameter module")
+        return 1
+    print(f"{project}: {len(values)} constants from {', '.join(read) or 'nothing'}")
+
+    failures, checked = [], 0
+    for document in documents:
+        if not document.exists():
+            continue
+        found = list(scan(document.read_text(encoding="utf-8"), values))
+        checked += len(found)
+        bad = [item for item in found if not item[3]]
+        state = "FAIL" if bad else "PASS"
+        print(f"  {state}  {document.name:<28} {len(found)} claim(s), {len(bad)} wrong")
+        for name, written, actual, _ in bad:
+            failures.append(f"{document.name}: `{name}` is written {written}, "
+                            f"the source says {actual:g}")
+    for item in failures:
+        print(f"        {item}")
+
+    if not checked:
+        note = ("no numbered parameter claims found -- either the spec quotes no "
+                "values, or it does not put them in backticks")
+        print(f"  {'FAIL' if strict else 'note'}  {note}")
+        return 1 if strict else 0
+    if failures:
+        print(f"RESULT: {len(failures)} of {checked} claim(s) do not match the source")
+        return 1
+    print(f"RESULT: {checked} claim(s) match the source")
+    return 0
+
+
+def self_check() -> int:
+    import tempfile
+
+    ok = True
+    with tempfile.TemporaryDirectory() as raw:
+        project = Path(raw)
+        (project / "demo_lib.py").write_text(
+            "POST_D = 10.0\nBORE_D = 10.8\nSWING_DEG = 18.66292488\n"
+            "TEETH = 18\nRATIO = 2.0\n"
+        )
+        cases = [
+            ("a matching table row", "| `POST_D` | 10.0 | the post |", 0),
+            ("a rounded value inside its own tolerance", "`SWING_DEG` 18.6629", 0),
+            ("a stale value", "`BORE_D` 4.4 after the repair", 1),
+            ("an integer written short of the real value", "`POST_D` 4", 1),
+            ("a plus/minus claim", "`SWING_DEG` +/-18.6629 either way", 0),
+            ("a name inside a call is not a claim", "`slot_for(POST_D, 4)` derives it", 0),
+            ("a name with no number", "`RATIO` is derived, not typed", 0),
+            ("a percentage is not a value", "`TEETH` 18% of the run", 0),
+            # One good claim and one name ending a row: without the same-line
+            # rule the second reads "5.1" off the next paragraph and fails.
+            ("a name ending a table row does not reach the next line",
+             "| `POST_D` | 10.0 |\n| 41.4 | `BORE_D` |\n\n5.1 the next section\n", 0),
+        ]
+        for label, body, want in cases:
+            (project / "demo_spec.md").write_text(f"# demo\n\n{body}\n")
+            got = check(project, [project / "demo_spec.md"], strict=False)
+            hit = got == want
+            ok &= hit
+            print(f"{'ok  ' if hit else 'FAIL'} {label}: exit {got}, wanted {want}")
+
+        # A number the spec never claims cannot make it fail.
+        (project / "demo_spec.md").write_text("# demo\n\nnothing quoted here\n")
+        got = check(project, [project / "demo_spec.md"], strict=False)
+        hit = got == 0
+        ok &= hit
+        print(f"{'ok  ' if hit else 'FAIL'} a spec with no claims passes: exit {got}")
+        got = check(project, [project / "demo_spec.md"], strict=True)
+        hit = got == 1
+        ok &= hit
+        print(f"{'ok  ' if hit else 'FAIL'} ... and --strict calls that a failure: exit {got}")
+
+    print("check_spec_numbers fixtures:", "ok" if ok else "FAILED")
+    return 0 if ok else 1
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("project", nargs="?", type=Path)
+    parser.add_argument("--doc", action="append", type=Path, default=None,
+                        help="a document to scan; defaults to *_spec.md and README.md")
+    parser.add_argument("--strict", action="store_true",
+                        help="fail when the documents quote no parameter at all")
+    parser.add_argument("--self-check", action="store_true")
+    args = parser.parse_args()
+
+    if args.self_check:
+        return self_check()
+    if args.project is None:
+        parser.error("a project directory is required")
+
+    project = args.project.resolve()
+    sys.path.insert(0, str(project))
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    documents = args.doc or sorted(project.glob("*_spec.md")) + [project / "README.md"]
+    return check(project, [Path(d) for d in documents], args.strict)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

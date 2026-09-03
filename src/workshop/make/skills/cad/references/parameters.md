@@ -98,6 +98,40 @@ before and after, and diff.
 prefer the vendored `scripts/packages/cadgen/src`, so a module placed there is
 read from two different files depending on how the process started.
 
+### Clearance comes off the largest feature, not the nearest one
+
+A running gap is derived like any other mate, and the derivation picks a
+dimension. Pick the wrong one and the arithmetic is flawless about the wrong
+part. A cross pin retaining a gear:
+
+```python
+GEAR_PIN_Z = GEAR_HUB_TOP + RETAINER_GAP + RETAINER_PIN_D / 2.0   # wrong
+```
+
+reads correctly, derives from a real diameter, and clears the hub by exactly
+the gap it names — with the Ø8 head on that Ø3 pin hanging 2 mm *into* the
+pointer sweeping underneath it. The shaft is the feature nearest the hub; the
+head is the feature that decides.
+
+```python
+RETAINER_SWEEP_D = max(RETAINER_PIN_D, RETAINER_HEAD_D)
+GEAR_PIN_Z = GEAR_HUB_TOP + RETAINER_GAP + RETAINER_SWEEP_D / 2.0
+```
+
+The `max` is the whole fix, and it is worth writing even where the two are
+equal today, because it says which envelope the gap is against. Whenever a
+clearance is derived from a part that has a head, a collar, a flange, a boss or
+a chamfered end, derive it from that part's *envelope* at the radius in
+question. Then check the float the choice costs: raising the pin by half the
+head's excess opens the retention gap by the same amount, and shrinking the
+head is usually cheaper than accepting it — 8 mm to 5 mm here took the gear's
+axial float from 3.0 mm back to 1.5 while leaving 0.8 mm of shoulder over the
+hole the head has to stop against.
+
+Neither a single-pose `interfere` nor a sweep that omits the retainer can see
+this: the moving part is only under the head for part of a turn. It needs
+`coupled_motion_collision` with the retainer named in `obstacle_parts`.
+
 ## Features And Refs
 
 Named features are the bridge between parameters and geometry.

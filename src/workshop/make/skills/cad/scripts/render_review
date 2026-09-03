@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""Write browser-free shaded PNGs for visual CAD review.
+
+Silhouette renders are the right instrument for likeness IoU and the wrong one
+for reviewing an exposed mechanism: a larger base can hide every interior part
+while the silhouette still looks complete. This renderer keeps occurrence
+colours and applies deterministic flat lighting in software, so a review can
+see overlapping parts, openings, recesses, and relative visual mass without a
+GL context or an available CAD Viewer.
+
+It is evidence for appearance only. Dimensions, validity, interference,
+motion, fit, mesh quality, and thickness remain owned by their normal gates.
+"""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import importlib.util
+import io
+import math
+import sys
+import tempfile
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageDraw
+
+
+ENTRY_SUFFIX = ".step.py"
+GEN_FUNC = "gen_" + "step"
+DEFAULT_SIZE = 900
+DEFAULT_TOLERANCE = 0.08
+DEFAULT_PAD = 0.07
+BACKGROUND = (237, 240, 244)
+NAMED_VIEWS = {
+    "front": (-90.0, 0.0),
+    "back": (90.0, 0.0),
+    "right": (0.0, 0.0),
+    "left": (180.0, 0.0),
+    "top": (-90.0, 90.0),
+    "bottom": (-90.0, -90.0),
+    "iso": (-45.0, 35.264),
+    "rear_iso": (135.0, 30.0),
+}
+FALLBACK_COLOURS = (
+    (52, 63, 75),
+    (231, 168, 62),
+    (74, 168, 162),
+    (197, 88, 92),
+    (115, 102, 189),
+    (129, 149, 75),
+)
+
+
+def _runtime_paths() -> None:
+    scripts = Path(__file__).resolve().parent
+    for path in (scripts, scripts / "packages", scripts / "packages" / "cadgen" / "src"):
+        text = str(path)
+        if path.is_dir() and text not in sys.path:
+            sys.path.insert(0, text)
+
+
+def _resolve_source(source: Path) -> Path:
+    if not source.is_dir():
+        return source
+    entries = [
+        path
+        for path in sorted(source.glob("*" + ENTRY_SUFFIX))
+        if not path.name.startswith("part_")
+    ]
+    if not entries:
+        entries = sorted(source.glob("*" + ENTRY_SUFFIX))
+    if not entries:
+        raise ValueError(f"{source} holds no {ENTRY_SUFFIX} entry")
+    return entries[0]
+
+
+def _load_entry(path: Path):
+    module_name = f"_review_{path.name.replace('.', '_')}"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    project = str(path.parent)
+    if project not in sys.path:
+        sys.path.insert(0, project)
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        sys.modules.pop(module_name, None)
+        raise
+    return module
+
+
+def build_shape(source: Path):
+    source = _resolve_source(source)
+    if source.name.endswith(ENTRY_SUFFIX):
+        with contextlib.redirect_stdout(io.StringIO()):
+            module = _load_entry(source)
+            builder = getattr(module, GEN_FUNC, None)
+            if builder is None:
+                raise AttributeError(f"{source.name} defines no {GEN_FUNC}()")
+            shape = builder()
+        if shape is None:
+            raise ValueError(f"{source.name} {GEN_FUNC}() returned None")
+        return source, shape
+    if source.suffix.lower() in {".step", ".stp"}:
+        from build123d import import_step
+
+        return source, import_step(str(source))
+    raise ValueError(f"{source} is neither a {ENTRY_SUFFIX} entry nor STEP")
+
+
+def _linear_to_srgb(value: float) -> int:
+    value = min(1.0, max(0.0, value))
+    encoded = 12.92 * value if value <= 0.0031308 else 1.055 * value ** (1 / 2.4) - 0.055
+    return round(encoded * 255)
+
+
+def _shape_colour(shape, index: int) -> tuple[int, int, int]:
+    colour = getattr(shape, "color", None)
+    if colour is None:
+        return FALLBACK_COLOURS[index % len(FALLBACK_COLOURS)]
+    channels = tuple(colour)
+    if len(channels) < 3:
+        return FALLBACK_COLOURS[index % len(FALLBACK_COLOURS)]
+    return tuple(_linear_to_srgb(float(value)) for value in channels[:3])
+
+
+def _leaves(shape):
+    children = list(getattr(shape, "children", ()) or ())
+    return children if children else [shape]
+
+
+def tessellate_occurrences(shape, tolerance: float):
+    occurrences = []
+    for index, child in enumerate(_leaves(shape)):
+        vertices, triangles = child.tessellate(tolerance)
+        points = np.asarray([[p.X, p.Y, p.Z] for p in vertices], dtype=float)
+        faces = np.asarray(triangles, dtype=np.int64)
+        if len(points) and len(faces):
+            occurrences.append((points, faces, _shape_colour(child, index)))
+    if not occurrences:
+        raise ValueError("tessellation produced no triangles")
+    return occurrences
+
+
+def camera_basis(azimuth: float, elevation: float):
+    az = math.radians(azimuth)
+    el = math.radians(elevation)
+    toward_viewer = np.array(
+        [math.cos(el) * math.cos(az), math.cos(el) * math.sin(az), math.sin(el)]
+    )
+    right = np.cross(np.array([0.0, 0.0, 1.0]), toward_viewer)
+    length = float(np.linalg.norm(right))
+    right = (
+        np.array([-math.sin(az), math.cos(az), 0.0])
+        if length < 1e-9
+        else right / length
+    )
+    up = np.cross(toward_viewer, right)
+    return toward_viewer, right, up
+
+
+def _shade(colour, normal, light, toward_viewer):
+    normal_length = float(np.linalg.norm(normal))
+    if normal_length < 1e-12:
+        brightness = 0.55
+    else:
+        normal = normal / normal_length
+        diffuse = max(0.0, float(np.dot(normal, light)))
+        rim = max(0.0, float(np.dot(normal, toward_viewer)))
+        brightness = min(1.18, 0.34 + 0.66 * diffuse + 0.12 * rim)
+    return tuple(min(255, max(0, round(channel * brightness))) for channel in colour)
+
+
+def render(occurrences, azimuth: float, elevation: float, size: int, pad: float):
+    toward_viewer, right, up = camera_basis(azimuth, elevation)
+    light = np.array([0.35, -0.45, 0.82], dtype=float)
+    light /= np.linalg.norm(light)
+    all_points = np.concatenate([points for points, _faces, _colour in occurrences])
+    sx = all_points @ right
+    sy = all_points @ up
+    width = float(sx.max() - sx.min())
+    height = float(sy.max() - sy.min())
+    span = max(width, height)
+    if span <= 0:
+        raise ValueError("projection is degenerate")
+    scale = (1.0 - 2.0 * pad) * size / span
+    x_offset = (size - width * scale) / 2.0 - float(sx.min()) * scale
+    y_offset = (size - height * scale) / 2.0 + float(sy.max()) * scale
+
+    triangles = []
+    for points, faces, colour in occurrences:
+        px = points @ right * scale + x_offset
+        py = y_offset - points @ up * scale
+        depth = points @ toward_viewer
+        for a, b, c in faces:
+            vertices = points[[a, b, c]]
+            normal = np.cross(vertices[1] - vertices[0], vertices[2] - vertices[0])
+            triangles.append(
+                (
+                    float(depth[[a, b, c]].mean()),
+                    [(float(px[a]), float(py[a])), (float(px[b]), float(py[b])), (float(px[c]), float(py[c]))],
+                    _shade(colour, normal, light, toward_viewer),
+                )
+            )
+    triangles.sort(key=lambda row: row[0])
+    image = Image.new("RGB", (size, size), BACKGROUND)
+    draw = ImageDraw.Draw(image)
+    for _depth, polygon, fill in triangles:
+        draw.polygon(polygon, fill=fill)
+    return image
+
+
+def parse_view(text: str):
+    if text in NAMED_VIEWS:
+        return text, *NAMED_VIEWS[text]
+    fields = text.split(",")
+    if len(fields) != 2:
+        raise argparse.ArgumentTypeError(f"view must be a name or AZ,EL, not {text!r}")
+    azimuth, elevation = (float(field) for field in fields)
+    return f"az{azimuth:g}_el{elevation:g}", azimuth, elevation
+
+
+def self_check() -> int:
+    from build123d import Box, Cylinder, Pos
+
+    shape = Box(20, 14, 6) + Pos(4, 0, 3) * Cylinder(3, 12)
+    occurrences = tessellate_occurrences(shape, 0.1)
+    image = render(occurrences, -45.0, 35.264, 320, DEFAULT_PAD)
+    pixels = np.asarray(image)
+    colour_count = len(np.unique(pixels.reshape(-1, 3), axis=0))
+    foreground = int(np.any(pixels != np.asarray(BACKGROUND), axis=2).sum())
+    if foreground < 2000 or colour_count < 8:
+        print(
+            f"render_review self-check failed: foreground={foreground} colours={colour_count}",
+            file=sys.stderr,
+        )
+        return 1
+    with tempfile.TemporaryDirectory(prefix="render-review-") as tmp:
+        path = Path(tmp) / "fixture.png"
+        image.save(path)
+        if path.stat().st_size <= 1000:
+            print("render_review self-check failed: PNG is unexpectedly small", file=sys.stderr)
+            return 1
+    print(f"render_review self-check: ok foreground={foreground} colours={colour_count}")
+    return 0
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source", nargs="?", type=Path)
+    parser.add_argument("--view", action="append", default=[])
+    parser.add_argument("-o", "--out", type=Path)
+    parser.add_argument("--size", type=int, default=DEFAULT_SIZE)
+    parser.add_argument("--tolerance", type=float, default=DEFAULT_TOLERANCE)
+    parser.add_argument("--pad", type=float, default=DEFAULT_PAD)
+    parser.add_argument("--self-check", action="store_true")
+    args = parser.parse_args(argv)
+    if args.self_check:
+        return self_check()
+    if args.source is None:
+        parser.error("source is required unless --self-check is used")
+    if args.size < 128:
+        parser.error("--size must be at least 128")
+    if not 0.0 <= args.pad < 0.4:
+        parser.error("--pad must be in [0, 0.4)")
+
+    source, shape = build_shape(args.source)
+    occurrences = tessellate_occurrences(shape, args.tolerance)
+    views = [parse_view(value) for value in (args.view or ["iso"])]
+    out = args.out or source.parent / "snap" / "review"
+    out.mkdir(parents=True, exist_ok=True)
+    for label, azimuth, elevation in views:
+        path = out / f"{label}.png"
+        render(occurrences, azimuth, elevation, args.size, args.pad).save(path)
+        print(path)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

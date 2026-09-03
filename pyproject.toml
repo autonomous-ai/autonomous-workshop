@@ -12,7 +12,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 dependencies = [
   "cadgen==0.4.19",
-  "pillow>=10.0",
+  "pillow>=10,<13",
   "psutil>=7.2,<8",
   "pypdf>=6.16.2,<7",
   "pypdfium2>=5.13,<6",
