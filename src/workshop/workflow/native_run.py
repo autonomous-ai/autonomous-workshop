@@ -39,12 +39,16 @@ from workshop.concept import (
     SOURCE_PATHS,
     PreRenderConcept,
     PreRenderConceptV3,
+    PreRenderConceptV4,
     SealedConcept,
     SealedConceptV3,
+    SealedConceptV4,
     normalized_concept_view,
     seal_pre_render_concept,
     seal_pre_render_concept_v3,
+    seal_pre_render_concept_v4,
     validate_sealed_concept_v3_tree,
+    validate_sealed_concept_v4_tree,
 )
 from workshop.integrations.factory import (
     FACTORY_CONTENT_MAPPING,
@@ -173,6 +177,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V11_CAPABILITY_PATH,
     DEEP_ECONOMICS_V12_CAPABILITY_PATH,
     DEEP_ECONOMICS_V14_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V15_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -191,6 +196,7 @@ from workshop.workflow.effort import (
     EFFORT_ROUTE_CAPABILITY_PATH,
     INVENT_CONCEPT_CAPABILITY_PATH,
     INVENT_CONCEPT_V2_CAPABILITY_PATH,
+    INVENT_CONCEPT_V3_CAPABILITY_PATH,
     SPARK_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
@@ -1986,7 +1992,9 @@ def _checkpoint_uses_invent_concept(
     effort = _checkpoint_effort(checkpoint)
     markers = {
         path for path in (
-            INVENT_CONCEPT_CAPABILITY_PATH, INVENT_CONCEPT_V2_CAPABILITY_PATH
+            INVENT_CONCEPT_CAPABILITY_PATH,
+            INVENT_CONCEPT_V2_CAPABILITY_PATH,
+            INVENT_CONCEPT_V3_CAPABILITY_PATH,
         ) if path in checkpoint.input_sha256s
     }
     if len(markers) > 1:
@@ -2003,11 +2011,11 @@ def _checkpoint_invent_concept_capability_path(
 ) -> str:
     if not _checkpoint_uses_invent_concept(checkpoint):
         raise StateConflict("native run lacks an Invent Concept capability")
-    return (
-        INVENT_CONCEPT_V2_CAPABILITY_PATH
-        if INVENT_CONCEPT_V2_CAPABILITY_PATH in checkpoint.input_sha256s
-        else INVENT_CONCEPT_CAPABILITY_PATH
-    )
+    if INVENT_CONCEPT_V3_CAPABILITY_PATH in checkpoint.input_sha256s:
+        return INVENT_CONCEPT_V3_CAPABILITY_PATH
+    if INVENT_CONCEPT_V2_CAPABILITY_PATH in checkpoint.input_sha256s:
+        return INVENT_CONCEPT_V2_CAPABILITY_PATH
+    return INVENT_CONCEPT_CAPABILITY_PATH
 
 
 def _checkpoint_next_stage(checkpoint: AgentRunCheckpoint, stage: str) -> str:
@@ -2634,7 +2642,12 @@ def _persist_invent_proposal_rejection(
 
 def _accepted_invent_concept(
     run: AgentRun, checkpoint: AgentRunCheckpoint
-) -> tuple[SealedConcept | SealedConceptV3, ConceptEffectEvidence, AgentArtifact, AgentArtifact]:
+) -> tuple[
+    SealedConcept | SealedConceptV3 | SealedConceptV4,
+    ConceptEffectEvidence,
+    AgentArtifact,
+    AgentArtifact,
+]:
     if not _checkpoint_uses_invent_concept(checkpoint):
         raise StateConflict("run does not use the active Invent Concept capability")
     sealed_candidates = tuple(
@@ -2662,7 +2675,14 @@ def _accepted_invent_concept(
     )
     if _sha256(sealed_content) != sealed_artifact.sha256:
         raise StateConflict("accepted sealed Concept differs from its binding")
-    if sealed_document.get("schema_version") == 3:
+    if sealed_document.get("schema_version") == 4:
+        sealed = SealedConceptV4.from_mapping(sealed_document)
+        validate_sealed_concept_v4_tree(sealed, run.run_root / concept_root)
+        sealed_image_bindings = {
+            (item["path"], item["sha256"]) for item in sealed.images
+        }
+        pre_render_sha256 = sealed.source.concept_sha256
+    elif sealed_document.get("schema_version") == 3:
         sealed = SealedConceptV3.from_mapping(sealed_document)
         validate_sealed_concept_v3_tree(sealed, run.run_root / concept_root)
         sealed_image_bindings = {
@@ -2989,6 +3009,7 @@ def _prepare_effort_stage_input(
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V14_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V15_CAPABILITY_PATH,
                 DEEP_ECONOMICS_CAPABILITY_PATH,
             )
         ):
@@ -3029,6 +3050,11 @@ def _prepare_effort_stage_input(
                     PurePosixPath(invented_path).parent / "visual-plan.json"
                 ).as_posix()
                 context["invent_concept_version"] = 2
+            elif capability_path == INVENT_CONCEPT_V3_CAPABILITY_PATH:
+                inputs["visual_instructions_path"] = (
+                    PurePosixPath(invented_path).parent / "visual-instructions.json"
+                ).as_posix()
+                context["invent_concept_version"] = 3
             context.update(
                 {
                     "invent_concept": True,
@@ -3044,6 +3070,10 @@ def _prepare_effort_stage_input(
             )
             if capability_path == INVENT_CONCEPT_V2_CAPABILITY_PATH:
                 context["visual_plan_path"] = inputs["visual_plan_path"]
+            elif capability_path == INVENT_CONCEPT_V3_CAPABILITY_PATH:
+                context["visual_instructions_path"] = inputs[
+                    "visual_instructions_path"
+                ]
         prior_paths = checkpoint.stage_artifacts.get("invent")
         if prior_paths:
             if "invent" not in checkpoint.invalidated_stages:
@@ -3077,7 +3107,14 @@ def _prepare_effort_stage_input(
                     raise StateConflict(
                         "prior sealed Concept differs from its artifact binding"
                     )
-                if prior_sealed_document.get("schema_version") == 3:
+                if prior_sealed_document.get("schema_version") == 4:
+                    prior_sealed = SealedConceptV4.from_mapping(
+                        prior_sealed_document
+                    )
+                    validate_sealed_concept_v4_tree(
+                        prior_sealed, run.run_root / prior_root
+                    )
+                elif prior_sealed_document.get("schema_version") == 3:
                     prior_sealed = SealedConceptV3.from_mapping(
                         prior_sealed_document
                     )
@@ -3121,13 +3158,18 @@ def _prepare_effort_stage_input(
                         "standing_concept_sha256": prior_sealed.concept_sha256,
                     }
                 )
-                if isinstance(prior_sealed, SealedConceptV3):
+                if isinstance(prior_sealed, (SealedConceptV3, SealedConceptV4)):
                     authored = prior_sealed.source.authored_inputs
                     prior_source_artifact = _stage_artifact_at(
                         checkpoint, "invent", authored["source_path"]
                     )
+                    visual_path_key = (
+                        "visual_instructions_path"
+                        if isinstance(prior_sealed, SealedConceptV4)
+                        else "visual_plan_path"
+                    )
                     prior_visual_artifact = _stage_artifact_at(
-                        checkpoint, "invent", authored["visual_plan_path"]
+                        checkpoint, "invent", authored[visual_path_key]
                     )
                     prior_source_document, unused_source_bytes = (
                         read_bounded_json_artifact(
@@ -3140,32 +3182,38 @@ def _prepare_effort_stage_input(
                         read_bounded_json_artifact(
                             run.run_root,
                             prior_visual_artifact.path,
-                            label="prior simplified visual plan",
+                            label="prior Invent visual instructions",
                         )
                     )
                     del unused_source_bytes, unused_visual_bytes
-                    subject_inputs.update(
-                        {
-                            "prior_invent_source_artifact_sha256": prior_source_artifact.sha256,
-                            "prior_visual_plan_artifact_sha256": prior_visual_artifact.sha256,
-                        }
+                    visual_subject_key = (
+                        "prior_visual_instructions_artifact_sha256"
+                        if isinstance(prior_sealed, SealedConceptV4)
+                        else "prior_visual_plan_artifact_sha256"
                     )
-                    inputs.update(
-                        {
-                            "prior_invent_source": {
-                                **_artifact_binding(prior_source_artifact),
-                                "value": prior_source_document,
-                            },
-                            "prior_visual_plan": {
-                                **_artifact_binding(prior_visual_artifact),
-                                "value": prior_visual_document,
-                            },
-                            "prior_normalized_concept": prior_sealed.source.to_dict(),
-                            "prior_normalized_research": prior_sealed.source.to_dict()[
-                                "research"
-                            ],
-                        }
+                    visual_input_key = (
+                        "prior_visual_instructions"
+                        if isinstance(prior_sealed, SealedConceptV4)
+                        else "prior_visual_plan"
                     )
+                    subject_inputs.update({
+                        "prior_invent_source_artifact_sha256": prior_source_artifact.sha256,
+                        visual_subject_key: prior_visual_artifact.sha256,
+                    })
+                    inputs.update({
+                        "prior_invent_source": {
+                            **_artifact_binding(prior_source_artifact),
+                            "value": prior_source_document,
+                        },
+                        visual_input_key: {
+                            **_artifact_binding(prior_visual_artifact),
+                            "value": prior_visual_document,
+                        },
+                        "prior_normalized_concept": prior_sealed.source.to_dict(),
+                        "prior_normalized_research": prior_sealed.source.to_dict()[
+                            "research"
+                        ],
+                    })
                 context["prior_sealed_concept"] = prior_sealed
                 context["prior_concept_effect"] = prior_effect
                 context["standing_concept_sha256"] = prior_sealed.concept_sha256
@@ -3430,10 +3478,18 @@ def _prepare_effort_stage_input(
                         for component in concept_view.brief["components"]
                     ],
                 }
-                if capability_path == INVENT_CONCEPT_V2_CAPABILITY_PATH:
+                if capability_path in (
+                    INVENT_CONCEPT_V2_CAPABILITY_PATH,
+                    INVENT_CONCEPT_V3_CAPABILITY_PATH,
+                ):
                     concept_packet["concept_visual_roles"] = [
                         dict(role) for role in concept_view.visual_roles
                     ]
+                if capability_path == INVENT_CONCEPT_V3_CAPABILITY_PATH:
+                    concept_packet["component_visuals"] = {
+                        key: dict(value)
+                        for key, value in concept_view.component_visuals.items()
+                    }
                 common.update(concept_packet)
                 context.update(
                     {
@@ -4194,6 +4250,7 @@ def _phased_deep_capability_path(
     """Return the exact frozen phased-deep profile path, newest first."""
 
     for path in (
+        DEEP_ECONOMICS_V15_CAPABILITY_PATH,
         DEEP_ECONOMICS_V14_CAPABILITY_PATH,
         DEEP_ECONOMICS_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -4215,6 +4272,7 @@ def _phased_deep_profile_name(checkpoint: AgentRunCheckpoint) -> str:
 
     path = _phased_deep_capability_path(checkpoint)
     names = {
+        DEEP_ECONOMICS_V15_CAPABILITY_PATH: "v15",
         DEEP_ECONOMICS_V14_CAPABILITY_PATH: "v14",
         DEEP_ECONOMICS_CAPABILITY_PATH: "v13",
         DEEP_ECONOMICS_V12_CAPABILITY_PATH: "v12",
@@ -4279,6 +4337,7 @@ def _native_launcher(
                     timeout_seconds = (
                         DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                         if phased_deep_path in (
+                            DEEP_ECONOMICS_V15_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                             DEEP_ECONOMICS_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -4291,6 +4350,7 @@ def _native_launcher(
                     )
                 elif (
                     phased_deep_path in (
+                        DEEP_ECONOMICS_V15_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                         DEEP_ECONOMICS_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -4302,6 +4362,7 @@ def _native_launcher(
                     timeout_seconds = (
                         DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
                         if phased_deep_path in (
+                            DEEP_ECONOMICS_V15_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                             DEEP_ECONOMICS_CAPABILITY_PATH,
                         )
@@ -4327,6 +4388,7 @@ def _native_launcher(
                 auto_compact_token_limit=(
                     DEEP_AUTO_COMPACT_TOKEN_LIMIT
                     if phased_deep_path in (
+                        DEEP_ECONOMICS_V15_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                         DEEP_ECONOMICS_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -4462,7 +4524,8 @@ def _deep_make_critical_path_prompt(
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
         and (
-            DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
+            DEEP_ECONOMICS_V15_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4485,6 +4548,7 @@ def _deep_make_critical_path_prompt(
         if (
             _phased_deep_capability_path(checkpoint)
             in (
+                DEEP_ECONOMICS_V15_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                 DEEP_ECONOMICS_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -4531,7 +4595,8 @@ def _deep_make_critical_path_prompt(
         "the final product and preserve the proof files in the product tree."
     )
     if (
-        DEEP_ECONOMICS_V14_CAPABILITY_PATH not in checkpoint.input_sha256s
+        DEEP_ECONOMICS_V15_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V14_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -4545,7 +4610,8 @@ def _deep_make_critical_path_prompt(
     ):
         return prompt
     if (
-        DEEP_ECONOMICS_V14_CAPABILITY_PATH not in checkpoint.input_sha256s
+        DEEP_ECONOMICS_V15_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V14_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -4744,7 +4810,8 @@ def _deep_make_recovery_prompt(
         checkpoint.stage == "make"
         and checkpoint.effort in ("forge", "quest")
         and (
-            DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
+            DEEP_ECONOMICS_V15_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -4765,6 +4832,7 @@ def _deep_make_recovery_prompt(
         if (
             _phased_deep_capability_path(checkpoint)
             in (
+                DEEP_ECONOMICS_V15_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                 DEEP_ECONOMICS_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -4777,6 +4845,7 @@ def _deep_make_recovery_prompt(
             if (
                 _phased_deep_capability_path(checkpoint)
                 in (
+                    DEEP_ECONOMICS_V15_CAPABILITY_PATH,
                     DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                     DEEP_ECONOMICS_CAPABILITY_PATH,
                 )
@@ -4822,6 +4891,7 @@ def _deep_make_recovery_prompt(
     if (
         _phased_deep_capability_path(checkpoint)
         in (
+            DEEP_ECONOMICS_V15_CAPABILITY_PATH,
             DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             DEEP_ECONOMICS_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -4915,6 +4985,20 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
         and _phased_deep_capability_path(checkpoint) is not None
     ):
         return ""
+    if _phased_deep_capability_path(checkpoint) == DEEP_ECONOMICS_V15_CAPABILITY_PATH:
+        return (
+            " This v15 Invent recovery is a two-input source handoff, not a "
+            "creative continuation. Do not call update_plan or get_goal, reread "
+            "the roster, rerank, research, delegate, review, or refine before "
+            "finalization. Your first action must check only whether "
+            "drafts/invent-source.json and the exact visual_instructions_path "
+            "from STAGE.json exist. If both exist, your next action must invoke "
+            "the exact Invent finalizer with --source and --visual-instructions. "
+            "If one is missing or a deterministic finalizer error names one "
+            "invalid input, author or repair only that smallest input and "
+            "immediately invoke the finalizer again. The ten-minute boundary is "
+            "repair reserve; agent-outcome.json is the only stopping condition."
+        )
     if _phased_deep_capability_path(checkpoint) == DEEP_ECONOMICS_V14_CAPABILITY_PATH:
         return (
             " This v14 Invent recovery is a two-input source handoff, not a "
@@ -4931,6 +5015,7 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
         )
     if (
         _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_V15_CAPABILITY_PATH,
             DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             DEEP_ECONOMICS_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -5049,6 +5134,7 @@ def _v10_make_proof_artifact_bindings(
     if len(state_hashes) != 3:
         return None
     if _phased_deep_capability_path(checkpoint) in (
+        DEEP_ECONOMICS_V15_CAPABILITY_PATH,
         DEEP_ECONOMICS_V14_CAPABILITY_PATH,
         DEEP_ECONOMICS_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -5154,6 +5240,7 @@ def _read_make_proof_acceptance(
     marker_sha256 = value.get("marker_sha256")
     proof_artifacts = value.get("proof_artifacts")
     requires_artifacts = _phased_deep_capability_path(checkpoint) in (
+        DEEP_ECONOMICS_V15_CAPABILITY_PATH,
         DEEP_ECONOMICS_V14_CAPABILITY_PATH,
         DEEP_ECONOMICS_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -5267,6 +5354,7 @@ def _make_proof_ready(
     if (
         valid
         and _phased_deep_capability_path(checkpoint) in (
+            DEEP_ECONOMICS_V15_CAPABILITY_PATH,
             DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             DEEP_ECONOMICS_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
@@ -5307,7 +5395,8 @@ def _v13_operator_resume_recovery(
         first_method == "resume"
         and checkpoint.stage == "make"
         and (
-            DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
+            DEEP_ECONOMICS_V15_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
         )
         and _make_proof_ready(paths, checkpoint)
@@ -7458,7 +7547,10 @@ def _read_pre_render_from_proposal(
     run: AgentRun,
     proposal: AgentOutcomeProposal,
     context: Mapping[str, Any],
-) -> tuple[PreRenderConcept | PreRenderConceptV3, AgentArtifact]:
+) -> tuple[
+    PreRenderConcept | PreRenderConceptV3 | PreRenderConceptV4,
+    AgentArtifact,
+]:
     path = context["concept_pre_render_path"]
     matches = tuple(item for item in proposal.outcome.artifacts if item.path == path)
     if len(matches) != 1:
@@ -7469,7 +7561,9 @@ def _read_pre_render_from_proposal(
     )
     if _sha256(content) != artifact.sha256:
         raise StateConflict("pending pre-render Concept differs from its artifact binding")
-    if context.get("invent_concept_version") == 2:
+    if context.get("invent_concept_version") == 3:
+        concept = PreRenderConceptV4.from_mapping(document)
+    elif context.get("invent_concept_version") == 2:
         concept = PreRenderConceptV3.from_mapping(document)
     else:
         concept = PreRenderConcept.from_mapping(
@@ -7480,8 +7574,29 @@ def _read_pre_render_from_proposal(
 
 
 def _concept_role_plan(
-    concept: PreRenderConcept | PreRenderConceptV3,
+    concept: PreRenderConcept | PreRenderConceptV3 | PreRenderConceptV4,
 ) -> tuple[tuple[str, str, str, tuple[str, ...], Mapping[str, Any]], ...]:
+    if isinstance(concept, PreRenderConceptV4):
+        document = concept.to_dict()
+        plan = tuple(
+            (
+                role["id"],
+                role["instruction"],
+                document["descriptor"][role["id"]]["path"],
+                tuple(role["appearance_references"]),
+                {
+                    "appearance": role["appearance"],
+                    "note": role["note"],
+                    "normalized_facts": role["normalized_facts"],
+                    "prompt_protocol_version": role["prompt_protocol_version"],
+                    "prompt_protocol_sha256": document["prompt_protocol_sha256"],
+                },
+            )
+            for role in document["drawing_instructions"]
+        )
+        if len({item[0] for item in plan}) != len(plan) or len({item[2] for item in plan}) != len(plan):
+            raise ContractError("Concept role plan contains duplicate roles or paths")
+        return plan
     if isinstance(concept, PreRenderConceptV3):
         document = concept.to_dict()
         plan = tuple(
@@ -7636,7 +7751,7 @@ def _complete_marked_invent_effect(
 ) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
     concept, pre_render_artifact = _read_pre_render_from_proposal(run, proposal, context)
     concept_root = run.run_root / context["concept_root"]
-    if isinstance(concept, PreRenderConceptV3):
+    if isinstance(concept, (PreRenderConceptV3, PreRenderConceptV4)):
         source_manifest_sha256 = concept.author_source_manifest["artifact_sha256"]
     else:
         concept_root = concept.root
@@ -7659,18 +7774,18 @@ def _complete_marked_invent_effect(
         or client.profile.profile_sha256 != authority.get("profile_sha256")
     ):
         raise _ConceptImageCredentialsUnavailable()
-    if isinstance(concept, PreRenderConceptV3):
+    if isinstance(concept, (PreRenderConceptV3, PreRenderConceptV4)):
         if context.get("concept_effect_resuming") is True:
             if not concept_root.is_dir() or concept_root.is_symlink():
                 raise StateConflict(
-                    "resumed simplified Concept effect root is unavailable"
+                    "resumed authored-input Concept effect root is unavailable"
                 )
         else:
             try:
                 concept_root.mkdir(mode=0o700)
             except FileExistsError as exc:
                 raise StateConflict(
-                    "simplified Concept effect root already exists"
+                    "authored-input Concept effect root already exists"
                 ) from exc
     plan = _concept_role_plan(concept)
     ledger = _concept_effect_ledger(run)
@@ -7847,13 +7962,16 @@ def _complete_marked_invent_effect(
         [values[0] for values in completed.values()],
         include_legacy_sources=isinstance(concept, PreRenderConcept),
     )
-    if isinstance(concept, PreRenderConceptV3):
+    image_bytes = {
+        role: _read_installed_concept_image(concept_root, values[0])
+        for role, values in completed.items()
+    }
+    if isinstance(concept, PreRenderConceptV4):
+        sealed = seal_pre_render_concept_v4(concept, image_bytes)
+    elif isinstance(concept, PreRenderConceptV3):
         sealed = seal_pre_render_concept_v3(
             concept,
-            {
-                role: _read_installed_concept_image(concept_root, values[0])
-                for role, values in completed.items()
-            },
+            image_bytes,
         )
     else:
         sealed = seal_pre_render_concept(concept)
@@ -7904,7 +8022,10 @@ def _complete_marked_invent_effect(
     _atomic_private_write(run.run_root / effect_path, effect_bytes, mode=0o600)
     # Reopen every host-created byte before it can support the gate.
     sealed_document, observed_sealed = read_bounded_json_artifact(run.run_root, sealed_path, label="sealed Concept")
-    if isinstance(sealed, SealedConceptV3):
+    if isinstance(sealed, SealedConceptV4):
+        observed_contract = SealedConceptV4.from_mapping(sealed_document)
+        validate_sealed_concept_v4_tree(observed_contract, concept_root)
+    elif isinstance(sealed, SealedConceptV3):
         observed_contract = SealedConceptV3.from_mapping(sealed_document)
         validate_sealed_concept_v3_tree(observed_contract, concept_root)
     else:
@@ -7939,9 +8060,13 @@ def _complete_marked_invent_effect(
     evidence = StageGateEvidence(
         stage="invent",
         gate_id=(
-            "invent.routed-sealed-concept-v2"
-            if isinstance(sealed, SealedConceptV3)
-            else "invent.routed-sealed-concept-v1"
+            "invent.routed-sealed-concept-v3"
+            if isinstance(sealed, SealedConceptV4)
+            else (
+                "invent.routed-sealed-concept-v2"
+                if isinstance(sealed, SealedConceptV3)
+                else "invent.routed-sealed-concept-v1"
+            )
         ),
         validator_version="1.0.0",
         passed=True,

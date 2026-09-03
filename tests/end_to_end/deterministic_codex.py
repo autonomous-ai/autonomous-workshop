@@ -396,7 +396,13 @@ def simplified_invent_source(stage) -> dict:
         },
         "research": {"sources": [], "findings": []},
     }
-    if "multipart" in stage["product_id"]:
+    if (
+        "multipart" in stage["product_id"]
+        or (
+            (stage["inputs"].get("concept_round") or 0) > 1
+            and "revised-component-set" in stage["product_id"]
+        )
+    ):
         value["concept"]["components"].append({
             "key": "pieces", "name": "Dog-pack pieces",
             "purpose": "Playable tactile markers", "form": "Rounded dog tokens",
@@ -474,6 +480,25 @@ def simplified_visual_plan(stage) -> dict:
     ):
         plan["roles"][1]["id"] = "revised-diagonal-move"
     return plan
+
+
+def fixed_visual_instructions(authored) -> dict:
+    keys = [component["key"] for component in authored["concept"]["components"]]
+    return {
+        "schema_version": 3,
+        "kind": "autonomous-workshop.fixed-concept-view-instructions",
+        "appearance": "Matte warm-white orbital board with muted blue pieces and crisp boundaries.",
+        "views": {
+            "front": "Show the complete front silhouette and waypoint relief.",
+            "top": "Show the complete footprint and orbital waypoint pattern.",
+            "bottom": "Show the complete flat print stance and underside.",
+            "exploded": "Separate %s and show every assembly relationship." % " and ".join(keys),
+        },
+        "components": {
+            key: "Show the complete %s alone with every interface unobscured." % key
+            for key in keys
+        },
+    }
 
 
 def author_concept_source(root: Path, stage, authored: dict) -> None:
@@ -621,10 +646,14 @@ def author_invent(root: Path, stage) -> None:
     simplified = str(capability.get("path", "")).endswith(
         "invent-concept-v2.md"
     )
-    source = "drafts/invent-source.json" if simplified else "authored/invent.json"
+    fixed = str(capability.get("path", "")).endswith("invent-concept-v3.md")
+    if fixed and (stage.get("round") or 0) > 1:
+        if "prior_visual_instructions" not in stage["inputs"]:
+            raise RuntimeError("fixed re-Invent lost prior_visual_instructions")
+    source = "drafts/invent-source.json" if (simplified or fixed) else "authored/invent.json"
     authored = (
         simplified_invent_source(stage)
-        if simplified
+        if (simplified or fixed)
         else invented_source(include_selection=assignment is None)
     )
     if assignment is None and not simplified:
@@ -646,6 +675,10 @@ def author_invent(root: Path, stage) -> None:
         visual_path = stage["inputs"]["visual_plan_path"]
         write_json(root / visual_path, simplified_visual_plan(stage))
         arguments.extend(("--visual-plan", visual_path))
+    elif fixed:
+        visual_path = stage["inputs"]["visual_instructions_path"]
+        write_json(root / visual_path, fixed_visual_instructions(authored))
+        arguments.extend(("--visual-instructions", visual_path))
     elif "invent_concept_capability" in stage["inputs"]:
         author_concept_source(root, stage, authored)
         arguments.extend(("--concept-root", stage["inputs"]["concept_root"]))
@@ -662,7 +695,7 @@ def author_make(root: Path, stage) -> None:
         )
         first_image = (
             inputs["sealed_concept"]["images"][0]["path"]
-            if inputs["sealed_concept"].get("schema_version") == 3
+            if inputs["sealed_concept"].get("schema_version") in (3, 4)
             else inputs["sealed_concept"]["image_manifest"]["entries"][0]["path"]
         )
         target = concept_root / first_image

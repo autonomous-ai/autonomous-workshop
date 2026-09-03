@@ -21,8 +21,10 @@ from workshop.concept import (
     ConceptExpectedContext,
     PreRenderConcept,
     PreRenderConceptV3,
+    PreRenderConceptV4,
     evaluate_concept_brief,
     normalize_authored_concept,
+    normalize_fixed_view_concept,
 )
 from workshop.invent.native import NativeInvented
 from workshop.match.native import NativeMatchAssignment, InventorRoster
@@ -530,13 +532,15 @@ def evaluate_routed_invent_stage(
         pre_render_path = concept_context.get("concept_pre_render_path")
         if not isinstance(concept_root, str) or not isinstance(pre_render_path, str):
             raise ContractError("marked Invent gate lacks canonical Concept paths")
-        if concept_context.get("invent_concept_version") == 2:
-            visual_plan_path = concept_context.get("visual_plan_path")
-            if not isinstance(visual_plan_path, str):
-                raise ContractError("simplified Invent gate lacks its visual-plan path")
+        if concept_context.get("invent_concept_version") in (2, 3):
+            fixed = concept_context.get("invent_concept_version") == 3
+            visual_key = "visual_instructions_path" if fixed else "visual_plan_path"
+            visual_path = concept_context.get(visual_key)
+            if not isinstance(visual_path, str):
+                raise ContractError("authored-input Invent gate lacks its visual path")
             expected_paths = (
                 invented_artifact_path, assignment_artifact_path, pre_render_path,
-                source_artifact_path, visual_plan_path,
+                source_artifact_path, visual_path,
             )
         else:
             expected_paths = (
@@ -623,23 +627,41 @@ def evaluate_routed_invent_stage(
         )
         if source_document != source:
             raise StateConflict("routed Invent source changed during validation")
-        if concept_context.get("invent_concept_version") == 2:
+        if concept_context.get("invent_concept_version") in (2, 3):
+            fixed = concept_context.get("invent_concept_version") == 3
             visual_artifact = outcome.artifacts[4]
             visual_document, visual_content = read_bounded_json_artifact(
-                run_root, visual_artifact.path, label="simplified Invent visual plan"
+                run_root, visual_artifact.path, label="Invent visual instructions"
             )
-            pre_render = PreRenderConceptV3.from_mapping(pre_render_document)
-            independently_normalized = normalize_authored_concept(
-                source, visual_document, source_path=source_artifact.path,
-                source_bytes=source_content, visual_plan_path=visual_artifact.path,
-                visual_plan_bytes=visual_content, wish=wish, wish_sha256=wish_sha256,
-                assignment=assignment, invented=invented,
-                round=concept_context["concept_round"],
-                standing_concept_sha256=concept_context.get("standing_concept_sha256"),
-                revision_input_sha256=concept_context.get("revision_input_sha256"),
-            )
+            common = {
+                "source_path": source_artifact.path,
+                "source_bytes": source_content,
+                "wish": wish,
+                "wish_sha256": wish_sha256,
+                "assignment": assignment,
+                "invented": invented,
+                "round": concept_context["concept_round"],
+                "standing_concept_sha256": concept_context.get("standing_concept_sha256"),
+                "revision_input_sha256": concept_context.get("revision_input_sha256"),
+            }
+            if fixed:
+                pre_render = PreRenderConceptV4.from_mapping(pre_render_document)
+                independently_normalized = normalize_fixed_view_concept(
+                    source, visual_document,
+                    visual_instructions_path=visual_artifact.path,
+                    visual_instructions_bytes=visual_content,
+                    **common,
+                )
+                structure_kind = "concept-structure-v3"
+            else:
+                pre_render = PreRenderConceptV3.from_mapping(pre_render_document)
+                independently_normalized = normalize_authored_concept(
+                    source, visual_document, visual_plan_path=visual_artifact.path,
+                    visual_plan_bytes=visual_content, **common,
+                )
+                structure_kind = "concept-structure-v2"
             if pre_render.to_dict() != independently_normalized.to_dict():
-                raise ContractError("simplified pre-render Concept differs from host normalization")
+                raise ContractError("authored-input pre-render Concept differs from host normalization")
             if (
                 (
                     (Path(run_root).resolve(strict=True) / concept_root).exists()
@@ -647,14 +669,14 @@ def evaluate_routed_invent_stage(
                 )
                 and concept_context.get("concept_effect_resuming") is not True
             ):
-                raise ContractError("simplified Invent contains native-authored Concept projections")
+                raise ContractError("authored-input Invent contains native-authored Concept projections")
             concept_checks = {
                 "pre_render_concept_sha256": pre_render.concept_sha256,
                 "pre_render_artifact_sha256": pre_render_artifact.sha256,
                 "source_manifest_sha256": pre_render.author_source_manifest["artifact_sha256"],
                 "derived_wish_sha256": pre_render.routed_wish["routed_wish_sha256"],
                 "concept_round": pre_render.round,
-                "concept_structure": {"checks_kind": "concept-structure-v2", "role_count": len(pre_render.drawing_instructions)},
+                "concept_structure": {"checks_kind": structure_kind, "role_count": len(pre_render.drawing_instructions)},
             }
         else:
             pre_render = PreRenderConcept.from_mapping(
@@ -687,7 +709,10 @@ def evaluate_routed_invent_stage(
     evidence = StageGateEvidence(
         stage="invent",
         gate_id=(
-            "invent.routed-concept-v2"
+            "invent.routed-concept-v3"
+            if concept_context is not None
+            and concept_context.get("invent_concept_version") == 3
+            else "invent.routed-concept-v2"
             if concept_context is not None
             and concept_context.get("invent_concept_version") == 2
             else "invent.routed-concept-v1"

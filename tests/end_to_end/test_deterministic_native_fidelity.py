@@ -5,6 +5,7 @@ import os
 import shutil
 import sqlite3
 import stat
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -307,11 +308,11 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
 
     def _environment(
         self, *, home=None, credentials=True, concept_credentials=True,
-        simplified_concept=False,
+        simplified_concept=False, fixed_concept=False,
     ):
         home = self.home if home is None else Path(home)
         environment = {
-            "PATH": os.environ.get("PATH", os.defpath),
+            "PATH": str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", os.defpath),
             "HOME": str(home.parent / "native-home"),
             "CODEX_HOME": str(home.parent / "native-codex-home"),
             "WORKSHOP_HOME": str(home),
@@ -330,6 +331,8 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
             )
         if simplified_concept:
             environment["WORKSHOP_INVENT_CONCEPT_V2_ACCEPTANCE"] = "1"
+        if fixed_concept:
+            environment["WORKSHOP_INVENT_CONCEPT_V3_ACCEPTANCE"] = "1"
         return environment
 
     @staticmethod
@@ -352,6 +355,7 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         concept_credentials=True,
         concept_transport=None,
         simplified_concept=False,
+        fixed_concept=False,
     ):
         self.concept_transport = (
             concept_transport
@@ -366,6 +370,7 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
                 credentials=credentials,
                 concept_credentials=concept_credentials,
                 simplified_concept=simplified_concept,
+                fixed_concept=fixed_concept,
             ),
             clear=True,
         ), mock.patch(
@@ -545,14 +550,25 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
             path.endswith("invent-concept-v2.md")
             for path in checkpoint.input_sha256s
         )
+        fixed_concept = any(
+            path.endswith("invent-concept-v3.md")
+            for path in checkpoint.input_sha256s
+        )
         expected_concept_calls = (
-            0 if effort == "spark" else (2 if simplified_concept else 5)
+            0 if effort == "spark" else (
+                (6 if "multipart" in product_id else 5)
+                if fixed_concept else (2 if simplified_concept else 5)
+            )
         )
         self.assertEqual(len(self.concept_transport.calls), expected_concept_calls)
         if effort != "spark":
             self.assertEqual(
                 [len(item[2]["input_references"]) for item in self.concept_transport.calls],
-                [0, 1] if simplified_concept else [0, 1, 1, 3, 1],
+                ([0, 1, 1, 3] + [1] * (expected_concept_calls - 4))
+                if fixed_concept
+                else [0, 1, 1, 3, 1]
+                if not simplified_concept
+                else [0, 1],
             )
             invent_names = {
                 Path(item.path).name
@@ -777,6 +793,36 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
                 )
                 self._remove_projection(product_id)
 
+    def test_fixed_view_forge_and_quest_produce_exact_reconstruction_inventory(self):
+        for effort in ("forge", "quest"):
+            with self.subTest(effort=effort):
+                product_id = "deterministic-v3-multipart-%s" % effort
+                transport = _DeterministicFactoryTransport(product_id)
+                receipt = self._run(
+                    product_id, transport, effort=effort, fixed_concept=True,
+                )
+                paths = self._paths(product_id)
+                checkpoint = self._assert_completed_route(
+                    product_id, effort, paths, receipt, transport
+                )
+                sealed_artifact = next(
+                    item for item in checkpoint.stage_artifacts["invent"]
+                    if item.path.endswith("/sealed.json")
+                )
+                sealed = json.loads(
+                    (paths.workspace / sealed_artifact.path).read_text()
+                )
+                self.assertEqual(sealed["schema_version"], 4)
+                self.assertEqual(
+                    [item["id"] for item in sealed["images"]],
+                    [
+                        "front", "top", "bottom", "exploded",
+                        "component:board", "component:pieces",
+                    ],
+                )
+                self.assertEqual(len(self.concept_transport.calls), 6)
+                self._remove_projection(product_id)
+
     def test_simplified_adaptive_role_boundaries_fail_before_or_seal_exactly(self):
         product_id = "deterministic-v2-multipart-twenty-role"
         transport = _DeterministicFactoryTransport(product_id)
@@ -909,6 +955,28 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
             (paths.workspace / "artifacts/concept/r0001/sealed.json").read_text()
         )
         self.assertEqual(len(sealed["images"]), 2)
+
+    def test_fixed_view_partial_roles_resume_same_intents_without_repeating_invent(self):
+        product_id = "deterministic-v3-concept-partial-resume"
+        transport = _DeterministicFactoryTransport(product_id)
+        concept_transport = _DeterministicConceptImageTransport(fail_once_at=2)
+        waiting = self._run(
+            product_id, transport, effort="forge",
+            concept_transport=concept_transport, fixed_concept=True,
+        )
+        paths = self._paths(product_id)
+        first_trace = self._trace(paths)
+        self.assertEqual((waiting["stage"], waiting["status"]), ("invent", "waiting"))
+        self.assertEqual(len(concept_transport.calls), 2)
+        advanced = self._resume(product_id, transport)
+        self.assertEqual((advanced["stage"], advanced["status"]), ("make", "active"))
+        self.assertEqual(len(concept_transport.calls), 6)
+        self.assertEqual(self._trace(paths), first_trace)
+        sealed = json.loads(
+            (paths.workspace / "artifacts/concept/r0001/sealed.json").read_text()
+        )
+        self.assertEqual(sealed["schema_version"], 4)
+        self.assertEqual(len(sealed["images"]), 5)
 
     def test_ambiguous_concept_role_waits_without_resend_or_repeated_cognition(self):
         product_id = "deterministic-concept-ambiguous"
@@ -1203,6 +1271,48 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         self.assertEqual(
             [item["id"] for item in second["source"]["drawing_instructions"]],
             ["orbital-board", "revised-diagonal-move"],
+        )
+        self._remove_projection(product_id)
+
+    def test_fixed_view_quest_revision_replaces_component_roles_with_bound_lineage(self):
+        product_id = "deterministic-v3-quest-invent-revision-revised-component-set"
+        transport = _DeterministicFactoryTransport(product_id)
+        receipt = self._run(
+            product_id, transport, effort="quest", fixed_concept=True,
+        )
+        paths = self._paths(product_id)
+        self.assertEqual(receipt["status"], "complete")
+        self.assertEqual(
+            [item["stage"] for item in self._trace(paths)],
+            ["invent", "make", "playtest", "invent", "make", "playtest", "release"],
+        )
+        checkpoint = AgentRun.open(
+            paths.workspace, host_state_root=paths.host_state
+        ).snapshot()
+        self.assertEqual(checkpoint.round_index, 2)
+        invent_paths = {item.path for item in checkpoint.stage_artifacts["invent"]}
+        self.assertIn("artifacts/invent/r0002/source.json", invent_paths)
+        self.assertIn("artifacts/invent/r0002/visual-instructions.json", invent_paths)
+        sealed_path = next(path for path in invent_paths if path.endswith("/sealed.json"))
+        first = json.loads(
+            (paths.workspace / "artifacts/concept/r0001/sealed.json").read_text()
+        )
+        second = json.loads((paths.workspace / sealed_path).read_text())
+        self.assertEqual(
+            second["source"]["bindings"]["standing_concept_sha256"],
+            first["concept_sha256"],
+        )
+        self.assertIsNotNone(second["source"]["bindings"]["revision_input_sha256"])
+        self.assertEqual(
+            [item["id"] for item in first["source"]["drawing_instructions"]],
+            ["front", "top", "bottom", "exploded", "component:board"],
+        )
+        self.assertEqual(
+            [item["id"] for item in second["source"]["drawing_instructions"]],
+            [
+                "front", "top", "bottom", "exploded",
+                "component:board", "component:pieces",
+            ],
         )
         self._remove_projection(product_id)
 

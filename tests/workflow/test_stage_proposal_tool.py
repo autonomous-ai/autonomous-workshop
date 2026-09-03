@@ -15,10 +15,13 @@ from workshop.artifacts import build_artifact_manifest
 from workshop.concept import (
     PreRenderConcept,
     PreRenderConceptV3,
+    PreRenderConceptV4,
     seal_pre_render_concept,
     seal_pre_render_concept_v3,
+    seal_pre_render_concept_v4,
 )
 from tests.concept.test_v3_authoring import SimplifiedConceptAuthoringTest
+from tests.concept.test_v4_authoring import FixedConceptAuthoringTest
 from workshop.errors import ArtifactError, ContractError
 from workshop.invent.native import NativeInvented
 from workshop.make.contracts import Made
@@ -991,6 +994,12 @@ class StageProposalToolTest(unittest.TestCase):
         (self.run_root / "agent-outcome.json").unlink()
         result = self.run_tool(
             "invent", "--source", "drafts/invent-v2.json", "--visual-plan",
+            inputs["visual_plan_path"], "--visual-instructions",
+            inputs["visual_plan_path"], expected=2,
+        )
+        self.assertIn("does not accept --visual-instructions", result.stderr)
+        result = self.run_tool(
+            "invent", "--source", "drafts/invent-v2.json", "--visual-plan",
             inputs["visual_plan_path"], "--concept-root", inputs["concept_root"], expected=2,
         )
         self.assertIn("does not accept --concept-root", result.stderr)
@@ -1002,6 +1011,70 @@ class StageProposalToolTest(unittest.TestCase):
             inputs["visual_plan_path"], expected=2,
         )
         self.assertIn("must not author Concept projections", result.stderr)
+
+    def test_fixed_view_invent_accepts_only_packet_bound_instructions(self):
+        fixture = FixedConceptAuthoringTest()
+        fixture.setUp()
+        source = copy.deepcopy(fixture.source)
+        source["selected_inventor_id"] = self.assignment.selected_inventor_id
+        source["ranking"] = [item.to_dict() for item in self.assignment.ranking]
+        wish = Wish.create("run-local-toy", "A held seed that opens into a star")
+        wish_bytes = canonical_json(wish.to_dict())
+        (self.run_root / "WISH.json").write_bytes(wish_bytes)
+        inputs = {
+            "effort": "forge", "wish": {"path": "WISH.json", "sha256": sha256(wish_bytes)},
+            "wish_sha256": sha256(wish_bytes), "inventor_roster": self.roster.to_dict(),
+            "blueprint": self.blueprint.to_dict(), "blueprint_sha256": self.blueprint.sha256,
+            "assignment_contract_path": "artifacts/invent/assignment.json",
+            "contract_path": "artifacts/invent/invented.json",
+            "invent_concept_capability": {"path": ".agents/skills/autonomous-workshop/references/invent-concept-v3.md", "sha256": "e" * 64},
+            "concept_root": "artifacts/concept/r0001/concept",
+            "concept_pre_render_path": "artifacts/concept/r0001/pre-render.json",
+            "concept_sealed_path": "artifacts/concept/r0001/sealed.json",
+            "concept_effect_path": "artifacts/concept/r0001/effect.json",
+            "visual_instructions_path": "artifacts/invent/visual-instructions.json",
+            "concept_round": 1, "standing_concept_sha256": None,
+            "revision_input_sha256": None,
+        }
+        self.write_stage("invent", inputs)
+        self.write_json("drafts/invent-v3.json", source, canonical=True)
+        self.write_json(inputs["visual_instructions_path"], fixture.instructions, canonical=True)
+        self.run_tool(
+            "invent", "--source", "drafts/invent-v3.json",
+            "--visual-instructions", inputs["visual_instructions_path"],
+        )
+        document, _ = self.assert_canonical_file(inputs["concept_pre_render_path"])
+        concept = PreRenderConceptV4.from_mapping(document)
+        self.assertEqual(
+            [role["id"] for role in concept.drawing_instructions],
+            ["front", "top", "bottom", "exploded", "component:shell", "component:core"],
+        )
+        proposal_document, _ = self.assert_canonical_file("agent-outcome.json")
+        proposal = AgentOutcomeProposal.from_mapping(proposal_document)
+        decision = evaluate_routed_invent_stage(
+            proposal, run_root=self.run_root, expected_checkpoint_sha256="1" * 64,
+            expected_subject_sha256="2" * 64, wish_sha256=inputs["wish_sha256"],
+            roster=self.roster, assignment_artifact_path="artifacts/invent/assignment.json",
+            invented_artifact_path="artifacts/invent/invented.json",
+            concept_context={
+                "invent_concept_version": 3, "concept_root": inputs["concept_root"],
+                "concept_pre_render_path": inputs["concept_pre_render_path"],
+                "visual_instructions_path": inputs["visual_instructions_path"],
+                "concept_round": 1, "standing_concept_sha256": None,
+                "revision_input_sha256": None, "wish": inputs["wish"],
+            },
+        )
+        self.assertEqual(
+            decision.evidence.checks["concept_structure"],
+            {"checks_kind": "concept-structure-v3", "role_count": 6},
+        )
+        (self.run_root / "agent-outcome.json").unlink()
+        result = self.run_tool(
+            "invent", "--source", "drafts/invent-v3.json",
+            "--visual-instructions", inputs["visual_instructions_path"],
+            "--visual-plan", inputs["visual_instructions_path"], expected=2,
+        )
+        self.assertIn("does not accept --concept-root or --visual-plan", result.stderr)
 
     def test_marked_routed_invent_rejects_incomplete_or_extra_source_tree(self):
         for mutation in ("missing-role", "extra-file"):
@@ -1055,6 +1128,18 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn("does not accept --visual-plan", result.stderr)
+
+    def test_frozen_v1_invent_rejects_the_v3_visual_instructions_flag(self):
+        inputs, source = self.create_marked_invent_source()
+        self.write_stage("invent", inputs)
+        self.write_json("drafts/marked-invent.json", source, canonical=True)
+        self.write_json("drafts/visual-instructions.json", {"views": {}}, canonical=True)
+        result = self.run_tool(
+            "invent", "--source", "drafts/marked-invent.json",
+            "--concept-root", inputs["concept_root"], "--visual-instructions",
+            "drafts/visual-instructions.json", expected=2,
+        )
+        self.assertIn("does not accept --visual-instructions", result.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_marked_invent_rejects_stale_round_and_substituted_wish_before_output(self):
@@ -1421,6 +1506,92 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn("differs from its manifest", failed.stderr)
+
+    def test_fixed_view_make_accepts_component_visual_map(self):
+        fixture = FixedConceptAuthoringTest()
+        fixture.setUp()
+        source = copy.deepcopy(fixture.source)
+        component = source["concept"]["components"][0]
+        component["key"] = "observatory"
+        source["concept"]["components"] = [component]
+        source["concept"]["interaction_trace"][0]["component_keys"] = ["observatory"]
+        source["selected_inventor_id"] = self.assignment.selected_inventor_id
+        source["ranking"] = [item.to_dict() for item in self.assignment.ranking]
+        instructions = copy.deepcopy(fixture.instructions)
+        instructions["views"]["exploded"] = "Separate observatory and show every interface."
+        instructions["components"] = {"observatory": "Show the complete observatory alone."}
+        wish = Wish.create("run-local-toy", "A held seed that opens into a star")
+        wish_bytes = canonical_json(wish.to_dict())
+        (self.run_root / "WISH.json").write_bytes(wish_bytes)
+        inputs = {
+            "effort": "forge", "wish": {"path": "WISH.json", "sha256": sha256(wish_bytes)},
+            "wish_sha256": sha256(wish_bytes), "inventor_roster": self.roster.to_dict(),
+            "blueprint": self.blueprint.to_dict(), "blueprint_sha256": self.blueprint.sha256,
+            "assignment_contract_path": "artifacts/invent/assignment.json",
+            "contract_path": "artifacts/invent/invented.json",
+            "invent_concept_capability": {"path": ".agents/skills/autonomous-workshop/references/invent-concept-v3.md", "sha256": "e" * 64},
+            "concept_root": "artifacts/concept/r0001/concept",
+            "concept_pre_render_path": "artifacts/concept/r0001/pre-render.json",
+            "concept_sealed_path": "artifacts/concept/r0001/sealed.json",
+            "concept_effect_path": "artifacts/concept/r0001/effect.json",
+            "visual_instructions_path": "artifacts/invent/visual-instructions.json",
+            "concept_round": 1, "standing_concept_sha256": None,
+            "revision_input_sha256": None,
+        }
+        self.write_stage("invent", inputs)
+        self.write_json("drafts/fixed-make.json", source, canonical=True)
+        self.write_json(inputs["visual_instructions_path"], instructions, canonical=True)
+        self.run_tool("invent", "--source", "drafts/fixed-make.json", "--visual-instructions", inputs["visual_instructions_path"])
+        assignment, _ = self.assert_canonical_file("artifacts/invent/assignment.json")
+        invented, _ = self.assert_canonical_file("artifacts/invent/invented.json")
+        pre_document, _ = self.assert_canonical_file(inputs["concept_pre_render_path"])
+        pre = PreRenderConceptV4.from_mapping(pre_document)
+        image_bytes = {}
+        for index, role in enumerate(pre.drawing_instructions):
+            content = b"\x89PNG\r\n\x1a\nfixed-%d" % index
+            path = self.run_root / inputs["concept_root"] / pre.descriptor[role["id"]]["path"]
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+            image_bytes[role["id"]] = content
+        sealed = seal_pre_render_concept_v4(pre, image_bytes)
+        self.write_json(inputs["concept_sealed_path"], sealed.to_dict(), canonical=True)
+        effect = ConceptEffectEvidence(
+            pre_render_concept_sha256=pre.concept_sha256,
+            sealed_concept_sha256=sealed.concept_sha256,
+            profile_id="openrouter-images-v1", profile_sha256="9" * 64,
+            roles=tuple(ConceptEffectRoleEvidence(
+                role=entry["id"], path=entry["path"],
+                intent_sha256=("%x" % (index + 1)) * 64,
+                image_sha256=entry["sha256"], media_type="image/png",
+            ) for index, entry in enumerate(sealed.images)),
+        )
+        self.write_json(inputs["concept_effect_path"], effect.to_dict(), canonical=True)
+        self.create_product()
+        review_path = self.run_root / "artifacts/make/r0001/product/cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text())
+        review["concept_sha256"] = invented["concept_sha256"]
+        review_path.write_bytes(canonical_json(review))
+        make_inputs = {
+            "assignment": assignment, "invented": invented,
+            "invent_concept_capability": inputs["invent_concept_capability"],
+            "sealed_concept": sealed.to_dict(),
+            "sealed_concept_artifact": {"path": inputs["concept_sealed_path"], "sha256": sha256((self.run_root / inputs["concept_sealed_path"]).read_bytes())},
+            "concept_effect": effect.to_dict(),
+            "concept_effect_artifact": {"path": inputs["concept_effect_path"], "sha256": sha256((self.run_root / inputs["concept_effect_path"]).read_bytes())},
+            "required_product_component_keys": ["observatory"],
+            "concept_visual_roles": [dict(item) for item in sealed.images],
+            "component_visuals": {"observatory": dict(sealed.images[-1])},
+        }
+        self.write_stage("make", make_inputs, round_index=1)
+        self.run_tool("make", "--product-root", "artifacts/make/r0001/product", "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json")
+        made_document, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
+        self.assertEqual(NativeMade.from_mapping(made_document).concept_sha256, sealed.concept_sha256)
+
+        make_inputs["component_visuals"] = {"wrong": dict(sealed.images[-1])}
+        (self.run_root / "agent-outcome.json").unlink()
+        self.write_stage("make", make_inputs, round_index=1)
+        failed = self.run_tool("make", "--product-root", "artifacts/make/r0001/product", "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json", expected=2)
+        self.assertIn("component visuals differ", failed.stderr)
 
     def test_spark_make_requires_creative_source_before_sealing(self):
         self.create_product()

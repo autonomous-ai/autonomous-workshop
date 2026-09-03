@@ -65,6 +65,13 @@ The selected route freezes `deep-economics-v14.md`. Disabling the activation
 switch affects only future runs: checkpoints already frozen with v1 or v2 always use
 their own materialized marker, profile, finalizer, and readers.
 
+The additive successor `invent-concept-v3.md` / Concept v4 is implemented but
+not selected for ordinary new runs until acceptance. It keeps the two-input
+native boundary while deterministically deriving front, top, bottom, exploded,
+and one isolated image per stable component. It freezes
+`deep-economics-v15.md`; exact v1/v2/v3 checkpoint markers remain the sole
+resume authority.
+
 - **Wish** preserves the person's exact words and explicit constraints.
 - The first active creative stage selects and binds one Inventor. Optional
   stages pass through without turns, artifacts, gates, or fabricated evidence.

@@ -805,6 +805,76 @@ class AgentRunTest(unittest.TestCase):
                     hashlib.sha256(source.read_bytes()).hexdigest(),
                 )
 
+    def test_v3_acceptance_switch_selects_only_v3_and_v15_for_new_deep_runs(self):
+        references = self.skill / "references"
+        files = {
+            "effort-routes-v1.md": b"selectable effort routes\n",
+            "invent-concept-v1.md": b"legacy Concept boundary\n",
+            "invent-concept-v2.md": b"adaptive Concept boundary\n",
+            "invent-concept-v3.md": b"fixed-view Concept boundary\n",
+            "deep-economics-v13.md": b"deep v13\n",
+            "deep-economics-v14.md": b"deep v14\n",
+            "deep-economics-v15.md": b"deep v15\n",
+        }
+        for name, content in files.items():
+            (references / name).write_bytes(content)
+        with patch.object(agent_run_module, "INVENT_CONCEPT_V3_ACTIVATED", True):
+            checkpoint = AgentRun.create(
+                self.root / "acceptance-forge",
+                host_state_root=self.root / "acceptance-forge-host",
+                product_id="acceptance-forge",
+                wish_bytes=canonical_wish("acceptance-forge", "Make a moon toy."),
+                product_run_constitution_source=self.product_run_constitution,
+                skill_root=self.skill,
+                effort="forge",
+            ).snapshot()
+        paths = set(checkpoint.input_sha256s)
+        self.assertIn(
+            ".agents/skills/autonomous-workshop/references/invent-concept-v3.md",
+            paths,
+        )
+        self.assertIn(
+            ".agents/skills/autonomous-workshop/references/deep-economics-v15.md",
+            paths,
+        )
+        for excluded in (
+            ".agents/skills/autonomous-workshop/references/invent-concept-v1.md",
+            ".agents/skills/autonomous-workshop/references/invent-concept-v2.md",
+            ".agents/skills/autonomous-workshop/references/deep-economics-v13.md",
+            ".agents/skills/autonomous-workshop/references/deep-economics-v14.md",
+        ):
+            self.assertNotIn(excluded, paths)
+
+    def test_v3_materialized_protocol_bytes_match_recorded_input_hashes(self):
+        repository = Path(__file__).resolve().parents[2]
+        skill = repository / ".agents/product-run/.agents/skills/autonomous-workshop"
+        constitution = repository / ".agents/product-run/AGENTS.md"
+        with patch.object(agent_run_module, "INVENT_CONCEPT_V3_ACTIVATED", True):
+            checkpoint = AgentRun.create(
+                self.run_root, host_state_root=self.host_state_root,
+                product_id=self.product_id, wish_bytes=self.wish_bytes,
+                product_run_constitution_source=constitution,
+                skill_root=skill, effort="forge",
+            ).snapshot()
+        paths = (
+            ".agents/skills/autonomous-workshop/references/invent-concept-v3.md",
+            ".agents/skills/autonomous-workshop/references/deep-economics-v15.md",
+            ".agents/skills/autonomous-workshop/references/make.md",
+            ".agents/skills/autonomous-workshop/scripts/stage_proposal.py",
+            ".agents/skills/autonomous-workshop/scripts/concept_validator.py",
+        )
+        for relative in paths:
+            with self.subTest(relative=relative):
+                source = skill / relative.removeprefix(
+                    ".agents/skills/autonomous-workshop/"
+                )
+                materialized = self.run_root / relative
+                self.assertEqual(materialized.read_bytes(), source.read_bytes())
+                self.assertEqual(
+                    checkpoint.input_sha256s[relative],
+                    hashlib.sha256(source.read_bytes()).hexdigest(),
+                )
+
     def test_capable_forge_make_can_return_to_invent_with_failed_gate(self):
         references = self.skill / "references"
         (references / "effort-routes-v1.md").write_bytes(

@@ -16,6 +16,7 @@ from workshop.concept import (
     evaluate_concept_brief,
     load_pre_render_concept,
     normalize_authored_concept,
+    normalize_fixed_view_concept,
 )
 from workshop.errors import ArtifactError, ContractError
 from workshop.invent.native import NativeInvented
@@ -109,7 +110,14 @@ def load_payload() -> dict[str, Any]:
         "visual_plan_hex", "round", "standing_concept_sha256",
         "revision_input_sha256",
     }
-    if not isinstance(value, dict) or set(value) not in (expected, simplified):
+    fixed = {
+        "protocol_version", "run_root", "wish", "assignment", "inventor_roster",
+        "invented", "creative_source", "creative_source_hex",
+        "creative_source_path", "creative_source_sha256",
+        "visual_instructions_path", "visual_instructions_hex", "round",
+        "standing_concept_sha256", "revision_input_sha256",
+    }
+    if not isinstance(value, dict) or set(value) not in (expected, simplified, fixed):
         raise ContractError("Concept validator input fields are invalid")
     return value
 
@@ -164,33 +172,54 @@ def validate(payload: dict[str, Any]) -> dict[str, Any]:
     if source_sha256 != payload["creative_source_sha256"]:
         raise ContractError("Concept creative source sha256 is invalid")
 
-    if payload.get("protocol_version") == 2:
+    if payload.get("protocol_version") in (2, 3):
+        fixed = payload["protocol_version"] == 3
+        path_key = "visual_instructions_path" if fixed else "visual_plan_path"
+        hex_key = "visual_instructions_hex" if fixed else "visual_plan_hex"
+        label = "Concept visual instructions" if fixed else "Concept visual plan"
         visual_relative = safe_relative(
-            payload["visual_plan_path"], "Concept visual-plan path"
+            payload[path_key], "%s path" % label
         )
         visual_content = read_regular(
-            root.joinpath(*visual_relative.parts), "Concept visual plan"
+            root.joinpath(*visual_relative.parts), label
         )
         try:
-            supplied_visual = bytes.fromhex(payload["visual_plan_hex"])
+            supplied_visual = bytes.fromhex(payload[hex_key])
             visual_value = json.loads(
                 visual_content.decode("utf-8"), object_pairs_hook=strict_object,
                 parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
             )
         except (TypeError, ValueError, UnicodeError) as exc:
-            raise ContractError("Concept visual-plan bytes are invalid") from exc
+            raise ContractError("%s bytes are invalid" % label) from exc
         if supplied_visual != visual_content:
-            raise ContractError("Concept visual-plan bytes changed during validation")
-        concept = normalize_authored_concept(
-            payload["creative_source"], visual_value,
-            source_path=payload["creative_source_path"], source_bytes=source_content,
-            visual_plan_path=payload["visual_plan_path"], visual_plan_bytes=visual_content,
-            wish=wish, wish_sha256=wish_binding["sha256"], assignment=assignment,
-            invented=invented, round=payload["round"],
-            standing_concept_sha256=payload["standing_concept_sha256"],
-            revision_input_sha256=payload["revision_input_sha256"],
-        )
-        return {"checks": {"checks_kind": "concept-structure-v2", "role_count": len(concept.drawing_instructions)}, "pre_render": concept.to_dict()}
+            raise ContractError("%s bytes changed during validation" % label)
+        common = {
+            "source_path": payload["creative_source_path"],
+            "source_bytes": source_content,
+            "wish": wish,
+            "wish_sha256": wish_binding["sha256"],
+            "assignment": assignment,
+            "invented": invented,
+            "round": payload["round"],
+            "standing_concept_sha256": payload["standing_concept_sha256"],
+            "revision_input_sha256": payload["revision_input_sha256"],
+        }
+        if fixed:
+            concept = normalize_fixed_view_concept(
+                payload["creative_source"], visual_value,
+                visual_instructions_path=payload[path_key],
+                visual_instructions_bytes=visual_content,
+                **common,
+            )
+            checks_kind = "concept-structure-v3"
+        else:
+            concept = normalize_authored_concept(
+                payload["creative_source"], visual_value,
+                visual_plan_path=payload[path_key], visual_plan_bytes=visual_content,
+                **common,
+            )
+            checks_kind = "concept-structure-v2"
+        return {"checks": {"checks_kind": checks_kind, "role_count": len(concept.drawing_instructions)}, "pre_render": concept.to_dict()}
 
     round_index = payload["round"]
     expected_root = "artifacts/concept/r%04d/concept" % round_index

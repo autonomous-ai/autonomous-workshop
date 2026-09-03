@@ -89,11 +89,14 @@ or expand one key per variant:
 
 Newer marked packets also contain `concept_visual_roles`, an ordered bounded
 summary copied from the sealed Concept. Use each role's purpose and image only
-as design direction. The role set is adaptive: never assume front, top, bottom,
-exploded, or one image per component, and never treat omission of such a legacy
-role as missing evidence. Normalized physical facts, component relationships,
-interaction trace, dimensions, constraints, and proof target remain
-authoritative; image pixels remain non-evidentiary.
+as design direction. In frozen v2 packets the role set is adaptive: never
+assume front, top, bottom, exploded, or one image per component, and never
+infer a missing legacy view. In v3 packets the set is fixed: use front, top, and
+bottom for envelope and silhouette; exploded for assembly and part identity;
+and `component_visuals[stable-key]` for each component's complete form and
+interfaces. Normalized physical facts, component relationships, interaction
+trace, dimensions, constraints, and proof target remain authoritative; image
+pixels remain non-evidentiary.
 
 ```json
 {

@@ -18,7 +18,9 @@ from workshop.artifacts import ArtifactEntry, ArtifactManifest, MAX_ENTRIES
 from workshop.concept import (
     SealedConcept,
     SealedConceptV3,
+    SealedConceptV4,
     validate_sealed_concept_v3_tree,
+    validate_sealed_concept_v4_tree,
 )
 from workshop.errors import ContractError, StateConflict
 from workshop.invent.native import NativeInvented
@@ -406,7 +408,7 @@ def _resolve_concept_binding(
 ) -> tuple[
     Path,
     bytes,
-    SealedConcept | SealedConceptV3,
+    SealedConcept | SealedConceptV3 | SealedConceptV4,
     bytes,
     Mapping[str, Any],
 ]:
@@ -423,7 +425,12 @@ def _resolve_concept_binding(
     if len(candidates) != 1:
         raise StateConflict("public archive cannot resolve the Made Concept")
     concept_directory, sealed_content, sealed_document = candidates[0]
-    if sealed_document.get("schema_version") == 3:
+    if sealed_document.get("schema_version") == 4:
+        sealed = SealedConceptV4.from_mapping(sealed_document)
+        validate_sealed_concept_v4_tree(
+            sealed, concept_directory / "concept"
+        )
+    elif sealed_document.get("schema_version") == 3:
         sealed = SealedConceptV3.from_mapping(sealed_document)
         validate_sealed_concept_v3_tree(
             sealed, concept_directory / "concept"
@@ -994,7 +1001,7 @@ def write_public_workflow_archive(
             ))
             writer("concept/sealed.json", sealed_content)
             writer("concept/effect.json", effect_content)
-            if isinstance(sealed, SealedConceptV3):
+            if isinstance(sealed, (SealedConceptV3, SealedConceptV4)):
                 for entry in sealed.source.author_source_manifest["entries"]:
                     writer(
                         "concept/source/%s" % PurePosixPath(entry["path"]).name,

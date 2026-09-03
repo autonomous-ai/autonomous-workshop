@@ -14,6 +14,7 @@ from workshop.workflow.effort import (
     EFFORT_ROUTE_CAPABILITY_PATH,
     INVENT_CONCEPT_CAPABILITY_PATH,
     INVENT_CONCEPT_V2_CAPABILITY_PATH,
+    INVENT_CONCEPT_V3_CAPABILITY_PATH,
 )
 from workshop.workflow.native_run import (
     _invent_concept_paths,
@@ -28,12 +29,14 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.run_root = Path(self.temporary.name).resolve()
 
-    def _checkpoint(self, effort="forge", *, marked=True, simplified=False, round_index=1):
+    def _checkpoint(self, effort="forge", *, marked=True, simplified=False, fixed=False, round_index=1):
         inputs = {EFFORT_ROUTE_CAPABILITY_PATH: "a" * 64}
         if marked:
             inputs[
-                INVENT_CONCEPT_V2_CAPABILITY_PATH
-                if simplified else INVENT_CONCEPT_CAPABILITY_PATH
+                INVENT_CONCEPT_V3_CAPABILITY_PATH if fixed else (
+                    INVENT_CONCEPT_V2_CAPABILITY_PATH
+                    if simplified else INVENT_CONCEPT_CAPABILITY_PATH
+                )
             ] = "b" * 64
         return AgentRunCheckpoint(
             product_id="invent-concept-packet",
@@ -125,6 +128,24 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
         self.assertEqual(packet["inputs"]["visual_plan_path"], "artifacts/invent/visual-plan.json")
         self.assertEqual(packet["inputs"]["invent_concept_capability"]["path"], INVENT_CONCEPT_V2_CAPABILITY_PATH)
         self.assertEqual(context["invent_concept_version"], 2)
+
+    def test_fixed_packet_binds_visual_instructions_without_changing_route(self):
+        subject, packet, context = _prepare_effort_stage_input(
+            mock.Mock(run_root=self.run_root), self._checkpoint(fixed=True),
+            roster=self._roster(), cad_gate_rejection=None,
+            make_proposal_rejection=None, playtest_proposal_rejection=None,
+        )
+        self.assertRegex(subject, r"^[0-9a-f]{64}$")
+        self.assertEqual(packet["next_transition"], "make")
+        self.assertEqual(
+            packet["inputs"]["visual_instructions_path"],
+            "artifacts/invent/visual-instructions.json",
+        )
+        self.assertEqual(
+            packet["inputs"]["invent_concept_capability"]["path"],
+            INVENT_CONCEPT_V3_CAPABILITY_PATH,
+        )
+        self.assertEqual(context["invent_concept_version"], 3)
 
     def test_checkpoint_cannot_mix_frozen_v1_and_v2_markers(self):
         checkpoint = self._checkpoint(simplified=True)

@@ -197,6 +197,13 @@ The host owns:
 Provider request/response compatibility from `e189bcb` belongs at this
 boundary. Its obsolete CAD timestamp and `--no-report` workarounds do not.
 
+The implemented, acceptance-gated v3 authoring boundary fixes the generated
+inventory to front, top, bottom, exploded, and one isolated view per stable
+component. The host owns the neutral direct-view prompt protocol and its
+dependency graph. This makes the handoff simpler to reconstruct while leaving
+dimensions authoritative in normalized source and keeping signature proof in
+Make.
+
 ### Activate Concept inside the current creative boundaries
 
 **Status: active for newly marked Forge and Quest; intentionally absent from

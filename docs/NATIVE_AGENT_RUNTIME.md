@@ -620,9 +620,8 @@ identities, requires exact brief/product component-key correspondence, and
 forbids copied Concept pixels in the product tree. Provider credentials never
 enter the native subprocess, packet, workspace evidence, or public status.
 
-Concept v3 is implemented additively behind the exact
-`invent-concept-v2.md` marker and is not yet selected for ordinary new runs.
-For an opt-in acceptance run, Invent authors only a consolidated source and the
+Concept v3 is active behind the exact `invent-concept-v2.md` marker. Invent
+authors only a consolidated source and the
 packet-bound adaptive visual plan. The installed finalizer and trusted host
 normalize those bytes independently, and the host executes the declared roles
 in order after native exit. Make consumes both Concept v2 and v3 through one
@@ -630,6 +629,19 @@ normalized view; v3 packets add `concept_visual_roles` and never require the
 legacy front/top/bottom/exploded or per-component image family. Physical facts
 remain authoritative and images remain non-evidentiary. Rollback suppresses
 v2/v14 materialization for future runs without rewriting a frozen checkpoint.
+
+Concept v4 is implemented behind the not-yet-active
+`invent-concept-v3.md`/`deep-economics-v15.md` pair. Its two authored inputs are
+the consolidated physical source and packet-bound fixed visual instructions.
+The host deterministically derives front, top, bottom, exploded, and one
+isolated role per stable component, up to sixteen components and twenty images.
+V4 Make packets add the stable-key `component_visuals` map. Front establishes
+the unchanged object's appearance; top and bottom depend on front; exploded
+depends on all three overall views; components depend on exploded. The frozen
+prompt protocol uses neutral orthographic-like product studies without scene,
+text, annotations, people, props, reflections, or dramatic depth effects.
+Acceptance may opt in through `WORKSHOP_INVENT_CONCEPT_V3_ACCEPTANCE=1`;
+rollback affects only new materialization.
 
 The host CAD gate retains two claim-bound tiers for historical protocols. Its
 default/full tier reruns the

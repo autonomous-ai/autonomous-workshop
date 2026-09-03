@@ -30,6 +30,21 @@ from workshop.concept.v3 import (
     validate_authored_source,
     validate_visual_plan,
 )
+from workshop.concept.v4 import (
+    FIXED_OVERALL_ROLES,
+    FIXED_PRESENTATION_PROMPT,
+    FIXED_PROMPT_PROTOCOL_VERSION,
+    FIXED_VIEW_INSTRUCTIONS_KIND,
+    MAX_FIXED_COMPONENTS,
+    PreRenderConceptV4,
+    SealedConceptV4,
+    derive_fixed_roles,
+    fixed_prompt_protocol_sha256,
+    normalize_fixed_view_concept,
+    seal_pre_render_concept_v4,
+    validate_fixed_view_instructions,
+    validate_sealed_concept_v4_tree,
+)
 
 __all__ = [
     "ConceptTree",
@@ -56,4 +71,17 @@ __all__ = [
     "validate_sealed_concept_v3_tree",
     "validate_authored_source",
     "validate_visual_plan",
+    "FIXED_OVERALL_ROLES",
+    "FIXED_PRESENTATION_PROMPT",
+    "FIXED_PROMPT_PROTOCOL_VERSION",
+    "FIXED_VIEW_INSTRUCTIONS_KIND",
+    "MAX_FIXED_COMPONENTS",
+    "PreRenderConceptV4",
+    "SealedConceptV4",
+    "derive_fixed_roles",
+    "fixed_prompt_protocol_sha256",
+    "normalize_fixed_view_concept",
+    "seal_pre_render_concept_v4",
+    "validate_fixed_view_instructions",
+    "validate_sealed_concept_v4_tree",
 ]

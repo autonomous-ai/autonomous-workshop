@@ -5,15 +5,20 @@ Quest Invent. This does not add a stage: the native Invent turn authors exact
 pre-render source, exits without credentials, and the trusted host renders and
 seals the required roles before the Invent gate may advance to Make.
 
-The next `invent-concept-v2.md` boundary is implemented but remains disabled
-for ordinary new runs until authenticated Forge and Quest acceptance passes.
+The `invent-concept-v2.md` boundary is the active ordinary Forge and Quest
+contract.
 Its native turn authors exactly `invent-source.json` and the packet-bound
 `visual-plan.json`; the host derives Concept v3 and executes the plan's 2 to 20
 ordered adaptive roles. The primary-form role is first, a signature-experience
 role is mandatory, and references may name only earlier roles. No fixed view or
 per-component image family is implied. Acceptance operators may opt in with
-`WORKSHOP_INVENT_CONCEPT_V2_ACCEPTANCE=1`; this freezes v2/v14 into that run and
-does not enable other runs.
+The implemented `invent-concept-v3.md` boundary remains disabled for ordinary
+new runs pending authenticated acceptance. Its native turn authors the same
+physical source plus packet-bound `visual-instructions.json`; the host derives
+Concept v4 with exactly front, top, bottom, exploded, and one isolated image per
+stable component. The 20-image ceiling limits it to sixteen components.
+Acceptance operators may opt in with `WORKSHOP_INVENT_CONCEPT_V3_ACCEPTANCE=1`,
+which freezes v3/v15 into that run without affecting other or existing runs.
 
 ## Authorization and configuration
 
@@ -54,7 +59,17 @@ intent. Each role has a durable private identity binding checkpoint, subject,
 pre-render Concept, instruction, output path, ordered reference hashes, profile,
 model, and request schema. V1 roles run in their fixed authored dependency
 order. V2 intents additionally bind the exact role facts and canonical
-normalized constraint block and run in the adaptive plan's declared order.
+normalized constraint block and run in the adaptive plan's declared order. V3
+binds shared appearance, each authored depiction note, normalized role facts,
+and the frozen prompt protocol. Front has no predecessor; top and bottom use
+front; exploded uses all three overall views; every component uses exploded.
+
+V3 presentation is deliberately plain: direct orthographic-like views, one
+unchanged fully framed product, white or light-neutral background, flat neutral
+lighting, restrained matte materials, and readable boundaries. It excludes
+scenes, text, annotations, people, hands, props, reflections, dramatic
+perspective, and depth of field. This improves legibility but does not turn a
+generated image into calibrated geometry.
 
 A proven pre-transmission failure can retry the same intent on `workshop
 resume`. A provider rejection remains rejected. If transmission may have

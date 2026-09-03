@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/schemas/workshop/fixed-view-instructions-v3.json",
+  "title": "Invent Concept v3 fixed-view authored instructions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "appearance", "views", "components"],
+  "properties": {
+    "schema_version": {"const": 3},
+    "kind": {"const": "autonomous-workshop.fixed-concept-view-instructions"},
+    "appearance": {"type": "string", "minLength": 1, "maxLength": 4000},
+    "views": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["front", "top", "bottom", "exploded"],
+      "properties": {
+        "front": {"type": "string", "minLength": 1, "maxLength": 4000},
+        "top": {"type": "string", "minLength": 1, "maxLength": 4000},
+        "bottom": {"type": "string", "minLength": 1, "maxLength": 4000},
+        "exploded": {"type": "string", "minLength": 1, "maxLength": 4000}
+      }
+    },
+    "components": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 16,
+      "propertyNames": {"pattern": "^[a-z0-9][a-z0-9-]{0,127}$"},
+      "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 4000}
+    }
+  }
+}

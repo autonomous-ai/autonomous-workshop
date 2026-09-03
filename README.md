@@ -249,6 +249,15 @@ unchanged. Frozen v1 runs remain byte-compatible; a frozen v2 acceptance run is
 also resumable if future selection is rolled back. The activation switch can
 disable v2 selection for future runs without changing either frozen protocol.
 
+The next Concept v3 boundary is implemented behind its acceptance switch. It
+replaces adaptive image choice with exactly front, top, bottom, exploded, and
+one isolated image per stable component. The host derives those requests from
+the physical source plus one fixed-view instruction file, using plain neutral
+orthographic-like presentation for CAD legibility. Its 20-image ceiling allows
+at most sixteen components. Until authenticated Forge and Quest acceptance is
+recorded, ordinary new runs continue to freeze v2; existing checkpoints always
+resume under their original v1, v2, or v3 marker.
+
 New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
 ceiling for their one persistent Make-to-Release session, and a 20-minute
 boundary per native turn. A timeout resumes the exact session and Goal through

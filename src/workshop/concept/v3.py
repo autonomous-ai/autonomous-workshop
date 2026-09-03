@@ -526,7 +526,7 @@ class NormalizedConceptView:
     visual_roles: tuple[Mapping[str, Any], ...]
 
     def __post_init__(self) -> None:
-        if self.schema_version not in (2, 3):
+        if self.schema_version not in (2, 3, 4):
             raise ContractError("normalized Concept view schema is unsupported")
         require_sha256(self.concept_sha256, "normalized Concept sha256")
         brief = copy_json_mapping(_thaw(self.brief), "normalized Concept brief", nonempty=True)
@@ -542,13 +542,27 @@ class NormalizedConceptView:
     def component_keys(self) -> tuple[str, ...]:
         return tuple(item["key"] for item in self.brief["components"])
 
+    @property
+    def component_visuals(self) -> Mapping[str, Mapping[str, Any]]:
+        mapped = {
+            role["id"].split(":", 1)[1]: role
+            for role in self.visual_roles
+            if role.get("kind") == "component"
+            and isinstance(role.get("id"), str)
+            and role["id"].startswith("component:")
+        }
+        return MappingProxyType(mapped)
+
 
 def normalized_concept_view(value: SealedConcept | SealedConceptV3 | Mapping[str, Any], *, root: Any = None) -> NormalizedConceptView:
     """Parse exactly one sealed contract version and expose its stable boundary."""
 
     if isinstance(value, Mapping):
         version = value.get("schema_version")
-        if version == 3:
+        if version == 4:
+            from .v4 import SealedConceptV4
+            value = SealedConceptV4.from_mapping(value)
+        elif version == 3:
             value = SealedConceptV3.from_mapping(value)
         elif version == 2:
             if root is None:
@@ -556,6 +570,13 @@ def normalized_concept_view(value: SealedConcept | SealedConceptV3 | Mapping[str
             value = SealedConcept.from_mapping(value, root=root)
         else:
             raise ContractError("sealed Concept mapping version is unsupported")
+    from .v4 import SealedConceptV4
+    if isinstance(value, SealedConceptV4):
+        return NormalizedConceptView(
+            schema_version=4, concept_sha256=value.concept_sha256,
+            brief=value.source.brief, research=value.source.research,
+            visual_roles=value.images,
+        )
     if isinstance(value, SealedConceptV3):
         return NormalizedConceptView(
             schema_version=3, concept_sha256=value.concept_sha256,
