@@ -1,104 +1,162 @@
 # Daydream
 
-Owns the stage before a Wish exists: one Inventor dreams one brand-new toy
-idea, the idea is linted for novelty, and the surviving idea is sealed as the
-plain-text brief that becomes a Wish. Daydream also owns each Inventor's
-persistent notebook of ideas already had.
+Daydream is the mandatory first creative step of every
+`workshop start <inventor>` cycle. It runs before a Wish exists and is not a
+product-run stage. `workshop start --idea` reuses a completed, Judge-accepted
+Daydream; the separate `workshop wish` command remains the entry point for a
+person's already-authored Wish.
 
-Daydream contains no Match, Invent, Make, Playtest, or Release behaviour. It
-hands a `Wish` to Workflow through `wish_from_daydream`, and from there a run
-is keyed by an ordinary Wish id so `workshop status` and `workshop resume`
-keep working unchanged.
+One Daydream turns current-world evidence, one selected Inventor's immutable
+Taste and specialist method, prior work, portfolio history, Design Vault leads,
+and factual downstream outcomes into one **creative product thesis**. An
+independent Judge must accept that exact thesis before it can become immutable
+Wish intent.
 
 Public API: `workshop.daydream`.
 
-## The two criteria
+## Boundary
 
-The founder's rule set for the MVP is two sentences: the idea must be entirely
-new, and it must fit what the Inventor's `TASTE.md` describes. Each is
-enforced today as follows.
+Daydream owns:
 
-- **Entirely new.** The `DAYDREAM_CONSTITUTION` instructs the Inventor to
-  search the web for anything similar, to name the two to five nearest things
-  in `prior_art` with the concrete difference in mechanism or play, and never
-  to repeat or re-skin any entry of `PRIOR-WORK.md` or `NOTEBOOK.md`. After
-  the turn, `lint_novelty` deterministically compares the idea against the
-  public toy catalog (`toys/<slug>/wish/wish.json`, falling back to the toy
-  README) and against the notebook: an identical normalized title, or a
-  Jaccard overlap of content words at or above `NOVELTY_MAX_SIMILARITY`, is
-  `too-close`. A too-close idea is recorded as rejected and never sealed.
-- **Fits the Taste.** The Inventor reads its exact `TASTE.md` bytes first and
-  asserts the fit itself in `taste_fit.honors` and `taste_fit.steers_clear_of`.
-  The sealed brief names the Inventor who dreamed it so Match binds the same
-  Inventor unless the Taste rejects the final concept, and Invent reviews the
-  fit again with the full Taste in hand.
+- why the product should exist now, or which evergreen tension still matters;
+- the physical action, response, payoff, and anti-generic signature;
+- exact Taste promises and rejection boundaries;
+- a source-backed novelty thesis and nearest prior art;
+- an observable proof mode with concrete kill criteria; and
+- the minimum Workshop route capable of preserving and proving the thesis.
 
-## On-disk layout
+Invent owns exact mechanisms, dimensions, materials, components, construction,
+tolerances, compatibility, and research-backed physical facts. Spark Make keeps
+its existing compound responsibility to seal those facts before building.
+Daydream may offer mechanism or Vault leads, but they are advisory and cannot
+become engineering truth here.
 
-    $WORKSHOP_HOME/daydreams/<inventor-id>/NOTEBOOK.jsonl
-    $WORKSHOP_HOME/daydreams/<inventor-id>/<daydream-id>/workspace/
-        TASTE.md  PRIOR-WORK.md  NOTEBOOK.md  .workshop-product-run-root  work/IDEA.json
-    $WORKSHOP_HOME/daydreams/<inventor-id>/<daydream-id>/host-state/
-        IDEA.json (sealed)  or  REJECTED.json
+The host does not generate, fan out, rank, or semantically score candidates.
+That creative work belongs to the native Manager and the selected Inventor.
+Python owns bounded contracts, exact identities, deterministic gates, private
+state, and the Wish handoff.
 
-Daydream is one native Goal, like every product stage. The host also drops
-the constitution into the workspace as `AGENTS.md` and copies the run-local
-finalizer `finalize_daydream.py` beside it. The Inventor opens one Goal
-(objective: one new, Taste-fitting idea in `work/IDEA.json`), runs the
-finalizer, which validates the file's shape and hashes its exact bytes into
-`agent-outcome.json`, and completes the Goal. The host passes that marker to
-the runtime as the turn's finalization marker and refuses an idea whose
-marker is missing or whose bytes no longer match it.
+## Native Goals
 
-## The judge
+The Inventor-side session gets one Goal named `Daydream`. It must:
 
-Every sealed idea is judged before it is built. The Judge Goal is a second,
-short native session in `<daydream-id>/judge-workspace/` with `IDEA.json`,
-`TASTE.md`, `ROUTE.md`, the judge constitution as `AGENTS.md`, and the same
-finalizer (`--role judge`). It reads the idea the way Make's blind critic
-will see two still renders: held object, form, subject, action, relationship,
-no exposed mechanism, no hidden signature, no promised feature a render
-cannot show, and a size that fits the route. It answers seven questions about those two renders (silhouette changes,
-moving part visible in both states, travel is large, body reads as a toy,
-mechanism is not dominant, fits the route, worth owning), and writes
-`work/VERDICT.json` with those checks, a decision, a confidence, named risks,
-and advice. A `build` decision requires all seven checks true; the finalizer
-and the host both reject a `build` that contradicts its own checks, so the
-judge cannot wave through an idea while naming the reason it will fail. The
-host seals the verdict into the idea record and `host-state/VERDICT.json`. The loop
-builds only `build` verdicts; a `dream-again` idea is remembered as `judged`
-so the Inventor can repair rather than repeat it. A new schema-v2
-`dream-again` record remains inspectable but cannot become Wish intent, even
-through `workshop start --idea`; historical schema-v1 records retain their
-frozen behavior.
+1. read the exact `TASTE.md`, selected custom-agent binding and declared skill
+   trees;
+2. read `PRIOR-WORK.md`, cross-Inventor `PORTFOLIO.md`, `NOTEBOOK.md`, and the
+   advisory Vault snapshot;
+3. use live web search to inspect current news, behavior, practices, and needs;
+4. diverge across materially different interaction families;
+5. theme-strip and falsify serious candidates against Taste, prior art, proof,
+   route, and portfolio repetition; and
+6. finalize exactly one schema-v2 `work/IDEA.json` with the run-local standard-
+   library finalizer.
 
-Every directory is created 0700 with no symlinks; every host file is 0600.
-The native Manager session (Codex by default) may write only inside
-`workspace/`; under Codex the network is off and web search is on. A new
-Daydream fails closed unless the native runtime reports an observed web-search
-event; source URLs alone are not accepted as proof of a live World Pulse. The
-session must write exactly `work/IDEA.json`. The host reads that file,
-lints it, and seals a `SealedDaydream` (idea, seed, Taste identity, Manager id,
-lint verdict,
-redacted session outcome, and the rendered brief) into `host-state/IDEA.json`.
+The runtime must report an observed web-search event. Source URLs alone do not
+prove that a current scan happened. Each thesis also carries two to six unique
+world-signal URLs, an exact scan time, and the explicit translation:
 
-## The loop
+```text
+current signal -> durable human tension -> Taste-specific physical opportunity
+```
 
-`workshop start <inventor>` dreams, builds, and dreams again until it is
-stopped. `loop.py` owns the two files that make that safe:
+The portable schema rejects malformed sources and publication times after the
+scan. The host requires every scan and prior-art observation time to equal the
+turn's exact UTC time, validates exact Taste excerpts, and rejects a
+`route_floor` above the selected route. Hotness never acts as a quality score;
+an evergreen thesis is legal only after the mandatory scan.
 
-    $WORKSHOP_HOME/daydreams/<inventor-id>/LOOP.json   one lease per Inventor
-    $WORKSHOP_HOME/daydreams/<inventor-id>/STOP        stop marker
+The independent Judge runs in a second short native session over the sealed
+idea, exact Taste, and selected route. Its schema-v2 verdict separately tests:
 
-`acquire_loop` refuses a second loop while the recorded pid is alive, and a
-stale record from a dead process is replaced. `request_stop` writes the
-marker (and sends SIGINT with `--now`); the loop checks the marker between
-steps, so a stop lands after the current daydream or build, never inside one.
-The daydream session and each build session stay separate by design: the
-idea is sealed and hashed before any build exists.
+- Taste fidelity;
+- opportunity grounding;
+- mechanism or play novelty after theme removal;
+- the anti-generic signature;
+- proof observability;
+- route fit;
+- whether the thesis is worth build time; and
+- whether the Invent handoff preserves the experience without pre-solving it.
 
-## Deliberately not in the MVP
+`build` is legal only when all eight booleans are true and every identity
+matches. Confidence is a prediction, never evidence. `dream-again` retains
+failed checks, risks, and actionable advice for the next Dream, but a new
+schema-v2 rejected thesis cannot become Wish intent, including through
+`--idea`. Historical schema-v1 records retain their frozen behavior.
 
-No judge or scoring model: the novelty lint is a deterministic floor, not
-taste. No outcome feedback: sales, playtests, and reviews do not yet flow back
-into the notebook.
+## Knowledge and memory
+
+The workspace keeps four evidence planes visibly distinct:
+
+- Inventor notebook: exact structural traces, novelty rejections, and Judge
+  predictions/advice;
+- Workshop portfolio: a bounded projection of every other Inventor's notebook,
+  used to catch renamed or re-themed repeats;
+- Design Vault: shared causal craft evidence, read-only and advisory; and
+- downstream outcomes: allowlisted host-observed status, needs, exact artifact
+  lineage, Release, and Factory identities.
+
+Outcome records are appended for Daydream-originated runs on every route and on
+resume. They preserve the chain from Daydream and provenance hashes through
+Invented, Made, Playtested, Release, product artifact, and Factory design/slug
+when those facts exist. Model prose, session messages, private URLs, and
+credentials are not copied. The next native Dream interprets these facts;
+Python does not turn them into a reward score or rewrite Taste.
+
+## Exact provenance and state
+
+Every schema-v2 seal binds the exact hashes of the Daydream prompt,
+constitutions, Taste, selected Inventor and skill bundle, Vault binding and
+snapshot, prior work, portfolio, notebook/outcomes view, finalizer, portable
+schema, world scan, prior art, and Manager spec. The Wish context carries the
+Daydream, idea, provenance, Inventor, and route identities unchanged.
+
+```text
+$WORKSHOP_HOME/daydreams/<inventor-id>/
+  NOTEBOOK.jsonl
+  OUTCOMES.jsonl
+  LOOP.json
+  STOP
+  <daydream-id>/
+    workspace/
+      AGENTS.md
+      TASTE.md
+      VAULT.md [and VAULT.json when available]
+      PRIOR-WORK.md
+      PORTFOLIO.md
+      NOTEBOOK.md
+      .codex/agents/<inventor-id>.toml
+      .agents/skills/<declared-skill>/...
+      finalize_daydream.py
+      daydream_schema.py
+      work/IDEA.json
+      agent-outcome.json
+    judge-workspace/
+      IDEA.json
+      TASTE.md
+      ROUTE.md
+      AGENTS.md
+      work/VERDICT.json
+      agent-outcome.json
+    host-state/
+      IDEA.json or REJECTED.json
+      VERDICT.json
+      INVENTOR.json
+      VAULT-BINDING.json [and VAULT.json when available]
+      PROVENANCE.json
+```
+
+Daydream and host-state directories are private and symlink-resistant. Agent
+work is accepted only when the finalizer marker names the exact file hash and
+the host re-parses the same schema independently. Novelty lint is deliberately
+a conservative lexical floor plus structural portfolio projection, not a claim
+that Python can judge global originality; semantic novelty remains native Judge
+work backed by source citations.
+
+## Verification
+
+Contract/finalizer parity tests share adversarial corpora. Workspace tests cover
+Inventor/Vault materialization, live-search proof, exact provenance, route and
+time failures, novelty, private state, Judge identity, and historical parsing.
+The focused end-to-end learning loop executes materialized finalizers across a
+Judge rejection and a repaired second Dream, proving that exact advice reaches
+the next Goal and that only the accepted thesis crosses into Wish.
