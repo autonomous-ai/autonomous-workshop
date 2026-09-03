@@ -21,10 +21,10 @@
 
 ## 4. Update acceptance coverage
 
-- [ ] 4.1 Update the authenticated mock-session Forge route so current Make is one direct final-product phase using the normal finalizer; verify its trace contains one Wish-wide session and one Make Goal but no proof turn, marker, receipt, or source handoff.
-- [ ] 4.2 Update the authenticated mock-session Quest route with the same direct Make behavior before Playtest; verify its trace reaches the unchanged Playtest and Release boundaries without fabricated proof state.
+- [x] 4.1 Update the authenticated mock-session Forge route so current Make is one direct final-product phase using the normal finalizer; verify its trace contains one Wish-wide session and one Make Goal but no proof turn, marker, receipt, or source handoff.
+- [x] 4.2 Update the authenticated mock-session Quest route with the same direct Make behavior before Playtest; verify its trace reaches the unchanged Playtest and Release boundaries without fabricated proof state.
 - [x] 4.3 Add an acceptance-audit failure case for helpers that fabricate `.make-proof-ready.json`, proof receipts, or host proof state for a current-profile run; verify the route fails rather than masking the production contract.
-- [ ] 4.4 Run the focused effort, native-host, native-session, asset, CAD-skill-registry, and mock-session suites, then the full deterministic test suite; verify every command exits successfully and no historical compatibility assertion is weakened or deleted merely to pass.
+- [x] 4.4 Run the focused effort, native-host, native-session, asset, CAD-skill-registry, and mock-session suites, then the full deterministic test suite; verify every command exits successfully and no historical compatibility assertion is weakened or deleted merely to pass.
 
 ## 5. Document the superseding architecture
 
@@ -34,12 +34,12 @@
 
 ## 6. Rerun and evaluate the exact Wish
 
-- [ ] 6.1 From the implementation worktree, launch a fresh Forge run through the normal Workshop CLI using exactly `A geometry-readable orthodox chess set that turns six Ho Chi Minh City landmarks into a complete 32-piece skyline, with round River and square Grid plinths distinguishing the two sides without relying on color.`; verify the frozen checkpoint identifies the direct profile and preserve any genuine completed, waiting, or failed terminal state without bypassing host-owned effects.
-- [ ] 6.2 Preserve the new run identifier plus hashes/paths for its sealed `NativeInvented` artifact, `snap/iso.png`, `snap/signature.png`, final semantic review, checkpoint, elapsed-time evidence, and native token telemetry in the private run workspace; verify the evidence resolves to the exact run bytes and do not commit private product artifacts or transcripts.
-- [ ] 6.3 Conduct a blind render comparison in which the reviewer first identifies orthodox roles and specific HCMC landmarks without labels, then evaluates each final against its exact Wish and that run's accepted structured Invent requirements; verify the record covers the new run and both baselines `wish-20260902-133652-1fe0198a` and `wish-20260902-154647-fabfb6fc`, including disagreements and the fresh-Invent confound.
-- [ ] 6.4 Add an evidence-backed comparison to `docs/QUALITY_ECONOMICS.md` reporting Wish adherence, Invent-result adherence, landmark recognizability, role recognizability, visual finish, completion, elapsed time, and measured token use for all three runs; verify it cites run IDs and artifact hashes, truthfully states whether quality improved, and introduces no host-side aesthetic score or production gate.
+- [x] 6.1 From the implementation worktree, launch a fresh Forge run through the normal Workshop CLI using exactly `A geometry-readable orthodox chess set that turns six Ho Chi Minh City landmarks into a complete 32-piece skyline, with round River and square Grid plinths distinguishing the two sides without relying on color.`; verify the frozen checkpoint identifies the direct profile and preserve any genuine completed, waiting, or failed terminal state without bypassing host-owned effects.
+- [x] 6.2 Preserve the new run identifier plus hashes/paths for its sealed `NativeInvented` artifact, `snap/iso.png`, `snap/signature.png`, final semantic review, checkpoint, elapsed-time evidence, and native token telemetry in the private run workspace; verify the evidence resolves to the exact run bytes and do not commit private product artifacts or transcripts.
+- [x] 6.3 Conduct a blind render comparison in which the reviewer first identifies orthodox roles and specific HCMC landmarks without labels, then evaluates each final against its exact Wish and that run's accepted structured Invent requirements; verify the record covers the new run and both baselines `wish-20260902-133652-1fe0198a` and `wish-20260902-154647-fabfb6fc`, including disagreements and the fresh-Invent confound.
+- [x] 6.4 Add an evidence-backed comparison to `docs/QUALITY_ECONOMICS.md` reporting Wish adherence, Invent-result adherence, landmark recognizability, role recognizability, visual finish, completion, elapsed time, and measured token use for all three runs; verify it cites run IDs and artifact hashes, truthfully states whether quality improved, and introduces no host-side aesthetic score or production gate.
 
 ## 7. Final verification
 
-- [ ] 7.1 Run strict OpenSpec validation for `disable-early-proof-phase` and the repository's complete deterministic verification from the implementation worktree; verify both succeed with a clean diff check and document any external Release waiting state separately from code correctness.
-- [ ] 7.2 Review the final diff for frozen-run compatibility, unchanged effect ownership, unchanged deterministic and semantic gates, and absence of committed credentials, private artifacts, transcripts, or build output; verify each requirement scenario is covered by a test or the preserved same-Wish evaluation evidence.
+- [x] 7.1 Run strict OpenSpec validation for `disable-early-proof-phase` and the repository's complete deterministic verification from the implementation worktree; verify both succeed with a clean diff check and document any external Release waiting state separately from code correctness.
+- [x] 7.2 Review the final diff for frozen-run compatibility, unchanged effect ownership, unchanged deterministic and semantic gates, and absence of committed credentials, private artifacts, transcripts, or build output; verify each requirement scenario is covered by a test or the preserved same-Wish evaluation evidence.
