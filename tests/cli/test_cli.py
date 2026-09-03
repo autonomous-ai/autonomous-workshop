@@ -1,6 +1,7 @@
 import json
 import importlib
 import os
+import stat
 import subprocess
 import tempfile
 import unittest
@@ -494,9 +495,15 @@ class DaydreamCommandTest(unittest.TestCase):
         environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
         environment.start()
         self.addCleanup(environment.stop)
+        self._with_credentials()
 
     def _loop_folder(self):
         return self.home / "daydreams" / "sample"
+
+    def _with_credentials(self):
+        ready = mock.patch("cli.main._publishing_account_ready", return_value=True)
+        ready.start()
+        self.addCleanup(ready.stop)
 
     def test_parser_defaults(self):
         args = parser().parse_args(("start", "pico-press"))
@@ -913,6 +920,58 @@ class DaydreamCommandTest(unittest.TestCase):
             self.assertEqual(main(("stop", "sample", "--now")), 0)
         self.assertEqual(signals, [True])
         self.assertIn("Interrupting the daydream loop for sample", stdout.getvalue())
+
+    def test_start_asks_for_this_inventors_shop_account_before_any_work(self):
+        mock.patch.stopall()
+        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        stdout = StringIO()
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=True), mock.patch(
+            "builtins.input", return_value=" pico-press "
+        ), mock.patch(
+            "cli.main.getpass.getpass", return_value="s3cret"
+        ), mock.patch(
+            "cli.main.run_daydream", return_value=sample_sealed()
+        ) as run, mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("start", "sample", "--once"))
+        self.assertEqual(result, 0)
+        run.assert_called_once()
+        output = stdout.getvalue()
+        self.assertIn("sample publishes to the shop as its own account", output)
+        self.assertIn("https://www.autonomous.ai/toys", output)
+        stored = self.home / "credentials" / "inventors" / "sample.env"
+        self.assertEqual(stat.S_IMODE(stored.stat().st_mode), 0o600)
+        self.assertIn("FACTORY_USERNAME=pico-press", stored.read_text(encoding="utf-8"))
+        # A second start reuses the stored pair and never prompts again.
+        with mock.patch(
+            "builtins.input", side_effect=AssertionError("prompted twice")
+        ), mock.patch(
+            "cli.main.run_daydream", return_value=sample_sealed()
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            self.assertEqual(main(("start", "sample", "--once")), 0)
+
+    def test_start_without_an_account_outside_a_terminal_fails_closed(self):
+        mock.patch.stopall()
+        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        stderr = StringIO()
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=False), mock.patch(
+            "cli.main.run_daydream"
+        ) as run, mock.patch("cli.main.acquire_loop") as lease, redirect_stdout(
+            StringIO()
+        ), redirect_stderr(stderr):
+            result = main(("start", "sample"))
+        self.assertEqual(result, 2)
+        run.assert_not_called()
+        lease.assert_not_called()
+        self.assertIn("sample has no shop account on this host", stderr.getvalue())
+        self.assertIn("https://www.autonomous.ai/toys", stderr.getvalue())
 
     def test_daydream_failure_reports_on_stderr_with_exit_two(self):
         stderr = StringIO()

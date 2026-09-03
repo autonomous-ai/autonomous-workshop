@@ -154,6 +154,12 @@ from workshop.workflow.agent_run import (
     AgentRunCheckpoint,
     DeterministicGateReceipt,
 )
+from workshop.workflow.budgets import (
+    BUDGETS_CAPABILITY_PATH,
+    MAX_BUDGETED_TURNS,
+    CommandBudget,
+    uses_command_budget,
+)
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
@@ -4233,6 +4239,61 @@ def _uses_dynamic_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
     )
 
 
+# The concrete class is patched by host tests, so keep the real type for the
+# identity check below.
+_CODEX_LAUNCHER_TYPE = CodexNativeSessionLauncher
+
+
+def _command_budget() -> CommandBudget:
+    """Construct this command's two clocks; tests inject a fake clock here."""
+
+    return CommandBudget()
+
+
+def _uses_command_budget(checkpoint: AgentRunCheckpoint) -> bool:
+    """Whether this frozen run replaced its turn counters with two clocks."""
+
+    return uses_command_budget(checkpoint.input_sha256s)
+
+
+def _budgeted_turn_launcher(
+    checkpoint: AgentRunCheckpoint,
+    launcher: NativeSessionLauncher,
+    seconds: int,
+) -> NativeSessionLauncher:
+    """Rebind one already-shaped launcher to what the clocks still allow.
+
+    The frozen budgets file becomes the runtime profile identity, so a turn
+    boundary that shrinks as a clock runs down never reads as policy drift on
+    the next resume of the same persistent session.
+    """
+
+    digest = checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH)
+    if (
+        digest is None
+        or checkpoint.manager_id != DEFAULT_MANAGER_ID
+        or not isinstance(launcher, _CODEX_LAUNCHER_TYPE)
+    ):
+        # Only the concrete Codex launcher exposes a turn boundary to rebind.
+        # Every other Manager, every injected test launcher, and every patched
+        # construction is used exactly as the caller built it.
+        return launcher
+    if (
+        getattr(launcher, "timeout_seconds", None) == seconds
+        and getattr(launcher, "runtime_profile_sha256", None) == digest
+    ):
+        return launcher
+    return CodexNativeSessionLauncher(
+        model=launcher.model,
+        reasoning_effort=launcher.reasoning_effort,
+        auto_compact_token_limit=launcher.auto_compact_token_limit,
+        runtime_profile_sha256=digest,
+        timeout_seconds=seconds,
+        binary=launcher.binary,
+        cli_version=launcher.cli_version,
+    )
+
+
 def _native_launcher(
     checkpoint: AgentRunCheckpoint,
     *,
@@ -6499,9 +6560,11 @@ def _evaluate_playtest_stage(
     return StageGateDecision(evidence=evidence, transition=transition), additional
 
 
-def _factory_credentials() -> Any:
+def _factory_credentials(inventor_id: Optional[str] = None) -> Any:
+    """Resolve the publishing account this Inventor releases as."""
+
     credential_environment = factory_service_credential_environment(
-        factory_credential_environment()
+        factory_credential_environment(inventor_id=inventor_id)
     )
     return factory_credentials_from_environment(credential_environment)
 
@@ -7004,7 +7067,7 @@ def _attempt_release_publication(
             )
             return receipt, False
         try:
-            credentials = _factory_credentials()
+            credentials = _factory_credentials(verified.inventor_id)
         except ContractError:
             raise _FactoryCredentialsUnavailable(verified.inventor_id) from None
         ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
@@ -7553,7 +7616,10 @@ def _run_native_session(
         initial_checkpoint,
         first_method=first_method,
     )
-    native_turn_limit = _native_turn_limit(run.snapshot())
+    budget = _command_budget() if _uses_command_budget(run.snapshot()) else None
+    native_turn_limit = (
+        MAX_BUDGETED_TURNS if budget is not None else _native_turn_limit(run.snapshot())
+    )
     initial_make_boundaries: set[str] = set()
     while turns < native_turn_limit:
         checkpoint = run.snapshot()
@@ -7611,6 +7677,16 @@ def _run_native_session(
             if _session_status(paths, checkpoint.manager_id) == "checkpointed"
             else "start"
         )
+        if budget is not None:
+            # Check the clocks before anything records an attempt, so a turn
+            # that never runs is never counted as one.
+            spent_clock = budget.exhausted(checkpoint.stage)
+            if spent_clock is not None:
+                raise WorkshopError(
+                    budget.exhausted_message(
+                        checkpoint.stage, spent_clock, checkpoint.product_id
+                    )
+                )
         progress = _NativeProgressTracker.begin(paths, checkpoint)
         turn_activity_observer = _combined_activity_observer(
             progress,
@@ -7640,6 +7716,13 @@ def _run_native_session(
             )
             if initial_make_proof_boundary and not make_proof_boundary:
                 initial_make_boundaries.add(checkpoint.checkpoint_sha256)
+        if budget is not None:
+            turn_launcher = _budgeted_turn_launcher(
+                checkpoint,
+                turn_launcher,
+                budget.turn_timeout_seconds(checkpoint.stage),
+            )
+        turn_mark = None if budget is None else budget.started()
         try:
             with wish_run_timing_span(
                 timing_observer,
@@ -7706,6 +7789,8 @@ def _run_native_session(
             # Token telemetry is best-effort and never a lifecycle gate.
             pass
         turns += 1
+        if budget is not None and turn_mark is not None:
+            budget.spend_since(checkpoint.stage, turn_mark)
         if not _agent_outcome_exists(run.run_root):
             # A normal native turn may end before the active Goal reaches its
             # finalizer. Continue the exact checkpointed session under the same
@@ -7719,7 +7804,7 @@ def _run_native_session(
                 consecutive_recoverable_turns = 0
                 recoverable_continuation = False
                 consecutive_unfinished_turns += 1
-                if (
+                if budget is None and (
                     consecutive_unfinished_turns
                     >= _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS
                 ):
@@ -7747,7 +7832,7 @@ def _run_native_session(
                 # rather than creating a second root session automatically.
                 if _session_status(paths, checkpoint.manager_id) == "checkpointed":
                     consecutive_recoverable_turns += 1
-                    if (
+                    if budget is None and (
                         consecutive_recoverable_turns
                         >= _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS
                     ):
@@ -7768,7 +7853,7 @@ def _run_native_session(
                         time.sleep(
                             _recoverable_native_turn_backoff_seconds(
                                 checkpoint,
-                                turns,
+                                min(turns, _MAX_NATIVE_TURNS - 1),
                             )
                         )
                     recoverable_continuation = True
@@ -7797,6 +7882,20 @@ def _run_native_session(
         progress.rebind(updated, activity="completed")
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action
+    if budget is not None:
+        # The clocks, not this backstop, normally end a budgeted command; say
+        # what actually happened rather than blaming a clock with time left.
+        snapshot = run.snapshot()
+        raise WorkshopError(
+            "native %s session took %d turns without finishing a stage; the "
+            "exact session remains checkpointed and resumable with "
+            "`workshop resume %s`"
+            % (
+                manager_spec(snapshot.manager_id).display_name,
+                native_turn_limit,
+                snapshot.product_id,
+            )
+        )
     raise WorkshopError("native product run exhausted its bounded native-turn budget")
 
 
@@ -8036,7 +8135,7 @@ def _native_receipt(
                 )
                 verified = _existing_release_for_promotion(effect_run, checkpoint)
                 try:
-                    _factory_credentials()
+                    _factory_credentials(verified.inventor_id)
                 except ContractError:
                     publication["reason"] = _FACTORY_CREDENTIALS_NEED
                     if _FACTORY_CREDENTIALS_NEED not in needs:
@@ -8268,7 +8367,9 @@ def start_native_run(
         )
         checkpoint = _advance_validated_wish(run)
         launcher = (
-            None if _uses_dynamic_deep_profile(checkpoint)
+            None
+            if _uses_dynamic_deep_profile(checkpoint)
+            or _uses_command_budget(checkpoint)
             else _native_launcher(checkpoint)
         )
         checkpoint, session, turns, action = _run_native_session(
@@ -8452,7 +8553,9 @@ def _resume_native_run_locked(
         )
     _prune_empty_make_product_directories(paths.workspace, checkpoint)
     launcher = (
-        None if _uses_dynamic_deep_profile(checkpoint)
+        None
+        if _uses_dynamic_deep_profile(checkpoint)
+        or _uses_command_budget(checkpoint)
         else _native_launcher(checkpoint)
     )
     checkpoint, session, turns, action = _run_native_session(

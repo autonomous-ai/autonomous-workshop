@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import hashlib
 import json
 import os
@@ -53,6 +54,8 @@ from workshop.make.skill_registry import (
 from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.execution import codex_subprocess_environment
 from workshop.runtime.credentials import (
+    inventor_credential_file,
+    store_factory_credentials,
     factory_credential_environment,
     factory_service_credential_environment,
 )
@@ -84,6 +87,78 @@ from workshop.workflow.effort import (
 
 _INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
 MAX_JUDGED_OUT_IN_A_ROW = 5
+_DEFAULT_SHOP_SIGNUP_URL = "https://www.autonomous.ai/toys"
+
+
+def _shop_signup_url() -> str:
+    """Where a person creates an Inventor's shop account.
+
+    The site has no dedicated signup route yet, so this points at the shop and
+    stays overridable; the site team can move it without a code change.
+    """
+
+    configured = os.environ.get("WORKSHOP_SHOP_SIGNUP_URL", "").strip()
+    return configured or _DEFAULT_SHOP_SIGNUP_URL
+
+
+def _publishing_account_ready(inventor_id: str) -> bool:
+    """Whether this Inventor already has its own shop account on this host."""
+
+    scoped = inventor_credential_file(inventor_id)
+    if not (scoped.exists() or scoped.is_symlink()) and not (
+        os.environ.get("FACTORY_USERNAME") and os.environ.get("FACTORY_PASSWORD")
+    ):
+        return False
+    try:
+        pair = factory_service_credential_environment(
+            factory_credential_environment(inventor_id=inventor_id)
+        )
+    except WorkshopError:
+        return False
+    return bool(pair.get("FACTORY_USERNAME")) and bool(pair.get("FACTORY_PASSWORD"))
+
+
+def _ensure_publishing_account(inventor_id: str, progress: TextIO) -> None:
+    """Ask for this Inventor's shop account before any work is started.
+
+    Each Inventor publishes as itself, so the shop credits the Inventor that
+    dreamed the toy. Release ends only after the Factory publishes and reads
+    the exact hashes back, so a run without an account would dream, build, and
+    then fail at the last step. Ask first, store the pair owner-only, and never
+    let it near an agent workspace.
+    """
+
+    if _publishing_account_ready(inventor_id):
+        return
+    signup = "Create one at %s, then run this again." % _shop_signup_url()
+    if not sys.stdin.isatty():
+        raise WorkshopError(
+            "%s has no shop account on this host, and this is not a terminal. "
+            "Run `workshop start %s` in a terminal to enter its username and "
+            "password, or set FACTORY_USERNAME and FACTORY_PASSWORD. %s"
+            % (inventor_id, inventor_id, signup)
+        )
+    print(
+        "%s publishes to the shop as its own account, and this host does not "
+        "have it yet." % inventor_id,
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Create an account for %s at %s, then enter it here."
+        % (inventor_id, _shop_signup_url()),
+        file=progress,
+        flush=True,
+    )
+    try:
+        username = input("Shop username for %s: " % inventor_id).strip()
+        password = getpass.getpass("Shop password for %s: " % inventor_id).strip()
+    except EOFError as exc:
+        raise WorkshopError("no account was entered for %s. %s" % (inventor_id, signup)) from exc
+    if not username or not password:
+        raise WorkshopError("both a username and a password are required")
+    path = store_factory_credentials(username, password, inventor_id=inventor_id)
+    print("Saved %s's account to %s (owner-only)." % (inventor_id, path), file=progress, flush=True)
 _LIVE_ACTIVE_INTERVAL_SECONDS = 2.0
 _LIVE_RUNNING_INTERVAL_SECONDS = 30.0
 _LIVE_CHURN_ACTIVITY = frozenset(("reasoning", "tool", "subagent"))
@@ -567,6 +642,7 @@ def _start(args: argparse.Namespace) -> int:
         raise WorkshopError("--max-ideas must be at least 1")
     if args.max_failures < 1:
         raise WorkshopError("--max-failures must be at least 1")
+    _ensure_publishing_account(args.inventor, progress)
     lease = acquire_loop(args.inventor)
     if not once:
         print(
@@ -1168,6 +1244,15 @@ def _create_inventor(args: argparse.Namespace) -> int:
         print("Taste: %s" % (destination / "TASTE.md"))
         print("Skill: %s" % (destination / manifest.extensions[0].path / "SKILL.md"))
         print("Checks: static-passed")
+        print(
+            "Next: create %s's shop account at %s so its toys are published "
+            "under its own name." % (manifest.inventor_id, _shop_signup_url())
+        )
+        print(
+            "Then: %s asks for that username and password once and stores them "
+            "on this host only."
+            % _shell_command("workshop", "start", manifest.inventor_id)
+        )
     return 0
 
 

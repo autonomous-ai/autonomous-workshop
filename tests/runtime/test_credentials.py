@@ -1,4 +1,5 @@
 import os
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -210,3 +211,71 @@ class FactoryCredentialBoundaryTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InventorAccountTest(unittest.TestCase):
+    def setUp(self):
+        self._temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self._temporary.cleanup)
+        self.home = Path(self._temporary.name).resolve() / "home"
+        self.environment = {"WORKSHOP_HOME": str(self.home)}
+
+    def test_each_inventor_publishes_as_its_own_stored_account(self):
+        from workshop.runtime.credentials import (
+            factory_credential_environment,
+            inventor_credential_file,
+            store_factory_credentials,
+        )
+
+        shared = store_factory_credentials("house", "p1", environment=self.environment)
+        scoped = store_factory_credentials(
+            "pico-press", "p2", inventor_id="pico-press", environment=self.environment
+        )
+        self.assertEqual(scoped, inventor_credential_file("pico-press", self.environment))
+        self.assertEqual(stat.S_IMODE(scoped.stat().st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(scoped.parent.stat().st_mode), 0o700)
+        self.assertEqual(
+            dict(factory_credential_environment(self.environment, inventor_id="pico-press")),
+            {"FACTORY_USERNAME": "pico-press", "FACTORY_PASSWORD": "p2"},
+        )
+        # An Inventor without its own account still publishes through the host pair.
+        self.assertEqual(
+            dict(factory_credential_environment(self.environment, inventor_id="mira-fold")),
+            {"FACTORY_USERNAME": "house", "FACTORY_PASSWORD": "p1"},
+        )
+        self.assertEqual(
+            dict(factory_credential_environment(self.environment)),
+            {"FACTORY_USERNAME": "house", "FACTORY_PASSWORD": "p1"},
+        )
+        self.assertTrue(shared.is_file())
+
+    def test_storing_replaces_atomically_and_rejects_bad_input(self):
+        from workshop.errors import ContractError
+        from workshop.runtime.credentials import (
+            factory_credential_environment,
+            store_factory_credentials,
+        )
+
+        path = store_factory_credentials(
+            "pico-press", "first", inventor_id="pico-press", environment=self.environment
+        )
+        store_factory_credentials(
+            "pico-press", "second", inventor_id="pico-press", environment=self.environment
+        )
+        self.assertEqual(
+            factory_credential_environment(self.environment, inventor_id="pico-press")[
+                "FACTORY_PASSWORD"
+            ],
+            "second",
+        )
+        self.assertFalse(path.with_name(path.name + ".tmp").exists())
+        for username, password in ((" spaced ", "ok"), ("ok", ""), ("ok", "with space")):
+            with self.subTest(username=username), self.assertRaises(ContractError):
+                store_factory_credentials(
+                    username, password, inventor_id="pico-press", environment=self.environment
+                )
+        for bad_id in ("Pico Press", "", "pico_press"):
+            with self.subTest(bad_id=bad_id), self.assertRaises(ContractError):
+                store_factory_credentials(
+                    "a", "b", inventor_id=bad_id, environment=self.environment
+                )
