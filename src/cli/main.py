@@ -38,6 +38,7 @@ from workshop.daydream import (
     DaydreamError,
     acquire_loop,
     load_sealed_daydream,
+    remember_resumed_outcome,
     remember_run_outcome,
     request_stop,
     run_daydream,
@@ -814,6 +815,7 @@ def _resume(args: argparse.Namespace) -> int:
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
+    remember_resumed_outcome(receipt)
     if args.json:
         _print_json(receipt)
     else:
