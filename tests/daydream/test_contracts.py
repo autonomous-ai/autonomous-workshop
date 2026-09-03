@@ -342,6 +342,23 @@ class VerdictTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "at least one risk"):
             Verdict.parse(bad)
         bad = build_verdict_dict()
+        bad["checks"]["travel_is_large"] = False
+        with self.assertRaisesRegex(ContractError, "build verdict requires every check"):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        del bad["checks"]["worth_owning"]
+        with self.assertRaisesRegex(ContractError, "checks must be exactly"):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        bad["checks"]["worth_owning"] = "yes"
+        with self.assertRaisesRegex(ContractError, "must be a boolean"):
+            Verdict.parse(bad)
+        self.assertEqual(
+            sample_verdict("dream-again").failed_checks,
+            ("moving_part_visible_in_both_states",),
+        )
+        self.assertEqual(sample_verdict("build").failed_checks, ())
+        bad = build_verdict_dict()
         bad["confidence"] = 1.5
         with self.assertRaises(ContractError):
             Verdict.parse(bad)

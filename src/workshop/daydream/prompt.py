@@ -85,12 +85,20 @@ you run the finalizer, you stop.
   `held_form`. The next stage's blind reviewer rejects anything that reads as
   a prototype, a bare exposed mechanism, or fragmented geometry, and it does
   so before it reads a word of your description.
-- Show the change. The moving part is part of the body and stays visible;
-  the two end states of the action look clearly different from one fixed
-  camera, at arm's length, in a single before/after render pair. Write those
-  two pictures in `before_after`. Never make the point of the toy something
-  hidden: no internal channel, concealed stop, buried path, or "feel it to
-  believe it". If the reviewer cannot see it in a render, it does not exist.
+- Show the change, and make it big. The two end states are proved by two
+  still renders from one fixed camera, so design for that picture:
+  - the outline of the toy changes. A stranger seeing the two pictures side
+    by side must see a different shape, not the same shape with something
+    shifted inside it;
+  - the moving part travels at least a third of the toy's longest dimension,
+    or swings at least 45 degrees. Twelve millimetres on a palm-sized animal
+    is invisible in a render;
+  - the moving part is fully visible in both states from that one camera. It
+    never hides behind the body, and it never folds into its own silhouette;
+  - nothing that matters happens inside. No internal channel, concealed stop,
+    buried path, or "feel it to believe it".
+  Write the two pictures in `before_after`. If a render cannot show it, it
+  does not exist.
 
 ## What Make's reviewer can see
 
@@ -258,20 +266,34 @@ must also be small: one or two printed parts, one action, one payoff that a
 single before/after render pair proves, no tight clearances, snap fits, thin
 flexures, or in-place captured parts.
 
-## Decide
+## Decide by answering seven questions
 
-Read the idea as the critic will see it, not as the Inventor hopes. For each
-criterion above, ask whether two still renders of chunky printed plastic
-could prove it. Then decide:
+Picture the two still renders this idea would produce: one fixed camera,
+chunky printed plastic, one colour, no motion, no captions, seen at arm's
+length. Answer each question true only if you would bet on it:
 
-- `build`: you would bet the build passes. Minor risks may remain; name them.
-- `dream-again`: a named risk is likely to fail the review or the print
-  preflight, or the idea is bigger than the route. Name every real risk and
-  say, in `advice`, what a smaller or clearer idea would keep.
+- `silhouette_changes`: do the two pictures show a different outline, not
+  the same outline with something shifted inside it?
+- `moving_part_visible_in_both_states`: is the moving part fully visible in
+  both pictures from that one camera, never hidden behind the body and never
+  folded into its own silhouette?
+- `travel_is_large`: does the moving part travel at least a third of the
+  toy's longest dimension, or swing at least 45 degrees? A few millimetres on
+  a palm-sized toy is invisible; answer false.
+- `body_reads_as_a_toy`: would a stranger name the object, unprompted, from
+  the first picture alone?
+- `mechanism_is_not_dominant`: does it read as a finished toy rather than a
+  rig, jig, slider, or bare mechanism?
+- `fits_the_route`: does the parts count, the tolerance, and the number of
+  states fit the route budget?
+- `worth_owning`: would someone want this on a shelf?
 
-Be strict but not cruel: a simple, friendly, visibly changing toy should pass.
-A clever mechanism whose point is hidden, a promise of several states, or a
-bare mechanism with no body should not. Do not reward complexity.
+Then decide. `build` is allowed only when all seven are true, and the
+finalizer will reject a `build` that contradicts its own checks. Otherwise
+`dream-again`: name every real risk and say, in `advice`, what to keep and
+what to change. Be strict but not cruel. A simple, friendly toy whose shape
+visibly changes should pass. A clever mechanism whose point is small, hidden,
+or self-occluding should not. Do not reward complexity.
 
 ## Output
 
@@ -281,6 +303,15 @@ Write exactly one file, `work/VERDICT.json`:
   "schema_version": 1,
   "kind": "autonomous-workshop.daydream-verdict",
   "decision": "build" or "dream-again",
+  "checks": {
+    "silhouette_changes": true or false,
+    "moving_part_visible_in_both_states": true or false,
+    "travel_is_large": true or false,
+    "body_reads_as_a_toy": true or false,
+    "mechanism_is_not_dominant": true or false,
+    "fits_the_route": true or false,
+    "worth_owning": true or false
+  },
   "confidence": 0.0 to 1.0, your probability that the build passes review,
   "risks": [
     {"kind": "one of: generic-form, exposed-mechanism, hidden-signature, unclear-state-change, too-many-parts, tight-tolerance, print-preflight, taste-fit, not-desirable, other",
@@ -289,8 +320,9 @@ Write exactly one file, `work/VERDICT.json`:
   "advice": "one line, at most 400 characters: what to keep and what to change"
 }
 
-At most 6 risks. A `dream-again` verdict names at least one. Then run the
-finalizer from the workspace root:
+All seven checks are required. `build` requires all seven true. At most 6
+risks; a `dream-again` verdict names at least one. Then run the finalizer
+from the workspace root:
 
     "$WORKSHOP_PYTHON" finalize_daydream.py --role judge
 

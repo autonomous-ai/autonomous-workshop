@@ -96,6 +96,15 @@ class FinalizerTest(unittest.TestCase):
             self.assertEqual(outcome["role"], "judge")
             self.assertEqual(outcome["idea_path"], "work/VERDICT.json")
             self.assertEqual(outcome["title"], "dream-again")
+            good = build_verdict_dict("build")
+            good["checks"]["travel_is_large"] = False
+            (root / "work" / "VERDICT.json").write_text(json.dumps(good), encoding="utf-8")
+            completed = subprocess.run(
+                [sys.executable, str(root / FINALIZER_FILE_NAME), "--role", "judge"],
+                cwd=root, capture_output=True, text=True, timeout=60, check=False,
+            )
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn("these are false: travel_is_large", completed.stderr)
             bad = build_verdict_dict("dream-again")
             bad["risks"] = [{"kind": "vibes", "detail": "meh"}]
             (root / "work" / "VERDICT.json").write_text(json.dumps(bad), encoding="utf-8")

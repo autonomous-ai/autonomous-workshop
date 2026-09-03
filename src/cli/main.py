@@ -474,8 +474,13 @@ def _print_daydream_card(sealed, *, stream: TextIO, offer_build: bool) -> None:
             )
         else:
             lines.append(
-                "Judge: dream again (confidence %.2f). %s Advice: %s"
-                % (verdict.confidence, risks, verdict.advice)
+                "Judge: dream again (confidence %.2f). Failed: %s. %s Advice: %s"
+                % (
+                    verdict.confidence,
+                    ", ".join(verdict.failed_checks) or "none",
+                    risks,
+                    verdict.advice,
+                )
             )
     if offer_build:
         lines.append(

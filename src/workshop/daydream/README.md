@@ -58,9 +58,14 @@ short native session in `<daydream-id>/judge-workspace/` with `IDEA.json`,
 finalizer (`--role judge`). It reads the idea the way Make's blind critic
 will see two still renders: held object, form, subject, action, relationship,
 no exposed mechanism, no hidden signature, no promised feature a render
-cannot show, and a size that fits the route. It writes `work/VERDICT.json`
-(`build` or `dream-again`, a confidence, named risks, advice) and the host
-seals the verdict into the idea record and `host-state/VERDICT.json`. The loop
+cannot show, and a size that fits the route. It answers seven questions about those two renders (silhouette changes,
+moving part visible in both states, travel is large, body reads as a toy,
+mechanism is not dominant, fits the route, worth owning), and writes
+`work/VERDICT.json` with those checks, a decision, a confidence, named risks,
+and advice. A `build` decision requires all seven checks true; the finalizer
+and the host both reject a `build` that contradicts its own checks, so the
+judge cannot wave through an idea while naming the reason it will fail. The
+host seals the verdict into the idea record and `host-state/VERDICT.json`. The loop
 builds only `build` verdicts; a `dream-again` idea is remembered as `judged`
 so the Inventor does not repeat it, and `workshop start --idea` can still
 build it on purpose.

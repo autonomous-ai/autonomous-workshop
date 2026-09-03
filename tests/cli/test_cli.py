@@ -738,7 +738,11 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(run.call_count, 2)
         self.assertEqual(start.call_count, 1)
         output = stdout.getvalue()
-        self.assertIn("Judge: dream again (confidence 0.25). hidden-signature:", output)
+        self.assertIn(
+            "Judge: dream again (confidence 0.25). Failed: "
+            "moving_part_visible_in_both_states. hidden-signature:",
+            output,
+        )
         self.assertIn("Judge says dream again; not building this one.", output)
         self.assertIn("Judge: build (confidence 0.80). Keep the ladder body", output)
         self.assertIn("Loop stopped (reached --max-ideas 2). Ideas: 2. Builds: 1. Published: 1.", output)

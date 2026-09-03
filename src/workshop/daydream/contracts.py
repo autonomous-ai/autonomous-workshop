@@ -23,6 +23,18 @@ MAX_BEFORE_AFTER_CHARS = 300
 MAX_VERDICT_TEXT_CHARS = 400
 MAX_VERDICT_RISKS = 6
 VERDICT_DECISIONS = ("build", "dream-again")
+# Every check a still render must satisfy.  A "build" verdict requires all of
+# them true; the run-local finalizer and the host both enforce that, so the
+# judge cannot wave an idea through while naming the reason it will fail.
+VERDICT_CHECKS = (
+    "silhouette_changes",
+    "moving_part_visible_in_both_states",
+    "travel_is_large",
+    "body_reads_as_a_toy",
+    "mechanism_is_not_dominant",
+    "fits_the_route",
+    "worth_owning",
+)
 DAYDREAM_VERDICT_KIND = "autonomous-workshop.daydream-verdict"
 MAX_PARAGRAPH_CHARS = 600
 MAX_PRIOR_ART_NAME_CHARS = 80
@@ -65,7 +77,9 @@ _IDEA_KEYS = frozenset(
     )
 )
 _IDEA_OPTIONAL_KEYS = frozenset(("held_form", "before_after"))
-_VERDICT_KEYS = frozenset(("schema_version", "kind", "decision", "confidence", "risks", "advice"))
+_VERDICT_KEYS = frozenset(
+    ("schema_version", "kind", "decision", "checks", "confidence", "risks", "advice")
+)
 _RISK_KEYS = frozenset(("kind", "detail"))
 _SEAL_OPTIONAL_KEYS = frozenset(("verdict",))
 _NEIGHBOR_KEYS = frozenset(("source", "title", "similarity"))
@@ -476,6 +490,7 @@ class Verdict:
 
     schema_version: int = 1
     decision: str
+    checks: Mapping[str, bool]
     confidence: float
     risks: tuple[VerdictRisk, ...]
     advice: str
@@ -485,6 +500,17 @@ class Verdict:
             raise ContractError("verdict schema_version must be 1")
         if self.decision not in VERDICT_DECISIONS:
             raise ContractError("verdict decision must be one of %s" % (VERDICT_DECISIONS,))
+        checks = self.checks
+        if not isinstance(checks, Mapping) or set(checks) != set(VERDICT_CHECKS):
+            raise ContractError("verdict checks must be exactly %s" % (VERDICT_CHECKS,))
+        if any(type(value) is not bool for value in checks.values()):
+            raise ContractError("every verdict check must be a boolean")
+        object.__setattr__(self, "checks", dict(checks))
+        if self.decision == "build" and not all(checks.values()):
+            raise ContractError(
+                "a build verdict requires every check to be true; failed: %s"
+                % ", ".join(sorted(name for name, value in checks.items() if not value))
+            )
         object.__setattr__(
             self, "confidence", _finite_unit_float(self.confidence, "verdict confidence")
         )
@@ -510,16 +536,22 @@ class Verdict:
         return cls(
             schema_version=raw["schema_version"],
             decision=raw["decision"],
+            checks=raw["checks"],
             confidence=raw["confidence"],
             risks=tuple(VerdictRisk.parse(entry) for entry in raw["risks"]),
             advice=raw["advice"],
         )
+
+    @property
+    def failed_checks(self) -> tuple[str, ...]:
+        return tuple(sorted(name for name, value in self.checks.items() if not value))
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "schema_version": self.schema_version,
             "kind": DAYDREAM_VERDICT_KIND,
             "decision": self.decision,
+            "checks": {name: bool(self.checks[name]) for name in VERDICT_CHECKS},
             "confidence": self.confidence,
             "risks": [risk.to_dict() for risk in self.risks],
             "advice": self.advice,
@@ -736,6 +768,7 @@ __all__ = [
     "PriorArt",
     "SealedDaydream",
     "TasteFit",
+    "VERDICT_CHECKS",
     "VERDICT_DECISIONS",
     "Verdict",
     "VerdictRisk",

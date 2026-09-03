@@ -25,7 +25,18 @@ DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
 DAYDREAM_VERDICT_KIND = "autonomous-workshop.daydream-verdict"
 IDEA_RELATIVE_PATH = "work/IDEA.json"
 VERDICT_RELATIVE_PATH = "work/VERDICT.json"
-_VERDICT_KEYS = frozenset(("schema_version", "kind", "decision", "confidence", "risks", "advice"))
+_VERDICT_KEYS = frozenset(
+    ("schema_version", "kind", "decision", "checks", "confidence", "risks", "advice")
+)
+_VERDICT_CHECKS = (
+    "silhouette_changes",
+    "moving_part_visible_in_both_states",
+    "travel_is_large",
+    "body_reads_as_a_toy",
+    "mechanism_is_not_dominant",
+    "fits_the_route",
+    "worth_owning",
+)
 _RISK_KINDS = (
     "generic-form",
     "exposed-mechanism",
@@ -178,6 +189,17 @@ def verdict_problems(raw: Any) -> list[str]:
         problems.append("kind must be %s" % DAYDREAM_VERDICT_KIND)
     if raw["decision"] not in ("build", "dream-again"):
         problems.append("decision must be build or dream-again")
+    checks = raw["checks"]
+    if not isinstance(checks, Mapping) or set(checks) != set(_VERDICT_CHECKS):
+        problems.append("checks must hold exactly these keys: %s" % ", ".join(_VERDICT_CHECKS))
+    elif any(not isinstance(value, bool) for value in checks.values()):
+        problems.append("every check must be true or false")
+    elif raw["decision"] == "build" and not all(checks.values()):
+        failed = ", ".join(sorted(name for name, value in checks.items() if not value))
+        problems.append(
+            "a build decision requires every check to be true, but these are false: %s. "
+            "Either the idea passes them or the decision is dream-again." % failed
+        )
     confidence = raw["confidence"]
     if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0.0 <= confidence <= 1.0:
         problems.append("confidence must be a number from 0.0 to 1.0")

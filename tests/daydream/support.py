@@ -11,6 +11,7 @@ from workshop.daydream.contracts import (
     Idea,
     NoveltyReport,
     SealedDaydream,
+    VERDICT_CHECKS,
     Verdict,
     VerdictRisk,
     render_brief,
@@ -107,10 +108,14 @@ def build_verdict_dict(decision: str = "build") -> Dict[str, Any]:
     risks = [] if decision == "build" else [
         {"kind": "hidden-signature", "detail": "The bead's cam rungs are inside the rails."}
     ]
+    checks = {name: True for name in VERDICT_CHECKS}
+    if decision != "build":
+        checks["moving_part_visible_in_both_states"] = False
     return {
         "schema_version": 1,
         "kind": DAYDREAM_VERDICT_KIND,
         "decision": decision,
+        "checks": checks,
         "confidence": 0.8 if decision == "build" else 0.25,
         "risks": risks,
         "advice": "Keep the ladder body; put the bead on the outside of the rails.",
