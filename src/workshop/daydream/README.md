@@ -72,10 +72,12 @@ build it on purpose.
 
 Every directory is created 0700 with no symlinks; every host file is 0600.
 The native Manager session (Codex by default) may write only inside
-`workspace/`; under Codex the network is off and web search is on. The
+`workspace/`; under Codex the network is off and web search is on. A new
+Daydream fails closed unless the native runtime reports an observed web-search
+event; source URLs alone are not accepted as proof of a live World Pulse. The
 session must write exactly `work/IDEA.json`. The host reads that file,
-lints it, and seals a
-`SealedDaydream` (idea, seed, Taste identity, Manager id, lint verdict,
+lints it, and seals a `SealedDaydream` (idea, seed, Taste identity, Manager id,
+lint verdict,
 redacted session outcome, and the rendered brief) into `host-state/IDEA.json`.
 
 ## The loop

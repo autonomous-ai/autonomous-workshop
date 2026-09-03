@@ -59,13 +59,14 @@ SEED = DaydreamSeed(moment="a bus stop in the cold", twist="it counts something"
 
 
 class _FakeOutcome:
-    def __init__(self, arguments):
+    def __init__(self, arguments, *, used_web_search=True):
         self.arguments = arguments
+        self.used_web_search = used_web_search
 
     def to_dict(self):
         return {
             "status": "completed",
-            "used_web_search": True,
+            "used_web_search": self.used_web_search,
             "product_id": self.arguments["product_id"],
             "input_tokens": 12,
         }
@@ -89,6 +90,7 @@ class _FakeLauncher:
         outcome_sha256=None,
         verdict="build",
         judge_error=None,
+        used_web_search=True,
     ):
         self.test = test
         self.error_after_idea = error_after_idea
@@ -96,6 +98,7 @@ class _FakeLauncher:
         self.outcome_sha256 = outcome_sha256
         self.verdict = verdict
         self.judge_error = judge_error
+        self.used_web_search = used_web_search
         self.timeout_seconds = timeout_seconds
         self.idea = idea
         self.error = error
@@ -187,7 +190,7 @@ class _FakeLauncher:
                 )
         if self.error is not None:
             raise self.error
-        return _FakeOutcome(arguments)
+        return _FakeOutcome(arguments, used_web_search=self.used_web_search)
 
 
     def _judge(self, arguments, run_root, host_state):
@@ -539,6 +542,13 @@ class DaydreamNativeTest(unittest.TestCase):
             self._run()
         self.assertEqual(list_daydreams("sample"), ())
 
+    def test_daydream_without_a_verified_live_search_event_fails_closed(self):
+        with self.assertRaisesRegex(DaydreamError, "no verified live web-search"):
+            self._run(idea=sample_idea_dict(), used_web_search=False)
+        paths = daydream_paths("sample", FIRST_ID)
+        self.assertFalse((paths.host_state / "IDEA.json").exists())
+        self.assertEqual(list_daydreams("sample"), ())
+
     def test_invalid_json_and_invalid_schema_fail(self):
         with self.assertRaisesRegex(DaydreamError, "not valid UTF-8 JSON"):
             self._run(idea="{not json")
@@ -605,7 +615,7 @@ class DaydreamNativeTest(unittest.TestCase):
                 error=CodexRecoverableInvocationError("Codex native session timed out"),
             )
 
-    def test_recoverable_failure_after_a_written_idea_is_kept_as_incomplete(self):
+    def test_recoverable_failure_without_search_proof_fails_closed(self):
         for index, error in enumerate(
             (
                 CodexRecoverableInvocationError("terminal event missing"),
@@ -613,19 +623,14 @@ class DaydreamNativeTest(unittest.TestCase):
             )
         ):
             daydream_id = "daydream-20260902-1018%02d-%08x" % (index, index + 7)
-            sealed, launchers = self._run(
-                daydream_id=daydream_id,
-                idea=sample_idea_dict(),
-                error=error,
-                error_after_idea=True,
-            )
-            self.assertEqual(sealed.session, {"status": "incomplete", "error": str(error)})
-            self.assertEqual(sealed.idea.title, "Ladder Drop")
-            self.assertEqual(load_sealed_daydream("sample", daydream_id), sealed)
-            paths = daydream_paths("sample", daydream_id)
-            (paths.host_state / "IDEA.json").unlink()
-            # The second loop iteration must not see the first as prior work.
-            paths.notebook.unlink()
+            with self.assertRaisesRegex(DaydreamError, "no verified live web-search"):
+                self._run(
+                    daydream_id=daydream_id,
+                    idea=sample_idea_dict(),
+                    error=error,
+                    error_after_idea=True,
+                )
+            self.assertEqual(list_daydreams("sample"), ())
 
     def test_overlapping_daydream_by_the_same_inventor_cannot_seal_a_repeat(self):
         test = self

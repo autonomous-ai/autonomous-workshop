@@ -1013,6 +1013,10 @@ def run_daydream(
         label="Daydream",
         launcher_kwargs={"timeout_seconds": DAYDREAM_TURN_TIMEOUT_SECONDS},
     )
+    if session.get("used_web_search") is not True:
+        raise DaydreamError(
+            "Daydream session produced no verified live web-search event"
+        )
     # The Inventor could write anything below the workspace; only a real,
     # unlinked work directory and a fresh notebook decide what gets sealed.
     _existing_real_directory(paths.workspace, label="daydream workspace")
