@@ -329,6 +329,7 @@ def build_daydream_prompt(
     notebook_count: int,
     prior_work_count: int,
     portfolio_count: int = 0,
+    outcome_count: int = 0,
     effort: Optional[str] = None,
     observed_at: Optional[str] = None,
 ) -> str:
@@ -342,6 +343,7 @@ def build_daydream_prompt(
         (notebook_count, "notebook count"),
         (prior_work_count, "prior work count"),
         (portfolio_count, "portfolio count"),
+        (outcome_count, "outcome count"),
     ):
         if type(value) is not int or value < 0:
             raise ContractError("%s must be a non-negative integer" % label)
@@ -358,7 +360,7 @@ def build_daydream_prompt(
         "Read `TASTE.md`, the selected custom agent `.codex/agents/%s.toml`, "
         "the selected skills in `.agents/skills/`, "
         "`PRIOR-WORK.md` (%d entries), `PORTFOLIO.md` (%d entries), "
-        "`NOTEBOOK.md` (%d entries), "
+        "`NOTEBOOK.md` (%d theses and %d downstream outcomes), "
         "and `VAULT.md` before committing a thesis.\n\n"
         "Lateral seed (a push, never a rule or evidence):\n"
         "- Situation: %s\n"
@@ -376,6 +378,7 @@ def build_daydream_prompt(
         prior_work_count,
         portfolio_count,
         notebook_count,
+        outcome_count,
         seed.moment,
         seed.twist,
         ROUTE_BUDGETS[route],

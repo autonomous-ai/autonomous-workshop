@@ -37,7 +37,7 @@ class PromptTest(unittest.TestCase):
             "VAULT.md",
             "22 entries",
             "7 entries",
-            "3 entries",
+            "3 theses",
             "2026-09-02T10:15:00Z",
             "work/IDEA.json",
         ):

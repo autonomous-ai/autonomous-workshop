@@ -18,6 +18,7 @@ from tests.daydream.support import (
 )
 from workshop.daydream.contracts import DaydreamError, Idea, SealedDaydream
 from workshop.daydream.notebook import NotebookEntry, StructuralTrace, append_notebook_entry
+from workshop.daydream.outcomes import remember_run_outcome
 from workshop.daydream.native import (
     DAYDREAM_TURN_TIMEOUT_SECONDS,
     INVENTOR_BINDING_FILE_NAME,
@@ -426,6 +427,41 @@ class DaydreamNativeTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(DaydreamError, "rejected"):
             self._run(daydream_id="daydream-20260902-101700-00000003", idea=sample_idea_dict())
+
+    def test_downstream_outcome_facts_reach_the_next_daydream_workspace(self):
+        previous, _launchers = self._run(idea=sample_idea_dict())
+        wish = wish_from_daydream(previous, wish_id="wish-outcome-memory")
+        remember_run_outcome(
+            wish,
+            receipt={
+                "effort": "forge",
+                "manager": "codex",
+                "status": "failed",
+                "stage": "make",
+                "publication": {"status": "not-created"},
+            },
+            moment=MOMENT,
+            home=self.home,
+        )
+        raw = sample_idea_dict()
+        raw["title"] = "Rung Counter"
+        raw["one_liner"] = "Tap a pocket rail and watch a captive marker count upward."
+        raw["experience"]["action"] = "Tap the top of the rail once per count."
+        raw["experience"]["response"] = "A captive marker ratchets upward by one notch."
+        raw["experience"]["payoff"] = "A twist drops the marker back to zero."
+        raw["experience"]["anti_generic_signature"] = (
+            "The same captive marker both ratchets upward and visibly free-falls on reset."
+        )
+        raw["keywords"] = ["rail", "marker", "ratchet", "counter"]
+        self._run(
+            daydream_id=SECOND_ID,
+            idea=raw,
+            expect_notebook=(
+                "Downstream outcomes (host-observed facts, not Judge predictions)",
+                "route=forge status=failed stage=make",
+                "wish-outcome-memory",
+            ),
+        )
 
     def test_cross_inventor_portfolio_blocks_a_renamed_repeat(self):
         idea = Idea.parse(sample_idea_dict())

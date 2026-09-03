@@ -50,6 +50,11 @@ from workshop.daydream.notebook import (
     read_notebook,
     render_notebook_markdown,
 )
+from workshop.daydream.outcomes import (
+    RunOutcomeMemory,
+    read_outcomes,
+    render_outcomes_markdown,
+)
 from workshop.daydream.prompt import (
     DAYDREAM_CONSTITUTION,
     DAYDREAM_CONSTITUTION_SHA256,
@@ -133,6 +138,7 @@ class DaydreamPaths:
     work: Path
     host_state: Path
     notebook: Path
+    outcomes: Path
 
 
 def _existing_real_directory(path: Path, *, label: str, private: bool = True) -> Path:
@@ -238,6 +244,7 @@ def daydream_paths(
         work=work,
         host_state=host_state,
         notebook=folder / "NOTEBOOK.jsonl",
+        outcomes=folder / "OUTCOMES.jsonl",
     )
 
 
@@ -520,6 +527,7 @@ def _write_workspace(
     repository_prior: Sequence[PriorWork],
     notebook_entries: Sequence[NotebookEntry],
     portfolio_entries: Sequence[PortfolioEntry],
+    outcome_entries: Sequence[RunOutcomeMemory],
     vault_summary: bytes,
 ) -> None:
     files = (
@@ -529,7 +537,14 @@ def _write_workspace(
             "PORTFOLIO.md",
             render_portfolio_markdown(portfolio_entries).encode("utf-8"),
         ),
-        ("NOTEBOOK.md", render_notebook_markdown(notebook_entries).encode("utf-8")),
+        (
+            "NOTEBOOK.md",
+            (
+                render_notebook_markdown(notebook_entries)
+                + "\n"
+                + render_outcomes_markdown(outcome_entries)
+            ).encode("utf-8"),
+        ),
         ("VAULT.md", vault_summary),
         # The constitution doubles as AGENTS.md so the Manager runtime loads it
         # the same way it loads a product run's constitution.
@@ -866,6 +881,7 @@ def run_daydream(
     catalog_root = repository_root if repository_root is not None else source_checkout_root()
     repository_prior = load_repository_prior_work(catalog_root)
     notebook_entries = read_notebook(paths.notebook)
+    outcome_entries = read_outcomes(paths.outcomes)
     portfolio_entries = load_portfolio(
         paths.notebook.parent.parent, exclude_inventor=manifest.inventor_id
     )
@@ -886,6 +902,7 @@ def run_daydream(
         repository_prior=repository_prior,
         notebook_entries=notebook_entries,
         portfolio_entries=portfolio_entries,
+        outcome_entries=outcome_entries,
         vault_summary=vault_summary,
     )
     prompt = build_daydream_prompt(
@@ -895,6 +912,7 @@ def run_daydream(
         notebook_count=len(notebook_entries),
         prior_work_count=len(repository_prior),
         portfolio_count=len(portfolio_entries),
+        outcome_count=len(outcome_entries),
         effort=effort,
         observed_at=created_at,
     )

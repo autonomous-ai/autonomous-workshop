@@ -12,6 +12,7 @@ from unittest import mock
 from cli.main import main, parser
 from workshop.runtime.progress import WishRunTimingEvent
 from workshop.daydream import DaydreamError
+from workshop.daydream.outcomes import outcome_path, read_outcomes
 
 from tests.daydream.support import sample_sealed, sample_verdict
 
@@ -633,6 +634,10 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertIn("Sealing the idea as this run's brief", stderr.getvalue())
         self.assertIn("Starting one native Codex session for Make", stderr.getvalue())
         self.assertNotIn(sealed.brief, stderr.getvalue())
+        outcomes = read_outcomes(outcome_path("sample", home=self.home))
+        self.assertEqual(len(outcomes), 1)
+        self.assertEqual(outcomes[0].run_status, "waiting")
+        self.assertEqual(outcomes[0].route, "spark")
 
     def test_start_passes_effort_manager_github_and_strict(self):
         sealed = sample_sealed()

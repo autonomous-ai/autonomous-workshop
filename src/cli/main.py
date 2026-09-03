@@ -38,6 +38,7 @@ from workshop.daydream import (
     DaydreamError,
     acquire_loop,
     load_sealed_daydream,
+    remember_run_outcome,
     request_stop,
     run_daydream,
     wish_from_daydream,
@@ -658,6 +659,12 @@ def _start(args: argparse.Namespace) -> int:
                     live_progress=live_progress,
                 )
             except (WorkshopError, RuntimeError) as exc:
+                remember_run_outcome(
+                    wish,
+                    error=exc,
+                    route=effort.name,
+                    manager=manager.manager_id,
+                )
                 # The build session ended without a verdict (timeout, provider
                 # failure, host refusal).  The run stays checkpointed; the loop
                 # counts the failure and moves on to the next idea.
@@ -680,6 +687,20 @@ def _start(args: argparse.Namespace) -> int:
                     reason = "stopped by workshop stop"
                     break
                 continue
+            except KeyboardInterrupt as exc:
+                remember_run_outcome(
+                    wish,
+                    error=exc,
+                    route=effort.name,
+                    manager=manager.manager_id,
+                )
+                raise
+            remember_run_outcome(
+                wish,
+                receipt=receipt,
+                route=effort.name,
+                manager=manager.manager_id,
+            )
             builds += 1
             publication = receipt.get("publication")
             if isinstance(publication, Mapping) and publication.get("status") == "public":

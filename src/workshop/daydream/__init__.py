@@ -31,6 +31,7 @@ from workshop.daydream.loop import (
     request_stop,
 )
 from workshop.daydream.notebook import NotebookEntry
+from workshop.daydream.outcomes import RunOutcomeMemory, remember_run_outcome
 from workshop.daydream.prompt import DAYDREAM_CONSTITUTION, build_daydream_prompt
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
 
@@ -50,6 +51,7 @@ __all__ = [
     "NoveltyReport",
     "PriorArt",
     "PriorWork",
+    "RunOutcomeMemory",
     "SealedDaydream",
     "TasteFit",
     "acquire_loop",
@@ -63,6 +65,7 @@ __all__ = [
     "read_loop_state",
     "render_brief",
     "request_stop",
+    "remember_run_outcome",
     "run_daydream",
     "wish_from_daydream",
 ]
