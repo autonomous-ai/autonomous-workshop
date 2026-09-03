@@ -42,6 +42,7 @@ BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
 _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (
     ("cad", Path("make/skills/cad")),
     ("design-reference", Path("make/skills/design-reference")),
+    ("design-vault", Path("invent/skills/design-vault")),
     (
         "electromechanical-integration",
         Path("make/skills/electromechanical-integration"),

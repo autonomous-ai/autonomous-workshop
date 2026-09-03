@@ -1,3 +1,4 @@
+import dataclasses
 import hashlib
 import json
 import os
@@ -552,6 +553,94 @@ class NativeCadGateTest(unittest.TestCase):
             (self.product_root / "cad/project/moon.step").read_bytes(),
             b"ISO-10303-21;\n",
         )
+
+    _MINI_STEP = (
+        "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('Open CASCADE Model'),'2;1');\n"
+        "FILE_NAME('moon','1970-01-01T00:00:00',('Author'),('Open CASCADE'),"
+        "'Open CASCADE STEP processor 7.9','cadgen','Unknown');\n"
+        "FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));\nENDSEC;\n"
+        "DATA;\n"
+        "#1 = CARTESIAN_POINT('',(0.,0.,0.));\n"
+        "#2 = CARTESIAN_POINT('',(1.,0.,0.));\n"
+        "#3 = VERTEX_POINT('',#1);\n"
+        "#4 = VERTEX_POINT('',#2);\n"
+        "#5 = COLOUR_RGB('',0.12,0.19,0.24);\n"
+        "#6 = COLOUR_RGB('',0.45,0.55,0.60);\n"
+        "#7 = STYLED_ITEM('color',(#5),#3);\n"
+        "#8 = STYLED_ITEM('color',(#6),#4);\n"
+        "#9 = MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION('',(\n"
+        "    #7,#8),#1);\n"
+        "ENDSEC;\nEND-ISO-10303-21;\n"
+    )
+    # The same model as Open CASCADE re-emits it on another run: style ids
+    # handed out in a different pointer order, colours travelling along.
+    _MINI_STEP_REEMITTED = _MINI_STEP.replace(
+        "#7 = STYLED_ITEM('color',(#5),#3);\n#8 = STYLED_ITEM('color',(#6),#4);",
+        "#7 = STYLED_ITEM('color',(#6),#4);\n#8 = STYLED_ITEM('color',(#5),#3);",
+    ).replace("    #7,#8),#1);", "    #8,#7),#1);")
+
+    def _seal_mini_step(self):
+        sealed = self._MINI_STEP.encode()
+        (self.product_root / "cad/project/moon.step").write_bytes(sealed)
+        manifest = build_artifact_manifest(
+            self.product_root, created_at="content-addressed"
+        )
+        self.made = dataclasses.replace(self.made, product_manifest=manifest)
+        return sealed
+
+    def test_step_reemitted_with_other_entity_numbering_still_passes(self):
+        sealed = self._seal_mini_step()
+        self.assertNotEqual(self._MINI_STEP_REEMITTED, self._MINI_STEP)
+
+        def runner(command, **arguments):
+            del arguments
+            Path(command[2], "moon.step").write_text(self._MINI_STEP_REEMITTED)
+            return VerifierProcessResult.from_bytes(0)
+
+        evidence = self._verify(runner)
+
+        self.assertTrue(evidence.passed)
+        self.assertTrue(evidence.source_tree_unchanged)
+        self.assertEqual(
+            (self.product_root / "cad/project/moon.step").read_bytes(), sealed
+        )
+
+    def test_step_whose_geometry_or_colour_changed_still_fails_closed(self):
+        self._seal_mini_step()
+        for label, old, new in (
+            ("coordinate", "(1.,0.,0.)", "(1.001,0.,0.)"),
+            ("colour", "0.45,0.55,0.60", "0.45,0.55,0.61"),
+            ("wiring", "#7 = STYLED_ITEM('color',(#5),#3);", "#7 = STYLED_ITEM('color',(#5),#4);"),
+            ("garbage", "DATA;", "DATA"),
+        ):
+            with self.subTest(label=label):
+                changed = self._MINI_STEP.replace(old, new, 1)
+                self.assertNotEqual(changed, self._MINI_STEP)
+
+                def runner(command, **arguments):
+                    del arguments
+                    Path(command[2], "moon.step").write_text(changed)
+                    return VerifierProcessResult.from_bytes(0)
+
+                with self.assertRaises(NativeCadGateError) as caught:
+                    self._verify(runner)
+
+                self.assertEqual(
+                    caught.exception.failure_code, "declared-cad-output-changed"
+                )
+
+    def test_step_mode_change_is_not_forgiven_by_graph_comparison(self):
+        self._seal_mini_step()
+
+        def runner(command, **arguments):
+            del arguments
+            Path(command[2], "moon.step").chmod(0o700)
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(runner)
+
+        self.assertEqual(caught.exception.failure_code, "declared-cad-output-changed")
 
     def test_frozen_verifier_may_refresh_only_known_volatile_reports(self):
         observed = {}

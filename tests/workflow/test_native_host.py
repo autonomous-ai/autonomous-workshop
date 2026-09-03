@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import socket
 import stat
 import tempfile
 import unittest
@@ -18,6 +19,12 @@ from workshop.match.native import (
     NativeMatchAssignment,
 )
 from workshop.product import ToyBlueprint
+from workshop.invent.gamevault import GameVaultUnavailable
+from workshop.invent.vault import RUN_VAULT_PATH, Vault
+from tests.invent.fake_gamevault import FakeGameVaultTransport, fake_client, install_fake_gamevault
+from tests.invent.test_vault import write_vault
+from types import SimpleNamespace
+from workshop.workflow.budgets import MAX_BUDGETED_TURNS, CommandBudget
 from workshop.workflow.native_run import (
     _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
     _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
@@ -41,6 +48,12 @@ from workshop.workflow.native_run import (
     _materialized_release_contract,
     NativeRunPaths,
     _NativeProgressTracker,
+    _best_round,
+    _phase_design_vault,
+    _playtest_score_history,
+    _record_playtest_evidence,
+    _repair_base,
+    _score_trend,
     _native_token_summary,
     _native_launcher,
     _native_turn_limit,
@@ -72,6 +85,7 @@ from workshop.workflow.proposals import AgentOutcomeProposal
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V13_CAPABILITY_PATH,
     DEEP_ECONOMICS_V1_CAPABILITY_PATH,
     DEEP_ECONOMICS_V2_CAPABILITY_PATH,
     DEEP_ECONOMICS_V3_CAPABILITY_PATH,
@@ -621,6 +635,9 @@ class _UnboundRecoverableLauncher(_FakeLauncher):
 
 
 class NativeHostTest(unittest.TestCase):
+    def setUp(self):
+        self.gamevault = install_fake_gamevault(self)
+
     @staticmethod
     def _launcher_checkpoint(*, effort, economics_capability, stage="make"):
         capability_paths = {
@@ -636,16 +653,24 @@ class NativeHostTest(unittest.TestCase):
             "deep-v10": DEEP_ECONOMICS_V10_CAPABILITY_PATH,
             "deep-v11": DEEP_ECONOMICS_V11_CAPABILITY_PATH,
             "deep-v12": DEEP_ECONOMICS_V12_CAPABILITY_PATH,
-            "deep-v13": DEEP_ECONOMICS_CAPABILITY_PATH,
-            "deep-v14": DEEP_ECONOMICS_V14_CAPABILITY_PATH,
+            "deep-v13": DEEP_ECONOMICS_V13_CAPABILITY_PATH,
+            "deep-v14": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
         if economics_capability == "deep-v14":
             inputs = {
-                DEEP_ECONOMICS_CAPABILITY_PATH: "d" * 64,
-                DEEP_ECONOMICS_V14_CAPABILITY_PATH: "a" * 64,
+                DEEP_ECONOMICS_V5_CAPABILITY_PATH: "e" * 64,
+                DEEP_ECONOMICS_V6_CAPABILITY_PATH: "d" * 64,
+                DEEP_ECONOMICS_V7_CAPABILITY_PATH: "c" * 64,
+                DEEP_ECONOMICS_V8_CAPABILITY_PATH: "b" * 64,
+                DEEP_ECONOMICS_V9_CAPABILITY_PATH: "9" * 64,
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH: "0" * 64,
+                DEEP_ECONOMICS_V11_CAPABILITY_PATH: "1" * 64,
+                DEEP_ECONOMICS_V12_CAPABILITY_PATH: "2" * 64,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH: "3" * 64,
+                DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
             }
         elif economics_capability == "deep-v13":
             # A real v13 run materializes the preserved v5-v12 references too. The
@@ -660,7 +685,7 @@ class NativeHostTest(unittest.TestCase):
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH: "0" * 64,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH: "1" * 64,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH: "2" * 64,
-                DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH: "a" * 64,
             }
         elif economics_capability == "deep-v12":
             inputs = {
@@ -796,6 +821,106 @@ class NativeHostTest(unittest.TestCase):
             _native_launcher(checkpoint)
 
         launcher_type.assert_called_once_with(reasoning_effort="low")
+
+    def test_deep_v14_make_starts_directly_at_full_depth(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="forge", economics_capability="deep-v14", stage="make"
+        )
+        for recoverable in (False, True):
+            with self.subTest(recoverable=recoverable), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher"
+            ) as launcher_type:
+                _native_launcher(
+                    checkpoint,
+                    initial_make_proof_boundary=True,
+                    recoverable_continuation=recoverable,
+                )
+                launcher_type.assert_called_once_with(
+                    reasoning_effort="high",
+                    auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                    runtime_profile_sha256="a" * 64,
+                    timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+                )
+        self.assertEqual(_native_turn_limit(checkpoint), DEEP_NATIVE_TURN_LIMIT)
+        prompt = _deep_make_critical_path_prompt(checkpoint)
+        self.assertIn("v14 direct Make path", prompt)
+        self.assertIn("sealed NativeInvented", prompt)
+        self.assertIn("coherent complete self-contained CAD baseline", prompt)
+        self.assertIn("narrow engineering coupon", prompt)
+        self.assertIn("agent-outcome.json completes", prompt)
+        self.assertNotIn("review/early-proof/", prompt)
+        self.assertNotIn(".make-proof-ready.json", prompt)
+        self.assertEqual(_deep_make_recovery_prompt(checkpoint), "")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            paths = NativeRunPaths(
+                workspace=root / "workspace",
+                host_state=root / "host-state",
+            )
+            paths.workspace.mkdir()
+            paths.host_state.mkdir()
+            marker = _make_proof_ready_path(paths)
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.make-proof-ready",
+                        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertFalse(_make_proof_ready(paths, checkpoint))
+            self.assertTrue(marker.is_file())
+            self.assertFalse(_make_proof_acceptance_path(paths, checkpoint).exists())
+
+    def test_new_forge_materializes_and_selects_deep_v14(self):
+        launcher = _FakeLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "new-forge-direct-profile"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ) as launcher_type:
+                start_native_run(
+                    Wish.create(product_id, "a direct profile fixture"),
+                    effort="forge",
+                )
+
+            capability = (
+                home
+                / "runs"
+                / product_id
+                / "workspace"
+                / DEEP_ECONOMICS_CAPABILITY_PATH
+            )
+            historical = (
+                home
+                / "runs"
+                / product_id
+                / "workspace"
+                / DEEP_ECONOMICS_V13_CAPABILITY_PATH
+            )
+            self.assertTrue(capability.is_file())
+            self.assertTrue(historical.is_file())
+            launcher_type.assert_called_once_with(
+                reasoning_effort="high",
+                auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+                runtime_profile_sha256=hashlib.sha256(
+                    capability.read_bytes()
+                ).hexdigest(),
+                timeout_seconds=DEEP_V5_INITIAL_INVENT_TIMEOUT_SECONDS,
+            )
 
     def test_deep_v9_shapes_each_stage_under_one_frozen_runtime_profile(self):
         for effort in ("forge", "quest"):
@@ -1111,16 +1236,15 @@ class NativeHostTest(unittest.TestCase):
         self.assertIn("next action must invoke the exact Invent finalizer", recovery)
         self.assertIn("ten-minute boundary is repair reserve", recovery)
 
-    def test_deep_v14_recovery_finalizes_or_repairs_only_two_inputs(self):
+    def test_deep_v14_recovery_finalizes_or_repairs_direct_invent_source(self):
         checkpoint = self._launcher_checkpoint(
             effort="quest", economics_capability="deep-v14", stage="invent"
         )
         recovery = _deep_invent_recovery_prompt(checkpoint)
-        self.assertIn("two-input source handoff", recovery)
-        self.assertIn("drafts/invent-source.json", recovery)
-        self.assertIn("visual_plan_path", recovery)
-        self.assertIn("repair only that smallest input", recovery)
-        self.assertIn("--source and --visual-plan", recovery)
+        self.assertIn("source handoff", recovery)
+        self.assertIn("work/invent-source.json", recovery)
+        self.assertIn("next action must invoke the exact Invent finalizer", recovery)
+        self.assertIn("Repair only a concrete deterministic finalizer error", recovery)
         for forbidden in ("rerank", "research", "delegate"):
             self.assertIn(forbidden, recovery)
         with mock.patch(
@@ -2181,6 +2305,7 @@ class NativeHostTest(unittest.TestCase):
             for skill_name in (
                 "cad",
                 "design-reference",
+                "design-vault",
                 "electromechanical-integration",
                 "image-to-cad",
                 "manual-design",
@@ -2229,6 +2354,20 @@ class NativeHostTest(unittest.TestCase):
                     ).is_file()
                 )
             self.assertFalse((workspace / "catalog").exists())
+            vault_path = workspace / RUN_VAULT_PATH
+            self.assertTrue(vault_path.is_file())
+            self.assertFalse(stat.S_IMODE(vault_path.stat().st_mode) & 0o222)
+            snapshot = Vault.from_packed_bytes(vault_path.read_bytes())
+            self.assertEqual(snapshot.sha256, self.gamevault.vault().sha256)
+            stage = json.loads((workspace / "STAGE.json").read_text(encoding="utf-8"))
+            self.assertEqual(stage["inputs"]["design_vault"]["path"], RUN_VAULT_PATH)
+            self.assertEqual(
+                stage["inputs"]["design_vault"]["sha256"],
+                hashlib.sha256(vault_path.read_bytes()).hexdigest(),
+            )
+            self.assertTrue((workspace / ".agents/skills/design-vault/vault_tools.py").is_file())
+            self.assertTrue((workspace / ".agents/skills/design-vault/SKILL.md").is_file())
+            self.assertFalse((workspace / ".agents/skills/design-vault/__pycache__").exists())
             prompt = arguments["prompt"]
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
@@ -2254,6 +2393,342 @@ class NativeHostTest(unittest.TestCase):
                 "Starting one native Codex session for Make",
                 stderr.getvalue(),
             )
+
+    def test_wish_runs_without_the_vault_when_it_is_unreachable(self):
+        launcher = _FakeLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            stdout = StringIO()
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run._gamevault_client",
+                side_effect=GameVaultUnavailable("no game vault token: set WORKSHOP_GAMEVAULT_TOKEN"),
+            ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+                result = main(("wish", "a", "quiet", "orrery", "--json"))
+            self.assertEqual(result, 0)
+            receipt = json.loads(stdout.getvalue())
+            self.assertEqual(len(launcher.starts), 1)
+            workspace = home / "runs" / receipt["product_id"] / "workspace"
+            self.assertFalse((workspace / RUN_VAULT_PATH).exists())
+            stage = json.loads((workspace / "STAGE.json").read_text(encoding="utf-8"))
+            self.assertEqual(stage["stage"], "make")
+            self.assertNotIn("design_vault", stage["inputs"])
+            self.assertNotIn("vault_leads", stage["inputs"])
+            markers = list((home / "state" / receipt["product_id"] / "vault").glob("*.unavailable"))
+            self.assertEqual(len(markers), 1)
+
+    def test_wish_runs_vault_bypassed_with_real_config_and_transport(self):
+        # Real config resolution and real HTTP transport (overriding the
+        # class fake): the run must survive a host with no vault credentials
+        # at all, and a host whose configured vault is down.
+        from workshop.invent.gamevault import default_client
+
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            dead_port = probe.getsockname()[1]
+        for label, extra_environment in (
+            ("no credentials", {}),
+            (
+                "vault down",
+                {
+                    "WORKSHOP_GAMEVAULT_URL": "http://127.0.0.1:%d" % dead_port,
+                    "WORKSHOP_GAMEVAULT_TOKEN": "fixture-token",
+                },
+            ),
+        ):
+            with self.subTest(label=label):
+                launcher = _FakeLauncher()
+                with tempfile.TemporaryDirectory() as temporary:
+                    home = Path(temporary).resolve() / "workshop-home"
+                    stdout = StringIO()
+                    with mock.patch.dict(
+                        os.environ,
+                        {"WORKSHOP_HOME": str(home), **extra_environment},
+                        clear=True,
+                    ), mock.patch(
+                        "workshop.workflow.native_run._source_checkout_root",
+                        return_value=None,
+                    ), mock.patch(
+                        "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                        return_value=launcher,
+                    ), mock.patch(
+                        "workshop.workflow.native_run._gamevault_client",
+                        side_effect=default_client,
+                    ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+                        result = main(("wish", "a", "quiet", "orrery", "--json"))
+                    self.assertEqual(result, 0)
+                    receipt = json.loads(stdout.getvalue())
+                    self.assertEqual(len(launcher.starts), 1)
+                    workspace = home / "runs" / receipt["product_id"] / "workspace"
+                    self.assertFalse((workspace / RUN_VAULT_PATH).exists())
+                    stage = json.loads(
+                        (workspace / "STAGE.json").read_text(encoding="utf-8")
+                    )
+                    self.assertNotIn("design_vault", stage["inputs"])
+                    self.assertNotIn("vault_leads", stage["inputs"])
+
+    def test_phase_snapshot_is_fetched_once_per_checkpoint_and_bound(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            run = SimpleNamespace(run_root=root / "run", host_state_root=root / "host")
+            run.run_root.mkdir()
+            run.host_state_root.mkdir()
+            transport = FakeGameVaultTransport()
+            with mock.patch(
+                "workshop.workflow.native_run._gamevault_client",
+                return_value=fake_client(transport),
+            ):
+                self.assertEqual(
+                    _phase_design_vault(run, SimpleNamespace(stage="match", checkpoint_sha256="a" * 64)),
+                    (None, None),
+                )
+                self.assertEqual(transport.calls, [])
+                make = SimpleNamespace(stage="make", checkpoint_sha256="b" * 64)
+                vault, binding = _phase_design_vault(run, make)
+                self.assertEqual(vault.sha256, transport.vault().sha256)
+                snapshot = run.run_root / RUN_VAULT_PATH
+                self.assertEqual(stat.S_IMODE(snapshot.stat().st_mode), 0o400)
+                self.assertEqual(
+                    binding,
+                    {
+                        "path": RUN_VAULT_PATH,
+                        "tool": ".agents/skills/design-vault/vault_tools.py",
+                        "sha256": hashlib.sha256(snapshot.read_bytes()).hexdigest(),
+                        "nodes": len(vault.nodes),
+                    },
+                )
+                cache = run.host_state_root / "vault" / ("b" * 64 + ".json")
+                self.assertEqual(stat.S_IMODE(cache.stat().st_mode), 0o600)
+                self.assertEqual(len([c for c in transport.calls if c[1].endswith("/export")]), 1)
+                # the same checkpoint never refetches, even when the vault is down
+                transport.fail = True
+                again, again_binding = _phase_design_vault(run, make)
+                self.assertEqual((again.sha256, again_binding), (vault.sha256, binding))
+                self.assertEqual(len([c for c in transport.calls if c[1].endswith("/export")]), 1)
+                # a new checkpoint that cannot reach the vault runs without one,
+                # drops the earlier phase's snapshot, and stays vault-less on resume
+                outage = SimpleNamespace(stage="playtest", checkpoint_sha256="c" * 64)
+                self.assertEqual(_phase_design_vault(run, outage), (None, None))
+                self.assertFalse(snapshot.exists())
+                marker = run.host_state_root / "vault" / ("c" * 64 + ".unavailable")
+                self.assertEqual(stat.S_IMODE(marker.stat().st_mode), 0o600)
+                transport.fail = False
+                self.assertEqual(_phase_design_vault(run, outage), (None, None))
+                # one successful export plus the one failed attempt; the marker stops a retry
+                self.assertEqual(len([c for c in transport.calls if c[1].endswith("/export")]), 2)
+                # queued write-backs are sent before the next fetch; a refused one
+                # is set aside instead of blocking the run
+                pending = run.host_state_root / "vault" / "pending"
+                pending.mkdir()
+                payload = {"label": "workshop wish r1", "rows": [{"slug": "wish", "id": "r0001-x", "symptom": "anti-patterns/idle-player", "claim": "c", "fix_tried": "f", "severity": "high", "survived_rounds": 1, "source": "workshop-playtest", "round": 1}], "dismissals": []}
+                for name, label in (("queued.json", "workshop wish r1"), ("bad.json", "reject-me")):
+                    (pending / name).write_text(json.dumps({**payload, "label": label}), encoding="utf-8")
+                    (pending / name).chmod(0o600)
+                # a round sealed during an outage also queues its design page
+                design = {"slug": "wish", "name": "Wish", "mechanisms": [], "exhibits": [], "verdict": "pass", "scores": None}
+                (pending / "with-design.json").write_text(
+                    json.dumps({**payload, "label": "workshop wish r2", "design": design}), encoding="utf-8"
+                )
+                (pending / "with-design.json").chmod(0o600)
+                # while the vault stays down the queue waits untouched: nothing is rejected
+                transport.fail = True
+                self.assertEqual(
+                    _phase_design_vault(run, SimpleNamespace(stage="make", checkpoint_sha256="f" * 64)),
+                    (None, None),
+                )
+                self.assertEqual(
+                    sorted(path.name for path in pending.iterdir()),
+                    ["bad.json", "queued.json", "with-design.json"],
+                )
+                transport.fail = False
+                fresh, _ = _phase_design_vault(run, SimpleNamespace(stage="playtest", checkpoint_sha256="e" * 64))
+                self.assertEqual(fresh.sha256, vault.sha256)
+                self.assertTrue(snapshot.exists())
+                self.assertEqual(
+                    [item["label"] for item in transport.evidence], ["workshop wish r1", "workshop wish r2"]
+                )
+                self.assertEqual(transport.evidence[1]["design"]["slug"], "wish")
+                self.assertFalse((pending / "queued.json").exists())
+                self.assertFalse((pending / "with-design.json").exists())
+                self.assertTrue((pending / "bad.json.rejected").exists())
+                # a tampered cache is a broken host, not a legacy run
+                cache.write_bytes(b"{not json")
+                with self.assertRaisesRegex(StateConflict, "malformed"):
+                    _phase_design_vault(run, make)
+
+    def test_playtest_evidence_is_posted_or_queued_for_the_next_phase(self):
+        from tests.playtest.test_vault_evidence import LEAD, LEAD_B, playtested_document
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            run = SimpleNamespace(run_root=root / "run", host_state_root=root / "host")
+            run.host_state_root.mkdir()
+            checkpoint = SimpleNamespace(product_id="wish-a", round_index=1, checkpoint_sha256="d" * 64)
+            context = {
+                "sealed_playtest": {
+                    "playtested": SimpleNamespace(to_dict=playtested_document),
+                    "leads": [LEAD, LEAD_B],
+                    "mechanisms": ["mechanisms/hand-off"],
+                    "concept": {"title": "River & Grid", "summary": "Chess on a keyed board."},
+                    "verdict": "block",
+                    "scores": {"play": 7.0},
+                }
+            }
+            transport = FakeGameVaultTransport()
+            with mock.patch(
+                "workshop.workflow.native_run._gamevault_client",
+                return_value=fake_client(transport),
+            ):
+                self.assertEqual(
+                    _record_playtest_evidence(run, checkpoint, context),
+                    {"rows": 1, "dismissals": 1, "design": True, "sent": True},
+                )
+                self.assertEqual(transport.evidence[0]["rows"][0]["id"], "r0001-idle-seat")
+                design = transport.evidence[0]["design"]
+                self.assertEqual(
+                    (design["slug"], design["name"], design["mechanisms"], design["exhibits"], design["verdict"], design["scores"]),
+                    ("wish-a", "River & Grid", ["mechanisms/hand-off"], ["anti-patterns/idle-player"], "block", {"play": 7.0}),
+                )
+                self.assertEqual(transport.review[0]["dismissals"][0]["symptom"], "anti-patterns/turtling")
+                transport.fail = True
+                self.assertEqual(
+                    _record_playtest_evidence(run, checkpoint, context),
+                    {"rows": 1, "dismissals": 1, "design": True, "sent": False},
+                )
+                queued = run.host_state_root / "vault" / "pending" / ("d" * 64 + ".json")
+                self.assertEqual(stat.S_IMODE(queued.stat().st_mode), 0o600)
+                self.assertEqual(json.loads(queued.read_text())["label"], "workshop wish-a r1")
+                self.assertEqual(json.loads(queued.read_text())["design"]["slug"], "wish-a")
+                transport.fail = False
+                # A page with nothing confirmed still lands: the vault gains the game itself.
+                quiet = {"sealed_playtest": {"playtested": SimpleNamespace(to_dict=lambda: {"checks": [], "feedback": []}), "leads": [], "mechanisms": [], "concept": {"title": "Quiet"}, "verdict": "pass", "scores": None}}
+                self.assertEqual(
+                    _record_playtest_evidence(run, checkpoint, quiet),
+                    {"rows": 0, "dismissals": 0, "design": True, "sent": True},
+                )
+                self.assertNotIn("rows", transport.evidence[-1])
+                self.assertEqual(transport.evidence[-1]["design"]["name"], "Quiet")
+                self.assertEqual(
+                    _record_playtest_evidence(run, checkpoint, {"sealed_playtest": {"playtested": SimpleNamespace(to_dict=lambda: {"checks": [], "feedback": []}), "leads": [], "mechanisms": []}}),
+                    {"rows": 0, "dismissals": 0, "design": False, "sent": True},
+                )
+
+    def test_score_history_reads_only_host_gate_receipts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary).resolve()
+            self.assertEqual(_playtest_score_history(host), [])
+            gates = host / "gates"
+            gates.mkdir()
+
+            def receipt(name, checks):
+                (gates / name).write_text(json.dumps({"evidence": {"checks": checks}}), encoding="utf-8")
+
+            receipt("0003-make.json", {"cad_verification_passed": True})
+            receipt("0004-playtest.json", {"round": 1, "verdict": "block", "score_reads": 3,
+                                            "score_median": {"play": 8.0, "wish_fit": 8.0},
+                                            "score_spread": {"play": 1, "wish_fit": 0},
+                                            "vault_leads_confirmed": 0})
+            receipt("0006-playtest.json", {"round": 2, "verdict": "pass"})
+            receipt("0008-playtest.json", {"round": 3, "verdict": "pass", "score_reads": 3,
+                                            "score_median": {"play": 6.0, "wish_fit": 9.0},
+                                            "score_spread": {"play": 4, "wish_fit": 0},
+                                            "vault_leads_confirmed": 1})
+            history = _playtest_score_history(host)
+            self.assertEqual([item["round"] for item in history], [1, 2, 3])
+            self.assertIsNone(history[1]["score_median"])
+            self.assertEqual(
+                _score_trend(history),
+                {"regression": {"play": -2.0}, "ambiguous": ["play"]},
+            )
+            self.assertEqual(_score_trend(history[:1]), {"regression": {}, "ambiguous": []})
+            self.assertEqual(_score_trend([]), {"regression": {}, "ambiguous": []})
+            (gates / "0010-playtest.json").write_text("{not json", encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "unreadable: 0010-playtest.json"):
+                _playtest_score_history(host)
+            (gates / "0010-playtest.json").write_text(json.dumps({"evidence": {"checks": []}}), encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "malformed: 0010-playtest.json"):
+                _playtest_score_history(host)
+
+    def test_repair_base_names_the_best_sealed_round_only_when_the_last_is_worse(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            run = SimpleNamespace(run_root=root / "run", host_state_root=root / "host")
+            run.run_root.mkdir()
+            gates = run.host_state_root / "gates"
+            gates.mkdir(parents=True)
+
+            def playtest(revision, round_index, failing, actionable, medians=None):
+                checks = {"round": round_index, "verdict": "pass" if not (failing or actionable) else "block",
+                          "failing_checks": failing, "actionable_feedback": actionable,
+                          "score_median": medians, "score_spread": None, "score_reads": None,
+                          "vault_leads_confirmed": 0}
+                (gates / ("%04d-playtest.json" % revision)).write_text(
+                    json.dumps({"evidence": {"checks": checks}}), encoding="utf-8")
+
+            def make(revision, round_index, made_sha256):
+                relative = "artifacts/make/r%04d/made.json" % round_index
+                sealed = run.run_root / relative
+                sealed.parent.mkdir(parents=True, exist_ok=True)
+                content = json.dumps({"made_sha256": made_sha256}).encode()
+                sealed.write_bytes(content)
+                (gates / ("%04d-make.json" % revision)).write_text(json.dumps({"evidence": {
+                    "artifact_path": relative, "artifact_sha256": hashlib.sha256(content).hexdigest(),
+                    "checks": {"round": round_index, "made_sha256": made_sha256}}}), encoding="utf-8")
+
+            self.assertIsNone(_best_round([]))
+            self.assertIsNone(_repair_base(run, []))
+            make(3, 1, "a" * 64); playtest(4, 1, 0, 1)
+            history = _playtest_score_history(run.host_state_root)
+            self.assertEqual(history[0]["machine_failures"], 1)
+            self.assertIsNone(_repair_base(run, history))       # only round, nothing to redirect to
+            make(5, 2, "b" * 64); playtest(6, 2, 1, 2)
+            history = _playtest_score_history(run.host_state_root)
+            self.assertEqual(_best_round(history)["round"], 1)
+            base = _repair_base(run, history)
+            self.assertEqual(base["round"], 1)
+            self.assertEqual(base["product_root"], "artifacts/make/r0001/product")
+            self.assertEqual(base["made_sha256"], "a" * 64)
+            self.assertEqual(base["made_artifact"]["path"], "artifacts/make/r0001/made.json")
+            make(7, 3, "c" * 64); playtest(8, 3, 0, 1, {"play": 9.0})
+            history = _playtest_score_history(run.host_state_root)
+            # rounds 1 and 3 tie on machine failures; round 3's scores win the tie
+            self.assertEqual(_best_round(history)["round"], 3)
+            self.assertIsNone(_repair_base(run, history))       # last round is the best
+            playtest(9, 4, 0, 3)
+            history = _playtest_score_history(run.host_state_root)
+            self.assertEqual(_repair_base(run, history)["round"], 3)
+            # legacy receipts without counts are never candidates
+            legacy = [{"round": 1, "machine_failures": None}, {"round": 2, "machine_failures": 2}]
+            self.assertEqual(_best_round(legacy)["round"], 2)
+            self.assertIsNone(_repair_base(run, [{"round": 5, "machine_failures": None}]))
+            # tampering with the sealed contract or the receipt fails closed
+            sealed = run.run_root / "artifacts/make/r0003/made.json"
+            original = sealed.read_bytes()
+            sealed.write_bytes(original + b" ")
+            with self.assertRaisesRegex(StateConflict, "differs from its receipt"):
+                _repair_base(run, history)
+            sealed.unlink()
+            with self.assertRaisesRegex(StateConflict, "round 3 is missing"):
+                _repair_base(run, history)
+            sealed.write_bytes(original)
+            (gates / "0007-make.json").write_text("{broken", encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "unreadable: 0007-make.json"):
+                _repair_base(run, history)
+            (gates / "0007-make.json").write_text(json.dumps({"evidence": {
+                "artifact_path": "../escape.json", "artifact_sha256": "0" * 64,
+                "checks": {"round": 3, "made_sha256": "c" * 64}}}), encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "artifact path is unsafe"):
+                _repair_base(run, history)
+            (gates / "0007-make.json").unlink()
+            self.assertIsNone(_repair_base(run, history))       # no receipt for the best round
+            self.assertIsNone(_repair_base(SimpleNamespace(run_root=root, host_state_root=root / "nowhere"), history))
 
     def test_resume_uses_exact_materialized_binding(self):
         launcher = _FakeLauncher()
@@ -2543,7 +3018,69 @@ class NativeHostTest(unittest.TestCase):
                 )
             )
 
+    def test_budgeted_runs_continue_through_unfinished_turns_until_a_clock_runs_out(self):
+        # The two clocks replace every counter: an unfinished turn is ordinary
+        # and costs only the minutes it used.
+        class _Clock:
+            def __init__(self):
+                self.now = 0.0
+
+            def __call__(self):
+                # Each turn consumes six minutes of the injected clock.
+                self.now += 180.0
+                return self.now
+
+        budget = CommandBudget(
+            step_seconds=30 * 60, run_seconds=60 * 60, clock=_Clock()
+        )
+        launcher = _AlwaysUnfinishedLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "budgeted-unfinished-continuation"
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run._command_budget",
+                return_value=budget,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(
+                WorkshopError,
+                r"Match used its 30-minute budget \(\d+ minutes spent\)",
+            ):
+                start_native_run(
+                    Wish.create(
+                        product_id,
+                        "a toy whose Goal repeatedly returns before finalization",
+                    )
+                )
+
+            turns = len(launcher.starts) + len(launcher.resumes)
+            # Far past the retired three-unfinished-turn rail, and stopped by
+            # the step clock rather than the run clock or a turn cap.
+            self.assertGreater(turns, _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS)
+            self.assertLess(turns, MAX_BUDGETED_TURNS)
+            self.assertGreaterEqual(budget.spent("match"), 30 * 60 - 360)
+            with mock.patch.dict(os.environ, environment, clear=True):
+                status = native_run_status(product_id)
+            self.assertEqual(status["status"], "active")
+            self.assertEqual(status["session_status"], "checkpointed")
+            self.assertEqual(status["native_turns"], turns)
+
     def test_normal_unfinished_turns_stop_early_and_remain_resumable(self):
+        # These rails are frozen historical behaviour: a run without the
+        # budgets capability still stops on its counters.
+        self.enterContext(
+            mock.patch(
+                "workshop.workflow.native_run._uses_command_budget",
+                return_value=False,
+            )
+        )
         launcher = _AlwaysUnfinishedLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -2617,6 +3154,14 @@ class NativeHostTest(unittest.TestCase):
             )
 
     def test_recoverable_interruptions_stop_early_and_remain_resumable(self):
+        # These rails are frozen historical behaviour: a run without the
+        # budgets capability still stops on its counters.
+        self.enterContext(
+            mock.patch(
+                "workshop.workflow.native_run._uses_command_budget",
+                return_value=False,
+            )
+        )
         launcher = _AlwaysInterruptedLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"

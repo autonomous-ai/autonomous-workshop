@@ -27,6 +27,70 @@ from workshop.match.native import NativeMatchAssignment
 
 
 NATIVE_MADE_KIND = "autonomous-workshop.made"
+MAKE_GROUP_KIND = "autonomous-workshop.make-group"
+PARTS_DIRECTORY = "parts"
+GROUPS_DIRECTORY = "groups"
+MAX_PART_BYTES = 95 * 1024 * 1024
+
+
+def part_path(key: str) -> str:
+    return "%s/%s.stl" % (PARTS_DIRECTORY, key)
+
+
+def group_path(name: str) -> str:
+    return "%s/%s.json" % (GROUPS_DIRECTORY, name)
+
+
+def _regular_bytes(path: Path, label: str) -> bytes:
+    if path.is_symlink() or not path.is_file():
+        raise ArtifactError("%s is missing or not a regular file" % label)
+    content = path.read_bytes()
+    if not 1 <= len(content) <= MAX_PART_BYTES:
+        raise ArtifactError("%s must contain 1 to %d bytes" % (label, MAX_PART_BYTES))
+    return content
+
+
+def validate_build_groups(concept: Mapping[str, Any], product_root: Path) -> dict[str, int]:
+    """Every planned group must be sealed against the exact part files on disk.
+
+    A concept without a ``build_plan`` (Invented schema 3 or 4) requires no
+    groups.  Otherwise each component needs ``parts/<key>.stl`` and each
+    group needs ``groups/<group>.json`` recording the part hashes it was sealed
+    with; a later group that silently rebuilt an earlier group's part fails
+    here rather than at Playtest.
+    """
+
+    plan = concept.get("build_plan")
+    if not isinstance(plan, (list, tuple)) or not plan:
+        return {"groups": 0, "parts": 0}
+    root = Path(product_root)
+    hashes: dict[str, str] = {}
+    for item in concept.get("components", ()):
+        key = item["key"]
+        content = _regular_bytes(root / PARTS_DIRECTORY / ("%s.stl" % key), "part %s" % key)
+        hashes[key] = hashlib.sha256(content).hexdigest()
+    for group in plan:
+        name = group["group"]
+        document, _ = _strict_json_object(root / GROUPS_DIRECTORY / ("%s.json" % name), "build group %s" % name)
+        if set(document) != {"schema_version", "kind", "group", "parts", "files"}:
+            raise ContractError("build group %s outcome fields are invalid" % name)
+        if (
+            document["schema_version"] != 1
+            or document["kind"] != MAKE_GROUP_KIND
+            or document["group"] != name
+            or document["parts"] != list(group["parts"])
+        ):
+            raise ContractError("build group %s outcome does not match the sealed plan" % name)
+        files = document["files"]
+        if not isinstance(files, Mapping) or set(files) != set(group["parts"]):
+            raise ContractError("build group %s outcome must hash exactly its parts" % name)
+        stale = sorted(key for key in group["parts"] if files[key] != hashes[key])
+        if stale:
+            raise ContractError(
+                "build group %s was sealed against different part bytes: %s"
+                % (name, ", ".join(stale))
+            )
+    return {"groups": len(plan), "parts": len(hashes)}
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -334,4 +398,13 @@ class NativeMade:
         return Made(product_root, self.product_manifest, page)
 
 
-__all__ = ["NATIVE_MADE_KIND", "NativeMade"]
+__all__ = [
+    "GROUPS_DIRECTORY",
+    "MAKE_GROUP_KIND",
+    "NATIVE_MADE_KIND",
+    "PARTS_DIRECTORY",
+    "NativeMade",
+    "group_path",
+    "part_path",
+    "validate_build_groups",
+]

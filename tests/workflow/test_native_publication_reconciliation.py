@@ -11,6 +11,7 @@ from tests.end_to_end.test_native_full_run import (
     _sha256,
 )
 from tests.integrations.test_factory import FactoryTransport
+from tests.invent.fake_gamevault import E2E_NODES, FakeGameVaultTransport, install_fake_gamevault
 from workshop.integrations.factory import (
     FactoryAgentCredentials,
     FactoryAgentSession,
@@ -43,6 +44,9 @@ class _UnknownPublishTransport(FactoryTransport):
 
 
 class NativePublicationReconciliationTest(unittest.TestCase):
+    def setUp(self):
+        install_fake_gamevault(self, FakeGameVaultTransport(E2E_NODES))
+
     def test_unknown_publish_overrides_local_draft_and_retry_does_not_resend(self):
         launcher = _OneSessionProductAgent()
         product_id = "orbit-dog-unknown-publication"

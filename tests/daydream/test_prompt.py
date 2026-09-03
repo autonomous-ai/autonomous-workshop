@@ -1,0 +1,139 @@
+import hashlib
+import unittest
+
+from workshop.daydream.contracts import DAYDREAM_IDEA_KIND
+from workshop.daydream.prompt import (
+    DAYDREAM_CONSTITUTION,
+    DAYDREAM_CONSTITUTION_SHA256,
+    build_daydream_prompt,
+)
+from workshop.daydream.seeds import DaydreamSeed
+from workshop.errors import ContractError
+
+
+class PromptTest(unittest.TestCase):
+    def test_prompt_names_inventor_seed_files_and_constitution(self):
+        seed = DaydreamSeed(moment="a bus stop in the cold", twist="it counts something")
+        prompt = build_daydream_prompt(
+            inventor_name="Pico Press",
+            inventor_id="pico-press",
+            seed=seed,
+            notebook_count=3,
+            prior_work_count=22,
+        )
+        for expected in (
+            "Pico Press",
+            "pico-press",
+            "a bus stop in the cold",
+            "it counts something",
+            "TASTE.md",
+            "PRIOR-WORK.md",
+            "NOTEBOOK.md",
+            "22 toys",
+            "3 ideas",
+            "work/IDEA.json",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, prompt)
+        self.assertTrue(prompt.endswith(DAYDREAM_CONSTITUTION))
+        self.assertLess(len(prompt.encode("utf-8")), 1024 * 1024)
+
+    def test_constitution_is_specific_and_its_identity_is_stable(self):
+        self.assertEqual(
+            DAYDREAM_CONSTITUTION_SHA256,
+            hashlib.sha256(DAYDREAM_CONSTITUTION.encode("utf-8")).hexdigest(),
+        )
+        for expected in (
+            DAYDREAM_IDEA_KIND,
+            "work/IDEA.json",
+            "TASTE.md",
+            "PRIOR-WORK.md",
+            "NOTEBOOK.md",
+            "web search",
+            "prior_art",
+            "taste_fit",
+            "parts_estimate",
+            "keywords",
+            "12",
+            "0.4 mm nozzle",
+            "0.8 mm minimum wall",
+            "No electronics",
+            "^[a-z0-9][a-z0-9-]{1,31}$",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, DAYDREAM_CONSTITUTION)
+
+    def test_prompt_validates_its_inputs(self):
+        seed = DaydreamSeed(moment="x", twist="y")
+        with self.assertRaises(ContractError):
+            build_daydream_prompt(
+                inventor_name="Pico Press",
+                inventor_id="pico-press",
+                seed=seed,
+                notebook_count=-1,
+                prior_work_count=0,
+            )
+        with self.assertRaises(ContractError):
+            build_daydream_prompt(
+                inventor_name="Pico Press",
+                inventor_id="pico-press",
+                seed={"moment": "x", "twist": "y"},
+                notebook_count=0,
+                prior_work_count=0,
+            )
+        with self.assertRaises(ContractError):
+            build_daydream_prompt(
+                inventor_name="Pico Press",
+                inventor_id="Pico Press",
+                seed=seed,
+                notebook_count=0,
+                prior_work_count=0,
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+class GoalTest(unittest.TestCase):
+    def test_constitution_makes_daydream_one_native_goal_with_a_finalizer(self):
+        from workshop.daydream.prompt import DAYDREAM_CONSTITUTION
+
+        self.assertIn("Daydream is one native Goal", DAYDREAM_CONSTITUTION)
+        self.assertIn("create one native Goal named `Daydream`", DAYDREAM_CONSTITUTION)
+        self.assertIn('"$WORKSHOP_PYTHON" finalize_daydream.py', DAYDREAM_CONSTITUTION)
+        self.assertIn("writes `agent-outcome.json`", DAYDREAM_CONSTITUTION)
+        self.assertIn("`agent-outcome.json` by hand", DAYDREAM_CONSTITUTION)
+        self.assertIn("you run the finalizer, you stop", DAYDREAM_CONSTITUTION)
+
+
+class RouteBudgetTest(unittest.TestCase):
+    def _prompt(self, effort):
+        from workshop.daydream.prompt import build_daydream_prompt
+        from workshop.daydream.seeds import DaydreamSeed
+
+        return build_daydream_prompt(
+            inventor_name="Sample",
+            inventor_id="sample",
+            seed=DaydreamSeed(moment="a bus stop in the cold", twist="it counts something"),
+            notebook_count=0,
+            prior_work_count=0,
+            effort=effort,
+        )
+
+    def test_route_budget_is_named_only_when_the_route_is_known(self):
+        from workshop.daydream.prompt import ROUTE_BUDGETS
+
+        self.assertNotIn("Route budget", self._prompt(None))
+        for effort in ("spark", "forge", "quest"):
+            with self.subTest(effort=effort):
+                prompt = self._prompt(effort)
+                self.assertIn(ROUTE_BUDGETS[effort], prompt)
+                self.assertLess(prompt.index("Route budget"), prompt.index("work/IDEA.json"))
+        self.assertIn("too big for Spark", self._prompt("spark"))
+
+    def test_unknown_route_is_rejected(self):
+        from workshop.errors import ContractError
+
+        with self.assertRaises(ContractError):
+            self._prompt("turbo")

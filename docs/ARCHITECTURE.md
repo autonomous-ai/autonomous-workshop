@@ -147,7 +147,17 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v13.md` capability
+For new Forge and Quest runs, the frozen `deep-economics-v14.md` capability
+begins Invent with high reasoning for 20 minutes and gives a recoverable
+continuation 10 minutes at medium as a source-finalization handoff. Make starts
+directly at high reasoning with a normal 60-minute boundary and 256k
+compaction. It batches the exact Wish, sealed Invent result, Inventor guidance,
+Make reference, and CAD skill, then persists one coherent complete CAD baseline
+early. Current Make uses `agent-outcome.json` from its first turn and has no
+early-proof marker, private proof receipt, or source-handoff phase. Playtest
+and Release use medium; final gates and effect ownership are unchanged.
+
+Frozen `deep-economics-v13.md` runs retain their original protocol, which
 begins Invent with high reasoning for 20 minutes and gives a recoverable
 continuation 10 minutes at medium as a source handoff. Its first action checks
 only whether source exists; existing source goes straight to the finalizer,

@@ -1,0 +1,26 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-03T04:01:29+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 493.75 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=e373a8e76892bea0f21cb9e3aa216b5010c5c1662c67438cb42d5186618f9535` | note | 0.00 |
+| 2 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' artifacts/make/r0001/product/neststomp` | rc=0 | 0.09 |
+| 3 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' artifacts/make/r0001/product/neststomp/assembled.step.py artifacts/make/r0001/product/neststomp/part_chick.step.py artifacts/make/r0001/product/neststomp/part_owl.step.py --write --json` | rc=0 | 20.33 |
+| 4 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' artifacts/make/r0001/product/neststomp --bed 220.0 220.0 --entry artifacts/make/r0001/product/neststomp/part_chick.step.py --entry artifacts/make/r0001/product/neststomp/part_owl.step.py` | rc=0 | 14.03 |
+| 5 | `<HOME>/code/autonomous-workshop/.venv/bin/python artifacts/make/r0001/product/neststomp/measure/check_fit.py` | rc=0 | 16.27 |
+| 6 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 7 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 8 | `check_motion  # NOT RUN: no documented mating/assembly action and no moving joint is declared` | skipped | 0.00 |
+| 9 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (7 JSONL requests)` | rc=0 | 53.24 |
+| 10 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/neststomp/assembled.step --glb --json` | rc=0 | 10.37 |
+| 11 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/neststomp/part_chick.step --stl --json` | rc=0 | 8.05 |
+| 12 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/neststomp/part_chick.stl --bed 220x220x220` | rc=0 | 2.14 |
+| 13 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/neststomp/part_chick.stl --nozzle 0.4 --report artifacts/make/r0001/product/neststomp/measure/thickness-chick.md` | rc=0 | 191.58 |
+| 14 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/neststomp/part_owl.step --stl --json` | rc=0 | 22.23 |
+| 15 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/neststomp/part_owl.stl --bed 220x220x220` | rc=0 | 6.31 |
+| 16 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/neststomp/part_owl.stl --nozzle 0.4 --report artifacts/make/r0001/product/neststomp/measure/thickness-owl.md` | rc=0 | 149.08 |

@@ -14,6 +14,7 @@ COMPONENTS = {
     "artifacts",
     "concept",
     "contributors",
+    "daydream",
     "release",
     "integrations",
     "invent",

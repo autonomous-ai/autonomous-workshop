@@ -129,7 +129,11 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
 - the exact nonempty root files named by `STAGE.json.required_root_files`:
   `product.json`, `assembled.step`, `assembled.step.json`, and `assembled.stl`;
 - `product.json` with nonempty `title` and `summary` strings, plus the exact
-  `components` array above for a marked Concept packet;
+  `components` array above for a marked Concept packet. Both text fields are
+  customer copy that reaches the shop unchanged: the title is a sayable name
+  of one to four words with no dimensions, part counts, or sentences, and
+  neither may use Workshop vocabulary (Wish, Taste, Goal, Make, Release,
+  Playtest, Spark, Forge, Quest, artifact, gate);
 - the self-contained CAD project, source, generated STEP/STL, measurements,
   passing `measure/print-preflight.md`, and final
   `measure/verification-pipeline.md`;

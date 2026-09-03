@@ -693,12 +693,103 @@ second defect. Recovery prohibited every optional reference, including the CAD
 skill's exact constant-wall and all-regions thickness method; Codex therefore
 spent repeated full regenerations exploring scalar and topology changes.
 
-New runs now freeze `deep-economics-v13.md`. The first final continuation keeps
+At that revision, new runs froze `deep-economics-v13.md`. The first final continuation keeps
 the source handoff, but an explicit resume with a valid proof marker starts
 directly in normal recovery. A saved thickness failure may load exactly its
 complete region table and `references/print-optimisation.md` once before one
 all-regions source repair. Frozen v12 keeps its original process. Every gate is
 unchanged; v13 remains unproven until a fresh terminal product publishes.
+
+### V14 removes the current early-proof phase
+
+New Forge and Quest runs now freeze `deep-economics-v14.md`. Invent keeps the
+v13 timing and source-finalization recovery, while Make begins directly at high
+reasoning with a normal 60-minute boundary and 256k compaction. The first Make
+turn reads the exact Wish and sealed Invent result, persists a coherent complete
+CAD baseline early, and finalizes through `agent-outcome.json`. It creates no
+proof-ready marker, private proof receipt, or proof-to-source handoff. Narrow
+engineering coupons remain permitted when they answer a specific fit, wall, or
+mechanism question, but they cannot become mandatory final form.
+
+This change tests the diagnosis that the former disposable blockout anchored
+later geometry even when it did not resemble the named building. The proof
+checkpoint originally protected useful durable product bytes during shorter
+context windows; the later 256k profile removed that constraint while the
+checkpoint's anchoring cost remained. Deterministic CAD, inventory, fit, mesh,
+wall-thickness, exact-evidence, blind semantic-review, integrated-verification,
+Playtest, and Release gates are unchanged.
+
+### Exact HCMC skyline-chess comparison
+
+The v14 rerun used exactly: `A geometry-readable orthodox chess set that turns
+six Ho Chi Minh City landmarks into a complete 32-piece skyline, with round
+River and square Grid plinths distinguishing the two sides without relying on
+color.` The run checkpoint binds `deep-economics-v14.md` at SHA-256
+`8231cf4536366ccf7fab36e1473e69767e7318b8009ec8f2737ab5dac3b282d3`.
+Its workspace contains no `review/early-proof/`, `.make-proof-ready.json`, or
+host `make-proof-acceptances/` state.
+
+The comparison was blind before contract reveal. The reviewer saw randomly
+named copies of each exact `snap/iso.png` and `snap/signature.png`, first tried
+to identify chess roles, landmark subjects, action, and side relationship, and
+only then matched hashes to run IDs and read each sealed Invent contract. This
+is comparative evidence, not a host gate or numerical aesthetic score.
+
+| Evidence dimension | `wish-20260902-133652-1fe0198a` | `wish-20260902-154647-fabfb6fc` | `wish-20260903-043228-300ae6a3` (v14) |
+|---|---|---|---|
+| Wish adherence | Complete 32-piece board is visible; round/square armies are legible | Signature sheet shows the complete set and setup sequence; the ISO is only a two-piece held-scale view | Complete 32-piece board and both plinth families are visible; caddies and board quadrants remain part of the presentation |
+| Sealed Invent adherence | Carries all six specified families, but Central Post Office, Bến Thành, and Phù Đổng read generically | Carries the specified hierarchy and tray relationship; City Hall, Bến Thành, and Post Office remain generic at viewing distance | Carries the new six-family mapping, four quadrants, and four caddies; its strong silhouettes match the sealed dimensions and relationships |
+| Blind landmark recognition | Confident: Bitexco helipad, Notre-Dame twin spires, Landmark 81 bundle; other three uncertain | Confident: Bitexco-like cantilever, Notre-Dame twin spires, tall stepped tower; other three uncertain | Confident: Landmark 81 bundle, Notre-Dame twin spires, Bitexco cantilever; City Hall, Independence Palace, and Bến Thành remain uncertain |
+| Blind role recognition | Overall chess set and pawn/back-rank hierarchy clear; several individual middle roles ambiguous | Overall chess set and six height/silhouette families clear in the signature sheet; held ISO cannot establish inventory | Overall set, pawns, corner rooks, twin-spire bishops, and tall royals clear; queen versus king needs height/context |
+| Visual finish | Cleanest conventional board and least clutter, but repetitive column/ball vocabulary | Clean signature sequence, but the hero ISO looks like a coarse two-piece blockout and the forms closely retain the proof vocabulary | Most differentiated architectural vocabulary and clearest plinth contrast; visibly rougher board/caddy edge composition than the first baseline |
+| Completion | Failed in Make; no final semantic-review artifact or Release | Complete and publicly published | Make and Release product gates passed; waiting only for missing Factory service credentials, so publication was truthfully not created |
+| Wall elapsed | 1h38m10s from run-id UTC start to durable last activity; includes resume overhead | 2h06m45s on the same basis | 1h55m57s from CLI start to credential waiting state |
+| Native token telemetry | Partial: 7,206,651 input; 31,673 output; 4/6 turns measured | Partial: 18,306,995 input; 79,823 output; 6/10 turns measured | Partial: 20,607,751 input; 94,912 output; 4/6 turns measured |
+
+The diagnosis is supported. Baseline `...133652...` carries its early proof's
+ball pawn, block rook, fork/twin-spire pieces, and bundled-column royal grammar
+into the final render. Baseline `...154647...` carries the proof's stepped
+rectangular tower and cone-on-cross form almost verbatim into its hash-bound
+held ISO and repeats that simplified vocabulary across the signature sheet.
+Those proofs were useful when short context windows threatened to leave no
+durable CAD, but they also became visual anchors after the 256k compaction fix.
+
+Removing the phase improved the outcome in the intended dimension: the v14
+result is plainly more product-readable than the second baseline's hero render
+and has a more varied, contract-specific architectural vocabulary than either
+proof. It is not an across-the-board quality win. The first baseline retains a
+cleaner board composition, none of the three results makes all six landmarks
+confidently nameable without labels, and v14 used more measured tokens than
+either baseline. The fresh Invent contract also changed three role-to-landmark
+assignments and the storage design, so the improvement cannot be attributed
+solely to removing proof. The evidence supports disabling proof as an obsolete
+and harmful mandatory anchor, not a claim that v14 by itself solved landmark
+recognizability or cost.
+
+Exact private evidence, all below each named run root:
+
+- `wish-20260902-133652-1fe0198a`: Invent
+  `b7e55c767e5bd6fb916a0909a813b4d2fd67137f7935e281f8954381e44b9894`;
+  ISO `9ee7c61773b346ac92c86ec3bd306f7c67410a9254fe66039649c30fa2ce952e`;
+  signature `3a0afec9fd95ef0ec5a220996fe1472ceae3088f6531ab64911f6459291c1199`;
+  early proof `1597b9db2ba42bf2b81fa72e3014ae8bebf176bdffdc6920f542a7abc3d332d4`;
+  token record `da0cd2faeaf2c6118a9d8b88d97f29dfd6839fa9c618ee5ab7d2a8b872102e81`.
+- `wish-20260902-154647-fabfb6fc`: Invent
+  `e3ddebc05fbfa97ce680e1ce2c6e1be7da8caaec1256d188bef4b481a3656e61`;
+  ISO `c180b517dd99d43dcab01dc0adf5dd162e33e076f8f042bbd8cc440002392e6b`;
+  signature `624f7856f7731c16a5f546806ef37090181d4d608bc7ab56e10ee5fa1db9f891`;
+  final review `d7c2884aeed81a1397ef9f08b2ec21e1652a3093aa70887d49a5aa1619eab480`;
+  early proof `26bff1748d9de9ebc7d69dbde2a9db6801ba1d7d7d1038eb06b41fb4b41bdb9e`;
+  token record `c5e8ddaa74ced3493985b9ea4e853a8d52f00939ce5b33c63da255c48f78c590`.
+- `wish-20260903-043228-300ae6a3`: Invent
+  `f021cd4ce4768458650c5399b6b19326ec7b360be67e66ea8d72fc2905551aa5`;
+  ISO `f0114cf848e61c8992fcfb042ec1a5c75b01e7c0d90af6c5469c7cf80d0a97ba`;
+  signature `9cc75628c585c0719b8a9e69906bc499d7baf614dd2eff4767995f6e18322629`;
+  final review `ebddee1658586835508c1b9630eb4a95c69c3527cb32c6a4731d8f71c39c6485`;
+  checkpoint `5cec2903e171f29aa383a73f97e09ad0daf3da69ff84d3816e8e97849f550334`
+  with `STAGE.json` bytes
+  `9226215f5d07556203861019aa3bba75e3348a388dea706069fc3807f866591c`;
+  token record `c6791b6b8c33d7ece569d4b79bf66839e8d4cfc59edcd1083227f9bcba29c050`.
 
 ## Quality is comparative evidence, not a model score
 

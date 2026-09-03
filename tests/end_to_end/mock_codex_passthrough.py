@@ -362,11 +362,13 @@ def _runtime_configuration(arguments: list[str]) -> tuple[str | None, str | None
 def _turn_timeout(run_root: Path) -> int:
     # The host writes this before the run workspace exists.  It is intentionally
     # outside the agent-readable root and contains no secret.
-    path = run_root.parents[2] / "mock-session-config.json"
     try:
+        path = run_root.parents[2] / "mock-session-config.json"
         value = json.loads(path.read_text(encoding="utf-8"))
         timeout = value["turn_timeout_seconds"]
-    except (OSError, KeyError, TypeError, ValueError):
+    except (OSError, KeyError, IndexError, TypeError, ValueError):
+        # IndexError: a run root only two levels deep (a bare /tmp/tmpXXXX on
+        # Linux) has no third parent; the default applies there too.
         return 300
     if type(timeout) is not int or not 1 <= timeout <= 3600:
         raise RuntimeError("mock-session turn timeout is invalid")

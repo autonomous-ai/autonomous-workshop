@@ -52,6 +52,7 @@ from workshop.runtime.project_boundary import (
 from workshop.wish import Wish
 from workshop.workflow.effort import (
     DEEP_ECONOMICS_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V13_CAPABILITY_PATH,
     DEEP_ECONOMICS_V14_CAPABILITY_PATH,
     DEEP_ECONOMICS_V15_CAPABILITY_PATH,
     EFFORT_ROUTE_CAPABILITY_PATH,
@@ -771,25 +772,30 @@ class AgentRun:
         v2_selected = INVENT_CONCEPT_V2_ACTIVATED or os.environ.get(
             INVENT_CONCEPT_V2_ACCEPTANCE_ENVIRONMENT
         ) == "1"
-        if selected_effort is not None and selected_effort.includes("invent") and v3_selected:
+        if selected_effort is not None and not selected_effort.includes("invent"):
+            excluded_capabilities = {
+                INVENT_CONCEPT_V2_CAPABILITY_PATH,
+                INVENT_CONCEPT_V3_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH,
+                DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V15_CAPABILITY_PATH,
+            }
+        elif selected_effort is not None and selected_effort.includes("invent") and v3_selected:
             excluded_capabilities = {
                 INVENT_CONCEPT_CAPABILITY_PATH,
                 INVENT_CONCEPT_V2_CAPABILITY_PATH,
-                DEEP_ECONOMICS_CAPABILITY_PATH,
-                DEEP_ECONOMICS_V14_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V15_CAPABILITY_PATH,
             }
         elif selected_effort is not None and selected_effort.includes("invent") and v2_selected:
             excluded_capabilities = {
                 INVENT_CONCEPT_CAPABILITY_PATH,
                 INVENT_CONCEPT_V3_CAPABILITY_PATH,
-                DEEP_ECONOMICS_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V15_CAPABILITY_PATH,
             }
         else:
             excluded_capabilities = {
                 INVENT_CONCEPT_V2_CAPABILITY_PATH,
                 INVENT_CONCEPT_V3_CAPABILITY_PATH,
-                DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V15_CAPABILITY_PATH,
             }
         if excluded_capabilities:

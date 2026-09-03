@@ -28,6 +28,12 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.run_root = Path(self.temporary.name).resolve()
+        self.host_state_root = self.run_root / "host-state"
+        self.host_state_root.mkdir()
+        self.run = SimpleNamespace(
+            run_root=self.run_root,
+            host_state_root=self.host_state_root,
+        )
 
     def _checkpoint(self, effort="forge", *, marked=True, simplified=False, fixed=False, round_index=1):
         inputs = {EFFORT_ROUTE_CAPABILITY_PATH: "a" * 64}
@@ -72,7 +78,7 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
     def test_marked_initial_invent_packet_binds_canonical_concept_paths(self):
         checkpoint = self._checkpoint()
         subject, packet, context = _prepare_effort_stage_input(
-            mock.Mock(run_root=self.run_root),
+            self.run,
             checkpoint,
             roster=self._roster(),
             cad_gate_rejection=None,
@@ -105,7 +111,7 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
 
     def test_unmarked_invent_packet_keeps_legacy_shape(self):
         unused_subject, packet, context = _prepare_effort_stage_input(
-            mock.Mock(run_root=self.run_root),
+            self.run,
             self._checkpoint(marked=False),
             roster=self._roster(),
             cad_gate_rejection=None,
@@ -118,7 +124,7 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
 
     def test_simplified_packet_binds_visual_plan_without_changing_route(self):
         subject, packet, context = _prepare_effort_stage_input(
-            mock.Mock(run_root=self.run_root),
+            self.run,
             self._checkpoint(simplified=True), roster=self._roster(),
             cad_gate_rejection=None, make_proposal_rejection=None,
             playtest_proposal_rejection=None,
@@ -131,7 +137,7 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
 
     def test_fixed_packet_binds_visual_instructions_without_changing_route(self):
         subject, packet, context = _prepare_effort_stage_input(
-            mock.Mock(run_root=self.run_root), self._checkpoint(fixed=True),
+            self.run, self._checkpoint(fixed=True),
             roster=self._roster(), cad_gate_rejection=None,
             make_proposal_rejection=None, playtest_proposal_rejection=None,
         )
@@ -158,7 +164,7 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(StateConflict, "ambiguous"):
             _prepare_effort_stage_input(
-                mock.Mock(run_root=self.run_root), checkpoint,
+                self.run, checkpoint,
                 roster=self._roster(), cad_gate_rejection=None,
                 make_proposal_rejection=None,
                 playtest_proposal_rejection=None,
@@ -255,7 +261,7 @@ class InventConceptPacketProtocolTest(unittest.TestCase):
             side_effect=read_contract,
         ):
             subject, packet, context = _prepare_effort_stage_input(
-                mock.Mock(run_root=self.run_root),
+                self.run,
                 checkpoint,
                 roster=self._roster(),
                 cad_gate_rejection=None,

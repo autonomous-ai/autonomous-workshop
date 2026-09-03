@@ -16,6 +16,11 @@ inventors/<id>/
   skills/<id>-<specialty>/  optional additional Codex skill
 ```
 
+Daydream hands the Inventor only its `TASTE.md`: `workshop daydream <id>`
+validates the bundle, puts the exact Taste bytes in front of the Inventor, asks for one brand-new idea
+that fits it, and names the Inventor who dreamed it in the sealed brief so
+Match binds the same Inventor unless the Taste rejects the final concept.
+
 `inventor.json` contains only the stable id, status, source, and sorted
 content-bound skill records. It does not decide what a person may Wish for or
 which kinds of product the Inventor is allowed to make. Match compares the

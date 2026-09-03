@@ -15,6 +15,7 @@ second reviewer is required for critical changes whenever one is available.
 
 | Component | Owned paths | Primary DRI | Backup | Risk |
 |---|---|---|---|---|
+| Daydream | `src/workshop/daydream`, `tests/daydream` | `@deehw` | Vacant | Standard |
 | Wish | `src/workshop/wish`, `tests/wish` | `@deehw` | Vacant | Standard |
 | Match | `src/workshop/match`, `tests/match` | `@deehw` | Vacant | High |
 | Invent | `src/workshop/invent`, `tests/invent` | `@deehw` | Vacant | Standard |

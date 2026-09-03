@@ -55,7 +55,7 @@ from workshop.runtime import EffectIntent, EffectLedger, Receipt
 
 
 DEFAULT_FACTORY_API = "https://panda-social-api.autonomous.ai/api/v1"
-DEFAULT_FACTORY_PAGE_BASE = "https://www.autonomous.ai/factory/product"
+DEFAULT_FACTORY_PAGE_BASE = "https://www.autonomous.ai/toys/product"
 DEFAULT_FACTORY_PROJECT_CDN_HOST = "cdn.autonomous.ai"
 FACTORY_USER_AGENT = "Mozilla/5.0 (compatible; AutonomousWorkshop/1.0)"
 HTTP_TIMEOUT_SECONDS = 120

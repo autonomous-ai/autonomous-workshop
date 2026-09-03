@@ -41,7 +41,12 @@ While pursuing the Goal:
 
 1. **Observe:** Read the Wish, complete roster index, the top three full
    custom-agent instructions, relevant skill resources, and any exact upstream evidence. Identify what
-   needs factual research and what needs creative exploration.
+   needs factual research and what needs creative exploration. When
+   `STAGE.json` names a `design_vault` (the host-written `VAULT.json` at the
+   run root, fetched live for this phase), brief yourself on candidate
+   mechanisms with `vault_tools.py guidance` before committing to one: each
+   recorded risk carries the fix that worked, including what earlier runs
+   confirmed at Playtest.
 2. **Act:** Use Codex-native search, browsing, file tools, and specialist
    subagents to research supported facts and explore materially different
    concepts. Save source provenance beside the claims it supports. Use the
@@ -99,8 +104,59 @@ If `STAGE.json.inputs.invent_concept_capability` is present, read its bound
 `references/invent-concept-v1.md` and author its exact five-file pre-render
 tree as part of this same Goal. The selected Inventor owns specialist design
 content; the root Manager checks cross-file component and mechanism coherence
-and remains responsible for the one finalizer call. Then run the packet-matched
-form:
+and remains responsible for the one finalizer call.
+
+The finalizer seals the concept as Invented schema 5 and enforces this
+contract deterministically. Required `concept` fields (extra fields such as
+`signature_decision`, `print_stance`, `assumptions`, or `risks` are allowed):
+
+- `title`, `summary`: bounded text.
+- `interaction`: what the owner physically does with the product; every
+  component must either mate with another component or be named here.
+- `envelope_mm`: `{length_mm, width_mm, height_mm}`, finite, within
+  `(0, 2000]`.
+- `mechanisms`: at most 16 unique slugs (`^[a-z][a-z0-9_-]{0,62}$`); may be
+  empty for a purely static object. Each slug must resolve to a design-vault
+  node (`vault_tools.py resolve <name>`, see the `design-vault` skill) or be
+  declared under the optional `novel_mechanisms` list as
+  `{"id": <slug>, "definition": <20 to 2000 characters>}`.
+- `components`: 1 to 64 entries with exactly `key`, `name`, `form`, `duty`,
+  `dimensions_mm`, `placement`, `interfaces`, `mates_with`, `signature`.
+- `build_plan`: 1 to 16 groups, each exactly `{"group": <slug>, "parts":
+  [component keys], "exit_criteria": <text>}`, in build order. Every
+  component appears in exactly one group; put parts that must be measured
+  against each other in the same group. Make seals one group at a time and
+  stops at the first group it cannot seal.
+
+The finalizer rejects, naming the rule in parentheses:
+
+- **unbound** — `form`, `duty`, `placement`, or `interfaces` hedges a quantity
+  (`roughly 20 mm`, `~4 mm`, `several`, `a few`, `enough`, `as needed`).
+  State the number.
+- **envelope** — a component's sorted dimensions exceed the sorted envelope.
+- **component-orphan** — `mates_with` names an unknown component, the
+  component itself, or the same mate twice.
+- **signature** — not exactly one component carries `"signature": true`; the
+  box is remembered by one object.
+- **decoration** — a component with no mate in either direction whose key or
+  name never appears in `interaction`. Give it a role or remove it.
+- **mechanism-unknown** — a mechanism that is neither a vault node nor a
+  declared novel mechanism; **mechanism-not-novel** — a `novel_mechanisms`
+  entry that resolves to an existing node.
+- **build-plan** — a group names an unknown component, a component sits in
+  two groups or in none, a group is empty, or a group name repeats.
+- **vault-conflict** / **vault-requirement** — the resolved mechanisms plus
+  every `constraints/*` node declare `conflicts-with`, or leave a `requires`
+  unmet. Run `vault_tools.py check <nodes> --with-constraints` before
+  finalizing. Risks reported there are not refusals; the host turns them into
+  `vault_leads` for Make and Playtest. `STAGE.json` may already carry
+  `inputs.vault_leads` for Invent itself: on round one they are the findings
+  for every mechanism the Wish names outright (plus the constraints), on a
+  repair round the findings Make or Playtest saw against the sealed concept
+  being revised. Read them before drafting and answer each one in the
+  concept's `vault_lead_responses` (`lead_id`, `status`, `response`).
+
+Then run:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \

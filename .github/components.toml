@@ -13,6 +13,20 @@ github_account_prefix = "@"
 vacant_backup_status = "vacant"
 
 [[components]]
+id = "daydream"
+name = "Daydream"
+purpose = "Let one Inventor dream one entirely new, Taste-fitting toy idea and seal it as the brief a Wish is made from."
+primary_role = "Daydream maintainer"
+backup_role = "Daydream backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "standard"
+source = ["src/workshop/daydream/**"]
+tests = ["tests/daydream/**"]
+docs = ["src/workshop/daydream/README.md"]
+
+[[components]]
 id = "wish"
 name = "Wish"
 purpose = "Preserve and validate the customer's request and constraints."
@@ -219,7 +233,7 @@ backup_github = []
 backup_status = "vacant"
 risk = "standard"
 source = ["inventors/**"]
-tests = []
+tests = ["inventors/*/skills/*/scripts/tests/**"]
 docs = ["inventors/README.md"]
 
 [[components]]

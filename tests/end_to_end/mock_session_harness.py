@@ -89,6 +89,7 @@ class MockSessionReport:
     effort: str
     model: str
     reasoning_effort: str
+    reasoning_effort_by_stage: Mapping[str, str]
     stages: tuple[str, ...]
     durations: Mapping[str, float]
     session_starts: int
@@ -117,6 +118,7 @@ class MockSessionReport:
             "effort": self.effort,
             "model": self.model,
             "reasoning_effort": self.reasoning_effort,
+            "reasoning_effort_by_stage": dict(self.reasoning_effort_by_stage),
             "stages": list(self.stages),
             "durations": dict(self.durations),
             "session_starts": self.session_starts,
@@ -588,6 +590,14 @@ def _assert_agent_write_ownership(
                 "%s:%s agent write inventory is missing" % (effort, stage)
             )
         for relative in writes:
+            if effort in ("forge", "quest") and (
+                relative == ".make-proof-ready.json"
+                or "/review/early-proof/" in ("/" + relative)
+            ):
+                raise MockSessionEvidenceError(
+                    "%s:%s current direct Make fabricated historical proof state in %s"
+                    % (effort, stage, relative)
+                )
             allowed = (
                 relative == "agent-outcome.json"
                 or re.fullmatch(
@@ -603,6 +613,7 @@ def _assert_agent_write_ownership(
                         "drafts/invent-source.json",
                     }
                 )
+                or (stage == "make" and relative.startswith(".cad-scratch/"))
                 or relative in root_sources.get(str(stage), set())
                 or relative.startswith("authored/")
                 or relative.startswith("sources/")
@@ -617,6 +628,16 @@ def _assert_agent_write_ownership(
                     "%s:%s agent write crossed ownership into %s"
                     % (effort, stage, relative)
                 )
+
+
+def _assert_no_current_proof_state(host_state: Path, *, effort: str) -> None:
+    proof_receipts = host_state / "make-proof-acceptances"
+    if effort in ("forge", "quest") and (
+        proof_receipts.exists() or proof_receipts.is_symlink()
+    ):
+        raise MockSessionEvidenceError(
+            "%s:current direct Make created historical host proof state" % effort
+        )
 
 
 def _terminal_evidence_mode(
@@ -793,9 +814,27 @@ def _validate_trace(
             "%s:native start/resume trace differs: %r" % (effort, methods)
         )
     models = {value.get("model") for value in trace}
+    expected_reasoning = {
+        "spark": {"make": "low", "release": "low"},
+        "forge": {"invent": "high", "make": "high", "release": "medium"},
+        "quest": {
+            "invent": "high",
+            "make": "high",
+            "playtest": "medium",
+            "release": "medium",
+        },
+    }[effort]
+    observed_reasoning = {
+        str(value["stage"]): value.get("reasoning_effort") for value in trace
+    }
     if len(models) != 1 or None in models:
         raise MockSessionEvidenceError(
-            "%s:runtime configuration changed across turns" % effort
+            "%s:model configuration changed across turns" % effort
+        )
+    if observed_reasoning != expected_reasoning:
+        raise MockSessionEvidenceError(
+            "%s:reasoning configuration differs: expected %r, observed %r"
+            % (effort, expected_reasoning, observed_reasoning)
         )
     for value in trace:
         if effort == "spark":
@@ -882,6 +921,7 @@ def _validate_trace(
             )
             cumulative_writes.clear()
     _assert_agent_write_ownership(trace, effort=effort)
+    _assert_no_current_proof_state(host_state, effort=effort)
     session = read_bounded_json(host_state / "codex-session.json", 64 * 1024)
     session_id = session.get("thread_id")
     if not isinstance(session_id, str):
@@ -1382,6 +1422,10 @@ def run_mock_session_acceptance(
             effort=effort,
             model=str(trace[0]["model"]),
             reasoning_effort=str(trace[0]["reasoning_effort"]),
+            reasoning_effort_by_stage={
+                str(value["stage"]): str(value["reasoning_effort"])
+                for value in trace
+            },
             stages=CANONICAL_ROUTES[effort],
             durations={
                 str(value["stage"]): float(value["elapsed_seconds"])

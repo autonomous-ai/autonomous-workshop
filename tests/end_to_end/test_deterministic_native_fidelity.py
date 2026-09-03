@@ -15,6 +15,7 @@ from email.policy import default as email_policy
 from pathlib import Path
 from unittest import mock
 
+from tests.invent.fake_gamevault import E2E_NODES, FakeGameVaultTransport, install_fake_gamevault
 from workshop.errors import ArtifactError, StateConflict, WorkshopError
 from workshop.integrations.factory import (
     FACTORY_PROJECT_PDF_MANUAL_FILENAME,
@@ -276,6 +277,7 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         )
         activation.start()
         self.addCleanup(activation.stop)
+        install_fake_gamevault(self, FakeGameVaultTransport(E2E_NODES))
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve()

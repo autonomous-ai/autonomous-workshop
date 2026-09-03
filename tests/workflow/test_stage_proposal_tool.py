@@ -1,11 +1,16 @@
 import hashlib
 import copy
+import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
+from unittest import mock
 import zlib
 from pathlib import Path
 
@@ -24,6 +29,11 @@ from tests.concept.test_v3_authoring import SimplifiedConceptAuthoringTest
 from tests.concept.test_v4_authoring import FixedConceptAuthoringTest
 from workshop.errors import ArtifactError, ContractError
 from workshop.invent.native import NativeInvented
+from tests.invent.test_native_contract import BUILD_PLAN_VIOLATIONS, CONCEPT_VIOLATIONS, v4_concept, v5_concept
+from tests.make.test_build_groups import seal_group, write_parts
+from tests.invent.test_vault import write_vault
+from tests.playtest.test_native_playtested import DIMS, LEAD_ANSWER_CASES, SCORE_CASES
+from workshop.invent.vault import Vault
 from workshop.make.contracts import Made
 from workshop.make.native import NativeMade
 from workshop.make.revision import NativeMakeInventRevision
@@ -46,6 +56,15 @@ from workshop.runtime.concept_effects import (
 
 
 REPOSITORY = Path(__file__).resolve().parents[2]
+VAULT_TOOL = (
+    Path(__file__).resolve().parents[2]
+    / "src"
+    / "workshop"
+    / "invent"
+    / "skills"
+    / "design-vault"
+    / "vault_tools.py"
+)
 TOOL = (
     REPOSITORY
     / ".agents"
@@ -217,39 +236,8 @@ class StageProposalToolTest(unittest.TestCase):
             assignment_sha256=self.assignment.assignment_sha256,
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
-            concept={
-                "title": "Moon Nook",
-                "summary": "A tiny lunar observatory shaped by the Wish.",
-                "signature_decision": (
-                    "The viewing aperture and the moon-phase dial share one "
-                    "compact tactile enclosure."
-                ),
-                "intended_interaction": (
-                    "A person turns the dial and looks through the aperture."
-                ),
-                "envelope_mm": {
-                    "length_mm": 60.0,
-                    "width_mm": 40.0,
-                    "height_mm": 25.0,
-                },
-                "components": [
-                    {
-                        "key": "observatory",
-                        "name": "Observatory body",
-                        "purpose": "Holds the aperture and phase dial",
-                        "form": "Rounded printable enclosure",
-                        "placement": "Centered on a table",
-                        "interfaces": "The dial rotates within the body",
-                        "dimensions_mm": {
-                            "length_mm": 60.0,
-                            "width_mm": 40.0,
-                            "height_mm": 25.0,
-                        },
-                    }
-                ],
-                "assumptions": ["The object is used indoors."],
-                "unresolved_risks": ["Physical fit has not yet been tested."],
-            },
+            schema_version=5,
+            concept=v5_concept(),
             research={
                 "sources": [
                     {
@@ -258,6 +246,18 @@ class StageProposalToolTest(unittest.TestCase):
                     }
                 ]
             },
+        )
+        self.legacy_invented = NativeInvented(
+            wish_sha256=self.assignment.wish_sha256,
+            assignment_sha256=self.assignment.assignment_sha256,
+            taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.assignment.blueprint_sha256,
+            schema_version=3,
+            concept={
+                "title": "Moon Nook",
+                "summary": "A tiny lunar observatory shaped by the Wish.",
+            },
+            research=self.invented.to_dict()["research"],
         )
 
     def write_json(self, relative, value, *, canonical=False):
@@ -502,12 +502,40 @@ class StageProposalToolTest(unittest.TestCase):
             blueprint_sha256=self.blueprint.sha256,
             ranking=self.assignment.ranking,
         )
+        source_component = next(
+            item
+            for item in self.invented.to_dict()["concept"]["components"]
+            if item["signature"] is True
+        )
+        component = {
+            "key": "observatory",
+            "name": "Observatory",
+            "purpose": source_component["duty"],
+            "form": source_component["form"],
+            "dimensions_mm": source_component["dimensions_mm"],
+            "placement": source_component["placement"],
+            "interfaces": source_component["interfaces"],
+        }
+        marked_concept = {
+            "title": "Moon Nook",
+            "summary": "A tiny lunar observatory shaped by the Wish.",
+            "signature_decision": "A rounded observatory opens around a phase dial.",
+            "intended_interaction": "Turn the phase dial by hand.",
+            "envelope_mm": {
+                "length_mm": 120.0,
+                "width_mm": 120.0,
+                "height_mm": 90.0,
+            },
+            "components": [component],
+            "assumptions": [],
+            "unresolved_risks": [],
+        }
         invented = NativeInvented(
             wish_sha256=wish_sha256,
             assignment_sha256=assignment.assignment_sha256,
             taste_sha256=assignment.selected_taste_sha256,
             blueprint_sha256=assignment.blueprint_sha256,
-            concept=self.invented.to_dict()["concept"],
+            concept=marked_concept,
             research=self.invented.to_dict()["research"],
         )
         source = {
@@ -535,7 +563,15 @@ class StageProposalToolTest(unittest.TestCase):
                 "dimensions_mm": {"length_mm": 5, "width_mm": 5, "height_mm": 20},
                 "clearance_mm": 0.3,
             },
-            "components": [self.invented.to_dict()["concept"]["components"][0]],
+            "components": [{
+                "key": component["key"],
+                "name": component["name"],
+                "purpose": component["purpose"],
+                "form": component["form"],
+                "dimensions_mm": component["dimensions_mm"],
+                "placement": component["placement"],
+                "interfaces": component["interfaces"],
+            }],
         }
         fields = (
             "object", "category", "envelope_mm", "wall_thickness_mm", "print_stance",
@@ -669,6 +705,9 @@ class StageProposalToolTest(unittest.TestCase):
         (product_root / "cad/project/measure/print-preflight.md").write_bytes(
             preflight
         )
+        write_parts(product_root, self.invented.to_dict()["concept"])
+        for group in self.invented.to_dict()["concept"]["build_plan"]:
+            seal_group(product_root, self.invented.to_dict()["concept"], group["group"])
         render = Image.new("RGB", (900, 900), "#fff4df")
         pen = ImageDraw.Draw(render)
         pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
@@ -1313,6 +1352,10 @@ class StageProposalToolTest(unittest.TestCase):
         effect_path = inputs["concept_effect_path"]
         self.write_json(effect_path, effect.to_dict(), canonical=True)
         product_root, _, _, _ = self.create_product()
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text())
+        review["concept_sha256"] = invented["concept_sha256"]
+        review_path.write_bytes(canonical_json(review))
         make_inputs = {
             "assignment": assignment,
             "invented": invented,
@@ -1623,6 +1666,300 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
         self.assertFalse(
             (self.run_root / "artifacts/make/r0001/made.json").exists()
+        )
+
+    def materialize_vault(self, *, tool=True, vault=True, corrupt=False):
+        skill = self.run_root / ".agents" / "skills" / "design-vault"
+        skill.mkdir(parents=True, exist_ok=True)
+        packed = Vault.from_directory(write_vault(self.run_root / "vault-source")).packed_bytes()
+        snapshot = self.run_root / "VAULT.json"
+        if vault:
+            snapshot.write_bytes(b"{not json" if corrupt else packed)
+        elif snapshot.exists():
+            snapshot.unlink()
+        if tool:
+            (skill / "vault_tools.py").write_bytes(VAULT_TOOL.read_bytes())
+        return skill
+
+    def invent_source(self, mechanisms, **extra):
+        concept = v5_concept()
+        concept["mechanisms"] = mechanisms
+        concept.update(extra)
+        return {"concept": concept, "research": self.invented.to_dict()["research"]}
+
+    def test_invent_applies_the_run_local_design_vault(self):
+        self.materialize_vault()
+        self.write_stage("invent", {"assignment": self.assignment.to_dict()})
+        self.write_json("drafts/invent.json", self.invent_source(["hand-off", "single-token"]))
+        self.run_tool("invent", "--source", "drafts/invent.json")
+        document, _ = self.assert_canonical_file("artifacts/invent/invented.json")
+        self.assertEqual(document["schema_version"], 5)
+        self.assertEqual(document["concept"]["mechanisms"], ["hand-off", "single-token"])
+        for mechanisms, extra, pattern in (
+            (["rotating-dome"], {}, "mechanism-unknown"),
+            (["card-hand"], {}, "vault-conflict"),
+            (["hand-off"], {}, "vault-requirement"),
+            (
+                ["hand-off", "single-token"],
+                {"novel_mechanisms": [{"id": "hand-off", "definition": "x" * 30}]},
+                "mechanism-not-novel",
+            ),
+        ):
+            (self.run_root / "artifacts/invent/invented.json").unlink(missing_ok=True)
+            self.write_json("drafts/invent.json", self.invent_source(mechanisms, **extra))
+            with self.subTest(pattern=pattern):
+                completed = self.run_tool("invent", "--source", "drafts/invent.json", expected=2)
+                self.assertIn("refused by the design vault", completed.stderr)
+                self.assertIn(pattern, completed.stderr)
+        (self.run_root / "artifacts/invent/invented.json").unlink(missing_ok=True)
+        self.write_json(
+            "drafts/invent.json",
+            self.invent_source(
+                ["single-token", "rotating-dome"],
+                novel_mechanisms=[{"id": "rotating-dome", "definition": "A dome that turns by hand."}],
+            ),
+        )
+        self.run_tool("invent", "--source", "drafts/invent.json")
+
+    def test_invent_vault_snapshot_must_be_whole_or_absent(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_vault_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        self.assertIsNone(tool._design_vault(self.run_root))
+        tool._assert_concept_vault_compatible(self.run_root, v4_concept())
+        skill = self.materialize_vault(tool=True, vault=False)
+        # the tool is a static skill; a stage the host gave no snapshot has no vault rules
+        self.assertIsNone(tool._design_vault(self.run_root))
+        (skill / "vault_tools.py").unlink()
+        self.materialize_vault(tool=False, vault=True)
+        with self.assertRaisesRegex(tool.ProposalError, "missing from the run"):
+            tool._design_vault(self.run_root)
+        self.materialize_vault(corrupt=True)
+        with self.assertRaisesRegex(tool.ProposalError, "snapshot is invalid"):
+            tool._design_vault(self.run_root)
+        self.materialize_vault()
+        module, vault = tool._design_vault(self.run_root)
+        self.assertEqual(vault.resolve("pass the baton"), "mechanisms/hand-off")
+        with self.assertRaisesRegex(tool.ProposalError, "vault-conflict"):
+            tool._assert_concept_vault_compatible(self.run_root, {**v4_concept(), "mechanisms": ["card-hand"]})
+        self.write_stage("invent", {"assignment": self.assignment.to_dict()})
+        self.write_json("drafts/invent.json", self.invent_source(["hand-off", "single-token"]))
+        import argparse
+
+        with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(Path(sys.executable).absolute())}):
+            result = tool.run(
+                argparse.Namespace(run_root=str(self.run_root), command="invent", source="drafts/invent.json")
+            )
+        self.assertEqual(result["outcome_path"], "agent-outcome.json")
+        document, _ = self.assert_canonical_file("artifacts/invent/invented.json")
+        self.assertEqual(document["schema_version"], 5)
+
+    def test_invent_rejects_contract_violations_with_a_named_rule(self):
+        self.write_stage("invent", {"assignment": self.assignment.to_dict()})
+        for name, mutate, pattern in CONCEPT_VIOLATIONS[:3] + CONCEPT_VIOLATIONS[-3:]:
+            concept = v5_concept()
+            mutate(concept)
+            self.write_json(
+                "drafts/invent.json",
+                {"concept": concept, "research": self.invented.to_dict()["research"]},
+            )
+            with self.subTest(violation=name):
+                completed = self.run_tool(
+                    "invent", "--source", "drafts/invent.json", expected=2
+                )
+                self.assertRegex(completed.stderr, pattern)
+                self.assertFalse((self.run_root / "artifacts/invent/invented.json").exists())
+
+    def test_invent_contract_rules_match_the_host_mirror(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_under_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        tool._validate_concept_contract(v4_concept())
+        for name, mutate, pattern in CONCEPT_VIOLATIONS:
+            concept = v4_concept()
+            mutate(concept)
+            with self.subTest(violation=name):
+                with self.assertRaisesRegex(tool.ProposalError, pattern):
+                    tool._validate_concept_contract(concept)
+        legacy = self.legacy_invented.to_dict()
+        assignment = self.assignment.to_dict()
+        self.assertEqual(tool._validate_invented(legacy, assignment), legacy)
+        current = self.invented.to_dict()
+        self.assertEqual(tool._validate_invented(current, assignment), current)
+        with self.assertRaisesRegex(tool.ProposalError, "schema_version must be 3, 4, or 5"):
+            tool._validate_invented({**legacy, "schema_version": 2}, assignment)
+        hand_written = {**current, "concept": {**current["concept"], "mechanisms": ["Bad Slug"]}}
+        with self.assertRaisesRegex(tool.ProposalError, "unique slugs"):
+            tool._validate_invented(hand_written, assignment)
+        sealed = tool._invent_contract(
+            self.run_root,
+            {"inputs": {"assignment": assignment}},
+            {"concept": current["concept"], "research": current["research"]},
+        )
+        self.assertEqual(sealed["schema_version"], 5)
+        self.assertEqual(sealed, current)
+        for name, mutate, pattern in BUILD_PLAN_VIOLATIONS:
+            concept = v5_concept()
+            mutate(concept)
+            with self.subTest(violation=name):
+                with self.assertRaisesRegex(tool.ProposalError, pattern):
+                    tool._validate_build_plan(concept)
+        self.assertEqual([g["group"] for g in tool._validate_build_plan(v5_concept())], ["body", "cap"])
+        with self.assertRaisesRegex(tool.ProposalError, "schema_version must be 3, 4, or 5"):
+            tool._validate_invented({**legacy, "schema_version": 6}, assignment)
+
+    def test_make_group_seals_parts_and_make_refuses_unsealed_or_stale_groups(self):
+        product_root, _, _, _ = self.create_product()
+        concept = self.invented.to_dict()["concept"]
+        self.write_stage(
+            "make",
+            {"assignment": self.assignment.to_dict(), "invented": self.invented.to_dict(), "feedback": []},
+            round_index=1,
+        )
+        shutil.rmtree(product_root / "groups")
+        completed = self.run_tool(
+            "make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("build group body has no sealed outcome", completed.stderr)
+        sealed = json.loads(self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "body").stdout)
+        self.assertEqual(sealed["group"], "body")
+        self.assertEqual(set(sealed["files"]), {"base", "dome"})
+        self.assertEqual(sealed["outcome_path"], "artifacts/make/r0001/product/groups/body.json")
+        self.assertEqual(sealed["exit_criteria"], "Dome turns freely on the base ring.")
+        self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap")
+        (product_root / "parts" / "dome.stl").write_bytes(b"solid dome v2\nendsolid\n")
+        completed = self.run_tool(
+            "make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("body was sealed against different part bytes: dome", completed.stderr)
+        self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "body")
+        self.run_tool(
+            "make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json",
+        )
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "ghost", expected=2)
+        self.assertIn("not in the sealed build_plan", completed.stderr)
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0002/product", "--group", "cap", expected=2)
+        self.assertIn("Make product root must be", completed.stderr)
+        (product_root / "parts" / "lens_cap.stl").unlink()
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap", expected=2)
+        self.assertIn("part lens_cap is missing", completed.stderr)
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"")
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap", expected=2)
+        self.assertIn("part lens_cap is empty", completed.stderr)
+        # in-process mirror of the group validator's remaining branches
+        spec = importlib.util.spec_from_file_location("stage_proposal_groups_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"solid cap\nendsolid\n")
+        with self.assertRaisesRegex(tool.ProposalError, "Make part lens_cap is empty|part lens_cap"):
+            (product_root / "parts" / "lens_cap.stl").write_bytes(b"")
+            tool._validate_build_groups(concept, product_root)
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"solid cap\nendsolid\n")
+        import argparse
+
+        with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(Path(sys.executable).absolute())}):
+            sealed_cap = tool.run(
+                argparse.Namespace(
+                    run_root=str(self.run_root), command="make-group",
+                    product_root="artifacts/make/r0001/product", group="cap",
+                )
+            )
+        self.assertEqual(sealed_cap["group"], "cap")
+        self.assertEqual(tool._validate_build_groups(concept, product_root), {"groups": 2, "parts": 3})
+        # the same branches the CLI exercised above, in-process for the parser and the sealers
+        stage = tool._load_stage(self.run_root, "make")
+        with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(Path(sys.executable).absolute())}):
+            with redirect_stdout(StringIO()):
+                self.assertEqual(
+                    tool.main(["--run-root", str(self.run_root), "make-group",
+                               "--product-root", "artifacts/make/r0001/product", "--group", "body"]),
+                    0,
+                )
+            with redirect_stdout(StringIO()):
+                self.assertEqual(
+                    tool.main(["--run-root", str(self.run_root), "make", "--product-root",
+                               "artifacts/make/r0001/product", "--cad-project-path", "cad/project",
+                               "--cad-verification-path", "cad/project/validation/cad-build.json"]),
+                    0,
+                )
+        for kwargs, pattern in (
+            ({"product_root_value": "artifacts/make/r0002/product", "group_name": "cap"}, "Make product root must be"),
+            ({"product_root_value": "artifacts/make/r0001/product", "group_name": "ghost"}, "not in the sealed build_plan"),
+        ):
+            with self.assertRaisesRegex(tool.ProposalError, pattern):
+                tool._make_group(self.run_root, stage, **kwargs)
+        (product_root / "parts" / "lens_cap.stl").unlink()
+        with self.assertRaisesRegex(tool.ProposalError, "part lens_cap is missing"):
+            tool._make_group(self.run_root, stage, product_root_value="artifacts/make/r0001/product", group_name="cap")
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"")
+        with self.assertRaisesRegex(tool.ProposalError, "part lens_cap is empty"):
+            tool._make_group(self.run_root, stage, product_root_value="artifacts/make/r0001/product", group_name="cap")
+        (product_root / "parts" / "lens_cap.stl").write_bytes(b"solid cap\nendsolid\n")
+        shutil.rmtree(product_root / "groups")
+        with self.assertRaisesRegex(tool.ProposalError, "build group body has no sealed outcome"):
+            tool._validate_build_groups(concept, product_root)
+        legacy_stage = dict(stage, inputs={**stage["inputs"], "invented": self.legacy_invented.to_dict()})
+        with self.assertRaisesRegex(tool.ProposalError, "declares no build_plan"):
+            tool._make_group(self.run_root, legacy_stage, product_root_value="artifacts/make/r0001/product", group_name="cap")
+        for group in concept["build_plan"]:
+            seal_group(product_root, concept, group["group"])
+        self.assertEqual(tool._validate_build_groups(v4_concept(), product_root), {"groups": 0, "parts": 0})
+        cap = product_root / "groups" / "cap.json"
+        good = json.loads(cap.read_text())
+        for broken, pattern in (
+            ("{broken", "not strict JSON"),
+            (json.dumps({**good, "extra": 1}), "fields are invalid"),
+            (json.dumps({**good, "parts": ["dome"]}), "does not match the sealed plan"),
+            (json.dumps({**good, "files": {"dome": "0" * 64}}), "hash exactly its parts"),
+            (json.dumps({**good, "files": {"lens_cap": "0" * 64}}), "different part bytes: lens_cap"),
+        ):
+            cap.write_text(broken, encoding="utf-8")
+            with self.subTest(pattern=pattern):
+                with self.assertRaisesRegex(tool.ProposalError, pattern):
+                    tool._validate_build_groups(concept, product_root)
+        (product_root / "parts" / "base.stl").unlink()
+        with self.assertRaisesRegex(tool.ProposalError, "lacks part base"):
+            tool._validate_build_groups(concept, product_root)
+        self.write_stage(
+            "make",
+            {"assignment": self.assignment.to_dict(), "invented": self.legacy_invented.to_dict(), "feedback": []},
+            round_index=1,
+        )
+        completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap", expected=2)
+        self.assertIn("declares no build_plan", completed.stderr)
+
+    def test_make_accepts_a_sealed_legacy_schema_3_invent(self):
+        product_root, _, _, _ = self.create_product()
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["concept_sha256"] = self.legacy_invented.concept_sha256
+        review_path.write_bytes(canonical_json(review))
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.legacy_invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+        )
+        made_document, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
+        NativeMade.from_mapping(made_document).assert_context(
+            self.assignment, self.legacy_invented, expected_round=1
         )
 
     def test_make_hashes_exact_product_tree_and_matches_native_made(self):
@@ -2373,6 +2710,8 @@ class StageProposalToolTest(unittest.TestCase):
         )
 
     def test_make_tolerates_a_sandbox_protected_empty_cad_cache(self):
+        if os.geteuid() == 0:
+            self.skipTest("root ignores directory write bits, so the cache is never protected")
         product_root, _, _, _ = self.create_product()
         project = product_root / "cad/project"
         cache = project / "__cadgen__"
@@ -2443,6 +2782,176 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("symlink or special directory", rejected.stderr)
         self.assertEqual((outside / "keep.txt").read_text(), "keep\n")
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_vault_lead_answer_rules_match_the_host_mirror(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_leads_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        for name, leads, checks, feedback, expected in LEAD_ANSWER_CASES:
+            with self.subTest(case=name):
+                if isinstance(expected, dict):
+                    self.assertEqual(tool._validate_vault_lead_answers(leads, checks, feedback), expected)
+                else:
+                    with self.assertRaisesRegex(tool.ProposalError, expected):
+                        tool._validate_vault_lead_answers(leads, checks, feedback)
+
+    def test_score_rules_match_the_host_mirror(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_scores_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        for name, checks, expected in SCORE_CASES:
+            with self.subTest(case=name):
+                if isinstance(expected, dict):
+                    self.assertEqual(tool._score_summary(DIMS, checks, minimum_reads=3), expected)
+                else:
+                    with self.assertRaisesRegex(tool.ProposalError, expected):
+                        tool._score_summary(DIMS, checks, minimum_reads=3)
+        with self.assertRaisesRegex(tool.ProposalError, "unique and non-empty"):
+            tool._score_summary(("a", "a"), SCORE_CASES[0][1], minimum_reads=3)
+        tool._assert_scored({}, [], "pass")
+        issued = {"score_dimensions": list(DIMS), "score_floor": 5, "score_minimum_reads": 3}
+        tool._assert_scored(issued, SCORE_CASES[0][1], "pass")
+        low = [{"check_id": "agent-playtest", "observations": {"reads": [
+            {"reader": r, "scores": {"wish_fit": 3, "play": 9}, "one_change": "x"} for r in "abc"]}}]
+        tool._assert_scored(issued, low, "improve")
+        with self.assertRaisesRegex(tool.ProposalError, "below the floor of 5: wish_fit"):
+            tool._assert_scored(issued, low, "pass")
+
+    def test_playtest_scores_are_required_when_issued(self):
+        made = self.create_made()
+        evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
+        evidence_root.mkdir(parents=True)
+        (evidence_root / "config.json").write_bytes(b'{"seed":1}\n')
+        checks = []
+        for check_id in self.blueprint.required_playtest_checks():
+            evidence_ref = "%s.json" % check_id
+            (evidence_root / evidence_ref).write_bytes(canonical_json({"check": check_id}) + b"\n")
+            checks.append(
+                {
+                    "check_id": check_id,
+                    "passed": True,
+                    "evaluator": "workshop-host",
+                    "evaluator_version": "1.0.0",
+                    "config_ref": "config.json",
+                    "evidence_ref": evidence_ref,
+                    "observed_at": "2026-08-26T00:00:00Z",
+                    "observations": {"ok": True},
+                }
+            )
+        self.write_stage(
+            "playtest",
+            {
+                "made": made.to_dict(),
+                "required_check_ids": list(self.blueprint.required_playtest_checks()),
+                "score_dimensions": list(self.blueprint.score_dimensions()),
+                "score_floor": self.blueprint.score_floor(),
+                "score_minimum_reads": self.blueprint.score_minimum_reads(),
+            },
+            round_index=1,
+        )
+        self.write_json("drafts/playtest.json", {"checks": checks, "feedback": [], "verdict": "pass"})
+        completed = self.run_tool(
+            "playtest", "--source", "drafts/playtest.json",
+            "--evidence-root", "artifacts/playtest/r0001/evidence", expected=2,
+        )
+        self.assertIn("carry a reads list", completed.stderr)
+        for check in checks:
+            if check["check_id"] == "agent-playtest":
+                check["observations"]["reads"] = [
+                    {
+                        "reader": reader,
+                        "scores": {dim: 7 for dim in self.blueprint.score_dimensions()},
+                        "one_change": "Widen the base ring by 1 mm.",
+                    }
+                    for reader in ("first-time", "optimizing", "adversarial")
+                ]
+        self.write_json("drafts/playtest.json", {"checks": checks, "feedback": [], "verdict": "pass"})
+        self.run_tool(
+            "playtest", "--source", "drafts/playtest.json",
+            "--evidence-root", "artifacts/playtest/r0001/evidence",
+        )
+        document, _ = self.assert_canonical_file("artifacts/playtest/r0001/playtested.json")
+        summary = NativePlaytested.from_mapping(document).assert_scored(
+            self.blueprint.score_dimensions(), floor=5, minimum_reads=3
+        )
+        self.assertEqual(summary["reads"], 3)
+
+    def test_playtest_must_answer_issued_vault_leads(self):
+        made = self.create_made()
+        evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
+        evidence_root.mkdir(parents=True)
+        (evidence_root / "config.json").write_bytes(b'{"seed":1}\n')
+        lead = {"id": "c" * 16, "kind": "risk", "nodes": ["mechanisms/x", "anti-patterns/y"], "explanation": "", "evidence": [], "suggested_fixes": []}
+        checks = []
+        for check_id in self.blueprint.required_playtest_checks():
+            evidence_ref = "%s.json" % check_id
+            (evidence_root / evidence_ref).write_bytes(canonical_json({"check": check_id}) + b"\n")
+            checks.append(
+                {
+                    "check_id": check_id,
+                    "passed": True,
+                    "evaluator": "workshop-host",
+                    "evaluator_version": "1.0.0",
+                    "config_ref": "config.json",
+                    "evidence_ref": evidence_ref,
+                    "observed_at": "2026-08-26T00:00:00Z",
+                    "observations": {"ok": True},
+                }
+            )
+        self.write_stage(
+            "playtest",
+            {
+                "made": made.to_dict(),
+                "required_check_ids": list(self.blueprint.required_playtest_checks()),
+                "vault_leads": [lead],
+            },
+            round_index=1,
+        )
+        self.write_json(
+            "drafts/playtest.json", {"checks": checks, "feedback": [], "verdict": "pass"}
+        )
+        completed = self.run_tool(
+            "playtest", "--source", "drafts/playtest.json",
+            "--evidence-root", "artifacts/playtest/r0001/evidence", expected=2,
+        )
+        self.assertIn("unanswered: " + "c" * 16, completed.stderr)
+        for check in checks:
+            if check["check_id"] == "agent-playtest":
+                check["observations"]["vault_leads"] = [
+                    {"lead": "c" * 16, "verdict": "dismissed", "why": "No exposure.", "feedback_code": None}
+                ]
+        self.write_json(
+            "drafts/playtest.json", {"checks": checks, "feedback": [], "verdict": "pass"}
+        )
+        self.run_tool(
+            "playtest", "--source", "drafts/playtest.json",
+            "--evidence-root", "artifacts/playtest/r0001/evidence",
+        )
+        document, _ = self.assert_canonical_file("artifacts/playtest/r0001/playtested.json")
+        playtested = NativePlaytested.from_mapping(document)
+        self.assertEqual(
+            playtested.assert_vault_leads_answered([lead]),
+            {"answered": 1, "confirmed": 0, "dismissed": 1},
+        )
+        (self.run_root / "artifacts/playtest/r0001/playtested.json").unlink()
+        (self.run_root / "agent-outcome.json").unlink()
+        spec = importlib.util.spec_from_file_location("stage_proposal_playtest_run", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        import argparse
+
+        with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(Path(sys.executable).absolute())}):
+            result = tool.run(
+                argparse.Namespace(
+                    run_root=str(self.run_root),
+                    command="playtest",
+                    source="drafts/playtest.json",
+                    evidence_root="artifacts/playtest/r0001/evidence",
+                )
+            )
+        self.assertEqual(result["outcome_path"], "agent-outcome.json")
+        again, _ = self.assert_canonical_file("artifacts/playtest/r0001/playtested.json")
+        self.assertEqual(again, document)
 
     def test_make_revision_seals_exact_contradiction_evidence_for_invent(self):
         evidence_root = self.run_root / "artifacts/make/r0001/revision-evidence"
@@ -3284,10 +3793,7 @@ class StageProposalToolTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertIn(
-            "match,invent,make,playtest,make-revision,release",
-            completed.stdout,
-        )
+        self.assertIn("match,invent,make,make-group,playtest,make-revision,release", completed.stdout)
 
 
 if __name__ == "__main__":

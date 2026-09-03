@@ -75,20 +75,18 @@ few decisions and checks that make it real.
 - For Forge and Quest, spend high reasoning where it changes the concept and
   exact final product. Invent begins with a 20-minute high-reasoning turn and
   receives one decisive 10-minute medium recovery when needed. Make begins
-  with one 16-minute medium proof runway and resumes the same Goal at high
-  reasoning as soon as its exact proof-ready marker exists. Later turns retain
-  30 minutes, and every stage compacts at 256k. These
-  boundaries and compacted context are focus constraints, not quality waivers. In Make, the
-  first persisted deliverable is the smallest exact causal or kinematic proof
-  plus neutral held/signature blockout renders under
-  `<cad-project>/review/early-proof/`. Inspect it before authoring the complete
-  part tree or detailed final geometry. Batch mandatory reads, author source as
-  the next durable action, and use root inspection for this cheap early
-  direction check. One independent native critic must still blindly review the
-  canonical final images before learning the Wish, then compare every exact
-  positive and negative held-form requirement. Self-review cannot pass that
-  final boundary. If the early proof is expensive or
-  ambiguous, simplify the mechanism while preserving the signature magic.
+  directly at high reasoning with the normal 60-minute boundary and every stage
+  compacts at 256k. Batch the exact Wish, current stage packet, sealed Invent
+  result, selected Inventor guidance, Make reference, and CAD skill. Persist one
+  coherent complete self-contained CAD baseline early and improve that same
+  baseline against generated final artifacts. A narrow engineering coupon may
+  test an uncertain fit or geometry fact, but no disposable generic blockout is
+  mandatory final form. Current Make has no early-proof marker, receipt, or
+  source-handoff phase. Frozen deep-v13 and older runs follow their materialized
+  historical proof instructions. One independent native critic must still
+  blindly review the canonical final images before learning the Wish, then
+  compare every exact positive and negative held-form requirement. Self-review
+  cannot pass that final boundary.
 
 ## Run one native Goal for the current stage
 

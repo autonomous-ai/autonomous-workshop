@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import hashlib
 import json
 import os
@@ -33,7 +34,18 @@ from workshop.contributors import (
     validate_contribution,
     validate_inventor_collection,
 )
+from workshop.daydream import (
+    DEFAULT_MAX_CONSECUTIVE_FAILURES,
+    DaydreamError,
+    acquire_loop,
+    load_sealed_daydream,
+    request_stop,
+    run_daydream,
+    wish_from_daydream,
+)
 from workshop.errors import WorkshopError
+from workshop.invent.gamevault import default_client as default_gamevault_client
+from workshop.invent.vault import Vault, VaultError
 from workshop.make.skill_registry import (
     discover_skills,
     fingerprint_skill_tree,
@@ -42,6 +54,8 @@ from workshop.make.skill_registry import (
 from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.execution import codex_subprocess_environment
 from workshop.runtime.credentials import (
+    inventor_credential_file,
+    store_factory_credentials,
     factory_credential_environment,
     factory_service_credential_environment,
 )
@@ -57,6 +71,7 @@ from workshop.runtime.managers import (
     manager_spec,
 )
 from workshop.runtime.package_data import (
+    default_workshop_home,
     packaged_inventors_root,
     product_run_domain_skill_roots,
 )
@@ -71,6 +86,79 @@ from workshop.workflow.effort import (
 
 
 _INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
+MAX_JUDGED_OUT_IN_A_ROW = 5
+_DEFAULT_SHOP_SIGNUP_URL = "https://www.autonomous.ai/toys"
+
+
+def _shop_signup_url() -> str:
+    """Where a person creates an Inventor's shop account.
+
+    The site has no dedicated signup route yet, so this points at the shop and
+    stays overridable; the site team can move it without a code change.
+    """
+
+    configured = os.environ.get("WORKSHOP_SHOP_SIGNUP_URL", "").strip()
+    return configured or _DEFAULT_SHOP_SIGNUP_URL
+
+
+def _publishing_account_ready(inventor_id: str) -> bool:
+    """Whether this Inventor already has its own shop account on this host."""
+
+    scoped = inventor_credential_file(inventor_id)
+    if not (scoped.exists() or scoped.is_symlink()) and not (
+        os.environ.get("FACTORY_USERNAME") and os.environ.get("FACTORY_PASSWORD")
+    ):
+        return False
+    try:
+        pair = factory_service_credential_environment(
+            factory_credential_environment(inventor_id=inventor_id)
+        )
+    except WorkshopError:
+        return False
+    return bool(pair.get("FACTORY_USERNAME")) and bool(pair.get("FACTORY_PASSWORD"))
+
+
+def _ensure_publishing_account(inventor_id: str, progress: TextIO) -> None:
+    """Ask for this Inventor's shop account before any work is started.
+
+    Each Inventor publishes as itself, so the shop credits the Inventor that
+    dreamed the toy. Release ends only after the Factory publishes and reads
+    the exact hashes back, so a run without an account would dream, build, and
+    then fail at the last step. Ask first, store the pair owner-only, and never
+    let it near an agent workspace.
+    """
+
+    if _publishing_account_ready(inventor_id):
+        return
+    signup = "Create one at %s, then run this again." % _shop_signup_url()
+    if not sys.stdin.isatty():
+        raise WorkshopError(
+            "%s has no shop account on this host, and this is not a terminal. "
+            "Run `workshop start %s` in a terminal to enter its username and "
+            "password, or set FACTORY_USERNAME and FACTORY_PASSWORD. %s"
+            % (inventor_id, inventor_id, signup)
+        )
+    print(
+        "%s publishes to the shop as its own account, and this host does not "
+        "have it yet." % inventor_id,
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Create an account for %s at %s, then enter it here."
+        % (inventor_id, _shop_signup_url()),
+        file=progress,
+        flush=True,
+    )
+    try:
+        username = input("Shop username for %s: " % inventor_id).strip()
+        password = getpass.getpass("Shop password for %s: " % inventor_id).strip()
+    except EOFError as exc:
+        raise WorkshopError("no account was entered for %s. %s" % (inventor_id, signup)) from exc
+    if not username or not password:
+        raise WorkshopError("both a username and a password are required")
+    path = store_factory_credentials(username, password, inventor_id=inventor_id)
+    print("Saved %s's account to %s (owner-only)." % (inventor_id, path), file=progress, flush=True)
 _LIVE_ACTIVE_INTERVAL_SECONDS = 2.0
 _LIVE_RUNNING_INTERVAL_SECONDS = 30.0
 _LIVE_CHURN_ACTIVITY = frozenset(("reasoning", "tool", "subagent"))
@@ -265,6 +353,33 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     last_activity,
                 )
             )
+    rounds = receipt.get("rounds")
+    if isinstance(rounds, (list, tuple)):
+        for entry in rounds:
+            if not isinstance(entry, Mapping):
+                continue
+            median = entry.get("score_median")
+            if isinstance(median, Mapping):
+                spread = entry.get("score_spread") or {}
+                ambiguous = sorted(
+                    dim
+                    for dim, value in spread.items()
+                    if isinstance(value, (int, float)) and value >= 3
+                )
+                scores = " ".join(
+                    "%s %g" % (dim, value) for dim, value in sorted(median.items())
+                )
+                print(
+                    "Round %s: %s — %s%s"
+                    % (
+                        entry.get("round", "?"),
+                        entry.get("verdict", "?"),
+                        scores,
+                        " (readers disagree on %s)" % ", ".join(ambiguous) if ambiguous else "",
+                    )
+                )
+            else:
+                print("Round %s: %s — unscored" % (entry.get("round", "?"), entry.get("verdict", "?")))
     publication = receipt.get("publication")
     publication_reason = None
     if isinstance(publication, Mapping):
@@ -301,16 +416,34 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
         print("Resume: %s" % _shell_command("workshop", "resume", product_id))
 
 
-def _wish(args: argparse.Namespace) -> int:
-    effort = workshop_effort(args.effort)
-    wish = Wish.create(
-        generate_wish_id(),
-        " ".join(args.objective),
-        context={"source": "workshop-cli"},
-    )
-    progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
-    manager = manager_spec(args.manager)
+DEFAULT_MAX_ROUNDS = 4
+MAX_ROUND_BUDGET = 100
+
+
+def _round_budget(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("round budget must be an integer")
+    if not 1 <= parsed <= MAX_ROUND_BUDGET:
+        raise argparse.ArgumentTypeError(
+            "round budget must be between 1 and %d" % MAX_ROUND_BUDGET
+        )
+    return parsed
+
+
+def _start_run(
+    wish: Wish,
+    *,
+    effort,
+    manager,
+    github: bool,
+    max_rounds: int = DEFAULT_MAX_ROUNDS,
+    progress: TextIO,
+    live_progress: "_LiveWishProgress",
+) -> Mapping[str, Any]:
+    """Announce and start one native run; callers print the receipt."""
+
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
     print(
         "Effort: %s — %s" % (effort.title, effort.description),
@@ -332,19 +465,377 @@ def _wish(args: argparse.Namespace) -> int:
         file=progress,
         flush=True,
     )
-    receipt = start_native_run(
+    return start_native_run(
         wish,
         effort=effort.name,
         manager_id=manager.manager_id,
-        github_publish_requested=args.github,
+        max_rounds=max_rounds,
+        github_publish_requested=github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
+    )
+
+
+def _wish(args: argparse.Namespace) -> int:
+    effort = workshop_effort(args.effort)
+    wish = Wish.create(
+        generate_wish_id(),
+        " ".join(args.objective),
+        context={"source": "workshop-cli"},
+    )
+    progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
+    manager = manager_spec(args.manager)
+    receipt = _start_run(
+        wish,
+        effort=effort,
+        manager=manager,
+        github=args.github,
+        max_rounds=args.max_rounds,
+        progress=progress,
+        live_progress=live_progress,
     )
     if args.json:
         _print_json(receipt)
     else:
         _print_native_receipt(receipt, verb="Run")
     return _native_exit_code(receipt, strict=args.strict)
+
+
+def _print_daydream_card(sealed, *, stream: TextIO, offer_build: bool) -> None:
+    idea = sealed.idea
+    lines = [
+        "Daydream: %s" % sealed.daydream_id,
+        "Inventor: %s (%s)" % (sealed.inventor_name, sealed.inventor_id),
+        "Title: %s" % idea.title,
+        "In one line: %s" % idea.one_liner,
+    ]
+    if idea.held_form is not None:
+        lines.append("What it looks like: %s" % idea.held_form)
+    lines += [
+        "What you do: %s" % idea.what_you_do,
+        "What happens: %s" % idea.what_happens,
+        "Why it is new: %s" % idea.why_it_is_new,
+        "Closest existing things: %s"
+        % "; ".join(
+            "%s (%s)" % (entry.name, entry.how_this_differs)
+            for entry in idea.prior_art
+        ),
+        "Taste fit: honors %s; steers clear of %s"
+        % (
+            "; ".join(idea.taste_fit.honors),
+            "; ".join(idea.taste_fit.steers_clear_of),
+        ),
+        "Printed parts: %d" % idea.parts_estimate,
+    ]
+    nearest = ", ".join(
+        "%s %.2f" % (neighbor.title, neighbor.similarity)
+        for neighbor in sealed.novelty.nearest
+    )
+    lines.append(
+        "Novelty lint: %s (%s)"
+        % (
+            sealed.novelty.status,
+            "nearest: %s" % nearest if nearest else sealed.novelty.reason,
+        )
+    )
+    verdict = sealed.verdict
+    if verdict is not None:
+        risks = "; ".join("%s: %s" % (risk.kind, risk.detail) for risk in verdict.risks)
+        if verdict.decision == "build":
+            lines.append(
+                "Judge: build (confidence %.2f). %s%s"
+                % (verdict.confidence, verdict.advice, " Risks: %s" % risks if risks else "")
+            )
+        else:
+            lines.append(
+                "Judge: dream again (confidence %.2f). Failed: %s. %s Advice: %s"
+                % (
+                    verdict.confidence,
+                    ", ".join(verdict.failed_checks) or "none",
+                    risks,
+                    verdict.advice,
+                )
+            )
+    if offer_build:
+        lines.append(
+            "Build it: %s"
+            % _shell_command(
+                "workshop",
+                "start",
+                sealed.inventor_id,
+                "--idea",
+                sealed.daydream_id,
+            )
+        )
+    for line in lines:
+        print(line, file=stream, flush=True)
+
+
+def _dream_or_load(
+    args: argparse.Namespace,
+    *,
+    root: Path,
+    manager,
+    progress: TextIO,
+    live_progress: "_LiveWishProgress",
+    effort: Optional[str],
+):
+    if args.idea is not None:
+        sealed = load_sealed_daydream(args.inventor, args.idea)
+        print("Daydream: %s (saved idea)" % sealed.daydream_id, file=progress, flush=True)
+        return sealed
+    print("Inventor: %s" % args.inventor, file=progress, flush=True)
+    print(
+        "Manager: %s%s"
+        % (
+            manager.display_name,
+            " (experimental)" if manager.experimental else "",
+        ),
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Daydreaming one brand-new idea that fits %s's Taste..." % args.inventor,
+        file=progress,
+        flush=True,
+    )
+    return run_daydream(
+        args.inventor,
+        source_root=root,
+        manager_id=manager.manager_id,
+        activity_observer=live_progress.activity,
+        effort=effort,
+    )
+
+
+def _daydream(args: argparse.Namespace) -> int:
+    root = _inventor_source_root(args.root)
+    manager = manager_spec(args.manager)
+    progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
+    sealed = _dream_or_load(
+        args,
+        root=root,
+        manager=manager,
+        progress=progress,
+        live_progress=live_progress,
+        effort=None,
+    )
+    if args.json:
+        _print_json({"daydream": sealed.to_dict()})
+    else:
+        _print_daydream_card(sealed, stream=progress, offer_build=True)
+    return 0
+
+
+def _start(args: argparse.Namespace) -> int:
+    """Dream and build until stopped; ``--once`` or ``--idea`` does one idea."""
+
+    root = _inventor_source_root(args.root)
+    manager = manager_spec(args.manager)
+    effort = workshop_effort(args.effort)
+    progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
+    once = args.once or args.idea is not None
+    if args.max_ideas is not None and args.max_ideas < 1:
+        raise WorkshopError("--max-ideas must be at least 1")
+    if args.max_failures < 1:
+        raise WorkshopError("--max-failures must be at least 1")
+    _ensure_publishing_account(args.inventor, progress)
+    lease = acquire_loop(args.inventor)
+    if not once:
+        print(
+            "Loop: %s dreams and builds until you stop it (Ctrl-C, or "
+            "%s from another terminal)."
+            % (args.inventor, _shell_command("workshop", "stop", args.inventor)),
+            file=progress,
+            flush=True,
+        )
+    ideas = builds = published = 0
+    failures = 0
+    judged_out = 0
+    exit_code = 0
+    reason = "finished"
+    try:
+        while True:
+            if lease.stop_requested():
+                reason = "stopped by workshop stop"
+                break
+            if not once and ideas:
+                print("", file=progress, flush=True)
+            try:
+                sealed = _dream_or_load(
+                    args,
+                    root=root,
+                    manager=manager,
+                    progress=progress,
+                    live_progress=live_progress,
+                    effort=effort.name,
+                )
+            except DaydreamError as exc:
+                if once:
+                    raise
+                failures += 1
+                lease.update(consecutive_failures=failures)
+                print("Daydream failed: %s" % exc, file=progress, flush=True)
+                if failures >= args.max_failures:
+                    reason = "%d consecutive failures" % failures
+                    exit_code = 1
+                    break
+                continue
+            ideas += 1
+            lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
+            verdict = sealed.verdict
+            if args.idea is None and verdict is not None and verdict.decision != "build":
+                # The judge would bet against this build.  Skip it, remember
+                # it, and dream again; --idea builds a saved idea on purpose.
+                if not args.json:
+                    _print_daydream_card(sealed, stream=progress, offer_build=True)
+                else:
+                    _print_json({"daydream": sealed.to_dict()})
+                print(
+                    "Judge says dream again; not building this one.",
+                    file=progress,
+                    flush=True,
+                )
+                if once:
+                    return 1
+                judged_out += 1
+                if judged_out >= MAX_JUDGED_OUT_IN_A_ROW:
+                    reason = "%d ideas judged out in a row" % judged_out
+                    exit_code = 1
+                    break
+                if lease.stop_requested():
+                    reason = "stopped by workshop stop"
+                    break
+                continue
+            judged_out = 0
+            if not once and lease.stop_requested():
+                # A stop that arrived during the daydream lands here, before a
+                # 20-minute build starts; the sealed idea stays buildable.
+                if not args.json:
+                    _print_daydream_card(sealed, stream=progress, offer_build=True)
+                else:
+                    _print_json({"daydream": sealed.to_dict()})
+                reason = "stopped by workshop stop"
+                break
+            if not args.json:
+                _print_daydream_card(sealed, stream=progress, offer_build=False)
+            wish = wish_from_daydream(sealed)
+            print("Sealing the idea as this run's brief.", file=progress, flush=True)
+            try:
+                receipt = _start_run(
+                    wish,
+                    effort=effort,
+                    manager=manager,
+                    github=args.github,
+                    progress=progress,
+                    live_progress=live_progress,
+                )
+            except (WorkshopError, RuntimeError) as exc:
+                # The build session ended without a verdict (timeout, provider
+                # failure, host refusal).  The run stays checkpointed; the loop
+                # counts the failure and moves on to the next idea.
+                if once:
+                    raise
+                failures += 1
+                lease.update(consecutive_failures=failures, last_wish_id=wish.product_id)
+                print("Build failed: %s" % exc, file=progress, flush=True)
+                print(
+                    "Resume it later: %s"
+                    % _shell_command("workshop", "resume", wish.product_id),
+                    file=progress,
+                    flush=True,
+                )
+                if failures >= args.max_failures:
+                    reason = "%d consecutive failures" % failures
+                    exit_code = 1
+                    break
+                if lease.stop_requested():
+                    reason = "stopped by workshop stop"
+                    break
+                continue
+            builds += 1
+            publication = receipt.get("publication")
+            if isinstance(publication, Mapping) and publication.get("status") == "public":
+                published += 1
+            if receipt.get("status") in ("failed", "waiting"):
+                failures += 1
+            else:
+                failures = 0
+            lease.update(
+                builds=builds,
+                published=published,
+                consecutive_failures=failures,
+                last_wish_id=wish.product_id,
+            )
+            if args.json:
+                print(
+                    json.dumps(
+                        {"daydream": sealed.to_dict(), "run": receipt},
+                        sort_keys=True,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
+            else:
+                _print_native_receipt(receipt, verb="Run")
+            if once:
+                exit_code = _native_exit_code(receipt, strict=args.strict)
+                break
+            if args.max_ideas is not None and ideas >= args.max_ideas:
+                reason = "reached --max-ideas %d" % args.max_ideas
+                break
+            if failures >= args.max_failures:
+                reason = "%d consecutive failures" % failures
+                exit_code = 1
+                break
+            if lease.stop_requested():
+                reason = "stopped by workshop stop"
+                break
+    except KeyboardInterrupt:
+        reason = "stopped by Ctrl-C"
+        exit_code = 130
+    except Exception as exc:
+        reason = "error: %s" % " ".join(str(exc).split())[:400]
+        raise
+    finally:
+        state = lease.release(reason=reason)
+    if not once or exit_code == 130:
+        print(
+            "Loop stopped (%s). Ideas: %d. Builds: %d. Published: %d."
+            % (reason, state.ideas, state.builds, state.published),
+            file=progress,
+            flush=True,
+        )
+        if state.last_wish_id and exit_code == 130:
+            print(
+                "Last run: %s" % _shell_command("workshop", "status", state.last_wish_id),
+                file=progress,
+                flush=True,
+            )
+    return exit_code
+
+
+def _stop(args: argparse.Namespace) -> int:
+    state = request_stop(args.inventor, now=args.now)
+    if args.now:
+        print(
+            "Interrupting the daydream loop for %s (pid %d) now; its current run "
+            "stays resumable." % (args.inventor, state.pid)
+        )
+    else:
+        print(
+            "Stop requested for %s (pid %d): the loop ends after its current step. "
+            "Use --now to interrupt it." % (args.inventor, state.pid)
+        )
+    print(
+        "So far: %d idea(s), %d build(s), %d published."
+        % (state.ideas, state.builds, state.published)
+    )
+    return 0
 
 
 def _status(args: argparse.Namespace) -> int:
@@ -753,6 +1244,15 @@ def _create_inventor(args: argparse.Namespace) -> int:
         print("Taste: %s" % (destination / "TASTE.md"))
         print("Skill: %s" % (destination / manifest.extensions[0].path / "SKILL.md"))
         print("Checks: static-passed")
+        print(
+            "Next: create %s's shop account at %s so its toys are published "
+            "under its own name." % (manifest.inventor_id, _shop_signup_url())
+        )
+        print(
+            "Then: %s asks for that username and password once and stores them "
+            "on this host only."
+            % _shell_command("workshop", "start", manifest.inventor_id)
+        )
     return 0
 
 
@@ -842,23 +1342,176 @@ def _schemas(args: argparse.Namespace) -> int:
     return 0
 
 
+def _vault(args: argparse.Namespace) -> int:
+    if args.root is not None:
+        root = Path(args.root).expanduser()
+        if not root.is_dir():
+            raise VaultError("no design vault directory at %s" % root)
+        vault = Vault.from_directory(root)
+    else:
+        vault = default_gamevault_client().export()
+    if args.action == "lint":
+        errors, warnings = vault.lint()
+        if args.json:
+            _print_json(
+                {"nodes": len(vault.nodes), "errors": errors, "warnings": warnings}
+            )
+        else:
+            for line in errors:
+                print("ERROR %s" % line)
+            for line in warnings:
+                print("WARN  %s" % line)
+            print(
+                "%d nodes, %d error(s), %d warning(s)"
+                % (len(vault.nodes), len(errors), len(warnings))
+            )
+        return 2 if errors else 1 if warnings else 0
+    findings = vault.check_compatibility(args.paths)
+    if args.json:
+        _print_json(findings)
+    else:
+        for finding in findings:
+            print("%-17s %s" % (finding["kind"].upper(), " -> ".join(finding["nodes"])))
+            for fix in finding["suggested_fixes"]:
+                print("    fix: %s" % fix)
+        print("%d finding(s) for %s" % (len(findings), ", ".join(args.paths)))
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(
         prog="workshop",
         description=(
-            "Turn one Wish into a product through one native Codex session and "
-            "host-verified Workshop gates."
+            "Let AI Inventors daydream new toys, then turn each liked idea into a "
+            "product through one native Manager session and host-verified "
+            "Workshop gates."
         ),
         epilog=(
             "Start here:\n"
             "  workshop doctor\n"
-            "  workshop wish \"a wind-up moon that waddles across my desk\""
+            "  workshop start pico-press\n"
+            "  workshop start pico-press --effort forge"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     subcommands = command.add_subparsers(
         dest="command", required=True, metavar="COMMAND"
     )
+
+    start = subcommands.add_parser(
+        "start",
+        help=(
+            "let one Inventor daydream, judge, and build brand-new toys until stopped"
+        ),
+    )
+    start.add_argument(
+        "inventor",
+        metavar="INVENTOR",
+        help="Inventor id such as pico-press (see `workshop inventors`)",
+    )
+    start.add_argument(
+        "--idea",
+        metavar="DAYDREAM_ID",
+        help="build a saved idea instead of dreaming a new one",
+    )
+    start.add_argument(
+        "--effort",
+        choices=tuple(WORKSHOP_EFFORTS),
+        default=DEFAULT_WORKSHOP_EFFORT,
+        metavar="MODE",
+        help=(
+            "creative depth: spark (Make->Release; default), "
+            "forge (Invent->Make->Release), or quest (Invent->Make->Playtest->Release)"
+        ),
+    )
+    start.add_argument(
+        "--manager",
+        choices=tuple(SUPPORTED_MANAGER_IDS),
+        default=DEFAULT_MANAGER_ID,
+        metavar="RUNTIME",
+        help=(
+            "native Manager runtime for the daydream and the run: codex (default), "
+            "claude, or grok"
+        ),
+    )
+    start.add_argument(
+        "--root", type=Path, help="Workshop checkout or inventor catalog"
+    )
+    start.add_argument(
+        "--github",
+        action="store_true",
+        help=(
+            "commit and push the generated toy folder after Release "
+            "(default: disabled)"
+        ),
+    )
+    start.add_argument(
+        "--once",
+        action="store_true",
+        help="dream and build one idea, then stop (default: loop until stopped)",
+    )
+    start.add_argument(
+        "--max-ideas",
+        type=int,
+        default=None,
+        metavar="N",
+        help="stop the loop after N ideas",
+    )
+    start.add_argument(
+        "--max-failures",
+        type=int,
+        default=DEFAULT_MAX_CONSECUTIVE_FAILURES,
+        metavar="N",
+        help="stop the loop after N consecutive failed daydreams or builds (default: %d)"
+        % DEFAULT_MAX_CONSECUTIVE_FAILURES,
+    )
+    start.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one JSON object per idea (one line each)",
+    )
+    start.add_argument(
+        "--strict", action="store_true", help="with --once: exit 1 when the run waits"
+    )
+    start.set_defaults(handler=_start)
+
+    stop = subcommands.add_parser(
+        "stop", help="stop an Inventor's daydream loop after its current step"
+    )
+    stop.add_argument("inventor", metavar="INVENTOR")
+    stop.add_argument(
+        "--now",
+        action="store_true",
+        help="also interrupt the loop immediately; its current run stays resumable",
+    )
+    stop.set_defaults(handler=_stop)
+
+    daydream = subcommands.add_parser(
+        "daydream",
+        help="let one Inventor dream and judge one brand-new toy idea without building it",
+    )
+    daydream.add_argument(
+        "inventor",
+        metavar="INVENTOR",
+        help="Inventor id such as pico-press (see `workshop inventors`)",
+    )
+    daydream.add_argument(
+        "--idea",
+        metavar="DAYDREAM_ID",
+        help="print a saved idea instead of dreaming a new one",
+    )
+    daydream.add_argument(
+        "--manager",
+        choices=tuple(SUPPORTED_MANAGER_IDS),
+        default=DEFAULT_MANAGER_ID,
+        metavar="RUNTIME",
+        help="native Manager runtime for the daydream: codex (default), claude, or grok",
+    )
+    daydream.add_argument(
+        "--root", type=Path, help="Workshop checkout or inventor catalog"
+    )
+    daydream.add_argument("--json", action="store_true", help="emit one JSON receipt")
+    daydream.set_defaults(handler=_daydream)
 
     wish = subcommands.add_parser(
         "wish", help="persist one Wish and start its native Manager session"
@@ -883,6 +1536,17 @@ def parser() -> argparse.ArgumentParser:
         help=(
             "native Manager runtime: codex (default), claude, or grok; "
             "frozen for the run and cannot be changed on resume"
+        ),
+    )
+    wish.add_argument(
+        "--max-rounds",
+        type=_round_budget,
+        default=DEFAULT_MAX_ROUNDS,
+        metavar="N",
+        help=(
+            "Invent-Make-Playtest round budget, 1-100 (default: %d); "
+            "frozen for the run and cannot be changed on resume"
+            % DEFAULT_MAX_ROUNDS
         ),
     )
     wish.add_argument(
@@ -982,6 +1646,19 @@ def parser() -> argparse.ArgumentParser:
     schemas.add_argument("--root", type=Path)
     schemas.add_argument("--json", action="store_true")
     schemas.set_defaults(handler=_schemas)
+
+    vault = subcommands.add_parser(
+        "vault", help="lint or query the game design vault served by the vault API"
+    )
+    vault.add_argument("action", choices=("lint", "check"))
+    vault.add_argument("paths", nargs="*", help="node paths for `check`")
+    vault.add_argument(
+        "--root",
+        type=Path,
+        help="a local vault checkout to read instead of the vault API",
+    )
+    vault.add_argument("--json", action="store_true")
+    vault.set_defaults(handler=_vault)
     return command
 
 

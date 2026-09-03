@@ -520,7 +520,10 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(receipt.adapter, "factory")
         self.assertEqual(receipt.details["release_sha256"], self.manifest.artifact_sha256)
         self.assertEqual(receipt.details["playtest_evidence_sha256"], self.playtest_sha256)
-        self.assertEqual(receipt.details["page_url"], "https://www.autonomous.ai/factory/product/verified-toy")
+        self.assertEqual(
+            receipt.details["page_url"],
+            "https://www.autonomous.ai/toys/product/verified-toy",
+        )
         self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
         self.assertEqual(
             receipt.details["factory_category_slug"],

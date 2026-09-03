@@ -61,10 +61,19 @@ second product-run session or weaken the one-session continuity rule.
 
 New Codex Spark projects freeze `spark-economics-v3.md` and run that one
 session at low reasoning effort with a 64k automatic context-compaction ceiling
-across Make and Release plus a 20-minute boundary per native turn. A timeout
+across Make and Release plus a 60-minute boundary per native turn. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
-waiver. New Forge and Quest projects freeze `deep-economics-v13.md`: Invent
+waiver. New Forge and Quest projects freeze `deep-economics-v14.md`. Invent
+retains its 20-minute high-reasoning turn and 10-minute medium
+source-finalization recovery. Make starts directly at high reasoning with a
+normal 60-minute boundary and 256k compaction, persists one coherent complete
+CAD baseline early, and uses `agent-outcome.json` from its first turn. Current
+Make has no early-proof turn, proof-ready marker, private proof receipt, or
+source handoff. Playtest and Release use medium; every final gate remains
+unchanged.
+
+Frozen deep-v13 projects retain their original protocol: Invent
 starts with 20 minutes at high reasoning and a recoverable continuation gets
 10 minutes at medium strictly as a source handoff. Existing source is finalized
 before reading or refinement; missing source is the first edit and finalization
@@ -72,7 +81,7 @@ is the next action. A compact exact-Taste-header index
 covers the complete roster before Codex reads only the strongest three full
 agents. Make starts with one 16-minute medium real-state proof phase at 256k,
 then the same Goal resumes at high reasoning for a 15-minute source handoff
-before normal 30-minute recovery after the host accepts its checkpoint-bound
+before normal 60-minute recovery after the host accepts its checkpoint-bound
 proof marker into a private receipt. An explicit operator resume with that
 valid receipt starts directly in normal recovery rather than replaying the
 source handoff. A current wall-thickness
@@ -274,8 +283,8 @@ turn transcript. Each individual event has a hard byte limit and is decoded,
 validated, classified into safe progress, and then discarded; an oversized or
 malformed record still fails closed. A legitimate long turn may emit more than
 that limit in aggregate because cumulative bytes consume no growing host
-buffer. The frozen per-run process timeout (20 minutes per v3 Codex Spark turn;
-one hour for prior profiles), isolated-process cleanup, per-message limit, and
+buffer. The frozen per-run process timeout (60 minutes per Codex Spark or deep
+turn since 2026-09-03; 20 or 30 minutes for runs frozen before that), isolated-process cleanup, per-message limit, and
 whole-run native-turn budget remain the surrounding resource bounds.
 
 ### Privacy-safe progress status
@@ -817,22 +826,18 @@ private Wish demonstrate that:
 10. the executable Workshop run ends at Release and makes no claim of physical
     printing, delivery, or review.
 11. a v3 Codex Spark run uses frozen low reasoning, its 64k compaction ceiling,
-    and a 20-minute boundary per native turn across both active stages; v2, v1,
+    and a 60-minute boundary per native turn across both active stages (20
+    minutes for v3 runs frozen before 2026-09-03); v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
     bindings; and
-12. a deep-v13 Codex Forge or Quest run uses index-first bounded high Invent
-    with a medium source-first finalization handoff, one 16-minute medium Make proof runway
-    followed by a 15-minute high source handoff and normal 30-minute recovery,
-    medium later stages, 256k compaction, an eight-turn CLI invocation cap, and
-    one-time proof-turn marker accepted into a private checkpoint-bound receipt
-    with no gate authority, a private run cache, deferred broad CAD guidance,
-    one batched mandatory read, immediate source work, root early inspection,
-    three fixed-camera exact-state renders, batched interpreter-prefixed CAD
-    commands, and exact `gen_step()` state entries, source-first proof sealing,
-    freshness-bound generated/render evidence, direct recovery on explicit
-    final-Make resume, and one evidence-triggered thickness-reference route,
-    while older exact runs retain
-    their original profile.
+12. a deep-v14 Codex Forge or Quest run uses index-first bounded high Invent
+    with a medium source-first finalization handoff, direct high-reasoning Make
+    with a normal 60-minute boundary, 256k compaction, an eight-turn CLI cap,
+    no early-proof marker or receipt, and every final product gate; deep-v13
+    and older exact runs retain their original proof profile.
+13. a marked Forge or Quest run may additionally freeze an Invent Concept
+    capability inside the same Invent Goal; native authorship, host-owned image
+    effects, exact-byte sealing, and Make adherence remain independently bound.
 
 ## Engine portability
 
@@ -848,3 +853,117 @@ bounded native-specialist delegation—not Codex prompt syntax or one vendor's
 custom-agent file format. Every future adapter must preserve the root Manager
 role, exact Inventor binding, host-owned gates, sandbox, checkpoint, and effect
 authority.
+
+## Run profiles, review protocol, and recovery windows
+
+These operator notes moved here from the README architecture section on
+2026-09-02 so the README stays short. They describe the frozen per-run
+economics profiles, the Make review protocol, and the bounded recovery
+windows exactly as they stood; newer sections above take precedence where
+they overlap.
+
+New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
+ceiling for their one persistent Make-to-Release session, and a 60-minute
+boundary per native turn (20 minutes before 2026-09-03). A timeout resumes the
+exact session and Goal through the existing bounded recovery path; it is not a
+stage deadline.
+New Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
+use a 10-minute medium source handoff only when needed: finalize an existing
+source first, or write then finalize before any refinement. A compact index
+covers every exact Taste header before Codex reads only the best three full
+Inventors. Make starts with one 16-minute medium real-state proof runway at 256k
+context; after exact proof bytes are durable, a checkpoint-bound marker returns
+control to the host and the same Make Goal resumes at high reasoning with a
+15-minute source handoff before normal 60-minute recovery (30 minutes before
+2026-09-03). Playtest and Release use medium, every stage compacts at 256k,
+and one CLI invocation stops after eight native turns. The host binds a private
+writable cache; the proof turn defers the broad CAD skill, batches its required
+reads, makes source the next durable action, and batches generate/export/render
+in one foreground call. It uses three distinct exact-state STLs and root
+inspection for the early direction check
+and reserves independent blind critique for final Make. Their novelty must come
+from one strong relationship or interaction
+that Make persists and has one independent critic inspect blindly as its first
+proof—not gratuitous parts or mechanisms. The proof marker is only a liveness
+boundary; it is not a gate or stage transition. If proof recovery is needed,
+v13 retains v12's evidence-first seal before any new design work and the host
+rejects stale generated or render bytes. An explicit operator resume after a
+valid final-Make proof starts directly in normal recovery instead of replaying
+the 15-minute source phase. A current thickness failure may load its complete
+region table and the one print-optimisation reference before one all-regions
+repair; unrelated reference browsing remains out of scope. Frozen deep-v12
+retains its original operator-resume behavior, and deep-v11 retains its proof
+recovery. Frozen deep-v10 runs retain
+their original less prescriptive Invent recovery. Frozen deep-v9 runs retain
+their 256k compaction, viewpoint-only proof, and normal 30-minute final Make;
+frozen deep-v8 runs retain their 24k compaction. Older runs keep the exact profile
+they started with. These are
+economics policies, not quality waivers: every effort still passes its full
+deterministic product and publication gates.
+
+The reverse arrows are evidence-bound repair routes, not free-form retries.
+Make can return a Forge or Quest run to Invent only when exact saved evidence
+shows that the sealed concept cannot be built as specified. Quest Playtest
+returns directly to Make for a build defect or directly to Invent for a concept
+defect. Each return starts a new stage Goal, invalidates stale downstream
+artifacts, and consumes the run's shared revision budget.
+If a Make or Playtest proposal cannot be safely reopened, Workshop quarantines
+its exact bytes and returns bounded, hash-bound repair feedback to that same
+stage instead of losing the run or weakening the gate.
+The Make finalizer removes safe derived `__cadgen__` cache files and prunes
+empty directories when its sandbox permits. Byte-free directories that the
+sandbox protects from unlink are ignored by both finalizer and host inventory;
+every file, symlink, special node, stable CAD export, source, measurement, and
+render remains exact and fail-closed. Before resuming a frozen Make protocol
+that still requires directory deletion, the trusted host also prunes only
+empty product directories while holding the run lock; it never removes files
+or follows links.
+For new runs it also requires two inspected chromatic exact-product renders:
+`<cad-project>/snap/iso.png` is the hero, while
+`<cad-project>/snap/signature.png` shows the signature interaction, reveal, or
+anti-generic detail without relying on marketing copy. When geometry changes,
+it uses fixed-camera exact-state STLs; motion-sheet poses of one mesh are only
+viewpoint evidence. Before spending that review, Make runs one fixed print preflight that
+generates every printable part and requires strict bed fit, mesh validity, and
+wall thickness at the final 0.4 mm nozzle profile. Its passing report is bound
+into a schema-v6 `SIGNATURE-REVIEW.json`, which records one bounded
+independent critic's unprompted held object, volumetric form, subjects, action,
+and spatial or causal relationship before the Wish is revealed. That same
+critic then compares each dimension and the concept's anti-generic signature
+with the exact Wish and canonical concept. It must enumerate every explicit
+positive and negative held-form constraint, cite blind visual evidence for each,
+and report no blocking visual defect. A prototype/device read, dominant exposed
+mechanism, zoom-dependent signature, raw faceting, unclear state change, or any
+visible caveat is blocking. Make permits at most two review rounds and then
+performs one integrated final verifier. The finalizer accepts only the current
+passing full-tier report with a successful thickness row, so omitting a failed
+check cannot spend a host isolated rebuild.
+The final verification report must live inside the declared self-contained CAD
+project, catching a misplaced build entry before the host pays for an isolated
+rebuild.
+The public toy README may use only this explicit presentation-render
+family as its local hero; arbitrary diagnostic images and black/white likeness
+masks are never promoted.
+If a native turn simply returns before writing a proposal, Workshop continues
+the same checkpointed Goal automatically, explicitly reminding the session
+that its finalizer has not run. Three consecutive normally returned turns
+without a proposal stop that command early with the exact session still
+resumable; this prevents one stuck Goal from silently consuming the shared
+32-turn command budget. An explicit `workshop resume` starts a fresh bounded
+continuation window without creating a second root session.
+A native timeout or recognized provider disconnect follows a separate, smaller
+window: two consecutive recoverable turn failures stop the command with the
+same session checkpointed. An explicit `workshop resume` starts a fresh
+two-failure window. This prevents repeated profile-bound native timeouts from
+silently rolling through the full 32-turn command budget.
+The one automatic recovery turn also receives a fixed critical-path reminder:
+reuse existing bytes, avoid restarting exploration, do not make finalization
+depend on a child agent, and prioritize remaining deterministic checks plus the
+stage finalizer.
+When a concrete operator or environment condition truly blocks a stage, the
+same run-local finalizer can write one checkpoint-bound `waiting` or `failed`
+need with no artifact or transition. The host stops immediately and preserves
+that reason in its private checkpoint; both the immediate command receipt and
+later `workshop status` calls print it as `Need:`. Chat prose is never treated
+as a durable need, and agents are explicitly forbidden from using this path
+for ordinary unfinished or repairable work.

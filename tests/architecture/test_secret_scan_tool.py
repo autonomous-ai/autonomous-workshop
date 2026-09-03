@@ -37,6 +37,23 @@ class SecretScanToolTest(unittest.TestCase):
             self.assertGreater(artifact.stat().st_size, 5 * 1024 * 1024)
             self.assertIn("github-token", SCAN_SECRETS.content_problems(artifact))
 
+    def test_key_prefixes_need_a_left_boundary(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            prose = Path(temporary) / "node.md"
+            prose.write_text(
+                "- sources: https://example.test/ask-the-league-of-game-makers-about-catch-up-rules/\n"
+                "  and https://example.test/desk-anthology-of-mechanisms-and-their-failures/\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(SCAN_SECRETS.content_problems(prose), [])
+            keyed = Path(temporary) / "keyed.md"
+            keyed.write_text(
+                "token=sk-%s\nother=sk-ant-%s\n" % ("a" * 40, "b" * 30), encoding="utf-8"
+            )
+            problems = SCAN_SECRETS.content_problems(keyed)
+            self.assertIn("openai-key", problems)
+            self.assertIn("anthropic-key", problems)
+
 
 if __name__ == "__main__":
     unittest.main()

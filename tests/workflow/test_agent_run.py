@@ -697,7 +697,7 @@ class AgentRunTest(unittest.TestCase):
             ).exists()
         )
 
-    def test_activation_selects_v2_and_v14_only_for_new_deep_runs(self):
+    def test_activation_selects_v2_and_v14_for_new_deep_runs(self):
         references = self.skill / "references"
         files = {
             "effort-routes-v1.md": b"selectable effort routes\n",
@@ -753,7 +753,7 @@ class AgentRunTest(unittest.TestCase):
             ".agents/skills/autonomous-workshop/references/invent-concept-v1.md",
             forge_paths,
         )
-        self.assertNotIn(
+        self.assertIn(
             ".agents/skills/autonomous-workshop/references/deep-economics-v13.md",
             forge_paths,
         )
@@ -767,6 +767,10 @@ class AgentRunTest(unittest.TestCase):
         )
         self.assertNotIn(
             ".agents/skills/autonomous-workshop/references/deep-economics-v14.md",
+            spark.input_sha256s,
+        )
+        self.assertNotIn(
+            ".agents/skills/autonomous-workshop/references/deep-economics-v13.md",
             spark.input_sha256s,
         )
 
@@ -805,7 +809,7 @@ class AgentRunTest(unittest.TestCase):
                     hashlib.sha256(source.read_bytes()).hexdigest(),
                 )
 
-    def test_v3_acceptance_switch_selects_only_v3_and_v15_for_new_deep_runs(self):
+    def test_v3_acceptance_switch_selects_v3_with_direct_v14_for_new_deep_runs(self):
         references = self.skill / "references"
         files = {
             "effort-routes-v1.md": b"selectable effort routes\n",
@@ -834,16 +838,19 @@ class AgentRunTest(unittest.TestCase):
             paths,
         )
         self.assertIn(
-            ".agents/skills/autonomous-workshop/references/deep-economics-v15.md",
+            ".agents/skills/autonomous-workshop/references/deep-economics-v14.md",
             paths,
         )
         for excluded in (
             ".agents/skills/autonomous-workshop/references/invent-concept-v1.md",
             ".agents/skills/autonomous-workshop/references/invent-concept-v2.md",
-            ".agents/skills/autonomous-workshop/references/deep-economics-v13.md",
-            ".agents/skills/autonomous-workshop/references/deep-economics-v14.md",
+            ".agents/skills/autonomous-workshop/references/deep-economics-v15.md",
         ):
             self.assertNotIn(excluded, paths)
+        self.assertIn(
+            ".agents/skills/autonomous-workshop/references/deep-economics-v13.md",
+            paths,
+        )
 
     def test_v3_materialized_protocol_bytes_match_recorded_input_hashes(self):
         repository = Path(__file__).resolve().parents[2]
@@ -858,7 +865,7 @@ class AgentRunTest(unittest.TestCase):
             ).snapshot()
         paths = (
             ".agents/skills/autonomous-workshop/references/invent-concept-v3.md",
-            ".agents/skills/autonomous-workshop/references/deep-economics-v15.md",
+            ".agents/skills/autonomous-workshop/references/deep-economics-v14.md",
             ".agents/skills/autonomous-workshop/references/make.md",
             ".agents/skills/autonomous-workshop/scripts/stage_proposal.py",
             ".agents/skills/autonomous-workshop/scripts/concept_validator.py",
