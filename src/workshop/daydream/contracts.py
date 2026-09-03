@@ -19,6 +19,7 @@ from workshop.daydream.schema import (
     LEGACY_VERDICT_CHECKS,
     PROOF_MODES,
     ROUTE_FLOORS,
+    THESIS_V2_VERDICT_CHECKS,
     THESIS_VERDICT_CHECKS,
     idea_problems as schema_idea_problems,
     verdict_problems as schema_verdict_problems,
@@ -427,18 +428,28 @@ class Opportunity:
     human_tension: str
     why_now: str
     physical_opportunity: str
+    evidence_boundary: Optional[str] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.world_scan, WorldScan):
             raise ContractError("opportunity world_scan must be a WorldScan")
         for name in ("human_tension", "why_now", "physical_opportunity"):
             bounded_paragraph(getattr(self, name), "opportunity %s" % name, 600)
+        if self.evidence_boundary is not None:
+            bounded_paragraph(
+                self.evidence_boundary, "opportunity evidence_boundary", 600
+            )
 
     @classmethod
-    def parse(cls, raw: Mapping[str, Any]) -> "Opportunity":
+    def parse(cls, raw: Mapping[str, Any], *, schema_version: int = 2) -> "Opportunity":
+        expected = frozenset(
+            ("world_scan", "human_tension", "why_now", "physical_opportunity")
+        )
+        if schema_version == 3:
+            expected |= frozenset(("evidence_boundary",))
         _exact_keys(
             raw,
-            frozenset(("world_scan", "human_tension", "why_now", "physical_opportunity")),
+            expected,
             "opportunity",
         )
         return cls(
@@ -446,15 +457,19 @@ class Opportunity:
             human_tension=raw["human_tension"],
             why_now=raw["why_now"],
             physical_opportunity=raw["physical_opportunity"],
+            evidence_boundary=raw.get("evidence_boundary"),
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        value = {
             "world_scan": self.world_scan.to_dict(),
             "human_tension": self.human_tension,
             "why_now": self.why_now,
             "physical_opportunity": self.physical_opportunity,
         }
+        if self.evidence_boundary is not None:
+            value["evidence_boundary"] = self.evidence_boundary
+        return value
 
 
 @dataclass(frozen=True)
@@ -550,6 +565,45 @@ class ProofPlan:
         }
 
 
+@dataclass(frozen=True)
+class LearningTrace:
+    """An exact response to one unresolved prior Daydream memory."""
+
+    daydream_id: str
+    memory_sha256: str
+    disposition: str
+    response: str
+
+    def __post_init__(self) -> None:
+        require_daydream_id(self.daydream_id, "learning daydream_id")
+        require_sha256(self.memory_sha256, "learning memory_sha256")
+        if self.disposition not in ("repaired", "abandoned"):
+            raise ContractError("learning disposition must be repaired or abandoned")
+        bounded_paragraph(self.response, "learning response", 500)
+
+    @classmethod
+    def parse(cls, raw: Mapping[str, Any]) -> "LearningTrace":
+        _exact_keys(
+            raw,
+            frozenset(("daydream_id", "memory_sha256", "disposition", "response")),
+            "learning entry",
+        )
+        return cls(
+            daydream_id=raw["daydream_id"],
+            memory_sha256=raw["memory_sha256"],
+            disposition=raw["disposition"],
+            response=raw["response"],
+        )
+
+    def to_dict(self) -> Dict[str, str]:
+        return {
+            "daydream_id": self.daydream_id,
+            "memory_sha256": self.memory_sha256,
+            "disposition": self.disposition,
+            "response": self.response,
+        }
+
+
 @dataclass(frozen=True, kw_only=True)
 class Idea:
     """One idea or creative product thesis exactly as the Inventor wrote it."""
@@ -570,15 +624,28 @@ class Idea:
     experience: Optional[Experience] = None
     proof: Optional[ProofPlan] = None
     route_floor: Optional[str] = None
+    learning: tuple[LearningTrace, ...] = ()
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
-            raise ContractError("idea schema_version must be 1 or 2")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2, 3):
+            raise ContractError("idea schema_version must be 1, 2, or 3")
+        if isinstance(self.learning, (str, Mapping)) or not isinstance(
+            self.learning, Sequence
+        ):
+            raise ContractError("idea learning must be a list")
+        learning = tuple(self.learning)
+        if len(learning) > 5 or any(
+            not isinstance(entry, LearningTrace) for entry in learning
+        ):
+            raise ContractError("idea learning must contain at most 5 LearningTrace entries")
+        if len({entry.daydream_id for entry in learning}) != len(learning):
+            raise ContractError("idea learning cannot repeat a prior daydream_id")
+        object.__setattr__(self, "learning", learning)
         if self.schema_version == 1:
             if any(
                 value is not None
                 for value in (self.opportunity, self.experience, self.proof, self.route_floor)
-            ):
+            ) or learning:
                 raise ContractError("idea schema 1 cannot carry thesis-v2 fields")
         else:
             if not isinstance(self.opportunity, Opportunity):
@@ -589,6 +656,13 @@ class Idea:
                 raise ContractError("idea proof must be a ProofPlan")
             if self.route_floor not in ROUTE_FLOORS:
                 raise ContractError("idea route_floor must be one of %s" % (ROUTE_FLOORS,))
+            if self.schema_version == 2:
+                if learning:
+                    raise ContractError("idea schema 2 cannot carry learning traces")
+                if self.opportunity.evidence_boundary is not None:
+                    raise ContractError("idea schema 2 cannot carry an evidence boundary")
+            elif self.opportunity.evidence_boundary is None:
+                raise ContractError("idea schema 3 requires an evidence boundary")
         if isinstance(self.prior_art, (str, Mapping)) or not isinstance(
             self.prior_art, Sequence
         ):
@@ -603,8 +677,8 @@ class Idea:
             )
         if self.schema_version == 1 and any(entry.url is not None for entry in prior_art):
             raise ContractError("idea schema 1 prior_art cannot carry source fields")
-        if self.schema_version == 2 and any(entry.url is None for entry in prior_art):
-            raise ContractError("idea schema 2 prior_art requires source fields")
+        if self.schema_version >= 2 and any(entry.url is None for entry in prior_art):
+            raise ContractError("thesis prior_art requires source fields")
         object.__setattr__(self, "prior_art", prior_art)
         if not isinstance(self.taste_fit, TasteFit):
             raise ContractError("idea taste_fit must be a TasteFit")
@@ -659,7 +733,7 @@ class Idea:
                 held_form=raw.get("held_form"),
                 before_after=raw.get("before_after"),
             )
-        opportunity = Opportunity.parse(raw["opportunity"])
+        opportunity = Opportunity.parse(raw["opportunity"], schema_version=version)
         experience = Experience.parse(raw["experience"])
         proof = ProofPlan.parse(raw["proof"])
         return cls(
@@ -682,14 +756,17 @@ class Idea:
             experience=experience,
             proof=proof,
             route_floor=raw["route_floor"],
+            learning=tuple(
+                LearningTrace.parse(entry) for entry in raw.get("learning", ())
+            ),
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        if self.schema_version == 2:
+        if self.schema_version >= 2:
             assert self.opportunity is not None
             assert self.experience is not None
             assert self.proof is not None
-            return {
+            value = {
                 "schema_version": self.schema_version,
                 "kind": DAYDREAM_IDEA_KIND,
                 "title": self.title,
@@ -704,6 +781,9 @@ class Idea:
                 "parts_estimate": self.parts_estimate,
                 "keywords": list(self.keywords),
             }
+            if self.schema_version == 3:
+                value["learning"] = [entry.to_dict() for entry in self.learning]
+            return value
         value: Dict[str, Any] = {
             "schema_version": self.schema_version,
             "kind": DAYDREAM_IDEA_KIND,
@@ -742,7 +822,7 @@ def render_brief(idea: Idea, *, inventor_name: str, inventor_id: str) -> str:
         raise ContractError("render_brief requires an Idea")
     bounded_line(inventor_name, "inventor name", MAX_INVENTOR_NAME_CHARS)
     require_inventor_id(inventor_id, "inventor id")
-    if idea.schema_version == 2:
+    if idea.schema_version >= 2:
         assert idea.opportunity is not None
         assert idea.experience is not None
         assert idea.proof is not None
@@ -857,11 +937,17 @@ class Verdict:
     route: Optional[str] = None
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
-            raise ContractError("verdict schema_version must be 1 or 2")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2, 3):
+            raise ContractError("verdict schema_version must be 1, 2, or 3")
         if not isinstance(self.checks, Mapping):
             raise ContractError("verdict checks must be a mapping")
-        expected_checks = VERDICT_CHECKS if self.schema_version == 1 else THESIS_VERDICT_CHECKS
+        expected_checks = (
+            VERDICT_CHECKS
+            if self.schema_version == 1
+            else THESIS_V2_VERDICT_CHECKS
+            if self.schema_version == 2
+            else THESIS_VERDICT_CHECKS
+        )
         if set(self.checks) != set(expected_checks):
             raise ContractError("verdict checks must be exactly %s" % (expected_checks,))
         object.__setattr__(self, "checks", dict(self.checks))
@@ -901,7 +987,13 @@ class Verdict:
         return tuple(sorted(name for name, value in self.checks.items() if not value))
 
     def to_dict(self) -> Dict[str, Any]:
-        check_names = VERDICT_CHECKS if self.schema_version == 1 else THESIS_VERDICT_CHECKS
+        check_names = (
+            VERDICT_CHECKS
+            if self.schema_version == 1
+            else THESIS_V2_VERDICT_CHECKS
+            if self.schema_version == 2
+            else THESIS_VERDICT_CHECKS
+        )
         value: Dict[str, Any] = {
             "schema_version": self.schema_version,
             "kind": DAYDREAM_VERDICT_KIND,
@@ -911,7 +1003,7 @@ class Verdict:
             "risks": [risk.to_dict() for risk in self.risks],
             "advice": self.advice,
         }
-        if self.schema_version == 2:
+        if self.schema_version >= 2:
             value.update(
                 {
                     "daydream_id": self.daydream_id,
@@ -1092,16 +1184,16 @@ class SealedDaydream:
     provenance: Optional[DaydreamProvenance] = None
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
-            raise ContractError("sealed daydream schema_version must be 1 or 2")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2, 3):
+            raise ContractError("sealed daydream schema_version must be 1, 2, or 3")
         if self.verdict is not None and not isinstance(self.verdict, Verdict):
             raise ContractError("sealed daydream verdict must be a Verdict")
         if self.schema_version == 1 and self.provenance is not None:
             raise ContractError("sealed daydream schema 1 cannot carry provenance")
-        if self.schema_version == 2 and not isinstance(self.provenance, DaydreamProvenance):
-            raise ContractError("sealed daydream schema 2 requires provenance")
-        if self.schema_version == 2 and not isinstance(self.verdict, Verdict):
-            raise ContractError("sealed daydream schema 2 requires a Judge verdict")
+        if self.schema_version >= 2 and not isinstance(self.provenance, DaydreamProvenance):
+            raise ContractError("sealed thesis requires provenance")
+        if self.schema_version >= 2 and not isinstance(self.verdict, Verdict):
+            raise ContractError("sealed thesis requires a Judge verdict")
         if self.kind != DAYDREAM_SEAL_KIND:
             raise ContractError("sealed daydream kind must be %s" % DAYDREAM_SEAL_KIND)
         require_daydream_id(self.daydream_id, "sealed daydream daydream_id")
@@ -1123,9 +1215,12 @@ class SealedDaydream:
         require_sha256(self.idea_sha256, "sealed daydream idea_sha256")
         if self.idea_sha256 != self.idea.sha256:
             raise ContractError("sealed daydream idea_sha256 does not match its idea")
-        if self.schema_version == 2:
-            if self.idea.schema_version != 2:
-                raise ContractError("sealed daydream schema 2 requires a schema-v2 thesis")
+        if self.schema_version >= 2:
+            if self.idea.schema_version != self.schema_version:
+                raise ContractError(
+                    "sealed daydream schema %d requires a schema-v%d thesis"
+                    % (self.schema_version, self.schema_version)
+                )
             assert self.provenance is not None
             if self.provenance.input_sha256s["taste"] != self.taste_sha256:
                 raise ContractError("sealed Daydream provenance does not match Taste")
@@ -1146,7 +1241,7 @@ class SealedDaydream:
                     "sealed Daydream provenance does not match its source evidence"
                 )
             if self.verdict is not None and (
-                self.verdict.schema_version != 2
+                self.verdict.schema_version != self.schema_version
                 or self.verdict.daydream_id != self.daydream_id
                 or self.verdict.idea_sha256 != self.idea_sha256
                 or self.verdict.taste_sha256 != self.taste_sha256
@@ -1169,8 +1264,8 @@ class SealedDaydream:
         if not isinstance(raw, Mapping):
             raise ContractError("sealed daydream must be a JSON object")
         version = raw.get("schema_version")
-        if type(version) is not int or version not in (1, 2):
-            raise ContractError("sealed daydream schema_version must be 1 or 2")
+        if type(version) is not int or version not in (1, 2, 3):
+            raise ContractError("sealed daydream schema_version must be 1, 2, or 3")
         expected = _SEAL_V1_KEYS if version == 1 else _SEAL_V2_KEYS
         _exact_keys(
             {key: value for key, value in raw.items() if key not in _SEAL_OPTIONAL_KEYS},
@@ -1181,7 +1276,7 @@ class SealedDaydream:
         return cls(
             verdict=None if verdict is None else Verdict.parse(verdict),
             provenance=(
-                DaydreamProvenance.parse(raw["provenance"]) if version == 2 else None
+                DaydreamProvenance.parse(raw["provenance"]) if version >= 2 else None
             ),
             schema_version=version,
             kind=raw["kind"],
@@ -1218,7 +1313,7 @@ class SealedDaydream:
         }
         if self.verdict is not None:
             value["verdict"] = self.verdict.to_dict()
-        if self.schema_version == 2:
+        if self.schema_version >= 2:
             assert self.provenance is not None
             value["provenance"] = self.provenance.to_dict()
         return value
@@ -1239,6 +1334,7 @@ __all__ = [
     "DaydreamProvenance",
     "Experience",
     "Idea",
+    "LearningTrace",
     "NOVELTY_STATUSES",
     "NoveltyNeighbor",
     "NoveltyReport",
@@ -1249,6 +1345,7 @@ __all__ = [
     "ROUTE_FLOORS",
     "SealedDaydream",
     "THESIS_VERDICT_CHECKS",
+    "THESIS_V2_VERDICT_CHECKS",
     "TasteFit",
     "VERDICT_CHECKS",
     "VERDICT_DECISIONS",

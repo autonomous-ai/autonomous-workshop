@@ -10,11 +10,11 @@ from unittest import mock
 
 from tests.invent.fake_gamevault import FAKE_TOKEN, FakeGameVaultTransport
 from tests.daydream.support import (
-    build_thesis_verdict_dict,
+    build_thesis_v3_verdict_dict as build_thesis_verdict_dict,
     horn_tip_catalog,
     horn_tip_thesis_dict as horn_tip_paraphrase_dict,
     inventor_bundle,
-    sample_thesis_dict as sample_idea_dict,
+    sample_thesis_v3_dict as sample_idea_dict,
 )
 from workshop.daydream.contracts import DaydreamError, Idea, SealedDaydream
 from workshop.daydream.notebook import NotebookEntry, StructuralTrace, append_notebook_entry
@@ -197,6 +197,7 @@ class _FakeLauncher:
         for name in (
             "IDEA.json",
             "TASTE.md",
+            "NOTEBOOK.md",
             "ROUTE.md",
             "AGENTS.md",
             "finalize_daydream.py",
@@ -325,7 +326,7 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(sealed.seed, SEED.to_dict())
         self.assertEqual(sealed.created_at, "2026-09-02T10:15:00Z")
         self.assertEqual(sealed.idea, Idea.parse(sample_idea_dict()))
-        self.assertEqual(sealed.schema_version, 2)
+        self.assertEqual(sealed.schema_version, 3)
         self.assertEqual(sealed.provenance.route, "spark")
         self.assertEqual(sealed.session, _FakeOutcome(start).to_dict())
         self.assertEqual(sealed.novelty.status, "new")
@@ -761,6 +762,18 @@ class DaydreamNativeTest(unittest.TestCase):
             "One tilt produces three visibly separated releases and three distinct catches."
         )
         raw["keywords"] = ["rail", "beads", "tilt", "rhythm"]
+        memory = list_daydreams("sample")[-1]
+        raw["learning"] = [
+            {
+                "daydream_id": memory.daydream_id,
+                "memory_sha256": memory.sha256,
+                "disposition": "repaired",
+                "response": (
+                    "Bind each catch sound to a separately visible release, directly "
+                    "repairing the proof-observable failure."
+                ),
+            }
+        ]
         self._run(
             daydream_id=SECOND_ID,
             idea=raw,
@@ -770,6 +783,32 @@ class DaydreamNativeTest(unittest.TestCase):
                 "make the unequal catch sequence independently observable",
             ),
         )
+
+    def test_new_thesis_must_close_the_newest_unresolved_memory(self):
+        self._run(idea=sample_idea_dict(), verdict="dream-again")
+        with self.assertRaisesRegex(
+            DaydreamError, "must disposition newest unresolved memory"
+        ):
+            self._run(daydream_id=SECOND_ID, idea=sample_idea_dict())
+        self.assertEqual(
+            [(entry.daydream_id, entry.status) for entry in list_daydreams("sample")],
+            [(FIRST_ID, "judged")],
+        )
+
+    def test_new_thesis_rejects_wrong_memory_hash(self):
+        self._run(idea=sample_idea_dict(), verdict="dream-again")
+        memory = list_daydreams("sample")[-1]
+        raw = sample_idea_dict()
+        raw["learning"] = [
+            {
+                "daydream_id": memory.daydream_id,
+                "memory_sha256": "f" * 64,
+                "disposition": "repaired",
+                "response": "Repair the exact failed proof boundary.",
+            }
+        ]
+        with self.assertRaisesRegex(DaydreamError, "memory_sha256 does not match"):
+            self._run(daydream_id=SECOND_ID, idea=raw)
 
     def test_judge_failures_fail_closed(self):
         with self.assertRaisesRegex(DaydreamError, "did not finalize its Judge Goal"):

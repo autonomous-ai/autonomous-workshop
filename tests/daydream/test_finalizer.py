@@ -8,8 +8,10 @@ from pathlib import Path
 
 from tests.daydream.support import (
     build_thesis_verdict_dict,
+    build_thesis_v3_verdict_dict,
     sample_idea_dict,
     sample_thesis_dict,
+    sample_thesis_v3_dict,
 )
 from workshop.daydream import finalize_daydream
 from workshop.daydream.contracts import Idea, Verdict
@@ -87,8 +89,33 @@ class FinalizerTest(unittest.TestCase):
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
 
+    def test_schema_v3_thesis_and_verdict_finalize_standalone(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self._root(temporary, sample_thesis_v3_dict())
+            completed = self._run(root)
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            (root / "agent-outcome.json").unlink()
+            (root / "work" / "VERDICT.json").write_text(
+                json.dumps(build_thesis_v3_verdict_dict()), encoding="utf-8"
+            )
+            completed = subprocess.run(
+                [sys.executable, str(root / FINALIZER_FILE_NAME), "--role", "judge"],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+
     def test_host_and_run_local_schema_have_parity_on_adversarial_corpus(self):
-        idea_cases = [sample_idea_dict(), sample_thesis_dict(), [], {"schema_version": True}]
+        idea_cases = [
+            sample_idea_dict(),
+            sample_thesis_dict(),
+            sample_thesis_v3_dict(),
+            [],
+            {"schema_version": True},
+        ]
         malformed = sample_thesis_dict()
         malformed["keywords"] = ["valid", {"unhashable": True}, "third"]
         idea_cases.append(malformed)
@@ -112,7 +139,12 @@ class FinalizerTest(unittest.TestCase):
             with self.subTest(contract="idea", index=index):
                 self.assertEqual(host_accepts, finalizer_accepts)
 
-        verdict_cases = [build_thesis_verdict_dict(), {"schema_version": False}, []]
+        verdict_cases = [
+            build_thesis_verdict_dict(),
+            build_thesis_v3_verdict_dict(),
+            {"schema_version": False},
+            [],
+        ]
         malformed_verdict = build_thesis_verdict_dict()
         malformed_verdict["checks"]["taste_fidelity"] = "yes"
         verdict_cases.append(malformed_verdict)

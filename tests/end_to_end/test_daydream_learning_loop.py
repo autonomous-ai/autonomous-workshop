@@ -9,12 +9,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from tests.daydream.support import (
-    build_thesis_verdict_dict,
+    build_thesis_v3_verdict_dict,
     inventor_bundle,
-    sample_thesis_dict,
+    sample_thesis_v3_dict,
 )
 from tests.invent.fake_gamevault import FakeGameVaultTransport
 from workshop.daydream.contracts import Idea
+from workshop.daydream.notebook import NotebookEntry
 from workshop.daydream.native import (
     daydream_paths,
     run_daydream,
@@ -30,7 +31,7 @@ SECOND_ID = "daydream-20260902-101600-00000002"
 
 
 def _repaired_thesis():
-    raw = copy.deepcopy(sample_thesis_dict())
+    raw = copy.deepcopy(sample_thesis_v3_dict())
     raw["title"] = "Rung Chorus"
     raw["one_liner"] = (
         "Tilt a pocket rail and hear three captive beads answer in a staggered rhythm."
@@ -123,6 +124,22 @@ class _ScriptedNativeRuntime:
         )
         self.daydream_prompts.append(arguments["prompt"])
         idea = self.ideas.pop(0)
+        notebook_path = run_root.parent.parent / "NOTEBOOK.jsonl"
+        if notebook_path.is_file():
+            lines = [line for line in notebook_path.read_text(encoding="utf-8").splitlines() if line]
+            prior = NotebookEntry.parse(json.loads(lines[-1]))
+            idea["learning"] = [
+                {
+                    "daydream_id": prior.daydream_id,
+                    "memory_sha256": prior.sha256,
+                    "disposition": "repaired",
+                    "response": (
+                        "Make each release independently visible and bind every "
+                        "catch sound to that visible event, directly repairing the "
+                        "Judge's proof-observable failure."
+                    ),
+                }
+            ]
         self.current_decision = self.decisions.pop(0)
         (run_root / "work/IDEA.json").write_text(
             json.dumps(idea, ensure_ascii=False), encoding="utf-8"
@@ -132,7 +149,7 @@ class _ScriptedNativeRuntime:
 
     def _judge(self, arguments, run_root):
         idea = json.loads((run_root / "IDEA.json").read_text(encoding="utf-8"))
-        verdict = build_thesis_verdict_dict(
+        verdict = build_thesis_v3_verdict_dict(
             self.current_decision,
             daydream_id=arguments["product_id"].removesuffix("-judge"),
             idea_sha256=Idea.parse(idea).sha256,
@@ -175,7 +192,7 @@ class DaydreamLearningLoopEndToEndTest(unittest.TestCase):
             inventor_bundle(sources)
             runtime = _ScriptedNativeRuntime(
                 self,
-                (sample_thesis_dict(), _repaired_thesis()),
+                (sample_thesis_v3_dict(), _repaired_thesis()),
                 ("dream-again", "build"),
             )
             vault = FakeGameVaultTransport().vault()

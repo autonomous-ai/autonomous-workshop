@@ -14,6 +14,7 @@ from workshop.daydream.contracts import (
     Idea,
     NoveltyReport,
     SealedDaydream,
+    THESIS_V2_VERDICT_CHECKS,
     THESIS_VERDICT_CHECKS,
     VERDICT_CHECKS,
     Verdict,
@@ -178,6 +179,24 @@ def sample_thesis() -> Idea:
     return Idea.parse(sample_thesis_dict())
 
 
+def sample_thesis_v3_dict(*, learning=None) -> Dict[str, Any]:
+    """The current thesis contract, optionally closing exact notebook memories."""
+
+    raw = sample_thesis_dict()
+    raw["schema_version"] = 3
+    raw["opportunity"]["evidence_boundary"] = (
+        "The sources establish screen-time concern and interest in tactile offline "
+        "rituals; they do not establish demand for this object, therapeutic benefit, "
+        "or that a paced gravity rhythm will be repeatedly desirable."
+    )
+    raw["learning"] = [] if learning is None else list(learning)
+    return raw
+
+
+def sample_thesis_v3(*, learning=None) -> Idea:
+    return Idea.parse(sample_thesis_v3_dict(learning=learning))
+
+
 def sample_provenance(
     route: str = "spark", idea: Idea | None = None
 ) -> DaydreamProvenance:
@@ -209,7 +228,7 @@ def sample_provenance(
 
 
 def horn_tip_thesis_dict() -> Dict[str, Any]:
-    raw = sample_thesis_dict()
+    raw = sample_thesis_v3_dict()
     raw.update(
         {
             "title": "Crescent Rocker",
@@ -273,7 +292,7 @@ def build_thesis_verdict_dict(
             "detail": "The proposed evidence does not distinguish paced catches from a continuous roll.",
         }
     ]
-    checks = {name: True for name in THESIS_VERDICT_CHECKS}
+    checks = {name: True for name in THESIS_V2_VERDICT_CHECKS}
     if decision != "build":
         checks["proof_observable"] = False
     return {
@@ -281,6 +300,38 @@ def build_thesis_verdict_dict(
         "kind": DAYDREAM_VERDICT_KIND,
         "daydream_id": daydream_id,
         "idea_sha256": idea_sha256 or sample_thesis().sha256,
+        "taste_sha256": taste_sha256,
+        "route": route,
+        "decision": decision,
+        "checks": checks,
+        "confidence": 0.8 if decision == "build" else 0.25,
+        "risks": risks,
+        "advice": "Keep the one-flip ritual; make the unequal catch sequence independently observable.",
+    }
+
+
+def build_thesis_v3_verdict_dict(
+    decision: str = "build",
+    *,
+    daydream_id: str = SAMPLE_DAYDREAM_ID,
+    idea_sha256: str | None = None,
+    taste_sha256: str = SAMPLE_TASTE_SHA256,
+    route: str = "spark",
+) -> Dict[str, Any]:
+    risks = [] if decision == "build" else [
+        {
+            "kind": "proof-mismatch",
+            "detail": "The proposed evidence does not distinguish paced catches from a continuous roll.",
+        }
+    ]
+    checks = {name: True for name in THESIS_VERDICT_CHECKS}
+    if decision != "build":
+        checks["proof_observable"] = False
+    return {
+        "schema_version": 3,
+        "kind": DAYDREAM_VERDICT_KIND,
+        "daydream_id": daydream_id,
+        "idea_sha256": idea_sha256 or sample_thesis_v3().sha256,
         "taste_sha256": taste_sha256,
         "route": route,
         "decision": decision,

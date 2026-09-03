@@ -34,6 +34,7 @@ class PromptTest(unittest.TestCase):
             "PRIOR-WORK.md",
             "PORTFOLIO.md",
             "NOTEBOOK.md",
+            "Required next",
             "VAULT.md",
             "22 entries",
             "7 entries",
@@ -63,11 +64,14 @@ class PromptTest(unittest.TestCase):
             "Do not search\nbackward for evidence",
             "Drop it without apology",
             "Pre-commit thesis audit",
-            "same\neight independent dimensions",
+            "same\nnine independent dimensions",
             "lucky frame",
+            "Mutually exhaustive kill criteria",
+            "Repeating a solved count",
             "reject a candidate that needs a higher route",
             "world_scan",
             "human_tension",
+            "evidence_boundary",
             "anti_generic_signature",
             "theme_strip_test",
             "kill_criteria",
@@ -170,3 +174,5 @@ class JudgeCalibrationTest(unittest.TestCase):
             JUDGE_CONSTITUTION,
         )
         self.assertIn("do not substitute market familiarity", JUDGE_CONSTITUTION)
+        self.assertIn("does not dimension, prototype, print, simulate, or", JUDGE_CONSTITUTION)
+        self.assertIn("not covert engineering inside Dream", JUDGE_CONSTITUTION)

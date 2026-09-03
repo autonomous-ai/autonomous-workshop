@@ -5,18 +5,21 @@ from datetime import datetime, timezone
 
 from tests.daydream.support import (
     build_thesis_verdict_dict,
+    build_thesis_v3_verdict_dict,
     sample_idea,
     sample_idea_dict,
     sample_novelty,
     sample_sealed,
     sample_thesis,
     sample_thesis_dict,
+    sample_thesis_v3_dict,
 )
 from workshop.daydream.contracts import (
     DAYDREAM_IDEA_KIND,
     DAYDREAM_SEAL_KIND,
     DaydreamProvenance,
     Idea,
+    LearningTrace,
     NoveltyNeighbor,
     NoveltyReport,
     PriorArt,
@@ -184,6 +187,32 @@ class CreativeThesisTest(unittest.TestCase):
         self.assertEqual(thesis.before_after, raw["proof"]["observable"])
         self.assertEqual(thesis.opportunity.world_scan.signals[0].url, raw["opportunity"]["world_scan"]["signals"][0]["url"])
         self.assertEqual(thesis.proof.mode, "visual-state")
+
+    def test_v3_binds_bounded_learning_without_changing_v2_identity(self):
+        prior_id = "daydream-20260902-091500-00000009"
+        raw = sample_thesis_v3_dict(
+            learning=[
+                {
+                    "daydream_id": prior_id,
+                    "memory_sha256": "b" * 64,
+                    "disposition": "abandoned",
+                    "response": "Choose a different physical verb and proof family.",
+                }
+            ]
+        )
+        thesis = Idea.parse(raw)
+        self.assertEqual(thesis.to_dict(), raw)
+        self.assertIsInstance(thesis.learning[0], LearningTrace)
+        self.assertEqual(thesis.learning[0].daydream_id, prior_id)
+        legacy = sample_thesis_dict()
+        self.assertEqual(Idea.parse(legacy).to_dict(), legacy)
+        missing_boundary = sample_thesis_v3_dict()
+        del missing_boundary["opportunity"]["evidence_boundary"]
+        with self.assertRaisesRegex(ContractError, "evidence_boundary"):
+            Idea.parse(missing_boundary)
+        malformed = sample_thesis_v3_dict(learning=raw["learning"] * 2)
+        with self.assertRaisesRegex(ContractError, "repeat|duplicate"):
+            Idea.parse(malformed)
 
     def test_v2_requires_world_provenance_thesis_and_falsifiers(self):
         mutations = []
@@ -486,12 +515,12 @@ class VerdictTest(unittest.TestCase):
             Verdict.parse(bad)
 
     def test_v2_verdict_is_conjunctive_and_hash_bound(self):
-        from workshop.daydream.contracts import THESIS_VERDICT_CHECKS, Verdict
+        from workshop.daydream.contracts import THESIS_V2_VERDICT_CHECKS, Verdict
 
         raw = build_thesis_verdict_dict()
         verdict = Verdict.parse(raw)
         self.assertEqual(verdict.to_dict(), raw)
-        self.assertEqual(tuple(verdict.checks), THESIS_VERDICT_CHECKS)
+        self.assertEqual(tuple(verdict.checks), THESIS_V2_VERDICT_CHECKS)
         self.assertEqual(verdict.failed_checks, ())
         for field, value in (
             ("daydream_id", "wish-20260902-101500-0badcafe"),
@@ -505,5 +534,16 @@ class VerdictTest(unittest.TestCase):
                 Verdict.parse(malformed)
         malformed = build_thesis_verdict_dict()
         malformed["checks"]["opportunity_grounded"] = False
+        with self.assertRaisesRegex(ContractError, "build verdict requires every check"):
+            Verdict.parse(malformed)
+
+    def test_v3_verdict_requires_learning_closure_conjunctively(self):
+        from workshop.daydream.contracts import THESIS_VERDICT_CHECKS, Verdict
+
+        raw = build_thesis_v3_verdict_dict()
+        verdict = Verdict.parse(raw)
+        self.assertEqual(tuple(verdict.checks), THESIS_VERDICT_CHECKS)
+        malformed = build_thesis_v3_verdict_dict()
+        malformed["checks"]["learning_closure"] = False
         with self.assertRaisesRegex(ContractError, "build verdict requires every check"):
             Verdict.parse(malformed)

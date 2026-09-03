@@ -14,8 +14,10 @@ from workshop.daydream.contracts import (
     MAX_ONE_LINER_CHARS,
     MAX_TITLE_CHARS,
     MAX_VERDICT_TEXT_CHARS,
+    THESIS_V2_VERDICT_CHECKS,
     THESIS_VERDICT_CHECKS,
     Idea,
+    LearningTrace,
     Verdict,
     bounded_line,
     bounded_paragraph,
@@ -38,6 +40,7 @@ _ENTRY_V1_KEYS = frozenset(
 _ENTRY_V2_KEYS = _ENTRY_V1_KEYS | frozenset(
     ("schema_version", "kind", "structure", "judge", "rejection_reason")
 )
+_ENTRY_V3_KEYS = _ENTRY_V2_KEYS | frozenset(("learning",))
 _STRUCTURE_KEYS = frozenset(
     (
         "physical_opportunity",
@@ -73,8 +76,8 @@ class StructuralTrace:
 
     @classmethod
     def from_idea(cls, idea: Idea) -> "StructuralTrace":
-        if not isinstance(idea, Idea) or idea.schema_version != 2:
-            raise ContractError("structural memory requires a schema-v2 Idea")
+        if not isinstance(idea, Idea) or idea.schema_version not in (2, 3):
+            raise ContractError("structural memory requires a schema-v2 or v3 Idea")
         assert idea.opportunity is not None
         assert idea.experience is not None
         return cls(
@@ -133,7 +136,10 @@ class JudgeMemory:
         checks = tuple(self.failed_checks)
         if (
             len(set(checks)) != len(checks)
-            or any(name not in THESIS_VERDICT_CHECKS for name in checks)
+            or any(
+                name not in set(THESIS_V2_VERDICT_CHECKS) | set(THESIS_VERDICT_CHECKS)
+                for name in checks
+            )
         ):
             raise ContractError(
                 "memory judge failed_checks contain unknown or repeated checks"
@@ -155,8 +161,8 @@ class JudgeMemory:
 
     @classmethod
     def from_verdict(cls, verdict: Verdict) -> "JudgeMemory":
-        if not isinstance(verdict, Verdict) or verdict.schema_version != 2:
-            raise ContractError("new Judge memory requires a schema-v2 Verdict")
+        if not isinstance(verdict, Verdict) or verdict.schema_version not in (2, 3):
+            raise ContractError("new Judge memory requires a schema-v2 or v3 Verdict")
         return cls(
             decision=verdict.decision,
             failed_checks=verdict.failed_checks,
@@ -201,6 +207,7 @@ class NotebookEntry:
     structure: StructuralTrace | None = None
     judge: JudgeMemory | None = None
     rejection_reason: str | None = None
+    learning: tuple[LearningTrace, ...] = ()
 
     def __post_init__(self) -> None:
         require_daydream_id(self.daydream_id, "notebook daydream_id")
@@ -214,11 +221,29 @@ class NotebookEntry:
             if any(
                 value is not None
                 for value in (self.structure, self.judge, self.rejection_reason)
-            ):
+            ) or self.learning:
                 raise ContractError("notebook schema 1 cannot carry thesis memory")
             return
-        if self.schema_version != 2 or not isinstance(self.structure, StructuralTrace):
-            raise ContractError("notebook schema 2 requires a structural trace")
+        if self.schema_version not in (2, 3) or not isinstance(
+            self.structure, StructuralTrace
+        ):
+            raise ContractError("notebook schema 2 or 3 requires a structural trace")
+        if isinstance(self.learning, (str, Mapping)) or not isinstance(
+            self.learning, Sequence
+        ):
+            raise ContractError("notebook learning must be a list")
+        learning = tuple(self.learning)
+        if len(learning) > 5 or any(
+            not isinstance(entry, LearningTrace) for entry in learning
+        ):
+            raise ContractError(
+                "notebook learning must contain at most 5 LearningTrace entries"
+            )
+        if len({entry.daydream_id for entry in learning}) != len(learning):
+            raise ContractError("notebook learning cannot repeat a prior daydream_id")
+        if self.schema_version == 2 and learning:
+            raise ContractError("notebook schema 2 cannot carry learning traces")
+        object.__setattr__(self, "learning", learning)
         if self.judge is not None and not isinstance(self.judge, JudgeMemory):
             raise ContractError("notebook judge must be JudgeMemory or null")
         if self.rejection_reason is not None:
@@ -245,12 +270,18 @@ class NotebookEntry:
         if not isinstance(raw, Mapping):
             raise ContractError("notebook entry must be a JSON object")
         version = raw.get("schema_version", 1)
-        if type(version) is not int or version not in (1, 2):
-            raise ContractError("notebook schema_version must be 1 or 2")
-        expected = _ENTRY_V1_KEYS if version == 1 else _ENTRY_V2_KEYS
+        if type(version) is not int or version not in (1, 2, 3):
+            raise ContractError("notebook schema_version must be 1, 2, or 3")
+        expected = (
+            _ENTRY_V1_KEYS
+            if version == 1
+            else _ENTRY_V2_KEYS
+            if version == 2
+            else _ENTRY_V3_KEYS
+        )
         if set(raw) != expected:
             raise ContractError("notebook entry keys must be exactly %s" % sorted(expected))
-        if version == 2 and raw["kind"] != NOTEBOOK_ENTRY_KIND:
+        if version >= 2 and raw["kind"] != NOTEBOOK_ENTRY_KIND:
             raise ContractError("notebook entry kind must be %s" % NOTEBOOK_ENTRY_KIND)
         return cls(
             daydream_id=raw["daydream_id"],
@@ -260,13 +291,16 @@ class NotebookEntry:
             idea_sha256=raw["idea_sha256"],
             status=raw["status"],
             schema_version=version,
-            structure=StructuralTrace.parse(raw["structure"]) if version == 2 else None,
+            structure=StructuralTrace.parse(raw["structure"]) if version >= 2 else None,
             judge=(
                 JudgeMemory.parse(raw["judge"])
-                if version == 2 and raw["judge"] is not None
+                if version >= 2 and raw["judge"] is not None
                 else None
             ),
             rejection_reason=raw.get("rejection_reason"),
+            learning=tuple(
+                LearningTrace.parse(entry) for entry in raw.get("learning", ())
+            ),
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -278,18 +312,26 @@ class NotebookEntry:
             "idea_sha256": self.idea_sha256,
             "status": self.status,
         }
-        if self.schema_version == 2:
+        if self.schema_version >= 2:
             assert self.structure is not None
             value.update(
                 {
-                    "schema_version": 2,
+                    "schema_version": self.schema_version,
                     "kind": NOTEBOOK_ENTRY_KIND,
                     "structure": self.structure.to_dict(),
                     "judge": self.judge.to_dict() if self.judge is not None else None,
                     "rejection_reason": self.rejection_reason,
                 }
             )
+            if self.schema_version == 3:
+                value["learning"] = [entry.to_dict() for entry in self.learning]
         return value
+
+    @property
+    def sha256(self) -> str:
+        """Hash the exact durable memory record referenced by later theses."""
+
+        return hashlib.sha256(canonical_json(self.to_dict()).encode("utf-8")).hexdigest()
 
 
 def append_notebook_entry(path: Path, entry: NotebookEntry) -> None:
@@ -339,12 +381,39 @@ def read_notebook(
     return tuple(entries[-limit:])
 
 
+def unresolved_actionable_entries(
+    entries: Sequence[NotebookEntry],
+) -> tuple[NotebookEntry, ...]:
+    """Return rejected memories no later thesis has explicitly dispositioned."""
+
+    positions = {entry.daydream_id: index for index, entry in enumerate(entries)}
+    addressed = {
+        trace.daydream_id
+        for index, entry in enumerate(entries)
+        for trace in entry.learning
+        if entry.schema_version == 3
+        and entry.judge is not None
+        and "learning_closure" not in entry.judge.failed_checks
+        if positions.get(trace.daydream_id, index) < index
+    }
+    return tuple(
+        entry
+        for entry in entries
+        if entry.status in ("rejected", "judged") and entry.daydream_id not in addressed
+    )
+
+
 def render_notebook_markdown(entries: Sequence[NotebookEntry]) -> str:
     """Render the notebook the Inventor reads so it never repeats itself."""
 
     lines = ["# Your notebook (ideas you already had — do not repeat)", ""]
     if not entries:
         lines.append("(empty: this is your first daydream)")
+    unresolved = unresolved_actionable_entries(entries)
+    actionable_ids = {entry.daydream_id for entry in unresolved}
+    newest_actionable_id = (
+        unresolved[-1].daydream_id if unresolved else None
+    )
     for entry in entries:
         if not isinstance(entry, NotebookEntry):
             raise ContractError("render_notebook_markdown requires NotebookEntry items")
@@ -352,6 +421,17 @@ def render_notebook_markdown(entries: Sequence[NotebookEntry]) -> str:
             "- **%s** (%s, %s, %s): %s"
             % (entry.title, entry.daydream_id, entry.status, entry.created_at, entry.one_liner)
         )
+        lines.append("  - Exact memory sha256: `%s`" % entry.sha256)
+        if entry.daydream_id == newest_actionable_id:
+            lines.append(
+                "  - **Required next:** cite this id and exact memory sha256 in "
+                "`learning`, then mark it `repaired` or `abandoned`."
+            )
+        elif entry.daydream_id in actionable_ids:
+            lines.append(
+                "  - **Older unresolved:** cite this only when the new thesis repairs "
+                "or abandons its direction; never repeat its failed promise."
+            )
         if entry.structure is not None:
             lines.append(
                 "  - Structure `%s`: %s -> %s -> %s"
@@ -378,6 +458,11 @@ def render_notebook_markdown(entries: Sequence[NotebookEntry]) -> str:
             )
         if entry.rejection_reason is not None:
             lines.append("  - Deterministic novelty rejection: %s" % entry.rejection_reason)
+        for trace in entry.learning:
+            lines.append(
+                "  - Learning closure for %s (%s): %s"
+                % (trace.daydream_id, trace.disposition, trace.response)
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -409,4 +494,5 @@ __all__ = [
     "prior_work_from_notebook",
     "read_notebook",
     "render_notebook_markdown",
+    "unresolved_actionable_entries",
 ]

@@ -27,7 +27,7 @@ LEGACY_VERDICT_CHECKS = (
     "fits_the_route",
     "worth_owning",
 )
-THESIS_VERDICT_CHECKS = (
+THESIS_V2_VERDICT_CHECKS = (
     "taste_fidelity",
     "opportunity_grounded",
     "mechanism_or_play_novelty",
@@ -37,6 +37,7 @@ THESIS_VERDICT_CHECKS = (
     "worth_building",
     "invent_handoff_clear",
 )
+THESIS_VERDICT_CHECKS = THESIS_V2_VERDICT_CHECKS + ("learning_closure",)
 PROOF_MODES = (
     "visual-form",
     "visual-state",
@@ -47,7 +48,7 @@ PROOF_MODES = (
     "rules-play",
 )
 ROUTE_FLOORS = ("spark", "forge", "quest")
-RISK_KINDS = (
+THESIS_V2_RISK_KINDS = (
     "generic-form",
     "exposed-mechanism",
     "hidden-signature",
@@ -65,6 +66,7 @@ RISK_KINDS = (
     "invent-ambiguity",
     "other",
 )
+RISK_KINDS = THESIS_V2_RISK_KINDS[:-1] + ("learning-gap", "other")
 
 _SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{1,31}$", re.ASCII)
 _DAYDREAM_ID = re.compile(r"^daydream-\d{8}-\d{6}-[0-9a-f]{8}$", re.ASCII)
@@ -104,9 +106,14 @@ _IDEA_V2_KEYS = frozenset(
         "keywords",
     )
 )
-_OPPORTUNITY_KEYS = frozenset(
+_IDEA_V3_KEYS = _IDEA_V2_KEYS | frozenset(("learning",))
+_LEARNING_KEYS = frozenset(
+    ("daydream_id", "memory_sha256", "disposition", "response")
+)
+_OPPORTUNITY_V2_KEYS = frozenset(
     ("world_scan", "human_tension", "why_now", "physical_opportunity")
 )
+_OPPORTUNITY_V3_KEYS = _OPPORTUNITY_V2_KEYS | frozenset(("evidence_boundary",))
 _WORLD_SCAN_KEYS = frozenset(("observed_at", "scope", "evergreen", "signals"))
 _WORLD_SIGNAL_KEYS = frozenset(("title", "url", "published_at", "insight"))
 _EXPERIENCE_KEYS = frozenset(
@@ -258,7 +265,7 @@ def _prior_art_problems(raw: Any, *, version: int) -> list[str]:
                 entry["how_this_differs"], "%s.how_this_differs" % label, 300
             )
         )
-        if version == 2:
+        if version >= 2:
             problems.extend(_url_problems(entry["url"], "%s.url" % label))
             problems.extend(
                 _timestamp_problems(entry["observed_at"], "%s.observed_at" % label)
@@ -331,13 +338,20 @@ def _world_scan_problems(raw: Any) -> list[str]:
     return problems
 
 
-def _opportunity_problems(raw: Any) -> list[str]:
-    problems = _key_problems(raw, _OPPORTUNITY_KEYS, "opportunity")
+def _opportunity_problems(raw: Any, *, version: int) -> list[str]:
+    expected = _OPPORTUNITY_V2_KEYS if version == 2 else _OPPORTUNITY_V3_KEYS
+    problems = _key_problems(raw, expected, "opportunity")
     if problems:
         return problems
     problems.extend(_world_scan_problems(raw["world_scan"]))
     for key in ("human_tension", "why_now", "physical_opportunity"):
         problems.extend(_paragraph_problems(raw[key], "opportunity.%s" % key, 600))
+    if version == 3:
+        problems.extend(
+            _paragraph_problems(
+                raw["evidence_boundary"], "opportunity.evidence_boundary", 600
+            )
+        )
     return problems
 
 
@@ -365,14 +379,43 @@ def _proof_problems(raw: Any) -> list[str]:
     return problems
 
 
+def _learning_problems(raw: Any) -> list[str]:
+    if not isinstance(raw, list) or len(raw) > 5:
+        return ["learning must be a list of at most 5 entries"]
+    problems: list[str] = []
+    seen_ids: set[str] = set()
+    for index, entry in enumerate(raw):
+        label = "learning[%d]" % index
+        entry_problems = _key_problems(entry, _LEARNING_KEYS, label)
+        problems.extend(entry_problems)
+        if entry_problems:
+            continue
+        daydream_id = entry["daydream_id"]
+        if not isinstance(daydream_id, str) or _DAYDREAM_ID.fullmatch(daydream_id) is None:
+            problems.append("%s.daydream_id is invalid" % label)
+        elif daydream_id in seen_ids:
+            problems.append("%s.daydream_id duplicates another learning entry" % label)
+        else:
+            seen_ids.add(daydream_id)
+        memory_sha256 = entry["memory_sha256"]
+        if not isinstance(memory_sha256, str) or _SHA256.fullmatch(memory_sha256) is None:
+            problems.append("%s.memory_sha256 must be a lowercase sha256" % label)
+        if entry["disposition"] not in ("repaired", "abandoned"):
+            problems.append("%s.disposition must be repaired or abandoned" % label)
+        problems.extend(
+            _paragraph_problems(entry["response"], "%s.response" % label, 500)
+        )
+    return problems
+
+
 def idea_problems(raw: Any) -> list[str]:
     """Return every bounded schema problem in one parsed ``IDEA.json`` value."""
 
     if not isinstance(raw, Mapping):
         return ["IDEA.json must be one JSON object"]
     version = raw.get("schema_version")
-    if type(version) is not int or version not in (1, 2):
-        return ["schema_version must be 1 or 2"]
+    if type(version) is not int or version not in (1, 2, 3):
+        return ["schema_version must be 1, 2, or 3"]
     if version == 1:
         present = set(raw)
         problems: list[str] = []
@@ -391,17 +434,20 @@ def idea_problems(raw: Any) -> list[str]:
         for key in ("what_you_do", "what_happens", "why_it_is_new"):
             problems.extend(_paragraph_problems(raw[key], key, 600))
     else:
-        problems = _key_problems(raw, _IDEA_V2_KEYS, "IDEA.json")
+        expected = _IDEA_V2_KEYS if version == 2 else _IDEA_V3_KEYS
+        problems = _key_problems(raw, expected, "IDEA.json")
         if problems:
             return problems
         problems.extend(_line_problems(raw["title"], "title", 60))
         problems.extend(_line_problems(raw["one_liner"], "one_liner", 200))
-        problems.extend(_opportunity_problems(raw["opportunity"]))
+        problems.extend(_opportunity_problems(raw["opportunity"], version=version))
         problems.extend(_experience_problems(raw["experience"]))
         problems.extend(_paragraph_problems(raw["why_it_is_new"], "why_it_is_new", 600))
         problems.extend(_proof_problems(raw["proof"]))
         if raw["route_floor"] not in ROUTE_FLOORS:
             problems.append("route_floor must be one of %s" % (ROUTE_FLOORS,))
+        if version == 3:
+            problems.extend(_learning_problems(raw["learning"]))
     if raw["kind"] != DAYDREAM_IDEA_KIND:
         problems.append("kind must be %s" % DAYDREAM_IDEA_KIND)
     problems.extend(_prior_art_problems(raw["prior_art"], version=version))
@@ -417,8 +463,8 @@ def verdict_problems(raw: Any) -> list[str]:
     if not isinstance(raw, Mapping):
         return ["VERDICT.json must be one JSON object"]
     version = raw.get("schema_version")
-    if type(version) is not int or version not in (1, 2):
-        return ["schema_version must be 1 or 2"]
+    if type(version) is not int or version not in (1, 2, 3):
+        return ["schema_version must be 1, 2, or 3"]
     expected = _VERDICT_V1_KEYS if version == 1 else _VERDICT_V2_KEYS
     problems = _key_problems(raw, expected, "VERDICT.json")
     if problems:
@@ -428,7 +474,13 @@ def verdict_problems(raw: Any) -> list[str]:
     if raw["decision"] not in ("build", "dream-again"):
         problems.append("decision must be build or dream-again")
     checks = raw["checks"]
-    expected_checks = LEGACY_VERDICT_CHECKS if version == 1 else THESIS_VERDICT_CHECKS
+    expected_checks = (
+        LEGACY_VERDICT_CHECKS
+        if version == 1
+        else THESIS_V2_VERDICT_CHECKS
+        if version == 2
+        else THESIS_VERDICT_CHECKS
+    )
     if not isinstance(checks, Mapping) or set(checks) != set(expected_checks):
         problems.append("checks must hold exactly these keys: %s" % ", ".join(expected_checks))
     elif any(type(value) is not bool for value in checks.values()):
@@ -456,11 +508,12 @@ def verdict_problems(raw: Any) -> list[str]:
             problems.extend(risk_problems)
             if risk_problems:
                 continue
-            if risk["kind"] not in RISK_KINDS:
-                problems.append("%s.kind must be one of %s" % (label, RISK_KINDS))
+            risk_kinds = RISK_KINDS if version == 3 else THESIS_V2_RISK_KINDS
+            if risk["kind"] not in risk_kinds:
+                problems.append("%s.kind must be one of %s" % (label, risk_kinds))
             problems.extend(_line_problems(risk["detail"], "%s.detail" % label, 400))
     problems.extend(_line_problems(raw["advice"], "advice", 400))
-    if version == 2:
+    if version >= 2:
         if not isinstance(raw["daydream_id"], str) or _DAYDREAM_ID.fullmatch(raw["daydream_id"]) is None:
             problems.append("daydream_id is invalid")
         for key in ("idea_sha256", "taste_sha256"):
@@ -478,6 +531,8 @@ __all__ = [
     "PROOF_MODES",
     "RISK_KINDS",
     "ROUTE_FLOORS",
+    "THESIS_V2_VERDICT_CHECKS",
+    "THESIS_V2_RISK_KINDS",
     "THESIS_VERDICT_CHECKS",
     "idea_problems",
     "verdict_problems",

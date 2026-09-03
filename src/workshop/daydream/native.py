@@ -51,6 +51,7 @@ from workshop.daydream.notebook import (
     prior_work_from_notebook,
     read_notebook,
     render_notebook_markdown,
+    unresolved_actionable_entries,
 )
 from workshop.daydream.outcomes import (
     RunOutcomeMemory,
@@ -573,8 +574,8 @@ def _validate_thesis_evidence(
 ) -> None:
     """Bind temporal claims and Taste citations to the exact turn inputs."""
 
-    if idea.schema_version != 2:
-        raise DaydreamError("new Daydream Goals must finalize an idea with schema_version 2")
+    if idea.schema_version != 3:
+        raise DaydreamError("new Daydream Goals must finalize an idea with schema_version 3")
     assert idea.opportunity is not None
     if idea.opportunity.world_scan.observed_at != observed_at or any(
         entry.observed_at != observed_at for entry in idea.prior_art
@@ -599,6 +600,39 @@ def _validate_thesis_evidence(
         raise DaydreamError(
             "Daydream Taste citations are not exact excerpts of TASTE.md: %s"
             % "; ".join(missing)
+        )
+
+
+def _validate_learning(
+    idea: Idea, entries: Sequence[NotebookEntry]
+) -> None:
+    """Require exact closure of the newest unresolved rejected thesis.
+
+    This is a lineage gate only.  Whether the prior creative direction should
+    be repaired or abandoned, and whether the response is good, remain native
+    Inventor and independent-Judge judgments.
+    """
+
+    if idea.schema_version != 3:
+        raise DaydreamError("new Daydream learning requires an idea with schema_version 3")
+    unresolved = unresolved_actionable_entries(entries)
+    unresolved_by_id = {entry.daydream_id: entry for entry in unresolved}
+    traces_by_id = {trace.daydream_id: trace for trace in idea.learning}
+    stale = sorted(set(traces_by_id) - set(unresolved_by_id))
+    if stale:
+        raise DaydreamError(
+            "Daydream learning references resolved or non-actionable memories: %s"
+            % ", ".join(stale)
+        )
+    for daydream_id, trace in traces_by_id.items():
+        if trace.memory_sha256 != unresolved_by_id[daydream_id].sha256:
+            raise DaydreamError(
+                "Daydream learning memory_sha256 does not match %s" % daydream_id
+            )
+    if unresolved and unresolved[-1].daydream_id not in traces_by_id:
+        raise DaydreamError(
+            "Daydream learning must disposition newest unresolved memory %s"
+            % unresolved[-1].daydream_id
         )
 
 
@@ -799,6 +833,7 @@ def judge_idea(
     manager_id: str,
     effort: str,
     daydream_id: str,
+    notebook_entries: Sequence[NotebookEntry],
     launcher_factory: Callable[..., Any] = manager_launcher,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> tuple[Verdict, Mapping[str, Any]]:
@@ -814,6 +849,10 @@ def judge_idea(
     files = (
         ("IDEA.json", (canonical_json(idea.to_dict()) + "\n").encode("utf-8")),
         ("TASTE.md", taste.content.encode("utf-8")),
+        (
+            "NOTEBOOK.md",
+            render_notebook_markdown(notebook_entries).encode("utf-8"),
+        ),
         ("ROUTE.md", ("# Route\n\n%s\n" % ROUTE_BUDGETS[effort]).encode("utf-8")),
         ("AGENTS.md", JUDGE_CONSTITUTION.encode("utf-8")),
         (FINALIZER_FILE_NAME, finalizer_bytes()),
@@ -856,7 +895,7 @@ def judge_idea(
     _existing_real_directory(workspace / "work", label="judge work directory", private=False)
     _read_outcome(workspace, file_name=VERDICT_FILE_NAME, who="judge", goal="Judge")
     verdict = _read_verdict(workspace / "work" / VERDICT_FILE_NAME)
-    if verdict.schema_version == 2 and (
+    if verdict.schema_version >= 2 and (
         verdict.daydream_id != daydream_id
         or verdict.idea_sha256 != idea.sha256
         or verdict.taste_sha256 != taste.sha256
@@ -883,7 +922,7 @@ def _remember(
     verdict: Optional[Verdict] = None,
     rejection_reason: Optional[str] = None,
 ) -> None:
-    thesis_memory = idea.schema_version == 2
+    thesis_memory = idea.schema_version in (2, 3)
     append_notebook_entry(
         paths.notebook,
         NotebookEntry(
@@ -893,10 +932,11 @@ def _remember(
             one_liner=idea.one_liner,
             idea_sha256=idea.sha256,
             status=status,
-            schema_version=2 if thesis_memory else 1,
+            schema_version=idea.schema_version if thesis_memory else 1,
             structure=StructuralTrace.from_idea(idea) if thesis_memory else None,
             judge=JudgeMemory.from_verdict(verdict) if verdict is not None else None,
             rejection_reason=rejection_reason,
+            learning=idea.learning,
         ),
     )
 
@@ -1036,6 +1076,7 @@ def run_daydream(
         idea, taste=taste, observed_at=created_at, route=route
     )
     latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
+    _validate_learning(idea, latest_entries)
     latest_portfolio = load_portfolio(
         paths.notebook.parent.parent, exclude_inventor=manifest.inventor_id
     )
@@ -1058,11 +1099,12 @@ def run_daydream(
         manager_id=spec.manager_id,
             effort=route,
         daydream_id=selected_id,
+        notebook_entries=latest_entries,
         launcher_factory=launcher_factory,
         activity_observer=activity_observer,
     )
-    if verdict.schema_version != 2:
-        raise DaydreamError("new Judge Goals must finalize a verdict with schema_version 2")
+    if verdict.schema_version != 3:
+        raise DaydreamError("new Judge Goals must finalize a verdict with schema_version 3")
     provenance = _build_provenance(
         route=route,
         manager=spec,
@@ -1078,7 +1120,7 @@ def run_daydream(
         label="Daydream provenance",
     )
     sealed = SealedDaydream(
-        schema_version=2,
+        schema_version=3,
         verdict=verdict,
         provenance=provenance,
         daydream_id=selected_id,
@@ -1161,7 +1203,7 @@ def wish_from_daydream(sealed: SealedDaydream, *, wish_id: Optional[str] = None)
 
     if not isinstance(sealed, SealedDaydream):
         raise ContractError("wish_from_daydream requires a SealedDaydream")
-    if sealed.schema_version == 2 and (
+    if sealed.schema_version >= 2 and (
         sealed.verdict is None or sealed.verdict.decision != "build"
     ):
         raise ContractError(

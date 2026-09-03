@@ -25,6 +25,11 @@ Daydream owns:
 - an observable proof mode with concrete kill criteria; and
 - the minimum Workshop route capable of preserving and proving the thesis.
 
+The kill criteria must be jointly satisfiable: the native pre-mortem and Judge
+must be able to name at least one plausible result that passes all of them.
+Mutually exhaustive failure conditions are an impossible contract, not a
+stronger proof plan.
+
 Invent owns exact mechanisms, dimensions, materials, components, construction,
 tolerances, compatibility, and research-backed physical facts. Spark Make keeps
 its existing compound responsibility to seal those facts before building.
@@ -48,7 +53,9 @@ The Inventor-side session gets one Goal named `Daydream`. It must:
 4. diverge across materially different interaction families;
 5. theme-strip and falsify serious candidates against Taste, prior art, proof,
    route, and portfolio repetition; and
-6. finalize exactly one schema-v2 `work/IDEA.json` with the run-local standard-
+6. disposition the newest unresolved notebook rejection by exact memory hash,
+   either repairing it or abandoning that direction; and
+7. finalize exactly one schema-v3 `work/IDEA.json` with the run-local standard-
    library finalizer.
 
 The runtime must report an observed web-search event. Source URLs alone do not
@@ -64,9 +71,13 @@ scan. The host requires every scan and prior-art observation time to equal the
 turn's exact UTC time, validates exact Taste excerpts, and rejects a
 `route_floor` above the selected route. Hotness never acts as a quality score;
 an evergreen thesis is legal only after the mandatory scan.
+Schema-v3 also requires `evidence_boundary`, which states what sources do not
+establish—especially demand, benefit, motivation, and repeat use—so the
+Taste-specific product translation stays visibly hypothetical rather than
+masquerading as a sourced fact.
 
 The independent Judge runs in a second short native session over the sealed
-idea, exact Taste, and selected route. Its schema-v2 verdict separately tests:
+idea, exact Taste, notebook, and selected route. Its schema-v3 verdict separately tests:
 
 - Taste fidelity;
 - opportunity grounding;
@@ -75,20 +86,31 @@ idea, exact Taste, and selected route. Its schema-v2 verdict separately tests:
 - proof observability;
 - route fit;
 - whether the thesis is worth build time; and
-- whether the Invent handoff preserves the experience without pre-solving it.
+- whether the Invent handoff preserves the experience without pre-solving it;
+  and
+- whether claimed repair/abandonment substantively closes the exact prior
+  feedback it cites.
 
-`build` is legal only when all eight booleans are true and every identity
+Worth-building includes a reason to return after the first reveal is understood,
+such as a continuing decision, discovery, mastery, expression, or changing
+causal response. A solved demonstration with cosmetic variation is rejected.
+
+`build` is legal only when all nine booleans are true and every identity
 matches. Confidence is a prediction, never evidence. `dream-again` retains
 failed checks, risks, and actionable advice for the next Dream, but a new
-schema-v2 rejected thesis cannot become Wish intent, including through
-`--idea`. Historical schema-v1 records retain their frozen behavior.
+schema-v3 rejected thesis cannot become Wish intent, including through
+`--idea`. Historical schema-v1 and v2 records retain their exact identities.
+The Judge may reject coupled unknowns that do not fit the route, but it cannot
+ask Daydream for dimensions, prototypes, coupons, simulations, or other
+Invent/Make evidence. Advice must simplify or change the thesis, select a
+capable route, or abandon that direction.
 
 ## Knowledge and memory
 
 The workspace keeps four evidence planes visibly distinct:
 
-- Inventor notebook: exact structural traces, novelty rejections, and Judge
-  predictions/advice;
+- Inventor notebook: exact content-hashed structural traces, novelty rejections,
+  Judge predictions/advice, and explicit repair-or-abandon learning closures;
 - Workshop portfolio: a bounded projection of every other Inventor's notebook,
   used to catch renamed or re-themed repeats;
 - Design Vault: shared causal craft evidence, read-only and advisory; and
@@ -104,7 +126,7 @@ Python does not turn them into a reward score or rewrite Taste.
 
 ## Exact provenance and state
 
-Every schema-v2 seal binds the exact hashes of the Daydream prompt,
+Every schema-v3 seal binds the exact hashes of the Daydream prompt,
 constitutions, Taste, selected Inventor and skill bundle, Vault binding and
 snapshot, prior work, portfolio, notebook/outcomes view, finalizer, portable
 schema, world scan, prior art, and Manager spec. The Wish context carries the
@@ -133,6 +155,7 @@ $WORKSHOP_HOME/daydreams/<inventor-id>/
     judge-workspace/
       IDEA.json
       TASTE.md
+      NOTEBOOK.md
       ROUTE.md
       AGENTS.md
       work/VERDICT.json

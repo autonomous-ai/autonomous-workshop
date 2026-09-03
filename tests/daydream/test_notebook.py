@@ -5,8 +5,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests.daydream.support import build_thesis_verdict_dict, sample_thesis_dict
-from workshop.daydream.contracts import DaydreamError, Idea, Verdict
+from tests.daydream.support import (
+    build_thesis_verdict_dict,
+    build_thesis_v3_verdict_dict,
+    sample_thesis_dict,
+    sample_thesis_v3_dict,
+)
+from workshop.daydream.contracts import DaydreamError, Idea, LearningTrace, Verdict
 from workshop.daydream.notebook import (
     JudgeMemory,
     NotebookEntry,
@@ -15,6 +20,7 @@ from workshop.daydream.notebook import (
     prior_work_from_notebook,
     read_notebook,
     render_notebook_markdown,
+    unresolved_actionable_entries,
 )
 from workshop.errors import ContractError
 
@@ -97,6 +103,7 @@ class NotebookTest(unittest.TestCase):
             "2026-09-02T10:15:02Z): One line about idea 2.",
             text,
         )
+        self.assertIn("**Required next:**", text)
         self.assertIn("(empty: this is your first daydream)", render_notebook_markdown(()))
         prior = prior_work_from_notebook((_entry(1),))
         self.assertEqual(prior[0].source, "notebook:daydream-20260902-101501-00000001")
@@ -146,6 +153,72 @@ class NotebookTest(unittest.TestCase):
             "Deterministic novelty rejection: too close",
             render_notebook_markdown((entry,)),
         )
+
+    def test_schema_v3_hash_closes_exactly_one_unresolved_memory(self):
+        old_idea = Idea.parse(sample_thesis_dict())
+        rejected = NotebookEntry(
+            daydream_id="daydream-20260902-101501-00000001",
+            created_at="2026-09-02T10:15:01Z",
+            title=old_idea.title,
+            one_liner=old_idea.one_liner,
+            idea_sha256=old_idea.sha256,
+            status="rejected",
+            schema_version=2,
+            structure=StructuralTrace.from_idea(old_idea),
+            rejection_reason="too close to an existing structural promise",
+        )
+        new_idea = Idea.parse(sample_thesis_v3_dict())
+        closure = LearningTrace(
+            daydream_id=rejected.daydream_id,
+            memory_sha256=rejected.sha256,
+            disposition="abandoned",
+            response="Use a different action, response, and proof family.",
+        )
+        accepted = NotebookEntry(
+            daydream_id="daydream-20260902-101502-00000002",
+            created_at="2026-09-02T10:15:02Z",
+            title=new_idea.title,
+            one_liner=new_idea.one_liner,
+            idea_sha256=new_idea.sha256,
+            status="dreamed",
+            schema_version=3,
+            structure=StructuralTrace.from_idea(new_idea),
+            judge=JudgeMemory.from_verdict(
+                Verdict.parse(
+                    build_thesis_v3_verdict_dict(idea_sha256=new_idea.sha256)
+                )
+            ),
+            learning=(closure,),
+        )
+        self.assertEqual(unresolved_actionable_entries((rejected,)), (rejected,))
+        self.assertEqual(unresolved_actionable_entries((rejected, accepted)), ())
+        self.assertEqual(NotebookEntry.parse(accepted.to_dict()), accepted)
+        text = render_notebook_markdown((rejected, accepted))
+        self.assertIn(rejected.sha256, text)
+        self.assertIn("Learning closure", text)
+
+        failed_raw = build_thesis_v3_verdict_dict("dream-again", idea_sha256=new_idea.sha256)
+        failed_raw["checks"]["proof_observable"] = True
+        failed_raw["checks"]["learning_closure"] = False
+        failed_raw["risks"] = [
+            {"kind": "learning-gap", "detail": "The response only claims repair."}
+        ]
+        failed = NotebookEntry(
+            daydream_id=accepted.daydream_id,
+            created_at=accepted.created_at,
+            title=accepted.title,
+            one_liner=accepted.one_liner,
+            idea_sha256=accepted.idea_sha256,
+            status="judged",
+            schema_version=3,
+            structure=accepted.structure,
+            judge=JudgeMemory.from_verdict(Verdict.parse(failed_raw)),
+            learning=(closure,),
+        )
+        self.assertEqual(unresolved_actionable_entries((rejected, failed)), (rejected, failed))
+        failed_text = render_notebook_markdown((rejected, failed))
+        self.assertIn("**Older unresolved:**", failed_text)
+        self.assertIn("**Required next:**", failed_text)
 
 
 if __name__ == "__main__":

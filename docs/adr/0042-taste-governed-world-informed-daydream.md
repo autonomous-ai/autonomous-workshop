@@ -56,6 +56,11 @@ The thesis owns:
 - exact provenance for the world, portfolio, Vault, memory, Manager, and
   Inventor inputs used by the Dream.
 
+Kill criteria must be discriminating but jointly satisfiable. The native
+pre-mortem and independent Judge require at least one plausible result that
+passes them all; an exhaustive set that rejects every possible outcome makes a
+thesis impossible rather than falsifiable.
+
 It may carry mechanism hypotheses and Vault leads, but those are explicitly
 advisory. Forge and Quest Invent remain authoritative for exact mechanisms,
 dimensions, components, materials, construction, tolerances, compatibility,
@@ -102,6 +107,9 @@ World evidence earns the durable tension, not a pre-existing demand for the
 exact novel mechanism. The Inventor may make an original physical leap from a
 supported tension through its Taste, but may not search backward to rationalize
 a seed or ignore evidence that contradicts the proposed setting or payoff.
+Schema-v3 makes the epistemic seam explicit with `evidence_boundary`: unsupported
+demand, benefit, motivation, and repeat-use claims cannot hide inside the human
+tension and must remain visible as creative hypotheses.
 
 Future host connectors may materialize a content-addressed world snapshot with
 source, publication and fetch time, region, language, expiry, and trust class.
@@ -130,7 +138,7 @@ requirements, and route capability, then commits exactly one thesis. These are
 native work instructions, not host stages or a Python prompt chain.
 
 Before commitment it privately pre-mortems the selected candidate against the
-same eight dimensions the independent Judge will inspect. This is native
+same nine dimensions the independent Judge will inspect. This is native
 self-repair, not a self-score: no candidate list or shadow verdict becomes a
 host gate, and the independent Judge still decides whether build time is earned.
 
@@ -139,7 +147,13 @@ host gate, and the independent Judge still decides whether build time is earned.
 Daydream keeps four boundaries distinct:
 
 1. **Inventor memory** records prior theses, rejection reasons, Judge advice,
-   and evidence-backed reflections relevant to that Inventor.
+   and evidence-backed reflections relevant to that Inventor. Each exact
+   memory record has a content hash. A later schema-v3 thesis must disposition
+   the newest unresolved rejection as `repaired` or `abandoned` and bind that
+   exact hash; the independent Judge decides whether the claimed creative
+   response is substantive. Up to four older unresolved memories may be closed
+   when relevant; they remain visible but cannot make the bounded contract
+   impossible as history grows.
 2. **Design Vault** records shared causal craft knowledge: mechanisms, risks,
    constraints, mitigations, and evidence. Daydream reads it as advisory;
    Invent applies its canonical compatibility gate.
@@ -162,15 +176,32 @@ expands from one generic still-render bet to a conjunctive falsification record:
 - source-backed opportunity grounding;
 - mechanism/play novelty rather than theme novelty;
 - an observable anti-generic signature under the declared proof mode;
+- an independently falsifiable proof plan;
 - fit with the named route;
 - desirability worth spending a build on; and
+- a clear Invent handoff that preserves the experience without pre-solving it;
+- substantive closure of exact unresolved notebook feedback; and
 - a calibrated prediction of the downstream Make result.
+
+Worth-building judgment includes return value after the first reveal is known:
+a continuing decision, discovery, mastery, expression, or changing causal
+response must remain. Repeating a solved count or varying speed/surface without
+changing the outcome does not alone justify build time.
 
 The host accepts `build` only when every required dimension passes and all
 identity hashes match. It validates booleans, enums, bounds, and exact bytes;
 it does not interpret creative prose. Judge confidence remains a prediction,
 never independent evidence. Later outcome processing compares the prediction
 with actual downstream gates instead of treating confidence as truth.
+
+The Judge respects the same ownership boundary. It may reject a thesis whose
+core effect contains too many coupled unknowns for the named route, but it may
+not demand dimensions, prototype runs, printed coupons, simulations, or other
+Invent/Make evidence from pre-Wish Daydream. Its actionable advice must change
+the thesis, select a capable route, or abandon the direction rather than move
+engineering work into Dream. Learning closure is judged against what Daydream
+can own; impossible out-of-boundary prior advice does not become permanent
+creative debt.
 
 ### Outcome and lineage
 
@@ -231,12 +262,13 @@ single score conceals blocking failures and creates an easy optimization target.
 
 ## Compatibility and migration
 
-Existing schema-v1 sealed Daydreams, notebooks, saved `--idea` builds, and
-product runs remain valid. New schema-v2 Daydreams always carry an independent
-Judge verdict: `build` is required before the thesis can become Wish intent;
-`dream-again` remains inspectable and feeds repair memory but cannot be built
-through `--idea`. Parsers dispatch by version instead of changing the canonical
-representation of historical objects.
+Existing schema-v1 and schema-v2 sealed Daydreams, notebooks, saved `--idea`
+builds, and product runs remain valid with their canonical identities unchanged.
+New schema-v3 Daydreams bind exact learning traces and always carry a schema-v3
+independent Judge verdict: `build` is required before the thesis can become
+Wish intent; `dream-again` remains inspectable and feeds repair memory but
+cannot be built through `--idea`. Parsers dispatch by version instead of
+changing the canonical representation of historical objects.
 
 The current CLI names remain. A saved new thesis still becomes an ordinary
 Wish through `wish_from_daydream`, preserving status/resume and the two-session
@@ -259,7 +291,8 @@ checkout.
 - Novelty tests retain the deterministic lexical floor and add structural
   fingerprints without claiming exhaustive global novelty.
 - Notebook tests prove rejection advice and downstream factual outcomes reach
-  a later Dream without mutating Taste.
+  a later Dream without mutating Taste, and that the next thesis closes the
+  newest unresolved memory by exact id and record hash.
 - Source-checkout and installed-wheel acceptance tests discover the same prior
   work and Inventor assets.
 - A focused end-to-end loop runs repeated Daydream and Judge Goals, observes
