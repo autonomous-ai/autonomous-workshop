@@ -9,34 +9,30 @@ import secrets
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Mapping, Optional, Sequence
+from urllib.parse import urlsplit
 
 from workshop.errors import ContractError, WorkshopError
 from workshop._validation import copy_json_mapping, require_sha256
+from workshop.daydream.schema import (
+    DAYDREAM_IDEA_KIND,
+    DAYDREAM_VERDICT_KIND,
+    LEGACY_VERDICT_CHECKS,
+    PROOF_MODES,
+    ROUTE_FLOORS,
+    THESIS_VERDICT_CHECKS,
+    idea_problems as schema_idea_problems,
+    verdict_problems as schema_verdict_problems,
+)
 
 
-DAYDREAM_IDEA_KIND = "autonomous-workshop.daydream-idea"
 DAYDREAM_SEAL_KIND = "autonomous-workshop.daydream-seal"
 MAX_TITLE_CHARS = 60
 MAX_ONE_LINER_CHARS = 200
-MAX_HELD_FORM_CHARS = 240
-MAX_BEFORE_AFTER_CHARS = 300
 MAX_VERDICT_TEXT_CHARS = 400
-MAX_VERDICT_RISKS = 6
 VERDICT_DECISIONS = ("build", "dream-again")
-# Every check a still render must satisfy.  A "build" verdict requires all of
-# them true; the run-local finalizer and the host both enforce that, so the
-# judge cannot wave an idea through while naming the reason it will fail.
-VERDICT_CHECKS = (
-    "silhouette_changes",
-    "moving_part_visible_in_both_states",
-    "travel_is_large",
-    "body_reads_as_a_toy",
-    "mechanism_is_not_dominant",
-    "fits_the_route",
-    "worth_owning",
-)
-DAYDREAM_VERDICT_KIND = "autonomous-workshop.daydream-verdict"
-MAX_PARAGRAPH_CHARS = 600
+# Historical schema-v1 check names remain stable so already-sealed verdicts
+# keep their exact identity.  New Judge Goals use THESIS_VERDICT_CHECKS.
+VERDICT_CHECKS = LEGACY_VERDICT_CHECKS
 MAX_PRIOR_ART_NAME_CHARS = 80
 MAX_PRIOR_ART_DIFFERENCE_CHARS = 300
 MAX_TASTE_FIT_ITEM_CHARS = 200
@@ -60,26 +56,8 @@ _INVENTOR_ID = re.compile(r"^[a-z][a-z0-9-]{1,62}$")
 _MANAGER_ID = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
 _KEYWORD = re.compile(r"^[a-z0-9][a-z0-9-]{1,31}$")
 _PRIOR_ART_KEYS = frozenset(("name", "how_this_differs"))
+_PRIOR_ART_V2_KEYS = frozenset(("name", "url", "observed_at", "how_this_differs"))
 _TASTE_FIT_KEYS = frozenset(("honors", "steers_clear_of"))
-_IDEA_KEYS = frozenset(
-    (
-        "schema_version",
-        "kind",
-        "title",
-        "one_liner",
-        "what_you_do",
-        "what_happens",
-        "why_it_is_new",
-        "prior_art",
-        "taste_fit",
-        "parts_estimate",
-        "keywords",
-    )
-)
-_IDEA_OPTIONAL_KEYS = frozenset(("held_form", "before_after"))
-_VERDICT_KEYS = frozenset(
-    ("schema_version", "kind", "decision", "checks", "confidence", "risks", "advice")
-)
 _RISK_KEYS = frozenset(("kind", "detail"))
 _SEAL_OPTIONAL_KEYS = frozenset(("verdict",))
 _NEIGHBOR_KEYS = frozenset(("source", "title", "similarity"))
@@ -243,6 +221,8 @@ class PriorArt:
 
     name: str
     how_this_differs: str
+    url: Optional[str] = None
+    observed_at: Optional[str] = None
 
     def __post_init__(self) -> None:
         bounded_line(self.name, "prior_art name", MAX_PRIOR_ART_NAME_CHARS)
@@ -251,14 +231,33 @@ class PriorArt:
             "prior_art how_this_differs",
             MAX_PRIOR_ART_DIFFERENCE_CHARS,
         )
+        if (self.url is None) != (self.observed_at is None):
+            raise ContractError("prior_art url and observed_at must be present together")
+        if self.url is not None:
+            bounded_line(self.url, "prior_art url", 500)
+            parsed = urlsplit(self.url)
+            if parsed.scheme not in ("http", "https") or not parsed.netloc or parsed.username:
+                raise ContractError(
+                    "prior_art url must be an http(s) URL without embedded credentials"
+                )
+            require_created_at(self.observed_at, "prior_art observed_at")
 
     @classmethod
-    def parse(cls, raw: Mapping[str, Any]) -> "PriorArt":
-        _exact_keys(raw, _PRIOR_ART_KEYS, "prior_art entry")
-        return cls(name=raw["name"], how_this_differs=raw["how_this_differs"])
+    def parse(cls, raw: Mapping[str, Any], *, schema_version: int = 1) -> "PriorArt":
+        expected = _PRIOR_ART_KEYS if schema_version == 1 else _PRIOR_ART_V2_KEYS
+        _exact_keys(raw, expected, "prior_art entry")
+        return cls(
+            name=raw["name"],
+            how_this_differs=raw["how_this_differs"],
+            url=raw.get("url"),
+            observed_at=raw.get("observed_at"),
+        )
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"name": self.name, "how_this_differs": self.how_this_differs}
+        value = {"name": self.name, "how_this_differs": self.how_this_differs}
+        if self.url is not None:
+            value.update({"url": self.url, "observed_at": self.observed_at})
+        return value
 
 
 @dataclass(frozen=True)
@@ -294,9 +293,233 @@ class TasteFit:
         }
 
 
+@dataclass(frozen=True)
+class WorldSignal:
+    """One bounded, source-addressed current-world observation."""
+
+    title: str
+    url: str
+    published_at: Optional[str]
+    insight: str
+
+    def __post_init__(self) -> None:
+        bounded_line(self.title, "world signal title", 160)
+        bounded_line(self.url, "world signal url", 500)
+        parsed = urlsplit(self.url)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc or parsed.username:
+            raise ContractError(
+                "world signal url must be an http(s) URL without embedded credentials"
+            )
+        if self.published_at is not None:
+            require_created_at(self.published_at, "world signal published_at")
+        bounded_line(self.insight, "world signal insight", 300)
+
+    @classmethod
+    def parse(cls, raw: Mapping[str, Any]) -> "WorldSignal":
+        _exact_keys(
+            raw,
+            frozenset(("title", "url", "published_at", "insight")),
+            "world signal",
+        )
+        return cls(
+            title=raw["title"],
+            url=raw["url"],
+            published_at=raw["published_at"],
+            insight=raw["insight"],
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "title": self.title,
+            "url": self.url,
+            "published_at": self.published_at,
+            "insight": self.insight,
+        }
+
+
+@dataclass(frozen=True)
+class WorldScan:
+    """The bounded search scope and current signals one thesis considered."""
+
+    observed_at: str
+    scope: str
+    evergreen: bool
+    signals: tuple[WorldSignal, ...]
+
+    def __post_init__(self) -> None:
+        require_created_at(self.observed_at, "world scan observed_at")
+        bounded_line(self.scope, "world scan scope", 500)
+        if type(self.evergreen) is not bool:
+            raise ContractError("world scan evergreen must be a boolean")
+        if isinstance(self.signals, (str, Mapping)) or not isinstance(self.signals, Sequence):
+            raise ContractError("world scan signals must be a list")
+        signals = tuple(self.signals)
+        if not 2 <= len(signals) <= 6 or any(
+            not isinstance(signal, WorldSignal) for signal in signals
+        ):
+            raise ContractError("world scan signals must contain 2 to 6 WorldSignal entries")
+        urls = [signal.url for signal in signals]
+        if len(set(urls)) != len(urls):
+            raise ContractError("world scan signal URLs must be unique")
+        object.__setattr__(self, "signals", signals)
+
+    @classmethod
+    def parse(cls, raw: Mapping[str, Any]) -> "WorldScan":
+        _exact_keys(
+            raw,
+            frozenset(("observed_at", "scope", "evergreen", "signals")),
+            "world scan",
+        )
+        return cls(
+            observed_at=raw["observed_at"],
+            scope=raw["scope"],
+            evergreen=raw["evergreen"],
+            signals=tuple(WorldSignal.parse(item) for item in raw["signals"]),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "observed_at": self.observed_at,
+            "scope": self.scope,
+            "evergreen": self.evergreen,
+            "signals": [signal.to_dict() for signal in self.signals],
+        }
+
+
+@dataclass(frozen=True)
+class Opportunity:
+    """The explicit signal-to-tension-to-physical-opportunity translation."""
+
+    world_scan: WorldScan
+    human_tension: str
+    why_now: str
+    physical_opportunity: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.world_scan, WorldScan):
+            raise ContractError("opportunity world_scan must be a WorldScan")
+        for name in ("human_tension", "why_now", "physical_opportunity"):
+            bounded_paragraph(getattr(self, name), "opportunity %s" % name, 600)
+
+    @classmethod
+    def parse(cls, raw: Mapping[str, Any]) -> "Opportunity":
+        _exact_keys(
+            raw,
+            frozenset(("world_scan", "human_tension", "why_now", "physical_opportunity")),
+            "opportunity",
+        )
+        return cls(
+            world_scan=WorldScan.parse(raw["world_scan"]),
+            human_tension=raw["human_tension"],
+            why_now=raw["why_now"],
+            physical_opportunity=raw["physical_opportunity"],
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "world_scan": self.world_scan.to_dict(),
+            "human_tension": self.human_tension,
+            "why_now": self.why_now,
+            "physical_opportunity": self.physical_opportunity,
+        }
+
+
+@dataclass(frozen=True)
+class Experience:
+    """The experience-level promise Daydream owns while Invent owns the how."""
+
+    physical_form: str
+    action: str
+    response: str
+    payoff: str
+    anti_generic_signature: str
+    theme_strip_test: str
+    invent_freedom: str
+
+    def __post_init__(self) -> None:
+        for name in (
+            "physical_form",
+            "action",
+            "response",
+            "payoff",
+            "anti_generic_signature",
+            "theme_strip_test",
+            "invent_freedom",
+        ):
+            bounded_paragraph(getattr(self, name), "experience %s" % name, 600)
+
+    @classmethod
+    def parse(cls, raw: Mapping[str, Any]) -> "Experience":
+        expected = frozenset(
+            (
+                "physical_form",
+                "action",
+                "response",
+                "payoff",
+                "anti_generic_signature",
+                "theme_strip_test",
+                "invent_freedom",
+            )
+        )
+        _exact_keys(raw, expected, "experience")
+        return cls(**{name: raw[name] for name in expected})
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "physical_form": self.physical_form,
+            "action": self.action,
+            "response": self.response,
+            "payoff": self.payoff,
+            "anti_generic_signature": self.anti_generic_signature,
+            "theme_strip_test": self.theme_strip_test,
+            "invent_freedom": self.invent_freedom,
+        }
+
+
+@dataclass(frozen=True)
+class ProofPlan:
+    """How a later stage can falsify the promised signature."""
+
+    mode: str
+    observable: str
+    kill_criteria: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if self.mode not in PROOF_MODES:
+            raise ContractError("proof mode must be one of %s" % (PROOF_MODES,))
+        bounded_paragraph(self.observable, "proof observable", 600)
+        object.__setattr__(
+            self,
+            "kill_criteria",
+            _line_tuple(
+                self.kill_criteria,
+                "proof kill_criteria",
+                minimum=2,
+                maximum=5,
+                item_maximum=300,
+            ),
+        )
+
+    @classmethod
+    def parse(cls, raw: Mapping[str, Any]) -> "ProofPlan":
+        _exact_keys(raw, frozenset(("mode", "observable", "kill_criteria")), "proof")
+        return cls(
+            mode=raw["mode"],
+            observable=raw["observable"],
+            kill_criteria=raw["kill_criteria"],
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "mode": self.mode,
+            "observable": self.observable,
+            "kill_criteria": list(self.kill_criteria),
+        }
+
+
 @dataclass(frozen=True, kw_only=True)
 class Idea:
-    """One brand-new toy idea exactly as the Inventor wrote it."""
+    """One idea or creative product thesis exactly as the Inventor wrote it."""
 
     schema_version: int = 1
     title: str
@@ -310,18 +533,29 @@ class Idea:
     keywords: tuple[str, ...]
     held_form: Optional[str] = None
     before_after: Optional[str] = None
+    opportunity: Optional[Opportunity] = None
+    experience: Optional[Experience] = None
+    proof: Optional[ProofPlan] = None
+    route_floor: Optional[str] = None
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("idea schema_version must be 1")
-        bounded_line(self.title, "idea title", MAX_TITLE_CHARS)
-        bounded_line(self.one_liner, "idea one_liner", MAX_ONE_LINER_CHARS)
-        if self.held_form is not None:
-            bounded_line(self.held_form, "idea held_form", MAX_HELD_FORM_CHARS)
-        if self.before_after is not None:
-            bounded_line(self.before_after, "idea before_after", MAX_BEFORE_AFTER_CHARS)
-        for name in ("what_you_do", "what_happens", "why_it_is_new"):
-            bounded_paragraph(getattr(self, name), "idea %s" % name, MAX_PARAGRAPH_CHARS)
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
+            raise ContractError("idea schema_version must be 1 or 2")
+        if self.schema_version == 1:
+            if any(
+                value is not None
+                for value in (self.opportunity, self.experience, self.proof, self.route_floor)
+            ):
+                raise ContractError("idea schema 1 cannot carry thesis-v2 fields")
+        else:
+            if not isinstance(self.opportunity, Opportunity):
+                raise ContractError("idea opportunity must be an Opportunity")
+            if not isinstance(self.experience, Experience):
+                raise ContractError("idea experience must be an Experience")
+            if not isinstance(self.proof, ProofPlan):
+                raise ContractError("idea proof must be a ProofPlan")
+            if self.route_floor not in ROUTE_FLOORS:
+                raise ContractError("idea route_floor must be one of %s" % (ROUTE_FLOORS,))
         if isinstance(self.prior_art, (str, Mapping)) or not isinstance(
             self.prior_art, Sequence
         ):
@@ -334,6 +568,10 @@ class Idea:
                 "idea prior_art must contain %d to %d entries"
                 % (MIN_PRIOR_ART_ENTRIES, MAX_PRIOR_ART_ENTRIES)
             )
+        if self.schema_version == 1 and any(entry.url is not None for entry in prior_art):
+            raise ContractError("idea schema 1 prior_art cannot carry source fields")
+        if self.schema_version == 2 and any(entry.url is None for entry in prior_art):
+            raise ContractError("idea schema 2 prior_art requires source fields")
         object.__setattr__(self, "prior_art", prior_art)
         if not isinstance(self.taste_fit, TasteFit):
             raise ContractError("idea taste_fit must be a TasteFit")
@@ -361,39 +599,78 @@ class Idea:
                 % (MIN_KEYWORDS, MAX_KEYWORDS, _KEYWORD.pattern)
             )
         object.__setattr__(self, "keywords", keywords)
+        problems = schema_idea_problems(self.to_dict())
+        if problems:
+            raise ContractError("idea is invalid: %s" % "; ".join(problems))
 
     @classmethod
     def parse(cls, raw: Mapping[str, Any]) -> "Idea":
-        if not isinstance(raw, Mapping):
-            raise ContractError("idea must be a JSON object")
-        _exact_keys(
-            {key: value for key, value in raw.items() if key not in _IDEA_OPTIONAL_KEYS},
-            _IDEA_KEYS,
-            "idea",
-        )
-        if raw["kind"] != DAYDREAM_IDEA_KIND:
-            raise ContractError("idea kind must be %s" % DAYDREAM_IDEA_KIND)
-        if isinstance(raw["prior_art"], (str, Mapping)) or not isinstance(
-            raw["prior_art"], Sequence
-        ):
-            raise ContractError("idea prior_art must be a list of entries")
-        prior_art = tuple(PriorArt.parse(entry) for entry in raw["prior_art"])
+        problems = schema_idea_problems(raw)
+        if problems:
+            raise ContractError("idea is invalid: %s" % "; ".join(problems))
+        version = raw["schema_version"]
+        if version == 1:
+            return cls(
+                schema_version=version,
+                title=raw["title"],
+                one_liner=raw["one_liner"],
+                what_you_do=raw["what_you_do"],
+                what_happens=raw["what_happens"],
+                why_it_is_new=raw["why_it_is_new"],
+                prior_art=tuple(
+                    PriorArt.parse(entry, schema_version=version) for entry in raw["prior_art"]
+                ),
+                taste_fit=TasteFit.parse(raw["taste_fit"]),
+                parts_estimate=raw["parts_estimate"],
+                keywords=raw["keywords"],
+                held_form=raw.get("held_form"),
+                before_after=raw.get("before_after"),
+            )
+        opportunity = Opportunity.parse(raw["opportunity"])
+        experience = Experience.parse(raw["experience"])
+        proof = ProofPlan.parse(raw["proof"])
         return cls(
-            schema_version=raw["schema_version"],
+            schema_version=version,
             title=raw["title"],
             one_liner=raw["one_liner"],
-            what_you_do=raw["what_you_do"],
-            what_happens=raw["what_happens"],
+            # Compatibility views for callers that consumed schema-v1 fields.
+            what_you_do=experience.action,
+            what_happens="%s %s" % (experience.response, experience.payoff),
             why_it_is_new=raw["why_it_is_new"],
-            prior_art=prior_art,
+            prior_art=tuple(
+                PriorArt.parse(entry, schema_version=version) for entry in raw["prior_art"]
+            ),
             taste_fit=TasteFit.parse(raw["taste_fit"]),
             parts_estimate=raw["parts_estimate"],
             keywords=raw["keywords"],
-            held_form=raw.get("held_form"),
-            before_after=raw.get("before_after"),
+            held_form=experience.physical_form,
+            before_after=proof.observable,
+            opportunity=opportunity,
+            experience=experience,
+            proof=proof,
+            route_floor=raw["route_floor"],
         )
 
     def to_dict(self) -> Dict[str, Any]:
+        if self.schema_version == 2:
+            assert self.opportunity is not None
+            assert self.experience is not None
+            assert self.proof is not None
+            return {
+                "schema_version": self.schema_version,
+                "kind": DAYDREAM_IDEA_KIND,
+                "title": self.title,
+                "one_liner": self.one_liner,
+                "opportunity": self.opportunity.to_dict(),
+                "experience": self.experience.to_dict(),
+                "why_it_is_new": self.why_it_is_new,
+                "prior_art": [entry.to_dict() for entry in self.prior_art],
+                "taste_fit": self.taste_fit.to_dict(),
+                "proof": self.proof.to_dict(),
+                "route_floor": self.route_floor,
+                "parts_estimate": self.parts_estimate,
+                "keywords": list(self.keywords),
+            }
         value: Dict[str, Any] = {
             "schema_version": self.schema_version,
             "kind": DAYDREAM_IDEA_KIND,
@@ -432,6 +709,53 @@ def render_brief(idea: Idea, *, inventor_name: str, inventor_id: str) -> str:
         raise ContractError("render_brief requires an Idea")
     bounded_line(inventor_name, "inventor name", MAX_INVENTOR_NAME_CHARS)
     require_inventor_id(inventor_id, "inventor id")
+    if idea.schema_version == 2:
+        assert idea.opportunity is not None
+        assert idea.experience is not None
+        assert idea.proof is not None
+        lines = [
+            "Daydreamed by %s (%s). Build this creative product thesis."
+            % (inventor_name, inventor_id),
+            "",
+            "Title: %s" % idea.title,
+            "In one line: %s" % idea.one_liner,
+            "Human tension: %s" % idea.opportunity.human_tension,
+            "Why now: %s" % idea.opportunity.why_now,
+            "Physical opportunity: %s" % idea.opportunity.physical_opportunity,
+            "Physical form: %s" % idea.experience.physical_form,
+            "Action: %s" % idea.experience.action,
+            "Response: %s" % idea.experience.response,
+            "Payoff: %s" % idea.experience.payoff,
+            "Anti-generic signature: %s" % idea.experience.anti_generic_signature,
+            "Theme-strip test: %s" % idea.experience.theme_strip_test,
+            "Invent freedom: %s" % idea.experience.invent_freedom,
+            "Why it is new: %s" % idea.why_it_is_new,
+            "Proof mode: %s" % idea.proof.mode,
+            "Observable proof: %s" % idea.proof.observable,
+            "Kill criteria:",
+        ]
+        lines.extend("- %s" % criterion for criterion in idea.proof.kill_criteria)
+        lines.append("Closest existing things, and how this differs:")
+        lines.extend(
+            "- %s (%s, observed %s): %s"
+            % (entry.name, entry.url, entry.observed_at, entry.how_this_differs)
+            for entry in idea.prior_art
+        )
+        lines.extend(
+            (
+                "Fits the Inventor's Taste by: %s" % "; ".join(idea.taste_fit.honors),
+                "Steers clear of: %s" % "; ".join(idea.taste_fit.steers_clear_of),
+                "Minimum route: %s" % idea.route_floor,
+                "Printed parts (estimate): %d" % idea.parts_estimate,
+                "",
+                "Preserve the opportunity, Taste promises, action, payoff, and "
+                "anti-generic signature. Invent owns the exact mechanism, dimensions, "
+                "materials, construction, and evidence-backed physical facts.",
+                "Match should bind %s, who dreamed this, unless the Taste rejects the "
+                "final concept." % inventor_name,
+            )
+        )
+        return "\n".join(lines)
     lines = [
         "Daydreamed by %s (%s). Build this new toy." % (inventor_name, inventor_id),
         "",
@@ -494,45 +818,38 @@ class Verdict:
     confidence: float
     risks: tuple[VerdictRisk, ...]
     advice: str
+    daydream_id: Optional[str] = None
+    idea_sha256: Optional[str] = None
+    taste_sha256: Optional[str] = None
+    route: Optional[str] = None
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("verdict schema_version must be 1")
-        if self.decision not in VERDICT_DECISIONS:
-            raise ContractError("verdict decision must be one of %s" % (VERDICT_DECISIONS,))
-        checks = self.checks
-        if not isinstance(checks, Mapping) or set(checks) != set(VERDICT_CHECKS):
-            raise ContractError("verdict checks must be exactly %s" % (VERDICT_CHECKS,))
-        if any(type(value) is not bool for value in checks.values()):
-            raise ContractError("every verdict check must be a boolean")
-        object.__setattr__(self, "checks", dict(checks))
-        if self.decision == "build" and not all(checks.values()):
-            raise ContractError(
-                "a build verdict requires every check to be true; failed: %s"
-                % ", ".join(sorted(name for name, value in checks.items() if not value))
-            )
-        object.__setattr__(
-            self, "confidence", _finite_unit_float(self.confidence, "verdict confidence")
-        )
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
+            raise ContractError("verdict schema_version must be 1 or 2")
+        if not isinstance(self.checks, Mapping):
+            raise ContractError("verdict checks must be a mapping")
+        expected_checks = VERDICT_CHECKS if self.schema_version == 1 else THESIS_VERDICT_CHECKS
+        if set(self.checks) != set(expected_checks):
+            raise ContractError("verdict checks must be exactly %s" % (expected_checks,))
+        object.__setattr__(self, "checks", dict(self.checks))
         if isinstance(self.risks, (str, Mapping)) or not isinstance(self.risks, Sequence):
             raise ContractError("verdict risks must be a list")
         risks = tuple(self.risks)
-        if len(risks) > MAX_VERDICT_RISKS or any(
-            not isinstance(risk, VerdictRisk) for risk in risks
-        ):
-            raise ContractError("verdict risks must hold at most %d entries" % MAX_VERDICT_RISKS)
-        if self.decision == "dream-again" and not risks:
-            raise ContractError("a dream-again verdict must name at least one risk")
+        if any(not isinstance(risk, VerdictRisk) for risk in risks):
+            raise ContractError("verdict risks must contain VerdictRisk entries")
         object.__setattr__(self, "risks", risks)
-        bounded_line(self.advice, "verdict advice", MAX_VERDICT_TEXT_CHARS)
+        problems = schema_verdict_problems(self.to_dict())
+        if problems:
+            raise ContractError("verdict is invalid: %s" % "; ".join(problems))
+        object.__setattr__(
+            self, "confidence", _finite_unit_float(self.confidence, "verdict confidence")
+        )
 
     @classmethod
     def parse(cls, raw: Mapping[str, Any]) -> "Verdict":
-        _exact_keys(raw, _VERDICT_KEYS, "verdict")
-        if raw["kind"] != DAYDREAM_VERDICT_KIND:
-            raise ContractError("verdict kind must be %s" % DAYDREAM_VERDICT_KIND)
-        if isinstance(raw["risks"], (str, Mapping)) or not isinstance(raw["risks"], Sequence):
-            raise ContractError("verdict risks must be a list")
+        problems = schema_verdict_problems(raw)
+        if problems:
+            raise ContractError("verdict is invalid: %s" % "; ".join(problems))
         return cls(
             schema_version=raw["schema_version"],
             decision=raw["decision"],
@@ -540,6 +857,10 @@ class Verdict:
             confidence=raw["confidence"],
             risks=tuple(VerdictRisk.parse(entry) for entry in raw["risks"]),
             advice=raw["advice"],
+            daydream_id=raw.get("daydream_id"),
+            idea_sha256=raw.get("idea_sha256"),
+            taste_sha256=raw.get("taste_sha256"),
+            route=raw.get("route"),
         )
 
     @property
@@ -547,15 +868,26 @@ class Verdict:
         return tuple(sorted(name for name, value in self.checks.items() if not value))
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        check_names = VERDICT_CHECKS if self.schema_version == 1 else THESIS_VERDICT_CHECKS
+        value: Dict[str, Any] = {
             "schema_version": self.schema_version,
             "kind": DAYDREAM_VERDICT_KIND,
             "decision": self.decision,
-            "checks": {name: bool(self.checks[name]) for name in VERDICT_CHECKS},
+            "checks": {name: self.checks[name] for name in check_names},
             "confidence": self.confidence,
             "risks": [risk.to_dict() for risk in self.risks],
             "advice": self.advice,
         }
+        if self.schema_version == 2:
+            value.update(
+                {
+                    "daydream_id": self.daydream_id,
+                    "idea_sha256": self.idea_sha256,
+                    "taste_sha256": self.taste_sha256,
+                    "route": self.route,
+                }
+            )
+        return value
 
 
 @dataclass(frozen=True)
@@ -761,17 +1093,25 @@ __all__ = [
     "DAYDREAM_SEAL_KIND",
     "DAYDREAM_VERDICT_KIND",
     "DaydreamError",
+    "Experience",
     "Idea",
     "NOVELTY_STATUSES",
     "NoveltyNeighbor",
     "NoveltyReport",
     "PriorArt",
+    "Opportunity",
+    "PROOF_MODES",
+    "ProofPlan",
+    "ROUTE_FLOORS",
     "SealedDaydream",
+    "THESIS_VERDICT_CHECKS",
     "TasteFit",
     "VERDICT_CHECKS",
     "VERDICT_DECISIONS",
     "Verdict",
     "VerdictRisk",
+    "WorldScan",
+    "WorldSignal",
     "bounded_line",
     "bounded_paragraph",
     "canonical_json",

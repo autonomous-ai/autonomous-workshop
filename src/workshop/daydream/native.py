@@ -80,6 +80,7 @@ DAYDREAM_REJECTION_KIND = "autonomous-workshop.daydream-rejection"
 IDEA_FILE_NAME = "IDEA.json"
 OUTCOME_FILE_NAME = "agent-outcome.json"
 FINALIZER_FILE_NAME = "finalize_daydream.py"
+SCHEMA_FILE_NAME = "daydream_schema.py"
 DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
 MAX_OUTCOME_FILE_BYTES = 64 * 1024
 JUDGE_WORKSPACE_NAME = "judge-workspace"
@@ -248,6 +249,16 @@ def finalizer_bytes() -> bytes:
     )
 
 
+def schema_bytes() -> bytes:
+    """The exact shared schema copied beside the run-local finalizer."""
+
+    return read_regular_bytes(
+        Path(__file__).with_name("schema.py"),
+        maximum=MAX_OUTCOME_FILE_BYTES * 8,
+        label="daydream schema source",
+    )
+
+
 def _write_workspace(
     paths: DaydreamPaths,
     *,
@@ -258,11 +269,22 @@ def _write_workspace(
     files = (
         ("TASTE.md", taste.content.encode("utf-8")),
         ("PRIOR-WORK.md", render_prior_work_markdown(repository_prior).encode("utf-8")),
+        (
+            "PORTFOLIO.md",
+            render_prior_work_markdown(repository_prior)
+            .replace("# Prior work", "# Workshop portfolio", 1)
+            .encode("utf-8"),
+        ),
         ("NOTEBOOK.md", render_notebook_markdown(notebook_entries).encode("utf-8")),
+        (
+            "VAULT.md",
+            b"# Design Vault advisory context\n\n(no Vault snapshot available yet)\n",
+        ),
         # The constitution doubles as AGENTS.md so the Manager runtime loads it
         # the same way it loads a product run's constitution.
         ("AGENTS.md", DAYDREAM_CONSTITUTION.encode("utf-8")),
         (FINALIZER_FILE_NAME, finalizer_bytes()),
+        (SCHEMA_FILE_NAME, schema_bytes()),
         (PRODUCT_RUN_ROOT_MARKER, PRODUCT_RUN_ROOT_MARKER_BYTES),
     )
     for name, payload in files:
@@ -440,6 +462,7 @@ def judge_idea(
         ("ROUTE.md", ("# Route\n\n%s\n" % ROUTE_BUDGETS[effort]).encode("utf-8")),
         ("AGENTS.md", JUDGE_CONSTITUTION.encode("utf-8")),
         (FINALIZER_FILE_NAME, finalizer_bytes()),
+        (SCHEMA_FILE_NAME, schema_bytes()),
         (PRODUCT_RUN_ROOT_MARKER, PRODUCT_RUN_ROOT_MARKER_BYTES),
     )
     for name, payload in files:
@@ -465,6 +488,9 @@ def judge_idea(
             inventor_id=inventor_id,
             title=idea.title,
             effort=effort,
+            daydream_id=daydream_id,
+            idea_sha256=idea.sha256,
+            taste_sha256=taste.sha256,
         ),
         activity_observer=activity_observer,
         finalized_files=(workspace / "work" / VERDICT_FILE_NAME,),
@@ -475,6 +501,13 @@ def judge_idea(
     _existing_real_directory(workspace / "work", label="judge work directory", private=False)
     _read_outcome(workspace, file_name=VERDICT_FILE_NAME, who="judge", goal="Judge")
     verdict = _read_verdict(workspace / "work" / VERDICT_FILE_NAME)
+    if verdict.schema_version == 2 and (
+        verdict.daydream_id != daydream_id
+        or verdict.idea_sha256 != idea.sha256
+        or verdict.taste_sha256 != taste.sha256
+        or verdict.route != effort
+    ):
+        raise DaydreamError("Judge verdict identity does not match the exact Daydream inputs")
     write_private_bytes(
         paths.host_state / VERDICT_FILE_NAME,
         (
@@ -554,6 +587,7 @@ def run_daydream(
     if not isinstance(selected_seed, DaydreamSeed):
         raise ContractError("daydream seed must be a DaydreamSeed")
     observed = _utc_moment(moment)
+    created_at = observed.strftime(CREATED_AT_FORMAT)
     selected_id = (
         daydream_id if daydream_id is not None else generate_daydream_id(moment=observed)
     )
@@ -574,6 +608,7 @@ def run_daydream(
         notebook_count=len(notebook_entries),
         prior_work_count=len(repository_prior),
         effort=effort,
+        observed_at=created_at,
     )
     session = _native_turn(
         launcher_factory,
@@ -597,11 +632,12 @@ def run_daydream(
     _existing_real_directory(paths.work, label="daydream work directory", private=False)
     _read_outcome(paths.workspace, file_name=IDEA_FILE_NAME, who="Inventor", goal="Daydream")
     idea = _read_idea(paths.work / IDEA_FILE_NAME)
+    if idea.schema_version != 2:
+        raise DaydreamError("new Daydream Goals must finalize an idea with schema_version 2")
     latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
     novelty = lint_novelty(
         idea, (*repository_prior, *prior_work_from_notebook(latest_entries))
     )
-    created_at = observed.strftime(CREATED_AT_FORMAT)
     if novelty.status != "new":
         _reject(paths, daydream_id=selected_id, created_at=created_at, idea=idea, novelty=novelty)
         raise DaydreamError("Daydream %s rejected: %s" % (selected_id, novelty.reason))
@@ -618,6 +654,8 @@ def run_daydream(
             launcher_factory=launcher_factory,
             activity_observer=activity_observer,
         )
+        if verdict.schema_version != 2:
+            raise DaydreamError("new Judge Goals must finalize a verdict with schema_version 2")
     sealed = SealedDaydream(
         verdict=verdict,
         daydream_id=selected_id,
@@ -718,12 +756,14 @@ __all__ = [
     "DaydreamPaths",
     "DAYDREAM_OUTCOME_KIND",
     "FINALIZER_FILE_NAME",
+    "SCHEMA_FILE_NAME",
     "IDEA_FILE_NAME",
     "JUDGE_TURN_TIMEOUT_SECONDS",
     "OUTCOME_FILE_NAME",
     "VERDICT_FILE_NAME",
     "judge_idea",
     "finalizer_bytes",
+    "schema_bytes",
     "REJECTED_FILE_NAME",
     "WISH_CONTEXT_SOURCE",
     "daydream_paths",

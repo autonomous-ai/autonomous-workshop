@@ -20,6 +20,7 @@ class PromptTest(unittest.TestCase):
             seed=seed,
             notebook_count=3,
             prior_work_count=22,
+            observed_at="2026-09-02T10:15:00Z",
         )
         for expected in (
             "Pico Press",
@@ -28,9 +29,12 @@ class PromptTest(unittest.TestCase):
             "it counts something",
             "TASTE.md",
             "PRIOR-WORK.md",
+            "PORTFOLIO.md",
             "NOTEBOOK.md",
-            "22 toys",
-            "3 ideas",
+            "VAULT.md",
+            "22 entries",
+            "3 entries",
+            "2026-09-02T10:15:00Z",
             "work/IDEA.json",
         ):
             with self.subTest(expected=expected):
@@ -49,15 +53,20 @@ class PromptTest(unittest.TestCase):
             "TASTE.md",
             "PRIOR-WORK.md",
             "NOTEBOOK.md",
-            "web search",
+            "live web search",
+            "world_scan",
+            "human_tension",
+            "anti_generic_signature",
+            "theme_strip_test",
+            "kill_criteria",
             "prior_art",
             "taste_fit",
             "parts_estimate",
             "keywords",
             "12",
             "0.4 mm nozzle",
-            "0.8 mm minimum wall",
-            "No electronics",
+            "0.8 mm absolute minimum wall",
+            "Electronics, batteries",
             "^[a-z0-9][a-z0-9-]{1,31}$",
         ):
             with self.subTest(expected=expected):
@@ -99,12 +108,12 @@ class GoalTest(unittest.TestCase):
     def test_constitution_makes_daydream_one_native_goal_with_a_finalizer(self):
         from workshop.daydream.prompt import DAYDREAM_CONSTITUTION
 
-        self.assertIn("Daydream is one native Goal", DAYDREAM_CONSTITUTION)
-        self.assertIn("create one native Goal named `Daydream`", DAYDREAM_CONSTITUTION)
+        self.assertIn("One native Goal", DAYDREAM_CONSTITUTION)
+        self.assertIn("exactly one Goal named\n`Daydream`", DAYDREAM_CONSTITUTION)
         self.assertIn('"$WORKSHOP_PYTHON" finalize_daydream.py', DAYDREAM_CONSTITUTION)
         self.assertIn("writes `agent-outcome.json`", DAYDREAM_CONSTITUTION)
-        self.assertIn("`agent-outcome.json` by hand", DAYDREAM_CONSTITUTION)
-        self.assertIn("you run the finalizer, you stop", DAYDREAM_CONSTITUTION)
+        self.assertIn("marker by hand", DAYDREAM_CONSTITUTION)
+        self.assertIn("stop immediately", DAYDREAM_CONSTITUTION)
 
 
 class RouteBudgetTest(unittest.TestCase):
@@ -124,13 +133,13 @@ class RouteBudgetTest(unittest.TestCase):
     def test_route_budget_is_named_only_when_the_route_is_known(self):
         from workshop.daydream.prompt import ROUTE_BUDGETS
 
-        self.assertNotIn("Route budget", self._prompt(None))
+        self.assertIn(ROUTE_BUDGETS["spark"], self._prompt(None))
         for effort in ("spark", "forge", "quest"):
             with self.subTest(effort=effort):
                 prompt = self._prompt(effort)
                 self.assertIn(ROUTE_BUDGETS[effort], prompt)
                 self.assertLess(prompt.index("Route budget"), prompt.index("work/IDEA.json"))
-        self.assertIn("too big for Spark", self._prompt("spark"))
+        self.assertIn("There is no separate Invent stage", self._prompt("spark"))
 
     def test_unknown_route_is_rejected(self):
         from workshop.errors import ContractError

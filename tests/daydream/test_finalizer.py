@@ -6,9 +6,20 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests.daydream.support import sample_idea_dict
+from tests.daydream.support import (
+    build_thesis_verdict_dict,
+    sample_idea_dict,
+    sample_thesis_dict,
+)
 from workshop.daydream import finalize_daydream
-from workshop.daydream.native import DAYDREAM_OUTCOME_KIND, FINALIZER_FILE_NAME, finalizer_bytes
+from workshop.daydream.contracts import Idea, Verdict
+from workshop.daydream.native import (
+    DAYDREAM_OUTCOME_KIND,
+    FINALIZER_FILE_NAME,
+    SCHEMA_FILE_NAME,
+    finalizer_bytes,
+    schema_bytes,
+)
 
 
 class FinalizerTest(unittest.TestCase):
@@ -16,6 +27,7 @@ class FinalizerTest(unittest.TestCase):
         root = Path(temporary) / "workspace"
         (root / "work").mkdir(parents=True)
         (root / FINALIZER_FILE_NAME).write_bytes(finalizer_bytes())
+        (root / SCHEMA_FILE_NAME).write_bytes(schema_bytes())
         if idea is not None:
             (root / "work" / "IDEA.json").write_text(
                 idea if isinstance(idea, str) else json.dumps(idea), encoding="utf-8"
@@ -55,6 +67,61 @@ class FinalizerTest(unittest.TestCase):
             self.assertEqual(self._run(root).returncode, 0)
             outcome = json.loads((root / "agent-outcome.json").read_text(encoding="utf-8"))
             self.assertEqual(outcome["title"], "Ladder Drop II")
+
+    def test_schema_v2_thesis_and_verdict_finalize_standalone(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self._root(temporary, sample_thesis_dict())
+            completed = self._run(root)
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            (root / "agent-outcome.json").unlink()
+            (root / "work" / "VERDICT.json").write_text(
+                json.dumps(build_thesis_verdict_dict()), encoding="utf-8"
+            )
+            completed = subprocess.run(
+                [sys.executable, str(root / FINALIZER_FILE_NAME), "--role", "judge"],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+
+    def test_host_and_run_local_schema_have_parity_on_adversarial_corpus(self):
+        idea_cases = [sample_idea_dict(), sample_thesis_dict(), [], {"schema_version": True}]
+        malformed = sample_thesis_dict()
+        malformed["keywords"] = ["valid", {"unhashable": True}, "third"]
+        idea_cases.append(malformed)
+        malformed = sample_thesis_dict()
+        malformed["title"] = "bad\x7fcontrol"
+        idea_cases.append(malformed)
+        for index, raw in enumerate(idea_cases):
+            finalizer_accepts = not finalize_daydream.idea_problems(raw)
+            try:
+                Idea.parse(raw)
+            except Exception as exc:
+                host_accepts = False
+                self.assertEqual(exc.__class__.__name__, "ContractError")
+            else:
+                host_accepts = True
+            with self.subTest(contract="idea", index=index):
+                self.assertEqual(host_accepts, finalizer_accepts)
+
+        verdict_cases = [build_thesis_verdict_dict(), {"schema_version": False}, []]
+        malformed_verdict = build_thesis_verdict_dict()
+        malformed_verdict["checks"]["taste_fidelity"] = "yes"
+        verdict_cases.append(malformed_verdict)
+        for index, raw in enumerate(verdict_cases):
+            finalizer_accepts = not finalize_daydream.verdict_problems(raw)
+            try:
+                Verdict.parse(raw)
+            except Exception as exc:
+                host_accepts = False
+                self.assertEqual(exc.__class__.__name__, "ContractError")
+            else:
+                host_accepts = True
+            with self.subTest(contract="verdict", index=index):
+                self.assertEqual(host_accepts, finalizer_accepts)
 
     def test_problems_are_listed_and_no_marker_is_written(self):
         raw = sample_idea_dict()
@@ -104,7 +171,7 @@ class FinalizerTest(unittest.TestCase):
                 cwd=root, capture_output=True, text=True, timeout=60, check=False,
             )
             self.assertEqual(completed.returncode, 1)
-            self.assertIn("these are false: travel_is_large", completed.stderr)
+            self.assertIn("failed: travel_is_large", completed.stderr)
             bad = build_verdict_dict("dream-again")
             bad["risks"] = [{"kind": "vibes", "detail": "meh"}]
             (root / "work" / "VERDICT.json").write_text(json.dumps(bad), encoding="utf-8")

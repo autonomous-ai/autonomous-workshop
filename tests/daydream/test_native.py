@@ -9,11 +9,11 @@ from pathlib import Path
 from unittest import mock
 
 from tests.daydream.support import (
-    build_verdict_dict,
+    build_thesis_verdict_dict,
     horn_tip_catalog,
-    horn_tip_paraphrase_dict,
+    horn_tip_thesis_dict as horn_tip_paraphrase_dict,
     inventor_bundle,
-    sample_idea_dict,
+    sample_thesis_dict as sample_idea_dict,
 )
 from workshop.daydream.contracts import DaydreamError, Idea, SealedDaydream
 from workshop.daydream.native import (
@@ -102,9 +102,12 @@ class _FakeLauncher:
         for name in (
             "TASTE.md",
             "PRIOR-WORK.md",
+            "PORTFOLIO.md",
             "NOTEBOOK.md",
+            "VAULT.md",
             "AGENTS.md",
             "finalize_daydream.py",
+            "daydream_schema.py",
             PRODUCT_RUN_ROOT_MARKER,
         ):
             self.test.assertTrue((run_root / name).is_file(), name)
@@ -158,7 +161,14 @@ class _FakeLauncher:
 
 
     def _judge(self, arguments, run_root, host_state):
-        for name in ("IDEA.json", "TASTE.md", "ROUTE.md", "AGENTS.md", "finalize_daydream.py"):
+        for name in (
+            "IDEA.json",
+            "TASTE.md",
+            "ROUTE.md",
+            "AGENTS.md",
+            "finalize_daydream.py",
+            "daydream_schema.py",
+        ):
             self.test.assertTrue((run_root / name).is_file(), name)
         self.test.assertEqual((run_root / "AGENTS.md").read_text(encoding="utf-8"), JUDGE_CONSTITUTION)
         self.test.assertEqual(arguments["constitution_sha256"], JUDGE_CONSTITUTION_SHA256)
@@ -172,8 +182,17 @@ class _FakeLauncher:
             raise self.judge_error
         if self.verdict is not None:
             verdict_path = run_root / "work" / "VERDICT.json"
+            daydream_id = arguments["product_id"].removesuffix("-judge")
+            taste_sha256 = hashlib.sha256((run_root / "TASTE.md").read_bytes()).hexdigest()
+            verdict = build_thesis_verdict_dict(
+                self.verdict,
+                daydream_id=daydream_id,
+                idea_sha256=Idea.parse(idea).sha256,
+                taste_sha256=taste_sha256,
+                route="spark",
+            )
             verdict_path.write_text(
-                json.dumps(build_verdict_dict(self.verdict)) if isinstance(self.verdict, str) else self.verdict,
+                json.dumps(verdict) if isinstance(self.verdict, str) else self.verdict,
                 encoding="utf-8",
             )
             (run_root / "agent-outcome.json").write_text(
@@ -295,10 +314,14 @@ class DaydreamNativeTest(unittest.TestCase):
         raw["one_liner"] = (
             "Tap a printed column and count the taps by how far a captive pin has climbed."
         )
-        raw["what_you_do"] = "Tap the top of the column once per event you want to count."
-        raw["what_happens"] = (
-            "Each tap ratchets a captive pin one notch higher; a twist lets it fall "
-            "back to zero."
+        raw["experience"]["action"] = (
+            "Tap the top of the column once per event you want to count."
+        )
+        raw["experience"]["response"] = (
+            "Each tap ratchets a captive pin one notch higher."
+        )
+        raw["experience"]["payoff"] = (
+            "A twist lets the climbed pin fall back to zero."
         )
         raw["keywords"] = ["ratchet", "counter", "pin"]
         sealed, launchers = self._run(
@@ -483,7 +506,7 @@ class DaydreamNativeTest(unittest.TestCase):
             daydream_id=SECOND_ID, idea=horn_tip_paraphrase_dict(), verdict="dream-again"
         )
         self.assertEqual(sealed.verdict.decision, "dream-again")
-        self.assertEqual(sealed.verdict.risks[0].kind, "hidden-signature")
+        self.assertEqual(sealed.verdict.risks[0].kind, "proof-mismatch")
         self.assertEqual(
             [entry.status for entry in list_daydreams("sample")], ["dreamed", "judged"]
         )
