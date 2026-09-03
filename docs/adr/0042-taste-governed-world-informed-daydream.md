@@ -240,6 +240,8 @@ checkout.
   corpus to host and run-local parsing.
 - Every new idea records a current-world scan, exact Taste trace, physical
   opportunity translation, proof mode, anti-generic test, and kill criteria.
+- Portable schema validation rejects a source publication time after its scan;
+  the host rejects any thesis whose route floor exceeds the selected route.
 - Daydream workspace tests prove only the selected validated Inventor's exact
   declared skills are materialized and no credentials are copied.
 - Judge tests require every independent dimension and reject a `build` that

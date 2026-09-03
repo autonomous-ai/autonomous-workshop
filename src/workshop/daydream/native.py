@@ -35,6 +35,7 @@ from workshop.daydream.contracts import (
     DaydreamError,
     Idea,
     NoveltyReport,
+    ROUTE_FLOORS,
     SealedDaydream,
     canonical_json,
     generate_daydream_id,
@@ -567,7 +568,9 @@ def _normalized_excerpt(value: str) -> str:
     return " ".join(value.casefold().split())
 
 
-def _validate_thesis_evidence(idea: Idea, *, taste: Taste, observed_at: str) -> None:
+def _validate_thesis_evidence(
+    idea: Idea, *, taste: Taste, observed_at: str, route: str
+) -> None:
     """Bind temporal claims and Taste citations to the exact turn inputs."""
 
     if idea.schema_version != 2:
@@ -578,6 +581,12 @@ def _validate_thesis_evidence(idea: Idea, *, taste: Taste, observed_at: str) -> 
     ):
         raise DaydreamError(
             "Daydream world-scan and prior-art observed_at must match the exact turn time"
+        )
+    assert idea.route_floor is not None
+    if ROUTE_FLOORS.index(route) < ROUTE_FLOORS.index(idea.route_floor):
+        raise DaydreamError(
+            "Daydream thesis requires at least the %s route; target route is %s"
+            % (idea.route_floor, route)
         )
     taste_text = _normalized_excerpt(taste.content)
     citations = (*idea.taste_fit.honors, *idea.taste_fit.steers_clear_of)
@@ -945,6 +954,9 @@ def run_daydream(
     Spark route unless ``effort`` names one.
     """
 
+    route = effort if effort is not None else "spark"
+    if route not in ROUTE_BUDGETS:
+        raise ContractError("daydream route budget is unknown: %r" % (route,))
     spec = manager_spec(manager_id)
     manifest, taste = resolve_inventor(inventor_id, source_root=source_root)
     selected_seed = seed if seed is not None else draw_seed()
@@ -1020,7 +1032,9 @@ def run_daydream(
     _existing_real_directory(paths.work, label="daydream work directory", private=False)
     _read_outcome(paths.workspace, file_name=IDEA_FILE_NAME, who="Inventor", goal="Daydream")
     idea = _read_idea(paths.work / IDEA_FILE_NAME)
-    _validate_thesis_evidence(idea, taste=taste, observed_at=created_at)
+    _validate_thesis_evidence(
+        idea, taste=taste, observed_at=created_at, route=route
+    )
     latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
     latest_portfolio = load_portfolio(
         paths.notebook.parent.parent, exclude_inventor=manifest.inventor_id
@@ -1042,14 +1056,13 @@ def run_daydream(
         taste=taste,
         inventor_id=manifest.inventor_id,
         manager_id=spec.manager_id,
-        effort=effort if effort is not None else "spark",
+            effort=route,
         daydream_id=selected_id,
         launcher_factory=launcher_factory,
         activity_observer=activity_observer,
     )
     if verdict.schema_version != 2:
         raise DaydreamError("new Judge Goals must finalize a verdict with schema_version 2")
-    route = effort if effort is not None else "spark"
     provenance = _build_provenance(
         route=route,
         manager=spec,

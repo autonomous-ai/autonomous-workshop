@@ -95,6 +95,11 @@ class FinalizerTest(unittest.TestCase):
         malformed = sample_thesis_dict()
         malformed["title"] = "bad\x7fcontrol"
         idea_cases.append(malformed)
+        malformed = sample_thesis_dict()
+        malformed["opportunity"]["world_scan"]["signals"][0]["published_at"] = (
+            "2026-09-03T10:15:00Z"
+        )
+        idea_cases.append(malformed)
         for index, raw in enumerate(idea_cases):
             finalizer_accepts = not finalize_daydream.idea_problems(raw)
             try:

@@ -281,6 +281,7 @@ class DaydreamNativeTest(unittest.TestCase):
         daydream_id=FIRST_ID,
         repository_root=None,
         activity_observer=None,
+        effort=None,
         vault_loader=None,
         **options,
     ):
@@ -294,6 +295,7 @@ class DaydreamNativeTest(unittest.TestCase):
             seed=SEED,
             moment=MOMENT,
             daydream_id=daydream_id,
+            effort=effort,
             vault_loader=vault_loader or self._unavailable_vault,
         )
         return sealed, launchers
@@ -567,6 +569,20 @@ class DaydreamNativeTest(unittest.TestCase):
         with self.assertRaisesRegex(DaydreamError, "not exact excerpts"):
             self._run(daydream_id=SECOND_ID, idea=raw)
 
+    def test_future_source_time_and_underpowered_route_fail_closed(self):
+        raw = sample_idea_dict()
+        raw["opportunity"]["world_scan"]["signals"][0]["published_at"] = (
+            "2026-09-03T10:15:00Z"
+        )
+        with self.assertRaisesRegex(DaydreamError, "cannot be after the world scan"):
+            self._run(idea=raw)
+        raw = sample_idea_dict()
+        raw["route_floor"] = "quest"
+        with self.assertRaisesRegex(
+            DaydreamError, "requires at least the quest route; target route is spark"
+        ):
+            self._run(daydream_id=SECOND_ID, idea=raw)
+
     def test_too_close_idea_is_rejected_and_remembered(self):
         catalog = horn_tip_catalog(Path(self._temporary.name).resolve() / "checkout")
         with self.assertRaisesRegex(DaydreamError, "Horn Tip"):
@@ -776,6 +792,8 @@ class DaydreamNativeTest(unittest.TestCase):
             run_daydream(
                 "sample", source_root=self.source_root, manager_id="gpt", launcher_factory=factory
             )
+        with self.assertRaisesRegex(ContractError, "route budget is unknown"):
+            self._run(effort="ultra", idea=sample_idea_dict())
         self.assertEqual(launchers, [])
         self.assertFalse((self.home / "daydreams").exists())
 

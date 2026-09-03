@@ -259,7 +259,12 @@ class PriorArt:
         if self.url is not None:
             bounded_line(self.url, "prior_art url", 500)
             parsed = urlsplit(self.url)
-            if parsed.scheme not in ("http", "https") or not parsed.netloc or parsed.username:
+            if (
+                parsed.scheme not in ("http", "https")
+                or not parsed.netloc
+                or parsed.username is not None
+                or parsed.password is not None
+            ):
                 raise ContractError(
                     "prior_art url must be an http(s) URL without embedded credentials"
                 )
@@ -329,7 +334,12 @@ class WorldSignal:
         bounded_line(self.title, "world signal title", 160)
         bounded_line(self.url, "world signal url", 500)
         parsed = urlsplit(self.url)
-        if parsed.scheme not in ("http", "https") or not parsed.netloc or parsed.username:
+        if (
+            parsed.scheme not in ("http", "https")
+            or not parsed.netloc
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
             raise ContractError(
                 "world signal url must be an http(s) URL without embedded credentials"
             )

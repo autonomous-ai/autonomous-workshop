@@ -202,7 +202,12 @@ def _url_problems(value: Any, label: str) -> list[str]:
     if problems:
         return problems
     parsed = urlsplit(value)
-    if parsed.scheme not in ("http", "https") or not parsed.netloc or parsed.username:
+    if (
+        parsed.scheme not in ("http", "https")
+        or not parsed.netloc
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
         return ["%s must be an http(s) URL without embedded credentials" % label]
     return []
 
@@ -281,7 +286,15 @@ def _world_scan_problems(raw: Any) -> list[str]:
     problems = _key_problems(raw, _WORLD_SCAN_KEYS, "opportunity.world_scan")
     if problems:
         return problems
-    problems.extend(_timestamp_problems(raw["observed_at"], "opportunity.world_scan.observed_at"))
+    observed_problems = _timestamp_problems(
+        raw["observed_at"], "opportunity.world_scan.observed_at"
+    )
+    problems.extend(observed_problems)
+    observed_at = (
+        None
+        if observed_problems
+        else datetime.strptime(raw["observed_at"], _TIMESTAMP_FORMAT)
+    )
     problems.extend(_line_problems(raw["scope"], "opportunity.world_scan.scope", 500))
     if type(raw["evergreen"]) is not bool:
         problems.append("opportunity.world_scan.evergreen must be true or false")
@@ -298,9 +311,18 @@ def _world_scan_problems(raw: Any) -> list[str]:
             continue
         problems.extend(_line_problems(signal["title"], "%s.title" % label, 160))
         problems.extend(_url_problems(signal["url"], "%s.url" % label))
-        problems.extend(
-            _timestamp_problems(signal["published_at"], "%s.published_at" % label, nullable=True)
+        published_problems = _timestamp_problems(
+            signal["published_at"], "%s.published_at" % label, nullable=True
         )
+        problems.extend(published_problems)
+        if (
+            signal["published_at"] is not None
+            and not published_problems
+            and observed_at is not None
+            and datetime.strptime(signal["published_at"], _TIMESTAMP_FORMAT)
+            > observed_at
+        ):
+            problems.append("%s.published_at cannot be after the world scan" % label)
         problems.extend(_line_problems(signal["insight"], "%s.insight" % label, 300))
         if isinstance(signal["url"], str):
             if signal["url"] in seen_urls:

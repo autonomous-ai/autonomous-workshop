@@ -197,6 +197,11 @@ class CreativeThesisTest(unittest.TestCase):
         raw["opportunity"]["world_scan"]["signals"][0]["url"] = "file:///tmp/fake"
         mutations.append(raw)
         raw = sample_thesis_dict()
+        raw["opportunity"]["world_scan"]["signals"][0]["url"] = (
+            "https://:secret@example.org/news"
+        )
+        mutations.append(raw)
+        raw = sample_thesis_dict()
         raw["proof"]["kill_criteria"] = ["Only one"]
         mutations.append(raw)
         raw = sample_thesis_dict()
