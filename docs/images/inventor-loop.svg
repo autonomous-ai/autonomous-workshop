@@ -1,80 +1,104 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title description">
-  <title id="title">The Autonomous Workshop loop: Daydream, Invent, Make, Release, Shop, Scoreboard</title>
-  <desc id="description">Autonomous AI Inventors daydream around the clock: they read, research, learn and watch, keep a notebook, and leave with one idea they like as a concept card. A liked idea starts a run through Invent, Make and Release under a frozen effort route. Release lists the product on the shop, where a buyer orders one and it ships in days. The scoreboard records every view, order, print and return and feeds the Inventors, so next month's toys beat this month's.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 1040" role="img" aria-labelledby="title description">
+  <title id="title">The Autonomous Workshop loop: Daydream, Invent, Make, Playtest, Release, Shop, Scoreboard</title>
+  <desc id="description">Autonomous AI Inventors daydream: each reads its own Taste, searches for prior art, and leaves with one brand-new idea it likes. A liked idea starts a run down one frozen route. Invent and Playtest are optional stages: Invent runs on Forge and Quest, Playtest on Quest only; Make and Release run on every route. Release lists the product on the shop, where a buyer orders one and it ships in days. The scoreboard records every view, order, print and return and feeds the Inventors, so next month's toys beat this month's.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#151515"/></marker>
     <marker id="arrowsoft" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1f5fd6"/></marker>
+    <marker id="arrowgray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8a8a8a"/></marker>
     <style>
       .box { fill: #ffffff; stroke: #c9c9c9; stroke-width: 1.5; }
       .box.strong { stroke: #151515; stroke-width: 2; }
+      .box.optional { stroke: #9a9a9a; stroke-width: 1.5; stroke-dasharray: 7 5; fill: #fafafa; }
       .h { font: 700 16px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #151515; }
+      .h.optional { fill: #444; }
       .t { font: 400 12px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #555; }
       .k { font: 500 10.5px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #1f5fd6; letter-spacing: 0.08em; }
+      .k.optional { fill: #8a8a8a; }
       .line { stroke: #151515; stroke-width: 1.6; fill: none; }
       .loop { stroke: #1f5fd6; stroke-width: 1.6; fill: none; stroke-dasharray: 6 5; }
+      .skip { stroke: #8a8a8a; stroke-width: 1.3; fill: none; stroke-dasharray: 4 4; }
+      .skiplabel { font: 500 10.5px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #8a8a8a; letter-spacing: 0.06em; }
       .note { font: 400 12px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #555; }
     </style>
   </defs>
-  <rect x="0" y="0" width="1200" height="420" fill="#ffffff"/>
+  <rect x="0" y="0" width="620" height="1040" fill="#ffffff"/>
 
-  <text class="h" x="30" y="50">Autonomous AI Inventors invent new toys and games around the clock.</text>
-  <text class="note" x="30" y="74">Spark: Make → Release · Forge: Invent → Make → Release · Quest: Invent → Make → Playtest → Release. Daydream feeds every route; the host seals every step.</text>
-  <text class="note" x="30" y="92">Nothing is made before it is wanted. Next month's toys beat this month's because the scoreboard feeds the Inventors.</text>
+  <text class="h" x="30" y="40">Autonomous AI Inventors invent new toys around the clock.</text>
+  <text class="note" x="30" y="62">One loop. Solid boxes run on every route; dashed boxes are optional.</text>
+  <text class="note" x="30" y="80">Nothing is made before it is wanted. The host seals every step.</text>
 
   <!-- Daydream -->
-  <rect class="box strong" x="30" y="120" width="250" height="150" rx="8"/>
-  <text class="k" x="46" y="146">ALWAYS ON · EVERY INVENTOR</text>
-  <text class="h" x="46" y="170">DAYDREAM</text>
-  <text class="t" x="46" y="192">Read the shop and scoreboard.</text>
-  <text class="t" x="46" y="209">Research, learn, watch.</text>
-  <text class="t" x="46" y="226">Keep a notebook. Leave with</text>
-  <text class="t" x="46" y="243">one idea it likes: a concept card.</text>
+  <rect class="box strong" x="140" y="104" width="340" height="118" rx="8"/>
+  <text class="k" x="156" y="128">EVERY INVENTOR · ONE IDEA PER CALL</text>
+  <text class="h" x="156" y="152">DAYDREAM</text>
+  <text class="t" x="156" y="174">Read its own Taste. Search for prior art.</text>
+  <text class="t" x="156" y="191">Keep a notebook. Leave with one brand-new</text>
+  <text class="t" x="156" y="208">idea it likes. The host lints and seals it.</text>
 
-  <!-- Invent -->
-  <rect class="box" x="320" y="120" width="170" height="150" rx="8"/>
-  <text class="k" x="336" y="146">FORGE · QUEST</text>
-  <text class="h" x="336" y="170">INVENT</text>
-  <text class="t" x="336" y="192">Research and specify</text>
-  <text class="t" x="336" y="209">the concept. Seal it.</text>
-  <text class="t" x="336" y="226">Concept renders.</text>
+  <path class="line" d="M310 222 L310 250" marker-end="url(#arrow)"/>
+
+  <!-- Invent (optional) -->
+  <rect class="box optional" x="140" y="250" width="340" height="96" rx="8"/>
+  <text class="k optional" x="156" y="274">OPTIONAL · FORGE AND QUEST</text>
+  <text class="h optional" x="156" y="298">INVENT</text>
+  <text class="t" x="156" y="320">Research and specify the concept. Seal it.</text>
+  <text class="t" x="156" y="337">Concept renders.</text>
+
+  <path class="line" d="M310 346 L310 374" marker-end="url(#arrow)"/>
 
   <!-- Make -->
-  <rect class="box" x="530" y="120" width="170" height="150" rx="8"/>
-  <text class="k" x="546" y="146">ALL ROUTES</text>
-  <text class="h" x="546" y="170">MAKE</text>
-  <text class="t" x="546" y="192">CAD as code. Print</text>
-  <text class="t" x="546" y="209">preflight. Blind review.</text>
-  <text class="t" x="546" y="226">Host rebuilds, seals.</text>
+  <rect class="box" x="140" y="374" width="340" height="96" rx="8"/>
+  <text class="k" x="156" y="398">EVERY ROUTE</text>
+  <text class="h" x="156" y="422">MAKE</text>
+  <text class="t" x="156" y="444">CAD as code. Print preflight. Blind review.</text>
+  <text class="t" x="156" y="461">The host rebuilds and seals the exact bytes.</text>
+
+  <path class="line" d="M310 470 L310 498" marker-end="url(#arrow)"/>
+
+  <!-- Playtest (optional) -->
+  <rect class="box optional" x="140" y="498" width="340" height="96" rx="8"/>
+  <text class="k optional" x="156" y="522">OPTIONAL · QUEST</text>
+  <text class="h optional" x="156" y="546">PLAYTEST</text>
+  <text class="t" x="156" y="568">Check the exact Make. Return bounded</text>
+  <text class="t" x="156" y="585">repair feedback with evidence.</text>
+
+  <path class="line" d="M310 594 L310 622" marker-end="url(#arrow)"/>
 
   <!-- Release -->
-  <rect class="box" x="740" y="120" width="170" height="150" rx="8"/>
-  <text class="k" x="756" y="146">ALL ROUTES</text>
-  <text class="h" x="756" y="170">RELEASE</text>
-  <text class="t" x="756" y="192">Manual, story, facts,</text>
-  <text class="t" x="756" y="209">renders. Publish with</text>
-  <text class="t" x="756" y="226">public readback.</text>
+  <rect class="box" x="140" y="622" width="340" height="96" rx="8"/>
+  <text class="k" x="156" y="646">EVERY ROUTE</text>
+  <text class="h" x="156" y="670">RELEASE</text>
+  <text class="t" x="156" y="692">Manual, story, facts, renders. Publish</text>
+  <text class="t" x="156" y="709">with public hash readback.</text>
+
+  <path class="line" d="M310 718 L310 746" marker-end="url(#arrow)"/>
 
   <!-- Shop -->
-  <rect class="box strong" x="950" y="120" width="230" height="150" rx="8"/>
-  <text class="k" x="966" y="146">AUTONOMOUS.AI/FACTORY</text>
-  <text class="h" x="966" y="170">SHOP</text>
-  <text class="t" x="966" y="192">Order one. Printed to order,</text>
-  <text class="t" x="966" y="209">photographed, ships in days.</text>
-  <text class="t" x="966" y="226">Sold enough? Molded, cheaper.</text>
+  <rect class="box strong" x="140" y="746" width="340" height="112" rx="8"/>
+  <text class="k" x="156" y="770">AUTONOMOUS.AI/FACTORY</text>
+  <text class="h" x="156" y="794">SHOP</text>
+  <text class="t" x="156" y="816">Order one. Printed to order, photographed,</text>
+  <text class="t" x="156" y="833">ships in days. First order: real photos</text>
+  <text class="t" x="156" y="850">replace renders. Sold enough? Molded.</text>
 
-  <!-- forward arrows -->
-  <path class="line" d="M280 195 L320 195" marker-end="url(#arrow)"/>
-  <path class="line" d="M490 195 L530 195" marker-end="url(#arrow)"/>
-  <path class="line" d="M700 195 L740 195" marker-end="url(#arrow)"/>
-  <path class="line" d="M910 195 L950 195" marker-end="url(#arrow)"/>
+  <path class="loop" d="M310 858 L310 886" marker-end="url(#arrowsoft)"/>
 
   <!-- Scoreboard -->
-  <rect class="box" x="400" y="318" width="420" height="82" rx="8"/>
-  <text class="h" x="416" y="344">SCOREBOARD</text>
-  <text class="t" x="416" y="366">Every view, order, print and return, keyed to the design.</text>
-  <text class="t" x="416" y="383">Shown to every Inventor.</text>
+  <rect class="box" x="140" y="886" width="340" height="84" rx="8"/>
+  <text class="h" x="156" y="912">SCOREBOARD</text>
+  <text class="t" x="156" y="934">Every view, order, print and return,</text>
+  <text class="t" x="156" y="951">keyed to the design. Shown to every Inventor.</text>
 
-  <!-- loop arrows -->
-  <path class="loop" d="M1065 270 C 1065 359, 850 359, 820 359" marker-end="url(#arrowsoft)"/>
-  <path class="loop" d="M400 359 C 360 359, 155 359, 155 270" marker-end="url(#arrowsoft)"/>
+  <!-- feedback loop back to Daydream -->
+  <path class="loop" d="M140 928 L70 928 L70 163 L140 163" marker-end="url(#arrowsoft)"/>
+  <text class="k" x="42" y="548" transform="rotate(-90 42 548)">NEXT MONTH'S TOYS BEAT THIS MONTH'S</text>
+
+  <!-- optional-stage bypasses -->
+  <path class="skip" d="M480 200 C 560 200, 560 410, 480 410" marker-end="url(#arrowgray)"/>
+  <text class="skiplabel" x="546" y="300" text-anchor="middle" transform="rotate(90 546 300)">SPARK SKIPS INVENT</text>
+  <path class="skip" d="M480 452 C 560 452, 560 660, 480 660" marker-end="url(#arrowgray)"/>
+  <text class="skiplabel" x="546" y="556" text-anchor="middle" transform="rotate(90 546 556)">SPARK AND FORGE SKIP PLAYTEST</text>
+
+  <text class="note" x="30" y="1000">Spark: Daydream → Make → Release. Forge adds Invent. Quest adds Invent and Playtest.</text>
+  <text class="note" x="30" y="1018">Every route ends in the shop and feeds the scoreboard.</text>
 </svg>
