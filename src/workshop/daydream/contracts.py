@@ -26,6 +26,7 @@ from workshop.daydream.schema import (
 
 
 DAYDREAM_SEAL_KIND = "autonomous-workshop.daydream-seal"
+DAYDREAM_PROVENANCE_KIND = "autonomous-workshop.daydream-provenance"
 MAX_TITLE_CHARS = 60
 MAX_ONE_LINER_CHARS = 200
 MAX_VERDICT_TEXT_CHARS = 400
@@ -62,7 +63,7 @@ _RISK_KEYS = frozenset(("kind", "detail"))
 _SEAL_OPTIONAL_KEYS = frozenset(("verdict",))
 _NEIGHBOR_KEYS = frozenset(("source", "title", "similarity"))
 _NOVELTY_KEYS = frozenset(("status", "max_similarity", "nearest", "reason"))
-_SEAL_KEYS = frozenset(
+_SEAL_V1_KEYS = frozenset(
     (
         "schema_version",
         "kind",
@@ -79,6 +80,28 @@ _SEAL_KEYS = frozenset(
         "session",
         "brief",
     )
+)
+_SEAL_V2_KEYS = _SEAL_V1_KEYS | frozenset(("provenance",))
+DAYDREAM_PROVENANCE_INPUTS = (
+    "daydream_prompt",
+    "daydream_constitution",
+    "judge_constitution",
+    "taste",
+    "inventor_binding",
+    "vault_binding",
+    "vault_snapshot",
+    "prior_work",
+    "portfolio",
+    "notebook",
+    "finalizer",
+    "schema",
+    "world_scan",
+    "prior_art",
+    "manager_spec",
+)
+_OPTIONAL_PROVENANCE_INPUTS = frozenset(("judge_constitution", "vault_snapshot"))
+_PROVENANCE_KEYS = frozenset(
+    ("schema_version", "kind", "route", "input_sha256s")
 )
 
 
@@ -976,6 +999,67 @@ class NoveltyReport:
         }
 
 
+@dataclass(frozen=True)
+class DaydreamProvenance:
+    """Content identities for every context plane used by one new Dream."""
+
+    route: str
+    input_sha256s: Mapping[str, Optional[str]]
+    schema_version: int = 1
+    kind: str = DAYDREAM_PROVENANCE_KIND
+
+    def __post_init__(self) -> None:
+        if type(self.schema_version) is not int or self.schema_version != 1:
+            raise ContractError("Daydream provenance schema_version must be 1")
+        if self.kind != DAYDREAM_PROVENANCE_KIND:
+            raise ContractError("Daydream provenance kind is invalid")
+        if self.route not in ROUTE_FLOORS:
+            raise ContractError(
+                "Daydream provenance route must be one of %s" % (ROUTE_FLOORS,)
+            )
+        if not isinstance(self.input_sha256s, Mapping) or set(self.input_sha256s) != set(
+            DAYDREAM_PROVENANCE_INPUTS
+        ):
+            raise ContractError(
+                "Daydream provenance inputs must be exactly %s"
+                % (DAYDREAM_PROVENANCE_INPUTS,)
+            )
+        copied: Dict[str, Optional[str]] = {}
+        for name in DAYDREAM_PROVENANCE_INPUTS:
+            value = self.input_sha256s[name]
+            if value is None:
+                if name not in _OPTIONAL_PROVENANCE_INPUTS:
+                    raise ContractError("Daydream provenance input %s cannot be null" % name)
+            else:
+                require_sha256(value, "Daydream provenance input %s" % name)
+            copied[name] = value
+        object.__setattr__(self, "input_sha256s", copied)
+
+    @classmethod
+    def parse(cls, raw: Mapping[str, Any]) -> "DaydreamProvenance":
+        _exact_keys(raw, _PROVENANCE_KEYS, "Daydream provenance")
+        return cls(
+            schema_version=raw["schema_version"],
+            kind=raw["kind"],
+            route=raw["route"],
+            input_sha256s=raw["input_sha256s"],
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "kind": self.kind,
+            "route": self.route,
+            "input_sha256s": {
+                name: self.input_sha256s[name] for name in DAYDREAM_PROVENANCE_INPUTS
+            },
+        }
+
+    @property
+    def sha256(self) -> str:
+        return hashlib.sha256(canonical_json(self.to_dict()).encode("utf-8")).hexdigest()
+
+
 @dataclass(frozen=True, kw_only=True)
 class SealedDaydream:
     """One idea, its provenance, its lint verdict, and the brief it becomes."""
@@ -995,12 +1079,17 @@ class SealedDaydream:
     session: Mapping[str, Any]
     brief: str
     verdict: Optional[Verdict] = None
+    provenance: Optional[DaydreamProvenance] = None
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("sealed daydream schema_version must be 1")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
+            raise ContractError("sealed daydream schema_version must be 1 or 2")
         if self.verdict is not None and not isinstance(self.verdict, Verdict):
             raise ContractError("sealed daydream verdict must be a Verdict")
+        if self.schema_version == 1 and self.provenance is not None:
+            raise ContractError("sealed daydream schema 1 cannot carry provenance")
+        if self.schema_version == 2 and not isinstance(self.provenance, DaydreamProvenance):
+            raise ContractError("sealed daydream schema 2 requires provenance")
         if self.kind != DAYDREAM_SEAL_KIND:
             raise ContractError("sealed daydream kind must be %s" % DAYDREAM_SEAL_KIND)
         require_daydream_id(self.daydream_id, "sealed daydream daydream_id")
@@ -1022,6 +1111,36 @@ class SealedDaydream:
         require_sha256(self.idea_sha256, "sealed daydream idea_sha256")
         if self.idea_sha256 != self.idea.sha256:
             raise ContractError("sealed daydream idea_sha256 does not match its idea")
+        if self.schema_version == 2:
+            if self.idea.schema_version != 2:
+                raise ContractError("sealed daydream schema 2 requires a schema-v2 thesis")
+            assert self.provenance is not None
+            if self.provenance.input_sha256s["taste"] != self.taste_sha256:
+                raise ContractError("sealed Daydream provenance does not match Taste")
+            assert self.idea.opportunity is not None
+            expected_world = hashlib.sha256(
+                canonical_json(self.idea.opportunity.world_scan.to_dict()).encode("utf-8")
+            ).hexdigest()
+            expected_prior_art = hashlib.sha256(
+                canonical_json([entry.to_dict() for entry in self.idea.prior_art]).encode(
+                    "utf-8"
+                )
+            ).hexdigest()
+            if (
+                self.provenance.input_sha256s["world_scan"] != expected_world
+                or self.provenance.input_sha256s["prior_art"] != expected_prior_art
+            ):
+                raise ContractError(
+                    "sealed Daydream provenance does not match its source evidence"
+                )
+            if self.verdict is not None and (
+                self.verdict.schema_version != 2
+                or self.verdict.daydream_id != self.daydream_id
+                or self.verdict.idea_sha256 != self.idea_sha256
+                or self.verdict.taste_sha256 != self.taste_sha256
+                or self.verdict.route != self.provenance.route
+            ):
+                raise ContractError("sealed Daydream provenance does not match its Judge")
         if not isinstance(self.novelty, NoveltyReport):
             raise ContractError("sealed daydream novelty must be a NoveltyReport")
         object.__setattr__(
@@ -1037,15 +1156,22 @@ class SealedDaydream:
     def parse(cls, raw: Mapping[str, Any]) -> "SealedDaydream":
         if not isinstance(raw, Mapping):
             raise ContractError("sealed daydream must be a JSON object")
+        version = raw.get("schema_version")
+        if type(version) is not int or version not in (1, 2):
+            raise ContractError("sealed daydream schema_version must be 1 or 2")
+        expected = _SEAL_V1_KEYS if version == 1 else _SEAL_V2_KEYS
         _exact_keys(
             {key: value for key, value in raw.items() if key not in _SEAL_OPTIONAL_KEYS},
-            _SEAL_KEYS,
+            expected,
             "sealed daydream",
         )
         verdict = raw.get("verdict")
         return cls(
             verdict=None if verdict is None else Verdict.parse(verdict),
-            schema_version=raw["schema_version"],
+            provenance=(
+                DaydreamProvenance.parse(raw["provenance"]) if version == 2 else None
+            ),
+            schema_version=version,
             kind=raw["kind"],
             daydream_id=raw["daydream_id"],
             inventor_id=raw["inventor_id"],
@@ -1080,6 +1206,9 @@ class SealedDaydream:
         }
         if self.verdict is not None:
             value["verdict"] = self.verdict.to_dict()
+        if self.schema_version == 2:
+            assert self.provenance is not None
+            value["provenance"] = self.provenance.to_dict()
         return value
 
     @property
@@ -1090,9 +1219,12 @@ class SealedDaydream:
 __all__ = [
     "CREATED_AT_FORMAT",
     "DAYDREAM_IDEA_KIND",
+    "DAYDREAM_PROVENANCE_INPUTS",
+    "DAYDREAM_PROVENANCE_KIND",
     "DAYDREAM_SEAL_KIND",
     "DAYDREAM_VERDICT_KIND",
     "DaydreamError",
+    "DaydreamProvenance",
     "Experience",
     "Idea",
     "NOVELTY_STATUSES",

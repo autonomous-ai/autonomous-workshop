@@ -161,8 +161,8 @@ Write only `work/IDEA.json`, one UTF-8 JSON object with exactly this shape:
     }
   ],
   "taste_fit": {
-    "honors": ["one to five exact or close Taste promises, each at most 200 characters"],
-    "steers_clear_of": ["one to five exact rejection boundaries, each at most 200 characters"]
+    "honors": ["one to five exact excerpts from TASTE.md, each at most 200 characters"],
+    "steers_clear_of": ["one to five exact rejection excerpts from TASTE.md, each at most 200 characters"]
   },
   "proof": {
     "mode": "visual-form | visual-state | configuration-set | tactile | acoustic | light-shadow | rules-play",

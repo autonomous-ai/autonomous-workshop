@@ -332,6 +332,33 @@ class SealedDaydreamTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "brief"):
             sample_sealed(inventor_name="Someone Else")
 
+    def test_schema_v2_requires_hash_bound_context_provenance(self):
+        from tests.daydream.support import (
+            build_thesis_verdict_dict,
+            sample_provenance,
+            sample_thesis,
+        )
+        from workshop.daydream.contracts import Verdict
+
+        idea = sample_thesis()
+        verdict = Verdict.parse(build_thesis_verdict_dict(idea_sha256=idea.sha256))
+        sealed = sample_sealed(
+            schema_version=2,
+            idea=idea,
+            idea_sha256=idea.sha256,
+            verdict=verdict,
+            provenance=sample_provenance(),
+        )
+        self.assertEqual(SealedDaydream.parse(sealed.to_dict()), sealed)
+        raw = sealed.to_dict()
+        raw["provenance"]["input_sha256s"]["portfolio"] = "0" * 64
+        changed = SealedDaydream.parse(raw)
+        self.assertNotEqual(changed.sha256, sealed.sha256)
+        raw = sealed.to_dict()
+        del raw["provenance"]
+        with self.assertRaisesRegex(ContractError, "provenance"):
+            SealedDaydream.parse(raw)
+
     def test_parse_rejects_unknown_keys_and_bad_fields(self):
         raw = sample_sealed().to_dict()
         raw["extra"] = 1

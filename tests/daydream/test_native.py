@@ -22,6 +22,7 @@ from workshop.daydream.outcomes import remember_run_outcome
 from workshop.daydream.native import (
     DAYDREAM_TURN_TIMEOUT_SECONDS,
     INVENTOR_BINDING_FILE_NAME,
+    PROVENANCE_FILE_NAME,
     VAULT_BINDING_FILE_NAME,
     daydream_paths,
     list_daydreams,
@@ -321,6 +322,8 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(sealed.seed, SEED.to_dict())
         self.assertEqual(sealed.created_at, "2026-09-02T10:15:00Z")
         self.assertEqual(sealed.idea, Idea.parse(sample_idea_dict()))
+        self.assertEqual(sealed.schema_version, 2)
+        self.assertEqual(sealed.provenance.route, "spark")
         self.assertEqual(sealed.session, _FakeOutcome(start).to_dict())
         self.assertEqual(sealed.novelty.status, "new")
         paths = daydream_paths("sample", FIRST_ID)
@@ -341,6 +344,40 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(binding["taste_sha256"], sealed.taste_sha256)
         self.assertEqual(
             [skill["name"] for skill in binding["skills"]], ["sample-inventor"]
+        )
+        provenance = json.loads(
+            (paths.host_state / PROVENANCE_FILE_NAME).read_text(encoding="utf-8")
+        )
+        self.assertEqual(provenance, sealed.provenance.to_dict())
+        for field, path in (
+            ("taste", paths.workspace / "TASTE.md"),
+            ("prior_work", paths.workspace / "PRIOR-WORK.md"),
+            ("portfolio", paths.workspace / "PORTFOLIO.md"),
+            ("notebook", paths.workspace / "NOTEBOOK.md"),
+        ):
+            self.assertEqual(
+                sealed.provenance.input_sha256s[field],
+                hashlib.sha256(path.read_bytes()).hexdigest(),
+            )
+        self.assertEqual(
+            sealed.provenance.input_sha256s["inventor_binding"],
+            hashlib.sha256(
+                (paths.host_state / INVENTOR_BINDING_FILE_NAME).read_bytes()
+            ).hexdigest(),
+        )
+        self.assertEqual(
+            sealed.provenance.input_sha256s["vault_binding"],
+            hashlib.sha256(
+                (paths.host_state / VAULT_BINDING_FILE_NAME).read_bytes()
+            ).hexdigest(),
+        )
+        self.assertEqual(
+            sealed.provenance.input_sha256s["daydream_prompt"],
+            hashlib.sha256(start["prompt"].encode("utf-8")).hexdigest(),
+        )
+        self.assertEqual(
+            stat.S_IMODE((paths.host_state / PROVENANCE_FILE_NAME).stat().st_mode),
+            0o600,
         )
         entries = list_daydreams("sample")
         self.assertEqual(
@@ -511,6 +548,16 @@ class DaydreamNativeTest(unittest.TestCase):
             self._run(daydream_id=SECOND_ID, idea=raw)
         with self.assertRaisesRegex(DaydreamError, "JSON object"):
             self._run(daydream_id="daydream-20260902-101700-00000003", idea="[1]")
+
+    def test_thesis_time_and_taste_citations_must_match_exact_inputs(self):
+        raw = sample_idea_dict()
+        raw["opportunity"]["world_scan"]["observed_at"] = "2026-09-02T10:14:59Z"
+        with self.assertRaisesRegex(DaydreamError, "exact turn time"):
+            self._run(idea=raw)
+        raw = sample_idea_dict()
+        raw["taste_fit"]["honors"] = ["A plausible paraphrase is not an exact citation"]
+        with self.assertRaisesRegex(DaydreamError, "not exact excerpts"):
+            self._run(daydream_id=SECOND_ID, idea=raw)
 
     def test_too_close_idea_is_rejected_and_remembered(self):
         catalog = horn_tip_catalog(Path(self._temporary.name).resolve() / "checkout")
@@ -745,7 +792,10 @@ class DaydreamNativeTest(unittest.TestCase):
                 "source": "workshop-daydream",
                 "inventor_id": "sample",
                 "daydream_id": FIRST_ID,
+                "daydream_sha256": sealed.sha256,
                 "idea_sha256": sealed.idea_sha256,
+                "provenance_sha256": sealed.provenance.sha256,
+                "route": "spark",
                 "title": "Ladder Drop",
             },
         )

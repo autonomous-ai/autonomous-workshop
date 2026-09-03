@@ -29,6 +29,7 @@ from workshop.daydream.catalog import (
     source_checkout_root,
 )
 from workshop.daydream.contracts import (
+    DaydreamProvenance,
     Verdict,
     CREATED_AT_FORMAT,
     DaydreamError,
@@ -90,6 +91,7 @@ from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     NativeManagerInvocationError,
     manager_launcher,
+    manager_project_bytes,
     manager_spec,
 )
 from workshop.runtime.package_data import (
@@ -119,6 +121,7 @@ JUDGE_TURN_TIMEOUT_SECONDS = 600
 REJECTED_FILE_NAME = "REJECTED.json"
 INVENTOR_BINDING_FILE_NAME = "INVENTOR.json"
 VAULT_BINDING_FILE_NAME = "VAULT-BINDING.json"
+PROVENANCE_FILE_NAME = "PROVENANCE.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 MAX_SEALED_FILE_BYTES = 256 * 1024
 MAX_ERROR_CHARS = 1_000
@@ -529,7 +532,7 @@ def _write_workspace(
     portfolio_entries: Sequence[PortfolioEntry],
     outcome_entries: Sequence[RunOutcomeMemory],
     vault_summary: bytes,
-) -> None:
+) -> Mapping[str, str]:
     files = (
         ("TASTE.md", taste.content.encode("utf-8")),
         ("PRIOR-WORK.md", render_prior_work_markdown(repository_prior).encode("utf-8")),
@@ -553,8 +556,86 @@ def _write_workspace(
         (SCHEMA_FILE_NAME, schema_bytes()),
         (PRODUCT_RUN_ROOT_MARKER, PRODUCT_RUN_ROOT_MARKER_BYTES),
     )
+    identities: dict[str, str] = {}
     for name, payload in files:
         write_private_bytes(paths.workspace / name, payload, label="daydream %s" % name)
+        identities[name] = hashlib.sha256(payload).hexdigest()
+    return identities
+
+
+def _normalized_excerpt(value: str) -> str:
+    return " ".join(value.casefold().split())
+
+
+def _validate_thesis_evidence(idea: Idea, *, taste: Taste, observed_at: str) -> None:
+    """Bind temporal claims and Taste citations to the exact turn inputs."""
+
+    if idea.schema_version != 2:
+        raise DaydreamError("new Daydream Goals must finalize an idea with schema_version 2")
+    assert idea.opportunity is not None
+    if idea.opportunity.world_scan.observed_at != observed_at or any(
+        entry.observed_at != observed_at for entry in idea.prior_art
+    ):
+        raise DaydreamError(
+            "Daydream world-scan and prior-art observed_at must match the exact turn time"
+        )
+    taste_text = _normalized_excerpt(taste.content)
+    citations = (*idea.taste_fit.honors, *idea.taste_fit.steers_clear_of)
+    missing = [
+        citation
+        for citation in citations
+        if _normalized_excerpt(citation) not in taste_text
+    ]
+    if missing:
+        raise DaydreamError(
+            "Daydream Taste citations are not exact excerpts of TASTE.md: %s"
+            % "; ".join(missing)
+        )
+
+
+def _json_sha256(value: Any) -> str:
+    return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def _json_line_sha256(value: Any) -> str:
+    return hashlib.sha256((canonical_json(value) + "\n").encode("utf-8")).hexdigest()
+
+
+def _build_provenance(
+    *,
+    route: str,
+    manager: Any,
+    prompt: str,
+    idea: Idea,
+    workspace_sha256s: Mapping[str, str],
+    inventor_binding: Mapping[str, Any],
+    vault_binding: Mapping[str, Any],
+    judge: bool,
+) -> DaydreamProvenance:
+    assert idea.opportunity is not None
+    vault_snapshot = vault_binding.get("sha256")
+    if vault_snapshot is not None:
+        require_sha256(vault_snapshot, "Daydream Vault snapshot sha256")
+    return DaydreamProvenance(
+        route=route,
+        input_sha256s={
+            "daydream_prompt": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+            "daydream_constitution": workspace_sha256s["AGENTS.md"],
+            "judge_constitution": JUDGE_CONSTITUTION_SHA256 if judge else None,
+            "taste": workspace_sha256s["TASTE.md"],
+            "inventor_binding": _json_line_sha256(inventor_binding),
+            "vault_binding": _json_line_sha256(vault_binding),
+            "vault_snapshot": vault_snapshot,
+            "prior_work": workspace_sha256s["PRIOR-WORK.md"],
+            "portfolio": workspace_sha256s["PORTFOLIO.md"],
+            "notebook": workspace_sha256s["NOTEBOOK.md"],
+            "finalizer": workspace_sha256s[FINALIZER_FILE_NAME],
+            "schema": workspace_sha256s[SCHEMA_FILE_NAME],
+            "world_scan": _json_sha256(idea.opportunity.world_scan.to_dict()),
+            "prior_art": _json_sha256([entry.to_dict() for entry in idea.prior_art]),
+            "manager_spec": hashlib.sha256(manager_project_bytes(manager)).hexdigest(),
+        },
+    )
 
 
 def _daydream_wish_sha256(
@@ -885,7 +966,7 @@ def run_daydream(
     portfolio_entries = load_portfolio(
         paths.notebook.parent.parent, exclude_inventor=manifest.inventor_id
     )
-    vault_summary, _vault_binding = _materialize_vault(
+    vault_summary, vault_binding = _materialize_vault(
         paths, vault_loader=vault_loader
     )
     inventor_binding = _materialize_selected_inventor(
@@ -896,7 +977,7 @@ def run_daydream(
         (canonical_json(inventor_binding) + "\n").encode("utf-8"),
         label="Daydream Inventor binding",
     )
-    _write_workspace(
+    workspace_sha256s = _write_workspace(
         paths,
         taste=taste,
         repository_prior=repository_prior,
@@ -938,8 +1019,7 @@ def run_daydream(
     _existing_real_directory(paths.work, label="daydream work directory", private=False)
     _read_outcome(paths.workspace, file_name=IDEA_FILE_NAME, who="Inventor", goal="Daydream")
     idea = _read_idea(paths.work / IDEA_FILE_NAME)
-    if idea.schema_version != 2:
-        raise DaydreamError("new Daydream Goals must finalize an idea with schema_version 2")
+    _validate_thesis_evidence(idea, taste=taste, observed_at=created_at)
     latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
     latest_portfolio = load_portfolio(
         paths.notebook.parent.parent, exclude_inventor=manifest.inventor_id
@@ -970,8 +1050,26 @@ def run_daydream(
         )
         if verdict.schema_version != 2:
             raise DaydreamError("new Judge Goals must finalize a verdict with schema_version 2")
+    route = effort if effort is not None else "spark"
+    provenance = _build_provenance(
+        route=route,
+        manager=spec,
+        prompt=prompt,
+        idea=idea,
+        workspace_sha256s=workspace_sha256s,
+        inventor_binding=inventor_binding,
+        vault_binding=vault_binding,
+        judge=judge,
+    )
+    write_private_bytes(
+        paths.host_state / PROVENANCE_FILE_NAME,
+        (canonical_json(provenance.to_dict()) + "\n").encode("utf-8"),
+        label="Daydream provenance",
+    )
     sealed = SealedDaydream(
+        schema_version=2,
         verdict=verdict,
+        provenance=provenance,
         daydream_id=selected_id,
         inventor_id=manifest.inventor_id,
         inventor_name=taste.name,
@@ -1052,16 +1150,25 @@ def wish_from_daydream(sealed: SealedDaydream, *, wish_id: Optional[str] = None)
 
     if not isinstance(sealed, SealedDaydream):
         raise ContractError("wish_from_daydream requires a SealedDaydream")
+    context = {
+        "source": WISH_CONTEXT_SOURCE,
+        "inventor_id": sealed.inventor_id,
+        "daydream_id": sealed.daydream_id,
+        "daydream_sha256": sealed.sha256,
+        "idea_sha256": sealed.idea_sha256,
+        "title": sealed.idea.title,
+    }
+    if sealed.provenance is not None:
+        context.update(
+            {
+                "provenance_sha256": sealed.provenance.sha256,
+                "route": sealed.provenance.route,
+            }
+        )
     return Wish.create(
         wish_id if wish_id is not None else generate_wish_id(),
         sealed.brief,
-        context={
-            "source": WISH_CONTEXT_SOURCE,
-            "inventor_id": sealed.inventor_id,
-            "daydream_id": sealed.daydream_id,
-            "idea_sha256": sealed.idea_sha256,
-            "title": sealed.idea.title,
-        },
+        context=context,
     )
 
 
@@ -1076,6 +1183,7 @@ __all__ = [
     "INVENTOR_BINDING_FILE_NAME",
     "JUDGE_TURN_TIMEOUT_SECONDS",
     "OUTCOME_FILE_NAME",
+    "PROVENANCE_FILE_NAME",
     "VERDICT_FILE_NAME",
     "judge_idea",
     "finalizer_bytes",

@@ -1,5 +1,6 @@
 """Shared fixtures for the Daydream tests; not a test module itself."""
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Dict
@@ -7,7 +8,9 @@ from typing import Any, Dict
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.daydream.contracts import (
     DAYDREAM_IDEA_KIND,
+    DAYDREAM_PROVENANCE_INPUTS,
     DAYDREAM_VERDICT_KIND,
+    DaydreamProvenance,
     Idea,
     NoveltyReport,
     SealedDaydream,
@@ -175,6 +178,36 @@ def sample_thesis() -> Idea:
     return Idea.parse(sample_thesis_dict())
 
 
+def sample_provenance(
+    route: str = "spark", idea: Idea | None = None
+) -> DaydreamProvenance:
+    selected = sample_thesis() if idea is None else idea
+    assert selected.opportunity is not None
+    values = {
+        name: hashlib.sha256(name.encode("utf-8")).hexdigest()
+        for name in DAYDREAM_PROVENANCE_INPUTS
+    }
+    values["taste"] = SAMPLE_TASTE_SHA256
+    values["vault_snapshot"] = None
+    values["world_scan"] = hashlib.sha256(
+        json.dumps(
+            selected.opportunity.world_scan.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    values["prior_art"] = hashlib.sha256(
+        json.dumps(
+            [entry.to_dict() for entry in selected.prior_art],
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    return DaydreamProvenance(route=route, input_sha256s=values)
+
+
 def horn_tip_thesis_dict() -> Dict[str, Any]:
     raw = sample_thesis_dict()
     raw.update(
@@ -295,7 +328,9 @@ def inventor_bundle(root: Path) -> Path:
         "name: Sample\n"
         "description: Makes specific physical playthings for test Wishes.\n"
         "---\n"
-        "# Taste\nSpecific and useful.\n",
+        "# Taste\nSpecific and useful.\n\n"
+        "## Promises\nMotion comes from geometry and gravity alone\n\n"
+        "## Rejections\nDecorative objects with no repeatable interaction\n",
         encoding="utf-8",
     )
     skill_name = "sample-inventor"

@@ -509,6 +509,15 @@ def _dream_or_load(
 ):
     if args.idea is not None:
         sealed = load_sealed_daydream(args.inventor, args.idea)
+        if (
+            effort is not None
+            and sealed.provenance is not None
+            and sealed.provenance.route != effort
+        ):
+            raise DaydreamError(
+                "saved Daydream route is %s, not %s"
+                % (sealed.provenance.route, effort)
+            )
         print("Daydream: %s (saved idea)" % sealed.daydream_id, file=progress, flush=True)
         return sealed
     print("Inventor: %s" % args.inventor, file=progress, flush=True)
