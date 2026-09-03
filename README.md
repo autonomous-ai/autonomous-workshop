@@ -21,7 +21,7 @@ Autonomous AI Inventors daydream, invent, and make new toys and games around the
 
 The Workshop is becoming the engine of an AI-native play company. The full plan, the state of the code, and the specifications are kept privately for now; the pieces below land in this repo as they ship.
 
-- **Daydream** is the first stage. `workshop daydream <inventor>` lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. `--run` builds the liked idea. The always-on loop, a judge, and outcome feedback come next.
+- **Daydream** is the first stage. `workshop start <inventor>` runs the whole loop; its first step lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. `workshop daydream <inventor>` shows the idea without building it. The always-on loop, a judge, and outcome feedback come next.
 - **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`WISH.json`, and every run id is a Wish id); that name is a contract, not a promise.
 - **Release explains the model**, and the first order prints and photographs the real piece so listings carry real images.
 - **An outcome scoreboard** keyed to each design feeds the Inventors, so next month's toys beat this month's.
@@ -36,30 +36,25 @@ codex login
 uv run workshop doctor
 ```
 
-Let an Inventor daydream one brand-new toy idea. It reads its own Taste, searches for prior art, and the host rejects anything too close to a toy already made:
+One command runs the whole loop. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made and seals the rest as the brief, and the run invents, makes, and publishes it (🔥 Forge, `Invent -> Make -> Release`, with Codex as the Workshop Manager):
 
 ```bash
-uv run workshop daydream pico-press
+uv run workshop start pico-press
 ```
 
-Like it? Build it. `--run` seals the idea as the run's brief and starts 🔥 Forge (`Invent -> Make -> Release`) with Codex as the Workshop Manager:
+`--effort spark` is the fast route (`Make -> Release`): the idea is already the concept. 🗺️ Quest adds Playtest:
 
 ```bash
-uv run workshop daydream pico-press --run
+uv run workshop start pico-press --effort spark
 ```
 
-`--effort spark` is the fast route (`Make -> Release`): the idea is already the concept. 🗺️ Quest adds Playtest. A saved idea can be built later:
-
-```bash
-uv run workshop daydream pico-press --run --effort spark
-uv run workshop daydream pico-press --idea <daydream-id> --run
-```
+Want to see the idea before building? `workshop daydream pico-press` prints the card and stops. Build a saved idea later with `workshop start pico-press --idea <daydream-id>`.
 
 `--manager` chooses the Workshop Manager for the daydream and the run. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
-uv run workshop daydream pico-press --manager grok --run --effort spark
+uv run workshop start pico-press --manager grok --effort spark
 ```
 
 Every run prints a run ID (a Wish ID). Check on it or continue the same session:
@@ -80,9 +75,9 @@ unknown failed turns still stop safely for an explicit operator resume.
 One run is one native coding-agent session — the shop lead. Resume cannot switch Managers.
 
 ```bash
-uv run workshop daydream pico-press --manager codex --run    # default
-uv run workshop daydream pico-press --manager claude --run   # experimental
-uv run workshop daydream pico-press --manager grok --run     # experimental
+uv run workshop start pico-press --manager codex    # default
+uv run workshop start pico-press --manager claude   # experimental
+uv run workshop start pico-press --manager grok     # experimental
 ```
 
 | Manager | CLI | Status |
@@ -240,7 +235,7 @@ The floorplan of the shop. An Inventor's idea walks one frozen route; Operations
 Daydream -> one liked idea -> a frozen effort route:
 
 ✨ Spark: Make -> Release                          (--effort spark: fastest)
-🔥 Forge: Invent <-> Make -> Release              (default for workshop daydream --run)
+🔥 Forge: Invent <-> Make -> Release              (default for workshop start)
 🗺️ Quest: Invent <-> Make <-> Playtest -> Release
 
 Release -> Shop (order one, printed to order, photographed, ships in days)

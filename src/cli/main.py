@@ -411,63 +411,91 @@ def _print_daydream_card(sealed, *, stream: TextIO, offer_build: bool) -> None:
             "Build it: %s"
             % _shell_command(
                 "workshop",
-                "daydream",
+                "start",
                 sealed.inventor_id,
                 "--idea",
                 sealed.daydream_id,
-                "--run",
             )
         )
     for line in lines:
         print(line, file=stream, flush=True)
 
 
+def _dream_or_load(
+    args: argparse.Namespace,
+    *,
+    root: Path,
+    manager,
+    progress: TextIO,
+    live_progress: "_LiveWishProgress",
+    effort: Optional[str],
+):
+    if args.idea is not None:
+        sealed = load_sealed_daydream(args.inventor, args.idea)
+        print("Daydream: %s (saved idea)" % sealed.daydream_id, file=progress, flush=True)
+        return sealed
+    print("Inventor: %s" % args.inventor, file=progress, flush=True)
+    print(
+        "Manager: %s%s"
+        % (
+            manager.display_name,
+            " (experimental)" if manager.experimental else "",
+        ),
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Daydreaming one brand-new idea that fits %s's Taste..." % args.inventor,
+        file=progress,
+        flush=True,
+    )
+    return run_daydream(
+        args.inventor,
+        source_root=root,
+        manager_id=manager.manager_id,
+        activity_observer=live_progress.activity,
+        effort=effort,
+    )
+
+
 def _daydream(args: argparse.Namespace) -> int:
-    if not args.run and (args.github or args.strict):
-        raise WorkshopError("--github and --strict apply only with --run")
     root = _inventor_source_root(args.root)
     manager = manager_spec(args.manager)
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
-    if args.idea is not None:
-        sealed = load_sealed_daydream(args.inventor, args.idea)
-        print("Daydream: %s (saved idea)" % sealed.daydream_id, file=progress, flush=True)
-    else:
-        print("Inventor: %s" % args.inventor, file=progress, flush=True)
-        print(
-            "Manager: %s%s"
-            % (
-                manager.display_name,
-                " (experimental)" if manager.experimental else "",
-            ),
-            file=progress,
-            flush=True,
-        )
-        print(
-            "Daydreaming one brand-new idea that fits %s's Taste..." % args.inventor,
-            file=progress,
-            flush=True,
-        )
-        sealed = run_daydream(
-            args.inventor,
-            source_root=root,
-            manager_id=manager.manager_id,
-            activity_observer=live_progress.activity,
-            effort=args.effort if args.run else None,
-        )
-    if not args.json:
-        _print_daydream_card(sealed, stream=progress, offer_build=not args.run)
-    if not args.run:
-        if args.json:
-            _print_json({"daydream": sealed.to_dict()})
-        return 0
-    effort = workshop_effort(args.effort)
-    wish = wish_from_daydream(sealed)
-    print(
-        "Liked. Sealing the idea as this run's brief.",
-        file=progress,
-        flush=True,
+    sealed = _dream_or_load(
+        args,
+        root=root,
+        manager=manager,
+        progress=progress,
+        live_progress=live_progress,
+        effort=None,
     )
+    if args.json:
+        _print_json({"daydream": sealed.to_dict()})
+    else:
+        _print_daydream_card(sealed, stream=progress, offer_build=True)
+    return 0
+
+
+def _start(args: argparse.Namespace) -> int:
+    root = _inventor_source_root(args.root)
+    manager = manager_spec(args.manager)
+    effort = workshop_effort(args.effort)
+    progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress)
+    sealed = _dream_or_load(
+        args,
+        root=root,
+        manager=manager,
+        progress=progress,
+        live_progress=live_progress,
+        effort=effort.name,
+    )
+    if not args.json:
+        _print_daydream_card(sealed, stream=progress, offer_build=False)
+    wish = wish_from_daydream(sealed)
+    print("Sealing the idea as this run's brief.", file=progress, flush=True)
     receipt = _start_run(
         wish,
         effort=effort,
@@ -989,8 +1017,8 @@ def parser() -> argparse.ArgumentParser:
         epilog=(
             "Start here:\n"
             "  workshop doctor\n"
-            "  workshop daydream pico-press\n"
-            "  workshop daydream pico-press --run"
+            "  workshop start pico-press\n"
+            "  workshop start pico-press --effort spark"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -998,31 +1026,31 @@ def parser() -> argparse.ArgumentParser:
         dest="command", required=True, metavar="COMMAND"
     )
 
-    daydream = subcommands.add_parser(
-        "daydream",
-        help="let one Inventor dream one brand-new toy idea; --run builds it",
+    start = subcommands.add_parser(
+        "start",
+        help="let one Inventor daydream a brand-new toy and build it end to end",
     )
-    daydream.add_argument(
+    start.add_argument(
         "inventor",
         metavar="INVENTOR",
         help="Inventor id such as pico-press (see `workshop inventors`)",
     )
-    daydream.add_argument(
-        "--run",
-        action="store_true",
-        help="seal the idea as this run's brief and start its native Manager session",
+    start.add_argument(
+        "--idea",
+        metavar="DAYDREAM_ID",
+        help="build a saved idea instead of dreaming a new one",
     )
-    daydream.add_argument(
+    start.add_argument(
         "--effort",
         choices=tuple(WORKSHOP_EFFORTS),
         default="forge",
         metavar="MODE",
         help=(
-            "creative depth for --run: forge (Invent->Make->Release; default), "
-            "spark (Make->Release), or quest (Invent->Make->Playtest->Release)"
+            "creative depth: forge (Invent->Make->Release; default), "
+            "spark (Make->Release; fastest), or quest (Invent->Make->Playtest->Release)"
         ),
     )
-    daydream.add_argument(
+    start.add_argument(
         "--manager",
         choices=tuple(SUPPORTED_MANAGER_IDS),
         default=DEFAULT_MANAGER_ID,
@@ -1032,15 +1060,10 @@ def parser() -> argparse.ArgumentParser:
             "claude, or grok"
         ),
     )
-    daydream.add_argument(
-        "--idea",
-        metavar="DAYDREAM_ID",
-        help="use a saved idea instead of dreaming a new one",
-    )
-    daydream.add_argument(
+    start.add_argument(
         "--root", type=Path, help="Workshop checkout or inventor catalog"
     )
-    daydream.add_argument(
+    start.add_argument(
         "--github",
         action="store_true",
         help=(
@@ -1048,10 +1071,35 @@ def parser() -> argparse.ArgumentParser:
             "(default: disabled)"
         ),
     )
-    daydream.add_argument("--json", action="store_true", help="emit one JSON receipt")
-    daydream.add_argument(
-        "--strict", action="store_true", help="exit 1 when the run waits"
+    start.add_argument("--json", action="store_true", help="emit one JSON receipt")
+    start.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
+    start.set_defaults(handler=_start)
+
+    daydream = subcommands.add_parser(
+        "daydream",
+        help="let one Inventor dream one brand-new toy idea without building it",
     )
+    daydream.add_argument(
+        "inventor",
+        metavar="INVENTOR",
+        help="Inventor id such as pico-press (see `workshop inventors`)",
+    )
+    daydream.add_argument(
+        "--idea",
+        metavar="DAYDREAM_ID",
+        help="print a saved idea instead of dreaming a new one",
+    )
+    daydream.add_argument(
+        "--manager",
+        choices=tuple(SUPPORTED_MANAGER_IDS),
+        default=DEFAULT_MANAGER_ID,
+        metavar="RUNTIME",
+        help="native Manager runtime for the daydream: codex (default), claude, or grok",
+    )
+    daydream.add_argument(
+        "--root", type=Path, help="Workshop checkout or inventor catalog"
+    )
+    daydream.add_argument("--json", action="store_true", help="emit one JSON receipt")
     daydream.set_defaults(handler=_daydream)
 
     wish = subcommands.add_parser(
