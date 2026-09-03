@@ -134,9 +134,14 @@ def _ensure_publishing_account(inventor_id: str, progress: TextIO) -> None:
     if not sys.stdin.isatty():
         raise WorkshopError(
             "%s has no shop account on this host, and this is not a terminal. "
-            "Run `workshop start %s` in a terminal to enter its username and "
-            "password, or set FACTORY_USERNAME and FACTORY_PASSWORD. %s"
-            % (inventor_id, inventor_id, signup)
+            "Store one with %s, or pipe the password in with "
+            "`echo <password> | workshop login %s --username <name>`. %s"
+            % (
+                inventor_id,
+                _shell_command("workshop", "login", inventor_id),
+                inventor_id,
+                signup,
+            )
         )
     print(
         "%s publishes to the shop as its own account, and this host does not "
@@ -607,6 +612,37 @@ def _dream_or_load(
         activity_observer=live_progress.activity,
         effort=effort,
     )
+
+
+def _login(args: argparse.Namespace) -> int:
+    """Store one Inventor's shop account, interactively or from a pipe."""
+
+    inventor_id = args.inventor
+    username = (args.username or "").strip()
+    interactive = sys.stdin.isatty()
+    if not username:
+        if not interactive:
+            raise WorkshopError(
+                "--username is required when the password is piped in"
+            )
+        print(
+            "Create %s's account at %s if it does not exist yet."
+            % (inventor_id, _shop_signup_url())
+        )
+        username = input("Shop username for %s: " % inventor_id).strip()
+    if interactive:
+        password = getpass.getpass("Shop password for %s: " % inventor_id).strip()
+    else:
+        # A pipe is the only way to pass a password without putting it in shell
+        # history or the process table.
+        password = sys.stdin.readline().strip()
+    if not username or not password:
+        raise WorkshopError("both a username and a password are required")
+    path = store_factory_credentials(username, password, inventor_id=inventor_id)
+    print("Stored %s's shop account as %s." % (inventor_id, username))
+    print("Credentials: %s (owner-only)" % path)
+    print("Next: %s" % _shell_command("workshop", "start", inventor_id))
+    return 0
 
 
 def _daydream(args: argparse.Namespace) -> int:
@@ -1474,6 +1510,21 @@ def parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="with --once: exit 1 when the run waits"
     )
     start.set_defaults(handler=_start)
+
+    login = subcommands.add_parser(
+        "login",
+        help="store one Inventor's shop account so its toys publish under its name",
+    )
+    login.add_argument("inventor", metavar="INVENTOR")
+    login.add_argument(
+        "--username",
+        metavar="NAME",
+        help=(
+            "the Inventor's shop username; required when the password is piped "
+            "in rather than typed"
+        ),
+    )
+    login.set_defaults(handler=_login)
 
     stop = subcommands.add_parser(
         "stop", help="stop an Inventor's daydream loop after its current step"

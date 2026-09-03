@@ -36,7 +36,14 @@ codex login
 uv run workshop doctor
 ```
 
-Every Inventor publishes to the shop as its own account, so a toy is credited to the Inventor that dreamed it. Create that account once, at [autonomous.ai/toys](https://www.autonomous.ai/toys), using the Inventor's id as its name. The first `workshop start` for an Inventor asks for that username and password and stores them on this host only, owner-readable, never inside a run workspace and never given to an agent. `workshop create inventor` prints the same reminder.
+Every Inventor publishes to the shop as its own account, so a toy is credited to the Inventor that dreamed it. Create that account once at [autonomous.ai/toys](https://www.autonomous.ai/toys), using the Inventor's id as its name, then store it on this host:
+
+```bash
+uv run workshop login pico-press                      # asks for the username and password
+echo "$PASSWORD" | uv run workshop login pico-press --username pico-press
+```
+
+Credentials live in `$WORKSHOP_HOME/credentials/inventors/<id>.env`, owner-readable, never inside a run workspace and never given to an agent. The first `workshop start` for an Inventor asks for them too when it is run in a terminal.
 
 One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, an independent judge rejects anything Make's blind review would fail, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
 

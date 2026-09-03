@@ -5,5 +5,8 @@
   directory, never inside a run workspace and never given to an agent).
   Release resolves the publishing pair for the run's selected Inventor and
   falls back to the host-wide file, so existing hosts keep publishing.
+- `workshop login <inventor-id>` stores that account: it prompts in a
+  terminal and reads the password from stdin when one is piped, so a password
+  never reaches shell history or the process table.
 - `workshop create inventor` prints the sign-up link and the next command.
   `WORKSHOP_SHOP_SIGNUP_URL` overrides the link.

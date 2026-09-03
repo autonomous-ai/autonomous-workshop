@@ -62,6 +62,7 @@ class NativeCommandTest(unittest.TestCase):
             {
                 "start",
                 "stop",
+                "login",
                 "daydream",
                 "wish",
                 "status",
@@ -972,6 +973,47 @@ class DaydreamCommandTest(unittest.TestCase):
         lease.assert_not_called()
         self.assertIn("sample has no shop account on this host", stderr.getvalue())
         self.assertIn("https://www.autonomous.ai/toys", stderr.getvalue())
+
+    def test_login_stores_an_account_from_a_pipe_and_from_a_terminal(self):
+        mock.patch.stopall()
+        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        stdout = StringIO()
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=False), mock.patch(
+            "cli.main.sys.stdin.readline", return_value="piped-secret\n"
+        ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("login", "sample", "--username", "sample"))
+        self.assertEqual(result, 0)
+        stored = self.home / "credentials" / "inventors" / "sample.env"
+        self.assertEqual(stat.S_IMODE(stored.stat().st_mode), 0o600)
+        body = stored.read_text(encoding="utf-8")
+        self.assertIn("FACTORY_USERNAME=sample", body)
+        self.assertIn("FACTORY_PASSWORD=piped-secret", body)
+        self.assertNotIn("piped-secret", stdout.getvalue())
+        self.assertIn("Stored sample's shop account as sample.", stdout.getvalue())
+
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=True), mock.patch(
+            "builtins.input", return_value="typed-name"
+        ), mock.patch(
+            "cli.main.getpass.getpass", return_value="typed-secret"
+        ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            self.assertEqual(main(("login", "sample")), 0)
+        body = stored.read_text(encoding="utf-8")
+        self.assertIn("FACTORY_USERNAME=typed-name", body)
+        self.assertIn("FACTORY_PASSWORD=typed-secret", body)
+
+    def test_login_from_a_pipe_requires_a_username(self):
+        mock.patch.stopall()
+        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        stderr = StringIO()
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=False), redirect_stdout(
+            StringIO()
+        ), redirect_stderr(stderr):
+            self.assertEqual(main(("login", "sample")), 2)
+        self.assertIn("--username is required", stderr.getvalue())
 
     def test_daydream_failure_reports_on_stderr_with_exit_two(self):
         stderr = StringIO()
