@@ -38,9 +38,12 @@ the host owns exact inputs, contracts, identity, budgets, and gates.
 
 ## Decision
 
-Daydream is the pre-Wish creative research boundary. It seals one **creative
-product thesis**, not an engineering solution and not a `NativeInvented`
-contract.
+Daydream is the mandatory first creative step of every
+`workshop start <inventor>` cycle and the pre-Wish creative research boundary.
+Supplying `--idea` reuses a Daydream that already completed; it does not skip
+the step. The direct `workshop wish` command remains the separate entry point
+for a person's already-authored Wish. Daydream seals one **creative product
+thesis**, not an engineering solution and not a `NativeInvented` contract.
 
 The thesis owns:
 

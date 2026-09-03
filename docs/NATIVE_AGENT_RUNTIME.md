@@ -39,12 +39,17 @@ does not govern ordinary source-repository work.
 
 ## Runtime boundary
 
-Daydream is a separate pre-Wish creative-research boundary governed by
-[ADR 0042](adr/0042-taste-governed-world-informed-daydream.md). It gives one
-selected Inventor a short native Manager session to observe the current world,
-apply its exact Taste and specialist method, and seal one creative product
-thesis. An accepted thesis becomes immutable Wish intent; it does not join or
-replace the product run's one persistent Wish-to-Release session.
+Daydream is the mandatory first creative step of every
+`workshop start <inventor>` cycle and a separate pre-Wish creative-research
+boundary governed by
+[ADR 0042](adr/0042-taste-governed-world-informed-daydream.md). `--idea`
+reuses a Daydream that already completed rather than skipping it. Daydream
+gives one selected Inventor a short native Manager session to observe the
+current world, apply its exact Taste and specialist method, and seal one
+creative product thesis. An accepted thesis becomes immutable Wish intent; it
+does not join or replace the product run's one persistent Wish-to-Release
+session. The direct `workshop wish` entry point remains the distinct path for
+a person's already-authored Wish.
 
 Every `workshop wish` first creates and populates one persistent toy project,
 freezes its effort, then launches one native Codex session in that directory

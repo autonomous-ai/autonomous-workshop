@@ -39,8 +39,12 @@ publication gates.
 
 ## Lifecycle
 
-Daydream is an optional autonomous pre-Wish loop, not another product-run
-stage. Each iteration uses a separate short native session to observe current
+Daydream is the mandatory first creative step of every
+`workshop start <inventor>` cycle, and a pre-Wish boundary rather than another
+product-run stage. `--idea` reuses a Daydream that already completed; it does
+not bypass Daydream. The separate user-authored `workshop wish` entry point
+starts from the person's Wish and does not select an Inventor up front. Each
+Daydream iteration uses a separate short native session to observe current
 signals, apply one Inventor's exact Taste and specialist method, and seal one
 creative product thesis. A thesis accepted by its independent Judge becomes
 the immutable Wish for a new product run. It owns the opportunity, intended
