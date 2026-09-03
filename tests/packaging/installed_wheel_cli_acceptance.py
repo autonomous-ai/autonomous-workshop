@@ -48,6 +48,7 @@ INVENTORS = (
     "leo",
     "luma-vale",
     "mira-fold",
+    "orin-shadow",
     "pico-press",
     "sonora-reed",
     "tess-loop",
