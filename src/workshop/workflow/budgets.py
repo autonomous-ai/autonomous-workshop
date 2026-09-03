@@ -1,16 +1,21 @@
-"""One command, two clocks: the whole timeout model for a budgeted native run.
+"""Two clocks per toy: the whole timeout model for a budgeted native run.
+
+These clocks bound **one toy**, from its sealed brief to its published page.
+They are created once per ``workshop start`` build or ``workshop resume``, so
+the daydream loop that calls them is never bounded by them: it dreams and
+builds until an operator stops it, and each toy starts with fresh clocks.
 
 A run frozen with :data:`BUDGETS_CAPABILITY_PATH` replaces every turn counter
-and recovery window with two wall clocks:
+and recovery window with:
 
-* each step (Invent, Make, Playtest, Release) may spend
-  :data:`STEP_BUDGET_SECONDS` of one command, which is room for two
-  maximum-length turns so a timeout can be resumed rather than lost;
-* the command as a whole may spend :data:`RUN_BUDGET_SECONDS`.
+* :data:`STEP_BUDGET_SECONDS` for each step (Invent, Make, Playtest,
+  Release), which is room for two maximum-length turns so a slow turn can be
+  resumed rather than lost;
+* :data:`RUN_BUDGET_SECONDS` for that one toy across all of its steps.
 
 Inside its clocks a step may take as many native turns as it needs and the
 host continues the same Goal automatically.  Every turn is bounded by whatever
-is left, so a turn never outlives its step.  When a clock runs out the command
+is left, so a turn never outlives its step.  When a clock runs out the build
 stops with one plain sentence and the exact session stays checkpointed;
 ``workshop resume`` starts fresh clocks.
 
@@ -53,7 +58,7 @@ def _positive_seconds(value: Any, label: str) -> int:
 
 @dataclass
 class CommandBudget:
-    """The two clocks of one ``workshop start`` or ``workshop resume``."""
+    """The two clocks of one toy's build. The daydream loop is not bounded."""
 
     step_seconds: int = STEP_BUDGET_SECONDS
     run_seconds: int = RUN_BUDGET_SECONDS
@@ -118,7 +123,7 @@ class CommandBudget:
     def exhausted_message(self, step: str, which: str, product_id: str) -> str:
         if which == "run":
             used, limit = self._spent_total, self.run_seconds
-            what = "This run"
+            what = "This toy"
         else:
             used, limit = self.spent(step), self.step_seconds
             what = step.title()

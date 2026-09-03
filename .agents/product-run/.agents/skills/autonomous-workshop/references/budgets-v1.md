@@ -1,12 +1,16 @@
 # Run budgets v1
 
 This run measures work in wall-clock time, not in turns. There are exactly two
-clocks and nothing else stops the command.
+clocks and nothing else stops it. Both bound this one toy.
 
-- **Each step gets 120 minutes** of one command: Invent, Make, Playtest, and
-  Release each have their own. That is room for two maximum-length turns, so a
-  turn that ends at the boundary can be resumed rather than lost.
-- **The command gets 6 hours** in total across all of its steps.
+- **Each step gets 120 minutes**: Invent, Make, Playtest, and Release each have
+  their own. That is room for two maximum-length turns, so a turn that ends at
+  the boundary can be resumed rather than lost.
+- **This toy gets 6 hours** in total across all of its steps.
+
+The Inventor's daydream loop is not bounded by either clock. It keeps dreaming
+and building until an operator stops it, and every toy begins with fresh
+clocks.
 
 Inside those clocks you may take as many native turns as the work needs. When a
 turn ends without your stage finalizer having run, the host continues the exact
@@ -14,7 +18,7 @@ same session and the same Goal automatically; that is ordinary, not a failure,
 and it costs nothing but the minutes it used. A turn is bounded by whatever the
 two clocks still allow, so a turn never outlives its step.
 
-When a clock runs out the command stops with one sentence naming the clock, and
+When a clock runs out this build stops with one sentence naming the clock, and
 the exact session stays checkpointed. An explicit `workshop resume` starts fresh
 clocks and continues the same Goal.
 
