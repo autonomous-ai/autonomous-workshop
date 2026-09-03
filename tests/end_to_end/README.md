@@ -141,3 +141,42 @@ The three evidence tiers are intentionally distinct:
 None of them proves creative or research quality, exhaustive agent behavior,
 physical printing, fit, durability, manufacture, shipment, delivery, or human
 response. Full product validation remains separate.
+
+## Focused Invent/Concept/Make run
+
+`tools/run_invent_make.py` runs a real private Forge-shaped acceptance slice:
+Wish, Invent (including the active host-rendered Concept contract), and Make.
+It stops after the real Make gate and never starts Release, loads Factory
+credentials, or grants publication authority. The default fixed Wish is the Ho
+Chi Minh City landmark chess set used to evaluate the direct deep-Make profile.
+
+```bash
+uv run --frozen python tools/run_invent_make.py
+```
+
+To inspect the sealed Invent and Concept output before Make begins:
+
+```bash
+uv run --frozen python tools/run_invent_make.py --stop-after concept
+```
+
+The native Codex defaults are `gpt-5.6-sol` and reasoning effort `medium`.
+Both are explicit and customizable; they are frozen in private test state:
+
+```bash
+uv run --frozen python tools/run_invent_make.py \
+  --model gpt-5.6-terra --effort high \
+  "A fixed Wish to compare against the baseline"
+```
+
+The command prints the retained private workspace for inspecting the sealed
+Invent, Concept, and Make artifacts. If a bounded run stops early, resume the
+same session and frozen profile with the printed id:
+
+```bash
+uv run --frozen python tools/run_invent_make.py --resume <wish-id>
+```
+
+Concept image credentials must already be configured exactly as for a normal
+Forge run. A missing credential produces the ordinary durable Invent wait;
+after configuring it, use `--resume`.

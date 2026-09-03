@@ -255,6 +255,8 @@ _AUTHORIZATION_NAME = "authorization.json"
 _RELEASE_EFFECT_WAIT_NAME = "release-effect-wait.json"
 _INVENT_EFFECT_WAIT_NAME = "invent-effect-wait.json"
 _PUBLIC_EXAMPLE_STATUS_NAME = "public-example.json"
+_PHASE_TEST_NAME = "phase-test.json"
+_PHASE_TEST_KIND = "autonomous-workshop.invent-make-phase-test"
 _NATIVE_TOKEN_USAGE_NAME = "native-token-usage.json"
 _NATIVE_TOKEN_USAGE_KIND = "autonomous-workshop.native-token-usage"
 _NATIVE_TOKEN_SUMMARY_KIND = "autonomous-workshop.native-token-summary"
@@ -9146,6 +9148,7 @@ def _run_native_session(
     paths: NativeRunPaths,
     *,
     launcher: Optional[NativeSessionLauncher],
+    stop_after_stage: Optional[str] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
@@ -9219,6 +9222,12 @@ def _run_native_session(
                 _rebind_existing_progress(
                     paths, checkpoint, updated, activity="completed"
                 )
+                if (
+                    stop_after_stage == checkpoint.stage
+                    and updated.stage
+                    == _checkpoint_next_stage(checkpoint, checkpoint.stage)
+                ):
+                    return updated, last_session, turns, action
                 if updated.status in ("waiting", "failed", "complete"):
                     return updated, last_session, turns, action
                 continue
@@ -9434,6 +9443,11 @@ def _run_native_session(
         consecutive_recoverable_turns = 0
         recoverable_continuation = False
         progress.rebind(updated, activity="completed")
+        if (
+            stop_after_stage == checkpoint.stage
+            and updated.stage == _checkpoint_next_stage(checkpoint, checkpoint.stage)
+        ):
+            return updated, last_session, turns, action
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action
     if budget is not None:
@@ -9827,6 +9841,131 @@ def _reject_grid_keepalive_wish_start() -> None:
         )
 
 
+def _phase_test_path(paths: NativeRunPaths) -> Path:
+    return paths.host_state / _PHASE_TEST_NAME
+
+
+def _write_phase_test_profile(
+    paths: NativeRunPaths,
+    *,
+    product_id: str,
+    model: str,
+    reasoning_effort: str,
+    stop_after_stage: str,
+) -> Mapping[str, Any]:
+    if stop_after_stage not in ("invent", "make"):
+        raise ContractError("phase test must stop after Invent/Concept or Make")
+    value = {
+        "schema_version": 1,
+        "kind": _PHASE_TEST_KIND,
+        "product_id": product_id,
+        "route": "invent-concept-make",
+        "model": model,
+        "reasoning_effort": reasoning_effort,
+        "stop_after_stage": stop_after_stage,
+    }
+    _write_private_json(_phase_test_path(paths), value)
+    return value
+
+
+def _read_phase_test_profile(
+    paths: NativeRunPaths,
+    *,
+    required: bool = False,
+) -> Optional[Mapping[str, Any]]:
+    path = _phase_test_path(paths)
+    if not path.exists() and not path.is_symlink():
+        if required:
+            raise StateConflict("Invent/Make phase-test profile is missing")
+        return None
+    try:
+        identity = path.lstat()
+        content = path.read_bytes()
+    except OSError as exc:
+        raise StateConflict("Invent/Make phase-test profile is unavailable") from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(identity.st_mode)
+        or stat.S_IMODE(identity.st_mode) != 0o600
+    ):
+        raise StateConflict("Invent/Make phase-test profile must be a private file")
+    value = _strict_json_bytes(content, label="Invent/Make phase-test profile")
+    if (
+        set(value)
+        != {
+            "schema_version",
+            "kind",
+            "product_id",
+            "route",
+            "model",
+            "reasoning_effort",
+            "stop_after_stage",
+        }
+        or value["schema_version"] != 1
+        or value["kind"] != _PHASE_TEST_KIND
+        or value["route"] != "invent-concept-make"
+        or value["stop_after_stage"] not in ("invent", "make")
+        or not isinstance(value["product_id"], str)
+        or not isinstance(value["model"], str)
+        or value["reasoning_effort"] not in ("low", "medium", "high", "xhigh")
+    ):
+        raise StateConflict("Invent/Make phase-test profile is invalid")
+    return value
+
+
+def _phase_test_receipt(
+    checkpoint: AgentRunCheckpoint,
+    *,
+    paths: NativeRunPaths,
+    profile: Mapping[str, Any],
+    session: Optional[CodexNativeSessionOutcome],
+    action: str,
+    turns: int,
+) -> Mapping[str, Any]:
+    receipt = _native_receipt(
+        checkpoint,
+        paths=paths,
+        session=session,
+        action=action,
+        turns=turns,
+    )
+    stop_after_stage = profile["stop_after_stage"]
+    expected_next_stage = "make" if stop_after_stage == "invent" else "release"
+    completed = (
+        checkpoint.stage == expected_next_stage
+        and checkpoint.status == "active"
+        and bool(checkpoint.stage_artifacts.get(stop_after_stage))
+    )
+    receipt["phase_test"] = {
+        "kind": (
+            "invent-concept"
+            if stop_after_stage == "invent"
+            else "invent-concept-make"
+        ),
+        "status": "complete" if completed else checkpoint.status,
+        "completed_stages": [
+            stage
+            for stage in ("invent", "make")
+            if checkpoint.stage_artifacts.get(stage)
+        ],
+        "model": profile["model"],
+        "reasoning_effort": profile["reasoning_effort"],
+        "stop_after": "concept" if stop_after_stage == "invent" else "make",
+        "make_started": bool(checkpoint.stage_artifacts.get("make")),
+        "release_started": False,
+    }
+    receipt["publication"] = {
+        "status": "not-requested",
+        "requested": False,
+        "required": False,
+        "reason": (
+            "This focused test stops after its selected phase and grants no "
+            "Release authority."
+        ),
+    }
+    return receipt
+
+
 def start_native_run(
     wish: Wish,
     *,
@@ -9958,12 +10097,123 @@ def start_native_run(
         }
 
 
+def start_native_phase_test(
+    wish: Wish,
+    *,
+    model: str = "gpt-5.6-sol",
+    reasoning_effort: str = "medium",
+    stop_after: str = "make",
+    max_rounds: int = 4,
+    activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
+) -> Mapping[str, Any]:
+    """Run real Forge phases through the selected Concept or Make boundary.
+
+    This is an operator acceptance seam, not a fourth production lifecycle.
+    It grants Concept-render authority, but never grants Release, Factory, or
+    GitHub publication authority. The chosen Codex profile is persisted in
+    private host state and must be reused by ``resume_native_phase_test``.
+    """
+
+    _reject_grid_keepalive_wish_start()
+    if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
+        raise ContractError("round budget must be an integer between 1 and 100")
+    activity_observer = _validated_activity_observer(activity_observer)
+    timing_observer = _validated_timing_observer(timing_observer)
+    if stop_after not in ("concept", "make"):
+        raise ContractError("phase test stop must be concept or make")
+    stop_after_stage = "invent" if stop_after == "concept" else "make"
+    launcher = CodexNativeSessionLauncher(
+        model=model,
+        reasoning_effort=reasoning_effort,
+        auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+        timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+    )
+    effort = workshop_effort("forge")
+    with wish_run_timing_span(
+        timing_observer,
+        product_id=wish.product_id,
+        stage="wish",
+        operation="run.initialize",
+    ):
+        assets = product_run_agent_assets()
+        wish_bytes = canonical_wish_bytes(wish)
+        paths = native_run_paths(wish.product_id, create=True)
+        try:
+            run = AgentRun.create(
+                paths.workspace,
+                paths.host_state,
+                product_id=wish.product_id,
+                wish_bytes=wish_bytes,
+                product_run_constitution_source=assets.constitution,
+                skill_root=assets.skill_root,
+                domain_skill_roots=product_run_domain_skill_roots(),
+                inventor_source_root=_product_run_inventor_source_root(assets),
+                max_rounds=max_rounds,
+                effort=effort.name,
+                manager_id=DEFAULT_MANAGER_ID,
+            )
+        except Exception:
+            try:
+                paths.workspace.parent.rmdir()
+            except OSError:
+                pass
+            raise
+    with _native_run_mutation_lock(paths):
+        profile = _write_phase_test_profile(
+            paths,
+            product_id=wish.product_id,
+            model=model,
+            reasoning_effort=reasoning_effort,
+            stop_after_stage=stop_after_stage,
+        )
+        concept_profile = ConceptImageProfile()
+        _record_authorization(
+            paths,
+            product_id=wish.product_id,
+            publish_requested=False,
+            github_publish_requested=False,
+            concept_render_authority={
+                "profile_id": concept_profile.profile_id,
+                "profile_sha256": concept_profile.profile_sha256,
+                "transmitted_data_classes": [
+                    "drawing-instruction-text",
+                    "exact-prior-role-images",
+                ],
+            },
+            create=True,
+        )
+        checkpoint = _advance_validated_wish(run)
+        checkpoint, session, turns, action = _run_native_session(
+            run,
+            paths,
+            launcher=launcher,
+            stop_after_stage=stop_after_stage,
+            activity_observer=activity_observer,
+            timing_observer=timing_observer,
+        )
+        return {
+            **_phase_test_receipt(
+                checkpoint,
+                paths=paths,
+                profile=profile,
+                session=session,
+                action=action,
+                turns=turns,
+            ),
+            "wish": wish.to_dict(),
+        }
+
+
 def _resume_native_run_locked(
     product_id: str,
     *,
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
+    launcher_override: Optional[NativeSessionLauncher] = None,
+    stop_after_stage: Optional[str] = None,
+    publish_authorized: bool = True,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -9972,7 +10222,7 @@ def _resume_native_run_locked(
     _record_authorization(
         paths,
         product_id=product_id,
-        publish_requested=True,
+        publish_requested=publish_authorized,
         create=False,
     )
     promotion_action: Optional[str] = None
@@ -10173,16 +10423,19 @@ def _resume_native_run_locked(
             action="inspected-terminal",
         )
     _prune_empty_make_product_directories(paths.workspace, checkpoint)
-    launcher = (
-        None
-        if _uses_dynamic_deep_profile(checkpoint)
-        or _uses_command_budget(checkpoint)
-        else _native_launcher(checkpoint)
-    )
+    launcher = launcher_override
+    if launcher is None:
+        launcher = (
+            None
+            if _uses_dynamic_deep_profile(checkpoint)
+            or _uses_command_budget(checkpoint)
+            else _native_launcher(checkpoint)
+        )
     checkpoint, session, turns, action = _run_native_session(
         run,
         paths,
         launcher=launcher,
+        stop_after_stage=stop_after_stage,
         activity_observer=activity_observer,
         timing_observer=timing_observer,
     )
@@ -10222,6 +10475,11 @@ def resume_native_run(
     timing_observer = _validated_timing_observer(timing_observer)
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
+        if _read_phase_test_profile(paths) is not None:
+            raise StateConflict(
+                "this is an Invent/Make phase test; resume it with the focused "
+                "phase-test runner so Release cannot start"
+            )
         run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
         checkpoint = run.snapshot()
         return _resume_native_run_locked(
@@ -10231,6 +10489,75 @@ def resume_native_run(
             paths=paths,
             activity_observer=activity_observer,
             timing_observer=timing_observer,
+        )
+
+
+def resume_native_phase_test(
+    product_id: str,
+    *,
+    activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
+) -> Mapping[str, Any]:
+    """Resume one frozen Invent/Concept/Make test without entering Release."""
+
+    activity_observer = _validated_activity_observer(activity_observer)
+    timing_observer = _validated_timing_observer(timing_observer)
+    paths = native_run_paths(product_id)
+    with _native_run_mutation_lock(paths):
+        profile = _read_phase_test_profile(paths, required=True)
+        assert profile is not None
+        if profile["product_id"] != product_id:
+            raise StateConflict("Invent/Make phase-test profile belongs to another run")
+        launcher = CodexNativeSessionLauncher(
+            model=profile["model"],
+            reasoning_effort=profile["reasoning_effort"],
+            auto_compact_token_limit=DEEP_AUTO_COMPACT_TOKEN_LIMIT,
+            timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
+        )
+        run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
+        checkpoint = run.snapshot()
+        if checkpoint.effort != "forge" or checkpoint.manager_id != DEFAULT_MANAGER_ID:
+            raise StateConflict("Invent/Make phase test has the wrong frozen route")
+        last_receipt: Optional[Mapping[str, Any]] = None
+        stop_after_stage = profile["stop_after_stage"]
+        while checkpoint.stage in ("invent", "make") and not (
+            stop_after_stage == "invent" and checkpoint.stage == "make"
+        ):
+            last_receipt = _resume_native_run_locked(
+                product_id,
+                run=run,
+                checkpoint=checkpoint,
+                paths=paths,
+                launcher_override=launcher,
+                stop_after_stage=stop_after_stage,
+                publish_authorized=False,
+                activity_observer=activity_observer,
+                timing_observer=timing_observer,
+            )
+            updated = run.snapshot()
+            if updated == checkpoint or updated.status in ("waiting", "failed"):
+                checkpoint = updated
+                break
+            checkpoint = updated
+        if checkpoint.stage == "release" and not checkpoint.stage_artifacts.get("make"):
+            raise StateConflict("Invent/Make phase test reached Release without Make")
+        action = (
+            str(last_receipt.get("action", "inspected-phase-test"))
+            if last_receipt is not None
+            else "inspected-phase-test"
+        )
+        turns = (
+            int(last_receipt.get("turns", 0))
+            if last_receipt is not None
+            else 0
+        )
+        return _phase_test_receipt(
+            checkpoint,
+            paths=paths,
+            profile=profile,
+            session=None,
+            action=action,
+            turns=turns,
         )
 
 
@@ -10264,6 +10591,8 @@ __all__ = [
     "native_run_paths",
     "native_run_status",
     "native_stage_prompt",
+    "resume_native_phase_test",
     "resume_native_run",
+    "start_native_phase_test",
     "start_native_run",
 ]

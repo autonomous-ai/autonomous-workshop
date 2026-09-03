@@ -27,7 +27,9 @@ _NATIVE_HOST_EXPORTS = (
     "native_run_paths",
     "native_run_status",
     "native_stage_prompt",
+    "resume_native_phase_test",
     "resume_native_run",
+    "start_native_phase_test",
     "start_native_run",
 )
 

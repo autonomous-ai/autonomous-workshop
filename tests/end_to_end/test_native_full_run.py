@@ -23,7 +23,9 @@ from workshop.artifacts import build_artifact_manifest
 from workshop.workflow.native_run import (
     _MAX_NATIVE_TURNS,
     native_run_paths,
+    resume_native_phase_test,
     resume_native_run,
+    start_native_phase_test,
     start_native_run,
 )
 from workshop.errors import ArtifactError, StateConflict
@@ -1908,6 +1910,127 @@ class NativeFullRunTest(unittest.TestCase):
                 release_packet["inputs"]["required_package_files"],
                 ["MANUAL.pdf", "product.json", "MANUAL-DESIGN.json"],
             )
+
+    def test_focused_phase_test_stops_after_make_without_release_authority(self):
+        launcher = _OneSessionProductAgent()
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            wish = Wish.create(
+                "focused-invent-make",
+                "Build a geometry-readable landmark chess set.",
+                context={"source": "focused-phase-test"},
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ) as launcher_type, mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ):
+                receipt = start_native_phase_test(
+                    wish,
+                    model="gpt-5.6-terra",
+                    reasoning_effort="medium",
+                )
+                paths = native_run_paths(wish.product_id)
+                checkpoint = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+                authorization = json.loads(
+                    (paths.host_state / "authorization.json").read_text(
+                        encoding="utf-8"
+                    )
+                )
+                profile = json.loads(
+                    (paths.host_state / "phase-test.json").read_text(
+                        encoding="utf-8"
+                    )
+                )
+                with self.assertRaisesRegex(
+                    StateConflict, "focused phase-test runner"
+                ):
+                    resume_native_run(wish.product_id)
+                inspected = resume_native_phase_test(wish.product_id)
+
+        launcher_type.assert_called_with(
+            model="gpt-5.6-terra",
+            reasoning_effort="medium",
+            auto_compact_token_limit=256_000,
+            timeout_seconds=3_600,
+        )
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            ["invent", "make"],
+        )
+        self.assertEqual((checkpoint.stage, checkpoint.status), ("release", "active"))
+        self.assertEqual(set(checkpoint.stage_artifacts), {"wish", "invent", "make"})
+        self.assertFalse(authorization["publish_requested"])
+        self.assertFalse(authorization["github_publish_requested"])
+        self.assertEqual(profile["model"], "gpt-5.6-terra")
+        self.assertEqual(profile["reasoning_effort"], "medium")
+        self.assertEqual(receipt["phase_test"]["status"], "complete")
+        self.assertEqual(receipt["phase_test"]["completed_stages"], ["invent", "make"])
+        self.assertFalse(receipt["publication"]["requested"])
+        self.assertEqual(inspected["phase_test"]["status"], "complete")
+
+    def test_focused_phase_test_can_stop_after_invent_concept(self):
+        launcher = _OneSessionProductAgent()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            wish = Wish.create(
+                "focused-invent-concept",
+                "Build a geometry-readable landmark chess set.",
+                context={"source": "focused-concept-test"},
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ):
+                receipt = start_native_phase_test(wish, stop_after="concept")
+                paths = native_run_paths(wish.product_id)
+                checkpoint = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+                authorization = json.loads(
+                    (paths.host_state / "authorization.json").read_text(
+                        encoding="utf-8"
+                    )
+                )
+
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            ["invent"],
+        )
+        self.assertEqual((checkpoint.stage, checkpoint.status), ("make", "active"))
+        self.assertEqual(set(checkpoint.stage_artifacts), {"wish", "invent"})
+        self.assertFalse(authorization["publish_requested"])
+        self.assertEqual(receipt["phase_test"]["kind"], "invent-concept")
+        self.assertEqual(receipt["phase_test"]["status"], "complete")
+        self.assertEqual(receipt["phase_test"]["stop_after"], "concept")
+        self.assertFalse(receipt["phase_test"]["make_started"])
 
     def _run_playtest_routing_case(
         self,
