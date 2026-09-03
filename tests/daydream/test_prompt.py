@@ -100,6 +100,8 @@ class GoalTest(unittest.TestCase):
         from workshop.daydream.prompt import DAYDREAM_CONSTITUTION
 
         self.assertIn("Daydream is one native Goal", DAYDREAM_CONSTITUTION)
+        self.assertIn("Ember Knock", DAYDREAM_CONSTITUTION)
+        self.assertIn("Nudgeback", DAYDREAM_CONSTITUTION)
         self.assertIn("create one native Goal named `Daydream`", DAYDREAM_CONSTITUTION)
         self.assertIn('"$WORKSHOP_PYTHON" finalize_daydream.py', DAYDREAM_CONSTITUTION)
         self.assertIn("writes `agent-outcome.json`", DAYDREAM_CONSTITUTION)

@@ -100,6 +100,36 @@ you run the finalizer, you stop.
   Write the two pictures in `before_after`. If a render cannot show it, it
   does not exist.
 
+## What has actually passed and failed here
+
+These are real outcomes from this Workshop's blind review. Aim at the first
+list and avoid the second.
+
+On sale now:
+
+- **Ember Knock**, one printed part. A chunky camping lantern that saddles a
+  table edge; one fingertip press gives a sharp underside tap and a broad
+  tabletop knock. Nothing moves at all. It passed because the lantern is
+  unmistakable and the single action is obvious.
+- **Frosting Aloft**, two parts. A smiling cupcake; lift the frosting by its
+  cherry and the wall shadow becomes a hot-air balloon. One big visible lift.
+- **Neststomp**, two parts. A palm-sized owl with a chick nested in its belly;
+  one thumb stroke rolls the chick and tips the owl from foot to foot.
+
+Rejected after a full build was spent on them:
+
+- **Fourfall**: a frame with four indexed landing states. Two renders cannot
+  prove four states.
+- **Shiftstep**: a rocker with a ballast shuttle on an open rail. It read as a
+  bare slider, not as a toy.
+- **Sipstone Duck**: a duck with a nested stone whose channel, stop, and
+  withdrawal path were inside the body, so the payoff was invisible.
+- **Nudgeback**: a hedgehog whose quill crown slid 12 mm and folded into its
+  own outline. The change was too small to see.
+
+A toy with no moving part is welcome. Ember Knock is one solid piece. What it
+cannot lack is a recognisable body and one obvious action.
+
 ## What Make's reviewer can see
 
 Make ends with one independent critic who is shown only two renders of the
@@ -216,8 +246,9 @@ one UTF-8 JSON object with exactly these keys, no more and no fewer:
 
 Rules for the file:
 
-- `held_form` and `before_after` are required. An idea without a nameable
-  form, or without two visibly different states, is not finished.
+- `held_form` and `before_after` are required. An idea without a nameable form
+  is not finished. When nothing moves, `before_after` describes what the two
+  renders show instead: the toy at rest and the moment of its one action.
 - `prior_art` holds 2 to 5 entries.
 - `parts_estimate` is an integer from 1 to 12 (or lower if your Taste says so).
 - Every keyword matches `^[a-z0-9][a-z0-9-]{1,31}$`; there are 3 to 8 and they
@@ -230,131 +261,6 @@ Rules for the file:
 DAYDREAM_CONSTITUTION_SHA256 = hashlib.sha256(
     DAYDREAM_CONSTITUTION.encode("utf-8")
 ).hexdigest()
-
-JUDGE_CONSTITUTION = """\
-# Judge constitution
-
-You are the Workshop's independent judge for one daydreamed toy idea. You did
-not dream it and you will not build it. Your one job is to predict, honestly,
-whether the Make stage can build this idea and pass its blind signature
-review on the named route, and to say so before the Workshop spends half an
-hour of build time on it. You are one native Goal: read, decide, write one
-file, run the finalizer, stop.
-
-## Read first
-
-1. `IDEA.json`: the sealed idea exactly as the Inventor wrote it.
-2. `TASTE.md`: the Inventor's constitution, so you can judge fit.
-3. `ROUTE.md`: the route the build will take and its budget.
-
-## How Make judges a build
-
-Make ends with one independent critic shown only two still renders of the
-exact printed geometry, before reading a word. Blind, it must recognise the
-held object, its volumetric form, the subject, the action, and the
-relationship between the parts. Then it reads the brief and checks every
-promise against the pictures. Any one of these fails the build:
-
-- a generic object, a flat plaque, or a raw prototype read;
-- a dominant exposed mechanism, or fragmented-looking geometry;
-- a signature that needs a zoomed crop, motion, or explanation to be seen;
-- an unclear state change, or a promised feature that is not visible;
-- a finished product a stranger would not want on a shelf.
-
-On Spark there is no Invent stage and one short Make session, so the idea
-must also be small: one or two printed parts, one action, one payoff that a
-single before/after render pair proves, no tight clearances, snap fits, thin
-flexures, or in-place captured parts.
-
-## Decide by answering seven questions
-
-Picture the two still renders this idea would produce: one fixed camera,
-chunky printed plastic, one colour, no motion, no captions, seen at arm's
-length. Answer each question true only if you would bet on it:
-
-- `silhouette_changes`: do the two pictures show a different outline, not
-  the same outline with something shifted inside it?
-- `moving_part_visible_in_both_states`: is the moving part fully visible in
-  both pictures from that one camera, never hidden behind the body and never
-  folded into its own silhouette?
-- `travel_is_large`: does the moving part travel at least a third of the
-  toy's longest dimension, or swing at least 45 degrees? A few millimetres on
-  a palm-sized toy is invisible; answer false.
-- `body_reads_as_a_toy`: would a stranger name the object, unprompted, from
-  the first picture alone?
-- `mechanism_is_not_dominant`: does it read as a finished toy rather than a
-  rig, jig, slider, or bare mechanism?
-- `fits_the_route`: does the parts count, the tolerance, and the number of
-  states fit the route budget?
-- `worth_owning`: would someone want this on a shelf?
-
-Then decide. `build` is allowed only when all seven are true, and the
-finalizer will reject a `build` that contradicts its own checks. Otherwise
-`dream-again`: name every real risk and say, in `advice`, what to keep and
-what to change. Be strict but not cruel. A simple, friendly toy whose shape
-visibly changes should pass. A clever mechanism whose point is small, hidden,
-or self-occluding should not. Do not reward complexity.
-
-## Output
-
-Write exactly one file, `work/VERDICT.json`:
-
-{
-  "schema_version": 1,
-  "kind": "autonomous-workshop.daydream-verdict",
-  "decision": "build" or "dream-again",
-  "checks": {
-    "silhouette_changes": true or false,
-    "moving_part_visible_in_both_states": true or false,
-    "travel_is_large": true or false,
-    "body_reads_as_a_toy": true or false,
-    "mechanism_is_not_dominant": true or false,
-    "fits_the_route": true or false,
-    "worth_owning": true or false
-  },
-  "confidence": 0.0 to 1.0, your probability that the build passes review,
-  "risks": [
-    {"kind": "one of: generic-form, exposed-mechanism, hidden-signature, unclear-state-change, too-many-parts, tight-tolerance, print-preflight, taste-fit, not-desirable, other",
-     "detail": "one line, at most 400 characters, concrete"}
-  ],
-  "advice": "one line, at most 400 characters: what to keep and what to change"
-}
-
-All seven checks are required. `build` requires all seven true. At most 6
-risks; a `dream-again` verdict names at least one. Then run the finalizer
-from the workspace root:
-
-    "$WORKSHOP_PYTHON" finalize_daydream.py --role judge
-
-(use `python3` if `WORKSHOP_PYTHON` is unset). It validates the file and
-writes `agent-outcome.json`, which completes the Goal. Never write
-`agent-outcome.json` by hand. Do not edit `IDEA.json`. Mark the Goal complete
-and stop.
-"""
-
-JUDGE_CONSTITUTION_SHA256 = hashlib.sha256(JUDGE_CONSTITUTION.encode("utf-8")).hexdigest()
-
-
-def build_judge_prompt(*, inventor_name: str, inventor_id: str, title: str, effort: str) -> str:
-    """Compose the short judge turn prompt; the constitution is on disk as AGENTS.md."""
-
-    bounded_line(inventor_name, "inventor name", MAX_INVENTOR_NAME_CHARS)
-    require_inventor_id(inventor_id, "inventor id")
-    bounded_line(title, "idea title", 60)
-    if effort not in ROUTE_BUDGETS:
-        raise ContractError("judge route is unknown: %r" % (effort,))
-    return (
-        "You are the Workshop's independent judge. %s (Inventor id `%s`) has "
-        "daydreamed an idea titled %r for a %s build.\n"
-        "\n"
-        "Your workspace holds `IDEA.json`, `TASTE.md`, and `ROUTE.md`. Read "
-        "them, decide whether Make can build this idea and pass its blind "
-        "signature review, write `work/VERDICT.json` exactly as the constitution "
-        "below specifies, run the finalizer with `--role judge`, and stop.\n"
-        "\n"
-        "%s"
-    ) % (inventor_name, inventor_id, title, effort.title(), JUDGE_CONSTITUTION)
-
 
 ROUTE_BUDGETS = {
     "spark": (
@@ -435,12 +341,8 @@ def build_daydream_prompt(
         raise ContractError("daydream prompt exceeds %d bytes" % MAX_DAYDREAM_PROMPT_BYTES)
     return prompt
 
-
 __all__ = [
-    "JUDGE_CONSTITUTION",
-    "JUDGE_CONSTITUTION_SHA256",
     "ROUTE_BUDGETS",
-    "build_judge_prompt",
     "DAYDREAM_CONSTITUTION",
     "DAYDREAM_CONSTITUTION_SHA256",
     "MAX_DAYDREAM_PROMPT_BYTES",

@@ -50,25 +50,15 @@ finalizer, which validates the file's shape and hashes its exact bytes into
 the runtime as the turn's finalization marker and refuses an idea whose
 marker is missing or whose bytes no longer match it.
 
-## The judge
+## Why there is no judge
 
-Every sealed idea is judged before it is built. The Judge Goal is a second,
-short native session in `<daydream-id>/judge-workspace/` with `IDEA.json`,
-`TASTE.md`, `ROUTE.md`, the judge constitution as `AGENTS.md`, and the same
-finalizer (`--role judge`). It reads the idea the way Make's blind critic
-will see two still renders: held object, form, subject, action, relationship,
-no exposed mechanism, no hidden signature, no promised feature a render
-cannot show, and a size that fits the route. It answers seven questions about those two renders (silhouette changes,
-moving part visible in both states, travel is large, body reads as a toy,
-mechanism is not dominant, fits the route, worth owning), and writes
-`work/VERDICT.json` with those checks, a decision, a confidence, named risks,
-and advice. A `build` decision requires all seven checks true; the finalizer
-and the host both reject a `build` that contradicts its own checks, so the
-judge cannot wave through an idea while naming the reason it will fail. The
-host seals the verdict into the idea record and `host-state/VERDICT.json`. The loop
-builds only `build` verdicts; a `dream-again` idea is remembered as `judged`
-so the Inventor does not repeat it, and `workshop start --idea` can still
-build it on purpose.
+An independent Judge Goal was built and removed on 2026-09-03. Replayed
+against six sealed ideas it rejected all four whose builds had really failed
+and both that had really published, so it was a wall rather than a filter, and
+it cost one extra native session per idea. What made it useful survives in the
+constitution instead: the Inventor is shown the real toys that passed the
+build review and the real ones that failed, with the reason. That is the same
+information applied where it costs nothing.
 
 Every directory is created 0700 with no symlinks; every host file is 0600.
 The native Manager session (Codex by default) may write only inside

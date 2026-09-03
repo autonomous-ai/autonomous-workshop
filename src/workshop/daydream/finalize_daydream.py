@@ -22,33 +22,7 @@ from typing import Any, Mapping, Sequence
 
 DAYDREAM_IDEA_KIND = "autonomous-workshop.daydream-idea"
 DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
-DAYDREAM_VERDICT_KIND = "autonomous-workshop.daydream-verdict"
 IDEA_RELATIVE_PATH = "work/IDEA.json"
-VERDICT_RELATIVE_PATH = "work/VERDICT.json"
-_VERDICT_KEYS = frozenset(
-    ("schema_version", "kind", "decision", "checks", "confidence", "risks", "advice")
-)
-_VERDICT_CHECKS = (
-    "silhouette_changes",
-    "moving_part_visible_in_both_states",
-    "travel_is_large",
-    "body_reads_as_a_toy",
-    "mechanism_is_not_dominant",
-    "fits_the_route",
-    "worth_owning",
-)
-_RISK_KINDS = (
-    "generic-form",
-    "exposed-mechanism",
-    "hidden-signature",
-    "unclear-state-change",
-    "too-many-parts",
-    "tight-tolerance",
-    "print-preflight",
-    "taste-fit",
-    "not-desirable",
-    "other",
-)
 OUTCOME_FILE_NAME = "agent-outcome.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 _LINE_BOUNDS = {
@@ -169,64 +143,10 @@ def _is_slug(value: str) -> bool:
     return all(character.isdigit() or character.islower() or character == "-" for character in value)
 
 
-def verdict_problems(raw: Any) -> list[str]:
-    """Return every shape or bound problem in a parsed verdict; empty means valid."""
+def finalize(run_root: Path, out=sys.stdout, err=sys.stderr) -> int:
+    """Validate work/IDEA.json and write the marker; return an exit code."""
 
-    if not isinstance(raw, Mapping):
-        return ["VERDICT.json must be one JSON object"]
-    missing = sorted(_VERDICT_KEYS - set(raw))
-    unknown = sorted(set(raw) - _VERDICT_KEYS)
-    problems = []
-    if missing:
-        problems.append("missing keys: %s" % ", ".join(missing))
-    if unknown:
-        problems.append("unknown keys: %s" % ", ".join(unknown))
-    if problems:
-        return problems
-    if raw["schema_version"] != 1:
-        problems.append("schema_version must be 1")
-    if raw["kind"] != DAYDREAM_VERDICT_KIND:
-        problems.append("kind must be %s" % DAYDREAM_VERDICT_KIND)
-    if raw["decision"] not in ("build", "dream-again"):
-        problems.append("decision must be build or dream-again")
-    checks = raw["checks"]
-    if not isinstance(checks, Mapping) or set(checks) != set(_VERDICT_CHECKS):
-        problems.append("checks must hold exactly these keys: %s" % ", ".join(_VERDICT_CHECKS))
-    elif any(not isinstance(value, bool) for value in checks.values()):
-        problems.append("every check must be true or false")
-    elif raw["decision"] == "build" and not all(checks.values()):
-        failed = ", ".join(sorted(name for name, value in checks.items() if not value))
-        problems.append(
-            "a build decision requires every check to be true, but these are false: %s. "
-            "Either the idea passes them or the decision is dream-again." % failed
-        )
-    confidence = raw["confidence"]
-    if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0.0 <= confidence <= 1.0:
-        problems.append("confidence must be a number from 0.0 to 1.0")
-    risks = raw["risks"]
-    if not isinstance(risks, list) or len(risks) > 6:
-        problems.append("risks must be a list of at most 6 entries")
-    else:
-        if raw["decision"] == "dream-again" and not risks:
-            problems.append("a dream-again verdict must name at least one risk")
-        for index, risk in enumerate(risks):
-            if not isinstance(risk, Mapping) or set(risk) != {"kind", "detail"}:
-                problems.append("risks[%d] needs exactly kind and detail" % index)
-                continue
-            if risk["kind"] not in _RISK_KINDS:
-                problems.append("risks[%d].kind must be one of %s" % (index, ", ".join(_RISK_KINDS)))
-            problems.extend(_line_problems(risk["detail"], "risks[%d].detail" % index, 400, allow_newlines=False))
-    problems.extend(_line_problems(raw["advice"], "advice", 400, allow_newlines=False))
-    return problems
-
-
-def finalize(run_root: Path, out=sys.stdout, err=sys.stderr, *, role: str = "inventor") -> int:
-    """Validate the role's file and write the outcome marker; return an exit code."""
-
-    if role == "judge":
-        relative, checker, label = VERDICT_RELATIVE_PATH, verdict_problems, "verdict"
-    else:
-        relative, checker, label = IDEA_RELATIVE_PATH, idea_problems, "idea"
+    relative, checker, label = IDEA_RELATIVE_PATH, idea_problems, "idea"
     file_path = run_root / relative
     try:
         payload = file_path.read_bytes()
@@ -255,11 +175,10 @@ def finalize(run_root: Path, out=sys.stdout, err=sys.stderr, *, role: str = "inv
         "schema_version": 1,
         "kind": DAYDREAM_OUTCOME_KIND,
         "status": "ready",
-        "role": role,
         "idea_path": relative,
         "idea_bytes": len(payload),
         "idea_sha256": hashlib.sha256(payload).hexdigest(),
-        "title": raw["title"] if role != "judge" else raw["decision"],
+        "title": raw["title"],
         "written_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     outcome_path = run_root / OUTCOME_FILE_NAME
@@ -294,14 +213,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=".",
         help="the daydream workspace (default: the current directory)",
     )
-    parser.add_argument(
-        "--role",
-        choices=("inventor", "judge"),
-        default="inventor",
-        help="inventor validates work/IDEA.json (default); judge validates work/VERDICT.json",
-    )
     args = parser.parse_args(argv)
-    return finalize(Path(args.run_root).resolve(), role=args.role)
+    return finalize(Path(args.run_root).resolve())
 
 
 if __name__ == "__main__":

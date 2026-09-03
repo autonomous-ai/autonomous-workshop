@@ -14,7 +14,7 @@ from cli.main import main, parser
 from workshop.runtime.progress import WishRunTimingEvent
 from workshop.daydream import DaydreamError
 
-from tests.daydream.support import sample_sealed, sample_verdict
+from tests.daydream.support import sample_sealed
 
 
 cli_main = importlib.import_module("cli.main")
@@ -730,51 +730,6 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(record["published"], 2)
         self.assertEqual(record["last_wish_id"], calls[-1])
         self.assertFalse((self._loop_folder() / "STOP").exists())
-
-    def test_loop_skips_builds_the_judge_bets_against(self):
-        rejected = sample_sealed(verdict=sample_verdict("dream-again"))
-        approved = sample_sealed(verdict=sample_verdict("build"))
-        stdout = StringIO()
-        with mock.patch(
-            "cli.main.run_daydream", side_effect=[rejected, approved]
-        ) as run, mock.patch(
-            "cli.main.start_native_run",
-            return_value=native_receipt(status="completed", stage="release", published=True),
-        ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
-            result = main(("start", "sample", "--max-ideas", "2"))
-        self.assertEqual(result, 0)
-        self.assertEqual(run.call_count, 2)
-        self.assertEqual(start.call_count, 1)
-        output = stdout.getvalue()
-        self.assertIn(
-            "Judge: dream again (confidence 0.25). Failed: "
-            "moving_part_visible_in_both_states. hidden-signature:",
-            output,
-        )
-        self.assertIn("Judge says dream again; not building this one.", output)
-        self.assertIn("Judge: build (confidence 0.80). Keep the ladder body", output)
-        self.assertIn("Loop stopped (reached --max-ideas 2). Ideas: 2. Builds: 1. Published: 1.", output)
-
-    def test_loop_stops_after_five_judged_out_ideas(self):
-        rejected = sample_sealed(verdict=sample_verdict("dream-again"))
-        with mock.patch("cli.main.run_daydream", return_value=rejected) as run, mock.patch(
-            "cli.main.start_native_run"
-        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
-            result = main(("start", "sample"))
-        self.assertEqual(result, 1)
-        self.assertEqual(run.call_count, 5)
-        start.assert_not_called()
-        record = json.loads((self._loop_folder() / "LOOP.json").read_text())
-        self.assertEqual(record["stop_reason"], "5 ideas judged out in a row")
-
-    def test_saved_idea_is_built_even_if_the_judge_said_dream_again(self):
-        rejected = sample_sealed(verdict=sample_verdict("dream-again"))
-        with mock.patch("cli.main.load_sealed_daydream", return_value=rejected), mock.patch(
-            "cli.main.start_native_run", return_value=native_receipt()
-        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
-            result = main(("start", "sample", "--idea", rejected.daydream_id))
-        self.assertEqual(result, 0)
-        start.assert_called_once()
 
     def test_stop_requested_during_a_daydream_lands_before_the_build(self):
         sealed = sample_sealed()

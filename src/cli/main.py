@@ -86,7 +86,6 @@ from workshop.workflow.effort import (
 
 
 _INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
-MAX_JUDGED_OUT_IN_A_ROW = 5
 _DEFAULT_SHOP_SIGNUP_URL = "https://www.autonomous.ai/toys"
 
 
@@ -544,24 +543,6 @@ def _print_daydream_card(sealed, *, stream: TextIO, offer_build: bool) -> None:
             "nearest: %s" % nearest if nearest else sealed.novelty.reason,
         )
     )
-    verdict = sealed.verdict
-    if verdict is not None:
-        risks = "; ".join("%s: %s" % (risk.kind, risk.detail) for risk in verdict.risks)
-        if verdict.decision == "build":
-            lines.append(
-                "Judge: build (confidence %.2f). %s%s"
-                % (verdict.confidence, verdict.advice, " Risks: %s" % risks if risks else "")
-            )
-        else:
-            lines.append(
-                "Judge: dream again (confidence %.2f). Failed: %s. %s Advice: %s"
-                % (
-                    verdict.confidence,
-                    ", ".join(verdict.failed_checks) or "none",
-                    risks,
-                    verdict.advice,
-                )
-            )
     if offer_build:
         lines.append(
             "Build it: %s"
@@ -690,7 +671,6 @@ def _start(args: argparse.Namespace) -> int:
         )
     ideas = builds = published = 0
     failures = 0
-    judged_out = 0
     exit_code = 0
     reason = "finished"
     try:
@@ -722,31 +702,6 @@ def _start(args: argparse.Namespace) -> int:
                 continue
             ideas += 1
             lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
-            verdict = sealed.verdict
-            if args.idea is None and verdict is not None and verdict.decision != "build":
-                # The judge would bet against this build.  Skip it, remember
-                # it, and dream again; --idea builds a saved idea on purpose.
-                if not args.json:
-                    _print_daydream_card(sealed, stream=progress, offer_build=True)
-                else:
-                    _print_json({"daydream": sealed.to_dict()})
-                print(
-                    "Judge says dream again; not building this one.",
-                    file=progress,
-                    flush=True,
-                )
-                if once:
-                    return 1
-                judged_out += 1
-                if judged_out >= MAX_JUDGED_OUT_IN_A_ROW:
-                    reason = "%d ideas judged out in a row" % judged_out
-                    exit_code = 1
-                    break
-                if lease.stop_requested():
-                    reason = "stopped by workshop stop"
-                    break
-                continue
-            judged_out = 0
             if not once and lease.stop_requested():
                 # A stop that arrived during the daydream lands here, before a
                 # 20-minute build starts; the sealed idea stays buildable.

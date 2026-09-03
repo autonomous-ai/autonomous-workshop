@@ -20,22 +20,6 @@ MAX_TITLE_CHARS = 60
 MAX_ONE_LINER_CHARS = 200
 MAX_HELD_FORM_CHARS = 240
 MAX_BEFORE_AFTER_CHARS = 300
-MAX_VERDICT_TEXT_CHARS = 400
-MAX_VERDICT_RISKS = 6
-VERDICT_DECISIONS = ("build", "dream-again")
-# Every check a still render must satisfy.  A "build" verdict requires all of
-# them true; the run-local finalizer and the host both enforce that, so the
-# judge cannot wave an idea through while naming the reason it will fail.
-VERDICT_CHECKS = (
-    "silhouette_changes",
-    "moving_part_visible_in_both_states",
-    "travel_is_large",
-    "body_reads_as_a_toy",
-    "mechanism_is_not_dominant",
-    "fits_the_route",
-    "worth_owning",
-)
-DAYDREAM_VERDICT_KIND = "autonomous-workshop.daydream-verdict"
 MAX_PARAGRAPH_CHARS = 600
 MAX_PRIOR_ART_NAME_CHARS = 80
 MAX_PRIOR_ART_DIFFERENCE_CHARS = 300
@@ -77,10 +61,8 @@ _IDEA_KEYS = frozenset(
     )
 )
 _IDEA_OPTIONAL_KEYS = frozenset(("held_form", "before_after"))
-_VERDICT_KEYS = frozenset(
-    ("schema_version", "kind", "decision", "checks", "confidence", "risks", "advice")
-)
-_RISK_KEYS = frozenset(("kind", "detail"))
+# Seals written while the retired judge existed carry a "verdict"; accept and
+# ignore it so those records still load.
 _SEAL_OPTIONAL_KEYS = frozenset(("verdict",))
 _NEIGHBOR_KEYS = frozenset(("source", "title", "similarity"))
 _NOVELTY_KEYS = frozenset(("status", "max_similarity", "nearest", "reason"))
@@ -465,100 +447,6 @@ def render_brief(idea: Idea, *, inventor_name: str, inventor_id: str) -> str:
 
 
 @dataclass(frozen=True)
-class VerdictRisk:
-    """One risk the judge saw, named by the Make review criterion it threatens."""
-
-    kind: str
-    detail: str
-
-    def __post_init__(self) -> None:
-        bounded_line(self.kind, "verdict risk kind", 60)
-        bounded_line(self.detail, "verdict risk detail", MAX_VERDICT_TEXT_CHARS)
-
-    @classmethod
-    def parse(cls, raw: Mapping[str, Any]) -> "VerdictRisk":
-        _exact_keys(raw, _RISK_KEYS, "verdict risk")
-        return cls(kind=raw["kind"], detail=raw["detail"])
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {"kind": self.kind, "detail": self.detail}
-
-
-@dataclass(frozen=True, kw_only=True)
-class Verdict:
-    """An independent judge's call on whether Make can prove this idea."""
-
-    schema_version: int = 1
-    decision: str
-    checks: Mapping[str, bool]
-    confidence: float
-    risks: tuple[VerdictRisk, ...]
-    advice: str
-
-    def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("verdict schema_version must be 1")
-        if self.decision not in VERDICT_DECISIONS:
-            raise ContractError("verdict decision must be one of %s" % (VERDICT_DECISIONS,))
-        checks = self.checks
-        if not isinstance(checks, Mapping) or set(checks) != set(VERDICT_CHECKS):
-            raise ContractError("verdict checks must be exactly %s" % (VERDICT_CHECKS,))
-        if any(type(value) is not bool for value in checks.values()):
-            raise ContractError("every verdict check must be a boolean")
-        object.__setattr__(self, "checks", dict(checks))
-        if self.decision == "build" and not all(checks.values()):
-            raise ContractError(
-                "a build verdict requires every check to be true; failed: %s"
-                % ", ".join(sorted(name for name, value in checks.items() if not value))
-            )
-        object.__setattr__(
-            self, "confidence", _finite_unit_float(self.confidence, "verdict confidence")
-        )
-        if isinstance(self.risks, (str, Mapping)) or not isinstance(self.risks, Sequence):
-            raise ContractError("verdict risks must be a list")
-        risks = tuple(self.risks)
-        if len(risks) > MAX_VERDICT_RISKS or any(
-            not isinstance(risk, VerdictRisk) for risk in risks
-        ):
-            raise ContractError("verdict risks must hold at most %d entries" % MAX_VERDICT_RISKS)
-        if self.decision == "dream-again" and not risks:
-            raise ContractError("a dream-again verdict must name at least one risk")
-        object.__setattr__(self, "risks", risks)
-        bounded_line(self.advice, "verdict advice", MAX_VERDICT_TEXT_CHARS)
-
-    @classmethod
-    def parse(cls, raw: Mapping[str, Any]) -> "Verdict":
-        _exact_keys(raw, _VERDICT_KEYS, "verdict")
-        if raw["kind"] != DAYDREAM_VERDICT_KIND:
-            raise ContractError("verdict kind must be %s" % DAYDREAM_VERDICT_KIND)
-        if isinstance(raw["risks"], (str, Mapping)) or not isinstance(raw["risks"], Sequence):
-            raise ContractError("verdict risks must be a list")
-        return cls(
-            schema_version=raw["schema_version"],
-            decision=raw["decision"],
-            checks=raw["checks"],
-            confidence=raw["confidence"],
-            risks=tuple(VerdictRisk.parse(entry) for entry in raw["risks"]),
-            advice=raw["advice"],
-        )
-
-    @property
-    def failed_checks(self) -> tuple[str, ...]:
-        return tuple(sorted(name for name, value in self.checks.items() if not value))
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "schema_version": self.schema_version,
-            "kind": DAYDREAM_VERDICT_KIND,
-            "decision": self.decision,
-            "checks": {name: bool(self.checks[name]) for name in VERDICT_CHECKS},
-            "confidence": self.confidence,
-            "risks": [risk.to_dict() for risk in self.risks],
-            "advice": self.advice,
-        }
-
-
-@dataclass(frozen=True)
 class NoveltyNeighbor:
     """One prior-work entry and how similar the idea is to it."""
 
@@ -662,13 +550,10 @@ class SealedDaydream:
     novelty: NoveltyReport
     session: Mapping[str, Any]
     brief: str
-    verdict: Optional[Verdict] = None
 
     def __post_init__(self) -> None:
         if type(self.schema_version) is not int or self.schema_version != 1:
             raise ContractError("sealed daydream schema_version must be 1")
-        if self.verdict is not None and not isinstance(self.verdict, Verdict):
-            raise ContractError("sealed daydream verdict must be a Verdict")
         if self.kind != DAYDREAM_SEAL_KIND:
             raise ContractError("sealed daydream kind must be %s" % DAYDREAM_SEAL_KIND)
         require_daydream_id(self.daydream_id, "sealed daydream daydream_id")
@@ -710,9 +595,7 @@ class SealedDaydream:
             _SEAL_KEYS,
             "sealed daydream",
         )
-        verdict = raw.get("verdict")
         return cls(
-            verdict=None if verdict is None else Verdict.parse(verdict),
             schema_version=raw["schema_version"],
             kind=raw["kind"],
             daydream_id=raw["daydream_id"],
@@ -746,8 +629,6 @@ class SealedDaydream:
             "session": copy_json_mapping(self.session, "sealed daydream session"),
             "brief": self.brief,
         }
-        if self.verdict is not None:
-            value["verdict"] = self.verdict.to_dict()
         return value
 
     @property
@@ -759,7 +640,6 @@ __all__ = [
     "CREATED_AT_FORMAT",
     "DAYDREAM_IDEA_KIND",
     "DAYDREAM_SEAL_KIND",
-    "DAYDREAM_VERDICT_KIND",
     "DaydreamError",
     "Idea",
     "NOVELTY_STATUSES",
@@ -768,10 +648,6 @@ __all__ = [
     "PriorArt",
     "SealedDaydream",
     "TasteFit",
-    "VERDICT_CHECKS",
-    "VERDICT_DECISIONS",
-    "Verdict",
-    "VerdictRisk",
     "bounded_line",
     "bounded_paragraph",
     "canonical_json",
