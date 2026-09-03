@@ -599,6 +599,31 @@ class DaydreamNativeTest(unittest.TestCase):
         # A judged-out idea is still sealed, so it can be built on purpose.
         self.assertEqual(load_sealed_daydream("sample", SECOND_ID).verdict.decision, "dream-again")
 
+    def test_judge_repair_advice_reaches_the_next_daydream_workspace(self):
+        rejected, _launchers = self._run(
+            idea=sample_idea_dict(), verdict="dream-again"
+        )
+        self.assertEqual(rejected.verdict.decision, "dream-again")
+        raw = sample_idea_dict()
+        raw["title"] = "Rung Chorus"
+        raw["one_liner"] = "Tilt a pocket rail and hear captive beads answer in a staggered rhythm."
+        raw["experience"]["action"] = "Tilt the rail through one slow quarter turn."
+        raw["experience"]["response"] = "Three captive beads release at visibly different thresholds."
+        raw["experience"]["payoff"] = "Their separated catches compose a repeatable three-beat answer."
+        raw["experience"]["anti_generic_signature"] = (
+            "One tilt produces three visibly separated releases and three distinct catches."
+        )
+        raw["keywords"] = ["rail", "beads", "tilt", "rhythm"]
+        self._run(
+            daydream_id=SECOND_ID,
+            idea=raw,
+            expect_notebook=(
+                "Judge prediction: dream-again",
+                "proof_observable",
+                "make the unequal catch sequence independently observable",
+            ),
+        )
+
     def test_judge_can_be_skipped_and_its_failures_fail_closed(self):
         sealed, launchers = self._run(idea=sample_idea_dict(), judge=False)
         self.assertIsNone(sealed.verdict)

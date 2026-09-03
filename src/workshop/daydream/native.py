@@ -42,7 +42,9 @@ from workshop.daydream.contracts import (
     require_inventor_id,
 )
 from workshop.daydream.notebook import (
+    JudgeMemory,
     NotebookEntry,
+    StructuralTrace,
     append_notebook_entry,
     prior_work_from_notebook,
     read_notebook,
@@ -763,8 +765,16 @@ def judge_idea(
 
 
 def _remember(
-    paths: DaydreamPaths, *, daydream_id: str, created_at: str, idea: Idea, status: str
+    paths: DaydreamPaths,
+    *,
+    daydream_id: str,
+    created_at: str,
+    idea: Idea,
+    status: str,
+    verdict: Optional[Verdict] = None,
+    rejection_reason: Optional[str] = None,
 ) -> None:
+    thesis_memory = idea.schema_version == 2
     append_notebook_entry(
         paths.notebook,
         NotebookEntry(
@@ -774,6 +784,10 @@ def _remember(
             one_liner=idea.one_liner,
             idea_sha256=idea.sha256,
             status=status,
+            schema_version=2 if thesis_memory else 1,
+            structure=StructuralTrace.from_idea(idea) if thesis_memory else None,
+            judge=JudgeMemory.from_verdict(verdict) if verdict is not None else None,
+            rejection_reason=rejection_reason,
         ),
     )
 
@@ -799,7 +813,14 @@ def _reject(
         (canonical_json(rejection) + "\n").encode("utf-8"),
         label="daydream rejection",
     )
-    _remember(paths, daydream_id=daydream_id, created_at=created_at, idea=idea, status="rejected")
+    _remember(
+        paths,
+        daydream_id=daydream_id,
+        created_at=created_at,
+        idea=idea,
+        status="rejected",
+        rejection_reason=novelty.reason,
+    )
 
 
 def run_daydream(
@@ -939,6 +960,7 @@ def run_daydream(
         created_at=created_at,
         idea=idea,
         status="judged" if verdict is not None and verdict.decision != "build" else "dreamed",
+        verdict=verdict,
     )
     return sealed
 
