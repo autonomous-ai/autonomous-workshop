@@ -6,12 +6,24 @@ assembled pose. Neither says the parts can be *brought* to that pose; a rigid
 feature can still be impossible to insert into a closed slot.
 
 This runs a declared motion manifest against the assembly, sampling the path and
-testing each step with an exact boolean. Four checks:
+testing each step with an exact boolean. Five checks:
 
     linear_motion_collision     slide/insert/withdraw along a vector
     rotation_motion_collision   hinge/fold/latch about an axis
+    coupled_motion_collision    several parts moving together, on a pose table
     clear_path_proxy            a pin, tool or finger of radius r reaches
     assembly_sequence           an ordered list of the above, in order
+
+The first two move ONE part against static obstacles, which is the wrong shape
+of question for a machine: a gear pair, a cam and its follower, a Geneva drive
+and a linkage all move at once, and holding the follower still turns the
+mechanism's whole working motion into a collision. `coupled_motion_collision`
+takes a pose per mover per sample -- the project's own kinematics, tabulated --
+and asks the only two questions a rigid-body sweep can settle about a running
+mechanism: that the parts clear each other all the way through the cycle, and
+that the driver actually reaches the follower. Marking a mover `"driven": true`
+runs the sweep a second time with that mover frozen; if nothing collides then,
+the pair transmits no motion and the manifest is measuring a gap.
 
 A condition says which answer it wants. `"expect": "clear"` (the default) is a
 motion that must be possible; `"expect": "blocked"` is a capture -- a dovetail
@@ -22,6 +34,10 @@ clean pass.
 
 This repo is STEP-first, so a step tests `(moved & obstacle).volume` on the
 B-rep.
+
+A manifest may also declare a retention graph. This closes the loophole where
+one moving part appears retained only because its nominal retainer was frozen
+as an obstacle even though that retainer can itself fall or slide away.
 
     scripts/check_motion <project-dir> --manifest measure/motion.json
     scripts/check_motion <project-dir> --manifest -        # from stdin
@@ -136,6 +152,12 @@ def index_parts(shape) -> dict[str, object]:
     walk(shape, [])
     parts = {name: shapes[0] for name, shapes in found.items() if len(shapes) == 1}
     parts["__ambiguous__"] = sorted(name for name, shapes in found.items() if len(shapes) > 1)
+    # The assembly's own children, kept apart from the nested labels underneath
+    # them: a cycle sweep has to account for these, and only these.
+    parts["__toplevel__"] = [label for label in
+                             (getattr(child, "label", "") for child in
+                              list(getattr(shape, "children", []) or []))
+                             if label]
     return parts
 
 
@@ -183,6 +205,11 @@ def vector3(value, field: str):
         raise ManifestError(f"{field} must be numeric: {error}") from error
 
 
+def part_names(parts: dict) -> list[str]:
+    """The labelled parts, without the dunder bookkeeping keys."""
+    return [name for name in parts if not name.startswith("__")]
+
+
 def resolve_parts(names, parts: dict, field: str) -> list[tuple[str, object]]:
     if isinstance(names, str):
         names = [names]
@@ -192,14 +219,14 @@ def resolve_parts(names, parts: dict, field: str) -> list[tuple[str, object]]:
     resolved = []
     for name in names:
         if name in ambiguous:
-            options = [key for key in parts if key != "__ambiguous__" and key.endswith("." + name)]
+            options = [key for key in part_names(parts) if key.endswith("." + name)]
             raise ManifestError(
                 f'{field} "{name}" is ambiguous - several parts carry that label; '
                 f'use a dotted path such as {options[0] if options else "<parent>." + name}'
             )
-        if name not in parts or name == "__ambiguous__":
-            near = [key for key in sorted(parts)
-                    if key != "__ambiguous__" and name.lower() in key.lower()][:6]
+        if name not in parts or name.startswith("__"):
+            near = [key for key in sorted(part_names(parts))
+                    if name.lower() in key.lower()][:6]
             hint = f"did you mean: {', '.join(near)}" if near else "run --list-parts"
             raise ManifestError(f'{field} "{name}" is not a labelled part; {hint}')
         resolved.append((name, parts[name]))
@@ -251,6 +278,7 @@ def check_linear(inputs: dict, thresholds: dict, parts: dict) -> dict:
     result = sweep(moving, obstacles, place, steps, tol,
                    bool(inputs.get("allow_seated_contact", False)))
     result["translation"] = list(vector3(inputs.get("translation"), "translation"))
+    result["stepMm"] = round(translation.length / steps, 4)
     return result
 
 
@@ -280,6 +308,9 @@ def check_rotation(inputs: dict, thresholds: dict, parts: dict) -> dict:
     result = sweep(moving, obstacles, place, steps, tol,
                    bool(inputs.get("allow_seated_contact", False)))
     result["arcDeg"] = [start, end]
+    reach = _reach(moving, point, direction)
+    sampled = [start + (end - start) * i / steps for i in range(steps + 1)]
+    result["stepMm"] = round(_step_mm(reach, sampled, [(0.0, 0.0, 0.0)] * (steps + 1)), 4)
     if not result["clear"]:
         result["angleDeg"] = round(start + (end - start) * result["step"] / steps, 4)
     return result
@@ -313,9 +344,246 @@ def check_clear_path(inputs: dict, thresholds: dict, parts: dict) -> dict:
     }
 
 
+
+def _reach(shape, axis_point, axis_direction) -> float:
+    """Furthest any point of the shape sits from a rotation axis."""
+    import math as _math
+
+    box = shape.bounding_box()
+    px, py, pz = axis_point
+    dx, dy, dz = axis_direction
+    length = _math.sqrt(dx * dx + dy * dy + dz * dz) or 1.0
+    dx, dy, dz = dx / length, dy / length, dz / length
+    worst = 0.0
+    for x in (box.min.X, box.max.X):
+        for y in (box.min.Y, box.max.Y):
+            for z in (box.min.Z, box.max.Z):
+                rx, ry, rz = x - px, y - py, z - pz
+                along = rx * dx + ry * dy + rz * dz
+                ox, oy, oz = rx - along * dx, ry - along * dy, rz - along * dz
+                worst = max(worst, _math.sqrt(ox * ox + oy * oy + oz * oz))
+    return worst
+
+
+def _step_mm(reach: float, angles, offsets) -> float:
+    """Furthest a point of a part travels between consecutive samples.
+
+    A sweep is blind to anything smaller than its own step: sample a gear mesh
+    every third of a tooth and a tooth passing clean through another reads as a
+    clear path. This is what makes that visible -- and, with
+    `thresholds.maxStepMm`, what makes it a check rather than a footnote.
+    """
+    import math as _math
+
+    worst = 0.0
+    count = max(len(angles), len(offsets))
+    for index in range(1, count):
+        turn = abs(angles[index] - angles[index - 1]) if index < len(angles) else 0.0
+        swing = 2.0 * reach * _math.sin(_math.radians(turn) / 2.0) if turn else 0.0
+        slide = 0.0
+        if index < len(offsets):
+            a, b = offsets[index - 1], offsets[index]
+            slide = _math.sqrt(sum((b[k] - a[k]) ** 2 for k in range(3)))
+        worst = max(worst, swing + slide)
+    return worst
+
+
+def _pose_table(spec: dict, steps: int, field: str):
+    """Absolute poses for one mover, sample by sample.
+
+    Explicit tables come from the project's own kinematics -- the same solution
+    that placed the geometry -- so the gate never re-derives a mechanism it
+    cannot know. A start/end pair is the linear shorthand for the cases where
+    the motion really is uniform.
+    """
+    from build123d import Axis, Vector
+
+    rotate = spec.get("rotation")
+    translate = spec.get("translation")
+    if not rotate and not translate:
+        raise ManifestError(f"{field} needs a rotation, a translation, or both")
+
+    axis = None
+    point = direction = None
+    angles = [0.0] * (steps + 1)
+    if rotate:
+        point = vector3(rotate.get("axis_point"), f"{field}.rotation.axis_point")
+        direction = vector3(rotate.get("axis_direction"), f"{field}.rotation.axis_direction")
+        if not any(direction):
+            raise ManifestError(f"{field}.rotation.axis_direction must not be the zero vector")
+        axis = Axis(Vector(*point), Vector(*direction))
+        listed = rotate.get("angles_deg")
+        if listed is not None:
+            if not isinstance(listed, list) or len(listed) != steps + 1:
+                raise ManifestError(
+                    f"{field}.rotation.angles_deg must hold steps+1 = {steps + 1} values, "
+                    f"got {len(listed) if isinstance(listed, list) else type(listed).__name__}")
+            angles = [float(value) for value in listed]
+        else:
+            start = float(rotate.get("start_deg", 0.0))
+            end = float(rotate.get("end_deg", 0.0))
+            angles = [start + (end - start) * i / steps for i in range(steps + 1)]
+
+    offsets = [(0.0, 0.0, 0.0)] * (steps + 1)
+    if translate:
+        listed = translate.get("offsets_mm")
+        if listed is not None:
+            if not isinstance(listed, list) or len(listed) != steps + 1:
+                raise ManifestError(
+                    f"{field}.translation.offsets_mm must hold steps+1 = {steps + 1} values")
+            offsets = [vector3(value, f"{field}.translation.offsets_mm") for value in listed]
+        else:
+            vector = vector3(translate.get("vector"), f"{field}.translation.vector")
+            start = float(translate.get("start", 0.0))
+            end = float(translate.get("end", 1.0))
+            offsets = [
+                tuple(component * (start + (end - start) * i / steps) for component in vector)
+                for i in range(steps + 1)
+            ]
+
+    def place(shape, index: int):
+        moved = shape
+        if axis is not None and angles[index]:
+            moved = moved.rotate(axis, angles[index])
+        offset = offsets[index]
+        if any(offset):
+            moved = moved.translate(Vector(*offset))
+        return moved
+
+    place.angles = angles
+    place.offsets = offsets
+    place.axis_point = point if rotate else (0.0, 0.0, 0.0)
+    place.axis_direction = direction if rotate else (0.0, 0.0, 1.0)
+    return place
+
+
+def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
+    """Several parts driven through one cycle together, pose table by pose table."""
+    movers = inputs.get("movers")
+    if not isinstance(movers, list) or not movers:
+        raise ManifestError("coupled_motion_collision requires a movers list")
+    steps = int(inputs.get("steps", DEFAULT_STEPS))
+    if steps < 1:
+        raise ManifestError("steps must be >= 1")
+    tol = float(thresholds.get("maxOverlapMm3", DEFAULT_OVERLAP_TOL))
+    allow_seated = bool(inputs.get("allow_seated_contact", False))
+
+    placed = []
+    for index, spec in enumerate(movers):
+        if not isinstance(spec, dict):
+            raise ManifestError(f"movers[{index}] must be an object")
+        name = spec.get("part")
+        if not name or not isinstance(name, str):
+            raise ManifestError(f"movers[{index}] requires a part name")
+        shape = resolve_parts(name, parts, f"movers[{index}].part")[0][1]
+        placed.append((name, shape, _pose_table(spec, steps, f"movers[{index}]"),
+                       bool(spec.get("driven", False))))
+    if len(placed) < 2 and any(driven for *_, driven in placed):
+        raise ManifestError('"driven" needs something to be driven by: name at least two movers')
+
+    obstacles = []
+    if "obstacle_parts" not in inputs:
+        # Every other check names its obstacles. This one does not have to, and
+        # the part it silently leaves out is the frame -- the one thing a
+        # mechanism is guaranteed to move against. Absence is unexamined; an
+        # explicit empty list is a decision, and passes.
+        mover_names = {name for name, *_ in placed}
+        unswept = [name for name in parts.get("__toplevel__", [])
+                   if name not in mover_names
+                   and not any(mover == name or mover.startswith(name + ".")
+                               for mover in mover_names)]
+        if unswept:
+            raise ManifestError(
+                "coupled_motion_collision left "
+                + ", ".join(sorted(unswept))
+                + " out of the sweep entirely: they are neither movers nor "
+                  "obstacles, so this cycle was never tested against them. "
+                  'Name them in obstacle_parts, or write "obstacle_parts": [] '
+                  "to say on the record that the cycle does not touch them."
+            )
+    elif inputs.get("obstacle_parts"):
+        obstacles = resolve_parts(inputs["obstacle_parts"], parts, "obstacle_parts")
+
+    def sweep_cycle(freeze=frozenset(), involving=None):
+        """First contact over the cycle, or None.
+
+        `freeze` holds movers at sample 0 while the rest run. `involving`
+        restricts the answer to contacts that touch one named part, which is
+        what makes a per-follower transmission test mean anything: with three
+        followers on one cam, a single "something collided" would pass a
+        machine driving only one of them.
+        """
+        for step in range(1 if allow_seated else 0, steps + 1):
+            posed = [
+                (name, place(shape, 0 if name in freeze else step))
+                for name, shape, place, driven in placed
+            ]
+            for first in range(len(posed)):
+                for second in range(first + 1, len(posed)):
+                    if involving and involving not in (posed[first][0], posed[second][0]):
+                        continue
+                    volume = overlap_volume(posed[first][1], posed[second][1])
+                    if volume > tol:
+                        return {"step": step, "steps": steps,
+                                "between": [posed[first][0], posed[second][0]],
+                                "overlapMm3": round(volume, 6)}
+                for obstacle_name, obstacle in obstacles:
+                    if involving and involving != posed[first][0]:
+                        continue
+                    volume = overlap_volume(posed[first][1], obstacle)
+                    if volume > tol:
+                        return {"step": step, "steps": steps,
+                                "between": [posed[first][0], obstacle_name],
+                                "overlapMm3": round(volume, 6)}
+        return None
+
+    step_mm = 0.0
+    for name, shape, place, _driven in placed:
+        reach = _reach(shape, place.axis_point, place.axis_direction)
+        step_mm = max(step_mm, _step_mm(reach, place.angles, place.offsets))
+
+    hit = sweep_cycle()
+    result = {
+        "clear": hit is None,
+        "steps": steps,
+        "stepMm": round(step_mm, 4),
+        "movers": [name for name, *_ in placed],
+        "skippedSeatedStep": allow_seated,
+    }
+    if hit is not None:
+        result.update(step=hit["step"], obstacle=" x ".join(hit["between"]),
+                      overlapMm3=hit["overlapMm3"])
+
+    # The second half, once per driven part: a follower that is never touched
+    # is not being driven, and one that is touched says nothing about the next.
+    driven_names = [name for name, _, _, driven in placed if driven]
+    if driven_names:
+        contacts = {name: sweep_cycle(freeze=frozenset([name]), involving=name)
+                    for name in driven_names}
+        untouched = [name for name, hit_at in contacts.items() if hit_at is None]
+        result["drivenParts"] = driven_names
+        result["transmits"] = not untouched
+        if untouched:
+            result["clear"] = False
+            result["transmitDetail"] = (
+                f"{', '.join(untouched)} never touched over {steps} samples with the "
+                f"drive running ({len(driven_names) - len(untouched)} of "
+                f"{len(driven_names)} driven part(s) are): this transmits no motion. "
+                "If the mechanism does drive it, check that sample 0 is not already at "
+                "the end of that part's travel -- a follower frozen at the top of its "
+                "stroke is never pushed further, and the cycle has to start elsewhere")
+        else:
+            reached = ", ".join(
+                f"{' x '.join(hit_at['between'])} at {hit_at['step']}/{steps}"
+                for hit_at in contacts.values())
+            result["transmitDetail"] = f"drive reaches every driven part -- {reached}"
+    return result
+
+
 CHECKS = {
     "linear_motion_collision": check_linear,
     "rotation_motion_collision": check_rotation,
+    "coupled_motion_collision": check_coupled,
     "clear_path_proxy": check_clear_path,
 }
 
@@ -373,6 +641,14 @@ def run_condition(condition: dict, parts: dict, index: int) -> dict:
         return record
 
     record.update(outcome)
+    limit = thresholds.get("maxStepMm")
+    if limit is not None and outcome.get("stepMm", 0.0) > float(limit):
+        record.update(
+            status="inconclusive",
+            detail=(f"sampled every {outcome['stepMm']:.3f} mm, coarser than the "
+                    f"{float(limit):.3f} mm this condition declares it has to see: a sweep "
+                    "is blind to anything smaller than its own step. Raise steps."))
+        return record
     expect = condition.get("expect", "clear")
     if expect not in ("clear", "blocked"):
         record.update(status="inconclusive", detail=f'expect must be "clear" or "blocked"')
@@ -380,12 +656,27 @@ def run_condition(condition: dict, parts: dict, index: int) -> dict:
     record["expect"] = expect
 
     clear = bool(outcome.get("clear"))
+    if outcome.get("drivenParts") and not outcome.get("transmits"):
+        # A follower nothing ever touches is not a clear path; it is a gap where
+        # the mechanism was supposed to be, and it reads as clear on every other
+        # check in this file.
+        record["expect"] = condition.get("expect", "clear")
+        record["status"] = "fail"
+        record["detail"] = outcome["transmitDetail"]
+        return record
     if clear:
-        moved = (f"clear across {outcome['steps']} steps" if "steps" in outcome
+        moved = (f"clear across {outcome['steps']} samples" if outcome.get("movers")
+                 else f"clear across {outcome['steps']} steps" if "steps" in outcome
                  else "path is clear")
+        if outcome.get("stepMm"):
+            moved += f" (step {outcome['stepMm']:.3f} mm)"
+        if outcome.get("transmitDetail"):
+            moved = f"{moved}; {outcome['transmitDetail']}"
     elif "step" in outcome:
         moved = (f"blocked by {outcome['obstacle']} at step "
                  f"{outcome['step']}/{outcome['steps']} ({outcome['overlapMm3']} mm3)")
+    elif outcome.get("movers"):
+        moved = f"clear across {outcome['steps']} samples"
     else:
         names = ", ".join(entry["obstacle"] for entry in outcome.get("blockedBy", []))
         moved = f"blocked by {names}"
@@ -402,6 +693,154 @@ def run_condition(condition: dict, parts: dict, index: int) -> dict:
     return record
 
 
+def _self_check() -> int:
+    """Fixtures whose answers are known, for the coupled check.
+
+    Each one is built so the naive implementation passes it: a sweep with a gap
+    in it is clear at every sample, and only the frozen pass can tell that
+    nothing was ever driven.
+    """
+    from build123d import Box, Pos
+
+    def block(label, x):
+        solid = Pos(x, 0, 0) * Box(10, 10, 10)
+        solid.label = label
+        return solid
+
+    parts = {"drive": block("drive", 0.0), "output": block("output", 20.0),
+             "__ambiguous__": [], "__toplevel__": ["drive", "output"]}
+
+    def coupled(ident, drive_to, output_offsets, driven=True, steps=10, extra=None):
+        movers = [
+            {"part": "drive", "translation": {"vector": [drive_to, 0, 0]}},
+            {"part": "output", "driven": driven,
+             "translation": {"offsets_mm": output_offsets}},
+        ]
+        inputs = {"steps": steps, "movers": movers}
+        if extra:
+            inputs.update(extra)
+        return run_condition(
+            {"id": ident, "check": "coupled_motion_collision", "expect": "clear",
+             "inputs": inputs}, parts, 0)
+
+    still = [[0.0, 0.0, 0.0]] * 11
+    ok = True
+
+    # 1. The drive never reaches the output. Every sample is clear, and that is
+    #    the failure: this is a gap being measured, not a mechanism.
+    got = coupled("gap", 5.0, still)
+    hit = got["status"] == "fail" and "transmits no motion" in got["detail"]
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} a clear sweep with nothing driven fails: {got['detail']}")
+
+    # 2. The same motion, far enough that the frozen output is struck: a real
+    #    drive, clear while both move.
+    following = [[15.0 * i / 10.0, 0.0, 0.0] for i in range(11)]
+    got = coupled("driven", 15.0, following)
+    hit = got["status"] == "pass" and got.get("transmits") is True
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} a following output passes and transmits: {got['detail']}")
+
+    # 3. An output that lags is run into: the pair binds and the cycle fails.
+    #    The blocks start 10 mm apart, so the drive has to close more than that
+    #    on the output for this to be a bind rather than a near miss.
+    lagging = [[15.0 * i / 10.0, 0.0, 0.0] for i in range(11)]
+    got = coupled("bind", 30.0, lagging)
+    hit = got["status"] == "fail" and "blocked" in got["detail"]
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} a lagging output is caught as a bind: {got['detail']}")
+
+    # 4. Two driven parts, only one of them reachable. A single "something
+    #    collided" would pass this; the per-part rule is what fails it.
+    parts["far"] = block("far", 60.0)
+    two = run_condition({
+        "id": "one-of-two", "check": "coupled_motion_collision", "expect": "clear",
+        "inputs": {"steps": 10, "movers": [
+            {"part": "drive", "translation": {"vector": [15.0, 0, 0]}},
+            {"part": "output", "driven": True,
+             "translation": {"offsets_mm": [[15.0 * i / 10.0, 0.0, 0.0] for i in range(11)]}},
+            {"part": "far", "driven": True,
+             "translation": {"offsets_mm": [[0.0, 0.0, 0.0]] * 11}},
+        ]}}, parts, 0)
+    hit = two["status"] == "fail" and "far" in two["detail"] and "1 of 2" in two["detail"]
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} one driven part out of two is not enough: {two['detail']}")
+    del parts["far"]
+
+    # 5. Without `driven`, case 1 is just a clear path -- the flag is what asks
+    #    the second question, and the file must not answer it uninvited.
+    got = coupled("no-claim", 5.0, still, driven=False)
+    hit = got["status"] == "pass" and "transmits" not in got
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} without driven, the same sweep is only a clear path")
+
+    # 6. A sweep is blind to anything smaller than its own step, so a condition
+    #    may declare the size it has to see. Too coarse is a check that did not
+    #    run -- not a clear path.
+    coarse = run_condition({
+        "id": "coarse", "check": "coupled_motion_collision", "expect": "clear",
+        "inputs": {"steps": 2, "movers": [
+            {"part": "drive", "translation": {"vector": [15.0, 0, 0]}},
+            {"part": "output", "driven": True,
+             "translation": {"offsets_mm": [[15.0 * i / 2.0, 0.0, 0.0] for i in range(3)]}},
+        ]},
+        "thresholds": {"maxStepMm": 1.0}}, parts, 0)
+    hit = coarse["status"] == "inconclusive" and "coarser than" in coarse["detail"]
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} too coarse a step is inconclusive: {coarse['detail'][:88]}")
+
+    fine = run_condition({
+        "id": "fine", "check": "coupled_motion_collision", "expect": "clear",
+        "inputs": {"steps": 30, "movers": [
+            {"part": "drive", "translation": {"vector": [15.0, 0, 0]}},
+            {"part": "output", "driven": True,
+             "translation": {"offsets_mm": [[15.0 * i / 30.0, 0.0, 0.0] for i in range(31)]}},
+        ]},
+        "thresholds": {"maxStepMm": 1.0}}, parts, 0)
+    hit = fine["status"] == "pass" and fine["stepMm"] <= 1.0
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} the same motion sampled finely passes, and says so: "
+          f"step {fine.get('stepMm')} mm")
+
+    # 7. A table that is not steps+1 long is a broken check, not a clear one.
+    got = coupled("short-table", 5.0, still[:4])
+    hit = got["status"] == "inconclusive" and "steps+1" in got["detail"]
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} a short pose table is inconclusive: {got['detail']}")
+
+
+    # 9. A frame the cycle never sweeps against. The movers clear each other
+    #    perfectly, so the condition passes on its own terms while the one part
+    #    the mechanism actually runs into was never in the test.
+    parts["frame"] = block("frame", 10.0)
+    parts["__toplevel__"] = ["drive", "output", "frame"]
+    got = coupled("silent-frame", 20.0, [[i * 2.0, 0.0, 0.0] for i in range(11)])
+    hit = got["status"] == "inconclusive" and "frame" in got["detail"]
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} a part left out of the sweep is inconclusive: "
+          f"{got['detail'][:96]}")
+
+    # 10. ... and saying so explicitly is a decision the manifest may record.
+    got = coupled("declared-empty", 20.0, [[i * 2.0, 0.0, 0.0] for i in range(11)],
+                  extra={"obstacle_parts": []})
+    hit = got["status"] == "pass"
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} an explicit empty obstacle list is accepted: "
+          f"{got['status']}")
+
+    # 11. Naming it is the other way through, and it catches the collision.
+    got = coupled("named-frame", 20.0, [[i * 2.0, 0.0, 0.0] for i in range(11)],
+                  extra={"obstacle_parts": ["frame"]})
+    hit = got["status"] == "fail" and "frame" in got["detail"]
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} a named frame is swept: {got['detail'][:96]}")
+    del parts["frame"]
+    parts["__toplevel__"] = ["drive", "output"]
+
+    print("check_motion coupled-motion fixtures:", "ok" if ok else "FAILED")
+    return 0 if ok else 1
+
+
 def load_manifest(source: str) -> dict:
     text = sys.stdin.read() if source == "-" else Path(source).read_text(encoding="utf-8")
     try:
@@ -413,16 +852,284 @@ def load_manifest(source: str) -> dict:
     return manifest
 
 
+# --- retention dependency audit -----------------------------------------
+
+def flatten_conditions(conditions: list[dict]) -> list[dict]:
+    """Return top-level and assembly-sequence conditions in one list."""
+    flat = []
+    for condition in conditions:
+        if not isinstance(condition, dict):
+            continue
+        flat.append(condition)
+        if condition.get("check") == "assembly_sequence":
+            steps = (condition.get("inputs", {}) or {}).get("steps", [])
+            if isinstance(steps, list):
+                flat.extend(flatten_conditions(steps))
+    return flat
+
+
+def flatten_results(results: list[dict]) -> list[dict]:
+    """Return top-level and assembly-sequence results in one list."""
+    flat = []
+    for result in results:
+        flat.append(result)
+        nested = result.get("stepResults", [])
+        if isinstance(nested, list):
+            flat.extend(flatten_results(nested))
+    return flat
+
+
+def check_retention_closure(manifest: dict, parts: dict, results: list[dict]) -> dict | None:
+    """Prove that each declared retainer reaches an explicitly fixed root.
+
+    Collision sweeps hold obstacle parts stationary. That is legitimate only
+    when a retention claim also explains why every removable obstacle in its
+    load path stays put. The manifest's retention graph supplies that missing
+    dependency information and this audit verifies the graph against passing
+    blocked-motion conditions.
+    """
+    declaration = manifest.get("retention")
+    if declaration is None:
+        return None
+
+    record = {
+        "id": "retention-closure",
+        "check": "retention_closure",
+        "description": "Every removable retainer reaches an explicitly fixed assembly root.",
+    }
+    errors = []
+    if not isinstance(declaration, dict):
+        record.update(status="fail", detail="retention must be an object")
+        return record
+
+    fixed_parts = declaration.get("fixed_parts", [])
+    proofs = declaration.get("proofs", [])
+    if not isinstance(fixed_parts, list) or not fixed_parts:
+        errors.append("retention.fixed_parts must name at least one fixed assembly root")
+        fixed_parts = []
+    if not isinstance(proofs, list) or not proofs:
+        errors.append("retention.proofs must contain at least one proof")
+        proofs = []
+
+    fixed = set()
+    for name in fixed_parts:
+        if not isinstance(name, str):
+            errors.append("every retention.fixed_parts entry must be a part name")
+            continue
+        try:
+            resolve_parts(name, parts, "retention.fixed_parts")
+            fixed.add(name)
+        except ManifestError as error:
+            errors.append(str(error))
+
+    condition_rows = flatten_conditions(manifest.get("conditions", []))
+    conditions = {}
+    for condition in condition_rows:
+        ident = condition.get("id")
+        if not isinstance(ident, str) or not ident:
+            continue
+        if ident in conditions:
+            errors.append(f'retention proof condition id "{ident}" is duplicated')
+        conditions[ident] = condition
+    result_by_id = {
+        result.get("id"): result for result in flatten_results(results)
+        if isinstance(result.get("id"), str)
+    }
+
+    proof_by_part = {}
+    supports_by_part = {}
+    for index, proof in enumerate(proofs):
+        field = f"retention.proofs[{index}]"
+        if not isinstance(proof, dict):
+            errors.append(f"{field} must be an object")
+            continue
+        part = proof.get("part")
+        condition_id = proof.get("condition")
+        if not isinstance(part, str) or not part:
+            errors.append(f"{field}.part must name a part")
+            continue
+        if part in proof_by_part:
+            errors.append(f'{field}.part "{part}" has more than one retention proof')
+            continue
+        try:
+            resolve_parts(part, parts, f"{field}.part")
+        except ManifestError as error:
+            errors.append(str(error))
+            continue
+        condition = conditions.get(condition_id)
+        if condition is None:
+            errors.append(f'{field}.condition "{condition_id}" does not name a condition')
+            continue
+        inputs = condition.get("inputs", {}) or {}
+        if condition.get("expect", "clear") != "blocked":
+            errors.append(f'{field}.condition "{condition_id}" must expect blocked')
+        if inputs.get("moving_part") != part:
+            errors.append(
+                f'{field}.condition "{condition_id}" moves {inputs.get("moving_part")!r}, '
+                f'not "{part}"'
+            )
+        result = result_by_id.get(condition_id)
+        if result is None or result.get("status") != "pass":
+            errors.append(f'{field}.condition "{condition_id}" did not pass')
+
+        obstacles = inputs.get("obstacle_parts", [])
+        if isinstance(obstacles, str):
+            obstacles = [obstacles]
+        if not isinstance(obstacles, list) or not obstacles:
+            errors.append(f'{field}.condition "{condition_id}" has no obstacle_parts')
+            obstacles = []
+        supports = proof.get("supports", obstacles)
+        if isinstance(supports, str):
+            supports = [supports]
+        if not isinstance(supports, list) or not supports:
+            errors.append(f"{field}.supports must name at least one load-bearing obstacle")
+            supports = []
+        for support in supports:
+            if not isinstance(support, str):
+                errors.append(f"every {field}.supports entry must be a part name")
+                continue
+            if support not in obstacles:
+                errors.append(
+                    f'{field}.supports "{support}" is not an obstacle in "{condition_id}"'
+                )
+                continue
+            try:
+                resolve_parts(support, parts, f"{field}.supports")
+            except ManifestError as error:
+                errors.append(str(error))
+        proof_by_part[part] = condition_id
+        supports_by_part[part] = supports
+
+    visited = set()
+
+    def reaches_fixed(part: str, trail: list[str]) -> None:
+        if part in fixed or part in visited:
+            return
+        if part in trail:
+            cycle = " -> ".join([*trail, part])
+            errors.append(f"retention dependency cycle: {cycle}")
+            return
+        if part not in proof_by_part:
+            parent = trail[-1] if trail else "retained part"
+            errors.append(
+                f'"{parent}" relies on removable obstacle "{part}", but "{part}" '
+                "has no retention proof and is not a fixed part"
+            )
+            return
+        for support in supports_by_part.get(part, []):
+            reaches_fixed(support, [*trail, part])
+        visited.add(part)
+
+    for part in proof_by_part:
+        reaches_fixed(part, [])
+
+    if errors:
+        record.update(status="fail", detail="; ".join(dict.fromkeys(errors)))
+    else:
+        record.update(
+            status="pass",
+            detail=(f"{len(proof_by_part)} retention proof(s) close at "
+                    f"{len(fixed)} fixed root(s)"),
+        )
+    return record
+
+
+def run_self_check() -> int:
+    """Regression for the frozen-but-unretained obstacle failure mode."""
+    parts = {
+        "shaft": object(),
+        "gate": object(),
+        "key": object(),
+        "frame": object(),
+        "__ambiguous__": [],
+    }
+
+    def blocked(ident: str, moving: str, obstacles: list[str]) -> dict:
+        return {
+            "id": ident,
+            "check": "linear_motion_collision",
+            "expect": "blocked",
+            "inputs": {"moving_part": moving, "obstacle_parts": obstacles},
+        }
+
+    conditions = [
+        blocked("shaft-held", "shaft", ["gate"]),
+        blocked("gate-held", "gate", ["key"]),
+        blocked("key-seated", "key", ["frame"]),
+    ]
+    results = [{"id": row["id"], "status": "pass"} for row in conditions]
+
+    broken = {
+        "conditions": conditions,
+        "retention": {
+            "fixed_parts": ["frame"],
+            "proofs": [{"part": "shaft", "condition": "shaft-held"}],
+        },
+    }
+    broken_result = check_retention_closure(broken, parts, results)
+    assert broken_result and broken_result["status"] == "fail"
+    assert 'obstacle "gate"' in broken_result["detail"]
+
+    closed = {
+        "conditions": conditions,
+        "retention": {
+            "fixed_parts": ["frame"],
+            "proofs": [
+                {"part": "shaft", "condition": "shaft-held"},
+                {"part": "gate", "condition": "gate-held"},
+                {"part": "key", "condition": "key-seated"},
+            ],
+        },
+    }
+    closed_result = check_retention_closure(closed, parts, results)
+    assert closed_result and closed_result["status"] == "pass"
+
+    cyclic = {
+        "conditions": [
+            blocked("shaft-held", "shaft", ["gate"]),
+            blocked("gate-held", "gate", ["shaft"]),
+        ],
+        "retention": {
+            "fixed_parts": ["frame"],
+            "proofs": [
+                {"part": "shaft", "condition": "shaft-held"},
+                {"part": "gate", "condition": "gate-held"},
+            ],
+        },
+    }
+    cyclic_results = [
+        {"id": "shaft-held", "status": "pass"},
+        {"id": "gate-held", "status": "pass"},
+    ]
+    cyclic_result = check_retention_closure(cyclic, parts, cyclic_results)
+    assert cyclic_result and cyclic_result["status"] == "fail"
+    assert "dependency cycle" in cyclic_result["detail"]
+
+    print("check_motion retention fixtures: ok")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("project", help="project directory holding the assembly entry")
-    parser.add_argument("--manifest", required=True, help="motion manifest JSON, or - for stdin")
+    parser.add_argument("project", nargs="?", help="project directory holding the assembly entry")
+    parser.add_argument("--manifest", help="motion manifest JSON, or - for stdin")
     parser.add_argument("--list-parts", action="store_true",
                         help="print the labelled parts and exit")
     parser.add_argument("--allow-inconclusive", action="store_true",
                         help="do not fail on conditions that could not run")
     parser.add_argument("--json", action="store_true", help="emit results as JSON")
+    parser.add_argument("--self-check", action="store_true",
+                        help="run the coupled-motion and retention fixtures, and exit")
     args = parser.parse_args()
+
+    if args.self_check:
+        # Both suites, always: a fixture set that stops running does not fail,
+        # it just stops appearing.
+        coupled = _self_check()
+        retention = run_self_check()
+        return coupled or retention
+    if not args.project or not args.manifest:
+        parser.error("project and --manifest are required unless --self-check is used")
 
     project = Path(args.project).resolve()
     if not project.is_dir():
@@ -438,9 +1145,7 @@ def main() -> int:
         return 2
 
     if args.list_parts:
-        for name in sorted(parts):
-            if name == "__ambiguous__":
-                continue
+        for name in sorted(part_names(parts)):
             print(f"{name}  (ambiguous)" if name in parts["__ambiguous__"] else name)
         for name in parts["__ambiguous__"]:
             print(f"{name}  (ambiguous - use its dotted path)")
@@ -453,6 +1158,9 @@ def main() -> int:
 
     results = [run_condition(condition, parts, index)
                for index, condition in enumerate(conditions)]
+    retention_result = check_retention_closure(manifest, parts, results)
+    if retention_result is not None:
+        results.append(retention_result)
     failed = [r for r in results if r["status"] == "fail"]
     unclear = [r for r in results if r["status"] == "inconclusive"]
 
@@ -465,7 +1173,7 @@ def main() -> int:
         }, indent=2))
         return 0 if not failed and (args.allow_inconclusive or not unclear) else 1
 
-    labelled = len([name for name in parts if name != "__ambiguous__"])
+    labelled = len(part_names(parts))
     print(f"{entry.name}: {labelled} labelled parts, {len(results)} condition(s)\n")
     for result in results:
         badge = {"pass": "ok  ", "fail": "FAIL", "inconclusive": "??  "}[result["status"]]

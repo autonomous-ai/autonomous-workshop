@@ -311,7 +311,7 @@ def _verify_declared_dependencies(python: Path, *, cwd: Path) -> None:
             "import importlib.metadata as m; "
             "requirements = m.requires('autonomous-workshop') or []; "
             "assert 'cadgen==0.4.19' in requirements, requirements; "
-            "assert 'pillow>=10.0' in requirements, requirements; "
+            "assert 'pillow<13,>=10' in requirements, requirements; "
             "assert 'psutil<8,>=7.2' in requirements, requirements; "
             "assert 'pypdf<7,>=6.16.2' in requirements, requirements; "
             "assert 'pypdfium2<6,>=5.13' in requirements, requirements; "

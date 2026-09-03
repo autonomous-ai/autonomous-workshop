@@ -85,7 +85,8 @@ import is 5.4 s of the ~7 s a render costs.
 ```
 measure_image.py    pixels to ratios, and the cross-check gate  (step 2)
 grid_overlay.py     read an organic outline off a labelled grid (step 2)
-render_views.py     build the model and draw its silhouette     (step 8)
+render_views.py     build the model, draw its silhouette, and (with
+                    --shaded) a lit review render beside it        (step 8)
 check_likeness.py   score that silhouette against the reference (step 8)
 ref_silhouette.py   flatten a reference the mask cannot hold     (step 8)
 ```
@@ -935,6 +936,32 @@ camera, and measuring an otherwise unobservable dimension by sweeping it
 through the gate — are in `references/likeness-gate.md`, with what each costs.
 Read it while writing the verification checklist so the handoff carries exact
 commands; the document-only phase still runs none of them.
+
+### A silhouette is for the gate. Look at the model with `--shaded`
+
+The mask is the right picture for scoring an outline and the wrong one for
+judging a model. A machine's identity is interior — slots, pockets, bores,
+a pin standing on an arm, one part seated in another — and a filled outline
+shows none of it: an assembly renders as a single blob whose parts cannot be
+told apart at any resolution. Reviewing a mechanism off silhouettes is how a
+part that is missing, mirrored, or in the wrong place survives a review.
+
+```bash
+python <skill-dir>/scripts/render_views.py <project-dir>/<name>.step.py \
+    --view front --view right --view top --view iso --shaded -o <project-dir>/snap
+```
+
+`--shaded` writes `<label>-shaded.png` **beside** each mask, never instead of
+it, so nothing the likeness gate reads changes. It is z-buffered flat shading,
+one colour per labelled part — a part's own `color` when the source sets one —
+with an outline wherever the part or the depth changes, which is what makes
+interior features legible. The outline pushes away from the local tone rather
+than always darkening -- an outline that only darkens is invisible on a dark
+part, and a 3 mm relief on a black plate then renders as black on black. Frame and camera match the mask exactly, so the two
+can be read against each other.
+
+Use it for every appearance review; use the mask for every score. Neither
+replaces the other, and neither sees colour or material the way a person does.
 
 Treat 0.90 as the target, not the pass mark for an unreviewed first attempt,
 and read the score as a **floor on the disagreement, never a ceiling on

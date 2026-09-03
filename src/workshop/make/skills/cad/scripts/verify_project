@@ -28,6 +28,11 @@ whenever the project carries a component STEP under ref/ -- a fetched part with 
 matching declared mount is a seat no gate has ever measured. This mount preflight
 applies to every final workflow, not only image-derived work.
 
+Every mode also runs check_spec_numbers whenever the project has a *_spec.md:
+a number the document attributes to a named parameter has to be that parameter's
+value.  A local check_spec.py proves the relations it was written for; it does
+not notice the table beside them still quoting a diameter from two repairs ago.
+
 Conditional gates that do not run are still written to the report as `skipped`
 rows.  A gate missing from the record is indistinguishable from one that passed.
 Image-derived final verification requires an explicit power classification:
@@ -1044,6 +1049,7 @@ def _final(
     bed: tuple[float, float, float],
     nozzle: float,
     skip_thickness: bool,
+    overhang_angle: float,
     image_derived: bool,
     likeness_refs: list[tuple[str, Path]],
     likeness_min: float,
@@ -1092,6 +1098,22 @@ def _final(
                 env_extra=_audit_env(project),
             ):
                 return 1
+
+    # A local check_spec.py proves the relations it was written to prove. It
+    # does not notice that the table beside them still quotes a diameter from
+    # two repairs ago, which is exactly the drift a geometry fix produces.
+    if list(project.glob("*_spec.md")):
+        if not _run_or_stop(
+            runner,
+            [sys.executable, SCRIPTS_DIR / "check_spec_numbers",
+             _path_arg(project, runner.cwd)],
+        ):
+            return 1
+    else:
+        runner.skipped(
+            "check_spec_numbers",
+            "no *_spec.md; no written parameter claims to hold the source to",
+        )
 
     mount_manifest = project / "measure" / "mounts.json"
     if mount_manifest.is_file():
@@ -1298,10 +1320,25 @@ def _final(
                 ],
             ):
                 return 1
+            role = printable.name.removesuffix(ENTRY_SUFFIX)
+            if role.startswith(PART_PREFIX):
+                role = role.removeprefix(PART_PREFIX)
+            # Every other gate here is blind to the build direction: a part
+            # whose features hang in mid-air sits on the bed, closes, and
+            # extrudes. This is the one that knows which way is up.
+            if not _run_or_stop(
+                runner,
+                [
+                    sys.executable,
+                    SCRIPTS_DIR / "check_overhang",
+                    _path_arg(_stl_for_entry(printable), runner.cwd),
+                    "--angle", str(overhang_angle),
+                    "--report",
+                    _path_arg(project / "measure" / f"overhang-{role}.md", runner.cwd),
+                ],
+            ):
+                return 1
             if not skip_thickness:
-                role = printable.name.removesuffix(ENTRY_SUFFIX)
-                if role.startswith(PART_PREFIX):
-                    role = role.removeprefix(PART_PREFIX)
                 if not _run_or_stop(
                     runner,
                     [
@@ -1766,6 +1803,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--bed", type=_parse_bed, help="printer bed WxDxH (default: project declaration, then 220x220x220)")
     parser.add_argument("--preview-tolerance", type=float, default=DEFAULT_PREVIEW_TOLERANCE, help="quick-mode render mesh tolerance (default: 0.1)")
     parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle diameter for exported-part thickness gates (default: 0.4 mm)")
+    parser.add_argument("--overhang-angle", type=float, default=45.0,
+                        help="deg from vertical; below this a down-facing surface needs support (default 45)")
     parser.add_argument("--skip-thickness", action="store_true", help="export/check meshes without the print-thickness gate; output cannot be called print-ready")
     parser.add_argument("--image-derived", action="store_true", help="require spec/landmark audits and run render, STEP-drift, and likeness gates")
     parser.add_argument(
@@ -2182,6 +2221,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             bed=bed,
             nozzle=float(args.nozzle),
             skip_thickness=bool(args.skip_thickness),
+            overhang_angle=float(args.overhang_angle),
             image_derived=bool(args.image_derived),
             likeness_refs=resolved_likeness_refs,
             likeness_min=float(args.likeness_min),

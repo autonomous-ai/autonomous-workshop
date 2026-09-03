@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -14,7 +15,18 @@ sys.path.insert(0, str(WORKSHOP_ROOT / "src"))
 from workshop.make.skill_registry import discover_skills  # noqa: E402
 
 
-def _verify_cadgen_pin(skills_root: Path) -> None:
+def _canonical(requirement: str) -> tuple[str, str]:
+    """Split a requirement into its PEP 503 name and its space-free specifier."""
+    cut = len(requirement)
+    for index, character in enumerate(requirement):
+        if character in "<>=!~[; ":
+            cut = index
+            break
+    name = re.sub(r"[-_.]+", "-", requirement[:cut]).lower()
+    return name, "".join(requirement[cut:].split())
+
+
+def _verify_skill_requirements(skills_root: Path) -> None:
     vendored = tomllib.loads(
         (
             skills_root
@@ -40,8 +52,11 @@ def _verify_cadgen_pin(skills_root: Path) -> None:
     dependencies = (
         root_project.get("dependencies") if isinstance(root_project, dict) else None
     )
-    if not isinstance(dependencies, list) or expected not in dependencies:
-        raise ValueError("Workshop dependency must pin %s" % expected)
+    if not isinstance(dependencies, list):
+        raise ValueError("Workshop dependencies are invalid")
+    declared = dict(
+        _canonical(item) for item in dependencies if isinstance(item, str)
+    )
 
     requirements = [
         line.strip()
@@ -50,8 +65,17 @@ def _verify_cadgen_pin(skills_root: Path) -> None:
         .splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     ]
-    if requirements != [expected]:
-        raise ValueError("CAD skill requirements must contain only %s" % expected)
+    if expected not in requirements:
+        raise ValueError("CAD skill requirements must pin %s" % expected)
+    # The skill runs inside the Workshop environment, so every dependency it
+    # declares has to be the one the Workshop installs -- upper bound included.
+    for requirement in requirements:
+        name, specifier = _canonical(requirement)
+        if declared.get(name) != specifier:
+            raise ValueError(
+                "Workshop dependency must pin %s exactly as the CAD skill does"
+                % requirement
+            )
 
 
 def main() -> int:
@@ -88,7 +112,7 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
-        _verify_cadgen_pin(skills_root)
+        _verify_skill_requirements(skills_root)
         print("skill-lock: %d reviewed skill trees match" % len(observed))
         return 0
     except (OSError, ValueError, json.JSONDecodeError) as exc:

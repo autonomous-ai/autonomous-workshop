@@ -40,6 +40,7 @@ from workshop.errors import (
     StateConflict,
 )
 from workshop.make.cad.mesh import inspect_stl_path
+from workshop.make.cad.step_color import read_step_part_colors
 from workshop.release.native import (
     DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
     FACTORY_CONTENT_BODY_MAX,
@@ -116,6 +117,12 @@ FACTORY_MODEL_GEOMETRY_SUFFIXES = frozenset(
     )
 )
 FACTORY_MODEL_GENERATOR_SUFFIXES = frozenset((".py",))
+# Only these sealed CAD types carry the per-part surface colours Make
+# assigned; a colour is read from the exact sealed bytes, never inferred
+# from a mesh, a render, or model prose.
+FACTORY_STEP_SUFFIXES = frozenset((".step", ".stp"))
+FACTORY_MAX_STEP_COLOUR_BYTES = 256 * 1024 * 1024
+FACTORY_PART_COLORS_MAPPING = "workshop-sealed-step-colours-to-factory-part-colors-v1"
 FACTORY_FORBIDDEN_MEDIA_SUFFIXES = frozenset(
     (
         ".avi", ".avif", ".bmp", ".gif", ".heic", ".jpeg", ".jpg",
@@ -138,6 +145,7 @@ FACTORY_IMPORT_PROVEN_NO_EFFECT_STATUSES = (
 )
 _INVENTOR_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _OCCURRENCE_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,127}$")
+_HEX_COLOUR = re.compile(r"^#[0-9a-f]{6}$")
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -372,6 +380,142 @@ def _inspect_shells(
             "Factory %s STL shell count failed: expected=%d observed=%s reasons=%s"
             % (label, expected, result.observed_shell_count, ",".join(reasons) or "unknown")
         )
+
+
+def _sealed_part_colors(root: Path, manifest: ArtifactManifest) -> Dict[str, str]:
+    """Return the exact surface colour Make sealed for each named part.
+
+    Make keeps a printable part's colour on that part's own STEP and may keep
+    the review assembly deliberately unstyled, so every sealed STEP is read and
+    the results are merged by part name.  A name two sealed files disagree
+    about is dropped: the shop keeps rendering its own colour rather than one
+    Workshop cannot prove.
+    """
+
+    steps = [
+        entry
+        for entry in manifest.entries
+        if PurePosixPath(entry.path).suffix.casefold() in FACTORY_STEP_SUFFIXES
+    ]
+    if sum(entry.bytes for entry in steps) > FACTORY_MAX_STEP_COLOUR_BYTES:
+        # Reading a pathological CAD tree must not stall the effect boundary.
+        return {}
+
+    colours: Dict[str, str] = {}
+    conflicting = set()
+    for entry in steps:
+        try:
+            content = _read_bound_file(root, manifest, entry.path)
+        except ContractError:
+            # A colour is enrichment. An unreadable sealed STEP is reported by
+            # the handoff builder itself; it must not fail here first.
+            return {}
+        for name, colour in read_step_part_colors(content).items():
+            if not _OCCURRENCE_NAME.fullmatch(name) or not _HEX_COLOUR.fullmatch(colour.hex):
+                continue
+            if colours.get(name, colour.hex) != colour.hex:
+                conflicting.add(name)
+            colours[name] = colour.hex
+    for name in conflicting:
+        colours.pop(name, None)
+    return colours
+
+
+def _normalized_hex(value: str) -> str:
+    """Fold the hex forms Factory accepts onto the one Workshop writes.
+
+    Factory stores ``#RGB``, ``#RRGGBB`` or ``#RRGGBBAA`` lower-cased. Workshop
+    only ever writes opaque ``#rrggbb``, so an equivalent shorthand or a fully
+    opaque alpha must read back as the same colour rather than as drift.
+    """
+
+    colour = value.strip().casefold()
+    if _HEX_COLOUR.fullmatch(colour):
+        return colour
+    if re.fullmatch(r"#[0-9a-f]{3}", colour):
+        return "#" + "".join(channel * 2 for channel in colour[1:])
+    if re.fullmatch(r"#[0-9a-f]{6}ff", colour):
+        return colour[:7]
+    return colour
+
+
+def _factory_assembly_parts(design: Mapping[str, Any]) -> Tuple[Mapping[str, Any], ...]:
+    """Normalize Factory's own view of the meshes its thumbnail renders.
+
+    Factory owns ``order``, ``mesh_name`` and ``part``; Workshop only ever
+    supplies ``color``.  An absent list means this design exposes no addressable
+    mesh, which is not an error: it simply leaves nothing to recolour.
+    """
+
+    parts = design.get("assembly_parts")
+    if parts is None:
+        return ()
+    if not isinstance(parts, list):
+        raise ReceiptError("Factory assembly_parts readback is malformed")
+    normalized = []
+    for part in parts:
+        if not isinstance(part, Mapping):
+            raise ReceiptError("Factory assembly_parts readback is malformed")
+        order = part.get("order")
+        if not isinstance(order, int) or isinstance(order, bool) or order < 0:
+            raise ReceiptError("Factory assembly part has no exact order")
+        mesh_name = part.get("mesh_name")
+        filename = part.get("part")
+        colour = part.get("color")
+        if (
+            mesh_name is not None and not isinstance(mesh_name, str)
+            or filename is not None and not isinstance(filename, str)
+            or colour is not None and not isinstance(colour, str)
+        ):
+            raise ReceiptError("Factory assembly part is malformed")
+        normalized.append(
+            {
+                "order": order,
+                "mesh_name": mesh_name or None,
+                "part": filename or None,
+                "color": _normalized_hex(colour) if colour else None,
+            }
+        )
+    orders = [part["order"] for part in normalized]
+    if len(set(orders)) != len(orders):
+        raise ReceiptError("Factory assembly parts do not have unique orders")
+    return tuple(sorted(normalized, key=lambda part: part["order"]))
+
+
+def _part_color_plan(
+    observed: Sequence[Mapping[str, Any]], colours: Mapping[str, str]
+) -> Optional[Tuple[Tuple[Mapping[str, Any], ...], Tuple[Mapping[str, Any], ...]]]:
+    """Return the exact partial write and the merged state it must produce.
+
+    ``None`` means no sealed colour addresses any mesh Factory reports, so no
+    request is owed at all.  An empty write with a target means Factory already
+    renders the sealed colours.
+    """
+
+    if not observed or not colours:
+        return None
+    resolved: Dict[int, str] = {}
+    for part in observed:
+        for address in (part["mesh_name"], PurePosixPath(part["part"] or "").stem or None):
+            if address is not None and address in colours:
+                resolved[part["order"]] = colours[address]
+                break
+    if not resolved and len(observed) == 1 and len(set(colours.values())) == 1:
+        # One rendered mesh and one exact sealed colour: the whole piece is
+        # that colour, whatever Factory chose to name the mesh.
+        resolved[observed[0]["order"]] = next(iter(colours.values()))
+    if not resolved:
+        return None
+    writes = tuple(
+        {"order": part["order"], "color": resolved[part["order"]]}
+        for part in observed
+        if part["order"] in resolved and part["color"] != resolved[part["order"]]
+    )
+    target = tuple(
+        dict(part, color=resolved.get(part["order"], part["color"]))
+        for part in observed
+    )
+    return writes, target
 
 
 def _occurrence_transport(
@@ -1409,6 +1553,31 @@ class FactoryClient:
             "PUT",
             "/designs/%s/story-blocks" % urllib.parse.quote(slug, safe=""),
             body=_canonical_json({"story_blocks": [dict(block) for block in blocks]}),
+            content_type="application/json",
+            idempotency_key=idempotency_key,
+        )
+
+    def write_part_colors(
+        self,
+        slug: str,
+        assembly_parts: Sequence[Mapping[str, Any]],
+        idempotency_key: str,
+    ) -> HttpResponse:
+        if not isinstance(slug, str) or not slug:
+            raise ContractError("Factory design slug is required")
+        if not isinstance(assembly_parts, (list, tuple)) or not assembly_parts:
+            raise ContractError("Factory part-colors write must carry parts")
+        for part in assembly_parts:
+            if not isinstance(part, Mapping) or set(part) != {"order", "color"}:
+                raise ContractError("Factory part-colors write must be exact")
+            if not _HEX_COLOUR.fullmatch(str(part["color"])):
+                raise ContractError("Factory part colour must be lower-case #rrggbb")
+        return self._request(
+            "PATCH",
+            "/designs/%s/part-colors" % urllib.parse.quote(slug, safe=""),
+            body=_canonical_json(
+                {"assembly_parts": [dict(part) for part in assembly_parts]}
+            ),
             content_type="application/json",
             idempotency_key=idempotency_key,
         )
@@ -2493,6 +2662,242 @@ class FactoryReleaseWriter:
         assert completed.receipt is not None
         return completed.receipt
 
+    @staticmethod
+    def _assert_part_colors_receipt(
+        receipt: Receipt,
+        intent: EffectIntent,
+        imported: Receipt,
+    ) -> None:
+        receipt.assert_payload(intent.pack_sha256)
+        receipt.assert_artifact(intent.product_artifact_sha256)
+        if not receipt.is_verified_draft or not _same_factory_identity(imported, receipt):
+            raise ReceiptError(
+                "Factory part-colors Receipt does not identify the imported draft"
+            )
+        details = receipt.details
+        for name in (
+            "release_sha256",
+            "playtest_evidence_sha256",
+            "handoff_artifact_sha256",
+            "part_colors_sha256",
+            "effect_request_sha256",
+            "part_colors_effect_request_sha256",
+            "import_effect_request_sha256",
+        ):
+            require_sha256(details.get(name), "Factory part-colors Receipt %s" % name)
+        expected = {
+            "product_id": intent.product_id,
+            "release_sha256": intent.release_sha256,
+            "playtest_evidence_sha256": intent.playtest_evidence_sha256,
+            "handoff_artifact_sha256": intent.handoff_artifact_sha256,
+            "part_colors_sha256": intent.request.get("part_colors_sha256"),
+            "part_colors_effect_request_sha256": intent.request_sha256,
+            "import_effect_request_sha256": imported.details.get(
+                "effect_request_sha256"
+            ),
+            "effect_request_sha256": intent.request_sha256,
+            "effect_idempotency_key": intent.idempotency_key,
+            "factory_part_colors_mapping": FACTORY_PART_COLORS_MAPPING,
+            "content_owner": "workshop-manager",
+        }
+        if any(details.get(name) != value for name, value in expected.items()):
+            raise ReceiptError(
+                "Factory part-colors Receipt is not bound to the exact sealed colours"
+            )
+        exact = details.get("part_colors")
+        if (
+            not isinstance(exact, Mapping)
+            or _canonical_sha256(exact) != intent.request.get("part_colors_sha256")
+            or exact != intent.request.get("part_colors")
+        ):
+            raise ReceiptError(
+                "Factory part-colors Receipt does not retain its exact sealed colours"
+            )
+
+    def _part_colors_receipt(
+        self,
+        design: Mapping[str, Any],
+        intent: EffectIntent,
+        imported: Receipt,
+        proof: Mapping[str, Any],
+        target: Sequence[Mapping[str, Any]],
+    ) -> Receipt:
+        if _factory_assembly_parts(design) != tuple(target):
+            raise ReceiptError(
+                "Factory readback does not render the exact sealed part colours"
+            )
+        observed = _factory_receipt(design, intent, proof)
+        observed.assert_owner(imported.owner_id)
+        if not observed.is_verified_draft or not _same_factory_identity(imported, observed):
+            raise ReceiptError(
+                "Factory part-colors readback changed the imported draft identity"
+            )
+        final = Receipt.from_dict(observed.to_dict())
+        self._assert_part_colors_receipt(final, intent, imported)
+        return final
+
+    def _ensure_part_colors(
+        self,
+        client: FactoryClient,
+        imported: Receipt,
+        part_colors: Mapping[str, str],
+    ) -> None:
+        """Render the draft in the exact colours Make sealed into its STEP.
+
+        Colour is enrichment of a draft that is already complete, so this owes
+        Factory a request only when a sealed colour addresses a mesh Factory
+        itself reports.  Once a request is owed it is a durable effect like any
+        other: intent first, then one partial merge, then authenticated
+        readback.
+        """
+
+        if not part_colors:
+            return
+        preflight = self._content_design(client, imported.slug)
+        plan = _part_color_plan(_factory_assembly_parts(preflight), part_colors)
+        if plan is None:
+            return
+        writes, target = plan
+
+        request = {
+            "schema_version": 1,
+            "method": "PATCH",
+            "api_origin": _api_origin(DEFAULT_FACTORY_API),
+            "path": "/designs/%s/part-colors"
+            % urllib.parse.quote(imported.slug, safe=""),
+            "owner_id": imported.owner_id,
+            "design_id": imported.design_id,
+            "slug": imported.slug,
+            "root_id": imported.root_id,
+            "current_history_id": imported.current_history_id,
+            "part_colors_sha256": _canonical_sha256(dict(part_colors)),
+            "part_colors": dict(part_colors),
+        }
+        intent = self.ledger.prepare(
+            kind="factory-part-colors",
+            product_id=imported.details.get("product_id"),
+            request=request,
+            pack_sha256=imported.payload_sha256,
+            handoff_artifact_sha256=imported.details.get("handoff_artifact_sha256"),
+            product_artifact_sha256=imported.artifact_sha256,
+            release_sha256=imported.details.get("release_sha256"),
+            playtest_evidence_sha256=imported.details.get(
+                "playtest_evidence_sha256"
+            ),
+        )
+        proof = {
+            **dict(imported.details),
+            "part_colors_sha256": request["part_colors_sha256"],
+            "part_colors": dict(part_colors),
+            "factory_part_colors_mapping": FACTORY_PART_COLORS_MAPPING,
+            "part_colors_effect_request_sha256": intent.request_sha256,
+            "import_effect_request_sha256": imported.details.get(
+                "effect_request_sha256"
+            ),
+            "content_owner": "workshop-manager",
+        }
+        if intent.state == "succeeded":
+            if intent.receipt is None:
+                raise StateConflict("completed Factory part-colors write has no Receipt")
+            self._assert_part_colors_receipt(intent.receipt, intent, imported)
+            return
+        if intent.state == "rejected":
+            raise EffectError("Factory previously rejected these exact part colours")
+        if intent.state == "sending":
+            intent = self.ledger.strand_as_unknown(
+                intent.intent_id, "host exited while Factory part colours were sending"
+            )
+        if intent.state == "unknown":
+            try:
+                design = self._content_design(client, imported.slug)
+                current = _part_color_plan(
+                    _factory_assembly_parts(design), part_colors
+                )
+                if current is None or current[0]:
+                    raise StateConflict(
+                        "Factory part colours are neither unset nor the exact sealed colours"
+                    )
+                receipt = self._part_colors_receipt(
+                    design, intent, imported, proof, current[1]
+                )
+                self.ledger.resolve_succeeded(intent.intent_id, receipt, design)
+            except (ContractError, EffectError, ReceiptError, StateConflict) as exc:
+                raise AmbiguousEffectError(
+                    "Factory part-colour outcome remains unknown; it will not be retried"
+                ) from exc
+            return
+
+        if not writes:
+            # The authenticated preflight already renders the exact sealed
+            # colours. Record the reconciled outcome without a redundant write.
+            receipt = self._part_colors_receipt(
+                preflight, intent, imported, proof, target
+            )
+            self.ledger.resolve_succeeded(intent.intent_id, receipt, preflight)
+            return
+
+        sending = self.ledger.begin(intent.intent_id)
+        assert sending.effect_token is not None
+        written: Optional[Mapping[str, Any]] = None
+        try:
+            response = client.write_part_colors(
+                imported.slug, writes, sending.idempotency_key
+            )
+            if response.status != 200:
+                summary = response.body.decode("utf-8", "replace")[:500]
+                error = "HTTP %s: %s" % (response.status, summary)
+                if response.status in PROVEN_NO_EFFECT_STATUSES:
+                    self.ledger.mark_rejected(
+                        sending.intent_id, sending.effect_token, error
+                    )
+                    raise EffectError(
+                        "Factory rejected the exact sealed part colours with HTTP %s"
+                        % response.status
+                    )
+                self.ledger.mark_unknown(
+                    sending.intent_id, sending.effect_token, error
+                )
+                raise AmbiguousEffectError(
+                    "Factory part-colors write returned an ambiguous HTTP status"
+                )
+            written = _json_body(response, "Factory part-colors write response")
+            if _factory_assembly_parts(written) != tuple(target):
+                raise ReceiptError(
+                    "Factory part-colors response did not preserve the exact merged colours"
+                )
+            observed = self._content_design(client, imported.slug)
+            receipt = self._part_colors_receipt(
+                observed, sending, imported, proof, target
+            )
+            self.ledger.mark_succeeded(
+                sending.intent_id,
+                sending.effect_token,
+                receipt,
+                {"part_colors_write": dict(written), "readback": dict(observed)},
+            )
+        except (AmbiguousEffectError, EffectError):
+            current_state = self.ledger.get(sending.intent_id)
+            if current_state.state == "sending":
+                self.ledger.mark_unknown(
+                    sending.intent_id,
+                    sending.effect_token,
+                    "Factory part colours lack conclusive exact readback",
+                    response=written,
+                )
+            raise
+        except Exception as exc:
+            current_state = self.ledger.get(sending.intent_id)
+            if current_state.state == "sending":
+                self.ledger.mark_unknown(
+                    sending.intent_id,
+                    sending.effect_token,
+                    "Factory part colours lack conclusive exact readback",
+                    response=written,
+                )
+            raise AmbiguousEffectError(
+                "Factory part-colour outcome is unknown and will not be blindly retried"
+            ) from exc
+
     def _complete_release_draft(
         self,
         client: FactoryClient,
@@ -2501,21 +2906,29 @@ class FactoryReleaseWriter:
         *,
         product_page_sha256: str,
         manual_sha256: str,
+        part_colors: Mapping[str, str],
     ) -> Receipt:
         if page.get("schema_version") == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
-            return self._ensure_page_content(
+            draft = self._ensure_page_content(
                 client,
                 imported,
                 page,
                 product_page_sha256=product_page_sha256,
                 manual_sha256=manual_sha256,
             )
-        if page.get("schema_version") not in (
+        elif page.get("schema_version") in (
             RELEASE_PRODUCT_SCHEMA_VERSION,
             DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
         ):
+            draft = imported
+        else:
             raise ContractError("Factory Release product schema is unsupported")
-        return imported
+        # Colour is the last write on the draft: the shop re-renders the
+        # thumbnail from it, and publication reuses the stored colours. The
+        # draft Receipt stays the import's own identity; the colour effect
+        # keeps its separate durable Receipt in the ledger.
+        self._ensure_part_colors(client, imported, part_colors)
+        return draft
 
     def __call__(
         self,
@@ -2577,6 +2990,10 @@ class FactoryReleaseWriter:
                 manual_content,
             )
         primary = handoff["primary_model"]
+        part_colors = _sealed_part_colors(
+            Path(context.made.artifact_root).resolve(strict=True),
+            context.made.artifact_manifest,
+        )
         # Factory defaults an omitted category to its first active category,
         # which is not a safe classification rule for Workshop products. Send
         # the canonical Toys & Games slug explicitly; an inactive/unknown slug
@@ -2635,6 +3052,7 @@ class FactoryReleaseWriter:
                 page,
                 product_page_sha256=handoff["product_page_sha256"],
                 manual_sha256=handoff["manual_sha256"],
+                part_colors=part_colors,
             )
         if intent.state == "rejected":
             raise EffectError("Factory previously rejected this exact model import")
@@ -2650,6 +3068,7 @@ class FactoryReleaseWriter:
                 page,
                 product_page_sha256=handoff["product_page_sha256"],
                 manual_sha256=handoff["manual_sha256"],
+                part_colors=part_colors,
             )
 
         context.assert_current()
@@ -2717,6 +3136,7 @@ class FactoryReleaseWriter:
             page,
             product_page_sha256=handoff["product_page_sha256"],
             manual_sha256=handoff["manual_sha256"],
+            part_colors=part_colors,
         )
 
 

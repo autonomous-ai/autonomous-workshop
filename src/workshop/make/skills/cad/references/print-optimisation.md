@@ -64,6 +64,36 @@ perfect and the print has a hole. A wall typed as `0.8` is the same defect
 when the nozzle changes, with nothing to catch it. Shell at more than the
 minimum, so there is a perimeter left for a fillet, a boss or a countersink.
 
+### A repeated feature's count is a wall
+
+The same rule reaches one step further than the wall you drew, to the material
+left *between* two copies of a feature you drew nowhere. A knurl, a flute, a
+vent slot, a cooling fin, a tick ring: the count is nearly always typed for
+looks, and it silently sets a wall.
+
+    web = 2 R sin(pi / n) - 2 r        # n circular flutes of radius r on a rim R
+
+24 flutes of R2.5 on a R22 crank rim leave **0.744 mm** on a 0.800 mm minimum
+wall. `validate`, `interfere`, `check_fit`, `check_mesh` and `check_overhang` all
+pass it; `check_thickness` finds it after a full export and voxelisation, which
+is the most expensive place in the toolchain to learn it. So solve the count
+from the web rather than checking the web after choosing the count:
+
+```python
+FLUTE_WEB = 2.0 * MIN_WALL      # twice the limit: the gate reads low by a step
+FLUTE_COUNT = int(math.pi / math.asin((FLUTE_WEB + 2.0 * FLUTE_R) / (2.0 * DISC_R)))
+```
+
+At 20 the same rim leaves 1.883 mm. Note the direction: the count is the
+*output*. Written the other way round — count typed, web asserted — the check
+restates the arithmetic and cannot fail, which is the same trap
+`references/parameters.md` describes for hand-sized mates.
+
+The pathological case is a pitch exactly equal to the feature size, where the
+web goes to zero and neighbouring pockets touch at a point. That one is a
+**non-manifold edge** rather than a thin wall, and `check_mesh` catches it where
+`check_thickness` does not.
+
 ## Hollowing is worth less than the volume it removes
 
 The volume that leaves the model is not the filament that stops being extruded.
@@ -156,6 +186,82 @@ Do not call a part optimised from a volume in a chat log. `--report` writes a
 markdown record next to the other verification artifacts, and a project that
 ships a hollowed part should say the wall it was shelled at, beside the
 `check_thickness` result that measured it.
+
+## Which way is up — `check_overhang`
+
+Every other gate in this toolchain is blind to the build direction. `check_fit`
+puts the part on the bed, `check_mesh` closes the shell, `check_thickness`
+extrudes the walls — and a part whose every feature hangs in mid-air passes all
+three, because none of them knows which way is up. A model can be sound,
+watertight, thick enough and impossible to print unsupported.
+
+```bash
+python "$CAD_SKILL_ROOT/scripts/check_overhang" part_x.stl --angle 45
+```
+
+It measures the down-facing surface in the pose the STL is in, drops what rests
+on the bed and what sits within a layer of material below it, clusters the rest,
+and splits each region two ways:
+
+- **bridge** — short enough to span, with material on both sides of it at its
+  own level. A bore ceiling, a slot roof. Reported, not a failure.
+- **overhang** — neither. It **fails**: the slicer droops it or asks for
+  support material.
+
+Area cannot tell those apart, which is why the split matters: a horizontal bore
+and a shelf of the same area and the same slope have completely different
+answers. The span it reports is the **shorter** plan dimension, because that is
+the one the slicer has to cross — a 10 x 40 mm roof is bridged across the 10.
+
+### The fixes, in the order worth trying
+
+- **Reorient the part.** A `part_*.step.py` entry owns its print pose; a link
+  that is a plate in the assembly becomes a plate on the bed, and its bores turn
+  vertical. Most overhangs are a pose problem, not a shape problem.
+- **Teardrop a horizontal bore.** A round hole through a vertical wall has a
+  ceiling the slicer must bridge, and above a few millimetres it sags into the
+  bore. Replacing the top with two 45 deg faces meeting at an apex gives every
+  layer material below it. The bore stays round where a shaft touches it.
+- **Put material under the feature.** A pin whose base overhangs the disc it
+  stands on has nothing to print onto; widen the disc, or add a boss under the
+  pin. This one is invisible to every other gate and common in cranks and webs.
+- **Taper it.** A cone under a collar, a 45 deg buttress under a shelf.
+
+**Do not design at the limit.** A cone that flares one millimetre out per
+millimetre up is a 45 deg overhang -- exactly the threshold -- and the flat
+facets a tessellator lays on it land at 44.7 deg, on the wrong side. The same
+goes for a 45 deg buttress or a chamfer sized to the limit. Give the angle
+somewhere to go: 1.3 mm of rise per mm of flare is 52 deg and passes at any
+tessellation tolerance.
+
+What it cannot tell you: what your slicer's support settings are, whether the
+material bridges well, or whether a 46 deg face will actually droop on your
+machine. It answers the geometric question only.
+
+## A wall is thin. An edge tapers. They are not the same finding
+
+Thickness alone cannot tell a 0.5 mm panel from the rim where a hole breaks out
+of a round post: both read under the minimum wall. The second one is not a
+defect and cannot be designed away — any hole crossing a curved surface, any
+countersink, any two faces meeting at an angle leaves material that tapers to
+nothing at the boundary. A gate that fails on it fails on geometry, and the only
+way to "fix" it is to delete the feature.
+
+What separates them is how wide the sub-minimum band is across the surface,
+which `check_thickness` reports per region as `band`:
+
+- **wall** — the band is wider than one minimum wall. Real material is missing;
+  fix it in the generator.
+- **taper** — the band is narrower than that, so what the slicer drops at the
+  edge is less than a single wall's width of material. Reported, counted against
+  a 2 % surface budget, and not a failure.
+
+A straight knife edge is always a wall: its band is `2 x min_wall / sin(2a)` for
+an apex angle `2a`, which is never narrower than two minimum walls however sharp
+or short the edge is. So the taper class does not excuse a knife edge, an
+under-thick rib or a shrunken shell — only boundaries where a feature runs out
+into a curved face. `--strict-thin` promotes tapers to failures when even those
+matter.
 
 ## Every thin region, not just the thinnest point
 
