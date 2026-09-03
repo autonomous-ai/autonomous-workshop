@@ -11,7 +11,7 @@ Invent is unchanged: it begins with 20 minutes at high reasoning. Its one
 10-minute medium recovery is a source-finalization handoff that seals the
 strongest durable `NativeInvented` source already in context.
 
-Make begins directly at high reasoning with the normal 30-minute native-turn
+Make begins directly at high reasoning with the normal 60-minute native-turn
 boundary and 256,000-token compaction. It reads the exact Wish, current
 `STAGE.json`, sealed `NativeInvented` result, selected Inventor guidance, Make
 reference, and CAD skill in one bounded batch. It persists one coherent,
@@ -25,7 +25,7 @@ marker, private proof-acceptance receipt, 16-minute medium proof turn, or
 15-minute proof-to-source handoff. `agent-outcome.json` is its only native
 completion marker from the first Make turn. Recoverable and explicit-resume
 continuations stay in the same session, stage, Goal, packet, and durable product
-bytes under the ordinary 30-minute recovery policy.
+bytes under the ordinary 60-minute recovery policy.
 
 The host continues to require accepted-Invent binding, complete printable
 inventory, strict fit, valid meshes, 0.4 mm wall thickness, exact product-state

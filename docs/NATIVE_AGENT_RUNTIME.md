@@ -64,7 +64,16 @@ session at low reasoning effort with a 64k automatic context-compaction ceiling
 across Make and Release plus a 60-minute boundary per native turn. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
-waiver. New Forge and Quest projects freeze `deep-economics-v13.md`: Invent
+waiver. New Forge and Quest projects freeze `deep-economics-v14.md`. Invent
+retains its 20-minute high-reasoning turn and 10-minute medium
+source-finalization recovery. Make starts directly at high reasoning with a
+normal 60-minute boundary and 256k compaction, persists one coherent complete
+CAD baseline early, and uses `agent-outcome.json` from its first turn. Current
+Make has no early-proof turn, proof-ready marker, private proof receipt, or
+source handoff. Playtest and Release use medium; every final gate remains
+unchanged.
+
+Frozen deep-v13 projects retain their original protocol: Invent
 starts with 20 minutes at high reasoning and a recoverable continuation gets
 10 minutes at medium strictly as a source handoff. Existing source is finalized
 before reading or refinement; missing source is the first edit and finalization
@@ -788,19 +797,11 @@ private Wish demonstrate that:
     minutes for v3 runs frozen before 2026-09-03); v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
     bindings; and
-12. a deep-v13 Codex Forge or Quest run uses index-first bounded high Invent
-    with a medium source-first finalization handoff, one 16-minute medium Make proof runway
-    followed by a 15-minute high source handoff and normal 30-minute recovery,
-    medium later stages, 256k compaction, an eight-turn CLI invocation cap, and
-    one-time proof-turn marker accepted into a private checkpoint-bound receipt
-    with no gate authority, a private run cache, deferred broad CAD guidance,
-    one batched mandatory read, immediate source work, root early inspection,
-    three fixed-camera exact-state renders, batched interpreter-prefixed CAD
-    commands, and exact `gen_step()` state entries, source-first proof sealing,
-    freshness-bound generated/render evidence, direct recovery on explicit
-    final-Make resume, and one evidence-triggered thickness-reference route,
-    while older exact runs retain
-    their original profile.
+12. a deep-v14 Codex Forge or Quest run uses index-first bounded high Invent
+    with a medium source-first finalization handoff, direct high-reasoning Make
+    with a normal 60-minute boundary, 256k compaction, an eight-turn CLI cap,
+    no early-proof marker or receipt, and every final product gate; deep-v13
+    and older exact runs retain their original proof profile.
 
 ## Engine portability
 

@@ -42,6 +42,7 @@ from tests.end_to_end.mock_session_factory import MockSessionFactoryServer
 from tests.end_to_end.mock_session_harness import (
     MockSessionPrerequisiteError,
     _assert_agent_write_ownership,
+    _assert_no_current_proof_state,
     _fixed_wish,
     _terminal_evidence_mode,
     preflight_codex,
@@ -452,6 +453,17 @@ class MockSessionArchitectureTest(unittest.TestCase):
             mock_session_policy_violations(allowed, filename="allowed.py"), ()
         )
 
+    def test_current_deep_routes_reject_host_proof_state(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host_state = Path(temporary)
+            _assert_no_current_proof_state(host_state, effort="forge")
+            (host_state / "make-proof-acceptances").mkdir()
+            for effort in ("forge", "quest"):
+                with self.subTest(effort=effort), self.assertRaisesRegex(
+                    MockSessionEvidenceError, "historical host proof state"
+                ):
+                    _assert_no_current_proof_state(host_state, effort=effort)
+
     def test_secret_audit_rejects_workspace_host_state_and_diagnostics(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -489,6 +501,27 @@ class MockSessionArchitectureTest(unittest.TestCase):
             _assert_agent_write_ownership(
                 ({"stage": "invent", "agent_writes": []},), effort="forge"
             )
+        with self.assertRaisesRegex(
+            MockSessionEvidenceError, "fabricated historical proof state"
+        ):
+            _assert_agent_write_ownership(
+                (
+                    {
+                        "stage": "make",
+                        "agent_writes": [
+                            "artifacts/make/r0001/product/cad/review/early-proof/proof.py"
+                        ],
+                    },
+                ),
+                effort="forge",
+            )
+        with self.assertRaisesRegex(
+            MockSessionEvidenceError, "fabricated historical proof state"
+        ):
+            _assert_agent_write_ownership(
+                ({"stage": "make", "agent_writes": [".make-proof-ready.json"]},),
+                effort="quest",
+            )
         _assert_agent_write_ownership(
             (
                 {
@@ -506,6 +539,7 @@ class MockSessionArchitectureTest(unittest.TestCase):
                         ".workshop-cache/ezdxf/font_manager_cache.json",
                         ".workshop-cache/xdg/ezdxf/font_manager_cache.json",
                         ".work-cache/ezdxf/font_manager_cache.json",
+                        ".cad-scratch/analytic.stl",
                         "artifacts/make/r0001/product/source.py",
                     ],
                 },

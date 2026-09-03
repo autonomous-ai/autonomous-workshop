@@ -1,12 +1,12 @@
 ## ADDED Requirements
 
 ### Requirement: New deep runs freeze a direct Make profile
-New Codex Forge and Quest runs SHALL freeze an immutable capability that preserves current deep Invent behavior, 256,000-token automatic compaction, later-stage economics, one Wish-wide session, one Goal per active stage, bounded recovery, and the eight-turn invocation cap while starting Make at high reasoning with the ordinary 30-minute boundary.
+New Codex Forge and Quest runs SHALL freeze an immutable capability that preserves current deep Invent behavior, 256,000-token automatic compaction, later-stage economics, one Wish-wide session, one Goal per active stage, bounded recovery, and the eight-turn invocation cap while starting Make at high reasoning with the ordinary 60-minute boundary.
 
 #### Scenario: A new Forge run is created
 - **WHEN** the host creates a new Codex Forge run
 - **THEN** its immutable inputs contain the current direct-deep capability
-- **AND** the first Make turn uses high reasoning, 256,000-token compaction, the ordinary 30-minute boundary, and `agent-outcome.json`
+- **AND** the first Make turn uses high reasoning, 256,000-token compaction, the ordinary 60-minute boundary, and `agent-outcome.json`
 - **AND** the turn receives final-product Make instructions rather than early-proof instructions
 
 #### Scenario: A direct run resumes

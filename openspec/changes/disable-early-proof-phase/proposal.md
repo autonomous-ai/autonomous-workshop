@@ -8,7 +8,7 @@ Main has no separate Concept stage in the active lifecycle. Forge and Quest pass
 
 - Freeze a new immutable deep-v14 capability for new Forge and Quest runs.
 - Preserve v13 Invent economics, 256k compaction, later-stage settings, recovery, one Wish-wide session, and all final gates.
-- Start current Make at high reasoning with its ordinary 30-minute boundary and normal `agent-outcome.json` finalizer.
+- Start current Make at high reasoning with its ordinary 60-minute boundary and normal `agent-outcome.json` finalizer.
 - Remove the current route's 16-minute medium early-proof turn, `review/early-proof/` deliverable, `.make-proof-ready.json`, private proof receipt, 15-minute source handoff, and proof-geometry reuse instruction.
 - Keep all proof machinery reachable for frozen v13 and older runs.
 - Update authenticated Forge/Quest acceptance coverage and rerun the exact prior Wish for a three-way evidence-backed quality comparison.

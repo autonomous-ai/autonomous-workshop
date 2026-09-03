@@ -217,28 +217,21 @@ a gate, and no dollar estimate is inferred. See
 [`docs/QUALITY_ECONOMICS.md`](docs/QUALITY_ECONOMICS.md) for the paired quality
 and cost benchmark.
 
-Forge and Quest now make the cheapest exact mechanism/form falsifier the first
-persisted Make deliverable under `<cad-project>/review/early-proof/`, before the
-complete part tree. Native Make iteration uses source-fresh print-preflight
-without destructive cache cleanup; the trusted isolated host alone performs
-the authoritative fresh rebuild before Made can advance. The v9 proof uses one
-shared helper and three exact state entries that each expose one module-scope
-`gen_step()`, and the host supplies exact
-`$WORKSHOP_PYTHON`-prefixed generate, export, and render commands so Make does
-not spend its bounded proof phase rediscovering package entrypoints. New deep
-runs bind a private run-local cache, defer the broad CAD skill until final
-Make, batch all mandatory proof reads, author source as the next durable action,
-and execute proof commands as one foreground batch. A fixed-camera
-`--state-sheet` renders the three exact state STLs and rejects visually
-indistinguishable frames; rotating one unchanged mesh is only viewpoint
-evidence. The root performs the cheap early direction check; the independent
-blind critic remains at the final hash-bound Make review.
+Current Forge and Quest Make starts directly at high reasoning and persists one
+coherent complete self-contained CAD baseline early from the exact Wish and
+sealed Invent result. There is no current early-proof marker, receipt, or
+source-handoff phase. Narrow engineering coupons may test uncertain facts, but
+they do not become mandatory final geometry. Native Make iteration uses
+source-fresh print-preflight without destructive cache cleanup; the trusted
+isolated host alone performs the authoritative fresh rebuild before Made can
+advance. Independent blind critique remains at the final hash-bound Make review.
+Frozen deep-v13 and older runs retain their original proof protocols.
 
 ## Architecture
 
 The floorplan of the shop. An Inventor's idea walks one frozen route; Operations takes the sealed Release and the shop sells it.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=daydream-v1)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=daydream-v1-deep-economics-v14)](docs/images/workshop-floorplan.svg)
 
 ```text
 Daydream -> one liked idea -> a frozen effort route:

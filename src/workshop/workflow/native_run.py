@@ -4244,8 +4244,7 @@ def _uses_dynamic_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
         and checkpoint.effort in ("forge", "quest")
         and (
             _uses_direct_deep_profile(checkpoint)
-            or
-            _phased_deep_capability_path(checkpoint) is not None
+            or _phased_deep_capability_path(checkpoint) is not None
             or DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
         )

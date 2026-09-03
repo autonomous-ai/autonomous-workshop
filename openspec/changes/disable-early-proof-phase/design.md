@@ -28,7 +28,7 @@ The proof is not a lifecycle gate, but it is operationally load-bearing: launch 
 
 ### 2. Direct Make uses the ordinary finalizer from turn one
 
-V14 Make launches at high reasoning, 256k compaction, and the normal 30-minute boundary. It uses `agent-outcome.json` immediately. Direct dispatch does not discover proof files, validate or consume `.make-proof-ready.json`, create/read a proof receipt, or choose proof/source-specific turns. Recoverable and explicit-resume continuations use the existing same-session, same-stage, same-Goal recovery over durable product bytes.
+V14 Make launches at high reasoning, 256k compaction, and the normal 60-minute boundary. It uses `agent-outcome.json` immediately. Direct dispatch does not discover proof files, validate or consume `.make-proof-ready.json`, create/read a proof receipt, or choose proof/source-specific turns. Recoverable and explicit-resume continuations use the existing same-session, same-stage, same-Goal recovery over durable product bytes.
 
 ### 3. Invent authority replaces proof geometry authority
 

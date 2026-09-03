@@ -47,6 +47,13 @@ All implementation and product-run work must preserve these boundaries:
   older Spark runs retain their frozen runtime profile. This changes cognitive
   spend only; every deterministic product and publication gate remains
   identical.
+- New Codex Forge and Quest runs freeze the v14 deep economics capability.
+  Invent retains its 20-minute high turn and bounded 10-minute medium source
+  finalization recovery. Make starts directly at high reasoning with a normal
+  60-minute boundary and 256k compaction, persisting one coherent complete CAD
+  baseline early. Current Make has no early-proof turn, proof marker, receipt,
+  or source handoff. Frozen v13 and older runs retain their materialized proof
+  protocol and remain resumable. All final gates are unchanged.
 - A capable Forge or Quest Make attempt may return directly to Invent only when
   exact preserved evidence proves that the sealed concept prevents any
   conforming build. Quest Playtest returns directly to Make for implementation
@@ -106,7 +113,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0020-signature-experience-evidence.md`, and
 `docs/adr/0021-compacted-spark-and-signature-review.md`, and
 `docs/adr/0022-blind-review-before-final-verification.md`, and
-`docs/adr/0023-bounded-spark-turn-and-semantic-review.md` before changing the CLI, runtime,
+`docs/adr/0023-bounded-spark-turn-and-semantic-review.md`, and
+`docs/adr/0042-remove-current-deep-make-proof-phase.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -131,6 +139,8 @@ than a literal lifecycle threshold. ADR 0025 extends the blind review to exact
 form and the concept's anti-generic signature, binds it to the canonical concept
 hash, and requires the final verification report inside the declared
 self-contained CAD project.
+ADR 0042 removes the early-proof phase from new Forge/Quest Make runs after the
+256k context fix while retaining v13 and older proof handling for frozen runs.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

@@ -693,12 +693,34 @@ second defect. Recovery prohibited every optional reference, including the CAD
 skill's exact constant-wall and all-regions thickness method; Codex therefore
 spent repeated full regenerations exploring scalar and topology changes.
 
-New runs now freeze `deep-economics-v13.md`. The first final continuation keeps
+At that revision, new runs froze `deep-economics-v13.md`. The first final continuation keeps
 the source handoff, but an explicit resume with a valid proof marker starts
 directly in normal recovery. A saved thickness failure may load exactly its
 complete region table and `references/print-optimisation.md` once before one
 all-regions source repair. Frozen v12 keeps its original process. Every gate is
 unchanged; v13 remains unproven until a fresh terminal product publishes.
+
+### V14 removes the current early-proof phase
+
+New Forge and Quest runs now freeze `deep-economics-v14.md`. Invent keeps the
+v13 timing and source-finalization recovery, while Make begins directly at high
+reasoning with a normal 60-minute boundary and 256k compaction. The first Make
+turn reads the exact Wish and sealed Invent result, persists a coherent complete
+CAD baseline early, and finalizes through `agent-outcome.json`. It creates no
+proof-ready marker, private proof receipt, or proof-to-source handoff. Narrow
+engineering coupons remain permitted when they answer a specific fit, wall, or
+mechanism question, but they cannot become mandatory final form.
+
+This change tests the diagnosis that the former disposable blockout anchored
+later geometry even when it did not resemble the named building. The proof
+checkpoint originally protected useful durable product bytes during shorter
+context windows; the later 256k profile removed that constraint while the
+checkpoint's anchoring cost remained. Deterministic CAD, inventory, fit, mesh,
+wall-thickness, exact-evidence, blind semantic-review, integrated-verification,
+Playtest, and Release gates are unchanged. Comparative results for the exact
+Ho Chi Minh City chess Wish will be recorded here only after the new run and
+both named baselines have been inspected; the workflow change itself is not
+evidence that quality improved.
 
 ## Quality is comparative evidence, not a model score
 

@@ -16,7 +16,7 @@ Quest: Wish -> Invent -> Make -> Playtest -> Release
 For a new Codex run, the host may freeze a versioned economics profile for this
 entire session. Spark uses its low-reasoning fast profile. Current Forge and
 Quest runs use an index-first bounded high-reasoning Invent turn with decisive
-medium recovery, then direct high-reasoning Make with a normal 30-minute turn
+medium recovery, then direct high-reasoning Make with a normal 60-minute turn
 and 256k compaction from its first turn; Playtest and Release use medium. Make
 persists one coherent complete self-contained CAD baseline early. It has no
 early-proof marker or receipt. Optional narrow engineering coupons may test a

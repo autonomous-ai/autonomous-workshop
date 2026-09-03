@@ -1,12 +1,12 @@
 ## 1. Freeze the direct deep profile
 
-- [x] 1.1 Add a new immutable current deep-economics capability file that preserves Forge/Quest Invent behavior, the 256,000-token compaction ceiling, later-stage settings, the eight-turn command cap, and normal recovery while specifying high-reasoning 30-minute Make from its first turn; verify capability packaging and byte/hash tests pass.
+- [x] 1.1 Add a new immutable current deep-economics capability file that preserves Forge/Quest Invent behavior, the 256,000-token compaction ceiling, later-stage settings, the eight-turn command cap, and normal recovery while specifying high-reasoning 60-minute Make from its first turn; verify capability packaging and byte/hash tests pass.
 - [x] 1.2 Rename current-profile code identifiers to explicit deep-v13 compatibility identifiers and add separate direct-deep versus phased-deep classification helpers; verify tests select the new marker only for newly created Forge/Quest runs and still recognize representative v13, v12, v10, and older frozen markers.
 - [x] 1.3 Update run materialization and frozen-input validation so new deep runs bind the direct profile permanently without changing existing run roots or checkpoints; verify a new run retains direct behavior after resume and a fixture frozen on v13 retains proof-phased behavior.
 
 ## 2. Route current Make directly to final product work
 
-- [x] 2.1 Change current-profile Make launch selection to use high reasoning, the 30-minute boundary, and `agent-outcome.json` from the first turn; verify launcher tests show no 16-minute proof turn or 15-minute proof-to-source handoff for the direct profile.
+- [x] 2.1 Change current-profile Make launch selection to use high reasoning, the 60-minute boundary, and `agent-outcome.json` from the first turn; verify launcher tests show no 16-minute proof turn or 15-minute proof-to-source handoff for the direct profile.
 - [x] 2.2 Bypass proof discovery, proof validation, `.make-proof-ready.json`, proof-acceptance receipt creation/readback, and proof-specific turn selection for direct-profile Make while retaining those functions for frozen phased profiles; verify focused workflow tests observe no proof marker or receipt on direct Make and unchanged marker/receipt handling on v13 fixtures.
 - [x] 2.3 Route recoverable and explicit-resume continuations of direct Make through the ordinary same-session, same-stage, same-Goal recovery path over durable product bytes; verify recovery tests never insert a proof or source-handoff phase and remain bounded by the existing recovery policy.
 - [x] 2.4 Replace the current Make prompt and materialized product-run guidance with Invent-to-Make instructions that batch the exact Wish, sealed `NativeInvented` contract, and other mandatory reads, persist a coherent complete CAD baseline early, permit narrow engineering coupons, and forbid disposable blockouts from becoming mandatory final form; verify prompt/asset tests preserve Wish and Invent-result authority, assume no Concept-stage images, and omit current-profile early-proof requirements.
@@ -23,14 +23,14 @@
 
 - [ ] 4.1 Update the authenticated mock-session Forge route so current Make is one direct final-product phase using the normal finalizer; verify its trace contains one Wish-wide session and one Make Goal but no proof turn, marker, receipt, or source handoff.
 - [ ] 4.2 Update the authenticated mock-session Quest route with the same direct Make behavior before Playtest; verify its trace reaches the unchanged Playtest and Release boundaries without fabricated proof state.
-- [ ] 4.3 Add an acceptance-audit failure case for helpers that fabricate `.make-proof-ready.json`, proof receipts, or host proof state for a current-profile run; verify the route fails rather than masking the production contract.
+- [x] 4.3 Add an acceptance-audit failure case for helpers that fabricate `.make-proof-ready.json`, proof receipts, or host proof state for a current-profile run; verify the route fails rather than masking the production contract.
 - [ ] 4.4 Run the focused effort, native-host, native-session, asset, CAD-skill-registry, and mock-session suites, then the full deterministic test suite; verify every command exits successfully and no historical compatibility assertion is weakened or deleted merely to pass.
 
 ## 5. Document the superseding architecture
 
-- [ ] 5.1 Add the next ADR recording why the proof checkpoint is superseded for new deep runs after the 256k context fix, why final gates remain, and why v13 proof handling must remain resumable; verify the ADR explicitly supersedes the relevant current-profile portions of ADRs 0030, 0033, 0038, and 0041 without rewriting their historical record.
-- [ ] 5.2 Update `AGENTS.md`, the product-run `AGENTS.md`, `docs/NATIVE_AGENT_RUNTIME.md`, `docs/ARCHITECTURE.md`, and `docs/QUALITY_ECONOMICS.md` to distinguish direct current Make from historical phased Make; verify repository searches find no statement that new Forge/Quest runs freeze v13 or require early proof.
-- [ ] 5.3 Update Forge, Quest, and workshop-floorplan diagrams and accessible descriptions to show direct high-reasoning Make with ordinary recovery and unchanged gates; verify the rendered/source diagrams contain no early-proof checkpoint on the current route.
+- [x] 5.1 Add the next ADR recording why the proof checkpoint is superseded for new deep runs after the 256k context fix, why final gates remain, and why v13 proof handling must remain resumable; verify the ADR explicitly supersedes the relevant current-profile portions of ADRs 0030, 0033, 0038, and 0041 without rewriting their historical record.
+- [x] 5.2 Update `AGENTS.md`, the product-run `AGENTS.md`, `docs/NATIVE_AGENT_RUNTIME.md`, `docs/ARCHITECTURE.md`, and `docs/QUALITY_ECONOMICS.md` to distinguish direct current Make from historical phased Make; verify repository searches find no statement that new Forge/Quest runs freeze v13 or require early proof.
+- [x] 5.3 Update Forge, Quest, and workshop-floorplan diagrams and accessible descriptions to show direct high-reasoning Make with ordinary recovery and unchanged gates; verify the rendered/source diagrams contain no early-proof checkpoint on the current route.
 
 ## 6. Rerun and evaluate the exact Wish
 
