@@ -33,7 +33,6 @@ from workshop.runtime.credentials import private_credential_values
 from workshop.runtime.package_data import default_workshop_home
 
 
-DEFAULT_GAMEVAULT_URL = "http://178.128.89.39:8090"
 GAMEVAULT_URL_NAME = "WORKSHOP_GAMEVAULT_URL"
 GAMEVAULT_TOKEN_NAME = "WORKSHOP_GAMEVAULT_TOKEN"
 GAMEVAULT_CREDENTIAL_FILE = "gamevault.env"
@@ -126,7 +125,10 @@ def gamevault_config(environment: Optional[Mapping[str, str]] = None) -> GameVau
         loaded = private_credential_values(path, _CREDENTIAL_NAME, label="game vault")
         url = url or loaded.get(GAMEVAULT_URL_NAME, "")
         token = token or loaded.get(GAMEVAULT_TOKEN_NAME, "")
-    url = url or DEFAULT_GAMEVAULT_URL
+    if not url:
+        raise GameVaultUnavailable(
+            "no game vault URL: set %s or write %s" % (GAMEVAULT_URL_NAME, path)
+        )
     if not token:
         raise GameVaultUnavailable(
             "no game vault token: set %s or write %s" % (GAMEVAULT_TOKEN_NAME, path)
@@ -303,7 +305,6 @@ def default_client(environment: Optional[Mapping[str, str]] = None) -> GameVault
 
 
 __all__ = [
-    "DEFAULT_GAMEVAULT_URL",
     "GAMEVAULT_TOKEN_NAME",
     "GAMEVAULT_URL_NAME",
     "GameVaultClient",

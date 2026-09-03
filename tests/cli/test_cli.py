@@ -1209,6 +1209,18 @@ class VaultCommandTest(unittest.TestCase):
         ), mock.patch("cli.main.default_gamevault_client", side_effect=real_default_client):
             code, _, err = self.run_cli("vault", "lint")
             self.assertEqual(code, 2)
+            self.assertIn("no game vault URL", err)
+            self.assertIn("gamevault.env", err)
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(
+            os.environ,
+            {
+                "WORKSHOP_HOME": temporary,
+                "WORKSHOP_GAMEVAULT_URL": "http://vault.test",
+            },
+            clear=True,
+        ), mock.patch("cli.main.default_gamevault_client", side_effect=real_default_client):
+            code, _, err = self.run_cli("vault", "lint")
+            self.assertEqual(code, 2)
             self.assertIn("no game vault token", err)
             self.assertIn("gamevault.env", err)
 
