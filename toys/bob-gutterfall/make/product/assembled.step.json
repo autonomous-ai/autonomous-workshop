@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "title": "Gutterfall assembled model",
+  "source": "cad/gutterfall/gutterfall_final.step.py",
+  "units": "mm",
+  "printed_parts": 1,
+  "printable": true
+}

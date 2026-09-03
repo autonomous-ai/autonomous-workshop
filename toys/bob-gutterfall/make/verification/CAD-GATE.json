@@ -1,0 +1,23 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-03T12:05:04+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 67.09 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=6afd45c9616b272ea36390bd5bd5d0f143c49358a32bdc724538e15ff2e58e0f` | note | 0.00 |
+| 2 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' artifacts/make/r0001/product/cad/gutterfall` | rc=0 | 0.07 |
+| 3 | `delete cache <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/gutterfall/__cadgen__` | rc=0 | 0.00 |
+| 4 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' artifacts/make/r0001/product/cad/gutterfall/gutterfall_final.step.py --write --json` | rc=0 | 15.69 |
+| 5 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' artifacts/make/r0001/product/cad/gutterfall --bed 220.0 220.0 --entry artifacts/make/r0001/product/cad/gutterfall/gutterfall_final.step.py` | rc=0 | 10.47 |
+| 6 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 7 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 8 | `check_motion  # NOT RUN: no documented mating/assembly action and no moving joint is declared` | skipped | 0.00 |
+| 9 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (3 JSONL requests)` | rc=0 | 31.12 |
+| 10 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/gutterfall/gutterfall_final.step --glb --json` | rc=0 | 1.56 |
+| 11 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/gutterfall/gutterfall_final.step --stl --json` | rc=0 | 1.48 |
+| 12 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/gutterfall/gutterfall_final.stl --bed 220x220x220` | rc=0 | 0.55 |
+| 13 | `<HOME>/code/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/gutterfall/gutterfall_final.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/gutterfall/measure/thickness-gutterfall_final.md` | rc=0 | 6.15 |
