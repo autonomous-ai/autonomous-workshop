@@ -1018,7 +1018,7 @@ def parser() -> argparse.ArgumentParser:
             "Start here:\n"
             "  workshop doctor\n"
             "  workshop start pico-press\n"
-            "  workshop start pico-press --effort spark"
+            "  workshop start pico-press --effort forge"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -1043,11 +1043,11 @@ def parser() -> argparse.ArgumentParser:
     start.add_argument(
         "--effort",
         choices=tuple(WORKSHOP_EFFORTS),
-        default="forge",
+        default=DEFAULT_WORKSHOP_EFFORT,
         metavar="MODE",
         help=(
-            "creative depth: forge (Invent->Make->Release; default), "
-            "spark (Make->Release; fastest), or quest (Invent->Make->Playtest->Release)"
+            "creative depth: spark (Make->Release; default), "
+            "forge (Invent->Make->Release), or quest (Invent->Make->Playtest->Release)"
         ),
     )
     start.add_argument(

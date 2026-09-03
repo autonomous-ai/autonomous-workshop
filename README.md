@@ -36,16 +36,16 @@ codex login
 uv run workshop doctor
 ```
 
-One command runs the whole loop. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made and seals the rest as the brief, and the run invents, makes, and publishes it (🔥 Forge, `Invent -> Make -> Release`, with Codex as the Workshop Manager):
+One command runs the whole loop. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made and seals the rest as the brief, and the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept):
 
 ```bash
 uv run workshop start pico-press
 ```
 
-`--effort spark` is the fast route (`Make -> Release`): the idea is already the concept. 🗺️ Quest adds Playtest:
+`--effort` goes deeper. 🔥 Forge adds Invent (`Invent -> Make -> Release`). 🗺️ Quest adds Invent and Playtest:
 
 ```bash
-uv run workshop start pico-press --effort spark
+uv run workshop start pico-press --effort forge
 ```
 
 Want to see the idea before building? `workshop daydream pico-press` prints the card and stops. Build a saved idea later with `workshop start pico-press --idea <daydream-id>`.
@@ -234,8 +234,8 @@ The floorplan of the shop. An Inventor's idea walks one frozen route; Operations
 ```text
 Daydream -> one liked idea -> a frozen effort route:
 
-✨ Spark: Make -> Release                          (--effort spark: fastest)
-🔥 Forge: Invent <-> Make -> Release              (default for workshop start)
+✨ Spark: Make -> Release                          (default)
+🔥 Forge: Invent <-> Make -> Release
 🗺️ Quest: Invent <-> Make <-> Playtest -> Release
 
 Release -> Shop (order one, printed to order, photographed, ships in days)

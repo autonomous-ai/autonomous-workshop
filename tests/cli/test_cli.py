@@ -440,7 +440,7 @@ class DaydreamCommandTest(unittest.TestCase):
     def test_parser_defaults(self):
         args = parser().parse_args(("start", "pico-press"))
         self.assertEqual(args.inventor, "pico-press")
-        self.assertEqual(args.effort, "forge")
+        self.assertEqual(args.effort, "spark")
         self.assertEqual(args.manager, "codex")
         self.assertIsNone(args.idea)
         self.assertFalse(args.json)
@@ -548,21 +548,21 @@ class DaydreamCommandTest(unittest.TestCase):
         run.assert_called_once()
         native_start.assert_called_once()
         self.assertEqual(run.call_args.kwargs["manager_id"], "codex")
-        self.assertEqual(run.call_args.kwargs["effort"], "forge")
+        self.assertEqual(run.call_args.kwargs["effort"], "spark")
         wish = observed["wish"]
         self.assertEqual(wish.product_id, "wish-one")
         self.assertEqual(wish.objective, sealed.brief)
         self.assertEqual(wish.context["source"], "workshop-daydream")
         self.assertEqual(wish.context["daydream_id"], sealed.daydream_id)
         self.assertEqual(wish.context["idea_sha256"], sealed.idea_sha256)
-        self.assertEqual(observed["effort"], "forge")
+        self.assertEqual(observed["effort"], "spark")
         self.assertEqual(observed["manager_id"], "codex")
         self.assertFalse(observed["github"])
         payload = json.loads(stdout.getvalue())
         self.assertEqual(set(payload), {"daydream", "run"})
         self.assertEqual(payload["run"]["stage"], "match")
         self.assertIn("Sealing the idea as this run's brief", stderr.getvalue())
-        self.assertIn("Starting one native Codex session for Invent", stderr.getvalue())
+        self.assertIn("Starting one native Codex session for Make", stderr.getvalue())
         self.assertNotIn(sealed.brief, stderr.getvalue())
 
     def test_start_passes_effort_manager_github_and_strict(self):
@@ -575,7 +575,7 @@ class DaydreamCommandTest(unittest.TestCase):
                     "start",
                     "sample",
                     "--effort",
-                    "spark",
+                    "forge",
                     "--manager",
                     "grok",
                     "--github",
@@ -584,8 +584,8 @@ class DaydreamCommandTest(unittest.TestCase):
             )
         self.assertEqual(result, 1)
         self.assertEqual(run.call_args.kwargs["manager_id"], "grok")
-        self.assertEqual(run.call_args.kwargs["effort"], "spark")
-        self.assertEqual(start.call_args.kwargs["effort"], "spark")
+        self.assertEqual(run.call_args.kwargs["effort"], "forge")
+        self.assertEqual(start.call_args.kwargs["effort"], "forge")
         self.assertEqual(start.call_args.kwargs["manager_id"], "grok")
         self.assertTrue(start.call_args.kwargs["github_publish_requested"])
 
@@ -602,7 +602,7 @@ class DaydreamCommandTest(unittest.TestCase):
         load.assert_called_once_with("sample", sealed.daydream_id)
         run.assert_not_called()
         start.assert_called_once()
-        self.assertEqual(start.call_args.kwargs["effort"], "forge")
+        self.assertEqual(start.call_args.kwargs["effort"], "spark")
         self.assertIn("(saved idea)", stdout.getvalue())
         self.assertNotIn("Build it:", stdout.getvalue())
         self.assertIn("Wish: wish-", stdout.getvalue())

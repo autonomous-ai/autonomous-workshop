@@ -15,7 +15,7 @@ accepting a new effort value.
 `workshop start <inventor-id>` is the front door: it asks one Inventor to dream
 one brand-new idea through `workshop.daydream`, prints the sealed concept card,
 seals it as a Wish, and starts the same native session `workshop wish` would,
-with Forge as its default effort. `workshop daydream <inventor-id>` dreams and
+with Spark as its default effort. `workshop daydream <inventor-id>` dreams and
 prints the card without building; `workshop start <inventor-id> --idea
 <daydream-id>` builds a saved idea. The CLI never judges or edits the idea;
 novelty and Taste fit are the Daydream component's job.
