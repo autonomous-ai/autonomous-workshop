@@ -17,6 +17,7 @@ from tests.daydream.support import (
     sample_thesis_dict as sample_idea_dict,
 )
 from workshop.daydream.contracts import DaydreamError, Idea, SealedDaydream
+from workshop.daydream.notebook import NotebookEntry, StructuralTrace, append_notebook_entry
 from workshop.daydream.native import (
     DAYDREAM_TURN_TIMEOUT_SECONDS,
     INVENTOR_BINDING_FILE_NAME,
@@ -80,6 +81,7 @@ class _FakeLauncher:
         idea=None,
         error=None,
         expect_notebook=(),
+        expect_portfolio=(),
         error_after_idea=False,
         finalize=True,
         outcome_sha256=None,
@@ -96,6 +98,7 @@ class _FakeLauncher:
         self.idea = idea
         self.error = error
         self.expect_notebook = expect_notebook
+        self.expect_portfolio = expect_portfolio
         self.starts = []
 
     def start(self, **arguments):
@@ -150,6 +153,9 @@ class _FakeLauncher:
         notebook = (run_root / "NOTEBOOK.md").read_text(encoding="utf-8")
         for expected in self.expect_notebook:
             self.test.assertIn(expected, notebook)
+        portfolio = (run_root / "PORTFOLIO.md").read_text(encoding="utf-8")
+        for expected in self.expect_portfolio:
+            self.test.assertIn(expected, portfolio)
         if arguments["activity_observer"] is not None:
             arguments["activity_observer"]("reasoning")
         if self.error is not None and not self.error_after_idea:
@@ -420,6 +426,33 @@ class DaydreamNativeTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(DaydreamError, "rejected"):
             self._run(daydream_id="daydream-20260902-101700-00000003", idea=sample_idea_dict())
+
+    def test_cross_inventor_portfolio_blocks_a_renamed_repeat(self):
+        idea = Idea.parse(sample_idea_dict())
+        other = self.home / "daydreams" / "other"
+        other.mkdir(parents=True, mode=0o700)
+        (self.home / "daydreams").chmod(0o700)
+        other.chmod(0o700)
+        append_notebook_entry(
+            other / "NOTEBOOK.jsonl",
+            NotebookEntry(
+                daydream_id="daydream-20260902-091500-00000009",
+                created_at="2026-09-02T09:15:00Z",
+                title=idea.title,
+                one_liner=idea.one_liner,
+                idea_sha256=idea.sha256,
+                status="dreamed",
+                schema_version=2,
+                structure=StructuralTrace.from_idea(idea),
+            ),
+        )
+        raw = sample_idea_dict()
+        raw["title"] = "Gravity Rungs"
+        with self.assertRaisesRegex(DaydreamError, "portfolio:other"):
+            self._run(
+                idea=raw,
+                expect_portfolio=("Ladder Drop", "other", "Anti-generic signature"),
+            )
 
     def test_unfinalized_goal_is_rejected(self):
         with self.assertRaisesRegex(DaydreamError, "did not finalize its Daydream Goal"):

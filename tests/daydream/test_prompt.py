@@ -20,6 +20,7 @@ class PromptTest(unittest.TestCase):
             seed=seed,
             notebook_count=3,
             prior_work_count=22,
+            portfolio_count=7,
             observed_at="2026-09-02T10:15:00Z",
         )
         for expected in (
@@ -35,6 +36,7 @@ class PromptTest(unittest.TestCase):
             "NOTEBOOK.md",
             "VAULT.md",
             "22 entries",
+            "7 entries",
             "3 entries",
             "2026-09-02T10:15:00Z",
             "work/IDEA.json",

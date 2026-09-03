@@ -59,6 +59,12 @@ from workshop.daydream.prompt import (
     build_daydream_prompt,
     build_judge_prompt,
 )
+from workshop.daydream.portfolio import (
+    PortfolioEntry,
+    load_portfolio,
+    prior_work_from_portfolio,
+    render_portfolio_markdown,
+)
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
 from workshop._validation import require_sha256
 from workshop.errors import ContractError, ManifestError
@@ -513,6 +519,7 @@ def _write_workspace(
     taste: Taste,
     repository_prior: Sequence[PriorWork],
     notebook_entries: Sequence[NotebookEntry],
+    portfolio_entries: Sequence[PortfolioEntry],
     vault_summary: bytes,
 ) -> None:
     files = (
@@ -520,9 +527,7 @@ def _write_workspace(
         ("PRIOR-WORK.md", render_prior_work_markdown(repository_prior).encode("utf-8")),
         (
             "PORTFOLIO.md",
-            render_prior_work_markdown(repository_prior)
-            .replace("# Prior work", "# Workshop portfolio", 1)
-            .encode("utf-8"),
+            render_portfolio_markdown(portfolio_entries).encode("utf-8"),
         ),
         ("NOTEBOOK.md", render_notebook_markdown(notebook_entries).encode("utf-8")),
         ("VAULT.md", vault_summary),
@@ -861,6 +866,9 @@ def run_daydream(
     catalog_root = repository_root if repository_root is not None else source_checkout_root()
     repository_prior = load_repository_prior_work(catalog_root)
     notebook_entries = read_notebook(paths.notebook)
+    portfolio_entries = load_portfolio(
+        paths.notebook.parent.parent, exclude_inventor=manifest.inventor_id
+    )
     vault_summary, _vault_binding = _materialize_vault(
         paths, vault_loader=vault_loader
     )
@@ -877,6 +885,7 @@ def run_daydream(
         taste=taste,
         repository_prior=repository_prior,
         notebook_entries=notebook_entries,
+        portfolio_entries=portfolio_entries,
         vault_summary=vault_summary,
     )
     prompt = build_daydream_prompt(
@@ -885,6 +894,7 @@ def run_daydream(
         seed=selected_seed,
         notebook_count=len(notebook_entries),
         prior_work_count=len(repository_prior),
+        portfolio_count=len(portfolio_entries),
         effort=effort,
         observed_at=created_at,
     )
@@ -913,8 +923,16 @@ def run_daydream(
     if idea.schema_version != 2:
         raise DaydreamError("new Daydream Goals must finalize an idea with schema_version 2")
     latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
+    latest_portfolio = load_portfolio(
+        paths.notebook.parent.parent, exclude_inventor=manifest.inventor_id
+    )
     novelty = lint_novelty(
-        idea, (*repository_prior, *prior_work_from_notebook(latest_entries))
+        idea,
+        (
+            *repository_prior,
+            *prior_work_from_notebook(latest_entries),
+            *prior_work_from_portfolio(latest_portfolio),
+        ),
     )
     if novelty.status != "new":
         _reject(paths, daydream_id=selected_id, created_at=created_at, idea=idea, novelty=novelty)
