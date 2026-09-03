@@ -450,8 +450,9 @@ class DaydreamCommandTest(unittest.TestCase):
         sealed = sample_sealed()
         observed = {}
 
-        def dream(inventor_id, *, source_root, manager_id, activity_observer):
+        def dream(inventor_id, *, source_root, manager_id, activity_observer, effort):
             observed["inventor_id"] = inventor_id
+            observed["effort"] = effort
             observed["source_root"] = source_root
             observed["manager_id"] = manager_id
             activity_observer("starting")
@@ -470,6 +471,7 @@ class DaydreamCommandTest(unittest.TestCase):
         start.assert_not_called()
         self.assertEqual(observed["inventor_id"], "sample")
         self.assertEqual(observed["manager_id"], "codex")
+        self.assertIsNone(observed["effort"])
         self.assertTrue(Path(observed["source_root"]).is_dir())
         output = stdout.getvalue()
         self.assertEqual(stderr.getvalue(), "")
@@ -581,6 +583,7 @@ class DaydreamCommandTest(unittest.TestCase):
             )
         self.assertEqual(result, 1)
         self.assertEqual(run.call_args.kwargs["manager_id"], "grok")
+        self.assertEqual(run.call_args.kwargs["effort"], "spark")
         self.assertEqual(start.call_args.kwargs["effort"], "spark")
         self.assertEqual(start.call_args.kwargs["manager_id"], "grok")
         self.assertTrue(start.call_args.kwargs["github_publish_requested"])

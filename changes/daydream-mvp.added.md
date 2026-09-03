@@ -9,3 +9,6 @@
   so `status` and `resume` are unchanged) and starts Invent -> Make -> Release
   by default; `--effort spark` takes the fast Make -> Release route and
   `--idea <daydream-id>` runs a previously saved idea.
+- With `--run`, the daydream prompt names the route budget (Spark: one to
+  three parts, one action, one payoff a before/after render proves) so the
+  Inventor dreams to the size Make can prove on that route.

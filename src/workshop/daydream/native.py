@@ -363,6 +363,7 @@ def run_daydream(
     seed: Optional[DaydreamSeed] = None,
     moment: Optional[datetime] = None,
     daydream_id: Optional[str] = None,
+    effort: Optional[str] = None,
 ) -> SealedDaydream:
     """Let one Inventor dream one new idea and seal it, or explain why not."""
 
@@ -391,6 +392,7 @@ def run_daydream(
         seed=selected_seed,
         notebook_count=len(notebook_entries),
         prior_work_count=len(repository_prior),
+        effort=effort,
     )
     session = _native_turn(
         launcher_factory,

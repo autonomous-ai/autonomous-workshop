@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 import hashlib
 
 from workshop.daydream.contracts import (
@@ -140,6 +142,28 @@ DAYDREAM_CONSTITUTION_SHA256 = hashlib.sha256(
 ).hexdigest()
 
 
+ROUTE_BUDGETS = {
+    "spark": (
+        "Route budget: SPARK. There is no Invent stage; Make must build and "
+        "prove this idea alone in one short session. Keep it to one to three "
+        "printed parts, one action, and one payoff that a single before/after "
+        "render pair proves at a glance. If the payoff needs several distinct "
+        "states, hidden internals, or fine timing to be believed, it is too big "
+        "for Spark: dream something smaller and sharper."
+    ),
+    "forge": (
+        "Route budget: FORGE. Invent will research and specify the concept "
+        "before Make builds it. Up to twelve printed parts; the payoff must "
+        "still be provable in renders and a short blind review."
+    ),
+    "quest": (
+        "Route budget: QUEST. Invent specifies, Make builds, Playtest checks the "
+        "exact Make and returns repair feedback. Up to twelve printed parts; a "
+        "richer mechanism or a short game is welcome if every claim is testable."
+    ),
+}
+
+
 def build_daydream_prompt(
     *,
     inventor_name: str,
@@ -147,6 +171,7 @@ def build_daydream_prompt(
     seed: DaydreamSeed,
     notebook_count: int,
     prior_work_count: int,
+    effort: Optional[str] = None,
 ) -> str:
     """Compose the short turn prompt: who you are, what is on disk, the seed."""
 
@@ -160,6 +185,9 @@ def build_daydream_prompt(
     ):
         if type(value) is not int or value < 0:
             raise ContractError("%s must be a non-negative integer" % label)
+    if effort is not None and effort not in ROUTE_BUDGETS:
+        raise ContractError("daydream route budget is unknown: %r" % (effort,))
+    budget = "" if effort is None else ROUTE_BUDGETS[effort] + "\n\n"
     prompt = (
         "You are %s (Inventor id `%s`), daydreaming one brand-new toy for the "
         "Autonomous Workshop.\n"
@@ -173,6 +201,7 @@ def build_daydream_prompt(
         "- Situation: %s\n"
         "- Twist: %s\n"
         "\n"
+        "%s"
         "Write your idea to `work/IDEA.json` exactly as the constitution below "
         "specifies, then stop.\n"
         "\n"
@@ -184,6 +213,7 @@ def build_daydream_prompt(
         notebook_count,
         seed.moment,
         seed.twist,
+        budget,
         DAYDREAM_CONSTITUTION,
     )
     if len(prompt.encode("utf-8")) > MAX_DAYDREAM_PROMPT_BYTES:
@@ -192,6 +222,7 @@ def build_daydream_prompt(
 
 
 __all__ = [
+    "ROUTE_BUDGETS",
     "DAYDREAM_CONSTITUTION",
     "DAYDREAM_CONSTITUTION_SHA256",
     "MAX_DAYDREAM_PROMPT_BYTES",

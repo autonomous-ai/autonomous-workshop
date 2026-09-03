@@ -93,3 +93,35 @@ class PromptTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RouteBudgetTest(unittest.TestCase):
+    def _prompt(self, effort):
+        from workshop.daydream.prompt import build_daydream_prompt
+        from workshop.daydream.seeds import DaydreamSeed
+
+        return build_daydream_prompt(
+            inventor_name="Sample",
+            inventor_id="sample",
+            seed=DaydreamSeed(moment="a bus stop in the cold", twist="it counts something"),
+            notebook_count=0,
+            prior_work_count=0,
+            effort=effort,
+        )
+
+    def test_route_budget_is_named_only_when_the_route_is_known(self):
+        from workshop.daydream.prompt import ROUTE_BUDGETS
+
+        self.assertNotIn("Route budget", self._prompt(None))
+        for effort in ("spark", "forge", "quest"):
+            with self.subTest(effort=effort):
+                prompt = self._prompt(effort)
+                self.assertIn(ROUTE_BUDGETS[effort], prompt)
+                self.assertLess(prompt.index("Route budget"), prompt.index("work/IDEA.json"))
+        self.assertIn("too big for Spark", self._prompt("spark"))
+
+    def test_unknown_route_is_rejected(self):
+        from workshop.errors import ContractError
+
+        with self.assertRaises(ContractError):
+            self._prompt("turbo")

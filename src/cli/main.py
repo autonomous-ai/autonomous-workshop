@@ -453,6 +453,7 @@ def _daydream(args: argparse.Namespace) -> int:
             source_root=root,
             manager_id=manager.manager_id,
             activity_observer=live_progress.activity,
+            effort=args.effort if args.run else None,
         )
     if not args.json:
         _print_daydream_card(sealed, stream=progress, offer_build=not args.run)
