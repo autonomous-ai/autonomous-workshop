@@ -1,5 +1,4 @@
 import copy
-import hashlib
 import json
 import subprocess
 import sys
@@ -9,19 +8,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from tests.daydream.support import (
-    build_thesis_v3_verdict_dict,
     inventor_bundle,
     sample_thesis_v3_dict,
 )
 from tests.invent.fake_gamevault import FakeGameVaultTransport
-from workshop.daydream.contracts import Idea
-from workshop.daydream.notebook import NotebookEntry
 from workshop.daydream.native import (
     daydream_paths,
     run_daydream,
     wish_from_daydream,
 )
-from workshop.errors import ContractError
+from workshop.daydream.outcomes import remember_run_outcome
 
 
 FIRST_MOMENT = datetime(2026, 9, 2, 10, 15, 0, tzinfo=timezone.utc)
@@ -92,11 +88,9 @@ class _Outcome:
 
 
 class _ScriptedNativeRuntime:
-    def __init__(self, test, ideas, decisions):
+    def __init__(self, test, ideas):
         self.test = test
         self.ideas = list(ideas)
-        self.decisions = list(decisions)
-        self.current_decision = None
         self.daydream_notebooks = []
         self.daydream_prompts = []
 
@@ -107,8 +101,6 @@ class _ScriptedNativeRuntime:
 
     def start(self, **arguments):
         run_root = Path(arguments["run_root"])
-        if run_root.name == "judge-workspace":
-            return self._judge(arguments, run_root)
         return self._dream(arguments, run_root)
 
     def _dream(self, arguments, run_root):
@@ -124,55 +116,19 @@ class _ScriptedNativeRuntime:
         )
         self.daydream_prompts.append(arguments["prompt"])
         idea = self.ideas.pop(0)
-        notebook_path = run_root.parent.parent / "NOTEBOOK.jsonl"
-        if notebook_path.is_file():
-            lines = [line for line in notebook_path.read_text(encoding="utf-8").splitlines() if line]
-            prior = NotebookEntry.parse(json.loads(lines[-1]))
-            idea["learning"] = [
-                {
-                    "daydream_id": prior.daydream_id,
-                    "memory_sha256": prior.sha256,
-                    "disposition": "repaired",
-                    "response": (
-                        "Make each release independently visible and bind every "
-                        "catch sound to that visible event, directly repairing the "
-                        "Judge's proof-observable failure."
-                    ),
-                }
-            ]
-        self.current_decision = self.decisions.pop(0)
         (run_root / "work/IDEA.json").write_text(
             json.dumps(idea, ensure_ascii=False), encoding="utf-8"
         )
-        self._finalize(run_root, role="inventor")
+        self._finalize(run_root)
         return _Outcome(arguments["product_id"], used_web_search=True)
 
-    def _judge(self, arguments, run_root):
-        idea = json.loads((run_root / "IDEA.json").read_text(encoding="utf-8"))
-        verdict = build_thesis_v3_verdict_dict(
-            self.current_decision,
-            daydream_id=arguments["product_id"].removesuffix("-judge"),
-            idea_sha256=Idea.parse(idea).sha256,
-            taste_sha256=hashlib.sha256(
-                (run_root / "TASTE.md").read_bytes()
-            ).hexdigest(),
-            route="forge",
-        )
-        (run_root / "work/VERDICT.json").write_text(
-            json.dumps(verdict, ensure_ascii=False), encoding="utf-8"
-        )
-        self._finalize(run_root, role="judge")
-        return _Outcome(arguments["product_id"], used_web_search=False)
-
-    def _finalize(self, run_root, *, role):
+    def _finalize(self, run_root):
         result = subprocess.run(
             [
                 sys.executable,
                 str(run_root / "finalize_daydream.py"),
                 "--run-root",
                 str(run_root),
-                "--role",
-                role,
             ],
             check=False,
             capture_output=True,
@@ -182,7 +138,7 @@ class _ScriptedNativeRuntime:
 
 
 class DaydreamLearningLoopEndToEndTest(unittest.TestCase):
-    def test_judge_advice_drives_a_second_accepted_thesis(self):
+    def test_real_downstream_failure_reaches_the_next_thesis(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             home = root / "home"
@@ -193,11 +149,10 @@ class DaydreamLearningLoopEndToEndTest(unittest.TestCase):
             runtime = _ScriptedNativeRuntime(
                 self,
                 (sample_thesis_v3_dict(), _repaired_thesis()),
-                ("dream-again", "build"),
             )
             vault = FakeGameVaultTransport().vault()
 
-            rejected = run_daydream(
+            first = run_daydream(
                 "sample",
                 source_root=sources,
                 repository_root=catalog,
@@ -208,9 +163,20 @@ class DaydreamLearningLoopEndToEndTest(unittest.TestCase):
                 effort="forge",
                 vault_loader=lambda: vault,
             )
-            self.assertEqual(rejected.verdict.decision, "dream-again")
-            with self.assertRaisesRegex(ContractError, "Judge-accepted"):
-                wish_from_daydream(rejected)
+            self.assertIsNone(first.verdict)
+            first_wish = wish_from_daydream(first, wish_id="wish-first-thesis")
+            self.assertTrue(
+                remember_run_outcome(
+                    first_wish,
+                    error=RuntimeError(
+                        "Make rejected the hidden catch sequence; the proof was not observable."
+                    ),
+                    route="forge",
+                    manager="codex",
+                    moment=FIRST_MOMENT,
+                    home=home,
+                )
+            )
 
             accepted = run_daydream(
                 "sample",
@@ -223,17 +189,17 @@ class DaydreamLearningLoopEndToEndTest(unittest.TestCase):
                 effort="forge",
                 vault_loader=lambda: vault,
             )
-            self.assertEqual(accepted.verdict.decision, "build")
+            self.assertIsNone(accepted.verdict)
             wish = wish_from_daydream(accepted, wish_id="wish-repaired-thesis")
             self.assertEqual(wish.context["daydream_id"], SECOND_ID)
             self.assertEqual(wish.context["route"], "forge")
             self.assertEqual(wish.context["provenance_sha256"], accepted.provenance.sha256)
 
             second_memory = runtime.daydream_notebooks[1]
-            self.assertIn("Judge prediction: dream-again", second_memory)
-            self.assertIn("proof_observable", second_memory)
+            self.assertIn("Downstream outcomes (host-observed facts", second_memory)
+            self.assertIn("Make rejected the hidden catch sequence", second_memory)
             self.assertIn(
-                "make the unequal catch sequence independently observable",
+                "proof was not observable",
                 second_memory,
             )
             self.assertIn("Anti-generic signature", second_memory)
@@ -244,7 +210,6 @@ class DaydreamLearningLoopEndToEndTest(unittest.TestCase):
                 ).is_file()
             )
             self.assertEqual(runtime.ideas, [])
-            self.assertEqual(runtime.decisions, [])
 
 
 if __name__ == "__main__":

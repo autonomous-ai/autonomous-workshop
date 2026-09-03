@@ -182,18 +182,44 @@ def private_credential_values(
     )
 
 
+def inventor_credential_file(
+    inventor_id: str,
+    environment: Optional[Mapping[str, str]] = None,
+) -> Path:
+    """Return one Inventor's own publishing account file.
+
+    Each Inventor publishes as itself, so its account lives in its own
+    owner-only file rather than sharing the host-wide pair.
+    """
+
+    if not isinstance(inventor_id, str) or _FACTORY_INVENTOR_ID.fullmatch(inventor_id) is None:
+        raise ContractError("Inventor id must be a canonical slug")
+    values = os.environ if environment is None else environment
+    return default_workshop_home(values) / "credentials" / "inventors" / (
+        "%s.env" % inventor_id
+    )
+
+
 def factory_credential_environment(
     environment: Optional[Mapping[str, str]] = None,
+    *,
+    inventor_id: Optional[str] = None,
 ) -> Mapping[str, str]:
     """Load bounded Factory values without exposing unrelated environment data.
 
-    Explicit process environment values override the private local file for
-    compatibility with ephemeral and CI hosts. Product-run Codex receives
-    neither source through :func:`codex_subprocess_environment`.
+    ``inventor_id`` selects that Inventor's own account file when it exists and
+    falls back to the host-wide file, so a host that has not yet given every
+    Inventor an account keeps publishing. Explicit process environment values
+    override both for ephemeral and CI hosts. Product-run Codex receives none
+    of these sources through :func:`codex_subprocess_environment`.
     """
 
     values = os.environ if environment is None else environment
     path = factory_credential_file(values)
+    if inventor_id is not None:
+        scoped = inventor_credential_file(inventor_id, values)
+        if scoped.exists() or scoped.is_symlink():
+            path = scoped
     loaded: dict[str, str] = {}
     if path.exists() or path.is_symlink():
         loaded.update(
@@ -318,6 +344,54 @@ def validate_factory_credential_configuration(values: Mapping[str, str]) -> None
         )
 
 
+def store_factory_credentials(
+    username: str,
+    password: str,
+    *,
+    inventor_id: Optional[str] = None,
+    environment: Optional[Mapping[str, str]] = None,
+) -> Path:
+    """Write one validated Factory service-account pair to the private file.
+
+    The file is the operator's own credential store: 0600 inside a 0700
+    directory, never inside a run workspace and never given to an agent.  An
+    existing file is replaced atomically so a failed write cannot leave a
+    half-written credential behind.
+    """
+
+    values = {"FACTORY_USERNAME": username, "FACTORY_PASSWORD": password}
+    validate_factory_credential_configuration(values)
+    path = (
+        factory_credential_file(environment)
+        if inventor_id is None
+        else inventor_credential_file(inventor_id, environment)
+    )
+    directory = path.parent
+    try:
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        os.chmod(directory, 0o700)
+    except OSError as exc:
+        raise ContractError(
+            "Factory credential directory could not be created: %s" % directory
+        ) from exc
+    document = "".join("%s=%s\n" % (name, values[name]) for name in sorted(values))
+    temporary = path.with_name(path.name + ".tmp")
+    try:
+        descriptor = os.open(
+            str(temporary), os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600
+        )
+        try:
+            os.fchmod(descriptor, 0o600)
+            os.write(descriptor, document.encode("utf-8"))
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        os.replace(temporary, path)
+    except OSError as exc:
+        raise ContractError("Factory credentials could not be stored") from exc
+    return path
+
+
 def factory_service_credential_environment(
     values: Mapping[str, str],
 ) -> Mapping[str, str]:
@@ -353,7 +427,9 @@ __all__ = [
     "private_credential_values",
     "MAX_FACTORY_CREDENTIAL_FILE_BYTES",
     "factory_credential_environment",
+    "inventor_credential_file",
     "factory_credential_file",
     "factory_service_credential_environment",
+    "store_factory_credentials",
     "validate_factory_credential_configuration",
 ]

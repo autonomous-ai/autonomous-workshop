@@ -10,7 +10,6 @@ from unittest import mock
 
 from tests.invent.fake_gamevault import FAKE_TOKEN, FakeGameVaultTransport
 from tests.daydream.support import (
-    build_thesis_v3_verdict_dict as build_thesis_verdict_dict,
     horn_tip_catalog,
     horn_tip_thesis_dict as horn_tip_paraphrase_dict,
     inventor_bundle,
@@ -32,12 +31,7 @@ from workshop.daydream.native import (
     wish_from_daydream,
 )
 from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
-from workshop.daydream.prompt import (
-    DAYDREAM_CONSTITUTION,
-    DAYDREAM_CONSTITUTION_SHA256,
-    JUDGE_CONSTITUTION,
-    JUDGE_CONSTITUTION_SHA256,
-)
+from workshop.daydream.prompt import DAYDREAM_CONSTITUTION, DAYDREAM_CONSTITUTION_SHA256
 from workshop.daydream.seeds import DaydreamSeed
 from workshop.errors import ContractError
 from workshop.invent.gamevault import GameVaultError, GameVaultUnavailable
@@ -88,16 +82,12 @@ class _FakeLauncher:
         error_after_idea=False,
         finalize=True,
         outcome_sha256=None,
-        verdict="build",
-        judge_error=None,
         used_web_search=True,
     ):
         self.test = test
         self.error_after_idea = error_after_idea
         self.finalize = finalize
         self.outcome_sha256 = outcome_sha256
-        self.verdict = verdict
-        self.judge_error = judge_error
         self.used_web_search = used_web_search
         self.timeout_seconds = timeout_seconds
         self.idea = idea
@@ -110,8 +100,6 @@ class _FakeLauncher:
         self.starts.append(dict(arguments))
         run_root = Path(arguments["run_root"])
         host_state = Path(arguments["host_state_root"])
-        if run_root.name == "judge-workspace":
-            return self._judge(arguments, run_root, host_state)
         for name in (
             "TASTE.md",
             "PRIOR-WORK.md",
@@ -191,62 +179,6 @@ class _FakeLauncher:
         if self.error is not None:
             raise self.error
         return _FakeOutcome(arguments, used_web_search=self.used_web_search)
-
-
-    def _judge(self, arguments, run_root, host_state):
-        for name in (
-            "IDEA.json",
-            "TASTE.md",
-            "NOTEBOOK.md",
-            "ROUTE.md",
-            "AGENTS.md",
-            "finalize_daydream.py",
-            "daydream_schema.py",
-        ):
-            self.test.assertTrue((run_root / name).is_file(), name)
-        self.test.assertEqual((run_root / "AGENTS.md").read_text(encoding="utf-8"), JUDGE_CONSTITUTION)
-        self.test.assertEqual(arguments["constitution_sha256"], JUDGE_CONSTITUTION_SHA256)
-        self.test.assertTrue(arguments["product_id"].endswith("-judge"))
-        self.test.assertEqual(stat.S_IMODE(host_state.stat().st_mode), 0o700)
-        self.test.assertEqual(arguments["finalization_marker"], run_root / "agent-outcome.json")
-        self.test.assertIn("Route budget: SPARK", (run_root / "ROUTE.md").read_text(encoding="utf-8"))
-        idea = json.loads((run_root / "IDEA.json").read_text(encoding="utf-8"))
-        self.test.assertEqual(idea["kind"], "autonomous-workshop.daydream-idea")
-        if self.judge_error is not None:
-            raise self.judge_error
-        if self.verdict is not None:
-            verdict_path = run_root / "work" / "VERDICT.json"
-            daydream_id = arguments["product_id"].removesuffix("-judge")
-            taste_sha256 = hashlib.sha256((run_root / "TASTE.md").read_bytes()).hexdigest()
-            verdict = build_thesis_verdict_dict(
-                self.verdict,
-                daydream_id=daydream_id,
-                idea_sha256=Idea.parse(idea).sha256,
-                taste_sha256=taste_sha256,
-                route="spark",
-            )
-            verdict_path.write_text(
-                json.dumps(verdict) if isinstance(self.verdict, str) else self.verdict,
-                encoding="utf-8",
-            )
-            (run_root / "agent-outcome.json").write_text(
-                json.dumps(
-                    {
-                        "schema_version": 1,
-                        "kind": "autonomous-workshop.daydream-outcome",
-                        "status": "ready",
-                        "role": "judge",
-                        "idea_path": "work/VERDICT.json",
-                        "idea_bytes": verdict_path.stat().st_size,
-                        "idea_sha256": hashlib.sha256(verdict_path.read_bytes()).hexdigest(),
-                        "title": "build",
-                        "written_at": "2026-09-02T10:17:00Z",
-                    }
-                ),
-                encoding="utf-8",
-            )
-        return _FakeOutcome(arguments)
-
 
 class DaydreamNativeTest(unittest.TestCase):
     def setUp(self):
@@ -711,115 +643,40 @@ class DaydreamNativeTest(unittest.TestCase):
             )
         self.assertEqual(list_daydreams("sample"), ())
 
-    def test_judge_verdict_is_sealed_and_a_dream_again_is_remembered_as_judged(self):
+    def test_new_daydream_has_no_predictive_judge_turn_or_gate(self):
         sealed, launchers = self._run(idea=sample_idea_dict())
-        self.assertEqual(sealed.verdict.decision, "build")
-        self.assertEqual(len(launchers), 2)
-        judge_manager, judge_kwargs, _ = launchers[1]
-        self.assertEqual(judge_manager, "codex")
-        self.assertEqual(judge_kwargs["timeout_seconds"], 600)
+        self.assertIsNone(sealed.verdict)
+        self.assertEqual(len(launchers), 1)
         paths = daydream_paths("sample", FIRST_ID)
-        verdict_record = json.loads((paths.host_state / "VERDICT.json").read_text(encoding="utf-8"))
-        self.assertEqual(verdict_record["verdict"]["decision"], "build")
+        self.assertFalse((paths.container / "judge-workspace").exists())
+        self.assertFalse((paths.host_state / "VERDICT.json").exists())
         self.assertEqual(load_sealed_daydream("sample", FIRST_ID), sealed)
         self.assertEqual([entry.status for entry in list_daydreams("sample")], ["dreamed"])
+        self.assertEqual(wish_from_daydream(sealed).context["daydream_id"], FIRST_ID)
 
-        raw = sample_idea_dict()
-        raw["title"] = "Turn Pact"
-        raw["one_liner"] = "Two players rotate paired dials and try to reveal the same hidden window."
-        raw["experience"]["action"] = "Each player rotates one dial without seeing the other dial."
-        raw["experience"]["response"] = "The paired shutters reveal one of several shared windows."
-        raw["experience"]["payoff"] = "Matching windows create a simultaneous tactile click."
-        raw["experience"]["anti_generic_signature"] = (
-            "Two blind rotations resolve as one visible window and one shared click."
-        )
-        raw["keywords"] = ["paired-dials", "shutters", "matching", "shared-click"]
-        sealed, _ = self._run(
-            daydream_id=SECOND_ID, idea=raw, verdict="dream-again"
-        )
-        self.assertEqual(sealed.verdict.decision, "dream-again")
-        self.assertEqual(sealed.verdict.risks[0].kind, "proof-mismatch")
-        self.assertEqual(
-            [entry.status for entry in list_daydreams("sample")], ["dreamed", "judged"]
-        )
-        # A judged-out thesis stays inspectable and feeds repair memory.
-        self.assertEqual(load_sealed_daydream("sample", SECOND_ID).verdict.decision, "dream-again")
-        with self.assertRaisesRegex(ContractError, "Judge-accepted"):
-            wish_from_daydream(sealed)
-
-    def test_judge_repair_advice_reaches_the_next_daydream_workspace(self):
-        rejected, _launchers = self._run(
-            idea=sample_idea_dict(), verdict="dream-again"
-        )
-        self.assertEqual(rejected.verdict.decision, "dream-again")
-        raw = sample_idea_dict()
-        raw["title"] = "Rung Chorus"
-        raw["one_liner"] = "Tilt a pocket rail and hear captive beads answer in a staggered rhythm."
-        raw["experience"]["action"] = "Tilt the rail through one slow quarter turn."
-        raw["experience"]["response"] = "Three captive beads release at visibly different thresholds."
-        raw["experience"]["payoff"] = "Their separated catches compose a repeatable three-beat answer."
-        raw["experience"]["anti_generic_signature"] = (
-            "One tilt produces three visibly separated releases and three distinct catches."
-        )
-        raw["keywords"] = ["rail", "beads", "tilt", "rhythm"]
+    def test_new_thesis_must_close_the_newest_novelty_rejection(self):
+        catalog = horn_tip_catalog(Path(self._temporary.name).resolve() / "checkout")
+        with self.assertRaisesRegex(DaydreamError, "Horn Tip"):
+            self._run(idea=horn_tip_paraphrase_dict(), repository_root=catalog)
         memory = list_daydreams("sample")[-1]
-        raw["learning"] = [
-            {
-                "daydream_id": memory.daydream_id,
-                "memory_sha256": memory.sha256,
-                "disposition": "repaired",
-                "response": (
-                    "Bind each catch sound to a separately visible release, directly "
-                    "repairing the proof-observable failure."
-                ),
-            }
-        ]
-        self._run(
-            daydream_id=SECOND_ID,
-            idea=raw,
-            expect_notebook=(
-                "Judge prediction: dream-again",
-                "proof_observable",
-                "make the unequal catch sequence independently observable",
-            ),
-        )
-
-    def test_new_thesis_must_close_the_newest_unresolved_memory(self):
-        self._run(idea=sample_idea_dict(), verdict="dream-again")
         with self.assertRaisesRegex(
             DaydreamError, "must disposition newest unresolved memory"
         ):
             self._run(daydream_id=SECOND_ID, idea=sample_idea_dict())
-        self.assertEqual(
-            [(entry.daydream_id, entry.status) for entry in list_daydreams("sample")],
-            [(FIRST_ID, "judged")],
-        )
-
-    def test_new_thesis_rejects_wrong_memory_hash(self):
-        self._run(idea=sample_idea_dict(), verdict="dream-again")
-        memory = list_daydreams("sample")[-1]
         raw = sample_idea_dict()
         raw["learning"] = [
             {
                 "daydream_id": memory.daydream_id,
                 "memory_sha256": "f" * 64,
-                "disposition": "repaired",
-                "response": "Repair the exact failed proof boundary.",
+                "disposition": "abandoned",
+                "response": "Abandon the crescent rocker for a paced acoustic ladder.",
             }
         ]
         with self.assertRaisesRegex(DaydreamError, "memory_sha256 does not match"):
-            self._run(daydream_id=SECOND_ID, idea=raw)
-
-    def test_judge_failures_fail_closed(self):
-        with self.assertRaisesRegex(DaydreamError, "did not finalize its Judge Goal"):
-            self._run(idea=sample_idea_dict(), verdict=None)
-        with self.assertRaisesRegex(DaydreamError, "Judge session failed"):
             self._run(
-                daydream_id=SECOND_ID,
-                idea=sample_idea_dict(),
-                judge_error=NativeManagerInvocationError("judge disconnect"),
+                daydream_id="daydream-20260902-101700-00000003",
+                idea=raw,
             )
-        self.assertEqual(list_daydreams("sample"), ())
 
     def test_unknown_inventor_and_manager_fail_before_any_state_exists(self):
         with self.assertRaisesRegex(DaydreamError, "unknown Inventor: nobody \\(known: sample\\)"):

@@ -1,13 +1,18 @@
 # Daydream evaluation
 
-Status: implementation-loop evidence, 2026-09-03
+Status: historical implementation-loop evidence, superseded 2026-09-03
 
 This report records the focused Daydream-only evaluation used while building
-the Taste-governed, world-informed creative-thesis path. It is deliberately not
-a claim that Workshop is already the world's best product-creation system.
-That claim needs blind comparison and downstream build evidence.
+the Taste-governed, world-informed creative-thesis path. Its predictive Judge
+conclusion is superseded: replay against real downstream outcomes later
+rejected all four failed builds *and* both published products in the comparison
+set. The production design therefore retains the useful falsification criteria
+inside the Daydream Goal, removes the Judge gate, and learns from actual
+Workshop outcomes. This report remains as experiment evidence, not current
+runtime authority or a claim that Workshop is already the world's best
+product-creation system.
 
-## What was exercised
+## What the retired experiment exercised
 
 - Real native Codex Daydream and independent Judge sessions, not model fakes.
 - Live web-search telemetry required by the host.
@@ -45,14 +50,14 @@ light relay that transfers a complete aperture between direct view and a
 receiver. The rejected Spark acoustic and tactile candidates did not collapse
 into either family.
 
-## Defects the loop found and repaired
+## Defects the retired loop found and repaired
 
 1. A notebook could contain advice without proving that the next thesis used
-   it. Schema-v3 added exact content-hashed learning traces and a ninth
-   conjunctive Judge check.
-2. The first implementation marked a cited memory resolved even when the Judge
-   failed `learning_closure`. Now only a later Judge pass on that dimension can
-   close the referenced memory.
+   it. Schema-v3 added exact content-hashed learning traces and an explicit
+   learning-closure audit.
+2. The first implementation marked a cited memory resolved without a later
+   exact learning trace. Now the trace must cite the prior record id and hash;
+   downstream evidence, not a predictive verdict, calibrates the repair.
 3. Judge advice asked Daydream for dimensioned coupons, crossing into Invent or
    Make. The Judge can reject route fit, but its advice must change the thesis,
    select a capable route, or abandon the direction.
@@ -78,7 +83,7 @@ exclusive two-output optical proof. Sonora's later Forksong Yoke passed worth
 and learning after earlier attempts failed both, but was still correctly
 rejected as Forge-scale work submitted to Spark.
 
-## Cost and selectivity observations
+## Historical cost and selectivity observations
 
 The real creative turns took roughly six to ten minutes in this sample. Native
 session receipts reported about 1.34M–2.72M cumulative input tokens, of which
@@ -91,7 +96,7 @@ After notebook presentation changed from “cite every unresolved memory” to
 and from roughly ten to seven minutes. A larger controlled sample is needed
 before treating that as a stable performance result.
 
-Acceptance rate is intentionally not the target. The Judge rejected:
+Acceptance rate was not the target. The retired Judge rejected:
 
 - attractive but unsupported demand bridges;
 - one-shot demonstrations without post-reveal value;
@@ -99,19 +104,21 @@ Acceptance rate is intentionally not the target. The Judge rejected:
 - mutually impossible proof gates; and
 - an action/response contradiction about which physical paddle became a foot.
 
-Those are useful rejections, not benchmark misses.
+Those categories remain useful pre-commit questions. The verdicts themselves
+were not a valid benchmark because the later downstream replay showed false
+rejection of published work.
 
 ## Deterministic verification
 
 The focused suite covers portable-finalizer/host parity, v1/v2 identity
 compatibility, v3 learning hashes, stale and mismatched memory rejection,
-Judge-gated closure, live-search telemetry, exact time/Taste/route provenance,
+exact learning closure, live-search telemetry, exact time/Taste/route provenance,
 Inventor and Vault materialization, novelty/portfolio memory, Wish admission,
 and a scripted two-turn Daydream repair loop.
 
-The production-like runs above add evidence that the native system can use the
+The production-like runs above show that the native system can use the
 contracts in practice. They do not prove physical feasibility, player desire,
-sales, or downstream gate success.
+sales, or downstream gate success, and they no longer justify a runtime Judge.
 
 ## Remaining proof before a leadership claim
 
@@ -119,13 +126,12 @@ sales, or downstream gate success.
    the prior Daydream baseline and credible external product briefs.
 2. Use unseen Inventors and time windows; judge Taste fidelity, originality,
    grounding, return value, route fit, and portfolio diversity independently.
-3. Send a representative accepted sample through the declared Invent/Make (and
-   Quest Playtest) routes and compare Judge predictions with host-observed gate
-   outcomes.
+3. Send a representative sample through the declared Invent/Make (and Quest
+   Playtest) routes and learn only from host-observed gate outcomes.
 4. Track latency, uncached tokens, acceptance-to-build yield, repeated failure
    classes, and cross-Inventor structural diversity over a larger sample.
 
 Until those steps pass, the supported conclusion is narrower: Daydream is a
-strong, selective, provenance-bound creative-thesis and learning system whose
-focused native loop found and repaired real design defects. “Best in the
-world” remains the North Star, not a test assertion.
+provenance-bound creative-thesis and outcome-learning system whose focused
+native loop found real design defects. “Best in the world” remains the North
+Star, not a test assertion.

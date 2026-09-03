@@ -23,6 +23,11 @@ from workshop.invent.vault import RUN_VAULT_PATH, Vault
 from tests.invent.fake_gamevault import FakeGameVaultTransport, fake_client, install_fake_gamevault
 from tests.invent.test_vault import write_vault
 from types import SimpleNamespace
+from workshop.workflow.budgets import (
+    MAX_BUDGETED_TURNS,
+    MIN_USEFUL_TURN_SECONDS,
+    CommandBudget,
+)
 from workshop.workflow.native_run import (
     _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
     _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
@@ -2697,7 +2702,76 @@ class NativeHostTest(unittest.TestCase):
                 )
             )
 
+    def test_budgeted_runs_continue_through_unfinished_turns_until_a_clock_runs_out(self):
+        # The two clocks replace every counter: an unfinished turn is ordinary
+        # and costs only the minutes it used.
+        class _Clock:
+            def __init__(self):
+                self.now = 0.0
+
+            def __call__(self):
+                # Each turn consumes six minutes of the injected clock.
+                self.now += 180.0
+                return self.now
+
+        budget = CommandBudget(
+            step_seconds=30 * 60, run_seconds=120 * 60, clock=_Clock()
+        )
+        launcher = _AlwaysUnfinishedLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "budgeted-unfinished-continuation"
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run._command_budget",
+                return_value=budget,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(
+                WorkshopError,
+                r"Match used its 30-minute budget \(\d+ minutes spent\)",
+            ):
+                start_native_run(
+                    Wish.create(
+                        product_id,
+                        "a toy whose Goal repeatedly returns before finalization",
+                    )
+                )
+
+            turns = len(launcher.starts) + len(launcher.resumes)
+            # Far past the retired three-unfinished-turn rail, and stopped by
+            # the step clock rather than the run clock or a turn cap.
+            self.assertGreater(turns, _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS)
+            self.assertLess(turns, MAX_BUDGETED_TURNS)
+            # It stopped once too little of the step clock remained to be worth
+            # another turn, not on a counter.
+            self.assertLess(
+                budget.step_seconds - budget.spent("match"), MIN_USEFUL_TURN_SECONDS
+            )
+            self.assertGreaterEqual(
+                budget.spent("match"), 30 * 60 - MIN_USEFUL_TURN_SECONDS - 180
+            )
+            with mock.patch.dict(os.environ, environment, clear=True):
+                status = native_run_status(product_id)
+            self.assertEqual(status["status"], "active")
+            self.assertEqual(status["session_status"], "checkpointed")
+            self.assertEqual(status["native_turns"], turns)
+
     def test_normal_unfinished_turns_stop_early_and_remain_resumable(self):
+        # These rails are frozen historical behaviour: a run without the
+        # budgets capability still stops on its counters.
+        self.enterContext(
+            mock.patch(
+                "workshop.workflow.native_run._uses_command_budget",
+                return_value=False,
+            )
+        )
         launcher = _AlwaysUnfinishedLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -2771,6 +2845,14 @@ class NativeHostTest(unittest.TestCase):
             )
 
     def test_recoverable_interruptions_stop_early_and_remain_resumable(self):
+        # These rails are frozen historical behaviour: a run without the
+        # budgets capability still stops on its counters.
+        self.enterContext(
+            mock.patch(
+                "workshop.workflow.native_run._uses_command_budget",
+                return_value=False,
+            )
+        )
         launcher = _AlwaysInterruptedLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"

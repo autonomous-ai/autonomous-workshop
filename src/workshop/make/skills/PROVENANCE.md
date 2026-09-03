@@ -3,13 +3,41 @@
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
-  `4800bbe89c92366995960f73650e994e96e52756` (2026-08-28), resynced from
-  `5d1e24a6dcdac2626ddef8f74b55130f20094cee` (2026-08-27).
+  `1e56c145586fa9be230443612c1d9d47c957e4f8` (2026-09-03), resynced from
+  `4800bbe89c92366995960f73650e994e96e52756` (2026-08-28).
 - The reviewed snapshot includes the complete upstream trees for all five
   skills. `cad` includes the vendored `cadgen` 0.4.19 source, bought-part mount
   tooling, run-cost guidance, and the strengthened image-derived verification
   runner. The image workflow includes clipped-reference rejection, reference
   silhouette preparation, and stored-camera replay for lower-cost iteration.
+- The 2026-09-03 resync takes upstream's build-direction and resolution work.
+  `cad` gains two gates: `check_overhang`, which is the only thing in the
+  toolchain that knows which way is up and splits down-facing surface into
+  spannable bridges and failing overhangs, and `check_spec_numbers`, which
+  holds a backticked constant quoted in a `*_spec.md` to the value its module
+  actually defines. `verify_project` runs the spec gate in every mode wherever
+  a `*_spec.md` exists and the overhang gate over every exported printable.
+  `check_motion` grows a coupled sweep that poses every mover from the
+  project's own kinematics, re-runs once per driven part, requires
+  `obstacle_parts` rather than silently omitting the frame, reports its own
+  step so a sweep too coarse to see a collision is inconclusive, and validates
+  a declared `retention` chain to a genuine fixed root. `check_thickness`
+  classifies each sub-minimum region as a wall, a taper or a spot by the width
+  of the band rather than by its thinnest point, confirms material entry with
+  two consecutive occupied samples, and omits a one-pitch band beside genuine
+  mesh creases. `render_review` is new and renders shaded PNGs without a
+  browser, which is what an exposed mechanism needs and a silhouette cannot
+  give; `image-to-cad`'s `render_views.py` gains the matching `--shaded`
+  output. `references/print-optimisation.md` carries the closed form that
+  solves a repeated feature's count from the web it leaves.
+  `design-reference`, `electromechanical-integration` and `step-parts` are
+  byte-identical to the previous snapshot; `cadgen` stays at 0.4.19.
+- The CAD skill's `requirements.txt` now declares `Pillow>=10,<13` beside the
+  `cadgen` pin, because `render_review` draws with it. Workshop's own
+  `pillow` dependency is tightened to the same range, and
+  `tools/verify_skill_locks.py` no longer requires the skill to depend on
+  `cadgen` alone: every requirement it declares must be pinned identically by
+  the Workshop that installs it.
 - The 2026-08-28 resync takes upstream's research-first turn.
   `design-reference` stops shipping an offline client: `scripts/design_refs.py`,
   `scripts/catalog_build.py`, `data/sources.json`,
@@ -70,9 +98,15 @@
   the design-reference cache root, its HTTP user agent, its client and test
   command examples, and the `catalog-schema.md` whitespace normalization — and
   drops the now-unused `DESIGN_REFERENCE_SKILL_ROOT` declaration from
-  `image-to-cad/SKILL.md`. No new adaptation is required: the resync introduces
-  no further checkout-relative command path. One trailing blank line in
-  `generation_runner.py` is still normalized for repository whitespace checks.
+  `image-to-cad/SKILL.md`. One trailing blank line in `generation_runner.py` is
+  still normalized for repository whitespace checks.
+  Re-applied on 2026-09-03 to the command examples that resync introduced: the
+  `check_overhang` docstring and `references/print-optimisation.md` examples,
+  and the `check_motion --self-check` example in
+  `references/motion-manifests.md`. The CAD skill's tool listing resolves the
+  new `render_review` through `workshop skills path` alongside the others, and
+  keeps upstream's new appearance-review step ahead of the Workshop's own
+  render-before-the-final-gate step, which is renumbered rather than replaced.
   Geometry, measurement, inspection, validation, export, and `cadgen`
   algorithms are otherwise the reviewed upstream bytes.
 - Adapted locally on 2026-08-27 in the canonical `cadgen` STEP writer to apply

@@ -1,6 +1,7 @@
 import json
 import importlib
 import os
+import stat
 import subprocess
 import tempfile
 import unittest
@@ -69,6 +70,7 @@ class NativeCommandTest(unittest.TestCase):
             {
                 "start",
                 "stop",
+                "login",
                 "daydream",
                 "wish",
                 "status",
@@ -502,9 +504,15 @@ class DaydreamCommandTest(unittest.TestCase):
         environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
         environment.start()
         self.addCleanup(environment.stop)
+        self._with_credentials()
 
     def _loop_folder(self):
         return self.home / "daydreams" / "sample"
+
+    def _with_credentials(self):
+        ready = mock.patch("cli.main._publishing_account_ready", return_value=True)
+        ready.start()
+        self.addCleanup(ready.stop)
 
     def test_parser_defaults(self):
         args = parser().parse_args(("start", "pico-press"))
@@ -735,42 +743,6 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(record["last_wish_id"], calls[-1])
         self.assertFalse((self._loop_folder() / "STOP").exists())
 
-    def test_loop_skips_builds_the_judge_bets_against(self):
-        rejected = sample_sealed(verdict=sample_verdict("dream-again"))
-        approved = sample_sealed(verdict=sample_verdict("build"))
-        stdout = StringIO()
-        with mock.patch(
-            "cli.main.run_daydream", side_effect=[rejected, approved]
-        ) as run, mock.patch(
-            "cli.main.start_native_run",
-            return_value=native_receipt(status="completed", stage="release", published=True),
-        ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
-            result = main(("start", "sample", "--max-ideas", "2"))
-        self.assertEqual(result, 0)
-        self.assertEqual(run.call_count, 2)
-        self.assertEqual(start.call_count, 1)
-        output = stdout.getvalue()
-        self.assertIn(
-            "Judge: dream again (confidence 0.25). Failed: "
-            "moving_part_visible_in_both_states. hidden-signature:",
-            output,
-        )
-        self.assertIn("Judge says dream again; not building this one.", output)
-        self.assertIn("Judge: build (confidence 0.80). Keep the ladder body", output)
-        self.assertIn("Loop stopped (reached --max-ideas 2). Ideas: 2. Builds: 1. Published: 1.", output)
-
-    def test_loop_stops_after_five_judged_out_ideas(self):
-        rejected = sample_sealed(verdict=sample_verdict("dream-again"))
-        with mock.patch("cli.main.run_daydream", return_value=rejected) as run, mock.patch(
-            "cli.main.start_native_run"
-        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
-            result = main(("start", "sample"))
-        self.assertEqual(result, 1)
-        self.assertEqual(run.call_count, 5)
-        start.assert_not_called()
-        record = json.loads((self._loop_folder() / "LOOP.json").read_text())
-        self.assertEqual(record["stop_reason"], "5 ideas judged out in a row")
-
     def test_legacy_saved_idea_retains_its_frozen_build_behavior(self):
         rejected = sample_sealed(verdict=sample_verdict("dream-again"))
         with mock.patch("cli.main.load_sealed_daydream", return_value=rejected), mock.patch(
@@ -780,7 +752,7 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(result, 0)
         start.assert_called_once()
 
-    def test_new_saved_thesis_cannot_bypass_a_dream_again_verdict(self):
+    def test_saved_thesis_ignores_a_retired_historical_verdict(self):
         idea = sample_thesis()
         verdict = Verdict.parse(
             build_thesis_verdict_dict(
@@ -798,14 +770,15 @@ class DaydreamCommandTest(unittest.TestCase):
         stdout = StringIO()
         with mock.patch(
             "cli.main.load_sealed_daydream", return_value=rejected
-        ), mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(
             stdout
         ), redirect_stderr(StringIO()):
             result = main(("start", "sample", "--idea", rejected.daydream_id))
-        self.assertEqual(result, 1)
-        start.assert_not_called()
-        self.assertNotIn("Build it:", stdout.getvalue())
-        self.assertIn("Judge says dream again; not building", stdout.getvalue())
+        self.assertEqual(result, 0)
+        start.assert_called_once()
+        self.assertNotIn("Judge", stdout.getvalue())
 
     def test_stop_requested_during_a_daydream_lands_before_the_build(self):
         sealed = sample_sealed()
@@ -952,6 +925,98 @@ class DaydreamCommandTest(unittest.TestCase):
             self.assertEqual(main(("stop", "sample", "--now")), 0)
         self.assertEqual(signals, [True])
         self.assertIn("Interrupting the daydream loop for sample", stdout.getvalue())
+
+    def test_start_asks_for_this_inventors_shop_account_before_any_work(self):
+        mock.patch.stopall()
+        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        stdout = StringIO()
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=True), mock.patch(
+            "builtins.input", return_value=" pico-press "
+        ), mock.patch(
+            "cli.main.getpass.getpass", return_value="s3cret"
+        ), mock.patch(
+            "cli.main.run_daydream", return_value=sample_sealed()
+        ) as run, mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("start", "sample", "--once"))
+        self.assertEqual(result, 0)
+        run.assert_called_once()
+        output = stdout.getvalue()
+        self.assertIn("sample publishes to the shop as its own account", output)
+        self.assertIn("https://www.autonomous.ai/toys", output)
+        stored = self.home / "credentials" / "inventors" / "sample.env"
+        self.assertEqual(stat.S_IMODE(stored.stat().st_mode), 0o600)
+        self.assertIn("FACTORY_USERNAME=pico-press", stored.read_text(encoding="utf-8"))
+        with mock.patch(
+            "builtins.input", side_effect=AssertionError("prompted twice")
+        ), mock.patch(
+            "cli.main.run_daydream", return_value=sample_sealed()
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            self.assertEqual(main(("start", "sample", "--once")), 0)
+
+    def test_start_without_an_account_outside_a_terminal_fails_closed(self):
+        mock.patch.stopall()
+        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        stderr = StringIO()
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=False), mock.patch(
+            "cli.main.run_daydream"
+        ) as run, mock.patch("cli.main.acquire_loop") as lease, redirect_stdout(
+            StringIO()
+        ), redirect_stderr(stderr):
+            result = main(("start", "sample"))
+        self.assertEqual(result, 2)
+        run.assert_not_called()
+        lease.assert_not_called()
+        self.assertIn("sample has no shop account on this host", stderr.getvalue())
+        self.assertIn("https://www.autonomous.ai/toys", stderr.getvalue())
+
+    def test_login_stores_an_account_from_a_pipe_and_from_a_terminal(self):
+        mock.patch.stopall()
+        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        stdout = StringIO()
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=False), mock.patch(
+            "cli.main.sys.stdin.readline", return_value="piped-secret\n"
+        ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("login", "sample", "--username", "sample"))
+        self.assertEqual(result, 0)
+        stored = self.home / "credentials" / "inventors" / "sample.env"
+        self.assertEqual(stat.S_IMODE(stored.stat().st_mode), 0o600)
+        body = stored.read_text(encoding="utf-8")
+        self.assertIn("FACTORY_USERNAME=sample", body)
+        self.assertIn("FACTORY_PASSWORD=piped-secret", body)
+        self.assertNotIn("piped-secret", stdout.getvalue())
+        self.assertIn("Stored sample's shop account as sample.", stdout.getvalue())
+
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=True), mock.patch(
+            "builtins.input", return_value="typed-name"
+        ), mock.patch(
+            "cli.main.getpass.getpass", return_value="typed-secret"
+        ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            self.assertEqual(main(("login", "sample")), 0)
+        body = stored.read_text(encoding="utf-8")
+        self.assertIn("FACTORY_USERNAME=typed-name", body)
+        self.assertIn("FACTORY_PASSWORD=typed-secret", body)
+
+    def test_login_from_a_pipe_requires_a_username(self):
+        mock.patch.stopall()
+        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        stderr = StringIO()
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=False), redirect_stdout(
+            StringIO()
+        ), redirect_stderr(stderr):
+            self.assertEqual(main(("login", "sample")), 2)
+        self.assertIn("--username is required", stderr.getvalue())
 
     def test_daydream_failure_reports_on_stderr_with_exit_two(self):
         stderr = StringIO()

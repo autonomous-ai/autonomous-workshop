@@ -381,22 +381,17 @@ class SealedDaydreamTest(unittest.TestCase):
             schema_version=2,
             idea=idea,
             idea_sha256=idea.sha256,
-            verdict=verdict,
             provenance=sample_provenance(),
         )
         self.assertEqual(SealedDaydream.parse(sealed.to_dict()), sealed)
-        with self.assertRaisesRegex(ContractError, "Judge verdict"):
-            sample_sealed(
-                schema_version=2,
-                idea=idea,
-                idea_sha256=idea.sha256,
-                verdict=None,
-                provenance=sample_provenance(),
-            )
-        provenance = sample_provenance().to_dict()
-        provenance["input_sha256s"]["judge_constitution"] = None
-        with self.assertRaisesRegex(ContractError, "judge_constitution cannot be null"):
-            DaydreamProvenance.parse(provenance)
+        historical = sample_sealed(
+            schema_version=2,
+            idea=idea,
+            idea_sha256=idea.sha256,
+            verdict=verdict,
+            provenance=sample_provenance(),
+        )
+        self.assertEqual(SealedDaydream.parse(historical.to_dict()), historical)
         raw = sealed.to_dict()
         raw["provenance"]["input_sha256s"]["portfolio"] = "0" * 64
         changed = SealedDaydream.parse(raw)

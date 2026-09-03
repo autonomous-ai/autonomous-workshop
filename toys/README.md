@@ -31,9 +31,9 @@ public readback. They are not mocked fixtures.
 
 | Toy | Inventor | Route exercised | Public acceptance |
 |---|---|---|---|
-| [Storm Reveal](mira-fold-storm-reveal/) | [Mira Fold](../inventors/mira-fold/) | Spark via the CLI default | [Factory page](https://www.autonomous.ai/factory/product/storm-reveal), CDN manual bytes verified |
-| [Rainspell Dial](sonora-reed-rainspell-dial-three-field-sound-garden/) | [Sonora Reed](../inventors/sonora-reed/) | Forge | [Factory page](https://www.autonomous.ai/factory/product/rainspell-dial-three-field-sound-garden), CDN manual bytes verified |
-| [Eclipse Braid](kestrel-knot-eclipse-braid/) | [Kestrel Knot](../inventors/kestrel-knot/) | Spark via the CLI default | [Factory page](https://www.autonomous.ai/factory/product/eclipse-braid), CDN manual bytes verified |
+| [Storm Reveal](mira-fold-storm-reveal/) | [Mira Fold](../inventors/mira-fold/) | Spark via the CLI default | [Factory page](https://www.autonomous.ai/toys/product/storm-reveal), CDN manual bytes verified |
+| [Rainspell Dial](sonora-reed-rainspell-dial-three-field-sound-garden/) | [Sonora Reed](../inventors/sonora-reed/) | Forge | [Factory page](https://www.autonomous.ai/toys/product/rainspell-dial-three-field-sound-garden), CDN manual bytes verified |
+| [Eclipse Braid](kestrel-knot-eclipse-braid/) | [Kestrel Knot](../inventors/kestrel-knot/) | Spark via the CLI default | [Factory page](https://www.autonomous.ai/toys/product/eclipse-braid), CDN manual bytes verified |
 
 For new runs, Make must seal and visually inspect a chromatic presentation
 render at `<cad-project>/snap/iso.png`. The public archive maps that explicit

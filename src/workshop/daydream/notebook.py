@@ -123,7 +123,7 @@ class StructuralTrace:
 
 @dataclass(frozen=True)
 class JudgeMemory:
-    """The independent Judge prediction retained as advice, never as fact."""
+    """A retired Judge prediction retained only for historical readability."""
 
     decision: str
     failed_checks: tuple[str, ...]
@@ -392,8 +392,6 @@ def unresolved_actionable_entries(
         for index, entry in enumerate(entries)
         for trace in entry.learning
         if entry.schema_version == 3
-        and entry.judge is not None
-        and "learning_closure" not in entry.judge.failed_checks
         if positions.get(trace.daydream_id, index) < index
     }
     return tuple(
@@ -448,7 +446,8 @@ def render_notebook_markdown(entries: Sequence[NotebookEntry]) -> str:
             )
         if entry.judge is not None:
             lines.append(
-                "  - Judge prediction: %s (%.2f); failed: %s; advice: %s"
+                "  - Retired Judge prediction (historical; ignored): %s (%.2f); "
+                "failed: %s; advice: %s"
                 % (
                     entry.judge.decision,
                     entry.judge.confidence,

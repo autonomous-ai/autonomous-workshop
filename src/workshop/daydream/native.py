@@ -30,7 +30,6 @@ from workshop.daydream.catalog import (
 )
 from workshop.daydream.contracts import (
     DaydreamProvenance,
-    Verdict,
     CREATED_AT_FORMAT,
     DaydreamError,
     Idea,
@@ -44,7 +43,6 @@ from workshop.daydream.contracts import (
     require_inventor_id,
 )
 from workshop.daydream.notebook import (
-    JudgeMemory,
     NotebookEntry,
     StructuralTrace,
     append_notebook_entry,
@@ -61,11 +59,8 @@ from workshop.daydream.outcomes import (
 from workshop.daydream.prompt import (
     DAYDREAM_CONSTITUTION,
     DAYDREAM_CONSTITUTION_SHA256,
-    JUDGE_CONSTITUTION,
-    JUDGE_CONSTITUTION_SHA256,
     ROUTE_BUDGETS,
     build_daydream_prompt,
-    build_judge_prompt,
 )
 from workshop.daydream.portfolio import (
     PortfolioEntry,
@@ -116,10 +111,6 @@ FINALIZER_FILE_NAME = "finalize_daydream.py"
 SCHEMA_FILE_NAME = "daydream_schema.py"
 DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
 MAX_OUTCOME_FILE_BYTES = 64 * 1024
-JUDGE_WORKSPACE_NAME = "judge-workspace"
-JUDGE_STATE_NAME = "judge-state"
-VERDICT_FILE_NAME = "VERDICT.json"
-JUDGE_TURN_TIMEOUT_SECONDS = 600
 REJECTED_FILE_NAME = "REJECTED.json"
 INVENTOR_BINDING_FILE_NAME = "INVENTOR.json"
 VAULT_BINDING_FILE_NAME = "VAULT-BINDING.json"
@@ -608,9 +599,9 @@ def _validate_learning(
 ) -> None:
     """Require exact closure of the newest unresolved rejected thesis.
 
-    This is a lineage gate only.  Whether the prior creative direction should
+    This is a lineage gate only. Whether the prior creative direction should
     be repaired or abandoned, and whether the response is good, remain native
-    Inventor and independent-Judge judgments.
+    Inventor judgment informed by exact downstream outcomes.
     """
 
     if idea.schema_version != 3:
@@ -663,7 +654,6 @@ def _build_provenance(
         input_sha256s={
             "daydream_prompt": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
             "daydream_constitution": workspace_sha256s["AGENTS.md"],
-            "judge_constitution": JUDGE_CONSTITUTION_SHA256,
             "taste": workspace_sha256s["TASTE.md"],
             "inventor_binding": _json_line_sha256(inventor_binding),
             "vault_binding": _json_line_sha256(vault_binding),
@@ -807,111 +797,6 @@ def _read_idea(path: Path) -> Idea:
         raise DaydreamError("work/IDEA.json is invalid: %s" % exc) from exc
 
 
-def _read_verdict(path: Path) -> Verdict:
-    try:
-        payload = read_regular_bytes(path, maximum=MAX_IDEA_FILE_BYTES, label="work/VERDICT.json")
-    except FileNotFoundError as exc:
-        raise DaydreamError("the judge wrote no work/VERDICT.json") from exc
-    try:
-        raw = json.loads(payload.decode("utf-8"))
-    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
-        raise DaydreamError("work/VERDICT.json is not valid UTF-8 JSON: %s" % exc) from exc
-    if not isinstance(raw, dict):
-        raise DaydreamError("work/VERDICT.json must be a JSON object")
-    try:
-        return Verdict.parse(raw)
-    except ContractError as exc:
-        raise DaydreamError("work/VERDICT.json is invalid: %s" % exc) from exc
-
-
-def judge_idea(
-    paths: DaydreamPaths,
-    *,
-    idea: Idea,
-    taste: Taste,
-    inventor_id: str,
-    manager_id: str,
-    effort: str,
-    daydream_id: str,
-    notebook_entries: Sequence[NotebookEntry],
-    launcher_factory: Callable[..., Any] = manager_launcher,
-    activity_observer: Optional[Callable[[str], None]] = None,
-) -> tuple[Verdict, Mapping[str, Any]]:
-    """Run the independent Judge Goal on a sealed idea and return its verdict."""
-
-    if effort not in ROUTE_BUDGETS:
-        raise ContractError("judge route is unknown: %r" % (effort,))
-    workspace = _exclusive_private_directory(
-        paths.container / JUDGE_WORKSPACE_NAME, label="judge workspace"
-    )
-    _ensure_private_directory(workspace / "work", label="judge work directory")
-    state = _exclusive_private_directory(paths.container / JUDGE_STATE_NAME, label="judge host state")
-    files = (
-        ("IDEA.json", (canonical_json(idea.to_dict()) + "\n").encode("utf-8")),
-        ("TASTE.md", taste.content.encode("utf-8")),
-        (
-            "NOTEBOOK.md",
-            render_notebook_markdown(notebook_entries).encode("utf-8"),
-        ),
-        ("ROUTE.md", ("# Route\n\n%s\n" % ROUTE_BUDGETS[effort]).encode("utf-8")),
-        ("AGENTS.md", JUDGE_CONSTITUTION.encode("utf-8")),
-        (FINALIZER_FILE_NAME, finalizer_bytes()),
-        (SCHEMA_FILE_NAME, schema_bytes()),
-        (PRODUCT_RUN_ROOT_MARKER, PRODUCT_RUN_ROOT_MARKER_BYTES),
-    )
-    for name, payload in files:
-        write_private_bytes(workspace / name, payload, label="judge %s" % name)
-    launcher_kwargs: dict[str, Any] = {"timeout_seconds": JUDGE_TURN_TIMEOUT_SECONDS}
-    if manager_id == "codex":
-        # The judge reads one small file; medium reasoning is enough and fast.
-        launcher_kwargs["reasoning_effort"] = "medium"
-    session = _native_turn(
-        launcher_factory,
-        manager_id,
-        run_root=workspace,
-        host_state_root=state,
-        product_id="%s-judge" % daydream_id,
-        wish_sha256=hashlib.sha256(
-            canonical_json(
-                {"daydream_id": daydream_id, "idea_sha256": idea.sha256, "effort": effort}
-            ).encode("utf-8")
-        ).hexdigest(),
-        constitution_sha256=JUDGE_CONSTITUTION_SHA256,
-        prompt=build_judge_prompt(
-            inventor_name=taste.name,
-            inventor_id=inventor_id,
-            title=idea.title,
-            effort=effort,
-            daydream_id=daydream_id,
-            idea_sha256=idea.sha256,
-            taste_sha256=taste.sha256,
-        ),
-        activity_observer=activity_observer,
-        finalized_files=(workspace / "work" / VERDICT_FILE_NAME,),
-        label="Judge",
-        launcher_kwargs=launcher_kwargs,
-    )
-    _existing_real_directory(workspace, label="judge workspace")
-    _existing_real_directory(workspace / "work", label="judge work directory", private=False)
-    _read_outcome(workspace, file_name=VERDICT_FILE_NAME, who="judge", goal="Judge")
-    verdict = _read_verdict(workspace / "work" / VERDICT_FILE_NAME)
-    if verdict.schema_version >= 2 and (
-        verdict.daydream_id != daydream_id
-        or verdict.idea_sha256 != idea.sha256
-        or verdict.taste_sha256 != taste.sha256
-        or verdict.route != effort
-    ):
-        raise DaydreamError("Judge verdict identity does not match the exact Daydream inputs")
-    write_private_bytes(
-        paths.host_state / VERDICT_FILE_NAME,
-        (
-            canonical_json({"verdict": verdict.to_dict(), "session": dict(session)}) + "\n"
-        ).encode("utf-8"),
-        label="judge verdict",
-    )
-    return verdict, session
-
-
 def _remember(
     paths: DaydreamPaths,
     *,
@@ -919,7 +804,6 @@ def _remember(
     created_at: str,
     idea: Idea,
     status: str,
-    verdict: Optional[Verdict] = None,
     rejection_reason: Optional[str] = None,
 ) -> None:
     thesis_memory = idea.schema_version in (2, 3)
@@ -934,7 +818,7 @@ def _remember(
             status=status,
             schema_version=idea.schema_version if thesis_memory else 1,
             structure=StructuralTrace.from_idea(idea) if thesis_memory else None,
-            judge=JudgeMemory.from_verdict(verdict) if verdict is not None else None,
+            judge=None,
             rejection_reason=rejection_reason,
             learning=idea.learning,
         ),
@@ -987,11 +871,10 @@ def run_daydream(
     effort: Optional[str] = None,
     vault_loader: Callable[[], Vault] = _default_vault_loader,
 ) -> SealedDaydream:
-    """Dream, independently judge, and seal one thesis, or explain why not.
+    """Dream and seal one world-informed thesis, or explain why not.
 
-    A ``dream-again`` verdict remains inspectable and informs the next Dream,
-    but only a ``build`` verdict can become Wish intent.  The Judge assumes the
-    Spark route unless ``effort`` names one.
+    Quality constraints are applied inside the Inventor's one native Goal and
+    calibrated by exact downstream outcomes. There is no predictive Judge turn.
     """
 
     route = effort if effort is not None else "spark"
@@ -1091,20 +974,6 @@ def run_daydream(
     if novelty.status != "new":
         _reject(paths, daydream_id=selected_id, created_at=created_at, idea=idea, novelty=novelty)
         raise DaydreamError("Daydream %s rejected: %s" % (selected_id, novelty.reason))
-    verdict, _judge_session = judge_idea(
-        paths,
-        idea=idea,
-        taste=taste,
-        inventor_id=manifest.inventor_id,
-        manager_id=spec.manager_id,
-            effort=route,
-        daydream_id=selected_id,
-        notebook_entries=latest_entries,
-        launcher_factory=launcher_factory,
-        activity_observer=activity_observer,
-    )
-    if verdict.schema_version != 3:
-        raise DaydreamError("new Judge Goals must finalize a verdict with schema_version 3")
     provenance = _build_provenance(
         route=route,
         manager=spec,
@@ -1121,7 +990,6 @@ def run_daydream(
     )
     sealed = SealedDaydream(
         schema_version=3,
-        verdict=verdict,
         provenance=provenance,
         daydream_id=selected_id,
         inventor_id=manifest.inventor_id,
@@ -1146,8 +1014,7 @@ def run_daydream(
         daydream_id=selected_id,
         created_at=created_at,
         idea=idea,
-        status="judged" if verdict.decision != "build" else "dreamed",
-        verdict=verdict,
+        status="dreamed",
     )
     return sealed
 
@@ -1203,12 +1070,6 @@ def wish_from_daydream(sealed: SealedDaydream, *, wish_id: Optional[str] = None)
 
     if not isinstance(sealed, SealedDaydream):
         raise ContractError("wish_from_daydream requires a SealedDaydream")
-    if sealed.schema_version >= 2 and (
-        sealed.verdict is None or sealed.verdict.decision != "build"
-    ):
-        raise ContractError(
-            "only a Judge-accepted Daydream can become Wish intent"
-        )
     context = {
         "source": WISH_CONTEXT_SOURCE,
         "inventor_id": sealed.inventor_id,
@@ -1240,11 +1101,8 @@ __all__ = [
     "SCHEMA_FILE_NAME",
     "IDEA_FILE_NAME",
     "INVENTOR_BINDING_FILE_NAME",
-    "JUDGE_TURN_TIMEOUT_SECONDS",
     "OUTCOME_FILE_NAME",
     "PROVENANCE_FILE_NAME",
-    "VERDICT_FILE_NAME",
-    "judge_idea",
     "finalizer_bytes",
     "schema_bytes",
     "REJECTED_FILE_NAME",

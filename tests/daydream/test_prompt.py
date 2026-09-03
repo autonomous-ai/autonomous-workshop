@@ -64,7 +64,7 @@ class PromptTest(unittest.TestCase):
             "Do not search\nbackward for evidence",
             "Drop it without apology",
             "Pre-commit thesis audit",
-            "same\nnine independent dimensions",
+            "nine\nindependent dimensions",
             "lucky frame",
             "Mutually exhaustive kill criteria",
             "Repeating a solved count",
@@ -164,15 +164,9 @@ class RouteBudgetTest(unittest.TestCase):
             self._prompt("turbo")
 
 
-class JudgeCalibrationTest(unittest.TestCase):
-    def test_judge_requires_grounding_without_penalizing_novelty(self):
-        from workshop.daydream.prompt import JUDGE_CONSTITUTION
-
-        self.assertIn("contextual contradiction", JUDGE_CONSTITUTION)
-        self.assertIn(
-            "Do not require evidence that people already demand the exact novel",
-            JUDGE_CONSTITUTION,
-        )
-        self.assertIn("do not substitute market familiarity", JUDGE_CONSTITUTION)
-        self.assertIn("does not dimension, prototype, print, simulate, or", JUDGE_CONSTITUTION)
-        self.assertIn("not covert engineering inside Dream", JUDGE_CONSTITUTION)
+class OutcomeCalibrationTest(unittest.TestCase):
+    def test_inventor_audit_is_calibrated_by_real_build_outcomes(self):
+        self.assertIn("Learn from real Workshop outcomes", DAYDREAM_CONSTITUTION)
+        self.assertIn("Ember Knock published", DAYDREAM_CONSTITUTION)
+        self.assertIn("Fourfall failed", DAYDREAM_CONSTITUTION)
+        self.assertIn("There is no predictive Judge turn", DAYDREAM_CONSTITUTION)

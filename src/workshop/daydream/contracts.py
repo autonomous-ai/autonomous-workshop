@@ -32,8 +32,9 @@ MAX_TITLE_CHARS = 60
 MAX_ONE_LINER_CHARS = 200
 MAX_VERDICT_TEXT_CHARS = 400
 VERDICT_DECISIONS = ("build", "dream-again")
-# Historical schema-v1 check names remain stable so already-sealed verdicts
-# keep their exact identity.  New Judge Goals use THESIS_VERDICT_CHECKS.
+# Historical verdict vocabulary remains stable so records written while the
+# retired Judge existed can still be parsed. New Daydreams do not create or
+# gate on Verdict objects.
 VERDICT_CHECKS = LEGACY_VERDICT_CHECKS
 MAX_PRIOR_ART_NAME_CHARS = 80
 MAX_PRIOR_ART_DIFFERENCE_CHARS = 300
@@ -86,7 +87,6 @@ _SEAL_V2_KEYS = _SEAL_V1_KEYS | frozenset(("provenance",))
 DAYDREAM_PROVENANCE_INPUTS = (
     "daydream_prompt",
     "daydream_constitution",
-    "judge_constitution",
     "taste",
     "inventor_binding",
     "vault_binding",
@@ -1192,8 +1192,6 @@ class SealedDaydream:
             raise ContractError("sealed daydream schema 1 cannot carry provenance")
         if self.schema_version >= 2 and not isinstance(self.provenance, DaydreamProvenance):
             raise ContractError("sealed thesis requires provenance")
-        if self.schema_version >= 2 and not isinstance(self.verdict, Verdict):
-            raise ContractError("sealed thesis requires a Judge verdict")
         if self.kind != DAYDREAM_SEAL_KIND:
             raise ContractError("sealed daydream kind must be %s" % DAYDREAM_SEAL_KIND)
         require_daydream_id(self.daydream_id, "sealed daydream daydream_id")

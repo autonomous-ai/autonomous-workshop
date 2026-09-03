@@ -411,6 +411,155 @@ def save_mask(mask: np.ndarray, path: Path) -> None:
 
 
 # --------------------------------------------------------------------------
+# shaded review render
+#
+# The silhouette is the right picture for the likeness gate and the wrong one
+# for a person: a machine's identity is in its interior -- slots, pockets,
+# flutes, the pin standing on its arm -- and a filled outline shows none of it.
+# A mechanism review off silhouettes reads every assembly as one blob.
+#
+# This adds a second, separate image: z-buffered flat shading, one colour per
+# labelled part, with an outline wherever the part or the depth changes. It is
+# written beside the mask and never replaces it, so nothing the gate consumes
+# moves.
+
+PART_PALETTE = (
+    (0.72, 0.74, 0.78), (0.85, 0.45, 0.28), (0.44, 0.56, 0.72),
+    (0.83, 0.71, 0.36), (0.55, 0.67, 0.52), (0.68, 0.55, 0.71),
+)
+
+
+def part_colour(node, index: int):
+    """A part's own colour when the source set one, else a stable palette."""
+    colour = getattr(node, "color", None)
+    if colour is not None:
+        with contextlib.suppress(TypeError, ValueError):
+            values = tuple(float(channel) for channel in tuple(colour))[:3]
+            if len(values) == 3:
+                return values
+    return PART_PALETTE[index % len(PART_PALETTE)]
+
+
+def tessellate_parts(shape, tolerance: float = DEFAULT_TOLERANCE):
+    """One mesh per labelled child, carrying a colour and an id per triangle."""
+    nodes = list(getattr(shape, "children", None) or []) or [shape]
+    points, faces, colours, ids = [], [], [], []
+    offset = 0
+    for index, node in enumerate(nodes):
+        node_points, node_faces = tessellate(node, tolerance)
+        points.append(node_points)
+        faces.append(node_faces + offset)
+        colours.append(np.tile(part_colour(node, index), (len(node_faces), 1)))
+        ids.append(np.full(len(node_faces), index, dtype=int))
+        offset += len(node_points)
+    return (np.concatenate(points), np.concatenate(faces),
+            np.concatenate(colours), np.concatenate(ids))
+
+
+def project_depth(points: np.ndarray, az: float, el: float, roll: float, fov: float):
+    """`project`, plus a depth that grows away from the camera."""
+    c, r, u = camera_basis(az, el, roll)
+    if fov <= 0:
+        return points @ r, points @ u, -(points @ c)
+    centre = (points.max(axis=0) + points.min(axis=0)) / 2
+    radius = float(np.linalg.norm(points - centre, axis=1).max())
+    distance = radius / math.sin(math.radians(fov) / 2) * 1.05
+    cam = centre + c * distance
+    rel = points - cam
+    depth = np.maximum(-(rel @ c), 1e-6)
+    return (rel @ r) / depth, (rel @ u) / depth, depth
+
+
+def shade_view(mesh, az: float, el: float, roll: float = 0.0, fov: float = 0.0,
+               size: int = DEFAULT_SIZE, pad: float = DEFAULT_PAD) -> np.ndarray:
+    """A shaded RGB image of the mesh, framed exactly like `rasterise`."""
+    points, faces, colours, ids = mesh
+    sx, sy, depth = project_depth(points, az, el, roll, fov)
+    width, height = sx.max() - sx.min(), sy.max() - sy.min()
+    span = max(width, height)
+    if span <= 0:
+        raise ValueError("the projection is degenerate")
+    scale = (1 - 2 * pad) * size / span
+    px = (sx - sx.min()) * scale + (size - width * scale) / 2
+    py = size - ((sy - sy.min()) * scale + (size - height * scale) / 2)
+
+    corners = points[faces]
+    normals = np.cross(corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0])
+    lengths = np.linalg.norm(normals, axis=1, keepdims=True)
+    normals = np.divide(normals, lengths, out=np.zeros_like(normals), where=lengths > 0)
+    camera, right, up = camera_basis(az, el, roll)
+    # Winding is not guaranteed across a fused solid, and a lit render must not
+    # depend on it: turn every normal toward the camera before shading.
+    facing = np.sign(normals @ camera)[:, None]
+    normals = normals * np.where(facing == 0, 1.0, facing)
+    light = camera * 0.55 + right * 0.45 + up * 0.70
+    light = light / np.linalg.norm(light)
+    shade = 0.32 + 0.68 * np.clip(normals @ light, 0.0, 1.0)
+
+    image = np.full((size, size, 3), 0.965)
+    zbuf = np.full((size, size), np.inf)
+    partbuf = np.full((size, size), -1, dtype=int)
+    for face in range(len(faces)):
+        a, b, c = faces[face]
+        x0, x1, x2 = px[a], px[b], px[c]
+        y0, y1, y2 = py[a], py[b], py[c]
+        lo_x, hi_x = int(math.floor(min(x0, x1, x2))), int(math.ceil(max(x0, x1, x2)))
+        lo_y, hi_y = int(math.floor(min(y0, y1, y2))), int(math.ceil(max(y0, y1, y2)))
+        lo_x, lo_y = max(lo_x, 0), max(lo_y, 0)
+        hi_x, hi_y = min(hi_x, size - 1), min(hi_y, size - 1)
+        if lo_x > hi_x or lo_y > hi_y:
+            continue
+        denom = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
+        if abs(denom) < 1e-12:
+            continue
+        gx = np.arange(lo_x, hi_x + 1)[None, :] + 0.5
+        gy = np.arange(lo_y, hi_y + 1)[:, None] + 0.5
+        w0 = ((y1 - y2) * (gx - x2) + (x2 - x1) * (gy - y2)) / denom
+        w1 = ((y2 - y0) * (gx - x2) + (x0 - x2) * (gy - y2)) / denom
+        w2 = 1.0 - w0 - w1
+        covered = (w0 >= 0) & (w1 >= 0) & (w2 >= 0)
+        if not covered.any():
+            continue
+        z = w0 * depth[a] + w1 * depth[b] + w2 * depth[c]
+        window = zbuf[lo_y:hi_y + 1, lo_x:hi_x + 1]
+        win = covered & (z < window)
+        if not win.any():
+            continue
+        window[win] = z[win]
+        image[lo_y:hi_y + 1, lo_x:hi_x + 1][win] = colours[face] * shade[face]
+        partbuf[lo_y:hi_y + 1, lo_x:hi_x + 1][win] = ids[face]
+
+    drawn = np.isfinite(zbuf)
+    if drawn.any():
+        jump = 0.015 * float(np.ptp(zbuf[drawn])) if drawn.sum() > 1 else 0.0
+        edge = np.zeros((size, size), dtype=bool)
+        for axis in (0, 1):
+            other_part = np.roll(partbuf, 1, axis=axis)
+            other_z = np.roll(zbuf, 1, axis=axis)
+            pair = drawn | np.isfinite(other_z)
+            # np.where evaluates both branches, and inf - inf is a nan warning
+            # on every background pixel; subtract only where both are real.
+            step = np.zeros((size, size))
+            np.subtract(zbuf, other_z, out=step, where=drawn & np.isfinite(other_z))
+            step = np.abs(step)
+            edge |= pair & ((partbuf != other_part) | (jump > 0) & (step > jump))
+        # An outline that only darkens disappears on a dark part -- a 3 mm relief
+        # on a black plate renders as black on black, and the feature the review
+        # is looking for is simply not there. Push away from the local tone
+        # instead: darken what is light, lighten what is dark.
+        if edge.any():
+            lit = image[edge]
+            tone = lit.mean(axis=1, keepdims=True)
+            image[edge] = np.where(tone < 0.32, lit * 0.5 + 0.30, lit * 0.42)
+    return image
+
+
+def save_image(image: np.ndarray, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(np.clip(image * 255.0, 0, 255).astype(np.uint8)).save(path)
+
+
+# --------------------------------------------------------------------------
 # pose search
 
 
@@ -539,6 +688,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--allow-clipped-reference", action="store_true",
                     help="allow a matched reference silhouette that touches the image "
                          "boundary; only valid for a partial-feature comparison")
+    ap.add_argument("--shaded", action="store_true",
+                    help="also write <label>-shaded.png: a lit, part-coloured "
+                         "review render. The masks the likeness gate reads are "
+                         "unchanged; this is the picture a person reads.")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--self-check", action="store_true")
     args = ap.parse_args(argv)
@@ -571,6 +724,7 @@ def main(argv: list[str] | None = None) -> int:
 
     shape = build_shape(source)
     points, faces = tessellate(shape, args.tolerance)
+    review_mesh = tessellate_parts(shape, args.tolerance) if args.shaded else None
 
     poses: dict[str, dict] = {}
     results: list[dict] = []
@@ -588,6 +742,9 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         mask = rasterise(points, faces, az, el, args.roll, args.fov, size=args.size)
         save_mask(mask, out_dir / f"{label}.png")
+        if review_mesh is not None:
+            save_image(shade_view(review_mesh, az, el, args.roll, args.fov, args.size),
+                       out_dir / f"{label}-shaded.png")
         pose = {"az": az, "el": el, "roll": args.roll, "fov": args.fov}
         poses[label] = pose
         results.append({"label": label, "kind": "view", **pose})
@@ -621,6 +778,10 @@ def main(argv: list[str] | None = None) -> int:
                          best["fov"], size=args.size)
         render_path = out_dir / f"{label}.png"
         save_mask(mask, render_path)
+        if review_mesh is not None:
+            save_image(shade_view(review_mesh, best["az"], best["el"], best["roll"],
+                                  best["fov"], args.size),
+                       out_dir / f"{label}-shaded.png")
         final = compare(normalise(mask), reference)
         pose = {"az": round(best["az"], 3), "el": round(best["el"], 3),
                 "roll": round(best["roll"], 3), "fov": best["fov"]}
@@ -650,6 +811,10 @@ def main(argv: list[str] | None = None) -> int:
                          pose.get("roll", 0.0), pose.get("fov", 0.0),
                          size=args.size)
         save_mask(mask, out_dir / f"{label}.png")
+        if review_mesh is not None:
+            save_image(shade_view(review_mesh, pose["az"], pose["el"],
+                                  pose.get("roll", 0.0), pose.get("fov", 0.0), args.size),
+                       out_dir / f"{label}-shaded.png")
         poses[label] = pose
         results.append({"label": label, "kind": "replay", **pose})
 

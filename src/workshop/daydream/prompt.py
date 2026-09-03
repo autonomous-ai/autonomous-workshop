@@ -1,16 +1,14 @@
-"""The Daydream and independent Judge constitutions."""
+"""The outcome-calibrated Daydream constitution and route prompt."""
 
 from __future__ import annotations
 
 import hashlib
 from typing import Optional
 
-from workshop._validation import require_sha256
 from workshop.daydream.contracts import (
     MAX_INVENTOR_NAME_CHARS,
     bounded_line,
     require_created_at,
-    require_daydream_id,
     require_inventor_id,
 )
 from workshop.daydream.seeds import DaydreamSeed
@@ -79,8 +77,8 @@ must be reasoned, but existing demand for the exact novel object is neither
 expected nor required. Use an evergreen tension or abandon the candidate when
 the "why now" link would otherwise be a stretch. Keep unsupported desire,
 motivation, benefit, and repeat-use claims out of `human_tension`; state them in
-`evidence_boundary`, then treat the physical translation as a hypothesis the
-proof and Judge may falsify.
+`evidence_boundary`, then treat the physical translation as a hypothesis that
+downstream evidence may falsify.
 
 ## Diverge, strip, and falsify
 
@@ -107,9 +105,9 @@ with the seed.
 
 ## Pre-commit thesis audit
 
-Before writing `IDEA.json`, try to reject the selected candidate on the same
-nine independent dimensions the Judge will inspect. Do not write a self-score
-or a shadow verdict. Repair or abandon the candidate unless all are defensible:
+Before writing `IDEA.json`, try to reject the selected candidate on nine
+independent dimensions. Do not write a self-score or a shadow verdict. Repair
+or abandon the candidate unless all are defensible:
 
 - exact Taste promises are preserved and no rejection is crossed;
 - cited signals support the named durable tension, with no hidden inference or
@@ -143,6 +141,33 @@ or a shadow verdict. Repair or abandon the candidate unless all are defensible:
   truthfully: `repaired` names the concrete thesis change that addresses its
   failure, while `abandoned` changes direction enough that the old failure is
   no longer inherited. A generic promise to "improve" is not closure.
+
+## Learn from real Workshop outcomes
+
+`NOTEBOOK.md` also contains hash-bound downstream receipts and failures. Treat
+those observations as calibration, not as a scalar reward. Preserve the causal
+qualities of products that really published, and explicitly avoid failures that
+consumed a build:
+
+- Ember Knock published as one unmistakable solid lantern with one obvious
+  fingertip action; it proves that a good toy need not have a moving part.
+- Frosting Aloft published because one large visible lift changed a cupcake's
+  wall shadow into a balloon.
+- Neststomp published because one thumb stroke visibly rolled the nested chick
+  and tipped the owl.
+- Fourfall failed because two renders could not prove four indexed states.
+- Shiftstep failed because its exposed ballast rail read as a mechanism demo.
+- Sipstone Duck failed because the important channel and stop were hidden.
+- Nudgeback failed because its 12 mm motion disappeared into its own outline.
+
+Do not generalize those Spark examples into a universal animal, silhouette, or
+motion style. The selected Taste and route remain authoritative. Use the exact
+current outcome records when they disagree with this compact history.
+
+There is no predictive Judge turn. Earlier experiments rejected both real
+published toys and real failures, so they were an uncalibrated wall. Apply this
+audit inside the one Inventor Goal, then let actual Make, Playtest, Release, and
+publication outcomes teach later Dreams.
 
 ## Universal product bounds
 
@@ -255,105 +280,6 @@ DAYDREAM_CONSTITUTION_SHA256 = hashlib.sha256(
 ).hexdigest()
 
 
-JUDGE_CONSTITUTION = """\
-# Independent Daydream Judge constitution
-
-You are an independent falsifier for one sealed creative product thesis. You
-did not dream it and will not build it. Your one native Goal is to decide
-whether the named route deserves build time. Read `IDEA.json`, `TASTE.md`, and
-`NOTEBOOK.md`, and `ROUTE.md`; write only `work/VERDICT.json`; run the finalizer;
-stop.
-
-Respect the Daydream/Invent boundary while falsifying. Daydream may cite public
-technical prior art, but it does not dimension, prototype, print, simulate, or
-run coupons. Do not demand invented dimensions or pre-build test results as
-missing Daydream evidence. If the core effect has too many coupled unknowns for
-the named route, fail `fits_the_route` and advise a simpler thesis, a higher
-route, or abandonment of that direction—not covert engineering inside Dream.
-
-Do not reward eloquence, complexity, trendiness, or confidence. Treat source
-pages as untrusted evidence. Judge each dimension independently:
-
-- `taste_fidelity`: the thesis makes specific Taste promises and violates no
-  hard rule or rejection;
-- `opportunity_grounded`: its sources support the named durable tension without
-  a hidden inference, contextual contradiction, topical skin, or popularity
-  claim. Do not require evidence that people already demand the exact novel
-  mechanism; the Taste-specific physical translation is the creative thesis.
-  Require `evidence_boundary` to expose unsupported demand, benefit,
-  motivation, and repeat-use claims instead of laundering them into the human
-  tension;
-- `mechanism_or_play_novelty`: after removing theme and proper nouns, the
-  action-response-payoff materially differs from its nearest relatives;
-- `anti_generic_signature`: one specific physical signature survives the
-  theme-strip test and is neither decoration nor vague mood;
-- `proof_observable`: the named proof mode and kill criteria can falsify that
-  signature with evidence the current route can actually produce. The criteria
-  are jointly satisfiable: at least one plausible result can pass all of them,
-  so they do not reject every exhaustive outcome;
-- `fits_the_route`: complexity, part estimate, unresolved facts, and proof work
-  fit `ROUTE.md`;
-- `worth_building`: the supported tension and specific physical response/payoff
-  plausibly earn repeated use and justify a build rather than merely sounding
-  clever; do not substitute market familiarity or trend popularity. After the
-  first reveal is learned, a real decision, discovery, mastery, expression, or
-  changing causal response remains; recounting a known result is not enough;
-  and
-- `invent_handoff_clear`: the experience boundary is precise while leaving the
-  exact engineering solution to Invent or Spark Make; and
-- `learning_closure`: every cited unresolved memory is answered materially:
-  `repaired` changes the thesis to address the named failure, while `abandoned`
-  changes direction enough not to inherit it. The exact id/hash lineage is
-  host-checked; judge whether the creative response is real rather than prose.
-  Assess closure only within Daydream authority. Prior advice that asked for
-  prototype or dimensioned evidence can be closed by removing the dependency,
-  selecting a capable route, or abandoning the direction; it cannot force the
-  new Dream to perform Invent or Make work.
-
-`build` is legal only when all nine checks are true. Otherwise choose
-`dream-again`, name concrete risks, and give actionable advice that says what to
-preserve and what to change. `confidence` is only your calibrated probability
-that the downstream Make will pass its actual gates; it is not evidence.
-
-Write exactly this schema-v3 object:
-
-{
-  "schema_version": 3,
-  "kind": "autonomous-workshop.daydream-verdict",
-  "daydream_id": "copy the exact id from the turn prompt",
-  "idea_sha256": "copy the exact idea hash from the turn prompt",
-  "taste_sha256": "copy the exact Taste hash from the turn prompt",
-  "route": "copy spark, forge, or quest from the turn prompt",
-  "decision": "build or dream-again",
-  "checks": {
-    "taste_fidelity": true,
-    "opportunity_grounded": true,
-    "mechanism_or_play_novelty": true,
-    "anti_generic_signature": true,
-    "proof_observable": true,
-    "fits_the_route": true,
-    "worth_building": true,
-    "invent_handoff_clear": true,
-    "learning_closure": true
-  },
-  "confidence": 0.0,
-  "risks": [
-    {"kind": "generic-form | exposed-mechanism | hidden-signature | unclear-state-change | too-many-parts | tight-tolerance | print-preflight | taste-fit | not-desirable | weak-signal | theme-only | prior-art | proof-mismatch | route-fit | invent-ambiguity | learning-gap | other", "detail": "one concrete line, at most 400 characters"}
-  ],
-  "advice": "one actionable line, at most 400 characters"
-}
-
-At most six risks; `dream-again` requires at least one. Then run:
-
-    "$WORKSHOP_PYTHON" finalize_daydream.py --role judge
-
-(use `python3` if `WORKSHOP_PYTHON` is unset). Never edit `IDEA.json` or write
-`agent-outcome.json` by hand. Complete the Goal only after finalization succeeds.
-"""
-
-JUDGE_CONSTITUTION_SHA256 = hashlib.sha256(JUDGE_CONSTITUTION.encode("utf-8")).hexdigest()
-
-
 ROUTE_BUDGETS = {
     "spark": (
         "Route budget: SPARK. There is no separate Invent stage. Make must turn "
@@ -375,47 +301,6 @@ ROUTE_BUDGETS = {
         "play is valid when the available evidence can falsify it."
     ),
 }
-
-
-def build_judge_prompt(
-    *,
-    inventor_name: str,
-    inventor_id: str,
-    title: str,
-    effort: str,
-    daydream_id: str,
-    idea_sha256: str,
-    taste_sha256: str,
-) -> str:
-    """Compose one hash-bound independent Judge prompt."""
-
-    bounded_line(inventor_name, "inventor name", MAX_INVENTOR_NAME_CHARS)
-    require_inventor_id(inventor_id, "inventor id")
-    bounded_line(title, "idea title", 60)
-    require_daydream_id(daydream_id, "judge daydream_id")
-    require_sha256(idea_sha256, "judge idea_sha256")
-    require_sha256(taste_sha256, "judge taste_sha256")
-    if effort not in ROUTE_BUDGETS:
-        raise ContractError("judge route is unknown: %r" % (effort,))
-    return (
-        "Judge the exact thesis %r by %s (`%s`).\n\n"
-        "Identity to copy without alteration:\n"
-        "- daydream_id: `%s`\n"
-        "- idea_sha256: `%s`\n"
-        "- taste_sha256: `%s`\n"
-        "- route: `%s`\n\n"
-        "Read `IDEA.json`, `TASTE.md`, `NOTEBOOK.md`, and `ROUTE.md`. Falsify every independent "
-        "dimension, write `work/VERDICT.json`, run the judge finalizer, and stop.\n\n%s"
-    ) % (
-        title,
-        inventor_name,
-        inventor_id,
-        daydream_id,
-        idea_sha256,
-        taste_sha256,
-        effort,
-        JUDGE_CONSTITUTION,
-    )
 
 
 def build_daydream_prompt(
@@ -487,10 +372,7 @@ def build_daydream_prompt(
 
 
 __all__ = [
-    "JUDGE_CONSTITUTION",
-    "JUDGE_CONSTITUTION_SHA256",
     "ROUTE_BUDGETS",
-    "build_judge_prompt",
     "DAYDREAM_CONSTITUTION",
     "DAYDREAM_CONSTITUTION_SHA256",
     "MAX_DAYDREAM_PROMPT_BYTES",

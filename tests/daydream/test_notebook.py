@@ -127,7 +127,7 @@ class NotebookTest(unittest.TestCase):
         self.assertEqual(NotebookEntry.parse(entry.to_dict()), entry)
         text = render_notebook_markdown((entry,))
         self.assertIn("Anti-generic signature:", text)
-        self.assertIn("Judge prediction: dream-again", text)
+        self.assertIn("Retired Judge prediction (historical; ignored): dream-again", text)
         self.assertIn("proof_observable", text)
         self.assertIn(verdict.advice, text)
         tampered = entry.to_dict()
@@ -215,9 +215,8 @@ class NotebookTest(unittest.TestCase):
             judge=JudgeMemory.from_verdict(Verdict.parse(failed_raw)),
             learning=(closure,),
         )
-        self.assertEqual(unresolved_actionable_entries((rejected, failed)), (rejected, failed))
+        self.assertEqual(unresolved_actionable_entries((rejected, failed)), (failed,))
         failed_text = render_notebook_markdown((rejected, failed))
-        self.assertIn("**Older unresolved:**", failed_text)
         self.assertIn("**Required next:**", failed_text)
 
 

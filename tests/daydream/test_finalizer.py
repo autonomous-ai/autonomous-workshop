@@ -7,14 +7,12 @@ import unittest
 from pathlib import Path
 
 from tests.daydream.support import (
-    build_thesis_verdict_dict,
-    build_thesis_v3_verdict_dict,
     sample_idea_dict,
     sample_thesis_dict,
     sample_thesis_v3_dict,
 )
 from workshop.daydream import finalize_daydream
-from workshop.daydream.contracts import Idea, Verdict
+from workshop.daydream.contracts import Idea
 from workshop.daydream.native import (
     DAYDREAM_OUTCOME_KIND,
     FINALIZER_FILE_NAME,
@@ -70,42 +68,16 @@ class FinalizerTest(unittest.TestCase):
             outcome = json.loads((root / "agent-outcome.json").read_text(encoding="utf-8"))
             self.assertEqual(outcome["title"], "Ladder Drop II")
 
-    def test_schema_v2_thesis_and_verdict_finalize_standalone(self):
+    def test_schema_v2_thesis_finalizes_standalone(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = self._root(temporary, sample_thesis_dict())
             completed = self._run(root)
             self.assertEqual(completed.returncode, 0, completed.stderr)
-            (root / "agent-outcome.json").unlink()
-            (root / "work" / "VERDICT.json").write_text(
-                json.dumps(build_thesis_verdict_dict()), encoding="utf-8"
-            )
-            completed = subprocess.run(
-                [sys.executable, str(root / FINALIZER_FILE_NAME), "--role", "judge"],
-                cwd=root,
-                capture_output=True,
-                text=True,
-                timeout=60,
-                check=False,
-            )
-            self.assertEqual(completed.returncode, 0, completed.stderr)
 
-    def test_schema_v3_thesis_and_verdict_finalize_standalone(self):
+    def test_schema_v3_thesis_finalizes_standalone(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = self._root(temporary, sample_thesis_v3_dict())
             completed = self._run(root)
-            self.assertEqual(completed.returncode, 0, completed.stderr)
-            (root / "agent-outcome.json").unlink()
-            (root / "work" / "VERDICT.json").write_text(
-                json.dumps(build_thesis_v3_verdict_dict()), encoding="utf-8"
-            )
-            completed = subprocess.run(
-                [sys.executable, str(root / FINALIZER_FILE_NAME), "--role", "judge"],
-                cwd=root,
-                capture_output=True,
-                text=True,
-                timeout=60,
-                check=False,
-            )
             self.assertEqual(completed.returncode, 0, completed.stderr)
 
     def test_host_and_run_local_schema_have_parity_on_adversarial_corpus(self):
@@ -139,27 +111,6 @@ class FinalizerTest(unittest.TestCase):
             with self.subTest(contract="idea", index=index):
                 self.assertEqual(host_accepts, finalizer_accepts)
 
-        verdict_cases = [
-            build_thesis_verdict_dict(),
-            build_thesis_v3_verdict_dict(),
-            {"schema_version": False},
-            [],
-        ]
-        malformed_verdict = build_thesis_verdict_dict()
-        malformed_verdict["checks"]["taste_fidelity"] = "yes"
-        verdict_cases.append(malformed_verdict)
-        for index, raw in enumerate(verdict_cases):
-            finalizer_accepts = not finalize_daydream.verdict_problems(raw)
-            try:
-                Verdict.parse(raw)
-            except Exception as exc:
-                host_accepts = False
-                self.assertEqual(exc.__class__.__name__, "ContractError")
-            else:
-                host_accepts = True
-            with self.subTest(contract="verdict", index=index):
-                self.assertEqual(host_accepts, finalizer_accepts)
-
     def test_problems_are_listed_and_no_marker_is_written(self):
         raw = sample_idea_dict()
         raw["title"] = "x" * 61
@@ -183,41 +134,16 @@ class FinalizerTest(unittest.TestCase):
         self.assertIn("title is longer than 60 characters", problems)
         self.assertIn("parts_estimate must be an integer from 1 to 12", problems)
 
-    def test_judge_role_validates_the_verdict(self):
-        from tests.daydream.support import build_verdict_dict
-
+    def test_retired_judge_role_is_not_available(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = self._root(temporary, None)
-            (root / "work" / "VERDICT.json").write_text(
-                json.dumps(build_verdict_dict("dream-again")), encoding="utf-8"
-            )
             completed = subprocess.run(
                 [sys.executable, str(root / FINALIZER_FILE_NAME), "--role", "judge"],
                 cwd=root, capture_output=True, text=True, timeout=60, check=False,
             )
-            self.assertEqual(completed.returncode, 0, completed.stderr)
-            outcome = json.loads((root / "agent-outcome.json").read_text(encoding="utf-8"))
-            self.assertEqual(outcome["role"], "judge")
-            self.assertEqual(outcome["idea_path"], "work/VERDICT.json")
-            self.assertEqual(outcome["title"], "dream-again")
-            good = build_verdict_dict("build")
-            good["checks"]["travel_is_large"] = False
-            (root / "work" / "VERDICT.json").write_text(json.dumps(good), encoding="utf-8")
-            completed = subprocess.run(
-                [sys.executable, str(root / FINALIZER_FILE_NAME), "--role", "judge"],
-                cwd=root, capture_output=True, text=True, timeout=60, check=False,
-            )
-            self.assertEqual(completed.returncode, 1)
-            self.assertIn("failed: travel_is_large", completed.stderr)
-            bad = build_verdict_dict("dream-again")
-            bad["risks"] = [{"kind": "vibes", "detail": "meh"}]
-            (root / "work" / "VERDICT.json").write_text(json.dumps(bad), encoding="utf-8")
-            completed = subprocess.run(
-                [sys.executable, str(root / FINALIZER_FILE_NAME), "--role", "judge"],
-                cwd=root, capture_output=True, text=True, timeout=60, check=False,
-            )
-            self.assertEqual(completed.returncode, 1)
-            self.assertIn("risks[0].kind must be one of", completed.stderr)
+            self.assertEqual(completed.returncode, 2)
+            self.assertIn("unrecognized arguments", completed.stderr)
+            self.assertFalse((root / "agent-outcome.json").exists())
 
     def test_finalizer_stays_standard_library_only(self):
         source = finalizer_bytes().decode("utf-8")

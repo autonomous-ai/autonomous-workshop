@@ -12,6 +12,15 @@ the installed `workshop` command.
 Spark is the default. Status and resume read that durable choice rather than
 accepting a new effort value.
 
+`workshop login <inventor-id>` stores that Inventor's shop account: it prompts
+in a terminal and reads the password from stdin when one is piped, so a
+password never reaches shell history or the process table. `workshop start
+<inventor-id>` refuses to begin without that account and prompts for it when
+it is interactive. Both write
+`$WORKSHOP_HOME/credentials/inventors/<id>.env` (owner-only). Release then publishes as that account, so the shop credits the
+Inventor that dreamed the toy. `WORKSHOP_SHOP_SIGNUP_URL` overrides the
+sign-up link the CLI prints.
+
 `workshop start <inventor-id>` is the front door and a loop: it asks one
 Inventor to dream one brand-new idea through `workshop.daydream`, prints the
 sealed concept card, seals it as a Wish, starts the same native session
@@ -22,6 +31,6 @@ sends SIGINT) and Ctrl-C ends it at once with the current run resumable.
 Three consecutive failures stop it; `--once` and `--max-ideas` bound it.
 `workshop daydream <inventor-id>` dreams and prints the card without building;
 `workshop start <inventor-id> --idea <daydream-id>` builds a saved,
-Judge-accepted idea. The
-CLI never judges or edits the idea; novelty and Taste fit are the Daydream
-component's job.
+sealed idea. The CLI never edits the idea or predicts its downstream success;
+novelty, Taste fit, pre-commit falsification, and exact outcome learning are
+the Daydream component's job.

@@ -1,0 +1,369 @@
+#!/usr/bin/env python3
+"""Unsupported down-facing surface, measured off the exported STL.
+
+Every other gate in this toolchain is blind to the build direction.
+`check_fit` puts the part on the bed, `check_mesh` says the shell is closed,
+`check_thickness` says the walls can be extruded -- and a part whose every
+feature hangs in mid-air passes all three, because none of them knows which way
+is up.
+
+This one asks the question a slicer asks: which faces point downward more
+steeply than the printer can hold, and is there anything under them.
+
+    steep       down-facing area whose slope from vertical is under --angle
+    bridge      a steep region short enough to span, with material on both
+                sides of it at its own level -- a hole's ceiling, a slot roof
+    overhang    a steep region that is neither: it FAILS, because the slicer
+                either droops it or asks for support material
+
+The distinction is the whole point. A round horizontal bore has a ceiling and
+is perfectly printable up to a span the nozzle can bridge; a shelf of the same
+area, anchored on one side only, is not. Area alone cannot tell them apart, so
+this reports the span and what is beside each region as well.
+
+    python "$CAD_SKILL_ROOT/scripts/check_overhang" part.stl --angle 45
+    python "$CAD_SKILL_ROOT/scripts/check_overhang" part.stl --report measure/overhang.md
+
+Exit 0 when nothing needs support, 1 when something does, 2 on bad usage.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from meshlib import load_stl, summarize, voxel_pitch, voxelize, weld  # noqa: E402
+
+MAX_SAMPLES = 300_000
+REPORT_REGIONS = 8
+# A region smaller than this is a chamfer runout or a tessellation artefact,
+# not a feature anybody supports.
+MIN_REGION_AREA = 1.0  # mm2
+
+
+def down_facing(verts, faces, limit_deg):
+    """Triangles whose normal points down more steeply than the limit.
+
+    The slope is measured from vertical, the way a slicer states it: a flat
+    ceiling is 0 deg and a 45 deg roof is 45 deg. `limit_deg` is the shallowest
+    slope the printer is expected to hold unaided.
+    """
+    tri = verts[faces]
+    normals = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    lengths = np.linalg.norm(normals, axis=1)
+    live = lengths > 0
+    unit = np.zeros_like(normals)
+    unit[live] = normals[live] / lengths[live, None]
+    area = lengths / 2.0
+    slope = np.degrees(np.arccos(np.clip(-unit[:, 2], -1.0, 1.0)))
+    return slope < limit_deg, slope, area
+
+
+def sample_faces(verts, faces, keep, area, pitch, cap=MAX_SAMPLES):
+    """Points spread over the kept triangles, by area."""
+    idx = np.flatnonzero(keep & (area > 0))
+    if idx.size == 0:
+        return np.zeros((0, 3)), np.zeros(0)
+    tri = verts[faces[idx]]
+    want = np.maximum(1, np.ceil(area[idx] / (pitch * pitch)).astype(int))
+    if want.sum() > cap:
+        want = np.maximum(1, (want * (cap / want.sum())).astype(int))
+    total = int(want.sum())
+    which = np.repeat(np.arange(idx.size), want)
+    u = np.random.default_rng(0).random((total, 2))
+    flip = u.sum(axis=1) > 1
+    u[flip] = 1 - u[flip]
+    a, b, c = tri[which, 0], tri[which, 1], tri[which, 2]
+    points = a + u[:, 0:1] * (b - a) + u[:, 1:2] * (c - a)
+    weights = np.repeat(area[idx] / want, want)
+    return points, weights
+
+
+def on_the_bed(points, bed_z, layer):
+    """Faces resting on the build plate. The plate is their support."""
+    return points[:, 2] <= bed_z + max(layer, 1e-6)
+
+
+def gap_below(inside, origin, pitch, points, limit):
+    """Distance from each sample straight down to the next material, or to the bed."""
+    shape = np.array(inside.shape)
+    gaps = np.full(len(points), np.inf)
+    steps = int(limit / pitch) + 2
+    cell = np.floor((points - origin) / pitch).astype(int)
+    live = np.arange(len(points))
+    depth = np.zeros(len(points))
+    for step in range(1, steps):
+        if live.size == 0:
+            break
+        probe = cell[live].copy()
+        probe[:, 2] -= step
+        below_bed = probe[:, 2] < 0
+        gaps[live[below_bed]] = step * pitch
+        keep = ~below_bed
+        live, probe = live[keep], probe[keep]
+        if live.size == 0:
+            break
+        within = np.all((probe >= 0) & (probe < shape), axis=1)
+        hit = np.zeros(len(live), dtype=bool)
+        w = np.flatnonzero(within)
+        if w.size:
+            p = probe[w]
+            hit[w] = inside[p[:, 0], p[:, 1], p[:, 2]]
+        gaps[live[hit]] = step * pitch
+        live = live[~hit]
+        depth[live] = step * pitch
+    gaps[np.isinf(gaps)] = limit
+    return gaps
+
+
+def cluster(points, weights, gaps, link):
+    """Group samples into connected regions, largest first."""
+    from scipy.ndimage import label
+
+    if len(points) == 0:
+        return []
+    cell = np.floor((points - points.min(axis=0)) / link).astype(int)
+    grid = np.zeros(cell.max(axis=0) + 1, dtype=bool)
+    grid[cell[:, 0], cell[:, 1], cell[:, 2]] = True
+    tags, found = label(grid, structure=np.ones((3, 3, 3), dtype=int))
+    tag = tags[cell[:, 0], cell[:, 1], cell[:, 2]]
+    out = []
+    for value in range(1, found + 1):
+        sel = tag == value
+        here = points[sel]
+        out.append({
+            "samples": int(sel.sum()),
+            "area": float(weights[sel].sum()),
+            # The span that matters is the one the slicer has to cross, which is
+            # the SHORTER plan dimension -- a 10 x 40 mm roof is bridged across
+            # the 10, not along the diagonal.
+            "span": float((here[:, :2].max(axis=0) - here[:, :2].min(axis=0)).min()),
+            "extent": tuple(float(v) for v in (here[:, :2].max(axis=0) - here[:, :2].min(axis=0))),
+            "at": tuple(float(v) for v in here.mean(axis=0)),
+            "gap": float(gaps[sel].max()),
+            "z": float(here[:, 2].mean()),
+        })
+    out.sort(key=lambda r: -r["area"])
+    return out
+
+
+def flanked(inside, origin, pitch, region, reach):
+    """Is there material beside this region, at its own level, on both sides?
+
+    A ceiling over a bore has walls either side of it and the slicer bridges
+    between them. A shelf has material on one side only, and bridging has
+    nothing to land on. Same area, same slope, different answer.
+    """
+    shape = np.array(inside.shape)
+    x, y, _ = region["at"]
+    z = region["z"] - pitch  # just under the face, inside whatever it roofs
+    base = np.floor((np.array([x, y, z]) - origin) / pitch).astype(int)
+    if not (0 <= base[2] < shape[2]):
+        return False
+    steps = int(reach / pitch) + 1
+    reached = []
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        found = False
+        for step in range(1, steps):
+            probe = base + np.array([dx * step, dy * step, 0])
+            if np.any(probe < 0) or np.any(probe >= shape):
+                break
+            if inside[probe[0], probe[1], probe[2]]:
+                found = True
+                break
+        reached.append(found)
+    return (reached[0] and reached[1]) or (reached[2] and reached[3])
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("stl", nargs="?", help="omit with --self-check")
+    ap.add_argument("--angle", type=float, default=45.0,
+                    help="deg from vertical; below this a down-face needs help (default 45)")
+    ap.add_argument("--bridge", type=float, default=12.0,
+                    help="mm; the longest span the printer is expected to bridge")
+    ap.add_argument("--layer", type=float, default=0.2, help="mm; layer height")
+    ap.add_argument("--voxel", type=float, default=None, help="mm; grid pitch")
+    ap.add_argument("--report", help="write a markdown record to this path")
+    ap.add_argument("--self-check", action="store_true",
+                    help="measure shapes whose answers are known, and stop")
+    args = ap.parse_args()
+
+    if args.self_check:
+        return _self_check()
+    if not args.stl:
+        ap.error("an STL is required unless --self-check is given")
+
+    verts, faces = weld(load_stl(args.stl))
+    state = summarize(verts, faces)
+    if state["boundary"]:
+        sys.exit(f"{args.stl}: {state['boundary']} open edges -- which way is inside is "
+                 "undefined on an open surface. Run check_mesh, then repair_mesh.")
+
+    pitch = voxel_pitch(verts, args.voxel or max(args.layer * 2, 0.4))
+    inside, origin = voxelize(verts, faces, pitch)
+    bed_z = float(verts[:, 2].min())
+    steep, slope, area = down_facing(verts, faces, args.angle)
+    total_area = float(area.sum())
+    steep_area = float(area[steep].sum())
+
+    points, weights = sample_faces(verts, faces, steep, area, pitch)
+    regions = []
+    if len(points):
+        gaps = gap_below(inside, origin, pitch, points, max(args.bridge, 20.0))
+        # The build plate supports what sits on it, and a face a layer or two
+        # above material below it is a step, not a drop.
+        loose = ~on_the_bed(points, bed_z, args.layer) & (gaps > max(2.0 * args.layer, pitch))
+        points, weights, gaps = points[loose], weights[loose], gaps[loose]
+        regions = cluster(points, weights, gaps, link=4 * pitch)
+
+    for region in regions:
+        if region["area"] < MIN_REGION_AREA:
+            region["kind"] = "trace"
+        elif region["span"] <= args.bridge and flanked(inside, origin, pitch, region, args.bridge):
+            region["kind"] = "bridge"
+        else:
+            region["kind"] = "overhang"
+
+    needs_support = [r for r in regions if r["kind"] == "overhang"]
+    bridges = [r for r in regions if r["kind"] == "bridge"]
+    traces = [r for r in regions if r["kind"] == "trace"]
+
+    head = (f"{args.stl}: {total_area / 100:.1f} cm2 of surface, grid {pitch:.3f} mm, "
+            f"{len(points)} unsupported samples over {len(regions)} region(s)")
+    print(head)
+    checks = [
+        ("FAIL" if needs_support else "PASS",
+         f"no face under {args.angle:.0f} deg needs support",
+         f"{100 * steep_area / total_area:.1f}% of the surface faces down that steeply; "
+         f"{len(needs_support)} region(s) need support, {len(bridges)} bridge, "
+         f"{len(traces)} below {MIN_REGION_AREA:.0f} mm2"
+         + (f"; worst {needs_support[0]['area']:.1f} mm2 spanning "
+            f"{needs_support[0]['span']:.1f} mm" if needs_support else "")),
+        ("PASS", f"bridges within {args.bridge:.0f} mm",
+         f"{len(bridges)} region(s), longest span "
+         f"{max((r['span'] for r in bridges), default=0.0):.1f} mm"),
+    ]
+    failed = False
+    for status, name, detail in checks:
+        print(f"  {status}  {name:38s} {detail}")
+        failed |= status == "FAIL"
+    shown = regions[:REPORT_REGIONS]
+    if shown:
+        print("        every unsupported region, largest first:")
+        for i, r in enumerate(shown, 1):
+            print(f"        {i}. [{r['kind']:8s}] {r['area']:7.1f} mm2 at "
+                  f"({r['at'][0]:.1f}, {r['at'][1]:.1f}, {r['at'][2]:.1f})  "
+                  f"span {r['span']:5.1f} mm of {r['extent'][0]:.0f}x{r['extent'][1]:.0f}, "
+                  f"{r['gap']:.1f} mm of air below")
+        if len(regions) > len(shown):
+            print(f"        ... and {len(regions) - len(shown)} smaller region(s)")
+    print("RESULT:", "NEEDS SUPPORT" if failed else "prints unsupported")
+
+    if args.report:
+        out = Path(args.report)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        rows = "\n".join(f"| {n} | {s} | {d} |" for s, n, d in checks)
+        region_rows = "" if not shown else (
+            "\n\n## Unsupported regions, largest first\n\n"
+            "A `bridge` is a steep region short enough to span with material on both sides of "
+            "it -- a bore ceiling or a slot roof. An `overhang` has neither, and needs support "
+            "or a design change.\n\n"
+            "| # | kind | area mm2 | at | span mm | air below mm |\n|---|---|---|---|---|---|\n"
+            + "\n".join(
+                f"| {i} | {r['kind']} | {r['area']:.1f} | "
+                f"({r['at'][0]:.1f}, {r['at'][1]:.1f}, {r['at'][2]:.1f}) | "
+                f"{r['span']:.1f} | {r['gap']:.1f} |" for i, r in enumerate(shown, 1)))
+        out.write_text(
+            f"# Overhang and support\n\n`{' '.join(sys.argv[1:])}`\n\n{head}\n\n"
+            f"| check | status | detail |\n|---|---|---|\n{rows}\n{region_rows}\n\n"
+            "Measured on the exported STL, in the pose it is printed in. The fix belongs in\n"
+            "the generator: reorient the part, replace a round horizontal bore with a\n"
+            "teardrop, or add a 45 deg buttress under the feature.\n",
+            encoding="utf-8")
+        print(f"  wrote {out}")
+    return 1 if failed else 0
+
+
+def _box(x0, y0, z0, x1, y1, z1):
+    q = [
+        [(x0,y0,z1),(x1,y0,z1),(x1,y1,z1)], [(x0,y0,z1),(x1,y1,z1),(x0,y1,z1)],
+        [(x0,y0,z0),(x1,y1,z0),(x1,y0,z0)], [(x0,y0,z0),(x0,y1,z0),(x1,y1,z0)],
+        [(x0,y0,z0),(x1,y0,z0),(x1,y0,z1)], [(x0,y0,z0),(x1,y0,z1),(x0,y0,z1)],
+        [(x0,y1,z0),(x0,y1,z1),(x1,y1,z1)], [(x0,y1,z0),(x1,y1,z1),(x1,y1,z0)],
+        [(x0,y0,z0),(x0,y0,z1),(x0,y1,z1)], [(x0,y0,z0),(x0,y1,z1),(x0,y1,z0)],
+        [(x1,y0,z0),(x1,y1,z0),(x1,y1,z1)], [(x1,y0,z0),(x1,y1,z1),(x1,y0,z1)],
+    ]
+    return [[list(v) for v in t] for t in q]
+
+
+def _measure(tris, angle=45.0, bridge=12.0, layer=0.2, voxel=0.4):
+    verts, faces = weld(np.array(tris, dtype=float))
+    pitch = voxel_pitch(verts, voxel)
+    inside, origin = voxelize(verts, faces, pitch)
+    bed_z = float(verts[:, 2].min())
+    steep, _, area = down_facing(verts, faces, angle)
+    points, weights = sample_faces(verts, faces, steep, area, pitch)
+    regions = []
+    if len(points):
+        gaps = gap_below(inside, origin, pitch, points, max(bridge, 20.0))
+        # The build plate supports what sits on it, and a face a layer or two
+        # above material below it is a step, not a drop.
+        loose = ~on_the_bed(points, bed_z, layer) & (gaps > max(2.0 * layer, pitch))
+        points, weights, gaps = points[loose], weights[loose], gaps[loose]
+        regions = cluster(points, weights, gaps, link=4 * pitch)
+    for region in regions:
+        if region["area"] < MIN_REGION_AREA:
+            region["kind"] = "trace"
+        elif region["span"] <= bridge and flanked(inside, origin, pitch, region, bridge):
+            region["kind"] = "bridge"
+        else:
+            region["kind"] = "overhang"
+    return regions
+
+
+def _self_check() -> int:
+    ok = True
+
+    def fixture(label, regions, want_kind, want_area=None):
+        nonlocal ok
+        kinds = [r["kind"] for r in regions if r["kind"] != "trace"]
+        hit = (kinds[:1] == [want_kind]) if want_kind else (kinds == [])
+        if hit and want_area is not None:
+            hit = abs(regions[0]["area"] - want_area) / want_area < 0.35
+        ok &= hit
+        detail = ", ".join(f"{r['kind']} {r['area']:.1f} mm2 span {r['span']:.1f}"
+                           for r in regions[:3]) or "nothing unsupported"
+        print(f"{'ok  ' if hit else 'FAIL'} {label}: {detail}")
+
+    # A plain block has no down-facing surface but its own footprint, which sits
+    # on the bed. Nothing to support.
+    fixture("a block on the bed needs no support", _measure(_box(0, 0, 0, 20, 20, 10)), None)
+
+    # A shelf: a slab held up at one end only. Its underside is a ceiling with
+    # material on ONE side, which is exactly what support material is for.
+    shelf = _box(0, 0, 0, 6, 20, 20) + _box(6, 0, 14, 30, 20, 20)
+    fixture("a cantilevered shelf needs support", _measure(shelf), "overhang", 24 * 20)
+
+    # The same span, bridged: hold the far end up too and the slicer can reach
+    # across. Same area, same slope, and now printable.
+    bridge = (_box(0, 0, 0, 6, 20, 20) + _box(6, 0, 14, 16, 20, 20)
+              + _box(16, 0, 0, 22, 20, 20))
+    fixture("the same roof, anchored both ends, bridges", _measure(bridge), "bridge")
+
+    # And a span too long to bridge fails even though it is anchored twice.
+    long_span = (_box(0, 0, 0, 6, 20, 20) + _box(6, 0, 14, 46, 20, 20)
+                 + _box(46, 0, 0, 52, 20, 20))
+    fixture("too long a span still needs support", _measure(long_span, bridge=12.0), "overhang")
+
+    print("check_overhang self-check:", "ok" if ok else "FAILED")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

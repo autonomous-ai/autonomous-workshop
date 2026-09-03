@@ -26,9 +26,7 @@ try:
     # import name.  Package imports use the fallback in contributor tests.
     from daydream_schema import (  # type: ignore[import-not-found]
         DAYDREAM_IDEA_KIND,
-        DAYDREAM_VERDICT_KIND,
         idea_problems,
-        verdict_problems,
     )
 except ImportError:  # pragma: no cover - package import uses schema.py in this directory
     schema_path = Path(__file__).with_name("schema.py")
@@ -38,24 +36,18 @@ except ImportError:  # pragma: no cover - package import uses schema.py in this 
     schema_module = importlib.util.module_from_spec(schema_spec)
     schema_spec.loader.exec_module(schema_module)
     DAYDREAM_IDEA_KIND = schema_module.DAYDREAM_IDEA_KIND
-    DAYDREAM_VERDICT_KIND = schema_module.DAYDREAM_VERDICT_KIND
     idea_problems = schema_module.idea_problems
-    verdict_problems = schema_module.verdict_problems
 
 DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
 IDEA_RELATIVE_PATH = "work/IDEA.json"
-VERDICT_RELATIVE_PATH = "work/VERDICT.json"
 OUTCOME_FILE_NAME = "agent-outcome.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 
 
-def finalize(run_root: Path, out=sys.stdout, err=sys.stderr, *, role: str = "inventor") -> int:
-    """Validate the role's file and write the outcome marker; return an exit code."""
+def finalize(run_root: Path, out=sys.stdout, err=sys.stderr) -> int:
+    """Validate ``work/IDEA.json`` and write the outcome marker."""
 
-    if role == "judge":
-        relative, checker, label = VERDICT_RELATIVE_PATH, verdict_problems, "verdict"
-    else:
-        relative, checker, label = IDEA_RELATIVE_PATH, idea_problems, "idea"
+    relative, checker, label = IDEA_RELATIVE_PATH, idea_problems, "idea"
     file_path = run_root / relative
     try:
         payload = file_path.read_bytes()
@@ -84,11 +76,10 @@ def finalize(run_root: Path, out=sys.stdout, err=sys.stderr, *, role: str = "inv
         "schema_version": 1,
         "kind": DAYDREAM_OUTCOME_KIND,
         "status": "ready",
-        "role": role,
         "idea_path": relative,
         "idea_bytes": len(payload),
         "idea_sha256": hashlib.sha256(payload).hexdigest(),
-        "title": raw["title"] if role != "judge" else raw["decision"],
+        "title": raw["title"],
         "written_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     outcome_path = run_root / OUTCOME_FILE_NAME
@@ -123,14 +114,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=".",
         help="the daydream workspace (default: the current directory)",
     )
-    parser.add_argument(
-        "--role",
-        choices=("inventor", "judge"),
-        default="inventor",
-        help="inventor validates work/IDEA.json (default); judge validates work/VERDICT.json",
-    )
     args = parser.parse_args(argv)
-    return finalize(Path(args.run_root).resolve(), role=args.role)
+    return finalize(Path(args.run_root).resolve())
 
 
 if __name__ == "__main__":
