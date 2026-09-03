@@ -72,7 +72,7 @@ stop.
 - A physical toy or game printable on a desktop FDM printer: 0.4 mm nozzle,
   0.8 mm minimum wall, support-free strongly preferred, and every part fits a
   common 200 mm bed.
-- At most 12 printed parts. Fewer is better, and your Taste may cap it lower.
+- At most 12 printed parts by contract. For now, at most 3, and one is best.
 - No electronics, batteries, or motors. No glue, magnets, springs, or
   purchased hardware unless your Taste explicitly allows them.
 - One clear action and one clear payoff. A first-time player must know what to
@@ -88,6 +88,26 @@ stop.
 - It must be buildable by the Workshop's next stages from your words alone.
   Prefer geometry the next stage can draw over mood it must guess at.
 
+## Keep it simple (for now)
+
+The Workshop is proving its pipeline, so simple beats clever. Right now the
+best idea is the one a stranger understands from a single photo and Make can
+print on the first try:
+
+- One or two printed parts. One is best. No assemblies of three or more.
+- One action, one payoff, both visible in a single before/after render pair.
+  No sequences, no counting, no multi-state cycles, no timing.
+- Motion, if any, comes from a rocker, a tip, a roll, a slide, or a shadow.
+  No axles tighter than 0.5 mm clearance, no snap fits, no thin flexures, no
+  captured parts that must be printed in place.
+- Palm-sized, chunky, rounded, and support-free on one flat face. Walls of
+  2 mm or more. Nothing thinner than 1.2 mm anywhere.
+- The form is recognizable and friendly at arm's length. A simple animal,
+  moon, boat, house, or creature is exactly right. No fine ribs, lattices,
+  text, or detail that must survive a 0.4 mm nozzle to work.
+- If you are choosing between a delightful simple idea and a clever complex
+  one, choose the simple one every time.
+
 ## The seed
 
 The prompt gives you a situation and a twist. They are a push, not a rule:
@@ -97,8 +117,8 @@ somewhere stale. Do not mention the seed inside the idea.
 ## How to work
 
 1. Read the three files.
-2. Dream several candidates quickly. Keep the one with the clearest action,
-   the strongest payoff, and the tightest Taste fit.
+2. Dream several candidates quickly. Keep the simplest one with a clear
+   action, a real payoff, and a tight Taste fit.
 3. Search the web for its nearest relatives. If one is too close, change the
    mechanism or pick another candidate, then search again.
 4. Write the file below.
@@ -154,12 +174,12 @@ DAYDREAM_CONSTITUTION_SHA256 = hashlib.sha256(
 ROUTE_BUDGETS = {
     "spark": (
         "Route budget: SPARK. There is no Invent stage; Make must build and "
-        "prove this idea alone in one short session. Keep it to one to three "
-        "printed parts, one action, and one payoff that a single before/after "
-        "render pair proves at a glance, inside one held form a stranger can "
-        "name. If the payoff needs several distinct states, hidden internals, or "
-        "fine timing to be believed, it is too big for Spark: dream something "
-        "smaller and sharper."
+        "prove this idea alone in one short session. Keep it to one or two "
+        "printed parts (one is best), one action, and one payoff that a single "
+        "before/after render pair proves at a glance, inside one chunky held "
+        "form a stranger can name. If the payoff needs several distinct states, "
+        "hidden internals, fine tolerances, or timing to be believed, it is too "
+        "big for Spark: dream something smaller and sharper."
     ),
     "forge": (
         "Route budget: FORGE. Invent will research and specify the concept "
