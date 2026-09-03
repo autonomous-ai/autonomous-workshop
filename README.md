@@ -232,159 +232,50 @@ blind critic remains at the final hash-bound Make review.
 
 ## Architecture
 
-The floorplan of the shop. An Inventor's idea walks a frozen effort, then Operations takes the sealed Release and the shop sells it.
+The floorplan of the shop. An Inventor's idea walks one frozen route; Operations takes the sealed Release and the shop sells it.
 
 [![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=daydream-v1)](docs/images/workshop-floorplan.svg)
 
 ```text
-Daydream (one idea per call today; always on next) -> one liked idea -> a frozen effort route:
+Daydream -> one liked idea -> a frozen effort route:
 
-✨ Spark: Make -> Release                          (default)
-🔥 Forge: Invent <-> Make -> Release
+✨ Spark: Make -> Release                          (--effort spark: fastest)
+🔥 Forge: Invent <-> Make -> Release              (default for workshop daydream --run)
 🗺️ Quest: Invent <-> Make <-> Playtest -> Release
 
 Release -> Shop (order one, printed to order, photographed, ships in days)
 Shop -> Scoreboard (views, orders, prints, returns) -> back to Daydream
 ```
 
-`workshop daydream <inventor> --run` seals the liked idea as the run's brief; the run is keyed by a Wish id.
+Route diagrams: [Spark](docs/images/effort-spark.svg) · [Forge](docs/images/effort-forge.svg) · [Quest](docs/images/effort-quest.svg).
 
-Passed-through stages create no turn, artifact, gate, or fabricated evidence. Spark and Forge record Playtest as `not-run`. Quest requires passing Playtest bound to the current Made revision.
+Every run is keyed by a Wish id. Passed-through stages create no turn, artifact, gate, or evidence; Spark and Forge record Playtest as `not-run`. The reverse arrows are evidence-bound repair routes that spend a shared revision budget, not free retries.
 
-New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
-ceiling for their one persistent Make-to-Release session, and a 20-minute
-boundary per native turn. A timeout resumes the exact session and Goal through
-the existing bounded recovery path; it is not a 20-minute stage deadline.
-New Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
-use a 10-minute medium source handoff only when needed: finalize an existing
-source first, or write then finalize before any refinement. A compact index
-covers every exact Taste header before Codex reads only the best three full
-Inventors. Make starts with one 16-minute medium real-state proof runway at 256k
-context; after exact proof bytes are durable, a checkpoint-bound marker returns
-control to the host and the same Make Goal resumes at high reasoning with a
-15-minute source handoff before normal 30-minute recovery. Playtest and Release
-use medium, every stage compacts at 256k,
-and one CLI invocation stops after eight native turns. The host binds a private
-writable cache; the proof turn defers the broad CAD skill, batches its required
-reads, makes source the next durable action, and batches generate/export/render
-in one foreground call. It uses three distinct exact-state STLs and root
-inspection for the early direction check
-and reserves independent blind critique for final Make. Their novelty must come
-from one strong relationship or interaction
-that Make persists and has one independent critic inspect blindly as its first
-proof—not gratuitous parts or mechanisms. The proof marker is only a liveness
-boundary; it is not a gate or stage transition. If proof recovery is needed,
-v13 retains v12's evidence-first seal before any new design work and the host
-rejects stale generated or render bytes. An explicit operator resume after a
-valid final-Make proof starts directly in normal recovery instead of replaying
-the 15-minute source phase. A current thickness failure may load its complete
-region table and the one print-optimisation reference before one all-regions
-repair; unrelated reference browsing remains out of scope. Frozen deep-v12
-retains its original operator-resume behavior, and deep-v11 retains its proof
-recovery. Frozen deep-v10 runs retain
-their original less prescriptive Invent recovery. Frozen deep-v9 runs retain
-their 256k compaction, viewpoint-only proof, and normal 30-minute final Make;
-frozen deep-v8 runs retain their 24k compaction. Older runs keep the exact profile
-they started with. These are
-economics policies, not quality waivers: every effort still passes its full
-deterministic product and publication gates.
+**Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
 
-The reverse arrows are evidence-bound repair routes, not free-form retries.
-Make can return a Forge or Quest run to Invent only when exact saved evidence
-shows that the sealed concept cannot be built as specified. Quest Playtest
-returns directly to Make for a build defect or directly to Invent for a concept
-defect. Each return starts a new stage Goal, invalidates stale downstream
-artifacts, and consumes the run's shared revision budget.
-If a Make or Playtest proposal cannot be safely reopened, Workshop quarantines
-its exact bytes and returns bounded, hash-bound repair feedback to that same
-stage instead of losing the run or weakening the gate.
-The Make finalizer removes safe derived `__cadgen__` cache files and prunes
-empty directories when its sandbox permits. Byte-free directories that the
-sandbox protects from unlink are ignored by both finalizer and host inventory;
-every file, symlink, special node, stable CAD export, source, measurement, and
-render remains exact and fail-closed. Before resuming a frozen Make protocol
-that still requires directory deletion, the trusted host also prunes only
-empty product directories while holding the run lock; it never removes files
-or follows links.
-For new runs it also requires two inspected chromatic exact-product renders:
-`<cad-project>/snap/iso.png` is the hero, while
-`<cad-project>/snap/signature.png` shows the signature interaction, reveal, or
-anti-generic detail without relying on marketing copy. When geometry changes,
-it uses fixed-camera exact-state STLs; motion-sheet poses of one mesh are only
-viewpoint evidence. Before spending that review, Make runs one fixed print preflight that
-generates every printable part and requires strict bed fit, mesh validity, and
-wall thickness at the final 0.4 mm nozzle profile. Its passing report is bound
-into a schema-v6 `SIGNATURE-REVIEW.json`, which records one bounded
-independent critic's unprompted held object, volumetric form, subjects, action,
-and spatial or causal relationship before the Wish is revealed. That same
-critic then compares each dimension and the concept's anti-generic signature
-with the exact Wish and canonical concept. It must enumerate every explicit
-positive and negative held-form constraint, cite blind visual evidence for each,
-and report no blocking visual defect. A prototype/device read, dominant exposed
-mechanism, zoom-dependent signature, raw faceting, unclear state change, or any
-visible caveat is blocking. Make permits at most two review rounds and then
-performs one integrated final verifier. The finalizer accepts only the current
-passing full-tier report with a successful thickness row, so omitting a failed
-check cannot spend a host isolated rebuild.
-The final verification report must live inside the declared self-contained CAD
-project, catching a misplaced build entry before the host pays for an isolated
-rebuild.
-The public toy README may use only this explicit presentation-render
-family as its local hero; arbitrary diagnostic images and black/white likeness
-masks are never promoted.
-If a native turn simply returns before writing a proposal, Workshop continues
-the same checkpointed Goal automatically, explicitly reminding the session
-that its finalizer has not run. Three consecutive normally returned turns
-without a proposal stop that command early with the exact session still
-resumable; this prevents one stuck Goal from silently consuming the shared
-32-turn command budget. An explicit `workshop resume` starts a fresh bounded
-continuation window without creating a second root session.
-A native timeout or recognized provider disconnect follows a separate, smaller
-window: two consecutive recoverable turn failures stop the command with the
-same session checkpointed. An explicit `workshop resume` starts a fresh
-two-failure window. This prevents repeated profile-bound native timeouts from
-silently rolling through the full 32-turn command budget.
-The one automatic recovery turn also receives a fixed critical-path reminder:
-reuse existing bytes, avoid restarting exploration, do not make finalization
-depend on a child agent, and prioritize remaining deterministic checks plus the
-stage finalizer.
-When a concrete operator or environment condition truly blocks a stage, the
-same run-local finalizer can write one checkpoint-bound `waiting` or `failed`
-need with no artifact or transition. The host stops immediately and preserves
-that reason in its private checkpoint; both the immediate command receipt and
-later `workshop status` calls print it as `Need:`. Chat prose is never treated
-as a durable need, and agents are explicitly forbidden from using this path
-for ordinary unfinished or repairable work.
+**What Make must prove.** Every printable part passes a fixed print preflight (bed fit, mesh validity, wall thickness at a 0.4 mm nozzle). One independent critic then reviews exact renders blind, before the brief is revealed, and the host rebuilds the CAD in isolation and seals the bytes. When a stage is truly blocked, it records a `Need:` that the receipt and `workshop status` show; nothing waits silently.
 
-[![Spark: Daydream, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
-
-[![Forge: Daydream, Invent, Make, Release, then Operations](docs/images/effort-forge.svg)](docs/images/effort-forge.svg)
-
-[![Quest: Daydream, Invent, Make, Playtest, Release, then Operations](docs/images/effort-quest.svg)](docs/images/effort-quest.svg)
-
-Workshop code ends at Release. Printing, delivery, and Review belong to Operations. Release is three facts about the same exact bytes:
+**What Release means.** Three facts about the same exact bytes:
 
 - full-tier, thickness-checked, ready-to-print CAD
 - a self-contained printable `MANUAL.pdf` for the box
 - authenticated public Factory readback of those CAD and manual hashes
 
-The selected [Workshop Manager](#workshop-managers) does the product work. The Python host is narrow: identity, exact bytes, lifecycle order, budgets, session start/resume, deterministic gates, credential isolation, and authorized effects. It does not contain a second agent framework, prompt chain, or reward loop. One native Goal is active at a time.
-
-Factory credentials live in `$WORKSHOP_HOME/credentials/factory.env` (0600 inside a 0700 directory) and never enter the native agent subprocess. Publication does not claim a physical print, pack, or delivery.
+Workshop code ends there. Printing, delivery, and Review belong to Operations. Publication does not claim a physical print, pack, or delivery.
 
 ```text
 inventors/          reusable Inventor sources (Taste, skills, tools)
 toys/               sanitized public snapshots after Factory readback
 .agents/product-run complete template copied into every new toy project
 src/cli/            command parsing, presentation, exit codes
-src/workshop/       trusted host: stages, workflow, runtime, gates, effects
+src/workshop/       trusted host: daydream, stages, workflow, runtime, gates, effects
 tests/              component-mirrored deterministic suite
 docs/               architecture, ADRs, and contributor guides
 ```
 
-The private project and host state stay outside the agent-visible checkout: `$WORKSHOP_HOME/runs/<wish-id>/workspace` and `$WORKSHOP_HOME/state/<wish-id>/`.
+Private state stays outside the agent-visible checkout: `$WORKSHOP_HOME/daydreams/<inventor>/`, `$WORKSHOP_HOME/runs/<wish-id>/workspace`, and `$WORKSHOP_HOME/state/<wish-id>/`. Factory credentials live in `$WORKSHOP_HOME/credentials/factory.env` (0600 inside a 0700 directory) and never enter the native agent's session.
 
-See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md), [Workshop architecture](docs/ARCHITECTURE.md), [publication boundary](docs/PUBLISH_SEALED_PRODUCT.md), and [Playtest evidence](docs/PLAYTEST_EVIDENCE.md).
+Turn budgets, compaction ceilings, recovery windows, and the blind-review protocol are specified in [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md). See also [Workshop architecture](docs/ARCHITECTURE.md), the [publication boundary](docs/PUBLISH_SEALED_PRODUCT.md), and [Playtest evidence](docs/PLAYTEST_EVIDENCE.md).
 
 ## Contributing
 
