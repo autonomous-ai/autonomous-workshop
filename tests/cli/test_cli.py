@@ -723,6 +723,27 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(record["last_wish_id"], calls[-1])
         self.assertFalse((self._loop_folder() / "STOP").exists())
 
+    def test_stop_requested_during_a_daydream_lands_before_the_build(self):
+        sealed = sample_sealed()
+
+        def dream(inventor_id, **kwargs):
+            (self._loop_folder() / "STOP").write_text("stop\n")
+            return sealed
+
+        stdout = StringIO()
+        with mock.patch("cli.main.run_daydream", side_effect=dream), mock.patch(
+            "cli.main.start_native_run"
+        ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("start", "sample"))
+        self.assertEqual(result, 0)
+        start.assert_not_called()
+        output = stdout.getvalue()
+        self.assertIn("Build it: workshop start sample --idea %s" % sealed.daydream_id, output)
+        self.assertIn("Loop stopped (stopped by workshop stop). Ideas: 1. Builds: 0.", output)
+        record = json.loads((self._loop_folder() / "LOOP.json").read_text())
+        self.assertEqual(record["last_daydream_id"], sealed.daydream_id)
+        self.assertFalse((self._loop_folder() / "STOP").exists())
+
     def test_loop_stops_after_consecutive_failures_with_exit_one(self):
         sealed = sample_sealed()
         with mock.patch("cli.main.run_daydream", return_value=sealed) as run, mock.patch(

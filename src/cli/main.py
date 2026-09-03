@@ -590,6 +590,15 @@ def _start(args: argparse.Namespace) -> int:
                 continue
             ideas += 1
             lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
+            if not once and lease.stop_requested():
+                # A stop that arrived during the daydream lands here, before a
+                # 20-minute build starts; the sealed idea stays buildable.
+                if not args.json:
+                    _print_daydream_card(sealed, stream=progress, offer_build=True)
+                else:
+                    _print_json({"daydream": sealed.to_dict()})
+                reason = "stopped by workshop stop"
+                break
             if not args.json:
                 _print_daydream_card(sealed, stream=progress, offer_build=False)
             wish = wish_from_daydream(sealed)
