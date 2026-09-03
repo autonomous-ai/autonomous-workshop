@@ -13,7 +13,18 @@
 
 # Autonomous Workshop
 
-You wish for a toy that doesn't exist. AI inventors in the Autonomous Workshop make it. A magical box turns up at your door in a few days. Use the [Workshop CLI](#quickstart) or [make a Wish on the web](https://www.autonomous.ai/wish).
+Autonomous AI Inventors daydream, invent, and make new toys and games around the clock. Each Inventor reads, researches, learns and watches, keeps a notebook, and leaves with one idea it likes. That idea runs through Invent, Make and Release under a trusted host that seals every step, and lands on the [shop](https://www.autonomous.ai/factory/shop), where you order one and it ships in days. Nothing is made before it is wanted.
+
+[![The Autonomous Workshop loop: Daydream, Invent, Make, Release, Shop, Scoreboard](docs/images/inventor-loop.svg)](docs/images/inventor-loop.svg)
+
+## Direction
+
+The Workshop is becoming the engine of an AI-native play company. The full plan, the state of the code, and the specifications are kept privately for now; the pieces below land in this repo as they ship.
+
+- **Daydream** is the new first stage: an always-running Goal per Inventor with a persistent notebook that emits a concept card when the Inventor likes an idea. It is in development; today a run still starts from a typed brief with `workshop wish`.
+- **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`workshop wish`, `WISH.json`); that name is a contract, not a promise.
+- **Release explains the model**, and the first order prints and photographs the real piece so listings carry real images.
+- **An outcome scoreboard** keyed to each design feeds the Inventors, so next month's toys beat this month's.
 
 ## Quickstart
 
@@ -25,7 +36,7 @@ codex login
 uv run workshop doctor
 ```
 
-A default Wish uses Codex as the Workshop Manager and ✨ Spark as the effort (`Wish -> Make -> Release`):
+A run starts from a brief. The CLI still calls it a Wish. The default uses Codex as the Workshop Manager and ✨ Spark as the effort (`Make -> Release`):
 
 ```bash
 uv run workshop wish \
@@ -40,7 +51,7 @@ uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-`--manager` chooses the Workshop Manager. This ✨ Spark Wish on Grok produced [Horn Tip](toys/pico-press-horn-tip/):
+`--manager` chooses the Workshop Manager. This ✨ Spark run on Grok produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
@@ -48,7 +59,7 @@ uv run workshop wish --manager grok --effort spark \
   "I wish for a tiny one-piece crescent desk rocker that tips with a fingertip"
 ```
 
-The command prints a Wish ID. Check on it or continue the same session:
+The command prints a run ID (a Wish ID). Check on it or continue the same session:
 
 ```bash
 uv run workshop status <wish-id>
@@ -63,7 +74,7 @@ unknown failed turns still stop safely for an explicit operator resume.
 
 ## Workshop Managers
 
-One Wish is one native coding-agent session — the shop lead. Resume cannot switch Managers.
+One run is one native coding-agent session — the shop lead. Resume cannot switch Managers.
 
 ```bash
 uv run workshop wish --manager codex --effort spark "I wish for …"   # default
@@ -79,7 +90,7 @@ uv run workshop wish --manager grok --effort spark "I wish for …"    # experim
 
 ## Inventors
 
-Each Inventor is a specialist point of view, not a category of Wish. Several can make the same kind of toy in their own way. Many more are coming, and you can add your own.
+Each Inventor is a specialist point of view with its own lane, not a category of toy. Several can make the same kind of toy in their own way. The roster is growing toward game-night titles, kinetic machines, and owned worlds and characters; six new Inventors are drafted and land here as they pass their first runs, and you can add your own.
 
 An Inventor is a declared specialist bundle: `TASTE.md` for creative judgment, `inventor.json` for identity and skill hashes, and a required `<id>-inventor` skill. Optional extra Inventor-prefixed skills may hold scripts, references, or tested deterministic tools. For a run, `.codex/agents/*.toml` is the sole roster. Inventor code cannot launch agents, choose stages, pass gates, or perform authenticated effects.
 
@@ -188,11 +199,11 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Cradle Crescent | [Bob](inventors/bob/) | — | [`toys/bob-cradle-crescent/`](toys/bob-cradle-crescent/) | [cradle-crescent](https://www.autonomous.ai/factory/product/cradle-crescent) |
 | False Lantern | [Leo](inventors/leo/) | — | [`toys/leo-false-lantern/`](toys/leo-false-lantern/) | [false-lantern](https://www.autonomous.ai/factory/product/false-lantern) |
 
-Horn Tip is a Spark run on Grok. A later Wish with the same prompt is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
+Horn Tip is a Spark run on Grok. A later run with the same brief is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
 
 Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. New
 toy READMEs report best-effort gross, cached, and uncached Manager input plus
-output and reasoning-output tokens by stage, alongside elapsed time from Wish
+output and reasoning-output tokens by stage, alongside elapsed time from run
 intake through authenticated Factory public readback. This is telemetry, never
 a gate, and no dollar estimate is inferred. See
 [`toys/README.md`](toys/) for what a snapshot includes and
@@ -218,17 +229,22 @@ blind critic remains at the final hash-bound Make review.
 
 ## Architecture
 
-The floorplan of the shop. One Wish walks a frozen effort, then Operations takes the sealed Release.
+The floorplan of the shop. An Inventor's idea walks a frozen effort, then Operations takes the sealed Release and the shop sells it.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=deep-economics-v13)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=daydream-v1)](docs/images/workshop-floorplan.svg)
 
 ```text
-✨ Spark: Wish -> Make -> Release                 (default)
-🔥 Forge: Wish -> Invent <-> Make -> Release
-🗺️ Quest: Wish -> Invent <-> Make <-> Playtest -> Release
+Daydream (always on, every Inventor) -> one liked idea -> a frozen effort route:
 
-Release -- handoff to Operations --> Printing -> Deliver -> Review
+✨ Spark: Make -> Release                          (default)
+🔥 Forge: Invent <-> Make -> Release
+🗺️ Quest: Invent <-> Make <-> Playtest -> Release
+
+Release -> Shop (order one, printed to order, photographed, ships in days)
+Shop -> Scoreboard (views, orders, prints, returns) -> back to Daydream
 ```
+
+Daydream is in development; until it lands, `workshop wish` seals a typed brief as the run's starting point.
 
 Passed-through stages create no turn, artifact, gate, or fabricated evidence. Spark and Forge record Playtest as `not-run`. Quest requires passing Playtest bound to the current Made revision.
 
@@ -337,11 +353,11 @@ later `workshop status` calls print it as `Need:`. Chat prose is never treated
 as a durable need, and agents are explicitly forbidden from using this path
 for ordinary unfinished or repairable work.
 
-[![Spark: Wish, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
+[![Spark: Daydream, Make, Release, then Operations](docs/images/effort-spark.svg)](docs/images/effort-spark.svg)
 
-[![Forge: Wish, Invent, Make, Release, then Operations](docs/images/effort-forge.svg)](docs/images/effort-forge.svg)
+[![Forge: Daydream, Invent, Make, Release, then Operations](docs/images/effort-forge.svg)](docs/images/effort-forge.svg)
 
-[![Quest: Wish, Invent, Make, Playtest, Release, then Operations](docs/images/effort-quest.svg)](docs/images/effort-quest.svg)
+[![Quest: Daydream, Invent, Make, Playtest, Release, then Operations](docs/images/effort-quest.svg)](docs/images/effort-quest.svg)
 
 Workshop code ends at Release. Printing, delivery, and Review belong to Operations. Release is three facts about the same exact bytes:
 

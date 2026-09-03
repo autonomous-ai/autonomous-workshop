@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-labelledby="title description">
-  <title id="title">Spark effort route: Wish to Make to Release</title>
+  <title id="title">Spark effort route: Daydream to Make to Release</title>
   <desc id="description">Spark is the default and shortest Autonomous Workshop route. New Codex Spark runs freeze low reasoning effort, a 64k automatic context-compaction ceiling, and a 20-minute boundary per native turn across one persistent session. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Make. A fixed preflight generates every printable and requires strict fit, mesh validity, and 0.4 mm-nozzle thickness before one independent critic blindly reads the exact form, subjects, action, and relationship. The critic binds that passing report, then checks every explicit held-form constraint and the anti-generic signature with no blocking visual defect. Make permits at most two review rounds, then requires one passing full-tier CAD report. Invent and Playtest are passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%">
@@ -30,7 +30,7 @@
 
   <rect width="1200" height="820" rx="28" fill="#f5f2ec"/>
   <text x="55" y="64" class="eyebrow orange">SPARK · DEFAULT · SHORTEST ROUTE</text>
-  <text x="55" y="108" class="title">From a Wish to a published toy—fast.</text>
+  <text x="55" y="108" class="title">From an Inventor's idea to a published toy—fast.</text>
   <text x="55" y="139" class="subtitle">One native session. Two active creative stages. Passed-through stages leave no pretend work behind.</text>
 
   <g filter="url(#shadow)">
@@ -44,9 +44,9 @@
   <path class="route" d="M 885 355 H 955"/>
 
   <g filter="url(#shadow)"><rect x="55" y="295" width="170" height="120" rx="20" class="node"/></g>
-  <text x="80" y="325" class="eyebrow">YOU IMAGINE IT</text>
-  <text x="80" y="359" class="heading">WISH</text>
-  <text x="80" y="386" class="body">Exact words persisted.</text>
+  <text x="80" y="325" class="eyebrow">ALWAYS ON</text>
+  <text x="80" y="359" class="heading">DAYDREAM</text>
+  <text x="80" y="386" class="body">One liked idea, sealed.</text>
 
   <g filter="url(#shadow)"><rect x="295" y="285" width="260" height="150" rx="20" class="active"/></g>
   <text x="322" y="315" class="eyebrow orange">CODEX GOAL · SELECT + BUILD</text>

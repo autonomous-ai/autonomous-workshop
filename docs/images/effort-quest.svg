@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title description">
-  <title id="title">Quest effort route: Wish to Invent to Make to Playtest to Release</title>
+  <title id="title">Quest effort route: Daydream to Invent to Make to Playtest to Release</title>
   <desc id="description">Quest is the fullest Autonomous Workshop route. New Codex Quest runs bind one deep profile across the persistent thread. Invent begins with a 20-minute high-reasoning turn, ranks a compact complete-roster Taste index before opening the best three full agents, and uses a 10-minute medium source handoff when needed: finalize existing source first, or write then finalize before refinement. Make begins with one 16-minute medium proof runway: one bounded mandatory read, immediate source authoring, three exact state models, and one fixed-camera state sheet using a private run cache while the broad CAD skill is deferred. Indistinguishable state frames fail. Proof recovery seals current fresh evidence before new design work. Root inspection checks this early direction; final Make retains independent blind critique. After exact proof bytes exist, a checkpoint-bound marker resumes the same Make Goal at high reasoning for a 15-minute source handoff before normal 30-minute recovery. Playtest and Release use medium reasoning, every stage compacts at 256k, and one command is capped at eight turns. The proof marker is a turn boundary, not a gate or stage transition. A fixed preflight generates every printable and requires strict fit, mesh validity, and 0.4 mm-nozzle thickness before final blind review. A proven concept block returns Make to Invent. Failed Playtest returns directly to Make for a build defect or Invent for a concept defect. All repair routes share one revision budget. Release requires passing Playtest evidence bound to the current Made revision, verifies the CAD and manual, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/></filter>
@@ -34,16 +34,16 @@
   <text x="83" y="212" class="eyebrow" fill="#376b61">WORKSHOP MANAGER</text>
   <text x="83" y="237" class="body">Codex Quest: Invent 20→10m · Make proof 16→source 15→recovery 30m · resume→recovery · 256k.</text>
 
-  <path class="route" d="M 175 355 H 210"/>
+  <path class="route" d="M 205 355 H 210"/>
   <path class="route" d="M 390 355 H 425"/>
   <path class="route" d="M 605 355 H 640"/>
   <path class="route" d="M 820 355 H 855"/>
   <path class="route" d="M 1035 355 H 1070"/>
 
-  <g filter="url(#shadow)"><rect x="55" y="300" width="120" height="110" rx="20" class="node"/></g>
-  <text x="76" y="330" class="eyebrow">IMAGINE</text>
-  <text x="76" y="363" class="heading">WISH</text>
-  <text x="76" y="389" class="body">Exact words.</text>
+  <g filter="url(#shadow)"><rect x="55" y="300" width="150" height="110" rx="20" class="node"/></g>
+  <text x="76" y="330" class="eyebrow">ALWAYS ON</text>
+  <text x="76" y="363" class="heading" style="font-size:22px">DAYDREAM</text>
+  <text x="76" y="389" class="body">One liked idea.</text>
 
   <g filter="url(#shadow)"><rect x="210" y="285" width="180" height="150" rx="20" class="active"/></g>
   <text x="233" y="315" class="eyebrow orange">CODEX GOAL · INVENT</text>

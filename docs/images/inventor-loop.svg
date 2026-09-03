@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title description">
+  <title id="title">The Autonomous Workshop loop: Daydream, Invent, Make, Release, Shop, Scoreboard</title>
+  <desc id="description">Autonomous AI Inventors daydream around the clock: they read, research, learn and watch, keep a notebook, and leave with one idea they like as a concept card. A liked idea starts a run through Invent, Make and Release under a frozen effort route. Release lists the product on the shop, where a buyer orders one and it ships in days. The scoreboard records every view, order, print and return and feeds the Inventors, so next month's toys beat this month's.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#151515"/></marker>
+    <marker id="arrowsoft" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1f5fd6"/></marker>
+    <style>
+      .box { fill: #ffffff; stroke: #c9c9c9; stroke-width: 1.5; }
+      .box.strong { stroke: #151515; stroke-width: 2; }
+      .h { font: 700 16px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #151515; }
+      .t { font: 400 12px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #555; }
+      .k { font: 500 10.5px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #1f5fd6; letter-spacing: 0.08em; }
+      .line { stroke: #151515; stroke-width: 1.6; fill: none; }
+      .loop { stroke: #1f5fd6; stroke-width: 1.6; fill: none; stroke-dasharray: 6 5; }
+      .note { font: 400 12px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #555; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="1200" height="420" fill="#ffffff"/>
+
+  <text class="h" x="30" y="50">Autonomous AI Inventors invent new toys and games around the clock.</text>
+  <text class="note" x="30" y="74">Spark: Make → Release · Forge: Invent → Make → Release · Quest: Invent → Make → Playtest → Release. Daydream feeds every route; the host seals every step.</text>
+  <text class="note" x="30" y="92">Nothing is made before it is wanted. Next month's toys beat this month's because the scoreboard feeds the Inventors.</text>
+
+  <!-- Daydream -->
+  <rect class="box strong" x="30" y="120" width="250" height="150" rx="8"/>
+  <text class="k" x="46" y="146">ALWAYS ON · EVERY INVENTOR</text>
+  <text class="h" x="46" y="170">DAYDREAM</text>
+  <text class="t" x="46" y="192">Read the shop and scoreboard.</text>
+  <text class="t" x="46" y="209">Research, learn, watch.</text>
+  <text class="t" x="46" y="226">Keep a notebook. Leave with</text>
+  <text class="t" x="46" y="243">one idea it likes: a concept card.</text>
+
+  <!-- Invent -->
+  <rect class="box" x="320" y="120" width="170" height="150" rx="8"/>
+  <text class="k" x="336" y="146">FORGE · QUEST</text>
+  <text class="h" x="336" y="170">INVENT</text>
+  <text class="t" x="336" y="192">Research and specify</text>
+  <text class="t" x="336" y="209">the concept. Seal it.</text>
+  <text class="t" x="336" y="226">Concept renders.</text>
+
+  <!-- Make -->
+  <rect class="box" x="530" y="120" width="170" height="150" rx="8"/>
+  <text class="k" x="546" y="146">ALL ROUTES</text>
+  <text class="h" x="546" y="170">MAKE</text>
+  <text class="t" x="546" y="192">CAD as code. Print</text>
+  <text class="t" x="546" y="209">preflight. Blind review.</text>
+  <text class="t" x="546" y="226">Host rebuilds, seals.</text>
+
+  <!-- Release -->
+  <rect class="box" x="740" y="120" width="170" height="150" rx="8"/>
+  <text class="k" x="756" y="146">ALL ROUTES</text>
+  <text class="h" x="756" y="170">RELEASE</text>
+  <text class="t" x="756" y="192">Manual, story, facts,</text>
+  <text class="t" x="756" y="209">renders. Publish with</text>
+  <text class="t" x="756" y="226">public readback.</text>
+
+  <!-- Shop -->
+  <rect class="box strong" x="950" y="120" width="230" height="150" rx="8"/>
+  <text class="k" x="966" y="146">AUTONOMOUS.AI/FACTORY</text>
+  <text class="h" x="966" y="170">SHOP</text>
+  <text class="t" x="966" y="192">Order one. Printed to order,</text>
+  <text class="t" x="966" y="209">photographed, ships in days.</text>
+  <text class="t" x="966" y="226">Sold enough? Molded, cheaper.</text>
+
+  <!-- forward arrows -->
+  <path class="line" d="M280 195 L320 195" marker-end="url(#arrow)"/>
+  <path class="line" d="M490 195 L530 195" marker-end="url(#arrow)"/>
+  <path class="line" d="M700 195 L740 195" marker-end="url(#arrow)"/>
+  <path class="line" d="M910 195 L950 195" marker-end="url(#arrow)"/>
+
+  <!-- Scoreboard -->
+  <rect class="box" x="400" y="318" width="420" height="82" rx="8"/>
+  <text class="h" x="416" y="344">SCOREBOARD</text>
+  <text class="t" x="416" y="366">Every view, order, print and return, keyed to the design.</text>
+  <text class="t" x="416" y="383">Shown to every Inventor.</text>
+
+  <!-- loop arrows -->
+  <path class="loop" d="M1065 270 C 1065 359, 850 359, 820 359" marker-end="url(#arrowsoft)"/>
+  <path class="loop" d="M400 359 C 360 359, 155 359, 155 270" marker-end="url(#arrowsoft)"/>
+</svg>
