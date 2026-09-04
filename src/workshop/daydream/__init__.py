@@ -5,6 +5,7 @@ from workshop.daydream.contracts import (
     DAYDREAM_IDEA_KIND,
     DAYDREAM_SEAL_KIND,
     DaydreamError,
+    DaydreamProvenance,
     Idea,
     NoveltyReport,
     PriorArt,
@@ -31,16 +32,28 @@ from workshop.daydream.loop import (
     request_stop,
 )
 from workshop.daydream.notebook import NotebookEntry
+from workshop.daydream.outcomes import (
+    OutcomeSummary,
+    RunOutcomeMemory,
+    outcome_path,
+    read_outcomes,
+    remember_resumed_outcome,
+    remember_run_outcome,
+    render_outcomes_markdown,
+    summarize_outcomes,
+)
 from workshop.daydream.prompt import DAYDREAM_CONSTITUTION, build_daydream_prompt
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
 
 __all__ = [
     "DAYDREAM_CONSTITUTION",
     "DAYDREAM_IDEA_KIND",
+    "OutcomeSummary",
     "DAYDREAM_SEAL_KIND",
     "DAYDREAM_TURN_TIMEOUT_SECONDS",
     "DEFAULT_MAX_CONSECUTIVE_FAILURES",
     "DaydreamError",
+    "DaydreamProvenance",
     "DaydreamPaths",
     "DaydreamSeed",
     "Idea",
@@ -50,6 +63,7 @@ __all__ = [
     "NoveltyReport",
     "PriorArt",
     "PriorWork",
+    "RunOutcomeMemory",
     "SealedDaydream",
     "TasteFit",
     "acquire_loop",
@@ -63,6 +77,12 @@ __all__ = [
     "read_loop_state",
     "render_brief",
     "request_stop",
+    "remember_run_outcome",
+    "remember_resumed_outcome",
+    "outcome_path",
+    "read_outcomes",
+    "render_outcomes_markdown",
     "run_daydream",
+    "summarize_outcomes",
     "wish_from_daydream",
 ]

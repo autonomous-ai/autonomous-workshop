@@ -4,15 +4,22 @@ import unittest
 from datetime import datetime, timezone
 
 from tests.daydream.support import (
+    build_thesis_verdict_dict,
+    build_thesis_v3_verdict_dict,
     sample_idea,
     sample_idea_dict,
     sample_novelty,
     sample_sealed,
+    sample_thesis,
+    sample_thesis_dict,
+    sample_thesis_v3_dict,
 )
 from workshop.daydream.contracts import (
     DAYDREAM_IDEA_KIND,
     DAYDREAM_SEAL_KIND,
+    DaydreamProvenance,
     Idea,
+    LearningTrace,
     NoveltyNeighbor,
     NoveltyReport,
     PriorArt,
@@ -167,6 +174,103 @@ class PriorArtAndTasteFitTest(unittest.TestCase):
             TasteFit.parse({"honors": ["a"]})
 
 
+class CreativeThesisTest(unittest.TestCase):
+    def test_v2_round_trips_and_exposes_legacy_read_views(self):
+        raw = sample_thesis_dict()
+        thesis = Idea.parse(raw)
+        self.assertEqual(thesis.schema_version, 2)
+        self.assertEqual(thesis.to_dict(), raw)
+        self.assertEqual(Idea.parse(json.loads(json.dumps(raw))), thesis)
+        self.assertEqual(thesis.what_you_do, raw["experience"]["action"])
+        self.assertIn(raw["experience"]["payoff"], thesis.what_happens)
+        self.assertEqual(thesis.held_form, raw["experience"]["physical_form"])
+        self.assertEqual(thesis.before_after, raw["proof"]["observable"])
+        self.assertEqual(thesis.opportunity.world_scan.signals[0].url, raw["opportunity"]["world_scan"]["signals"][0]["url"])
+        self.assertEqual(thesis.proof.mode, "visual-state")
+
+    def test_v3_binds_bounded_learning_without_changing_v2_identity(self):
+        prior_id = "daydream-20260902-091500-00000009"
+        raw = sample_thesis_v3_dict(
+            learning=[
+                {
+                    "daydream_id": prior_id,
+                    "memory_sha256": "b" * 64,
+                    "disposition": "abandoned",
+                    "response": "Choose a different physical verb and proof family.",
+                }
+            ]
+        )
+        thesis = Idea.parse(raw)
+        self.assertEqual(thesis.to_dict(), raw)
+        self.assertIsInstance(thesis.learning[0], LearningTrace)
+        self.assertEqual(thesis.learning[0].daydream_id, prior_id)
+        legacy = sample_thesis_dict()
+        self.assertEqual(Idea.parse(legacy).to_dict(), legacy)
+        missing_boundary = sample_thesis_v3_dict()
+        del missing_boundary["opportunity"]["evidence_boundary"]
+        with self.assertRaisesRegex(ContractError, "evidence_boundary"):
+            Idea.parse(missing_boundary)
+        malformed = sample_thesis_v3_dict(learning=raw["learning"] * 2)
+        with self.assertRaisesRegex(ContractError, "repeat|duplicate"):
+            Idea.parse(malformed)
+
+    def test_v2_requires_world_provenance_thesis_and_falsifiers(self):
+        mutations = []
+        raw = sample_thesis_dict()
+        del raw["opportunity"]
+        mutations.append(raw)
+        raw = sample_thesis_dict()
+        raw["opportunity"]["world_scan"]["signals"] = raw["opportunity"]["world_scan"]["signals"][:1]
+        mutations.append(raw)
+        raw = sample_thesis_dict()
+        raw["opportunity"]["world_scan"]["signals"][0]["url"] = "file:///tmp/fake"
+        mutations.append(raw)
+        raw = sample_thesis_dict()
+        raw["opportunity"]["world_scan"]["signals"][0]["url"] = (
+            "https://:secret@example.org/news"
+        )
+        mutations.append(raw)
+        raw = sample_thesis_dict()
+        raw["proof"]["kill_criteria"] = ["Only one"]
+        mutations.append(raw)
+        raw = sample_thesis_dict()
+        raw["proof"]["mode"] = "vibes"
+        mutations.append(raw)
+        raw = sample_thesis_dict()
+        raw["route_floor"] = "ultra"
+        mutations.append(raw)
+        for index, malformed in enumerate(mutations):
+            with self.subTest(index=index), self.assertRaises(ContractError):
+                Idea.parse(malformed)
+
+    def test_adversarial_scalar_types_fail_as_contract_errors(self):
+        for value in (True, 2.0, "2"):
+            raw = sample_thesis_dict()
+            raw["schema_version"] = value
+            with self.subTest(field="schema_version", value=value), self.assertRaises(ContractError):
+                Idea.parse(raw)
+        raw = sample_thesis_dict()
+        raw["keywords"] = ["valid", {"not": "hashable"}, "third"]
+        with self.assertRaises(ContractError):
+            Idea.parse(raw)
+        raw = sample_thesis_dict()
+        raw["keywords"] = ["gravity", "café", "rhythm"]
+        with self.assertRaises(ContractError):
+            Idea.parse(raw)
+        raw = sample_thesis_dict()
+        raw["title"] = "Delete\x7fme"
+        with self.assertRaises(ContractError):
+            Idea.parse(raw)
+
+    def test_v2_brief_separates_dream_ownership_from_invent(self):
+        brief = render_brief(sample_thesis(), inventor_name="Sample", inventor_id="sample")
+        self.assertIn("Build this creative product thesis", brief)
+        self.assertIn("Human tension:", brief)
+        self.assertIn("Anti-generic signature:", brief)
+        self.assertIn("Kill criteria:", brief)
+        self.assertIn("Invent owns the exact mechanism", brief)
+
+
 class RenderBriefTest(unittest.TestCase):
     def test_brief_is_exact_deterministic_text(self):
         idea = sample_idea()
@@ -263,6 +367,40 @@ class SealedDaydreamTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "brief"):
             sample_sealed(inventor_name="Someone Else")
 
+    def test_schema_v2_requires_hash_bound_context_provenance(self):
+        from tests.daydream.support import (
+            build_thesis_verdict_dict,
+            sample_provenance,
+            sample_thesis,
+        )
+        from workshop.daydream.contracts import Verdict
+
+        idea = sample_thesis()
+        verdict = Verdict.parse(build_thesis_verdict_dict(idea_sha256=idea.sha256))
+        sealed = sample_sealed(
+            schema_version=2,
+            idea=idea,
+            idea_sha256=idea.sha256,
+            provenance=sample_provenance(),
+        )
+        self.assertEqual(SealedDaydream.parse(sealed.to_dict()), sealed)
+        historical = sample_sealed(
+            schema_version=2,
+            idea=idea,
+            idea_sha256=idea.sha256,
+            verdict=verdict,
+            provenance=sample_provenance(),
+        )
+        self.assertEqual(SealedDaydream.parse(historical.to_dict()), historical)
+        raw = sealed.to_dict()
+        raw["provenance"]["input_sha256s"]["portfolio"] = "0" * 64
+        changed = SealedDaydream.parse(raw)
+        self.assertNotEqual(changed.sha256, sealed.sha256)
+        raw = sealed.to_dict()
+        del raw["provenance"]
+        with self.assertRaisesRegex(ContractError, "provenance"):
+            SealedDaydream.parse(raw)
+
     def test_parse_rejects_unknown_keys_and_bad_fields(self):
         raw = sample_sealed().to_dict()
         raw["extra"] = 1
@@ -322,3 +460,85 @@ class HeldFormTest(unittest.TestCase):
         raw["held_form"] = ""
         with self.assertRaisesRegex(ContractError, "held_form"):
             Idea.parse(raw)
+
+
+class VerdictTest(unittest.TestCase):
+    def test_verdict_round_trip_and_bounds(self):
+        from tests.daydream.support import build_verdict_dict, sample_sealed, sample_verdict
+        from workshop.daydream.contracts import SealedDaydream, Verdict
+        from workshop.errors import ContractError
+
+        for decision in ("build", "dream-again"):
+            verdict = sample_verdict(decision)
+            self.assertEqual(Verdict.parse(verdict.to_dict()), verdict)
+            sealed = sample_sealed(verdict=verdict)
+            self.assertEqual(SealedDaydream.parse(sealed.to_dict()), sealed)
+            self.assertEqual(sealed.to_dict()["verdict"]["decision"], decision)
+        self.assertNotIn("verdict", sample_sealed().to_dict())
+        bad = build_verdict_dict("dream-again")
+        bad["risks"] = []
+        with self.assertRaisesRegex(ContractError, "at least one risk"):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        bad["checks"]["travel_is_large"] = False
+        with self.assertRaisesRegex(ContractError, "build verdict requires every check"):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        del bad["checks"]["worth_owning"]
+        with self.assertRaisesRegex(ContractError, "checks must hold exactly"):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        bad["checks"]["worth_owning"] = "yes"
+        with self.assertRaisesRegex(ContractError, "must be true or false"):
+            Verdict.parse(bad)
+        self.assertEqual(
+            sample_verdict("dream-again").failed_checks,
+            ("moving_part_visible_in_both_states",),
+        )
+        self.assertEqual(sample_verdict("build").failed_checks, ())
+        bad = build_verdict_dict()
+        bad["confidence"] = 1.5
+        with self.assertRaises(ContractError):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        bad["decision"] = "maybe"
+        with self.assertRaises(ContractError):
+            Verdict.parse(bad)
+        bad = build_verdict_dict()
+        bad["extra"] = 1
+        with self.assertRaisesRegex(ContractError, "unknown keys"):
+            Verdict.parse(bad)
+
+    def test_v2_verdict_is_conjunctive_and_hash_bound(self):
+        from workshop.daydream.contracts import THESIS_V2_VERDICT_CHECKS, Verdict
+
+        raw = build_thesis_verdict_dict()
+        verdict = Verdict.parse(raw)
+        self.assertEqual(verdict.to_dict(), raw)
+        self.assertEqual(tuple(verdict.checks), THESIS_V2_VERDICT_CHECKS)
+        self.assertEqual(verdict.failed_checks, ())
+        for field, value in (
+            ("daydream_id", "wish-20260902-101500-0badcafe"),
+            ("idea_sha256", "abc"),
+            ("taste_sha256", "abc"),
+            ("route", "turbo"),
+        ):
+            malformed = build_thesis_verdict_dict()
+            malformed[field] = value
+            with self.subTest(field=field), self.assertRaises(ContractError):
+                Verdict.parse(malformed)
+        malformed = build_thesis_verdict_dict()
+        malformed["checks"]["opportunity_grounded"] = False
+        with self.assertRaisesRegex(ContractError, "build verdict requires every check"):
+            Verdict.parse(malformed)
+
+    def test_v3_verdict_requires_learning_closure_conjunctively(self):
+        from workshop.daydream.contracts import THESIS_VERDICT_CHECKS, Verdict
+
+        raw = build_thesis_v3_verdict_dict()
+        verdict = Verdict.parse(raw)
+        self.assertEqual(tuple(verdict.checks), THESIS_VERDICT_CHECKS)
+        malformed = build_thesis_v3_verdict_dict()
+        malformed["checks"]["learning_closure"] = False
+        with self.assertRaisesRegex(ContractError, "build verdict requires every check"):
+            Verdict.parse(malformed)

@@ -13,138 +13,39 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Sequence
 
-DAYDREAM_IDEA_KIND = "autonomous-workshop.daydream-idea"
+try:
+    # The host copies schema.py beside this standalone finalizer under this
+    # import name.  Package imports use the fallback in contributor tests.
+    from daydream_schema import (  # type: ignore[import-not-found]
+        DAYDREAM_IDEA_KIND,
+        idea_problems,
+    )
+except ImportError:  # pragma: no cover - package import uses schema.py in this directory
+    schema_path = Path(__file__).with_name("schema.py")
+    schema_spec = importlib.util.spec_from_file_location("_workshop_daydream_schema", schema_path)
+    if schema_spec is None or schema_spec.loader is None:
+        raise
+    schema_module = importlib.util.module_from_spec(schema_spec)
+    schema_spec.loader.exec_module(schema_module)
+    DAYDREAM_IDEA_KIND = schema_module.DAYDREAM_IDEA_KIND
+    idea_problems = schema_module.idea_problems
+
 DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
 IDEA_RELATIVE_PATH = "work/IDEA.json"
 OUTCOME_FILE_NAME = "agent-outcome.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
-_LINE_BOUNDS = {
-    "title": 60,
-    "one_liner": 200,
-    "held_form": 240,
-    "before_after": 300,
-}
-_PARAGRAPH_BOUNDS = {
-    "what_you_do": 600,
-    "what_happens": 600,
-    "why_it_is_new": 600,
-}
-_REQUIRED_KEYS = frozenset(
-    (
-        "schema_version",
-        "kind",
-        "title",
-        "one_liner",
-        "held_form",
-        "before_after",
-        "what_you_do",
-        "what_happens",
-        "why_it_is_new",
-        "prior_art",
-        "taste_fit",
-        "parts_estimate",
-        "keywords",
-    )
-)
-
-
-def _line_problems(value: Any, label: str, maximum: int, *, allow_newlines: bool) -> list[str]:
-    if not isinstance(value, str) or not value.strip():
-        return ["%s must be a non-empty string" % label]
-    problems = []
-    if len(value) > maximum:
-        problems.append("%s is longer than %d characters" % (label, maximum))
-    permitted = "\n" if allow_newlines else ""
-    if any(ord(character) < 32 and character not in permitted for character in value):
-        problems.append("%s contains control characters" % label)
-    if value != value.strip():
-        problems.append("%s has leading or trailing whitespace" % label)
-    return problems
-
-
-def idea_problems(raw: Any) -> list[str]:
-    """Return every shape or bound problem in a parsed idea; empty means valid."""
-
-    if not isinstance(raw, Mapping):
-        return ["IDEA.json must be one JSON object"]
-    problems = []
-    missing = sorted(_REQUIRED_KEYS - set(raw))
-    unknown = sorted(set(raw) - _REQUIRED_KEYS)
-    if missing:
-        problems.append("missing keys: %s" % ", ".join(missing))
-    if unknown:
-        problems.append("unknown keys: %s" % ", ".join(unknown))
-    if problems:
-        return problems
-    if raw["schema_version"] != 1:
-        problems.append("schema_version must be 1")
-    if raw["kind"] != DAYDREAM_IDEA_KIND:
-        problems.append("kind must be %s" % DAYDREAM_IDEA_KIND)
-    for key, maximum in _LINE_BOUNDS.items():
-        problems.extend(_line_problems(raw[key], key, maximum, allow_newlines=False))
-    for key, maximum in _PARAGRAPH_BOUNDS.items():
-        problems.extend(_line_problems(raw[key], key, maximum, allow_newlines=True))
-    prior_art = raw["prior_art"]
-    if not isinstance(prior_art, list) or not 2 <= len(prior_art) <= 5:
-        problems.append("prior_art must list 2 to 5 entries")
-    else:
-        for index, entry in enumerate(prior_art):
-            if not isinstance(entry, Mapping) or set(entry) != {"name", "how_this_differs"}:
-                problems.append("prior_art[%d] needs exactly name and how_this_differs" % index)
-                continue
-            problems.extend(
-                _line_problems(entry["name"], "prior_art[%d].name" % index, 80, allow_newlines=False)
-            )
-            problems.extend(
-                _line_problems(
-                    entry["how_this_differs"],
-                    "prior_art[%d].how_this_differs" % index,
-                    300,
-                    allow_newlines=False,
-                )
-            )
-    taste_fit = raw["taste_fit"]
-    if not isinstance(taste_fit, Mapping) or set(taste_fit) != {"honors", "steers_clear_of"}:
-        problems.append("taste_fit needs exactly honors and steers_clear_of")
-    else:
-        for key in ("honors", "steers_clear_of"):
-            items = taste_fit[key]
-            if not isinstance(items, list) or not 1 <= len(items) <= 5:
-                problems.append("taste_fit.%s must list 1 to 5 lines" % key)
-                continue
-            for index, item in enumerate(items):
-                problems.extend(
-                    _line_problems(item, "taste_fit.%s[%d]" % (key, index), 200, allow_newlines=False)
-                )
-    parts = raw["parts_estimate"]
-    if type(parts) is not int or not 1 <= parts <= 12:
-        problems.append("parts_estimate must be an integer from 1 to 12")
-    keywords = raw["keywords"]
-    if (
-        not isinstance(keywords, list)
-        or not 3 <= len(keywords) <= 8
-        or len(set(keywords)) != len(keywords)
-        or any(not isinstance(keyword, str) or not _is_slug(keyword) for keyword in keywords)
-    ):
-        problems.append("keywords must be 3 to 8 unique lowercase slugs")
-    return problems
-
-
-def _is_slug(value: str) -> bool:
-    if not 2 <= len(value) <= 32 or not (value[0].isdigit() or value[0].islower()):
-        return False
-    return all(character.isdigit() or character.islower() or character == "-" for character in value)
 
 
 def finalize(run_root: Path, out=sys.stdout, err=sys.stderr) -> int:
-    """Validate work/IDEA.json and write the marker; return an exit code."""
+    """Validate ``work/IDEA.json`` and write the outcome marker."""
 
     relative, checker, label = IDEA_RELATIVE_PATH, idea_problems, "idea"
     file_path = run_root / relative

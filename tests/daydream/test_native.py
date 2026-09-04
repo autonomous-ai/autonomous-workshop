@@ -8,15 +8,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
+from tests.invent.fake_gamevault import FAKE_TOKEN, FakeGameVaultTransport
 from tests.daydream.support import (
     horn_tip_catalog,
-    horn_tip_paraphrase_dict,
+    horn_tip_thesis_dict as horn_tip_paraphrase_dict,
     inventor_bundle,
-    sample_idea_dict,
+    sample_thesis_v3_dict as sample_idea_dict,
 )
 from workshop.daydream.contracts import DaydreamError, Idea, SealedDaydream
+from workshop.daydream.notebook import NotebookEntry, StructuralTrace, append_notebook_entry
+from workshop.daydream.outcomes import remember_run_outcome
 from workshop.daydream.native import (
     DAYDREAM_TURN_TIMEOUT_SECONDS,
+    INVENTOR_BINDING_FILE_NAME,
+    PROVENANCE_FILE_NAME,
+    VAULT_BINDING_FILE_NAME,
     daydream_paths,
     list_daydreams,
     load_sealed_daydream,
@@ -24,9 +30,11 @@ from workshop.daydream.native import (
     run_daydream,
     wish_from_daydream,
 )
+from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
 from workshop.daydream.prompt import DAYDREAM_CONSTITUTION, DAYDREAM_CONSTITUTION_SHA256
 from workshop.daydream.seeds import DaydreamSeed
 from workshop.errors import ContractError
+from workshop.invent.gamevault import GameVaultError, GameVaultUnavailable
 from workshop.runtime.codex import CodexInvocationError, CodexRecoverableInvocationError
 from workshop.runtime.managers import (
     NativeManagerInvocationError,
@@ -45,13 +53,14 @@ SEED = DaydreamSeed(moment="a bus stop in the cold", twist="it counts something"
 
 
 class _FakeOutcome:
-    def __init__(self, arguments):
+    def __init__(self, arguments, *, used_web_search=True):
         self.arguments = arguments
+        self.used_web_search = used_web_search
 
     def to_dict(self):
         return {
             "status": "completed",
-            "used_web_search": True,
+            "used_web_search": self.used_web_search,
             "product_id": self.arguments["product_id"],
             "input_tokens": 12,
         }
@@ -69,18 +78,22 @@ class _FakeLauncher:
         idea=None,
         error=None,
         expect_notebook=(),
+        expect_portfolio=(),
         error_after_idea=False,
         finalize=True,
         outcome_sha256=None,
+        used_web_search=True,
     ):
         self.test = test
         self.error_after_idea = error_after_idea
         self.finalize = finalize
         self.outcome_sha256 = outcome_sha256
+        self.used_web_search = used_web_search
         self.timeout_seconds = timeout_seconds
         self.idea = idea
         self.error = error
         self.expect_notebook = expect_notebook
+        self.expect_portfolio = expect_portfolio
         self.starts = []
 
     def start(self, **arguments):
@@ -90,9 +103,12 @@ class _FakeLauncher:
         for name in (
             "TASTE.md",
             "PRIOR-WORK.md",
+            "PORTFOLIO.md",
             "NOTEBOOK.md",
+            "VAULT.md",
             "AGENTS.md",
             "finalize_daydream.py",
+            "daydream_schema.py",
             PRODUCT_RUN_ROOT_MARKER,
         ):
             self.test.assertTrue((run_root / name).is_file(), name)
@@ -107,12 +123,32 @@ class _FakeLauncher:
         )
         self.test.assertTrue((run_root / "work").is_dir())
         self.test.assertEqual(list((run_root / "work").iterdir()), [])
+        skill = run_root / ".agents" / "skills" / "sample-inventor" / "SKILL.md"
+        vault_skill = run_root / ".agents" / "skills" / "design-vault" / "SKILL.md"
+        vault_tool = run_root / ".agents" / "skills" / "design-vault" / "vault_tools.py"
+        agent = run_root / ".codex" / "agents" / "sample.toml"
+        self.test.assertEqual(
+            skill.read_bytes(),
+            (self.test.source_root / "sample" / "skills" / "sample-inventor" / "SKILL.md").read_bytes(),
+        )
+        self.test.assertEqual(parse_inventor_custom_agent_bytes(agent.read_bytes()).inventor_id, "sample")
+        self.test.assertEqual(stat.S_IMODE(skill.stat().st_mode), 0o400)
+        self.test.assertTrue(vault_skill.is_file())
+        self.test.assertTrue(vault_tool.is_file())
+        self.test.assertEqual(stat.S_IMODE(vault_skill.stat().st_mode), 0o400)
+        self.test.assertEqual(stat.S_IMODE(vault_tool.stat().st_mode), 0o400)
+        self.test.assertEqual(stat.S_IMODE(agent.stat().st_mode), 0o400)
+        self.test.assertEqual(stat.S_IMODE((run_root / ".agents").stat().st_mode), 0o500)
+        self.test.assertEqual(stat.S_IMODE((run_root / ".codex").stat().st_mode), 0o500)
         self.test.assertEqual(stat.S_IMODE(host_state.stat().st_mode), 0o700)
         self.test.assertEqual(stat.S_IMODE(run_root.stat().st_mode), 0o700)
         self.test.assertFalse(host_state.is_relative_to(run_root))
         notebook = (run_root / "NOTEBOOK.md").read_text(encoding="utf-8")
         for expected in self.expect_notebook:
             self.test.assertIn(expected, notebook)
+        portfolio = (run_root / "PORTFOLIO.md").read_text(encoding="utf-8")
+        for expected in self.expect_portfolio:
+            self.test.assertIn(expected, portfolio)
         if arguments["activity_observer"] is not None:
             arguments["activity_observer"]("reasoning")
         if self.error is not None and not self.error_after_idea:
@@ -142,8 +178,7 @@ class _FakeLauncher:
                 )
         if self.error is not None:
             raise self.error
-        return _FakeOutcome(arguments)
-
+        return _FakeOutcome(arguments, used_web_search=self.used_web_search)
 
 class DaydreamNativeTest(unittest.TestCase):
     def setUp(self):
@@ -179,6 +214,8 @@ class DaydreamNativeTest(unittest.TestCase):
         daydream_id=FIRST_ID,
         repository_root=None,
         activity_observer=None,
+        effort=None,
+        vault_loader=None,
         **options,
     ):
         factory, launchers = self._factory(**options)
@@ -191,8 +228,14 @@ class DaydreamNativeTest(unittest.TestCase):
             seed=SEED,
             moment=MOMENT,
             daydream_id=daydream_id,
+            effort=effort,
+            vault_loader=vault_loader or self._unavailable_vault,
         )
         return sealed, launchers
+
+    @staticmethod
+    def _unavailable_vault():
+        raise GameVaultUnavailable("fixture has no Vault")
 
     def test_happy_path_seals_the_idea_and_remembers_it(self):
         activities = []
@@ -215,6 +258,8 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(sealed.seed, SEED.to_dict())
         self.assertEqual(sealed.created_at, "2026-09-02T10:15:00Z")
         self.assertEqual(sealed.idea, Idea.parse(sample_idea_dict()))
+        self.assertEqual(sealed.schema_version, 3)
+        self.assertEqual(sealed.provenance.route, "spark")
         self.assertEqual(sealed.session, _FakeOutcome(start).to_dict())
         self.assertEqual(sealed.novelty.status, "new")
         paths = daydream_paths("sample", FIRST_ID)
@@ -228,6 +273,48 @@ class DaydreamNativeTest(unittest.TestCase):
             (paths.workspace / "TASTE.md").read_bytes(),
             (self.source_root / "sample" / "TASTE.md").read_bytes(),
         )
+        binding = json.loads(
+            (paths.host_state / INVENTOR_BINDING_FILE_NAME).read_text(encoding="utf-8")
+        )
+        self.assertEqual(binding["inventor_id"], "sample")
+        self.assertEqual(binding["taste_sha256"], sealed.taste_sha256)
+        self.assertEqual(
+            [skill["name"] for skill in binding["skills"]], ["sample-inventor"]
+        )
+        provenance = json.loads(
+            (paths.host_state / PROVENANCE_FILE_NAME).read_text(encoding="utf-8")
+        )
+        self.assertEqual(provenance, sealed.provenance.to_dict())
+        for field, path in (
+            ("taste", paths.workspace / "TASTE.md"),
+            ("prior_work", paths.workspace / "PRIOR-WORK.md"),
+            ("portfolio", paths.workspace / "PORTFOLIO.md"),
+            ("notebook", paths.workspace / "NOTEBOOK.md"),
+        ):
+            self.assertEqual(
+                sealed.provenance.input_sha256s[field],
+                hashlib.sha256(path.read_bytes()).hexdigest(),
+            )
+        self.assertEqual(
+            sealed.provenance.input_sha256s["inventor_binding"],
+            hashlib.sha256(
+                (paths.host_state / INVENTOR_BINDING_FILE_NAME).read_bytes()
+            ).hexdigest(),
+        )
+        self.assertEqual(
+            sealed.provenance.input_sha256s["vault_binding"],
+            hashlib.sha256(
+                (paths.host_state / VAULT_BINDING_FILE_NAME).read_bytes()
+            ).hexdigest(),
+        )
+        self.assertEqual(
+            sealed.provenance.input_sha256s["daydream_prompt"],
+            hashlib.sha256(start["prompt"].encode("utf-8")).hexdigest(),
+        )
+        self.assertEqual(
+            stat.S_IMODE((paths.host_state / PROVENANCE_FILE_NAME).stat().st_mode),
+            0o600,
+        )
         entries = list_daydreams("sample")
         self.assertEqual(
             [(entry.daydream_id, entry.status) for entry in entries],
@@ -235,6 +322,56 @@ class DaydreamNativeTest(unittest.TestCase):
         )
         self.assertEqual(entries[0].idea_sha256, sealed.idea_sha256)
         self.assertEqual(load_sealed_daydream("sample", FIRST_ID), sealed)
+        vault_binding = json.loads(
+            (paths.host_state / VAULT_BINDING_FILE_NAME).read_text(encoding="utf-8")
+        )
+        self.assertEqual(vault_binding, {"status": "unavailable"})
+        self.assertFalse((paths.workspace / "VAULT.json").exists())
+        self.assertIn(
+            "Status: unavailable",
+            (paths.workspace / "VAULT.md").read_text(encoding="utf-8"),
+        )
+
+    def test_available_vault_is_hash_bound_and_materialized_without_credentials(self):
+        vault = FakeGameVaultTransport().vault()
+        sealed, _launchers = self._run(
+            idea=sample_idea_dict(), vault_loader=lambda: vault
+        )
+        paths = daydream_paths("sample", FIRST_ID)
+        packed = vault.packed_bytes()
+        digest = hashlib.sha256(packed).hexdigest()
+        self.assertEqual((paths.workspace / "VAULT.json").read_bytes(), packed)
+        self.assertEqual((paths.host_state / "VAULT.json").read_bytes(), packed)
+        self.assertEqual(stat.S_IMODE((paths.workspace / "VAULT.json").stat().st_mode), 0o400)
+        binding = json.loads(
+            (paths.host_state / VAULT_BINDING_FILE_NAME).read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            binding,
+            {
+                "status": "available",
+                "path": "VAULT.json",
+                "skill": ".agents/skills/design-vault/SKILL.md",
+                "sha256": digest,
+                "nodes": len(vault.nodes),
+            },
+        )
+        self.assertIn(digest, (paths.workspace / "VAULT.md").read_text(encoding="utf-8"))
+        workspace_bytes = b"".join(
+            path.read_bytes()
+            for path in paths.workspace.rglob("*")
+            if path.is_file()
+        )
+        self.assertNotIn(FAKE_TOKEN.encode("utf-8"), workspace_bytes)
+        self.assertEqual(sealed.idea.title, "Ladder Drop")
+
+    def test_invalid_vault_evidence_fails_before_starting_a_native_session(self):
+        def invalid_vault():
+            raise GameVaultError("malformed fixture export")
+
+        with self.assertRaisesRegex(DaydreamError, "invalid evidence"):
+            self._run(idea=sample_idea_dict(), vault_loader=invalid_vault)
+        self.assertEqual(self.factories[-1], [])
 
     def test_second_daydream_sees_the_first_and_may_not_repeat_it(self):
         self._run(idea=sample_idea_dict())
@@ -243,10 +380,14 @@ class DaydreamNativeTest(unittest.TestCase):
         raw["one_liner"] = (
             "Tap a printed column and count the taps by how far a captive pin has climbed."
         )
-        raw["what_you_do"] = "Tap the top of the column once per event you want to count."
-        raw["what_happens"] = (
-            "Each tap ratchets a captive pin one notch higher; a twist lets it fall "
-            "back to zero."
+        raw["experience"]["action"] = (
+            "Tap the top of the column once per event you want to count."
+        )
+        raw["experience"]["response"] = (
+            "Each tap ratchets a captive pin one notch higher."
+        )
+        raw["experience"]["payoff"] = (
+            "A twist lets the climbed pin fall back to zero."
         )
         raw["keywords"] = ["ratchet", "counter", "pin"]
         sealed, launchers = self._run(
@@ -260,6 +401,68 @@ class DaydreamNativeTest(unittest.TestCase):
         with self.assertRaisesRegex(DaydreamError, "rejected"):
             self._run(daydream_id="daydream-20260902-101700-00000003", idea=sample_idea_dict())
 
+    def test_downstream_outcome_facts_reach_the_next_daydream_workspace(self):
+        previous, _launchers = self._run(idea=sample_idea_dict())
+        wish = wish_from_daydream(previous, wish_id="wish-outcome-memory")
+        remember_run_outcome(
+            wish,
+            receipt={
+                "effort": "forge",
+                "manager": "codex",
+                "status": "failed",
+                "stage": "make",
+                "publication": {"status": "not-created"},
+            },
+            moment=MOMENT,
+            home=self.home,
+        )
+        raw = sample_idea_dict()
+        raw["title"] = "Rung Counter"
+        raw["one_liner"] = "Tap a pocket rail and watch a captive marker count upward."
+        raw["experience"]["action"] = "Tap the top of the rail once per count."
+        raw["experience"]["response"] = "A captive marker ratchets upward by one notch."
+        raw["experience"]["payoff"] = "A twist drops the marker back to zero."
+        raw["experience"]["anti_generic_signature"] = (
+            "The same captive marker both ratchets upward and visibly free-falls on reset."
+        )
+        raw["keywords"] = ["rail", "marker", "ratchet", "counter"]
+        self._run(
+            daydream_id=SECOND_ID,
+            idea=raw,
+            expect_notebook=(
+                "Downstream outcomes (host-observed facts, not Judge predictions)",
+                "route=forge status=failed stage=make",
+                "wish-outcome-memory",
+            ),
+        )
+
+    def test_cross_inventor_portfolio_blocks_a_renamed_repeat(self):
+        idea = Idea.parse(sample_idea_dict())
+        other = self.home / "daydreams" / "other"
+        other.mkdir(parents=True, mode=0o700)
+        (self.home / "daydreams").chmod(0o700)
+        other.chmod(0o700)
+        append_notebook_entry(
+            other / "NOTEBOOK.jsonl",
+            NotebookEntry(
+                daydream_id="daydream-20260902-091500-00000009",
+                created_at="2026-09-02T09:15:00Z",
+                title=idea.title,
+                one_liner=idea.one_liner,
+                idea_sha256=idea.sha256,
+                status="dreamed",
+                schema_version=2,
+                structure=StructuralTrace.from_idea(idea),
+            ),
+        )
+        raw = sample_idea_dict()
+        raw["title"] = "Gravity Rungs"
+        with self.assertRaisesRegex(DaydreamError, "portfolio:other"):
+            self._run(
+                idea=raw,
+                expect_portfolio=("Ladder Drop", "other", "Anti-generic signature"),
+            )
+
     def test_unfinalized_goal_is_rejected(self):
         with self.assertRaisesRegex(DaydreamError, "did not finalize its Daydream Goal"):
             self._run(idea=sample_idea_dict(), finalize=False)
@@ -272,6 +475,13 @@ class DaydreamNativeTest(unittest.TestCase):
             self._run()
         self.assertEqual(list_daydreams("sample"), ())
 
+    def test_daydream_without_a_verified_live_search_event_fails_closed(self):
+        with self.assertRaisesRegex(DaydreamError, "no verified live web-search"):
+            self._run(idea=sample_idea_dict(), used_web_search=False)
+        paths = daydream_paths("sample", FIRST_ID)
+        self.assertFalse((paths.host_state / "IDEA.json").exists())
+        self.assertEqual(list_daydreams("sample"), ())
+
     def test_invalid_json_and_invalid_schema_fail(self):
         with self.assertRaisesRegex(DaydreamError, "not valid UTF-8 JSON"):
             self._run(idea="{not json")
@@ -281,6 +491,30 @@ class DaydreamNativeTest(unittest.TestCase):
             self._run(daydream_id=SECOND_ID, idea=raw)
         with self.assertRaisesRegex(DaydreamError, "JSON object"):
             self._run(daydream_id="daydream-20260902-101700-00000003", idea="[1]")
+
+    def test_thesis_time_and_taste_citations_must_match_exact_inputs(self):
+        raw = sample_idea_dict()
+        raw["opportunity"]["world_scan"]["observed_at"] = "2026-09-02T10:14:59Z"
+        with self.assertRaisesRegex(DaydreamError, "exact turn time"):
+            self._run(idea=raw)
+        raw = sample_idea_dict()
+        raw["taste_fit"]["honors"] = ["A plausible paraphrase is not an exact citation"]
+        with self.assertRaisesRegex(DaydreamError, "not exact excerpts"):
+            self._run(daydream_id=SECOND_ID, idea=raw)
+
+    def test_future_source_time_and_underpowered_route_fail_closed(self):
+        raw = sample_idea_dict()
+        raw["opportunity"]["world_scan"]["signals"][0]["published_at"] = (
+            "2026-09-03T10:15:00Z"
+        )
+        with self.assertRaisesRegex(DaydreamError, "cannot be after the world scan"):
+            self._run(idea=raw)
+        raw = sample_idea_dict()
+        raw["route_floor"] = "quest"
+        with self.assertRaisesRegex(
+            DaydreamError, "requires at least the quest route; target route is spark"
+        ):
+            self._run(daydream_id=SECOND_ID, idea=raw)
 
     def test_too_close_idea_is_rejected_and_remembered(self):
         catalog = horn_tip_catalog(Path(self._temporary.name).resolve() / "checkout")
@@ -328,7 +562,7 @@ class DaydreamNativeTest(unittest.TestCase):
                 error=CodexRecoverableInvocationError("Codex native session timed out"),
             )
 
-    def test_recoverable_failure_after_a_written_idea_is_kept_as_incomplete(self):
+    def test_recoverable_failure_without_search_proof_fails_closed(self):
         for index, error in enumerate(
             (
                 CodexRecoverableInvocationError("terminal event missing"),
@@ -336,19 +570,14 @@ class DaydreamNativeTest(unittest.TestCase):
             )
         ):
             daydream_id = "daydream-20260902-1018%02d-%08x" % (index, index + 7)
-            sealed, launchers = self._run(
-                daydream_id=daydream_id,
-                idea=sample_idea_dict(),
-                error=error,
-                error_after_idea=True,
-            )
-            self.assertEqual(sealed.session, {"status": "incomplete", "error": str(error)})
-            self.assertEqual(sealed.idea.title, "Ladder Drop")
-            self.assertEqual(load_sealed_daydream("sample", daydream_id), sealed)
-            paths = daydream_paths("sample", daydream_id)
-            (paths.host_state / "IDEA.json").unlink()
-            # The second loop iteration must not see the first as prior work.
-            paths.notebook.unlink()
+            with self.assertRaisesRegex(DaydreamError, "no verified live web-search"):
+                self._run(
+                    daydream_id=daydream_id,
+                    idea=sample_idea_dict(),
+                    error=error,
+                    error_after_idea=True,
+                )
+            self.assertEqual(list_daydreams("sample"), ())
 
     def test_overlapping_daydream_by_the_same_inventor_cannot_seal_a_repeat(self):
         test = self
@@ -414,6 +643,41 @@ class DaydreamNativeTest(unittest.TestCase):
             )
         self.assertEqual(list_daydreams("sample"), ())
 
+    def test_new_daydream_has_no_predictive_judge_turn_or_gate(self):
+        sealed, launchers = self._run(idea=sample_idea_dict())
+        self.assertIsNone(sealed.verdict)
+        self.assertEqual(len(launchers), 1)
+        paths = daydream_paths("sample", FIRST_ID)
+        self.assertFalse((paths.container / "judge-workspace").exists())
+        self.assertFalse((paths.host_state / "VERDICT.json").exists())
+        self.assertEqual(load_sealed_daydream("sample", FIRST_ID), sealed)
+        self.assertEqual([entry.status for entry in list_daydreams("sample")], ["dreamed"])
+        self.assertEqual(wish_from_daydream(sealed).context["daydream_id"], FIRST_ID)
+
+    def test_new_thesis_must_close_the_newest_novelty_rejection(self):
+        catalog = horn_tip_catalog(Path(self._temporary.name).resolve() / "checkout")
+        with self.assertRaisesRegex(DaydreamError, "Horn Tip"):
+            self._run(idea=horn_tip_paraphrase_dict(), repository_root=catalog)
+        memory = list_daydreams("sample")[-1]
+        with self.assertRaisesRegex(
+            DaydreamError, "must disposition newest unresolved memory"
+        ):
+            self._run(daydream_id=SECOND_ID, idea=sample_idea_dict())
+        raw = sample_idea_dict()
+        raw["learning"] = [
+            {
+                "daydream_id": memory.daydream_id,
+                "memory_sha256": "f" * 64,
+                "disposition": "abandoned",
+                "response": "Abandon the crescent rocker for a paced acoustic ladder.",
+            }
+        ]
+        with self.assertRaisesRegex(DaydreamError, "memory_sha256 does not match"):
+            self._run(
+                daydream_id="daydream-20260902-101700-00000003",
+                idea=raw,
+            )
+
     def test_unknown_inventor_and_manager_fail_before_any_state_exists(self):
         with self.assertRaisesRegex(DaydreamError, "unknown Inventor: nobody \\(known: sample\\)"):
             resolve_inventor("nobody", source_root=self.source_root)
@@ -424,6 +688,8 @@ class DaydreamNativeTest(unittest.TestCase):
             run_daydream(
                 "sample", source_root=self.source_root, manager_id="gpt", launcher_factory=factory
             )
+        with self.assertRaisesRegex(ContractError, "route budget is unknown"):
+            self._run(effort="ultra", idea=sample_idea_dict())
         self.assertEqual(launchers, [])
         self.assertFalse((self.home / "daydreams").exists())
 
@@ -451,7 +717,10 @@ class DaydreamNativeTest(unittest.TestCase):
                 "source": "workshop-daydream",
                 "inventor_id": "sample",
                 "daydream_id": FIRST_ID,
+                "daydream_sha256": sealed.sha256,
                 "idea_sha256": sealed.idea_sha256,
+                "provenance_sha256": sealed.provenance.sha256,
+                "route": "spark",
                 "title": "Ladder Drop",
             },
         )

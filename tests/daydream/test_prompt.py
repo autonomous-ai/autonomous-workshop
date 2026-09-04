@@ -20,6 +20,8 @@ class PromptTest(unittest.TestCase):
             seed=seed,
             notebook_count=3,
             prior_work_count=22,
+            portfolio_count=7,
+            observed_at="2026-09-02T10:15:00Z",
         )
         for expected in (
             "Pico Press",
@@ -27,10 +29,17 @@ class PromptTest(unittest.TestCase):
             "a bus stop in the cold",
             "it counts something",
             "TASTE.md",
+            ".codex/agents/pico-press.toml",
+            ".agents/skills/",
             "PRIOR-WORK.md",
+            "PORTFOLIO.md",
             "NOTEBOOK.md",
-            "22 toys",
-            "3 ideas",
+            "Required next",
+            "VAULT.md",
+            "22 entries",
+            "7 entries",
+            "3 theses",
+            "2026-09-02T10:15:00Z",
             "work/IDEA.json",
         ):
             with self.subTest(expected=expected):
@@ -49,15 +58,31 @@ class PromptTest(unittest.TestCase):
             "TASTE.md",
             "PRIOR-WORK.md",
             "NOTEBOOK.md",
-            "web search",
+            "live web search",
+            "at least four candidates",
+            "at least three meaningfully",
+            "Do not search\nbackward for evidence",
+            "Drop it without apology",
+            "Pre-commit thesis audit",
+            "nine\nindependent dimensions",
+            "lucky frame",
+            "Mutually exhaustive kill criteria",
+            "Repeating a solved count",
+            "reject a candidate that needs a higher route",
+            "world_scan",
+            "human_tension",
+            "evidence_boundary",
+            "anti_generic_signature",
+            "theme_strip_test",
+            "kill_criteria",
             "prior_art",
             "taste_fit",
             "parts_estimate",
             "keywords",
             "12",
             "0.4 mm nozzle",
-            "0.8 mm minimum wall",
-            "No electronics",
+            "0.8 mm absolute minimum wall",
+            "Electronics, batteries",
             "^[a-z0-9][a-z0-9-]{1,31}$",
         ):
             with self.subTest(expected=expected):
@@ -99,14 +124,12 @@ class GoalTest(unittest.TestCase):
     def test_constitution_makes_daydream_one_native_goal_with_a_finalizer(self):
         from workshop.daydream.prompt import DAYDREAM_CONSTITUTION
 
-        self.assertIn("Daydream is one native Goal", DAYDREAM_CONSTITUTION)
-        self.assertIn("Ember Knock", DAYDREAM_CONSTITUTION)
-        self.assertIn("Nudgeback", DAYDREAM_CONSTITUTION)
-        self.assertIn("create one native Goal named `Daydream`", DAYDREAM_CONSTITUTION)
+        self.assertIn("One native Goal", DAYDREAM_CONSTITUTION)
+        self.assertIn("exactly one Goal named\n`Daydream`", DAYDREAM_CONSTITUTION)
         self.assertIn('"$WORKSHOP_PYTHON" finalize_daydream.py', DAYDREAM_CONSTITUTION)
         self.assertIn("writes `agent-outcome.json`", DAYDREAM_CONSTITUTION)
-        self.assertIn("`agent-outcome.json` by hand", DAYDREAM_CONSTITUTION)
-        self.assertIn("you run the finalizer, you stop", DAYDREAM_CONSTITUTION)
+        self.assertIn("marker by hand", DAYDREAM_CONSTITUTION)
+        self.assertIn("stop immediately", DAYDREAM_CONSTITUTION)
 
 
 class RouteBudgetTest(unittest.TestCase):
@@ -126,16 +149,24 @@ class RouteBudgetTest(unittest.TestCase):
     def test_route_budget_is_named_only_when_the_route_is_known(self):
         from workshop.daydream.prompt import ROUTE_BUDGETS
 
-        self.assertNotIn("Route budget", self._prompt(None))
+        self.assertIn(ROUTE_BUDGETS["spark"], self._prompt(None))
         for effort in ("spark", "forge", "quest"):
             with self.subTest(effort=effort):
                 prompt = self._prompt(effort)
                 self.assertIn(ROUTE_BUDGETS[effort], prompt)
                 self.assertLess(prompt.index("Route budget"), prompt.index("work/IDEA.json"))
-        self.assertIn("too big for Spark", self._prompt("spark"))
+        self.assertIn("There is no separate Invent stage", self._prompt("spark"))
 
     def test_unknown_route_is_rejected(self):
         from workshop.errors import ContractError
 
         with self.assertRaises(ContractError):
             self._prompt("turbo")
+
+
+class OutcomeCalibrationTest(unittest.TestCase):
+    def test_inventor_audit_is_calibrated_by_real_build_outcomes(self):
+        self.assertIn("Learn from real Workshop outcomes", DAYDREAM_CONSTITUTION)
+        self.assertIn("Ember Knock published", DAYDREAM_CONSTITUTION)
+        self.assertIn("Fourfall failed", DAYDREAM_CONSTITUTION)
+        self.assertIn("There is no predictive Judge turn", DAYDREAM_CONSTITUTION)

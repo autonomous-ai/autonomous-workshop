@@ -24,6 +24,7 @@ try:
 except ImportError:  # pragma: no cover - Codex CLI hosts are currently POSIX
     fcntl = None  # type: ignore[assignment]
 
+from workshop._validation import require_sha256
 from workshop.errors import (
     AmbiguousEffectError,
     ArtifactError,
@@ -7986,6 +7987,175 @@ def _draft_publication_intent_state(
     return intent.state
 
 
+# (lineage key, stage, contract suffix, identity fields, fields that may be null).
+# Make seals ``product_artifact_sha256`` as null; Playtest and Release carry it.
+_LINEAGE_CONTRACTS = (
+    (
+        "invented",
+        "invent",
+        "/invented.json",
+        ("wish_sha256", "concept_sha256", "invented_sha256"),
+        frozenset(),
+    ),
+    (
+        "made",
+        "make",
+        "/made.json",
+        (
+            "wish_sha256",
+            "invented_sha256",
+            "made_sha256",
+            "product_artifact_sha256",
+        ),
+        frozenset(("product_artifact_sha256",)),
+    ),
+    (
+        "playtested",
+        "playtest",
+        "/playtested.json",
+        ("playtested_sha256", "made_sha256", "product_artifact_sha256"),
+        frozenset(),
+    ),
+    (
+        "release",
+        "release",
+        "/release.json",
+        (
+            "release_sha256",
+            "made_sha256",
+            "playtested_sha256",
+            "product_artifact_sha256",
+        ),
+        frozenset(),
+    ),
+)
+_MAX_LINEAGE_CONTRACT_BYTES = 8 * 1024 * 1024
+
+
+def _accepted_lineage_contract(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    stage: str,
+    suffix: str,
+    fields: Sequence[str],
+    optional: frozenset[str] = frozenset(),
+) -> Optional[Mapping[str, Any]]:
+    """Read one current accepted contract already hash-verified by the checkpoint."""
+
+    candidates: dict[str, AgentArtifact] = {}
+    for artifact in checkpoint.stage_artifacts.get(stage, ()):
+        if artifact.path.endswith(suffix):
+            candidates[artifact.path] = artifact
+    if not candidates:
+        return None
+    if len(candidates) != 1:
+        raise StateConflict("accepted lineage has ambiguous %s contracts" % suffix)
+    artifact = next(iter(candidates.values()))
+    path = paths.workspace / artifact.path
+    try:
+        before = path.lstat()
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict(
+            "accepted lineage contract is unavailable: %s" % artifact.path
+        ) from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(before.st_mode)
+        or not 1 <= len(content) <= _MAX_LINEAGE_CONTRACT_BYTES
+        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+        or _sha256(content) != artifact.sha256
+    ):
+        raise StateConflict("accepted lineage contract changed: %s" % artifact.path)
+    try:
+        document = _strict_json_bytes(content, label="accepted lineage contract")
+        identities = {
+            name: (
+                None
+                if name in optional and document.get(name) is None
+                else require_sha256(document.get(name), "accepted lineage %s" % name)
+            )
+            for name in fields
+        }
+    except ContractError as exc:
+        raise StateConflict("accepted lineage contract is malformed: %s" % artifact.path) from exc
+    return {
+        "path": artifact.path,
+        "contract_sha256": artifact.sha256,
+        **identities,
+    }
+
+
+def _daydream_origin(wish: Wish) -> Optional[Mapping[str, Any]]:
+    context = wish.context
+    if context.get("source") != "workshop-daydream":
+        return None
+    try:
+        inventor_id = context.get("inventor_id")
+        daydream_id = context.get("daydream_id")
+        if (
+            not isinstance(inventor_id, str)
+            or re.fullmatch(r"[a-z][a-z0-9-]{1,62}", inventor_id) is None
+            or not isinstance(daydream_id, str)
+            or re.fullmatch(r"daydream-\d{8}-\d{6}-[0-9a-f]{8}", daydream_id) is None
+        ):
+            raise ContractError("Daydream Wish origin ids are invalid")
+        origin: dict[str, Any] = {
+            "source": "workshop-daydream",
+            "inventor_id": inventor_id,
+            "daydream_id": daydream_id,
+            "idea_sha256": require_sha256(
+                context.get("idea_sha256"), "Daydream Wish idea sha256"
+            ),
+            "daydream_sha256": None,
+            "provenance_sha256": None,
+            "route": None,
+        }
+        for name in ("daydream_sha256", "provenance_sha256"):
+            if context.get(name) is not None:
+                origin[name] = require_sha256(
+                    context.get(name), "Daydream Wish %s" % name
+                )
+        route = context.get("route")
+        if route is not None:
+            workshop_effort(route)
+            origin["route"] = route
+        return origin
+    except ContractError as exc:
+        raise StateConflict("Daydream Wish origin is malformed") from exc
+
+
+def _native_lineage(
+    paths: Optional[NativeRunPaths], checkpoint: AgentRunCheckpoint
+) -> Mapping[str, Any]:
+    lineage: dict[str, Any] = {
+        "schema_version": 1,
+        "wish_id": checkpoint.product_id,
+        "wish_sha256": checkpoint.wish_sha256,
+        "origin": None,
+        "invented": None,
+        "made": None,
+        "playtested": None,
+        "release": None,
+    }
+    if paths is None:
+        return lineage
+    lineage["origin"] = _daydream_origin(_load_wish(paths.workspace))
+    for name, stage, suffix, fields, optional in _LINEAGE_CONTRACTS:
+        lineage[name] = _accepted_lineage_contract(
+            paths,
+            checkpoint,
+            stage=stage,
+            suffix=suffix,
+            fields=fields,
+            optional=optional,
+        )
+    return lineage
+
+
 def _native_receipt(
     checkpoint: AgentRunCheckpoint,
     *,
@@ -8065,6 +8235,8 @@ def _native_receipt(
                     ),
                     "requested": True,
                     "required": True,
+                    "design_id": receipt.design_id,
+                    "slug": receipt.slug,
                     "page_url": receipt.details.get("page_url"),
                     "manual_url": receipt.details.get("manual_url"),
                     "cover_url": receipt.details.get("cover_url"),
@@ -8185,6 +8357,7 @@ def _native_receipt(
                 "reason": "Host token state was not provided.",
             }
         ),
+        "lineage": _native_lineage(paths, checkpoint),
     }
     if checkpoint.effort is not None:
         receipt["effort"] = checkpoint.effort

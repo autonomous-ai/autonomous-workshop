@@ -8,7 +8,7 @@ import os
 import stat
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 from workshop.contributors import (
@@ -19,19 +19,22 @@ from workshop.contributors import (
     load_taste,
     validate_inventor_collection,
 )
+from workshop.contributors.extensions import load_inventor_extension_bundles
 from workshop.daydream._files import read_regular_bytes, write_private_bytes
 from workshop.daydream.catalog import (
     PriorWork,
     lint_novelty,
-    load_repository_prior_work,
+    load_prior_work,
     render_prior_work_markdown,
     source_checkout_root,
 )
 from workshop.daydream.contracts import (
+    DaydreamProvenance,
     CREATED_AT_FORMAT,
     DaydreamError,
     Idea,
     NoveltyReport,
+    ROUTE_FLOORS,
     SealedDaydream,
     canonical_json,
     generate_daydream_id,
@@ -41,28 +44,58 @@ from workshop.daydream.contracts import (
 )
 from workshop.daydream.notebook import (
     NotebookEntry,
+    StructuralTrace,
     append_notebook_entry,
     prior_work_from_notebook,
     read_notebook,
     render_notebook_markdown,
+    unresolved_actionable_entries,
+)
+from workshop.daydream.outcomes import (
+    RunOutcomeMemory,
+    read_outcomes,
+    render_outcomes_markdown,
 )
 from workshop.daydream.prompt import (
     DAYDREAM_CONSTITUTION,
     DAYDREAM_CONSTITUTION_SHA256,
+    ROUTE_BUDGETS,
     build_daydream_prompt,
+)
+from workshop.daydream.portfolio import (
+    PortfolioEntry,
+    load_portfolio,
+    prior_work_from_portfolio,
+    render_portfolio_markdown,
 )
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
 from workshop._validation import require_sha256
-from workshop.errors import ContractError
+from workshop.errors import ContractError, ManifestError
+from workshop.invent.gamevault import (
+    GameVaultError,
+    GameVaultUnavailable,
+    default_client as default_gamevault_client,
+)
+from workshop.invent.vault import MAX_PACKED_BYTES, Vault
+from workshop.runtime.agent_assets import (
+    InventorSkillBinding,
+    inventor_custom_agent_bytes,
+    parse_inventor_custom_agent_bytes,
+)
 from workshop.runtime.codex import CodexInvocationError, CodexRecoverableInvocationError
 from workshop.runtime.managers import (
     NativeManagerRecoverableError,
     DEFAULT_MANAGER_ID,
     NativeManagerInvocationError,
     manager_launcher,
+    manager_project_bytes,
     manager_spec,
 )
-from workshop.runtime.package_data import default_workshop_home
+from workshop.runtime.package_data import (
+    PackageDataError,
+    default_workshop_home,
+    product_run_domain_skill_roots,
+)
 from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER,
     PRODUCT_RUN_ROOT_MARKER_BYTES,
@@ -75,14 +108,21 @@ DAYDREAM_REJECTION_KIND = "autonomous-workshop.daydream-rejection"
 IDEA_FILE_NAME = "IDEA.json"
 OUTCOME_FILE_NAME = "agent-outcome.json"
 FINALIZER_FILE_NAME = "finalize_daydream.py"
+SCHEMA_FILE_NAME = "daydream_schema.py"
 DAYDREAM_OUTCOME_KIND = "autonomous-workshop.daydream-outcome"
 MAX_OUTCOME_FILE_BYTES = 64 * 1024
 REJECTED_FILE_NAME = "REJECTED.json"
+INVENTOR_BINDING_FILE_NAME = "INVENTOR.json"
+VAULT_BINDING_FILE_NAME = "VAULT-BINDING.json"
+PROVENANCE_FILE_NAME = "PROVENANCE.json"
 MAX_IDEA_FILE_BYTES = 64 * 1024
 MAX_SEALED_FILE_BYTES = 256 * 1024
 MAX_ERROR_CHARS = 1_000
 NOTEBOOK_LINT_LIMIT = 1_000_000
 WISH_CONTEXT_SOURCE = "workshop-daydream"
+MAX_INVENTOR_SOURCE_BYTES = 64 * 1024
+MAX_DAYDREAM_SKILL_FILES = 128
+MAX_DAYDREAM_SKILL_BYTES = 2 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -94,6 +134,7 @@ class DaydreamPaths:
     work: Path
     host_state: Path
     notebook: Path
+    outcomes: Path
 
 
 def _existing_real_directory(path: Path, *, label: str, private: bool = True) -> Path:
@@ -199,6 +240,7 @@ def daydream_paths(
         work=work,
         host_state=host_state,
         notebook=folder / "NOTEBOOK.jsonl",
+        outcomes=folder / "OUTCOMES.jsonl",
     )
 
 
@@ -239,25 +281,393 @@ def finalizer_bytes() -> bytes:
     )
 
 
+def schema_bytes() -> bytes:
+    """The exact shared schema copied beside the run-local finalizer."""
+
+    return read_regular_bytes(
+        Path(__file__).with_name("schema.py"),
+        maximum=MAX_OUTCOME_FILE_BYTES * 8,
+        label="daydream schema source",
+    )
+
+
+def _materialize_domain_skill(paths: DaydreamPaths, *, name: str, source_root: Path) -> None:
+    """Copy one trusted package-owned skill without following linked content."""
+
+    requested = Path(source_root)
+    if requested.is_symlink():
+        raise DaydreamError("Daydream domain skill %s must not be a symlink" % name)
+    try:
+        root = requested.resolve(strict=True)
+    except OSError as exc:
+        raise DaydreamError("Daydream domain skill %s is unavailable" % name) from exc
+    if root != requested or not root.is_dir():
+        raise DaydreamError("Daydream domain skill %s must be a canonical directory" % name)
+    entries: list[tuple[Path, Path, int]] = []
+    total = 0
+    for source in sorted(root.rglob("*"), key=lambda item: item.as_posix()):
+        relative = source.relative_to(root)
+        if "__pycache__" in relative.parts or source.name == ".DS_Store":
+            continue
+        if source.is_symlink():
+            raise DaydreamError("Daydream domain skill %s contains a symlink" % name)
+        if source.is_dir():
+            continue
+        try:
+            identity = source.lstat()
+        except OSError as exc:
+            raise DaydreamError("Daydream domain skill %s changed while reading" % name) from exc
+        if not stat.S_ISREG(identity.st_mode):
+            raise DaydreamError("Daydream domain skill %s contains a special file" % name)
+        total += identity.st_size
+        entries.append((source, relative, identity.st_mode))
+    if (
+        not entries
+        or len(entries) > MAX_DAYDREAM_SKILL_FILES
+        or total > MAX_DAYDREAM_SKILL_BYTES
+    ):
+        raise DaydreamError("Daydream domain skill %s exceeds its input bounds" % name)
+
+    skills_root = paths.workspace / ".agents" / "skills"
+    for directory, label in (
+        (paths.workspace / ".agents", "Daydream agent inputs"),
+        (skills_root, "Daydream skill inputs"),
+        (skills_root / name, "Daydream %s skill" % name),
+    ):
+        _ensure_private_directory(directory, label=label)
+    target_root = skills_root / name
+    for source, relative, source_mode in entries:
+        content = read_regular_bytes(
+            source,
+            maximum=MAX_DAYDREAM_SKILL_BYTES,
+            label="Daydream %s skill file" % name,
+        )
+        destination = target_root / relative
+        destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        write_private_bytes(
+            destination,
+            content,
+            label="materialized Daydream %s skill" % name,
+        )
+        os.chmod(destination, 0o500 if source_mode & 0o111 else 0o400)
+
+
+def _default_vault_loader() -> Vault:
+    return default_gamevault_client().export()
+
+
+def _materialize_vault(
+    paths: DaydreamPaths, *, vault_loader: Callable[[], Vault]
+) -> tuple[bytes, Mapping[str, Any]]:
+    """Fetch one host-owned advisory Vault snapshot and its offline query skill."""
+
+    try:
+        design_vault_skill = product_run_domain_skill_roots()["design-vault"]
+    except (KeyError, PackageDataError) as exc:
+        raise DaydreamError("the packaged design-vault skill is unavailable") from exc
+    _materialize_domain_skill(paths, name="design-vault", source_root=design_vault_skill)
+    try:
+        vault = vault_loader()
+    except GameVaultUnavailable:
+        binding: Mapping[str, Any] = {"status": "unavailable"}
+        summary = (
+            "# Design Vault advisory context\n\n"
+            "Status: unavailable for this Daydream. Do not claim Vault leads or "
+            "invent missing knowledge. Continue from Taste, world sources, portfolio, "
+            "and prior art.\n"
+        ).encode("utf-8")
+    except GameVaultError as exc:
+        raise DaydreamError("Design Vault returned invalid evidence: %s" % exc) from exc
+    else:
+        if not isinstance(vault, Vault):
+            raise DaydreamError("Design Vault loader returned no typed Vault")
+        packed = vault.packed_bytes()
+        if not 1 <= len(packed) <= MAX_PACKED_BYTES:
+            raise DaydreamError("Design Vault snapshot exceeds its byte bound")
+        digest = hashlib.sha256(packed).hexdigest()
+        binding = {
+            "status": "available",
+            "path": "VAULT.json",
+            "skill": ".agents/skills/design-vault/SKILL.md",
+            "sha256": digest,
+            "nodes": len(vault.nodes),
+        }
+        write_private_bytes(
+            paths.workspace / "VAULT.json", packed, label="Daydream Vault snapshot"
+        )
+        os.chmod(paths.workspace / "VAULT.json", 0o400)
+        write_private_bytes(
+            paths.host_state / "VAULT.json", packed, label="host Daydream Vault snapshot"
+        )
+        summary = (
+            "# Design Vault advisory context\n\n"
+            "Status: available\n"
+            "Snapshot: `VAULT.json`\n"
+            "SHA-256: `%s`\n"
+            "Nodes: %d\n\n"
+            "Query it only through `.agents/skills/design-vault/vault_tools.py`. "
+            "This pre-Wish workspace has no `STAGE.json`; use only the skill's "
+            "offline resolve, node, and guidance queries. "
+            "Treat every result as an advisory mechanism lead or risk, never an "
+            "engineering fact and never Taste authority.\n"
+            % (digest, len(vault.nodes))
+        ).encode("utf-8")
+    write_private_bytes(
+        paths.host_state / VAULT_BINDING_FILE_NAME,
+        (canonical_json(binding) + "\n").encode("utf-8"),
+        label="Daydream Vault binding",
+    )
+    return summary, binding
+
+
+def _materialize_selected_inventor(
+    paths: DaydreamPaths, *, manifest: InventorManifest, taste: Taste
+) -> Mapping[str, Any]:
+    """Project the selected Inventor's exact agent and skill trees read-only."""
+
+    try:
+        bundles = load_inventor_extension_bundles(manifest)
+    except ManifestError as exc:
+        raise DaydreamError("selected Inventor skills are invalid: %s" % exc) from exc
+    if not bundles:
+        raise DaydreamError("selected Inventor declares no specialist skill")
+    manifest_bytes = read_regular_bytes(
+        manifest.path,
+        maximum=MAX_INVENTOR_SOURCE_BYTES,
+        label="selected Inventor manifest",
+    )
+    taste_path = manifest.path.parent / "TASTE.md"
+    taste_bytes = read_regular_bytes(
+        taste_path,
+        maximum=MAX_INVENTOR_SOURCE_BYTES,
+        label="selected Inventor Taste",
+    )
+    if hashlib.sha256(taste_bytes).hexdigest() != taste.sha256:
+        raise DaydreamError("selected Inventor Taste changed after validation")
+    skills = tuple(
+        InventorSkillBinding(
+            name=bundle.extension.name,
+            path=bundle.extension.path,
+            artifact_sha256=bundle.extension.artifact_sha256,
+        )
+        for bundle in bundles
+    )
+    try:
+        agent_bytes = inventor_custom_agent_bytes(
+            manifest.inventor_id,
+            manifest_bytes,
+            taste_bytes,
+            skills=skills,
+        )
+    except ContractError as exc:
+        raise DaydreamError("selected Inventor custom agent is invalid: %s" % exc) from exc
+
+    agents_root = paths.workspace / ".agents"
+    skills_root = agents_root / "skills"
+    codex_root = paths.workspace / ".codex"
+    codex_agents = codex_root / "agents"
+    for directory, label in (
+        (agents_root, "Daydream agent inputs"),
+        (skills_root, "Daydream skill inputs"),
+        (codex_root, "Daydream Codex inputs"),
+        (codex_agents, "Daydream custom agents"),
+    ):
+        _ensure_private_directory(directory, label=label)
+
+    for bundle in bundles:
+        target_root = skills_root / bundle.extension.name
+        _ensure_private_directory(target_root, label="Inventor skill %s" % bundle.extension.name)
+        for entry in bundle.manifest.entries:
+            relative = PurePosixPath(entry.path)
+            source = bundle.root.joinpath(*relative.parts)
+            content = read_regular_bytes(
+                source,
+                maximum=entry.bytes,
+                label="Inventor skill %s" % relative.as_posix(),
+            )
+            if len(content) != entry.bytes or hashlib.sha256(content).hexdigest() != entry.sha256:
+                raise DaydreamError(
+                    "Inventor skill %s changed after validation" % relative.as_posix()
+                )
+            destination = target_root.joinpath(*relative.parts)
+            destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+            write_private_bytes(
+                destination,
+                content,
+                label="materialized Inventor skill %s" % relative.as_posix(),
+            )
+            os.chmod(destination, 0o500 if entry.executable else 0o400)
+
+    agent_path = codex_agents / (manifest.inventor_id + ".toml")
+    write_private_bytes(agent_path, agent_bytes, label="materialized Inventor custom agent")
+    os.chmod(agent_path, 0o400)
+    try:
+        binding = parse_inventor_custom_agent_bytes(agent_bytes)
+    except ContractError as exc:  # pragma: no cover - compiler and parser share a contract
+        raise DaydreamError("materialized Inventor custom agent is invalid") from exc
+    for root in (agents_root, codex_root):
+        for directory in sorted(
+            (path for path in root.rglob("*") if path.is_dir()),
+            key=lambda path: len(path.parts),
+            reverse=True,
+        ):
+            os.chmod(directory, 0o500)
+        os.chmod(root, 0o500)
+    return binding.to_host_dict()
+
+
 def _write_workspace(
     paths: DaydreamPaths,
     *,
     taste: Taste,
     repository_prior: Sequence[PriorWork],
     notebook_entries: Sequence[NotebookEntry],
-) -> None:
+    portfolio_entries: Sequence[PortfolioEntry],
+    outcome_entries: Sequence[RunOutcomeMemory],
+    vault_summary: bytes,
+) -> Mapping[str, str]:
     files = (
         ("TASTE.md", taste.content.encode("utf-8")),
         ("PRIOR-WORK.md", render_prior_work_markdown(repository_prior).encode("utf-8")),
-        ("NOTEBOOK.md", render_notebook_markdown(notebook_entries).encode("utf-8")),
+        (
+            "PORTFOLIO.md",
+            render_portfolio_markdown(portfolio_entries).encode("utf-8"),
+        ),
+        (
+            "NOTEBOOK.md",
+            (
+                render_notebook_markdown(notebook_entries)
+                + "\n"
+                + render_outcomes_markdown(outcome_entries)
+            ).encode("utf-8"),
+        ),
+        ("VAULT.md", vault_summary),
         # The constitution doubles as AGENTS.md so the Manager runtime loads it
         # the same way it loads a product run's constitution.
         ("AGENTS.md", DAYDREAM_CONSTITUTION.encode("utf-8")),
         (FINALIZER_FILE_NAME, finalizer_bytes()),
+        (SCHEMA_FILE_NAME, schema_bytes()),
         (PRODUCT_RUN_ROOT_MARKER, PRODUCT_RUN_ROOT_MARKER_BYTES),
     )
+    identities: dict[str, str] = {}
     for name, payload in files:
         write_private_bytes(paths.workspace / name, payload, label="daydream %s" % name)
+        identities[name] = hashlib.sha256(payload).hexdigest()
+    return identities
+
+
+def _normalized_excerpt(value: str) -> str:
+    return " ".join(value.casefold().split())
+
+
+def _validate_thesis_evidence(
+    idea: Idea, *, taste: Taste, observed_at: str, route: str
+) -> None:
+    """Bind temporal claims and Taste citations to the exact turn inputs."""
+
+    if idea.schema_version != 3:
+        raise DaydreamError("new Daydream Goals must finalize an idea with schema_version 3")
+    assert idea.opportunity is not None
+    if idea.opportunity.world_scan.observed_at != observed_at or any(
+        entry.observed_at != observed_at for entry in idea.prior_art
+    ):
+        raise DaydreamError(
+            "Daydream world-scan and prior-art observed_at must match the exact turn time"
+        )
+    assert idea.route_floor is not None
+    if ROUTE_FLOORS.index(route) < ROUTE_FLOORS.index(idea.route_floor):
+        raise DaydreamError(
+            "Daydream thesis requires at least the %s route; target route is %s"
+            % (idea.route_floor, route)
+        )
+    taste_text = _normalized_excerpt(taste.content)
+    citations = (*idea.taste_fit.honors, *idea.taste_fit.steers_clear_of)
+    missing = [
+        citation
+        for citation in citations
+        if _normalized_excerpt(citation) not in taste_text
+    ]
+    if missing:
+        raise DaydreamError(
+            "Daydream Taste citations are not exact excerpts of TASTE.md: %s"
+            % "; ".join(missing)
+        )
+
+
+def _validate_learning(
+    idea: Idea, entries: Sequence[NotebookEntry]
+) -> None:
+    """Require exact closure of the newest unresolved rejected thesis.
+
+    This is a lineage gate only. Whether the prior creative direction should
+    be repaired or abandoned, and whether the response is good, remain native
+    Inventor judgment informed by exact downstream outcomes.
+    """
+
+    if idea.schema_version != 3:
+        raise DaydreamError("new Daydream learning requires an idea with schema_version 3")
+    unresolved = unresolved_actionable_entries(entries)
+    unresolved_by_id = {entry.daydream_id: entry for entry in unresolved}
+    traces_by_id = {trace.daydream_id: trace for trace in idea.learning}
+    stale = sorted(set(traces_by_id) - set(unresolved_by_id))
+    if stale:
+        raise DaydreamError(
+            "Daydream learning references resolved or non-actionable memories: %s"
+            % ", ".join(stale)
+        )
+    for daydream_id, trace in traces_by_id.items():
+        if trace.memory_sha256 != unresolved_by_id[daydream_id].sha256:
+            raise DaydreamError(
+                "Daydream learning memory_sha256 does not match %s" % daydream_id
+            )
+    if unresolved and unresolved[-1].daydream_id not in traces_by_id:
+        raise DaydreamError(
+            "Daydream learning must disposition newest unresolved memory %s"
+            % unresolved[-1].daydream_id
+        )
+
+
+def _json_sha256(value: Any) -> str:
+    return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def _json_line_sha256(value: Any) -> str:
+    return hashlib.sha256((canonical_json(value) + "\n").encode("utf-8")).hexdigest()
+
+
+def _build_provenance(
+    *,
+    route: str,
+    manager: Any,
+    prompt: str,
+    idea: Idea,
+    workspace_sha256s: Mapping[str, str],
+    inventor_binding: Mapping[str, Any],
+    vault_binding: Mapping[str, Any],
+) -> DaydreamProvenance:
+    assert idea.opportunity is not None
+    vault_snapshot = vault_binding.get("sha256")
+    if vault_snapshot is not None:
+        require_sha256(vault_snapshot, "Daydream Vault snapshot sha256")
+    return DaydreamProvenance(
+        route=route,
+        input_sha256s={
+            "daydream_prompt": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+            "daydream_constitution": workspace_sha256s["AGENTS.md"],
+            "taste": workspace_sha256s["TASTE.md"],
+            "inventor_binding": _json_line_sha256(inventor_binding),
+            "vault_binding": _json_line_sha256(vault_binding),
+            "vault_snapshot": vault_snapshot,
+            "prior_work": workspace_sha256s["PRIOR-WORK.md"],
+            "portfolio": workspace_sha256s["PORTFOLIO.md"],
+            "notebook": workspace_sha256s["NOTEBOOK.md"],
+            "finalizer": workspace_sha256s[FINALIZER_FILE_NAME],
+            "schema": workspace_sha256s[SCHEMA_FILE_NAME],
+            "world_scan": _json_sha256(idea.opportunity.world_scan.to_dict()),
+            "prior_art": _json_sha256([entry.to_dict() for entry in idea.prior_art]),
+            "manager_spec": hashlib.sha256(manager_project_bytes(manager)).hexdigest(),
+        },
+    )
 
 
 def _daydream_wish_sha256(
@@ -388,8 +798,15 @@ def _read_idea(path: Path) -> Idea:
 
 
 def _remember(
-    paths: DaydreamPaths, *, daydream_id: str, created_at: str, idea: Idea, status: str
+    paths: DaydreamPaths,
+    *,
+    daydream_id: str,
+    created_at: str,
+    idea: Idea,
+    status: str,
+    rejection_reason: Optional[str] = None,
 ) -> None:
+    thesis_memory = idea.schema_version in (2, 3)
     append_notebook_entry(
         paths.notebook,
         NotebookEntry(
@@ -399,6 +816,11 @@ def _remember(
             one_liner=idea.one_liner,
             idea_sha256=idea.sha256,
             status=status,
+            schema_version=idea.schema_version if thesis_memory else 1,
+            structure=StructuralTrace.from_idea(idea) if thesis_memory else None,
+            judge=None,
+            rejection_reason=rejection_reason,
+            learning=idea.learning,
         ),
     )
 
@@ -424,7 +846,14 @@ def _reject(
         (canonical_json(rejection) + "\n").encode("utf-8"),
         label="daydream rejection",
     )
-    _remember(paths, daydream_id=daydream_id, created_at=created_at, idea=idea, status="rejected")
+    _remember(
+        paths,
+        daydream_id=daydream_id,
+        created_at=created_at,
+        idea=idea,
+        status="rejected",
+        rejection_reason=novelty.reason,
+    )
 
 
 def run_daydream(
@@ -440,27 +869,54 @@ def run_daydream(
     moment: Optional[datetime] = None,
     daydream_id: Optional[str] = None,
     effort: Optional[str] = None,
+    vault_loader: Callable[[], Vault] = _default_vault_loader,
 ) -> SealedDaydream:
-    """Let one Inventor dream one new idea and seal it, or explain why not."""
+    """Dream and seal one world-informed thesis, or explain why not.
 
+    Quality constraints are applied inside the Inventor's one native Goal and
+    calibrated by exact downstream outcomes. There is no predictive Judge turn.
+    """
+
+    route = effort if effort is not None else "spark"
+    if route not in ROUTE_BUDGETS:
+        raise ContractError("daydream route budget is unknown: %r" % (route,))
     spec = manager_spec(manager_id)
     manifest, taste = resolve_inventor(inventor_id, source_root=source_root)
     selected_seed = seed if seed is not None else draw_seed()
     if not isinstance(selected_seed, DaydreamSeed):
         raise ContractError("daydream seed must be a DaydreamSeed")
     observed = _utc_moment(moment)
+    created_at = observed.strftime(CREATED_AT_FORMAT)
     selected_id = (
         daydream_id if daydream_id is not None else generate_daydream_id(moment=observed)
     )
     paths = daydream_paths(manifest.inventor_id, selected_id, home=home, create=True)
     catalog_root = repository_root if repository_root is not None else source_checkout_root()
-    repository_prior = load_repository_prior_work(catalog_root)
+    repository_prior = load_prior_work(catalog_root)
     notebook_entries = read_notebook(paths.notebook)
-    _write_workspace(
+    outcome_entries = read_outcomes(paths.outcomes)
+    portfolio_entries = load_portfolio(
+        paths.notebook.parent.parent, exclude_inventor=manifest.inventor_id
+    )
+    vault_summary, vault_binding = _materialize_vault(
+        paths, vault_loader=vault_loader
+    )
+    inventor_binding = _materialize_selected_inventor(
+        paths, manifest=manifest, taste=taste
+    )
+    write_private_bytes(
+        paths.host_state / INVENTOR_BINDING_FILE_NAME,
+        (canonical_json(inventor_binding) + "\n").encode("utf-8"),
+        label="Daydream Inventor binding",
+    )
+    workspace_sha256s = _write_workspace(
         paths,
         taste=taste,
         repository_prior=repository_prior,
         notebook_entries=notebook_entries,
+        portfolio_entries=portfolio_entries,
+        outcome_entries=outcome_entries,
+        vault_summary=vault_summary,
     )
     prompt = build_daydream_prompt(
         inventor_name=taste.name,
@@ -468,7 +924,10 @@ def run_daydream(
         seed=selected_seed,
         notebook_count=len(notebook_entries),
         prior_work_count=len(repository_prior),
+        portfolio_count=len(portfolio_entries),
+        outcome_count=len(outcome_entries),
         effort=effort,
+        observed_at=created_at,
     )
     session = _native_turn(
         launcher_factory,
@@ -486,21 +945,52 @@ def run_daydream(
         label="Daydream",
         launcher_kwargs={"timeout_seconds": DAYDREAM_TURN_TIMEOUT_SECONDS},
     )
+    if session.get("used_web_search") is not True:
+        raise DaydreamError(
+            "Daydream session produced no verified live web-search event"
+        )
     # The Inventor could write anything below the workspace; only a real,
     # unlinked work directory and a fresh notebook decide what gets sealed.
     _existing_real_directory(paths.workspace, label="daydream workspace")
     _existing_real_directory(paths.work, label="daydream work directory", private=False)
     _read_outcome(paths.workspace, file_name=IDEA_FILE_NAME, who="Inventor", goal="Daydream")
     idea = _read_idea(paths.work / IDEA_FILE_NAME)
-    latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
-    novelty = lint_novelty(
-        idea, (*repository_prior, *prior_work_from_notebook(latest_entries))
+    _validate_thesis_evidence(
+        idea, taste=taste, observed_at=created_at, route=route
     )
-    created_at = observed.strftime(CREATED_AT_FORMAT)
+    latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
+    _validate_learning(idea, latest_entries)
+    latest_portfolio = load_portfolio(
+        paths.notebook.parent.parent, exclude_inventor=manifest.inventor_id
+    )
+    novelty = lint_novelty(
+        idea,
+        (
+            *repository_prior,
+            *prior_work_from_notebook(latest_entries),
+            *prior_work_from_portfolio(latest_portfolio),
+        ),
+    )
     if novelty.status != "new":
         _reject(paths, daydream_id=selected_id, created_at=created_at, idea=idea, novelty=novelty)
         raise DaydreamError("Daydream %s rejected: %s" % (selected_id, novelty.reason))
+    provenance = _build_provenance(
+        route=route,
+        manager=spec,
+        prompt=prompt,
+        idea=idea,
+        workspace_sha256s=workspace_sha256s,
+        inventor_binding=inventor_binding,
+        vault_binding=vault_binding,
+    )
+    write_private_bytes(
+        paths.host_state / PROVENANCE_FILE_NAME,
+        (canonical_json(provenance.to_dict()) + "\n").encode("utf-8"),
+        label="Daydream provenance",
+    )
     sealed = SealedDaydream(
+        schema_version=3,
+        provenance=provenance,
         daydream_id=selected_id,
         inventor_id=manifest.inventor_id,
         inventor_name=taste.name,
@@ -580,16 +1070,25 @@ def wish_from_daydream(sealed: SealedDaydream, *, wish_id: Optional[str] = None)
 
     if not isinstance(sealed, SealedDaydream):
         raise ContractError("wish_from_daydream requires a SealedDaydream")
+    context = {
+        "source": WISH_CONTEXT_SOURCE,
+        "inventor_id": sealed.inventor_id,
+        "daydream_id": sealed.daydream_id,
+        "daydream_sha256": sealed.sha256,
+        "idea_sha256": sealed.idea_sha256,
+        "title": sealed.idea.title,
+    }
+    if sealed.provenance is not None:
+        context.update(
+            {
+                "provenance_sha256": sealed.provenance.sha256,
+                "route": sealed.provenance.route,
+            }
+        )
     return Wish.create(
         wish_id if wish_id is not None else generate_wish_id(),
         sealed.brief,
-        context={
-            "source": WISH_CONTEXT_SOURCE,
-            "inventor_id": sealed.inventor_id,
-            "daydream_id": sealed.daydream_id,
-            "idea_sha256": sealed.idea_sha256,
-            "title": sealed.idea.title,
-        },
+        context=context,
     )
 
 
@@ -599,11 +1098,16 @@ __all__ = [
     "DaydreamPaths",
     "DAYDREAM_OUTCOME_KIND",
     "FINALIZER_FILE_NAME",
+    "SCHEMA_FILE_NAME",
     "IDEA_FILE_NAME",
+    "INVENTOR_BINDING_FILE_NAME",
     "OUTCOME_FILE_NAME",
+    "PROVENANCE_FILE_NAME",
     "finalizer_bytes",
+    "schema_bytes",
     "REJECTED_FILE_NAME",
     "WISH_CONTEXT_SOURCE",
+    "VAULT_BINDING_FILE_NAME",
     "daydream_paths",
     "list_daydreams",
     "load_sealed_daydream",

@@ -14,8 +14,17 @@ from cli.main import main, parser
 from workshop.runtime.progress import WishRunTimingEvent
 from workshop.runtime.browser_login import BrowserLoginCredential
 from workshop.daydream import DaydreamError
+from workshop.daydream.native import wish_from_daydream
+from workshop.daydream.outcomes import outcome_path, read_outcomes, remember_run_outcome
 
-from tests.daydream.support import sample_sealed
+from tests.daydream.support import (
+    build_thesis_verdict_dict,
+    sample_provenance,
+    sample_sealed,
+    sample_thesis,
+    sample_verdict,
+)
+from workshop.daydream.contracts import Verdict
 
 
 cli_main = importlib.import_module("cli.main")
@@ -645,6 +654,10 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertIn("Sealing the idea as this run's brief", stderr.getvalue())
         self.assertIn("Starting one native Codex session for Make", stderr.getvalue())
         self.assertNotIn(sealed.brief, stderr.getvalue())
+        outcomes = read_outcomes(outcome_path("sample", home=self.home))
+        self.assertEqual(len(outcomes), 1)
+        self.assertEqual(outcomes[0].run_status, "waiting")
+        self.assertEqual(outcomes[0].route, "spark")
 
     def test_start_passes_effort_manager_github_and_strict(self):
         sealed = sample_sealed()
@@ -688,6 +701,72 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertIn("(saved idea)", stdout.getvalue())
         self.assertNotIn("Build it:", stdout.getvalue())
         self.assertIn("Wish: wish-", stdout.getvalue())
+
+    def test_daydream_outcomes_reports_real_results_without_dreaming(self):
+        sealed = sample_sealed()
+        published = wish_from_daydream(sealed, wish_id="wish-published")
+        stalled = wish_from_daydream(sealed, wish_id="wish-stalled")
+        remember_run_outcome(
+            published,
+            receipt={
+                "product_id": "wish-published",
+                "effort": "spark",
+                "status": "complete",
+                "stage": "release",
+                "publication": {"status": "public", "verified": True},
+            },
+            home=self.home,
+        )
+        remember_run_outcome(
+            stalled,
+            receipt={
+                "product_id": "wish-stalled",
+                "effort": "spark",
+                "status": "failed",
+                "stage": "make",
+            },
+            home=self.home,
+        )
+        stdout = StringIO()
+        with mock.patch("cli.main.run_daydream") as run, mock.patch(
+            "cli.main.start_native_run"
+        ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("daydream", "sample", "--outcomes"))
+        self.assertEqual(result, 0)
+        run.assert_not_called()
+        start.assert_not_called()
+        output = stdout.getvalue()
+        self.assertIn("Yield so far", output)
+        self.assertIn("- 1 theses reached 2 runs: 1 published, 1 failed at make.", output)
+        self.assertIn("wish-stalled", output)
+
+        stdout = StringIO()
+        with mock.patch("cli.main.run_daydream") as run, redirect_stdout(
+            stdout
+        ), redirect_stderr(StringIO()):
+            result = main(("daydream", "sample", "--outcomes", "--json"))
+        self.assertEqual(result, 0)
+        run.assert_not_called()
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(set(payload), {"summary", "outcomes"})
+        self.assertEqual(payload["summary"]["published"], 1)
+        self.assertEqual(payload["summary"]["runs"], 2)
+        self.assertEqual(
+            payload["summary"]["receipts"],
+            [{"run_status": "failed", "stage": "make", "count": 1}],
+        )
+        self.assertEqual([item["wish_id"] for item in payload["outcomes"]], ["wish-published", "wish-stalled"])
+
+    def test_daydream_outcomes_is_empty_for_an_inventor_who_built_nothing(self):
+        stdout = StringIO()
+        with mock.patch("cli.main.run_daydream") as run, redirect_stdout(
+            stdout
+        ), redirect_stderr(StringIO()):
+            result = main(("daydream", "sample", "--outcomes"))
+        self.assertEqual(result, 0)
+        run.assert_not_called()
+        self.assertIn("(none recorded yet)", stdout.getvalue())
+        self.assertNotIn("Yield so far", stdout.getvalue())
 
     def test_daydream_with_a_saved_idea_only_prints_it(self):
         sealed = sample_sealed()
@@ -734,6 +813,43 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(record["published"], 2)
         self.assertEqual(record["last_wish_id"], calls[-1])
         self.assertFalse((self._loop_folder() / "STOP").exists())
+
+    def test_legacy_saved_idea_retains_its_frozen_build_behavior(self):
+        rejected = sample_sealed(verdict=sample_verdict("dream-again"))
+        with mock.patch("cli.main.load_sealed_daydream", return_value=rejected), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("start", "sample", "--idea", rejected.daydream_id))
+        self.assertEqual(result, 0)
+        start.assert_called_once()
+
+    def test_saved_thesis_ignores_a_retired_historical_verdict(self):
+        idea = sample_thesis()
+        verdict = Verdict.parse(
+            build_thesis_verdict_dict(
+                "dream-again",
+                idea_sha256=idea.sha256,
+            )
+        )
+        rejected = sample_sealed(
+            schema_version=2,
+            idea=idea,
+            idea_sha256=idea.sha256,
+            verdict=verdict,
+            provenance=sample_provenance(),
+        )
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main.load_sealed_daydream", return_value=rejected
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(
+            stdout
+        ), redirect_stderr(StringIO()):
+            result = main(("start", "sample", "--idea", rejected.daydream_id))
+        self.assertEqual(result, 0)
+        start.assert_called_once()
+        self.assertNotIn("Judge", stdout.getvalue())
 
     def test_stop_requested_during_a_daydream_lands_before_the_build(self):
         sealed = sample_sealed()

@@ -39,6 +39,20 @@ publication gates.
 
 ## Lifecycle
 
+Daydream is the mandatory first creative step of every
+`workshop start <inventor>` cycle, and a pre-Wish boundary rather than another
+product-run stage. `--idea` reuses a Daydream that already completed; it does
+not bypass Daydream. The separate user-authored `workshop wish` entry point
+starts from the person's Wish and does not select an Inventor up front. Each
+Daydream iteration uses a separate short native session to observe current
+signals, apply one Inventor's exact Taste and specialist method, and seal one
+creative product thesis. A sealed thesis that passes the host's deterministic
+checks becomes the immutable Wish for a new product run; there is no separate
+predictive Judge turn (ADR 0043). It owns the opportunity, intended
+physical experience, anti-generic signature, and proof target; Invent still
+owns the exact engineering solution. See
+[ADR 0043](adr/0043-taste-governed-world-informed-daydream.md).
+
 ```text
 Spark: Wish -> Make -> Release
 Forge: Wish -> Invent <-> Make -> Release

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from importlib import resources
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence
 
@@ -24,6 +25,9 @@ MAX_PRIOR_WORK_SOURCE_CHARS = 200
 MAX_PRIOR_WORK_TITLE_CHARS = 200
 MAX_PRIOR_WORK_SUMMARY_CHARS = 2_000
 MAX_CATALOG_FILE_BYTES = 64 * 1024
+MAX_BUNDLED_CATALOG_BYTES = 256 * 1024
+MAX_BUNDLED_CATALOG_ENTRIES = 2_000
+PRIOR_WORK_CATALOG_KIND = "autonomous-workshop.prior-work-catalog"
 NOVELTY_MAX_SIMILARITY = 0.5
 MIN_TOKEN_CHARS = 3
 STOPWORDS = frozenset(
@@ -145,6 +149,51 @@ def load_repository_prior_work(
         if entry is not None:
             entries.append(entry)
     return tuple(entries)
+
+
+def load_bundled_prior_work() -> tuple[PriorWork, ...]:
+    """Load the release-bundled public portfolio used outside a source checkout."""
+
+    try:
+        payload = resources.files("workshop.daydream").joinpath("prior_work.json").read_bytes()
+    except (OSError, TypeError) as exc:
+        raise DaydreamError("bundled prior-work catalog is unavailable") from exc
+    if not 1 <= len(payload) <= MAX_BUNDLED_CATALOG_BYTES:
+        raise DaydreamError("bundled prior-work catalog exceeds its byte bound")
+    try:
+        raw = json.loads(payload.decode("utf-8"))
+    except (UnicodeError, ValueError, RecursionError) as exc:
+        raise DaydreamError("bundled prior-work catalog is not valid UTF-8 JSON") from exc
+    if (
+        not isinstance(raw, Mapping)
+        or set(raw) != {"schema_version", "kind", "entries"}
+        or type(raw["schema_version"]) is not int
+        or raw["schema_version"] != 1
+        or raw["kind"] != PRIOR_WORK_CATALOG_KIND
+        or not isinstance(raw["entries"], list)
+        or not 1 <= len(raw["entries"]) <= MAX_BUNDLED_CATALOG_ENTRIES
+    ):
+        raise DaydreamError("bundled prior-work catalog contract is invalid")
+    entries: list[PriorWork] = []
+    for index, value in enumerate(raw["entries"]):
+        if not isinstance(value, Mapping) or set(value) != {"source", "title", "summary"}:
+            raise DaydreamError("bundled prior-work entry %d is invalid" % index)
+        try:
+            entries.append(PriorWork(**value))
+        except (TypeError, ContractError) as exc:
+            raise DaydreamError("bundled prior-work entry %d is invalid" % index) from exc
+    if len({entry.source for entry in entries}) != len(entries):
+        raise DaydreamError("bundled prior-work catalog repeats a source")
+    return tuple(entries)
+
+
+def load_prior_work(repository_root: Optional[Path]) -> tuple[PriorWork, ...]:
+    """Merge the bundled release view with newer source-checkout entries."""
+
+    merged = {entry.source: entry for entry in load_bundled_prior_work()}
+    for entry in load_repository_prior_work(repository_root):
+        merged[entry.source] = entry
+    return tuple(merged[source] for source in sorted(merged))
 
 
 def source_checkout_root() -> Optional[Path]:
@@ -271,6 +320,8 @@ __all__ = [
     "STOPWORDS",
     "content_tokens",
     "lint_novelty",
+    "load_bundled_prior_work",
+    "load_prior_work",
     "load_repository_prior_work",
     "normalize_title",
     "render_prior_work_markdown",

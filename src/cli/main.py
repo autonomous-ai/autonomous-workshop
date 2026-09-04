@@ -38,8 +38,14 @@ from workshop.daydream import (
     DaydreamError,
     acquire_loop,
     load_sealed_daydream,
+    outcome_path,
+    read_outcomes,
+    remember_resumed_outcome,
+    remember_run_outcome,
+    render_outcomes_markdown,
     request_stop,
     run_daydream,
+    summarize_outcomes,
     wish_from_daydream,
 )
 from workshop.errors import WorkshopError
@@ -569,6 +575,15 @@ def _dream_or_load(
 ):
     if args.idea is not None:
         sealed = load_sealed_daydream(args.inventor, args.idea)
+        if (
+            effort is not None
+            and sealed.provenance is not None
+            and sealed.provenance.route != effort
+        ):
+            raise DaydreamError(
+                "saved Daydream route is %s, not %s"
+                % (sealed.provenance.route, effort)
+            )
         print("Daydream: %s (saved idea)" % sealed.daydream_id, file=progress, flush=True)
         return sealed
     print("Inventor: %s" % args.inventor, file=progress, flush=True)
@@ -595,15 +610,25 @@ def _dream_or_load(
     )
 
 
-def _login(args: argparse.Namespace) -> int:
-    """Explicitly start the same browser authorization used by create/start."""
+def _daydream_outcomes(args: argparse.Namespace) -> int:
+    """Print what really happened to this Inventor's built ideas; dream nothing."""
 
-    _browser_login(args.inventor, sys.stdout)
-    print("Next: %s" % _shell_command("workshop", "start", args.inventor))
+    outcomes = read_outcomes(outcome_path(args.inventor))
+    if args.json:
+        _print_json(
+            {
+                "summary": summarize_outcomes(outcomes).to_dict(),
+                "outcomes": [outcome.to_dict() for outcome in outcomes],
+            }
+        )
+    else:
+        print(render_outcomes_markdown(outcomes), end="")
     return 0
 
 
 def _daydream(args: argparse.Namespace) -> int:
+    if args.outcomes:
+        return _daydream_outcomes(args)
     root = _inventor_source_root(args.root)
     manager = manager_spec(args.manager)
     progress = sys.stderr if args.json else sys.stdout
@@ -620,6 +645,14 @@ def _daydream(args: argparse.Namespace) -> int:
         _print_json({"daydream": sealed.to_dict()})
     else:
         _print_daydream_card(sealed, stream=progress, offer_build=True)
+    return 0
+
+
+def _login(args: argparse.Namespace) -> int:
+    """Explicitly start the same browser authorization used by create/start."""
+
+    _browser_login(args.inventor, sys.stdout)
+    print("Next: %s" % _shell_command("workshop", "start", args.inventor))
     return 0
 
 
@@ -703,7 +736,13 @@ def _start(args: argparse.Namespace) -> int:
                     live_progress=live_progress,
                 )
             except (WorkshopError, RuntimeError) as exc:
-                # The build session ended without a verdict (timeout, provider
+                remember_run_outcome(
+                    wish,
+                    error=exc,
+                    route=effort.name,
+                    manager=manager.manager_id,
+                )
+                # The build session ended without a receipt (timeout, provider
                 # failure, host refusal).  The run stays checkpointed; the loop
                 # counts the failure and moves on to the next idea.
                 if once:
@@ -725,6 +764,20 @@ def _start(args: argparse.Namespace) -> int:
                     reason = "stopped by workshop stop"
                     break
                 continue
+            except KeyboardInterrupt as exc:
+                remember_run_outcome(
+                    wish,
+                    error=exc,
+                    route=effort.name,
+                    manager=manager.manager_id,
+                )
+                raise
+            remember_run_outcome(
+                wish,
+                receipt=receipt,
+                route=effort.name,
+                manager=manager.manager_id,
+            )
             builds += 1
             publication = receipt.get("publication")
             if isinstance(publication, Mapping) and publication.get("status") == "public":
@@ -829,6 +882,7 @@ def _resume(args: argparse.Namespace) -> int:
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
+    remember_resumed_outcome(receipt)
     if args.json:
         _print_json(receipt)
     else:
@@ -1355,7 +1409,7 @@ def parser() -> argparse.ArgumentParser:
     start = subcommands.add_parser(
         "start",
         help=(
-            "let one Inventor daydream, judge, and build brand-new toys until stopped"
+            "let one Inventor daydream and build brand-new toys until stopped"
         ),
     )
     start.add_argument(
@@ -1453,7 +1507,7 @@ def parser() -> argparse.ArgumentParser:
 
     daydream = subcommands.add_parser(
         "daydream",
-        help="let one Inventor dream and judge one brand-new toy idea without building it",
+        help="let one Inventor dream one brand-new toy idea without building it",
     )
     daydream.add_argument(
         "inventor",
@@ -1464,6 +1518,11 @@ def parser() -> argparse.ArgumentParser:
         "--idea",
         metavar="DAYDREAM_ID",
         help="print a saved idea instead of dreaming a new one",
+    )
+    daydream.add_argument(
+        "--outcomes",
+        action="store_true",
+        help="print what really happened to this Inventor's built ideas instead of dreaming",
     )
     daydream.add_argument(
         "--manager",

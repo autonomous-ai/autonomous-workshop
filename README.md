@@ -13,7 +13,7 @@
 
 # Autonomous Workshop
 
-Autonomous AI Inventors daydream, invent, and make new toys and games around the clock. Each Inventor reads, researches, learns and watches, keeps a notebook, and leaves with one idea it likes. That idea runs through Invent, Make and Release under a trusted host that seals every step, and lands on the [shop](https://www.autonomous.ai/toys), where you order one and it ships in days. Nothing is made before it is wanted.
+Autonomous AI Inventors daydream, invent, and make new toys and games around the clock. Each Inventor reads, researches, learns and watches, keeps a notebook, and leaves with one sealed creative thesis. That thesis runs through Invent, Make and Release under a trusted host that seals every step, and lands on the [shop](https://www.autonomous.ai/toys), where you order one and it ships in days. Nothing is made before it is wanted.
 
 [![The Autonomous Workshop loop: Daydream, Invent (optional), Make, Playtest (optional), Release, Shop, Scoreboard](docs/images/inventor-loop.svg)](docs/images/inventor-loop.svg)
 
@@ -21,7 +21,7 @@ Autonomous AI Inventors daydream, invent, and make new toys and games around the
 
 The Workshop is becoming the engine of an AI-native play company. The full plan, the state of the code, and the specifications are kept privately for now; the pieces below land in this repo as they ship.
 
-- **Daydream** is the first stage. `workshop start <inventor>` runs the whole loop; its first step lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. The Inventor is shown the toys that passed the build review and the ones that failed, with the reason, so it aims at what can actually be made. `workshop daydream <inventor>` shows an idea without building it. Once started, the loop keeps dreaming and building until `workshop stop` or Ctrl-C. Outcome feedback comes next.
+- **Daydream** is the first step. `workshop start <inventor>` always begins there unless `--idea` reuses an already completed Dream; direct `workshop wish` remains the separate user-authored-Wish path. The Inventor observes the live world, reads exact Taste, specialist skills, prior work, portfolio, Design Vault, notebook, and downstream facts, then writes one creative product thesis rather than an engineering design. Nine pre-commit falsification dimensions shape the thesis inside that one Goal; exact Make, Playtest, Release, and publication outcomes calibrate later Dreams instead of a predictive Judge gate. Rejections and host-observed outcomes feed the next content-hashed learning loop. `workshop daydream <inventor>` runs this boundary without Make.
 - **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`WISH.json`, and every run id is a Wish id); that name is a contract, not a promise.
 - **Release explains the model**, and the first order prints and photographs the real piece so listings carry real images.
 - **An outcome scoreboard** keyed to each design feeds the Inventors, so next month's toys beat this month's.
@@ -40,7 +40,7 @@ When an Inventor is not yet connected, Workshop opens [Connect Inventor](https:/
 
 Each Inventor has its own owner-only credential file under `$WORKSHOP_HOME/credentials/inventors/`. The browser returns only a short-lived, one-time authorization code; Workshop exchanges it directly with the Autonomous Toys API. Publishing credentials never enter a browser URL, product workspace, or coding-agent session. To choose a different account later, run `uv run workshop login <inventor-id>`.
 
-One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
+One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and the exact result teaches the next Dream:
 
 ```bash
 uv run workshop start pico-press
@@ -59,7 +59,7 @@ Three consecutive failed daydreams or builds stop the loop on their own. `--once
 uv run workshop start pico-press --effort forge
 ```
 
-Want to see an idea before building? `workshop daydream pico-press` prints the card and stops. Build a saved idea later with `workshop start pico-press --idea <daydream-id>`.
+Want to see an idea before building? `workshop daydream pico-press` prints the card and stops. Build a saved idea later with `workshop start pico-press --idea <daydream-id>`. Want to know how the built ideas really did? `workshop daydream pico-press --outcomes` prints host-counted yield (published, stopped at which stage, errored) over every run of that Inventor.
 
 `--manager` chooses the Workshop Manager for the daydream and the run. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
@@ -136,7 +136,7 @@ Brand new games, invented for one wish: new rules, new pieces, a new reason to s
 
 https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
 
-*[Blindcap: Duel](https://www.autonomous.ai/toys/product/blindcap-duel)
+*[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel)
 — a two-player hidden-information strategy game of mushrooms, probes, and crowns*
 
 ### Bob — invent machines that move ([TASTE.md](inventors/bob/TASTE.md))
@@ -145,7 +145,7 @@ Things that do one delightful thing when you wind them up, let them go, or drop 
 
 https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
 
-*[Trotter](https://www.autonomous.ai/toys/product/spot-quadruped-robot-wind-up-walker)
+*[Trotter](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
 — a palm-size, rubber-band-powered quadruped*
 
 ### Ivy — invent science toys you can hold ([TASTE.md](inventors/ivy/TASTE.md))
@@ -191,22 +191,22 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 
 | Toy | Inventor | Effort | Snapshot | Factory |
 |---|---|---|---|---|
-| Moonwake Turn | [Luma Vale](inventors/luma-vale/) | Spark | [`toys/luma-vale-moonwake-turn/`](toys/luma-vale-moonwake-turn/) | [moonwake-turn](https://www.autonomous.ai/toys/product/moonwake-turn) |
-| Mooncoil Dragon | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-mooncoil-dragon/`](toys/pico-press-mooncoil-dragon/) | [mooncoil-dragon](https://www.autonomous.ai/toys/product/mooncoil-dragon) |
-| Pocket Eclipse Menagerie | [Orin Shadow](inventors/orin-shadow/) | Spark | [`toys/orin-shadow-pocket-eclipse-menagerie/`](toys/orin-shadow-pocket-eclipse-menagerie/) | [pocket-eclipse-menagerie](https://www.autonomous.ai/toys/product/pocket-eclipse-menagerie) |
-| Starling Gate | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-starling-gate/`](toys/pico-press-starling-gate/) | [starling-gate](https://www.autonomous.ai/toys/product/starling-gate) |
-| Moonchase Fox | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-moonchase-fox/`](toys/pico-press-moonchase-fox/) | [moonchase-fox](https://www.autonomous.ai/toys/product/moonchase-fox) |
-| Storm Reveal | [Mira Fold](inventors/mira-fold/) | ✨ Spark | [`toys/mira-fold-storm-reveal/`](toys/mira-fold-storm-reveal/) | [storm-reveal](https://www.autonomous.ai/toys/product/storm-reveal) |
-| Saigon Skyline Chess | [Alice](inventors/alice/) | ✨ Spark | [`toys/alice-saigon-skyline-chess/`](toys/alice-saigon-skyline-chess/) | [saigon-skyline-chess](https://www.autonomous.ai/toys/product/saigon-skyline-chess) |
-| Rainspell Dial | [Sonora Reed](inventors/sonora-reed/) | 🔥 Forge | [`toys/sonora-reed-rainspell-dial-three-field-sound-garden/`](toys/sonora-reed-rainspell-dial-three-field-sound-garden/) | [rainspell-dial-three-field-sound-garden](https://www.autonomous.ai/toys/product/rainspell-dial-three-field-sound-garden) |
-| Eclipse Braid | [Kestrel Knot](inventors/kestrel-knot/) | ✨ Spark | [`toys/kestrel-knot-eclipse-braid/`](toys/kestrel-knot-eclipse-braid/) | [eclipse-braid](https://www.autonomous.ai/toys/product/eclipse-braid) |
-| Moonwake Garden | [Luma Vale](inventors/luma-vale/) | 🗺️ Quest | [`toys/luma-vale-moonwake-garden/`](toys/luma-vale-moonwake-garden/) | [moonwake-garden](https://www.autonomous.ai/toys/product/moonwake-garden) |
-| Horn Tip | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/toys/product/horn-tip) |
-| Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/toys/product/lunar-relay) |
-| Orbit Gobbler | [Bob](inventors/bob/) | 🔥 Forge | [`toys/bob-orbit-gobbler/`](toys/bob-orbit-gobbler/) | [orbit-gobbler](https://www.autonomous.ai/toys/product/orbit-gobbler) |
-| Comet Heist | [Leo](inventors/leo/) | 🗺️ Quest | [`toys/leo-comet-heist-twin-pulse-vault-run/`](toys/leo-comet-heist-twin-pulse-vault-run/) | [comet-heist-twin-pulse-vault-run](https://www.autonomous.ai/toys/product/comet-heist-twin-pulse-vault-run) |
-| Cradle Crescent | [Bob](inventors/bob/) | — | [`toys/bob-cradle-crescent/`](toys/bob-cradle-crescent/) | [cradle-crescent](https://www.autonomous.ai/toys/product/cradle-crescent) |
-| False Lantern | [Leo](inventors/leo/) | — | [`toys/leo-false-lantern/`](toys/leo-false-lantern/) | [false-lantern](https://www.autonomous.ai/toys/product/false-lantern) |
+| Moonwake Turn | [Luma Vale](inventors/luma-vale/) | Spark | [`toys/luma-vale-moonwake-turn/`](toys/luma-vale-moonwake-turn/) | [moonwake-turn](https://www.autonomous.ai/factory/product/moonwake-turn) |
+| Mooncoil Dragon | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-mooncoil-dragon/`](toys/pico-press-mooncoil-dragon/) | [mooncoil-dragon](https://www.autonomous.ai/factory/product/mooncoil-dragon) |
+| Pocket Eclipse Menagerie | [Orin Shadow](inventors/orin-shadow/) | Spark | [`toys/orin-shadow-pocket-eclipse-menagerie/`](toys/orin-shadow-pocket-eclipse-menagerie/) | [pocket-eclipse-menagerie](https://www.autonomous.ai/factory/product/pocket-eclipse-menagerie) |
+| Starling Gate | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-starling-gate/`](toys/pico-press-starling-gate/) | [starling-gate](https://www.autonomous.ai/factory/product/starling-gate) |
+| Moonchase Fox | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-moonchase-fox/`](toys/pico-press-moonchase-fox/) | [moonchase-fox](https://www.autonomous.ai/factory/product/moonchase-fox) |
+| Storm Reveal | [Mira Fold](inventors/mira-fold/) | ✨ Spark | [`toys/mira-fold-storm-reveal/`](toys/mira-fold-storm-reveal/) | [storm-reveal](https://www.autonomous.ai/factory/product/storm-reveal) |
+| Saigon Skyline Chess | [Alice](inventors/alice/) | ✨ Spark | [`toys/alice-saigon-skyline-chess/`](toys/alice-saigon-skyline-chess/) | [saigon-skyline-chess](https://www.autonomous.ai/factory/product/saigon-skyline-chess) |
+| Rainspell Dial | [Sonora Reed](inventors/sonora-reed/) | 🔥 Forge | [`toys/sonora-reed-rainspell-dial-three-field-sound-garden/`](toys/sonora-reed-rainspell-dial-three-field-sound-garden/) | [rainspell-dial-three-field-sound-garden](https://www.autonomous.ai/factory/product/rainspell-dial-three-field-sound-garden) |
+| Eclipse Braid | [Kestrel Knot](inventors/kestrel-knot/) | ✨ Spark | [`toys/kestrel-knot-eclipse-braid/`](toys/kestrel-knot-eclipse-braid/) | [eclipse-braid](https://www.autonomous.ai/factory/product/eclipse-braid) |
+| Moonwake Garden | [Luma Vale](inventors/luma-vale/) | 🗺️ Quest | [`toys/luma-vale-moonwake-garden/`](toys/luma-vale-moonwake-garden/) | [moonwake-garden](https://www.autonomous.ai/factory/product/moonwake-garden) |
+| Horn Tip | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/factory/product/horn-tip) |
+| Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/factory/product/lunar-relay) |
+| Orbit Gobbler | [Bob](inventors/bob/) | 🔥 Forge | [`toys/bob-orbit-gobbler/`](toys/bob-orbit-gobbler/) | [orbit-gobbler](https://www.autonomous.ai/factory/product/orbit-gobbler) |
+| Comet Heist | [Leo](inventors/leo/) | 🗺️ Quest | [`toys/leo-comet-heist-twin-pulse-vault-run/`](toys/leo-comet-heist-twin-pulse-vault-run/) | [comet-heist-twin-pulse-vault-run](https://www.autonomous.ai/factory/product/comet-heist-twin-pulse-vault-run) |
+| Cradle Crescent | [Bob](inventors/bob/) | — | [`toys/bob-cradle-crescent/`](toys/bob-cradle-crescent/) | [cradle-crescent](https://www.autonomous.ai/factory/product/cradle-crescent) |
+| False Lantern | [Leo](inventors/leo/) | — | [`toys/leo-false-lantern/`](toys/leo-false-lantern/) | [false-lantern](https://www.autonomous.ai/factory/product/false-lantern) |
 
 Horn Tip is a Spark run on Grok. A later run with the same brief is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
 
@@ -243,7 +243,7 @@ The floorplan of the shop. An Inventor's idea walks one frozen route; Operations
 [![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime follows a selectable Spark, Forge, or Quest route before handing the released toy to Operations](docs/images/workshop-floorplan.svg?version=daydream-v1)](docs/images/workshop-floorplan.svg)
 
 ```text
-Daydream -> one liked idea -> a frozen effort route:
+Daydream -> one sealed thesis -> its frozen effort route:
 
 ✨ Spark: Make -> Release                          (default)
 🔥 Forge: Invent <-> Make -> Release
@@ -257,9 +257,9 @@ Route diagrams: [Spark](docs/images/effort-spark.svg) · [Forge](docs/images/eff
 
 Every run is keyed by a Wish id. Passed-through stages create no turn, artifact, gate, or evidence; Spark and Forge record Playtest as `not-run`. The reverse arrows are evidence-bound repair routes that spend a shared revision budget, not free retries.
 
-**Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Every step is one native Goal, Daydream included, and every Goal ends with a run-local finalizer writing `agent-outcome.json`, which is the only completion signal the host trusts. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
+**Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Daydream is one short pre-Wish Goal, and every Goal ends with a run-local finalizer writing `agent-outcome.json`, which is the only completion signal the host trusts. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, predictive Judge, or reward loop.
 
-**Two sessions, by design.** `workshop start` is a loop: dream, build, dream again. A daydream is its own short native session. It ends when the idea is sealed: linted, hashed, written to the Inventor's notebook, and rendered as the brief. Each liked idea then gets its own persistent build session, one per run, exactly as a typed brief would. The idea is an immutable input to the build, so Make can never quietly rewrite what it is building; daydreams can run on their own cadence; a saved idea can be built later, on any route or Manager, or rebuilt after a failed Make; and a build failure never touches the idea.
+**Two sessions, by design.** `workshop start` is a loop: dream, build, dream again. Daydream is the short pre-Wish session; its sealed thesis then gets a separate persistent product-run session. The thesis is immutable input, so Invent or Make can solve the exact mechanism without quietly replacing the opportunity, action, payoff, or anti-generic signature. A saved Dream can be reused later with its sealed route and provenance; build outcomes never rewrite it, but they become factual context for a later Dream.
 
 **What Make must prove.** Every printable part passes a fixed print preflight (bed fit, mesh validity, wall thickness at a 0.4 mm nozzle). One independent critic then reviews exact renders blind, before the brief is revealed, and the host rebuilds the CAD in isolation and seals the bytes. When a stage is truly blocked, it records a `Need:` that the receipt and `workshop status` show; nothing waits silently.
 
@@ -284,6 +284,8 @@ docs/               architecture, ADRs, and contributor guides
 Private state stays outside the agent-visible checkout: `$WORKSHOP_HOME/daydreams/<inventor>/`, `$WORKSHOP_HOME/runs/<wish-id>/workspace`, and `$WORKSHOP_HOME/state/<wish-id>/`. Factory credentials live in `$WORKSHOP_HOME/credentials/inventors/<inventor-id>.env` (0600 inside a 0700 directory) and never enter the native agent's session.
 
 Turn budgets, compaction ceilings, recovery windows, and the blind-review protocol are specified in [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md). See also [Workshop architecture](docs/ARCHITECTURE.md), the [publication boundary](docs/PUBLISH_SEALED_PRODUCT.md), and [Playtest evidence](docs/PLAYTEST_EVIDENCE.md).
+Focused Daydream implementation-loop evidence and its explicit limitations are
+recorded in [Daydream evaluation](docs/DAYDREAM_EVALUATION.md).
 
 ## Contributing
 

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.prior-work-catalog",
+  "entries": [
+    {"source":"toys/alice-saigon-skyline-chess","title":"Saigon Skyline Chess","summary":"A geometry-readable orthodox chess set that turns six Ho Chi Minh City landmarks into a complete 32-piece skyline, with round River and square Grid plinths distinguishing the two sides without relying on color."},
+    {"source":"toys/bob-cradle-crescent","title":"Cradle Crescent","summary":"Cradle Crescent is a palm-sized, one-piece crescent desk rocker with two choose-either horn tap pockets and an integral centered star; it is designed for a gentle lateral tap and a point-up rest cue."},
+    {"source":"toys/bob-gutterfall","title":"Gutterfall","summary":"A palm-sized stone gargoyle that rolls nose-down over a table edge and catches its dive with its own curled tail."},
+    {"source":"toys/bob-lunar-relay","title":"Lunar Relay","summary":"A palm-sized, three-part printable desk mechanism whose exposed rocker makes one cratered moon rise when the other is pressed."},
+    {"source":"toys/bob-orbit-gobbler","title":"Orbit Gobbler","summary":"An all-printable hand-cranked desktop automaton in which a geared carrier guides a captive moon through a visible orbit and back through a fixed C-shaped mouth every two crank turns."},
+    {"source":"toys/kestrel-knot-eclipse-braid","title":"Eclipse Braid","summary":"A one-handed print-in-place desk toy whose captive moon runner follows one fully visible braided figure-eight route through two separated bridges and returns home by continued thumb motion."},
+    {"source":"toys/leo-comet-heist-twin-pulse-vault-run","title":"Comet Heist: Twin-Pulse Vault Run","summary":"A portable, all-printed tabletop dexterity game for one or two players: pulse two gravity gates, flick a comet through both portals, and bank into pip-marked vaults across six shots."},
+    {"source":"toys/leo-false-lantern","title":"False Lantern","summary":"A compact two-player firefly signaling duel invented by Leo and completed by the Codex-orchestrated Workshop flow: Wish → Match → Invent → Make ↔ Playtest → Release."},
+    {"source":"toys/luma-vale-moonwake-garden","title":"Moonwake Garden","summary":"A pocket-sized, three-part ambient-light garden whose single exposed right-edge dial reveals Cassiopeia, Cygnus, and a Little Dipper reading within Ursa Minor at three indexed positions."},
+    {"source":"toys/luma-vale-moonwake-turn","title":"Moonwake Turn","summary":"A one-piece desk sculpture whose sailing-ship silhouette becomes a breaching-whale and crescent-moon aperture after one exact quarter-turn."},
+    {"source":"toys/mira-fold-storm-reveal","title":"Storm Reveal","summary":"A pocket-size three-piece sleepy cloud puzzle whose single guided quarter-turn reveals a standing rainbow-and-lightning storm scene, then reverses to reset."},
+    {"source":"toys/orin-shadow-frosting-aloft","title":"Frosting Aloft","summary":"A two-part printable cupcake whose lifted frosting transforms its wall shadow into a hot-air balloon."},
+    {"source":"toys/orin-shadow-lantern-menagerie-the-three-moon-shadow-reel","title":"Lantern Menagerie: The Three-Moon Shadow Reel","summary":"A four-part hand-powered moon gate with a captured reel that casts indexed rabbit, fox, and owl shadows from an ordinary external phone flashlight."},
+    {"source":"toys/orin-shadow-pocket-eclipse-menagerie","title":"Pocket Eclipse Menagerie","summary":"A palm-sized one-piece shadow toy whose broad faces project a horned owl and, after a 90-degree turn, a leaping rabbit under an ordinary external phone flashlight."},
+    {"source":"toys/pico-press-comet-pebble","title":"Comet Pebble","summary":"A palm-size one-piece desk wobbler designed for a sideways flick or gentle roll, with a raised smiling-star home cue."},
+    {"source":"toys/pico-press-horn-tip","title":"Horn Tip","summary":"A tiny one-piece crescent desk rocker. Press a rounded horn with a fingertip and it tips, then gravity walks it back to rest on its outer curve."},
+    {"source":"toys/pico-press-moonchase-fox","title":"Moonchase Fox","summary":"A palm-sized, one-piece sleeping fox whose curled tail is a gentle desk-rocking track around a crescent window."},
+    {"source":"toys/pico-press-mooncoil-dragon","title":"Mooncoil Dragon","summary":"A palm-sized one-piece desk rocker designed to rest as a curled sleeping dragon, then reveal a castle-bearing crescent when gently rocked."},
+    {"source":"toys/pico-press-neststomp","title":"Neststomp","summary":"A palm-sized two-piece owl desk toy whose removable chick rolls beneath the belly to create a visible foot-to-foot change."},
+    {"source":"toys/pico-press-orbit-cradle","title":"Orbit Cradle","summary":"A palm-sized, one-piece crescent moon that rocks on one continuous arc while its joined star appears to climb, crest, and return."},
+    {"source":"toys/pico-press-pearlturn","title":"Pearlturn","summary":"A two-piece hand-powered desk toy whose open clam shell is intended to shift between low and tall poses around a loose, visible pearl drum."},
+    {"source":"toys/pico-press-starling-gate","title":"Starling Gate","summary":"A palm-sized, one-piece rocking arch whose negative space shifts from a perched bird at rest toward a shooting-star streak in motion."},
+    {"source":"toys/pico-press-tempest-lull","title":"Tempest Lull","summary":"A palm-sized, one-piece storm-cloud desk rocker whose connected lightning bolt sweeps through the open arch as the whole body rocks and returns toward center."},
+    {"source":"toys/sonora-reed-ember-knock","title":"Ember Knock","summary":"One-piece table-edge lantern rocker for rigid 18–22 mm edges, with a rounded throat, underside striker, twin return pads, and inboard globe ballast."},
+    {"source":"toys/sonora-reed-rainspell-dial-three-field-sound-garden","title":"Rainspell Dial: Three-Field Sound Garden","summary":"A palm-size, hand-powered desktop sound toy whose broad wheel carries a captive rounded gravity plectrum across three visibly different printed rib fields in the continuous sequence rain, frog-song, and crickets."},
+    {"source":"toys/tess-loop-night-sky-weave","title":"Night-Sky Weave","summary":"Nine reversible Crescent, Comet, and Star tiles share centered edge gates, inviting loose mosaic play as snowflakes, dragons, crowns, and newly named constellations."},
+    {"source":"toys/vela-bloom-moon-moth-bloom","title":"Moon-Moth Bloom","summary":"A three-part, hardware-free hand-powered desk toy: sweeping the left wing rotates the meshed pair from a low crescent form toward a moth silhouette with six star apertures."}
+  ]
+}
