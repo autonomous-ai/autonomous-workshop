@@ -91,6 +91,24 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
             resolved_library = None
         if resolved_library is not None and resolved_library.is_file():
             runtime_paths.add(resolved_library)
+    # Every real directory holding a link on the launcher chain, including a
+    # symlinked directory component such as Homebrew's ``opt/python@3.11``.
+    hop = executable
+    for _ in range(32):
+        for parent in reversed(hop.parents):
+            if parent.is_symlink():
+                runtime_paths.add(Path(os.path.realpath(parent.parent)))
+        if not hop.is_symlink():
+            break
+        runtime_paths.add(Path(os.path.realpath(hop.parent)))
+        target = Path(os.readlink(hop))
+        if not target.is_absolute():
+            target = Path(os.path.realpath(hop.parent)) / target
+        hop = Path(os.path.normpath(target))
+    if sysconfig.get_config_var("PYTHONFRAMEWORK"):
+        framework_root = Path(sysconfig.get_config_var("prefix")).resolve(strict=True)
+        if (framework_root / sysconfig.get_config_var("PYTHONFRAMEWORK")).is_file():
+            runtime_paths.add(framework_root)
     runtime_paths.add(Path(binary).resolve(strict=True))
     entries = [
         '":root"="deny"',
@@ -1098,6 +1116,10 @@ class CodexNativeSessionTest(unittest.TestCase):
                 root,
                 launcher.binary,
             )
+            current_policy = (
+                codex_runtime._run_policy_before_launcher_chain(root, current_policy)
+                or current_policy
+            )
             predecessor_policy = codex_runtime._run_policy_before_private_cache(
                 root,
                 current_policy,
@@ -1152,6 +1174,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             current_policy = codex_runtime._codex_run_policy(
                 root,
                 launcher.binary,
+            )
+            current_policy = (
+                codex_runtime._run_policy_before_launcher_chain(root, current_policy)
+                or current_policy
             )
             policy_before_private_cache = (
                 codex_runtime._run_policy_before_private_cache(
@@ -1240,6 +1266,10 @@ class CodexNativeSessionTest(unittest.TestCase):
                     root,
                     launcher.binary,
                 )
+                current_policy = (
+                    codex_runtime._run_policy_before_launcher_chain(root, current_policy)
+                    or current_policy
+                )
                 current_paths = {
                     item.path for item in current_policy.trusted_python_runtime_paths
                 }
@@ -1327,6 +1357,155 @@ class CodexNativeSessionTest(unittest.TestCase):
                 resumed.binding.checkpoint_sha256,
                 payload["checkpoint_sha256"],
             )
+
+    @staticmethod
+    def _launcher_chain_fixture(container):
+        """A venv launcher that reaches the interpreter through a linked directory."""
+
+        real_interpreter = Path(sys.executable).resolve(strict=True)
+        real = container / "real"
+        (real / "bin").mkdir(parents=True)
+        (real / "bin" / "python3.11").symlink_to(real_interpreter)
+        optlink = container / "optlink"
+        optlink.symlink_to(real, target_is_directory=True)
+        venv = container / "venv"
+        (venv / "bin").mkdir(parents=True)
+        (venv / "pyvenv.cfg").write_text(
+            "home = %s\n" % (optlink / "bin"), encoding="utf-8"
+        )
+        (venv / "bin" / "python").symlink_to(optlink / "bin" / "python3.11")
+        (venv / "bin" / "python3").symlink_to("python")
+        return venv / "bin" / "python3", real / "bin", optlink
+
+    def test_launcher_chain_directories_follow_links_and_linked_directories(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            container = Path(temporary).resolve()
+            launcher_path, real_bin, optlink = self._launcher_chain_fixture(container)
+            directories = codex_runtime._launcher_chain_directories(launcher_path)
+            self.assertEqual(
+                directories,
+                (launcher_path.parent, container, real_bin),
+            )
+            self.assertEqual(
+                codex_runtime._launcher_chain_directories(
+                    Path(sys.executable).resolve(strict=True)
+                ),
+                (),
+            )
+            with mock.patch.object(
+                codex_runtime.sys, "executable", str(launcher_path)
+            ):
+                granted = {
+                    identity.path
+                    for identity in codex_runtime._python_runtime_permission_identities()
+                }
+            # Only the physical directories are granted: Codex canonicalizes
+            # rule paths, so the links themselves would grant their targets.
+            self.assertIn(str(container), granted)
+            self.assertIn(str(real_bin), granted)
+            self.assertIn(str(launcher_path.parent), granted)
+            self.assertNotIn(str(optlink), granted)
+            self.assertNotIn(str(optlink / "bin" / "python3.11"), granted)
+
+    def test_framework_runtime_root_is_granted_only_for_framework_builds(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            prefix = Path(temporary).resolve() / "Versions" / "3.11"
+            prefix.mkdir(parents=True)
+
+            def config(values):
+                return lambda key: values.get(key)
+
+            with mock.patch.object(
+                codex_runtime.sysconfig,
+                "get_config_var",
+                config({"PYTHONFRAMEWORK": "", "prefix": str(prefix)}),
+            ):
+                self.assertIsNone(codex_runtime._framework_runtime_root())
+            framework = {"PYTHONFRAMEWORK": "Python", "prefix": str(prefix)}
+            with mock.patch.object(
+                codex_runtime.sysconfig, "get_config_var", config(framework)
+            ):
+                self.assertIsNone(codex_runtime._framework_runtime_root())
+                (prefix / "Python").write_bytes(b"dylib")
+                self.assertEqual(codex_runtime._framework_runtime_root(), prefix)
+
+    def test_resume_accepts_exact_pre_launcher_chain_policy_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            container = Path(temporary).resolve() / "chain"
+            container.mkdir()
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher_path, real_bin, _ = self._launcher_chain_fixture(container)
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            with mock.patch.object(
+                codex_runtime.sys, "executable", str(launcher_path)
+            ):
+                started = self.start(launcher, root)
+                checkpoint = self.host_state(root) / "codex-session.json"
+                payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+                current_policy = codex_runtime._codex_run_policy(
+                    root, launcher.binary
+                )
+                predecessor = codex_runtime._run_policy_before_launcher_chain(
+                    root, current_policy
+                )
+                self.assertIsNotNone(predecessor)
+                current_paths = {
+                    item.path for item in current_policy.trusted_python_runtime_paths
+                }
+                predecessor_paths = {
+                    item.path for item in predecessor.trusted_python_runtime_paths
+                }
+                self.assertLess(predecessor_paths, current_paths)
+                self.assertNotIn(str(real_bin), predecessor_paths)
+                self.assertNotIn(str(container), predecessor_paths)
+                self.assertIn(str(launcher_path.parent), predecessor_paths)
+                payload["runtime_config_sha256"] = codex_runtime._runtime_config_sha256(
+                    launcher.cli_version,
+                    launcher.model,
+                    launcher.reasoning_effort,
+                    predecessor,
+                )
+                identity = {
+                    key: value
+                    for key, value in payload.items()
+                    if key != "checkpoint_sha256"
+                }
+                payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+                checkpoint.write_text(
+                    json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+                    encoding="utf-8",
+                )
+                os.chmod(checkpoint, 0o600)
+                resumed = self.resume(launcher, root)
+                # A host whose chain adds nothing keeps its policy identity.
+                with mock.patch.object(
+                    codex_runtime, "_launcher_chain_candidates", return_value=()
+                ):
+                    self.assertIsNone(
+                        codex_runtime._run_policy_before_launcher_chain(
+                            root, current_policy
+                        )
+                    )
+            self.assertEqual(len(factory.calls), 2)
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+            resumed_filesystem = tomllib.loads(
+                next(
+                    value
+                    for value in factory.calls[1][0]
+                    if value.startswith("permissions.workshop-product-run.filesystem=")
+                )
+            )["permissions"]["workshop-product-run"]["filesystem"]
+            self.assertEqual(resumed_filesystem[str(real_bin)], "read")
+            self.assertEqual(resumed_filesystem[str(container)], "read")
 
     def test_resume_rejects_never_shipped_venv_feature_predecessors(self):
         marker = Path(sys.executable).parent.parent / "pyvenv.cfg"
@@ -1423,6 +1602,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             current_policy = codex_runtime._codex_run_policy(
                 root,
                 launcher.binary,
+            )
+            current_policy = (
+                codex_runtime._run_policy_before_launcher_chain(root, current_policy)
+                or current_policy
             )
             policy_before_private_cache = (
                 codex_runtime._run_policy_before_private_cache(

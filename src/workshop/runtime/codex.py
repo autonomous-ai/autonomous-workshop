@@ -20,7 +20,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterator, Mapping, Optional
+from typing import Any, Callable, Iterable, Iterator, Mapping, Optional
 
 from workshop.errors import ContractError
 from workshop.runtime.execution import (
@@ -568,6 +568,60 @@ def _run_policy_before_venv_launcher_directory(
     )
 
 
+def _run_policy_before_launcher_chain(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> Optional[_CodexRunPolicy]:
+    """Return the exact policy from before launcher-chain traversal was granted.
+
+    Earlier policies trusted only the launcher, its directory, and the fully
+    resolved interpreter.  On hosts whose launcher reaches the interpreter
+    through intermediate links (Homebrew, pyenv, uv-managed builds behind an
+    ``opt`` link) or whose interpreter is a macOS framework build, the sandbox
+    could list the interpreter but never start it.  New policies grant the
+    real directory holding every link on that chain and the framework root.
+    Reconstruct only the immediately
+    preceding policy so already-bound native sessions can resume.  Returns
+    ``None`` on hosts where the chain adds nothing, so their policy identity
+    is unchanged.
+    """
+
+    executable = Path(sys.executable)
+    additions = {
+        str(path)
+        for path in _launcher_chain_candidates(
+            executable, _base_python_runtime_candidates(executable)
+        )
+    }
+    if not additions:
+        return None
+    matching = tuple(
+        identity
+        for identity in run_policy.trusted_python_runtime_paths
+        if identity.path in additions
+    )
+    if len(matching) != len(additions):
+        raise CodexInvocationError(
+            "Codex runtime policy has no unique launcher chain grant"
+        )
+    predecessor_paths = tuple(
+        identity
+        for identity in run_policy.trusted_python_runtime_paths
+        if identity.path not in additions
+    )
+    return _CodexRunPolicy(
+        permission_config_arguments=_permission_config_arguments(
+            run_root,
+            predecessor_paths,
+            run_policy.trusted_codex_runtime_paths,
+        ),
+        trusted_python_runtime_paths=predecessor_paths,
+        trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
+        environment_allowlist=run_policy.environment_allowlist,
+        environment_overrides=run_policy.environment_overrides,
+    )
+
+
 def _codex_native_version_tuple(version: Any) -> Optional[tuple[int, int, int]]:
     if not isinstance(version, str):
         return None
@@ -669,6 +723,95 @@ def _trusted_runtime_path_identity(
     )
 
 
+_MAX_LAUNCHER_SYMLINK_HOPS = 32
+
+
+def _launcher_chain_directories(executable: Path) -> tuple[Path, ...]:
+    """Return the real directories holding every link that starts ``executable``.
+
+    A launcher such as ``.venv/bin/python3`` commonly reaches its interpreter
+    through several links.  Homebrew's framework Python, for example, goes
+    ``python3 -> python -> /opt/homebrew/opt/python@3.11/bin/python3.11 ->
+    ../Frameworks/.../bin/python3.11`` and the ``python@3.11`` directory in
+    the middle is itself a link into the Cellar.  Codex canonicalizes every
+    configured path before it writes a sandbox rule, so granting a link by
+    its own name grants its target instead and the link itself stays
+    unreadable; the kernel then fails the exec while resolving it.  What does
+    work, and what the venv launcher-directory grant already relies on, is
+    trusting the real directory that contains the link.  Walk the chain hop
+    by hop, including symlinked directory components, and return the physical
+    parent directory of each link in order.
+
+    Nothing here is platform-specific: a one-hop Linux launcher yields its
+    ``bin`` directory and a regular executable yields nothing.
+    """
+
+    directories: list[Path] = []
+
+    def remember(link: Path) -> None:
+        parent = Path(os.path.realpath(link.parent))
+        if parent not in directories:
+            directories.append(parent)
+
+    current = executable
+    for _ in range(_MAX_LAUNCHER_SYMLINK_HOPS):
+        for parent in reversed(current.parents):
+            if parent.is_symlink():
+                remember(parent)
+        if not current.is_symlink():
+            return tuple(directories)
+        remember(current)
+        target = Path(os.readlink(current))
+        if not target.is_absolute():
+            target = Path(os.path.realpath(current.parent)) / target
+        current = Path(os.path.normpath(target))
+    raise CodexInvocationError(
+        "Workshop Python launcher symlink chain is too long for its sandbox"
+    )
+
+
+def _framework_runtime_root() -> Optional[Path]:
+    """Return the resolved framework version root of a macOS framework build.
+
+    A framework build (python.org, Homebrew, or a ``--enable-framework``
+    pyenv install) keeps its shared library at ``Versions/X.Y/Python`` beside
+    ``bin``, ``lib``, and ``Resources`` rather than in ``LIBDIR``, so the
+    ``LIBDIR``/``INSTSONAME`` grant below never finds it and the interpreter
+    fails at dynamic load.  That version root is the interpreter installation
+    itself; grant it read-only by exact identity.  ``PYTHONFRAMEWORK`` is
+    empty on every non-framework build, including all Linux interpreters, so
+    this returns nothing there.
+    """
+
+    framework = sysconfig.get_config_var("PYTHONFRAMEWORK")
+    prefix = sysconfig.get_config_var("prefix")
+    if not isinstance(framework, str) or not framework:
+        return None
+    if not isinstance(prefix, str) or not prefix:
+        return None
+    try:
+        resolved = Path(prefix).resolve(strict=True)
+    except OSError:
+        return None
+    if not resolved.is_dir() or not (resolved / framework).is_file():
+        return None
+    return resolved
+
+
+def _launcher_chain_candidates(
+    executable: Path, base: Iterable[Path]
+) -> tuple[Path, ...]:
+    """Return the launcher-chain and framework grants not already in ``base``."""
+
+    known = set(base)
+    additions: list[Path] = []
+    for path in (*_launcher_chain_directories(executable), _framework_runtime_root()):
+        if path is None or path in known or path in additions:
+            continue
+        additions.append(path)
+    return tuple(additions)
+
+
 def _python_runtime_permission_identities(
 ) -> tuple[_TrustedRuntimePathIdentity, ...]:
     """Return exact identities for the read-only Python runtime trust boundary.
@@ -694,6 +837,17 @@ def _python_runtime_permission_identities(
     """
 
     executable = Path(sys.executable)
+    candidates = _base_python_runtime_candidates(executable)
+    candidates.update(_launcher_chain_candidates(executable, candidates))
+    return tuple(
+        _trusted_runtime_path_identity(path)
+        for path in sorted(candidates, key=lambda candidate: str(candidate))
+    )
+
+
+def _base_python_runtime_candidates(executable: Path) -> set[Path]:
+    """Return the interpreter, venv marker, stdlib, and shared-library grants."""
+
     try:
         resolved = executable.resolve(strict=True)
     except OSError as exc:
@@ -748,10 +902,7 @@ def _python_runtime_permission_identities(
             resolved_library = None
         if resolved_library is not None and resolved_library.is_file():
             candidates.add(resolved_library)
-    return tuple(
-        _trusted_runtime_path_identity(path)
-        for path in sorted(candidates, key=lambda candidate: str(candidate))
-    )
+    return candidates
 
 
 def _codex_runtime_permission_identities(
@@ -1786,9 +1937,18 @@ class CodexNativeSessionLauncher:
                 else None
             ),
         )
-        policy_before_private_cache = _run_policy_before_private_cache(
+        policy_before_launcher_chain = _run_policy_before_launcher_chain(
             root,
             run_policy,
+        )
+        historical_current = (
+            run_policy
+            if policy_before_launcher_chain is None
+            else policy_before_launcher_chain
+        )
+        policy_before_private_cache = _run_policy_before_private_cache(
+            root,
+            historical_current,
         )
         policy_before_venv_directory = (
             _run_policy_before_venv_launcher_directory(
@@ -1807,6 +1967,10 @@ class CodexNativeSessionLauncher:
         )
         predecessor_policies: list[tuple[_CodexRunPolicy, bool]] = [
             (policy_before_private_cache, True),
+        ]
+        if policy_before_launcher_chain is not None:
+            predecessor_policies.insert(0, (policy_before_launcher_chain, True))
+        predecessor_policies += [
             (
                 _run_policy_before_workshop_python(historical_policy),
                 True,
