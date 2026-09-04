@@ -73,19 +73,27 @@ it.
 
 ## Credentials
 
-Supply Factory credentials through the private
-`$WORKSHOP_HOME/credentials/factory.env` file (preferred) or a supported
-ephemeral host environment or secret manager. The trusted host loads them only
-when no native agent turn is running. Never put credentials in a Wish, prompt,
-`TASTE.md`, product-run workspace, Release package, source file, or commit. The
-coding-agent subprocess receives a scrubbed environment.
+Interactive users do not create Factory credentials by hand. The first
+`workshop create inventor` or `workshop start <inventor-id>` opens
+`https://www.autonomous.ai/toys/inventor/login`; `workshop login <inventor-id>`
+reconnects explicitly. The trusted host writes the result to the matching
+owner-only `$WORKSHOP_HOME/credentials/inventors/<inventor-id>.env` file and
+loads it only when no native agent turn is running.
 
-The private file uses strict `NAME=raw-value` lines; it is not evaluated by a
-shell, so literal surrounding single or double quotes are invalid. Configure
-exactly one Workshop service account with `FACTORY_USERNAME` and
-`FACTORY_PASSWORD`. This account publishes every Release regardless of which
-Inventor the first active creative stage selected; a person running
-`workshop wish` never supplies a Factory username or password.
+Never put credentials in a Wish, prompt, `TASTE.md`, product-run workspace,
+Release package, source file, or commit. The coding-agent subprocess receives a
+scrubbed environment. Ephemeral host environments and secret managers remain
+supported for non-interactive and legacy deployments.
+
+Each private file uses strict `NAME=raw-value` lines; it is not evaluated by a
+shell, so literal surrounding single or double quotes are invalid. After the
+user authorizes Workshop for the named Inventor, the website redirects only a
+five-minute, single-use authorization code to the loopback callback. Workshop
+proves its in-memory PKCE verifier directly to the Autonomous Toys API, which
+returns `FACTORY_USERNAME` and `FACTORY_PASSWORD` exactly once to the CLI. The
+publishing credential never enters browser JavaScript or a URL. The file also
+stores `FACTORY_INVENTOR_ID`; a missing or mismatched binding is rejected before
+Release.
 
 For migration, exactly one legacy scoped username such as
 `FACTORY_ALICE_USERNAME=alice` is temporarily accepted with
@@ -94,17 +102,19 @@ to that Inventor. Multiple scoped usernames, or a generic and scoped username
 together, are rejected as ambiguous. Rename the legacy key to
 `FACTORY_USERNAME`.
 
-Run `uv run workshop doctor` to validate account singularity, pair
-completeness, file permissions, and syntax without printing any secret value.
-At login, the returned Factory username must match the configured service
-account. Authenticated owner ids and exact artifact hashes remain bound through
-import, publication, reconciliation, and readback receipts. Missing or rejected
+`uv run workshop doctor` validates any legacy host-wide configuration without
+printing a secret. `create` and `start` validate the selected Inventor's file
+before using it. At import, the unchanged Factory session calls
+`/auth/agent/login` with the stored pair, keeps the returned 365-day bearer in
+memory, and retries that login once after a protected request returns `401`.
+Authenticated owner ids and exact artifact hashes remain bound through import,
+publication, reconciliation, and readback receipts. Missing or rejected
 credentials leave Release waiting with a concrete need; they do not create a
 successful private-only Release.
 
-Factory may display the Workshop service account as the public author. The
-actual Inventor remains independently bound in the sealed product facts; it is
-not inferred from the Factory login identity.
+Factory displays the authorizing account as the public author. The actual
+Inventor remains independently bound in the sealed product facts; it is not
+inferred from the Factory login identity.
 
 ## Recovery
 

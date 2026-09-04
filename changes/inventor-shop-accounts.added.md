@@ -1,12 +1,13 @@
-- Give every Inventor its own shop account. `workshop start <inventor-id>`
-  now checks for that account before it dreams anything, prompts once for the
-  username and password, and stores them in
+- Give every Inventor its own shop account. The first time you create or start
+  an Inventor, Workshop opens
+  `https://www.autonomous.ai/toys/inventor/login` in your browser. Choose an
+  Autonomous account and approve **Connect Inventor**; Workshop then continues
+  in the terminal.
+- Store the generated publishing credential and canonical Inventor id in
   `$WORKSHOP_HOME/credentials/inventors/<id>.env` (0600 inside a 0700
-  directory, never inside a run workspace and never given to an agent).
-  Release resolves the publishing pair for the run's selected Inventor and
-  falls back to the host-wide file, so existing hosts keep publishing.
-- `workshop login <inventor-id>` stores that account: it prompts in a
-  terminal and reads the password from stdin when one is piped, so a password
-  never reaches shell history or the process table.
-- `workshop create inventor` prints the sign-up link and the next command.
-  `WORKSHOP_SHOP_SIGNUP_URL` overrides the link.
+  directory). The browser redirects a short-lived authorization code to the
+  local callback; Workshop exchanges it directly with the API using PKCE. The
+  publishing credential never enters browser JavaScript, a URL, a run
+  workspace, or a coding-agent process.
+- `workshop login <inventor-id>` repeats the browser flow to choose a different
+  account. Existing host-wide Factory credentials remain supported.

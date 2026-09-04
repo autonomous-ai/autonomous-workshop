@@ -455,10 +455,13 @@ on that mutable ordering. Draft and public evidence are accepted only when
 authenticated readback preserves the declared category slug.
 
 Starting `workshop wish` authorizes this one required publication for the exact
-run bytes; there is no separate publish mode. One host-owned Workshop Factory
-service account publishes every Inventor's Release. Its credentials are stored
-outside the run in the private Workshop home, loaded only between native turns,
-and never copied into the run workspace or coding-agent process. Inventor
+run bytes; there is no separate publish mode. The person authorizes Workshop in
+the browser, and the Autonomous Toys API generates a reusable publishing
+credential for that account. It is stored outside the run in the private
+Workshop home under the Inventor id that was created or started.
+Release loads only that Inventor's file between native turns and uses the
+existing Factory login integration to mint a 365-day bearer in memory. Neither
+credential enters the run workspace or coding-agent process. Inventor
 provenance stays in the sealed Release facts rather than being inferred from
 the publisher username. Missing credentials leave Release incomplete. A public
 page is the terminal digital handoff, never a printing or delivery receipt.

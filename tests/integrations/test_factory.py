@@ -549,7 +549,10 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(receipt.adapter, "factory")
         self.assertEqual(receipt.details["release_sha256"], self.manifest.artifact_sha256)
         self.assertEqual(receipt.details["playtest_evidence_sha256"], self.playtest_sha256)
-        self.assertEqual(receipt.details["page_url"], "https://www.autonomous.ai/factory/product/verified-toy")
+        self.assertEqual(
+            receipt.details["page_url"],
+            "https://www.autonomous.ai/toys/product/verified-toy",
+        )
         self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
         self.assertEqual(
             receipt.details["factory_category_slug"],
@@ -1591,7 +1594,7 @@ def draft_receipt():
             ).hexdigest(),
             "factory_content": content,
             "factory_content_mapping": "workshop-release-v3-to-factory-content-v1",
-            "page_url": "https://www.autonomous.ai/factory/product/verified-toy",
+            "page_url": "https://www.autonomous.ai/toys/product/verified-toy",
         },
         design_id="design-1",
         slug="verified-toy",
@@ -1619,7 +1622,7 @@ def pdf_draft_receipt():
             "manual_path": "MANUAL.pdf",
             "manual_sha256": hashlib.sha256(PDF_MANUAL).hexdigest(),
             "factory_category_slug": FACTORY_TOY_CATEGORY_SLUG,
-            "page_url": "https://www.autonomous.ai/factory/product/verified-toy",
+            "page_url": "https://www.autonomous.ai/toys/product/verified-toy",
         },
         design_id="design-1",
         slug="verified-toy",

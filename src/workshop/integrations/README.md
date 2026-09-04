@@ -2,10 +2,12 @@
 
 Owns the authenticated Factory adapter used for the host-effect portion of
 Release. `factory.py` builds an exact sealed model-and-Release ZIP handoff,
-logs in with Workshop's single host-owned Factory service account, carries the
-canonical `MANUAL.pdf`, and proves public publication by authenticated hash
-readback. The selected Inventor remains sealed product provenance and is not
-the Factory authentication identity.
+uses the selected Inventor's host-only generated Factory username/password,
+carries the canonical `MANUAL.pdf`, and proves public publication by
+authenticated hash readback. The existing session exchanges the pair for a
+365-day bearer and keeps it in memory only. The selected Inventor remains
+sealed product provenance and selects a local credential file; it is not the
+Factory authentication identity.
 The local product, full-tier print-ready CAD, and in-box manual must pass their
 deterministic gates before this effect starts, but Release remains incomplete
 until Factory readback verifies the exact public bytes. Unsupported remote

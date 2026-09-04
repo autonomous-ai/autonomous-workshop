@@ -36,14 +36,9 @@ codex login
 uv run workshop doctor
 ```
 
-Every Inventor publishes to the shop as its own account, so a toy is credited to the Inventor that dreamed it. Create that account once at [autonomous.ai/toys](https://www.autonomous.ai/toys), using the Inventor's id as its name, then store it on this host:
+When an Inventor is not yet connected, Workshop opens [Connect Inventor](https://www.autonomous.ai/toys/inventor/login) during `create` or `start`. Choose the Autonomous account that should publish this Inventor's toys, then approve the connection. Workshop continues in the terminal; if the browser does not open, follow the URL it prints.
 
-```bash
-uv run workshop login pico-press                      # asks for the username and password
-echo "$PASSWORD" | uv run workshop login pico-press --username pico-press
-```
-
-Credentials live in `$WORKSHOP_HOME/credentials/inventors/<id>.env`, owner-readable, never inside a run workspace and never given to an agent. The first `workshop start` for an Inventor asks for them too when it is run in a terminal.
+Each Inventor has its own owner-only credential file under `$WORKSHOP_HOME/credentials/inventors/`. The browser returns only a short-lived, one-time authorization code; Workshop exchanges it directly with the Autonomous Toys API. Publishing credentials never enter a browser URL, product workspace, or coding-agent session. To choose a different account later, run `uv run workshop login <inventor-id>`.
 
 One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
 
@@ -286,7 +281,7 @@ tests/              component-mirrored deterministic suite
 docs/               architecture, ADRs, and contributor guides
 ```
 
-Private state stays outside the agent-visible checkout: `$WORKSHOP_HOME/daydreams/<inventor>/`, `$WORKSHOP_HOME/runs/<wish-id>/workspace`, and `$WORKSHOP_HOME/state/<wish-id>/`. Factory credentials live in `$WORKSHOP_HOME/credentials/factory.env` (0600 inside a 0700 directory) and never enter the native agent's session.
+Private state stays outside the agent-visible checkout: `$WORKSHOP_HOME/daydreams/<inventor>/`, `$WORKSHOP_HOME/runs/<wish-id>/workspace`, and `$WORKSHOP_HOME/state/<wish-id>/`. Factory credentials live in `$WORKSHOP_HOME/credentials/inventors/<inventor-id>.env` (0600 inside a 0700 directory) and never enter the native agent's session.
 
 Turn budgets, compaction ceilings, recovery windows, and the blind-review protocol are specified in [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md). See also [Workshop architecture](docs/ARCHITECTURE.md), the [publication boundary](docs/PUBLISH_SEALED_PRODUCT.md), and [Playtest evidence](docs/PLAYTEST_EVIDENCE.md).
 

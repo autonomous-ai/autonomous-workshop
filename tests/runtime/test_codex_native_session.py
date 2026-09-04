@@ -414,6 +414,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 "OPENAI_API_KEY": "codex-auth",
                 "FACTORY_PASSWORD": "must-not-reach-codex",
                 "FACTORY_USERNAME": "must-not-reach-codex",
+                "FACTORY_INVENTOR_ID": "alice",
             }
             with mock.patch.dict(os.environ, parent_environment, clear=True):
                 outcome = self.start(
@@ -486,6 +487,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(call["env"]["OPENAI_API_KEY"], "codex-auth")
             self.assertNotIn("FACTORY_PASSWORD", call["env"])
             self.assertNotIn("FACTORY_USERNAME", call["env"])
+            self.assertNotIn("FACTORY_INVENTOR_ID", call["env"])
             filesystem_override = next(
                 value
                 for value in command

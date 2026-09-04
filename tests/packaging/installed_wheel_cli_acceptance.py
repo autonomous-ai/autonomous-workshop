@@ -911,6 +911,23 @@ def acceptance(
             token in wish_help for token in ("--effort", "spark", "forge", "quest")
         ):
             raise AssertionError("installed Wish help lacks selectable effort routes")
+        login_help = _run(
+            (workshop, "login", "--help"), cwd=away, environment=environment
+        ).stdout
+        if "INVENTOR" not in login_help or "--username" in login_help:
+            raise AssertionError("installed login help lacks the browser flow")
+        _run(
+            (
+                python,
+                "-c",
+                "from workshop.runtime.browser_login import "
+                "DEFAULT_INVENTOR_LOGIN_URL as url; "
+                "assert url == "
+                "'https://www.autonomous.ai/toys/inventor/login', url",
+            ),
+            cwd=away,
+            environment=environment,
+        )
         if with_dependencies:
             _native_wish_smoke(
                 workshop=workshop,
