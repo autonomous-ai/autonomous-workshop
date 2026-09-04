@@ -48,10 +48,10 @@ Daydream iteration uses a separate short native session to observe current
 signals, apply one Inventor's exact Taste and specialist method, and seal one
 creative product thesis. A sealed thesis that passes the host's deterministic
 checks becomes the immutable Wish for a new product run; there is no separate
-predictive Judge turn (ADR 0042). It owns the opportunity, intended
+predictive Judge turn (ADR 0043). It owns the opportunity, intended
 physical experience, anti-generic signature, and proof target; Invent still
 owns the exact engineering solution. See
-[ADR 0042](adr/0042-taste-governed-world-informed-daydream.md).
+[ADR 0043](adr/0043-taste-governed-world-informed-daydream.md).
 
 ```text
 Spark: Wish -> Make -> Release
@@ -469,10 +469,13 @@ on that mutable ordering. Draft and public evidence are accepted only when
 authenticated readback preserves the declared category slug.
 
 Starting `workshop wish` authorizes this one required publication for the exact
-run bytes; there is no separate publish mode. One host-owned Workshop Factory
-service account publishes every Inventor's Release. Its credentials are stored
-outside the run in the private Workshop home, loaded only between native turns,
-and never copied into the run workspace or coding-agent process. Inventor
+run bytes; there is no separate publish mode. The person authorizes Workshop in
+the browser, and the Autonomous Toys API generates a reusable publishing
+credential for that account. It is stored outside the run in the private
+Workshop home under the Inventor id that was created or started.
+Release loads only that Inventor's file between native turns and uses the
+existing Factory login integration to mint a 365-day bearer in memory. Neither
+credential enters the run workspace or coding-agent process. Inventor
 provenance stays in the sealed Release facts rather than being inferred from
 the publisher username. Missing credentials leave Release incomplete. A public
 page is the terminal digital handoff, never a printing or delivery receipt.

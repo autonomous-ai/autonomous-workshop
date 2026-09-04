@@ -1,4 +1,4 @@
-# ADR 0042: Make Daydream Taste-governed and world-informed
+# ADR 0043: Make Daydream Taste-governed and world-informed
 
 - Status: Accepted
 - Date: 2026-09-03

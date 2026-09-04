@@ -12,14 +12,17 @@ the installed `workshop` command.
 Spark is the default. Status and resume read that durable choice rather than
 accepting a new effort value.
 
-`workshop login <inventor-id>` stores that Inventor's shop account: it prompts
-in a terminal and reads the password from stdin when one is piped, so a
-password never reaches shell history or the process table. `workshop start
-<inventor-id>` refuses to begin without that account and prompts for it when
-it is interactive. Both write
-`$WORKSHOP_HOME/credentials/inventors/<id>.env` (owner-only). Release then publishes as that account, so the shop credits the
-Inventor that dreamed the toy. `WORKSHOP_SHOP_SIGNUP_URL` overrides the
-sign-up link the CLI prints.
+`workshop create inventor` and the first `workshop start <inventor-id>` open
+`https://www.autonomous.ai/toys/inventor/login` when that Inventor is not yet
+connected. The CLI prints the complete authorization URL, opens the browser,
+and waits on a random-state, one-shot loopback callback. The callback receives
+only a short-lived code; the CLI exchanges it directly with the Autonomous Toys
+API using its in-memory PKCE verifier. It stores the generated Factory
+username/password and canonical Inventor id in the owner-only
+`$WORKSHOP_HOME/credentials/inventors/<inventor-id>.env`. The stored id must
+match the Inventor selected for publication. The publishing credential never
+enters browser JavaScript, a URL, run workspace, or native-agent environment.
+`workshop login <inventor-id>` explicitly repeats the same flow.
 
 `workshop start <inventor-id>` is the front door and a loop: it asks one
 Inventor to dream one brand-new idea through `workshop.daydream`, prints the

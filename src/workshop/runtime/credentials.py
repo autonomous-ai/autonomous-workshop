@@ -1,6 +1,7 @@
 """Host-only credential loading outside every product-run workspace.
 
-The preferred local source is ``$WORKSHOP_HOME/credentials/factory.env``.
+Browser-issued credentials are stored per Inventor under
+``$WORKSHOP_HOME/credentials/inventors/``.
 It is read lazily by the trusted host after a native coding-agent turn exits;
 the file path and values are never passed to that subprocess.
 """
@@ -19,7 +20,8 @@ from workshop.runtime.package_data import default_workshop_home
 
 MAX_FACTORY_CREDENTIAL_FILE_BYTES = 32 * 1024
 _FACTORY_CREDENTIAL_NAME = re.compile(
-    r"^FACTORY_(?:PASSWORD|USERNAME|[A-Z][A-Z0-9_]{0,63}_USERNAME)$"
+    r"^FACTORY_(?:INVENTOR_ID|PASSWORD|USERNAME|"
+    r"[A-Z][A-Z0-9_]{0,63}_USERNAME)$"
 )
 _FACTORY_SCOPED_USERNAME_NAME = re.compile(
     r"^FACTORY_([A-Z][A-Z0-9_]{0,63})_USERNAME$"
@@ -154,7 +156,7 @@ def _parse_credential_file(
         if (
             not value
             or value != value.strip()
-            or len(value.encode("utf-8")) > 4096
+            or len(value.encode("utf-8")) > 16_384
             or any(ord(character) < 32 or ord(character) == 127 for character in value)
         ):
             raise ContractError(
@@ -186,11 +188,7 @@ def inventor_credential_file(
     inventor_id: str,
     environment: Optional[Mapping[str, str]] = None,
 ) -> Path:
-    """Return one Inventor's own publishing account file.
-
-    Each Inventor publishes as itself, so its account lives in its own
-    owner-only file rather than sharing the host-wide pair.
-    """
+    """Return one per-Inventor publishing-account file."""
 
     if not isinstance(inventor_id, str) or _FACTORY_INVENTOR_ID.fullmatch(inventor_id) is None:
         raise ContractError("Inventor id must be a canonical slug")
@@ -207,19 +205,15 @@ def factory_credential_environment(
 ) -> Mapping[str, str]:
     """Load bounded Factory values without exposing unrelated environment data.
 
-    ``inventor_id`` selects that Inventor's own account file when it exists and
-    falls back to the host-wide file, so a host that has not yet given every
-    Inventor an account keeps publishing. Explicit process environment values
-    override both for ephemeral and CI hosts. Product-run Codex receives none
-    of these sources through :func:`codex_subprocess_environment`.
+    ``inventor_id`` selects that Inventor's credential file when it exists and
+    falls back to the legacy host-wide username/password pair. Explicit process
+    environment values override disk for ephemeral and CI hosts. Product-run
+    Codex receives none of these sources through
+    :func:`codex_subprocess_environment`.
     """
 
     values = os.environ if environment is None else environment
     path = factory_credential_file(values)
-    if inventor_id is not None:
-        scoped = inventor_credential_file(inventor_id, values)
-        if scoped.exists() or scoped.is_symlink():
-            path = scoped
     loaded: dict[str, str] = {}
     if path.exists() or path.is_symlink():
         loaded.update(
@@ -229,6 +223,18 @@ def factory_credential_environment(
                 label="Factory",
             )
         )
+    if inventor_id is not None:
+        scoped = inventor_credential_file(inventor_id, values)
+        if scoped.exists() or scoped.is_symlink():
+            loaded = _parse_credential_file(
+                _read_private_credential_file(scoped),
+                _FACTORY_CREDENTIAL_NAME,
+                label="Factory",
+            )
+            if loaded.get("FACTORY_INVENTOR_ID") != inventor_id:
+                raise ContractError(
+                    "Factory credential is not bound to Inventor %s" % inventor_id
+                )
     environment_values = _credential_environment_values(values)
     environment_usernames = {
         name
@@ -246,21 +252,35 @@ def factory_credential_environment(
             ):
                 loaded.pop(name)
     loaded.update(environment_values)
+    bound_inventor_id = loaded.get("FACTORY_INVENTOR_ID")
+    if (
+        inventor_id is not None
+        and bound_inventor_id is not None
+        and bound_inventor_id != inventor_id
+    ):
+        raise ContractError(
+            "Factory credential is not bound to Inventor %s" % inventor_id
+        )
     return loaded
 
 
 def validate_factory_credential_configuration(values: Mapping[str, str]) -> None:
     """Validate one host credential set without returning or exposing secrets.
 
-    The canonical configuration is one Workshop-owned service account under
-    ``FACTORY_USERNAME`` and ``FACTORY_PASSWORD``. Exactly one legacy scoped
-    username is accepted temporarily as an unambiguous compatibility alias;
-    it is normalized to the same single service account and never binds
-    publication authority to the selected Inventor.
+    Browser authorization stores one generated Factory username/password pair
+    plus its Inventor binding. One scoped username alias remains accepted for
+    legacy hosts.
     """
 
     if not isinstance(values, Mapping):
         raise ContractError("Factory credential configuration must be a mapping")
+
+    bound_inventor_id = values.get("FACTORY_INVENTOR_ID")
+    if bound_inventor_id is not None and (
+        not isinstance(bound_inventor_id, str)
+        or _FACTORY_INVENTOR_ID.fullmatch(bound_inventor_id) is None
+    ):
+        raise ContractError("Factory credential inventor id is malformed")
 
     usernames_present = False
     generic_username = values.get("FACTORY_USERNAME")
@@ -318,6 +338,10 @@ def validate_factory_credential_configuration(values: Mapping[str, str]) -> None
             "Factory credentials must define only one Workshop service account; "
             "replace legacy scoped username variables with FACTORY_USERNAME"
         )
+    if bound_inventor_id is not None and generic_username is None:
+        raise ContractError(
+            "Factory credential inventor id requires FACTORY_USERNAME"
+        )
 
     password = values.get("FACTORY_PASSWORD")
     password_present = password is not None
@@ -344,28 +368,8 @@ def validate_factory_credential_configuration(values: Mapping[str, str]) -> None
         )
 
 
-def store_factory_credentials(
-    username: str,
-    password: str,
-    *,
-    inventor_id: Optional[str] = None,
-    environment: Optional[Mapping[str, str]] = None,
-) -> Path:
-    """Write one validated Factory service-account pair to the private file.
-
-    The file is the operator's own credential store: 0600 inside a 0700
-    directory, never inside a run workspace and never given to an agent.  An
-    existing file is replaced atomically so a failed write cannot leave a
-    half-written credential behind.
-    """
-
-    values = {"FACTORY_USERNAME": username, "FACTORY_PASSWORD": password}
+def _store_factory_values(values: Mapping[str, str], path: Path) -> Path:
     validate_factory_credential_configuration(values)
-    path = (
-        factory_credential_file(environment)
-        if inventor_id is None
-        else inventor_credential_file(inventor_id, environment)
-    )
     directory = path.parent
     try:
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -392,14 +396,41 @@ def store_factory_credentials(
     return path
 
 
+def store_factory_credentials(
+    username: str,
+    password: str,
+    *,
+    inventor_id: Optional[str] = None,
+    environment: Optional[Mapping[str, str]] = None,
+) -> Path:
+    """Write one validated Factory service-account pair to the private file.
+
+    The file is the operator's own credential store: 0600 inside a 0700
+    directory, never inside a run workspace and never given to an agent.  An
+    existing file is replaced atomically so a failed write cannot leave a
+    half-written credential behind.
+    """
+
+    values = {"FACTORY_USERNAME": username, "FACTORY_PASSWORD": password}
+    if inventor_id is not None:
+        values["FACTORY_INVENTOR_ID"] = inventor_id
+    path = (
+        factory_credential_file(environment)
+        if inventor_id is None
+        else inventor_credential_file(inventor_id, environment)
+    )
+    return _store_factory_values(values, path)
+
+
 def factory_service_credential_environment(
     values: Mapping[str, str],
 ) -> Mapping[str, str]:
-    """Normalize one validated Workshop Factory service-account pair.
+    """Normalize one validated Workshop Factory username/password pair.
 
-    A single legacy ``FACTORY_<INVENTOR>_USERNAME`` value is accepted only so
-    existing private hosts can migrate without interrupting Release. Its
-    variable name grants no Inventor-scoped authority.
+    The Inventor binding is validated at the file boundary and deliberately
+    omitted from the service mapping consumed by the unchanged Factory login
+    integration. A single legacy ``FACTORY_<INVENTOR>_USERNAME`` value remains
+    accepted for migration.
     """
 
     validate_factory_credential_configuration(values)

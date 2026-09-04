@@ -179,6 +179,8 @@ class FactoryCredentialBoundaryTest(unittest.TestCase):
             ({"FACTORY_USERNAME": "alice"}, "configured together"),
             ({"FACTORY_PASSWORD": "secret"}, "configured together"),
             ({"FACTORY_ALICE_USERNAME": "alice"}, "configured together"),
+            ({"FACTORY_INVENTOR_ID": "Pico Press"}, "inventor id is malformed"),
+            ({"FACTORY_INVENTOR_ID": "pico-press"}, "requires FACTORY_USERNAME"),
         )
         for values, message in invalid:
             with self.subTest(message=message), self.assertRaisesRegex(
@@ -236,7 +238,23 @@ class InventorAccountTest(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(scoped.parent.stat().st_mode), 0o700)
         self.assertEqual(
             dict(factory_credential_environment(self.environment, inventor_id="pico-press")),
+            {
+                "FACTORY_USERNAME": "pico-press",
+                "FACTORY_PASSWORD": "p2",
+                "FACTORY_INVENTOR_ID": "pico-press",
+            },
+        )
+        self.assertEqual(
+            factory_service_credential_environment(
+                factory_credential_environment(
+                    self.environment, inventor_id="pico-press"
+                )
+            ),
             {"FACTORY_USERNAME": "pico-press", "FACTORY_PASSWORD": "p2"},
+        )
+        self.assertIn(
+            "FACTORY_INVENTOR_ID=pico-press\n",
+            scoped.read_text(encoding="utf-8"),
         )
         # An Inventor without its own account still publishes through the host pair.
         self.assertEqual(
@@ -248,6 +266,26 @@ class InventorAccountTest(unittest.TestCase):
             {"FACTORY_USERNAME": "house", "FACTORY_PASSWORD": "p1"},
         )
         self.assertTrue(shared.is_file())
+
+    def test_scoped_file_rejects_a_missing_or_mismatched_inventor_binding(self):
+        for binding in (None, "mira-fold"):
+            with self.subTest(binding=binding):
+                directory = self.home / "credentials" / "inventors"
+                directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+                os.chmod(directory, 0o700)
+                path = directory / "pico-press.env"
+                source = "FACTORY_USERNAME=khoa\nFACTORY_PASSWORD=agent-secret\n"
+                if binding is not None:
+                    source += "FACTORY_INVENTOR_ID=%s\n" % binding
+                path.write_text(source, encoding="utf-8")
+                os.chmod(path, 0o600)
+
+                with self.assertRaisesRegex(
+                    ContractError, "not bound to Inventor pico-press"
+                ):
+                    factory_credential_environment(
+                        self.environment, inventor_id="pico-press"
+                    )
 
     def test_storing_replaces_atomically_and_rejects_bad_input(self):
         from workshop.errors import ContractError

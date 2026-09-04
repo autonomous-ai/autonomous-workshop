@@ -78,6 +78,11 @@ uv run workshop create inventor ada \
   --root .
 ```
 
+Before writing the bundle, Workshop opens
+`https://www.autonomous.ai/toys/inventor/login` so you can choose the account
+that will publish this Inventor's toys. That connection is stored for this
+Inventor on this computer only.
+
 `inventor.json` records only stable source metadata and exact skill-tree
 bindings:
 

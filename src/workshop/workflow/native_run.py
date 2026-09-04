@@ -278,8 +278,8 @@ _RECOVERABLE_BACKOFF_MAX_SECONDS = 30.0
 _RECOVERABLE_BACKOFF_JITTER_MIN = 0.75
 _RECOVERABLE_BACKOFF_JITTER_SPAN = 0.5
 _FACTORY_CREDENTIALS_NEED = (
-    "Factory credentials for Workshop's service account are missing or malformed; "
-    "configure FACTORY_USERNAME and FACTORY_PASSWORD, then resume this run."
+    "Factory credentials for Workshop publication are missing or malformed; run "
+    "`workshop login <inventor-id>` in an interactive terminal, then resume this run."
 )
 _FACTORY_PUBLICATION_NEED = (
     "Factory publication could not be verified; restore server connectivity, "

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import getpass
 import hashlib
 import json
 import os
@@ -58,12 +57,12 @@ from workshop.make.skill_registry import (
     resolve_skills_root,
 )
 from workshop.runtime.agent_assets import product_run_agent_assets
+from workshop.runtime.browser_login import FactoryBrowserLogin
 from workshop.runtime.execution import codex_subprocess_environment
 from workshop.runtime.credentials import (
-    inventor_credential_file,
-    store_factory_credentials,
     factory_credential_environment,
     factory_service_credential_environment,
+    store_factory_credentials,
 )
 from workshop.runtime.codex import (
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
@@ -92,78 +91,72 @@ from workshop.workflow.effort import (
 
 
 _INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
-_DEFAULT_SHOP_SIGNUP_URL = "https://www.autonomous.ai/toys"
-
-
-def _shop_signup_url() -> str:
-    """Return the configurable page where an Inventor creates a shop account."""
-
-    configured = os.environ.get("WORKSHOP_SHOP_SIGNUP_URL", "").strip()
-    return configured or _DEFAULT_SHOP_SIGNUP_URL
 
 
 def _publishing_account_ready(inventor_id: str) -> bool:
-    """Whether this Inventor already has its own shop account on this host."""
+    """Whether one Inventor has a complete generated Factory credential."""
 
-    scoped = inventor_credential_file(inventor_id)
-    if not (scoped.exists() or scoped.is_symlink()) and not (
-        os.environ.get("FACTORY_USERNAME") and os.environ.get("FACTORY_PASSWORD")
-    ):
-        return False
     try:
-        pair = factory_service_credential_environment(
+        credential = factory_service_credential_environment(
             factory_credential_environment(inventor_id=inventor_id)
         )
     except WorkshopError:
         return False
-    return bool(pair.get("FACTORY_USERNAME")) and bool(pair.get("FACTORY_PASSWORD"))
+    return bool(credential.get("FACTORY_USERNAME")) and bool(
+        credential.get("FACTORY_PASSWORD")
+    )
+
+
+def _browser_login(inventor_id: str, progress: TextIO) -> Path:
+    """Connect one Inventor and persist its generated Factory credential."""
+
+    if not sys.stdin.isatty():
+        raise WorkshopError(
+            "Workshop is not signed in and cannot open an interactive browser from "
+            "this terminal. Run `%s` in an interactive terminal first."
+            % _shell_command("workshop", "login", inventor_id)
+        )
+    with FactoryBrowserLogin(inventor_id=inventor_id) as login:
+        print(
+            "Connect %s to Autonomous" % inventor_id,
+            file=progress,
+            flush=True,
+        )
+        print("Open this link in your browser:", file=progress, flush=True)
+        print(login.authorization_url, file=progress, flush=True)
+        login.open_browser()
+        print("Waiting for authorization...", file=progress, flush=True)
+        credential = login.wait()
+    path = store_factory_credentials(
+        credential.username,
+        credential.password,
+        inventor_id=inventor_id,
+    )
+    print(
+        "Connected %s to @%s." % (inventor_id, credential.username),
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Credentials: %s (owner-only)" % path,
+        file=progress,
+        flush=True,
+    )
+    return path
 
 
 def _ensure_publishing_account(inventor_id: str, progress: TextIO) -> None:
-    """Collect the Inventor's shop account before starting creative work."""
+    """Require browser-issued publishing credentials for one Inventor."""
 
     if _publishing_account_ready(inventor_id):
         return
-    signup = "Create one at %s, then run this again." % _shop_signup_url()
-    if not sys.stdin.isatty():
-        raise WorkshopError(
-            "%s has no shop account on this host, and this is not a terminal. "
-            "Store one with %s, or pipe the password in with "
-            "`echo <password> | workshop login %s --username <name>`. %s"
-            % (
-                inventor_id,
-                _shell_command("workshop", "login", inventor_id),
-                inventor_id,
-                signup,
-            )
-        )
     print(
-        "%s publishes to the shop as its own account, and this host does not "
-        "have it yet." % inventor_id,
+        "Inventor %s needs your Autonomous account to publish finished toys."
+        % inventor_id,
         file=progress,
         flush=True,
     )
-    print(
-        "Create an account for %s at %s, then enter it here."
-        % (inventor_id, _shop_signup_url()),
-        file=progress,
-        flush=True,
-    )
-    try:
-        username = input("Shop username for %s: " % inventor_id).strip()
-        password = getpass.getpass("Shop password for %s: " % inventor_id).strip()
-    except EOFError as exc:
-        raise WorkshopError(
-            "no account was entered for %s. %s" % (inventor_id, signup)
-        ) from exc
-    if not username or not password:
-        raise WorkshopError("both a username and a password are required")
-    path = store_factory_credentials(username, password, inventor_id=inventor_id)
-    print(
-        "Saved %s's account to %s (owner-only)." % (inventor_id, path),
-        file=progress,
-        flush=True,
-    )
+    _browser_login(inventor_id, progress)
 
 
 _LIVE_ACTIVE_INTERVAL_SECONDS = 2.0
@@ -313,6 +306,16 @@ def _validated_inventors(root: Path):
     collection = inventor_collection(root)
     validate_inventor_collection(collection)
     return tuple(discover_inventors(collection))
+
+
+def _require_routable_inventor(root: Path, inventor_id: str) -> None:
+    """Reject an unknown or invalid Inventor before any browser authorization."""
+
+    collection = inventor_collection(root)
+    validate_inventor_collection(
+        collection,
+        required_routable_id=inventor_id,
+    )
 
 
 def _inventor_problems(manifests) -> list[str]:
@@ -646,31 +649,10 @@ def _daydream(args: argparse.Namespace) -> int:
 
 
 def _login(args: argparse.Namespace) -> int:
-    """Store one Inventor's shop account, interactively or from a pipe."""
+    """Explicitly start the same browser authorization used by create/start."""
 
-    inventor_id = args.inventor
-    username = (args.username or "").strip()
-    interactive = sys.stdin.isatty()
-    if not username:
-        if not interactive:
-            raise WorkshopError("--username is required when the password is piped in")
-        print(
-            "Create %s's account at %s if it does not exist yet."
-            % (inventor_id, _shop_signup_url())
-        )
-        username = input("Shop username for %s: " % inventor_id).strip()
-    if interactive:
-        password = getpass.getpass("Shop password for %s: " % inventor_id).strip()
-    else:
-        # A pipe is the only way to pass a password without putting it in shell
-        # history or the process table.
-        password = sys.stdin.readline().strip()
-    if not username or not password:
-        raise WorkshopError("both a username and a password are required")
-    path = store_factory_credentials(username, password, inventor_id=inventor_id)
-    print("Stored %s's shop account as %s." % (inventor_id, username))
-    print("Credentials: %s (owner-only)" % path)
-    print("Next: %s" % _shell_command("workshop", "start", inventor_id))
+    _browser_login(args.inventor, sys.stdout)
+    print("Next: %s" % _shell_command("workshop", "start", args.inventor))
     return 0
 
 
@@ -687,6 +669,7 @@ def _start(args: argparse.Namespace) -> int:
         raise WorkshopError("--max-ideas must be at least 1")
     if args.max_failures < 1:
         raise WorkshopError("--max-failures must be at least 1")
+    _require_routable_inventor(root, args.inventor)
     _ensure_publishing_account(args.inventor, progress)
     lease = acquire_loop(args.inventor)
     if not once:
@@ -1085,17 +1068,8 @@ def _doctor_factory() -> dict[str, str]:
     if not username and not password:
         return _check_record(
             "factory-credentials",
-            "needs-attention",
-            (
-                "Factory credentials are not configured; Release requires public "
-                "Factory publication."
-            ),
-            next_step=(
-                "Configure the Workshop service account as FACTORY_USERNAME and "
-                "FACTORY_PASSWORD in the private "
-                "$WORKSHOP_HOME/credentials/factory.env file; Wish users do not "
-                "supply Factory credentials."
-            ),
+            "ready",
+            "Each Inventor connects to Autonomous in the browser when first needed.",
         )
     return _check_record(
         "factory-credentials",
@@ -1238,7 +1212,6 @@ def _inventors(args: argparse.Namespace) -> int:
 
 
 def _create_inventor(args: argparse.Namespace) -> int:
-    collection = prepare_inventor_collection(args.root)
     if args.taste is None and not args.inventor_id:
         raise WorkshopError(
             "inventor_id is required unless --taste supplies a TASTE.md name"
@@ -1249,6 +1222,9 @@ def _create_inventor(args: argparse.Namespace) -> int:
     name = args.name
     if args.taste is None and name is None:
         name = _default_inventor_name(inventor_id)
+    collection = prepare_inventor_collection(args.root)
+    progress = sys.stderr if args.json else sys.stdout
+    _ensure_publishing_account(inventor_id, progress)
     destination = create_inventor(
         collection,
         inventor_id,
@@ -1284,15 +1260,7 @@ def _create_inventor(args: argparse.Namespace) -> int:
         print("Taste: %s" % (destination / "TASTE.md"))
         print("Skill: %s" % (destination / manifest.extensions[0].path / "SKILL.md"))
         print("Checks: static-passed")
-        print(
-            "Next: create %s's shop account at %s so its toys are published "
-            "under its own name." % (manifest.inventor_id, _shop_signup_url())
-        )
-        print(
-            "Then: %s asks for that username and password once and stores them "
-            "on this host only."
-            % _shell_command("workshop", "start", manifest.inventor_id)
-        )
+        print("Next: %s" % _shell_command("workshop", "start", manifest.inventor_id))
     return 0
 
 
@@ -1517,16 +1485,12 @@ def parser() -> argparse.ArgumentParser:
 
     login = subcommands.add_parser(
         "login",
-        help="store one Inventor's shop account so its toys publish under its name",
+        help="connect one Inventor to your Autonomous account in a browser",
     )
-    login.add_argument("inventor", metavar="INVENTOR")
     login.add_argument(
-        "--username",
-        metavar="NAME",
-        help=(
-            "the Inventor's shop username; required when the password is piped "
-            "in rather than typed"
-        ),
+        "inventor",
+        metavar="INVENTOR",
+        help="Inventor id to connect, such as pico-press",
     )
     login.set_defaults(handler=_login)
 
