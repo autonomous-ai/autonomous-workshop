@@ -7987,12 +7987,15 @@ def _draft_publication_intent_state(
     return intent.state
 
 
+# (lineage key, stage, contract suffix, identity fields, fields that may be null).
+# Make seals ``product_artifact_sha256`` as null; Playtest and Release carry it.
 _LINEAGE_CONTRACTS = (
     (
         "invented",
         "invent",
         "/invented.json",
         ("wish_sha256", "concept_sha256", "invented_sha256"),
+        frozenset(),
     ),
     (
         "made",
@@ -8004,12 +8007,14 @@ _LINEAGE_CONTRACTS = (
             "made_sha256",
             "product_artifact_sha256",
         ),
+        frozenset(("product_artifact_sha256",)),
     ),
     (
         "playtested",
         "playtest",
         "/playtested.json",
         ("playtested_sha256", "made_sha256", "product_artifact_sha256"),
+        frozenset(),
     ),
     (
         "release",
@@ -8021,6 +8026,7 @@ _LINEAGE_CONTRACTS = (
             "playtested_sha256",
             "product_artifact_sha256",
         ),
+        frozenset(),
     ),
 )
 _MAX_LINEAGE_CONTRACT_BYTES = 8 * 1024 * 1024
@@ -8033,6 +8039,7 @@ def _accepted_lineage_contract(
     stage: str,
     suffix: str,
     fields: Sequence[str],
+    optional: frozenset[str] = frozenset(),
 ) -> Optional[Mapping[str, Any]]:
     """Read one current accepted contract already hash-verified by the checkpoint."""
 
@@ -8066,7 +8073,11 @@ def _accepted_lineage_contract(
     try:
         document = _strict_json_bytes(content, label="accepted lineage contract")
         identities = {
-            name: require_sha256(document.get(name), "accepted lineage %s" % name)
+            name: (
+                None
+                if name in optional and document.get(name) is None
+                else require_sha256(document.get(name), "accepted lineage %s" % name)
+            )
             for name in fields
         }
     except ContractError as exc:
@@ -8133,13 +8144,14 @@ def _native_lineage(
     if paths is None:
         return lineage
     lineage["origin"] = _daydream_origin(_load_wish(paths.workspace))
-    for name, stage, suffix, fields in _LINEAGE_CONTRACTS:
+    for name, stage, suffix, fields, optional in _LINEAGE_CONTRACTS:
         lineage[name] = _accepted_lineage_contract(
             paths,
             checkpoint,
             stage=stage,
             suffix=suffix,
             fields=fields,
+            optional=optional,
         )
     return lineage
 

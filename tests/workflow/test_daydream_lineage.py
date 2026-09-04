@@ -105,6 +105,71 @@ class DaydreamReceiptLineageTest(unittest.TestCase):
                     NativeRunPaths(workspace=workspace, host_state=state), checkpoint
                 )
 
+    def test_made_contract_may_leave_product_artifact_unbound(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            workspace = root / "workspace"
+            state = root / "state"
+            workspace.mkdir()
+            state.mkdir()
+            wish = Wish.create("wish-spark", "Build the exact Dream.")
+            (workspace / "WISH.json").write_bytes(canonical_wish_bytes(wish))
+            wish_sha256 = hashlib.sha256(canonical_wish_bytes(wish)).hexdigest()
+            made = {
+                "wish_sha256": wish_sha256,
+                "invented_sha256": "2" * 64,
+                "made_sha256": "3" * 64,
+                "product_artifact_sha256": None,
+            }
+            relative = "artifacts/make/r0001/made.json"
+            path = workspace / relative
+            path.parent.mkdir(parents=True)
+            content = _json_bytes(made)
+            path.write_bytes(content)
+            checkpoint = AgentRunCheckpoint(
+                product_id="wish-spark",
+                stage="make",
+                status="complete",
+                revision=1,
+                round_index=1,
+                max_rounds=4,
+                wish_sha256=wish_sha256,
+                run_root_sha256="6" * 64,
+                host_state_root_sha256="7" * 64,
+                checkpoint_sha256="8" * 64,
+                input_sha256s={},
+                inventor_roster=(),
+                stage_artifacts={
+                    "make": (AgentArtifact(relative, hashlib.sha256(content).hexdigest()),)
+                },
+                invalidated_stages=(),
+                effort="spark",
+            )
+            lineage = _native_lineage(
+                NativeRunPaths(workspace=workspace, host_state=state), checkpoint
+            )
+            self.assertIsNone(lineage["origin"])
+            self.assertEqual(lineage["made"]["made_sha256"], "3" * 64)
+            self.assertIsNone(lineage["made"]["product_artifact_sha256"])
+            made["made_sha256"] = None
+            path.write_bytes(_json_bytes(made))
+            checkpoint = AgentRunCheckpoint(
+                **{
+                    **checkpoint.__dict__,
+                    "stage_artifacts": {
+                        "make": (
+                            AgentArtifact(
+                                relative, hashlib.sha256(_json_bytes(made)).hexdigest()
+                            ),
+                        )
+                    },
+                }
+            )
+            with self.assertRaisesRegex(StateConflict, "malformed"):
+                _native_lineage(
+                    NativeRunPaths(workspace=workspace, host_state=state), checkpoint
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
