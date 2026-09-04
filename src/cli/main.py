@@ -39,10 +39,14 @@ from workshop.daydream import (
     DaydreamError,
     acquire_loop,
     load_sealed_daydream,
+    outcome_path,
+    read_outcomes,
     remember_resumed_outcome,
     remember_run_outcome,
+    render_outcomes_markdown,
     request_stop,
     run_daydream,
+    summarize_outcomes,
     wish_from_daydream,
 )
 from workshop.errors import WorkshopError
@@ -603,7 +607,25 @@ def _dream_or_load(
     )
 
 
+def _daydream_outcomes(args: argparse.Namespace) -> int:
+    """Print what really happened to this Inventor's built ideas; dream nothing."""
+
+    outcomes = read_outcomes(outcome_path(args.inventor))
+    if args.json:
+        _print_json(
+            {
+                "summary": summarize_outcomes(outcomes).to_dict(),
+                "outcomes": [outcome.to_dict() for outcome in outcomes],
+            }
+        )
+    else:
+        print(render_outcomes_markdown(outcomes), end="")
+    return 0
+
+
 def _daydream(args: argparse.Namespace) -> int:
+    if args.outcomes:
+        return _daydream_outcomes(args)
     root = _inventor_source_root(args.root)
     manager = manager_spec(args.manager)
     progress = sys.stderr if args.json else sys.stdout
@@ -1532,6 +1554,11 @@ def parser() -> argparse.ArgumentParser:
         "--idea",
         metavar="DAYDREAM_ID",
         help="print a saved idea instead of dreaming a new one",
+    )
+    daydream.add_argument(
+        "--outcomes",
+        action="store_true",
+        help="print what really happened to this Inventor's built ideas instead of dreaming",
     )
     daydream.add_argument(
         "--manager",

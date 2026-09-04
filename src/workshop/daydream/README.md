@@ -123,6 +123,15 @@ when those facts exist. Model prose, session messages, private URLs, and
 credentials are not copied. The next native Dream interprets these facts;
 Python does not turn them into a reward score or rewrite Taste.
 
+The rendered `NOTEBOOK.md` opens the outcome section with a yield count over
+each run's latest event: how many theses reached a build, how many published,
+where the rest stopped (`failed at make`, `waiting at release`), and how many
+sessions errored or were interrupted, split by route. These are host counts,
+not a score. `workshop daydream <inventor> --outcomes` prints the same view
+(`--json` adds the structured summary and every event) so whether the
+no-Judge loop actually builds and publishes is answered from the log, not from
+opinion.
+
 ## Exact provenance and state
 
 Every schema-v3 seal binds the exact hashes of the Daydream prompt,

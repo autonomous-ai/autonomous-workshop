@@ -64,7 +64,7 @@ Three consecutive failed daydreams or builds stop the loop on their own. `--once
 uv run workshop start pico-press --effort forge
 ```
 
-Want to see an idea before building? `workshop daydream pico-press` prints the card and stops. Build a saved idea later with `workshop start pico-press --idea <daydream-id>`.
+Want to see an idea before building? `workshop daydream pico-press` prints the card and stops. Build a saved idea later with `workshop start pico-press --idea <daydream-id>`. Want to know how the built ideas really did? `workshop daydream pico-press --outcomes` prints host-counted yield (published, stopped at which stage, errored) over every run of that Inventor.
 
 `--manager` chooses the Workshop Manager for the daydream and the run. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 

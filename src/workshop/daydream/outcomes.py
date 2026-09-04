@@ -598,10 +598,121 @@ def read_outcomes(
     return tuple(memories[-limit:])
 
 
+@dataclass(frozen=True)
+class OutcomeSummary:
+    """Host counts over each run's latest event.  Facts only, never a score.
+
+    ``receipts`` lists every non-public receipt as ``(run_status, stage, count)``
+    so a Dream, or a person asking whether the no-Judge loop builds anything,
+    can see where runs actually stop.  ``by_route`` lists ``(route, runs,
+    published)``.  Both are sorted so the rendering is deterministic.
+    """
+
+    theses: int
+    runs: int
+    published: int
+    receipts: tuple[tuple[str, str, int], ...]
+    errors: int
+    interrupted: int
+    by_route: tuple[tuple[str, int, int], ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "theses": self.theses,
+            "runs": self.runs,
+            "published": self.published,
+            "receipts": [
+                {"run_status": status, "stage": stage, "count": count}
+                for status, stage, count in self.receipts
+            ],
+            "errors": self.errors,
+            "interrupted": self.interrupted,
+            "by_route": [
+                {"route": route, "runs": runs, "published": published}
+                for route, runs, published in self.by_route
+            ],
+        }
+
+
+def summarize_outcomes(outcomes: Sequence[RunOutcomeMemory]) -> OutcomeSummary:
+    """Count what happened to each run, judged by its last appended event."""
+
+    latest: dict[str, RunOutcomeMemory] = {}
+    for outcome in outcomes:
+        if not isinstance(outcome, RunOutcomeMemory):
+            raise ContractError("summarize_outcomes requires RunOutcomeMemory items")
+        # The log is append-only, so the last line for a run is its newest fact
+        # (a resume receipt after an interrupted first attempt, for example).
+        latest[outcome.wish_id] = outcome
+    theses = {outcome.daydream_id for outcome in latest.values()}
+    published = errors = interrupted = 0
+    receipts: dict[tuple[str, str], int] = {}
+    routes: dict[str, list[int]] = {}
+    for outcome in latest.values():
+        route = routes.setdefault(outcome.route or "unknown", [0, 0])
+        route[0] += 1
+        if outcome.result == "error":
+            errors += 1
+        elif outcome.result == "interrupted":
+            interrupted += 1
+        elif outcome.publication_status == "public":
+            published += 1
+            route[1] += 1
+        else:
+            key = (outcome.run_status or "unknown", outcome.stage or "unknown")
+            receipts[key] = receipts.get(key, 0) + 1
+    return OutcomeSummary(
+        theses=len(theses),
+        runs=len(latest),
+        published=published,
+        receipts=tuple(
+            (status, stage, count) for (status, stage), count in sorted(receipts.items())
+        ),
+        errors=errors,
+        interrupted=interrupted,
+        by_route=tuple(
+            (route, counts[0], counts[1]) for route, counts in sorted(routes.items())
+        ),
+    )
+
+
+def render_outcome_summary_markdown(summary: OutcomeSummary) -> str:
+    if not isinstance(summary, OutcomeSummary):
+        raise ContractError("render_outcome_summary_markdown requires an OutcomeSummary")
+    if summary.runs == 0:
+        return ""
+    parts = ["%d published" % summary.published]
+    parts.extend(
+        "%d %s at %s" % (count, status, stage)
+        for status, stage, count in summary.receipts
+    )
+    if summary.errors:
+        parts.append("%d errored" % summary.errors)
+    if summary.interrupted:
+        parts.append("%d interrupted" % summary.interrupted)
+    lines = [
+        "## Yield so far (host counts over each run's latest event, not a score)",
+        "",
+        "- %d theses reached %d runs: %s."
+        % (summary.theses, summary.runs, ", ".join(parts)),
+        "- By route: %s."
+        % "; ".join(
+            "%s %d runs, %d published" % (route, runs, published)
+            for route, runs, published in summary.by_route
+        ),
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def render_outcomes_markdown(outcomes: Sequence[RunOutcomeMemory]) -> str:
     lines = ["# Downstream outcomes (host-observed facts, not Judge predictions)", ""]
     if not outcomes:
         lines.append("(none recorded yet)")
+    else:
+        lines.append(render_outcome_summary_markdown(summarize_outcomes(outcomes)))
+        lines.append("## Every recorded event")
+        lines.append("")
     for outcome in outcomes:
         if not isinstance(outcome, RunOutcomeMemory):
             raise ContractError("render_outcomes_markdown requires RunOutcomeMemory items")
@@ -657,10 +768,13 @@ __all__ = [
     "MAX_OUTCOME_MEMORY_BYTES",
     "OUTCOME_FILE_NAME",
     "OUTCOME_MEMORY_KIND",
+    "OutcomeSummary",
     "RunOutcomeMemory",
     "outcome_path",
     "read_outcomes",
     "remember_run_outcome",
     "remember_resumed_outcome",
+    "render_outcome_summary_markdown",
     "render_outcomes_markdown",
+    "summarize_outcomes",
 ]

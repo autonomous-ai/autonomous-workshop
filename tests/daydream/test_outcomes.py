@@ -8,12 +8,15 @@ from pathlib import Path
 from tests.daydream.support import sample_sealed
 from workshop.daydream.native import wish_from_daydream
 from workshop.daydream.outcomes import (
+    OutcomeSummary,
     RunOutcomeMemory,
     outcome_path,
     read_outcomes,
     remember_resumed_outcome,
     remember_run_outcome,
+    render_outcome_summary_markdown,
     render_outcomes_markdown,
+    summarize_outcomes,
 )
 from workshop.errors import ContractError
 from workshop.wish import Wish
@@ -203,6 +206,85 @@ class OutcomeMemoryTest(unittest.TestCase):
                     home=home,
                 )
             )
+
+
+def _event(wish_id, *, result="receipt", route="spark", run_status="complete",
+           stage="release", publication_status=None, daydream_id=None,
+           recorded_at="2026-09-03T08:00:00Z"):
+    error = result != "receipt"
+    return RunOutcomeMemory(
+        daydream_id=daydream_id or "daydream-20260902-101500-0badcafe",
+        idea_sha256="a" * 64,
+        wish_id=wish_id,
+        recorded_at=recorded_at,
+        result=result,
+        route=route,
+        manager="codex",
+        run_status=None if error else run_status,
+        stage=None if error else stage,
+        revision=None,
+        round=None,
+        wish_sha256=None,
+        checkpoint_sha256=None,
+        publication_status=None if error else publication_status,
+        publication_verified=None if error else (publication_status == "public"),
+        error_type="RuntimeError" if error else None,
+        error_detail="the session ended" if error else None,
+    )
+
+
+class OutcomeSummaryTest(unittest.TestCase):
+    def test_summary_counts_each_run_by_its_latest_event(self):
+        second_idea = "daydream-20260903-090000-0badf00d"
+        third_idea = "daydream-20260903-100000-0badbeef"
+        events = (
+            # One idea, one run, published.
+            _event("wish-one", publication_status="public"),
+            # Second idea: interrupted first, then a resume receipt failed at Make.
+            _event("wish-two", result="interrupted", daydream_id=second_idea),
+            _event("wish-two", run_status="failed", stage="make", daydream_id=second_idea,
+                   recorded_at="2026-09-03T09:00:00Z"),
+            # Second idea built again on Forge and published.
+            _event("wish-two-again", route="forge", publication_status="public",
+                   daydream_id=second_idea),
+            # Third idea: the build session died without a receipt.
+            _event("wish-three", result="error", daydream_id=third_idea),
+            # Third idea rebuilt and now waiting for a manual Release step.
+            _event("wish-three-again", run_status="waiting", stage="release",
+                   daydream_id=third_idea),
+        )
+        summary = summarize_outcomes(events)
+        self.assertEqual(summary.theses, 3)
+        self.assertEqual(summary.runs, 5)
+        self.assertEqual(summary.published, 2)
+        self.assertEqual(summary.receipts, (("failed", "make", 1), ("waiting", "release", 1)))
+        self.assertEqual(summary.errors, 1)
+        self.assertEqual(summary.interrupted, 0)
+        self.assertEqual(summary.by_route, (("forge", 1, 1), ("spark", 4, 1)))
+        self.assertEqual(
+            summary.to_dict()["by_route"],
+            [
+                {"route": "forge", "runs": 1, "published": 1},
+                {"route": "spark", "runs": 4, "published": 1},
+            ],
+        )
+        rendered = render_outcomes_markdown(events)
+        self.assertIn("host-observed facts, not Judge predictions", rendered)
+        self.assertIn(
+            "- 3 theses reached 5 runs: 2 published, 1 failed at make, "
+            "1 waiting at release, 1 errored.",
+            rendered,
+        )
+        self.assertIn("- By route: forge 1 runs, 1 published; spark 4 runs, 1 published.", rendered)
+        self.assertLess(rendered.index("Yield so far"), rendered.index("Every recorded event"))
+        self.assertLess(rendered.index("Every recorded event"), rendered.index("wish-one"))
+
+    def test_empty_log_has_no_yield_section_and_rejects_foreign_items(self):
+        self.assertEqual(summarize_outcomes(()), OutcomeSummary(0, 0, 0, (), 0, 0, ()))
+        self.assertEqual(render_outcome_summary_markdown(summarize_outcomes(())), "")
+        self.assertNotIn("Yield so far", render_outcomes_markdown(()))
+        with self.assertRaisesRegex(ContractError, "RunOutcomeMemory"):
+            summarize_outcomes(({"wish_id": "wish"},))
 
 
 if __name__ == "__main__":

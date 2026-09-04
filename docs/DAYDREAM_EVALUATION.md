@@ -130,6 +130,9 @@ sales, or downstream gate success, and they no longer justify a runtime Judge.
    Playtest) routes and learn only from host-observed gate outcomes.
 4. Track latency, uncached tokens, acceptance-to-build yield, repeated failure
    classes, and cross-Inventor structural diversity over a larger sample.
+   Build and publication yield per Inventor is already counted from
+   `OUTCOMES.jsonl` by `workshop daydream <inventor> --outcomes`; the other
+   measures still need collection.
 
 Until those steps pass, the supported conclusion is narrower: Daydream is a
 provenance-bound creative-thesis and outcome-learning system whose focused

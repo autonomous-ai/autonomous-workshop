@@ -33,9 +33,14 @@ from workshop.daydream.loop import (
 )
 from workshop.daydream.notebook import NotebookEntry
 from workshop.daydream.outcomes import (
+    OutcomeSummary,
     RunOutcomeMemory,
+    outcome_path,
+    read_outcomes,
     remember_resumed_outcome,
     remember_run_outcome,
+    render_outcomes_markdown,
+    summarize_outcomes,
 )
 from workshop.daydream.prompt import DAYDREAM_CONSTITUTION, build_daydream_prompt
 from workshop.daydream.seeds import DaydreamSeed, draw_seed
@@ -43,6 +48,7 @@ from workshop.daydream.seeds import DaydreamSeed, draw_seed
 __all__ = [
     "DAYDREAM_CONSTITUTION",
     "DAYDREAM_IDEA_KIND",
+    "OutcomeSummary",
     "DAYDREAM_SEAL_KIND",
     "DAYDREAM_TURN_TIMEOUT_SECONDS",
     "DEFAULT_MAX_CONSECUTIVE_FAILURES",
@@ -73,6 +79,10 @@ __all__ = [
     "request_stop",
     "remember_run_outcome",
     "remember_resumed_outcome",
+    "outcome_path",
+    "read_outcomes",
+    "render_outcomes_markdown",
     "run_daydream",
+    "summarize_outcomes",
     "wish_from_daydream",
 ]
