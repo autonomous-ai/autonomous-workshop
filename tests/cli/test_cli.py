@@ -12,6 +12,7 @@ from unittest import mock
 
 from cli.main import main, parser
 from workshop.runtime.progress import WishRunTimingEvent
+from workshop.runtime.browser_login import BrowserLoginCredential
 from workshop.daydream import DaydreamError
 
 from tests.daydream.support import sample_sealed
@@ -497,6 +498,9 @@ class DaydreamCommandTest(unittest.TestCase):
         environment.start()
         self.addCleanup(environment.stop)
         self._with_credentials()
+        routing = mock.patch("cli.main._require_routable_inventor")
+        routing.start()
+        self.addCleanup(routing.stop)
 
     def _loop_folder(self):
         return self.home / "daydreams" / "sample"
@@ -877,33 +881,35 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(signals, [True])
         self.assertIn("Interrupting the daydream loop for sample", stdout.getvalue())
 
-    def test_start_asks_for_this_inventors_shop_account_before_any_work(self):
+    def test_start_opens_browser_login_before_any_work_when_credential_is_missing(self):
         mock.patch.stopall()
         environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
         environment.start()
         self.addCleanup(environment.stop)
         stdout = StringIO()
-        with mock.patch("cli.main.sys.stdin.isatty", return_value=True), mock.patch(
-            "builtins.input", return_value=" pico-press "
+        with mock.patch(
+            "cli.main._publishing_account_ready", return_value=False
         ), mock.patch(
-            "cli.main.getpass.getpass", return_value="s3cret"
+            "cli.main._require_routable_inventor"
         ), mock.patch(
+            "cli.main._browser_login",
+            return_value=self.home / "credentials" / "inventors" / "sample.env",
+        ) as login, mock.patch(
             "cli.main.run_daydream", return_value=sample_sealed()
         ) as run, mock.patch(
             "cli.main.start_native_run", return_value=native_receipt()
         ), redirect_stdout(stdout), redirect_stderr(StringIO()):
             result = main(("start", "sample", "--once"))
         self.assertEqual(result, 0)
+        login.assert_called_once_with("sample", stdout)
         run.assert_called_once()
         output = stdout.getvalue()
-        self.assertIn("sample publishes to the shop as its own account", output)
-        self.assertIn("https://www.autonomous.ai/toys", output)
-        stored = self.home / "credentials" / "inventors" / "sample.env"
-        self.assertEqual(stat.S_IMODE(stored.stat().st_mode), 0o600)
-        self.assertIn("FACTORY_USERNAME=pico-press", stored.read_text(encoding="utf-8"))
-        # A second start reuses the stored pair and never prompts again.
-        with mock.patch(
-            "builtins.input", side_effect=AssertionError("prompted twice")
+        self.assertIn("needs your Autonomous account", output)
+        # A second start reuses the stored credential and never opens a browser.
+        with mock.patch("cli.main._publishing_account_ready", return_value=True), mock.patch(
+            "cli.main._require_routable_inventor"
+        ), mock.patch(
+            "cli.main._browser_login", side_effect=AssertionError("opened twice")
         ), mock.patch(
             "cli.main.run_daydream", return_value=sample_sealed()
         ), mock.patch(
@@ -911,13 +917,17 @@ class DaydreamCommandTest(unittest.TestCase):
         ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
             self.assertEqual(main(("start", "sample", "--once")), 0)
 
-    def test_start_without_an_account_outside_a_terminal_fails_closed(self):
+    def test_start_without_a_credential_outside_a_terminal_fails_closed(self):
         mock.patch.stopall()
         environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
         environment.start()
         self.addCleanup(environment.stop)
         stderr = StringIO()
-        with mock.patch("cli.main.sys.stdin.isatty", return_value=False), mock.patch(
+        with mock.patch(
+            "cli.main._publishing_account_ready", return_value=False
+        ), mock.patch(
+            "cli.main._require_routable_inventor"
+        ), mock.patch("cli.main.sys.stdin.isatty", return_value=False), mock.patch(
             "cli.main.run_daydream"
         ) as run, mock.patch("cli.main.acquire_loop") as lease, redirect_stdout(
             StringIO()
@@ -926,49 +936,40 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(result, 2)
         run.assert_not_called()
         lease.assert_not_called()
-        self.assertIn("sample has no shop account on this host", stderr.getvalue())
-        self.assertIn("https://www.autonomous.ai/toys", stderr.getvalue())
+        self.assertIn("workshop login", stderr.getvalue())
 
-    def test_login_stores_an_account_from_a_pipe_and_from_a_terminal(self):
+    def test_login_opens_browser_and_stores_the_generated_credential(self):
         mock.patch.stopall()
         environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
         environment.start()
         self.addCleanup(environment.stop)
+        credential = BrowserLoginCredential(
+            username="khoa",
+            password="generated-agent-secret",
+        )
+        flow = mock.MagicMock()
+        flow.authorization_url = (
+            "https://www.autonomous.ai/toys/inventor/login?callback_url=local&state=random"
+        )
+        flow.open_browser.return_value = True
+        flow.wait.return_value = credential
+        context = mock.MagicMock()
+        context.__enter__.return_value = flow
         stdout = StringIO()
-        with mock.patch("cli.main.sys.stdin.isatty", return_value=False), mock.patch(
-            "cli.main.sys.stdin.readline", return_value="piped-secret\n"
+        with mock.patch("cli.main.sys.stdin.isatty", return_value=True), mock.patch(
+            "cli.main.FactoryBrowserLogin", return_value=context
         ), redirect_stdout(stdout), redirect_stderr(StringIO()):
-            result = main(("login", "sample", "--username", "sample"))
+            result = main(("login", "sample"))
         self.assertEqual(result, 0)
         stored = self.home / "credentials" / "inventors" / "sample.env"
         self.assertEqual(stat.S_IMODE(stored.stat().st_mode), 0o600)
         body = stored.read_text(encoding="utf-8")
-        self.assertIn("FACTORY_USERNAME=sample", body)
-        self.assertIn("FACTORY_PASSWORD=piped-secret", body)
-        self.assertNotIn("piped-secret", stdout.getvalue())
-        self.assertIn("Stored sample's shop account as sample.", stdout.getvalue())
-
-        with mock.patch("cli.main.sys.stdin.isatty", return_value=True), mock.patch(
-            "builtins.input", return_value="typed-name"
-        ), mock.patch(
-            "cli.main.getpass.getpass", return_value="typed-secret"
-        ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
-            self.assertEqual(main(("login", "sample")), 0)
-        body = stored.read_text(encoding="utf-8")
-        self.assertIn("FACTORY_USERNAME=typed-name", body)
-        self.assertIn("FACTORY_PASSWORD=typed-secret", body)
-
-    def test_login_from_a_pipe_requires_a_username(self):
-        mock.patch.stopall()
-        environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
-        environment.start()
-        self.addCleanup(environment.stop)
-        stderr = StringIO()
-        with mock.patch("cli.main.sys.stdin.isatty", return_value=False), redirect_stdout(
-            StringIO()
-        ), redirect_stderr(stderr):
-            self.assertEqual(main(("login", "sample")), 2)
-        self.assertIn("--username is required", stderr.getvalue())
+        self.assertIn("FACTORY_USERNAME=khoa", body)
+        self.assertIn("FACTORY_PASSWORD=generated-agent-secret", body)
+        self.assertIn("FACTORY_INVENTOR_ID=sample", body)
+        self.assertNotIn("generated-agent-secret", stdout.getvalue())
+        self.assertIn("Connected sample to @khoa.", stdout.getvalue())
+        self.assertIn("workshop start sample", stdout.getvalue())
 
     def test_daydream_failure_reports_on_stderr_with_exit_two(self):
         stderr = StringIO()
@@ -993,6 +994,21 @@ class DaydreamCommandTest(unittest.TestCase):
             self.assertEqual(result, 2)
             run.assert_not_called()
             self.assertIn("no native Inventor bundles", stderr.getvalue())
+
+    def test_unknown_inventor_fails_before_browser_login(self):
+        mock.patch.stopall()
+        stderr = StringIO()
+        with mock.patch("cli.main._browser_login") as login, mock.patch(
+            "cli.main.run_daydream"
+        ) as run, redirect_stdout(StringIO()), redirect_stderr(stderr):
+            result = main(("start", "test-inventor2", "--once"))
+        self.assertEqual(result, 2)
+        login.assert_not_called()
+        run.assert_not_called()
+        self.assertIn(
+            "inventor collection is missing test-inventor2",
+            stderr.getvalue(),
+        )
 
 
 class DoctorTest(unittest.TestCase):
@@ -1041,7 +1057,7 @@ class DoctorTest(unittest.TestCase):
         self.assertIn("goals, subagents, and isolation", check["detail"])
         self.assertIn("0.145.0", check["next"])
 
-    def test_missing_factory_credentials_block_terminal_release(self):
+    def test_missing_factory_credentials_are_created_on_demand(self):
         ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
         stdout = StringIO()
         with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
@@ -1055,11 +1071,11 @@ class DoctorTest(unittest.TestCase):
         ), redirect_stdout(stdout):
             result = main(("doctor", "--json"))
         receipt = json.loads(stdout.getvalue())
-        self.assertEqual(result, 1)
-        self.assertEqual(receipt["status"], "needs-attention")
+        self.assertEqual(result, 0)
+        self.assertEqual(receipt["status"], "ready")
         factory = next(item for item in receipt["checks"] if item["name"] == "factory-credentials")
-        self.assertEqual(factory["status"], "needs-attention")
-        self.assertIn("Release requires public Factory publication", factory["detail"])
+        self.assertEqual(factory["status"], "ready")
+        self.assertIn("connects to Autonomous", factory["detail"])
 
     def test_partial_factory_credentials_fail_without_printing_values(self):
         secret = "do-not-print-this-value"
@@ -1142,6 +1158,11 @@ class DoctorTest(unittest.TestCase):
 
 
 class PersonaCommandTest(unittest.TestCase):
+    def setUp(self):
+        ready = mock.patch("cli.main._publishing_account_ready", return_value=True)
+        ready.start()
+        self.addCleanup(ready.stop)
+
     def test_create_list_and_check_use_only_v8_inventor_bundles(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -1221,6 +1242,76 @@ class PersonaCommandTest(unittest.TestCase):
                 (root / "inventors" / "moon-weaver" / "TASTE.md").read_bytes(),
                 content,
             )
+
+    def test_create_inventor_starts_browser_login_when_needed(self):
+        with tempfile.TemporaryDirectory() as temporary, mock.patch(
+            "cli.main._publishing_account_ready", return_value=False
+        ), mock.patch("cli.main._browser_login") as login, redirect_stdout(
+            StringIO()
+        ), redirect_stderr(StringIO()):
+            self.assertEqual(
+                main(
+                    (
+                        "create",
+                        "inventor",
+                        "mira",
+                        "--description",
+                        "kinetic desk toys",
+                        "--root",
+                        temporary,
+                    )
+                ),
+                0,
+            )
+        login.assert_called_once_with("mira", mock.ANY)
+
+    def test_create_inventor_validates_root_before_browser_login(self):
+        with tempfile.TemporaryDirectory() as temporary, mock.patch(
+            "cli.main._publishing_account_ready", return_value=False
+        ), mock.patch("cli.main._browser_login") as login, redirect_stdout(
+            StringIO()
+        ), redirect_stderr(StringIO()):
+            self.assertEqual(
+                main(
+                    (
+                        "create",
+                        "inventor",
+                        "mira",
+                        "--description",
+                        "kinetic desk toys",
+                        "--root",
+                        str(Path(temporary) / "missing"),
+                    )
+                ),
+                2,
+            )
+        login.assert_not_called()
+
+    def test_create_json_keeps_browser_login_progress_off_stdout(self):
+        with tempfile.TemporaryDirectory() as temporary, mock.patch(
+            "cli.main._publishing_account_ready", return_value=False
+        ), mock.patch("cli.main._browser_login") as login:
+            stdout = StringIO()
+            stderr = StringIO()
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                self.assertEqual(
+                    main(
+                        (
+                            "create",
+                            "inventor",
+                            "mira",
+                            "--description",
+                            "kinetic desk toys",
+                            "--root",
+                            temporary,
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+        login.assert_called_once_with("mira", stderr)
+        self.assertEqual(json.loads(stdout.getvalue())["id"], "mira")
+        self.assertIn("needs your Autonomous account", stderr.getvalue())
 
     def test_check_rejects_pre_v8_manifests_without_executing_them(self):
         with tempfile.TemporaryDirectory() as temporary:

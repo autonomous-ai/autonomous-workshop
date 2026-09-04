@@ -14,6 +14,9 @@
 **/*.bak.*
 **/state/portal-auth.json
 **/state/panda-auth.json
+# Host credentials stay ignored even when WORKSHOP_HOME points inside a checkout.
+**/credentials/inventors/*.env*
+**/credentials/factory.env*
 
 # generated runtime state
 .runtime/

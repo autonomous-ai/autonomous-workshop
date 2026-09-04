@@ -18,7 +18,8 @@ Workshop. It is authoritative together with
 [ADR 0037](adr/0037-raise-deep-compaction-ceiling.md),
 [ADR 0038](adr/0038-prove-product-states-and-bound-final-source.md),
 [ADR 0039](adr/0039-make-invent-recovery-a-source-handoff.md),
-[ADR 0040](adr/0040-make-proof-recovery-a-sealing-handoff.md), and the repository
+[ADR 0040](adr/0040-make-proof-recovery-a-sealing-handoff.md),
+[ADR 0042](adr/0042-browser-issued-factory-credential.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -672,11 +673,19 @@ thickness-checked, print-ready CAD, validates the exact `MANUAL.pdf`, imports
 the exact CAD/manual handoff, publishes it, and verifies public page and manual
 readback hashes. Missing credentials or a remote outage leaves Release waiting
 and resumable; the durable effect ledger reconciles before retry. Local
-credentials belong in the private `$WORKSHOP_HOME/credentials/factory.env`
-file and are loaded lazily only after the native turn exits. One Workshop-owned
-Factory service account publishes every Inventor's Release; Inventor provenance
-remains independently sealed in the product facts and never selects
-credentials. Codex 0.145.0 or newer runs with Workshop's strict
+credentials belong in private
+`$WORKSHOP_HOME/credentials/inventors/<inventor-id>.env` files and are loaded
+lazily only after the native turn exits. Interactive hosts store the publishing
+credential issued by the Autonomous Toys API against the Inventor named by
+explicit browser authorization. The existing Factory session exchanges that
+credential for a 365-day bearer only when Release needs it and keeps the bearer
+in memory. Browser authorization uses a short-lived, single-use code and PKCE;
+the website performs a top-level redirect to the loopback callback, and the CLI
+exchanges the code directly with the Autonomous Toys API. Inventor provenance
+remains independently sealed in the product facts
+and selects only the matching host credential file, whose embedded Inventor id
+must also match.
+Codex 0.145.0 or newer runs with Workshop's strict
 permission profile: all filesystem reads are denied by default, the exact
 absolute toy project is writable, immutable instructions remain read-only,
 only minimal tool paths plus the identity-bound Workshop Python runtime and
