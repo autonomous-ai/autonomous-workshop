@@ -270,7 +270,7 @@ class _CallbackHandler(BaseHTTPRequestHandler):
             self._respond(
                 200,
                 "Inventor connected",
-                "You're all set. Workshop is continuing in your terminal.",
+                "You can close this window and continue in your terminal.",
             )
         finally:
             self.server.completed.set()

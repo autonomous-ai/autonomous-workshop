@@ -87,6 +87,9 @@ class FactoryBrowserLoginTest(unittest.TestCase):
                 self.assertEqual(response.status, 200)
                 body = response.read().decode("utf-8")
                 self.assertIn("Inventor connected", body)
+                self.assertIn(
+                    "You can close this window and continue in your terminal.", body
+                )
                 self.assertNotIn(code, body)
                 self.assertNotIn("long-lived-agent-password", body)
                 self.assertEqual(response.headers["Cache-Control"], "no-store")
