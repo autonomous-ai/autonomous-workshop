@@ -41,6 +41,12 @@ from workshop.errors import (
 )
 from workshop.make.cad.mesh import inspect_stl_path
 from workshop.make.cad.step_color import read_step_part_colors
+from workshop.make.cad.fe_parts import FePartsError, PartKeying, key_parts
+from workshop.make.cad.posed_occurrences import (
+    PosedOccurrenceError,
+    PosedProvider,
+    posed_occurrences,
+)
 from workshop.make.assembly_package import (
     ASSEMBLY_PACKAGE_PATH,
     is_assembly_package,
@@ -522,6 +528,8 @@ def _handoff_proof_details(handoff: Mapping[str, Any]) -> Dict[str, Any]:
     reason = transport.get("reason")
     if reason is not None:
         details["handoff_transport_reason"] = reason
+    if transport.get("viewer_groups") is not None:
+        details["viewer_groups"] = int(transport["viewer_groups"])
     for key in ("session_history_sha256", "cover_render_sha256"):
         value = handoff.get(key)
         if value is not None:
@@ -649,6 +657,66 @@ def _part_color_plan(
         for part in observed
     )
     return writes, target
+
+
+# The posed-geometry provider is replaceable so tests can key occurrences
+# without a CAD kernel; production runs the sealed STEP through the bounded
+# kernel subprocess.
+_POSED_OCCURRENCE_PROVIDER: Optional[PosedProvider] = None
+
+
+def _posed_provider() -> PosedProvider:
+    return _POSED_OCCURRENCE_PROVIDER or posed_occurrences
+
+
+def _keyed_color_plan(
+    observed: Sequence[Mapping[str, Any]],
+    keys: Sequence[Mapping[str, Any]],
+) -> Optional[Tuple[Tuple[Mapping[str, Any], ...], Tuple[Mapping[str, Any], ...]]]:
+    """Plan a keyed colour write: one entry per coloured viewer group.
+
+    ``keys`` are the host's viewer-parity ``assembly_parts`` entries.  The
+    write carries every coloured entry in full (order, part, mesh_name,
+    colour) so a draft the shop has not rendered yet stores the complete
+    table; the target is the shop's current list merged by order, exactly as
+    its endpoint merges.
+    """
+
+    writes = tuple(
+        {
+            "order": int(key["order"]),
+            "part": str(key["part"]),
+            "mesh_name": str(key["mesh_name"]),
+            "color": _normalized_hex(str(key["color"])),
+        }
+        for key in keys
+        if key.get("color")
+    )
+    if not writes:
+        return None
+    merged: Dict[int, Dict[str, Any]] = {
+        int(part["order"]): dict(part) for part in observed
+    }
+    pending = []
+    for write in writes:
+        current = merged.get(write["order"])
+        if current is not None:
+            if current.get("color") == write["color"] and current.get("part") == write["part"]:
+                continue
+            merged[write["order"]] = {**current, **write}
+        else:
+            merged[write["order"]] = {"order": write["order"], **write}
+        pending.append(write)
+    target = tuple(
+        {
+            "order": item["order"],
+            "mesh_name": item.get("mesh_name") or None,
+            "part": item.get("part") or None,
+            "color": _normalized_hex(item["color"]) if item.get("color") else None,
+        }
+        for item in sorted(merged.values(), key=lambda part: part["order"])
+    )
+    return tuple(pending), target
 
 
 def _occurrence_transport(
@@ -894,13 +962,37 @@ def _occurrence_transport(
                 "sha256": hashlib.sha256(content).hexdigest(),
             }
         )
-    _inspect_shells(root, manifest, primary_source, len(occurrences), "assembly")
-    inspected = set()
-    for occurrence in occurrences:
-        key = (occurrence["source_path"], occurrence["sha256"])
-        if key not in inspected:
-            _inspect_shells(root, manifest, occurrence["source_path"], 1, "production")
-            inspected.add(key)
+    # The shop's viewer numbers part groups from the assembled mesh alone and
+    # keys group i by the i-th slide; a part that splits into several shells
+    # would shift every colour after it.  Key the groups here with the posed
+    # occurrence geometry of the sealed STEP so every group, slivers included,
+    # is owned by the sealed part it belongs to.
+    assembled_bytes = _read_bound_file(root, manifest, primary_source)
+    step_bytes = _read_bound_file(root, manifest, source_step)
+    try:
+        posed = _posed_provider()(step_bytes)
+    except PosedOccurrenceError as exc:
+        raise ContractError("Factory occurrence family cannot be posed: %s" % exc)
+    try:
+        keying = key_parts(
+            assembled_bytes,
+            posed,
+            lead=PurePosixPath(transport_primary_name(transport_stem)).name,
+            slide_order=[occurrence["name"] for occurrence in occurrences],
+            part_meshes={
+                occurrence["name"]: _read_bound_file(root, manifest, occurrence["source_path"])
+                for occurrence in occurrences
+            },
+        )
+    except FePartsError as exc:
+        raise ContractError("Factory occurrence family cannot be keyed: %s" % exc)
+    if not keying.complete:
+        raise ContractError(
+            "Factory occurrence family leaves occurrences without a viewer group: %s"
+            % ", ".join(keying.unowned_occurrences)
+        )
+    for index, part in enumerate(transported_parts):
+        part["index"] = index
     transported_sidecar = dict(sidecar)
     transported_sidecar["parts"] = transported_parts
     sidecar_payload = _canonical_json(transported_sidecar) + b"\n"
@@ -914,7 +1006,12 @@ def _occurrence_transport(
         "sidecar_sha256": hashlib.sha256(sidecar_payload).hexdigest(),
         "parts_directory": parts_directory,
         "occurrences": tuple(occurrences),
+        "part_keying": keying,
     }
+
+
+def transport_primary_name(transport_stem: str) -> str:
+    return transport_stem + ".stl"
 
 
 def _validated_occurrence_transport(
@@ -1374,7 +1471,13 @@ def _build_model_handoff(
                     len(occurrence["occurrences"]) if occurrence is not None else 1
                 ),
                 "reason": transport_reason,
+                "viewer_groups": (
+                    occurrence["part_keying"].groups.count
+                    if occurrence is not None
+                    else None
+                ),
             },
+            "part_keying": occurrence["part_keying"] if occurrence is not None else None,
             "session_history_sha256": (
                 hashlib.sha256(session_history).hexdigest()
                 if session_history is not None
@@ -1771,10 +1874,23 @@ class FactoryClient:
         if not isinstance(assembly_parts, (list, tuple)) or not assembly_parts:
             raise ContractError("Factory part-colors write must carry parts")
         for part in assembly_parts:
-            if not isinstance(part, Mapping) or set(part) != {"order", "color"}:
+            if not isinstance(part, Mapping) or set(part) not in (
+                {"order", "color"},
+                {"order", "part", "mesh_name", "color"},
+            ):
                 raise ContractError("Factory part-colors write must be exact")
+            if type(part["order"]) is not int or part["order"] < 0:
+                raise ContractError("Factory part order must be a non-negative integer")
             if not _HEX_COLOUR.fullmatch(str(part["color"])):
                 raise ContractError("Factory part colour must be lower-case #rrggbb")
+            for key in ("part", "mesh_name"):
+                if key in part and (
+                    not isinstance(part[key], str)
+                    or not part[key]
+                    or len(part[key]) > 256
+                    or not part[key].isprintable()
+                ):
+                    raise ContractError("Factory part-colors %s must be bounded text" % key)
         return self._request(
             "PATCH",
             "/designs/%s/part-colors" % urllib.parse.quote(slug, safe=""),
@@ -2944,6 +3060,7 @@ class FactoryReleaseWriter:
         client: FactoryClient,
         imported: Receipt,
         part_colors: Mapping[str, str],
+        part_keys: Sequence[Mapping[str, Any]] = (),
     ) -> None:
         """Render the draft in the exact colours Make sealed into its STEP.
 
@@ -2957,7 +3074,11 @@ class FactoryReleaseWriter:
         if not part_colors:
             return
         preflight = self._content_design(client, imported.slug)
-        plan = _part_color_plan(_factory_assembly_parts(preflight), part_colors)
+        keyed = tuple(part_keys)
+        if keyed:
+            plan = _keyed_color_plan(_factory_assembly_parts(preflight), keyed)
+        else:
+            plan = _part_color_plan(_factory_assembly_parts(preflight), part_colors)
         if plan is None:
             return
         writes, target = plan
@@ -2976,6 +3097,11 @@ class FactoryReleaseWriter:
             "part_colors_sha256": _canonical_sha256(dict(part_colors)),
             "part_colors": dict(part_colors),
         }
+        if keyed:
+            request["assembly_parts"] = [dict(item) for item in writes]
+            request["assembly_parts_sha256"] = _canonical_sha256(
+                [dict(item) for item in writes]
+            )
         intent = self.ledger.prepare(
             kind="factory-part-colors",
             product_id=imported.details.get("product_id"),
@@ -2993,6 +3119,14 @@ class FactoryReleaseWriter:
             "part_colors_sha256": request["part_colors_sha256"],
             "part_colors": dict(part_colors),
             "factory_part_colors_mapping": FACTORY_PART_COLORS_MAPPING,
+            **(
+                {
+                    "assembly_parts_sha256": request["assembly_parts_sha256"],
+                    "viewer_group_keys": len(keyed),
+                }
+                if keyed
+                else {}
+            ),
             "part_colors_effect_request_sha256": intent.request_sha256,
             "import_effect_request_sha256": imported.details.get(
                 "effect_request_sha256"
@@ -3013,8 +3147,10 @@ class FactoryReleaseWriter:
         if intent.state == "unknown":
             try:
                 design = self._content_design(client, imported.slug)
-                current = _part_color_plan(
-                    _factory_assembly_parts(design), part_colors
+                current = (
+                    _keyed_color_plan(_factory_assembly_parts(design), keyed)
+                    if keyed
+                    else _part_color_plan(_factory_assembly_parts(design), part_colors)
                 )
                 if current is None or current[0]:
                     raise StateConflict(
@@ -3110,6 +3246,7 @@ class FactoryReleaseWriter:
         product_page_sha256: str,
         manual_sha256: str,
         part_colors: Mapping[str, str],
+        part_keys: Sequence[Mapping[str, Any]] = (),
     ) -> Receipt:
         if page.get("schema_version") == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
             draft = self._ensure_page_content(
@@ -3130,7 +3267,7 @@ class FactoryReleaseWriter:
         # thumbnail from it, and publication reuses the stored colours. The
         # draft Receipt stays the import's own identity; the colour effect
         # keeps its separate durable Receipt in the ledger.
-        self._ensure_part_colors(client, imported, part_colors)
+        self._ensure_part_colors(client, imported, part_colors, part_keys=part_keys)
         return draft
 
     def __call__(
@@ -3199,6 +3336,14 @@ class FactoryReleaseWriter:
             part_colors = _package_part_colors(
                 made_root, context.made.artifact_manifest
             )
+        keying = handoff.get("part_keying")
+        part_keys: Tuple[Mapping[str, Any], ...] = ()
+        if isinstance(keying, PartKeying) and part_colors:
+            part_keys = tuple(
+                {**key.to_dict(), "color": part_colors[key.owner]}
+                for key in keying.keys
+                if key.owner in part_colors
+            )
         # Factory defaults an omitted category to its first active category,
         # which is not a safe classification rule for Workshop products. Send
         # the canonical Toys & Games slug explicitly; an inactive/unknown slug
@@ -3259,6 +3404,7 @@ class FactoryReleaseWriter:
                 product_page_sha256=handoff["product_page_sha256"],
                 manual_sha256=handoff["manual_sha256"],
                 part_colors=part_colors,
+                part_keys=part_keys,
             )
         if intent.state == "rejected":
             raise EffectError("Factory previously rejected this exact model import")
@@ -3275,6 +3421,7 @@ class FactoryReleaseWriter:
                 product_page_sha256=handoff["product_page_sha256"],
                 manual_sha256=handoff["manual_sha256"],
                 part_colors=part_colors,
+                part_keys=part_keys,
             )
 
         context.assert_current()
@@ -3343,6 +3490,7 @@ class FactoryReleaseWriter:
             product_page_sha256=handoff["product_page_sha256"],
             manual_sha256=handoff["manual_sha256"],
             part_colors=part_colors,
+            part_keys=part_keys,
         )
 
 

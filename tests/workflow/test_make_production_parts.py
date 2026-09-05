@@ -19,7 +19,7 @@ def _sha(value):
     return hashlib.sha256(value).hexdigest()
 
 
-def _package(names):
+def _package(names, colour=(0.5, 0.5, 0.5, 1.0)):
     return {
         "schemaVersion": 2,
         "entryKind": "assembly",
@@ -38,7 +38,7 @@ def _package(names):
                     0.0, 0.0, 1.0, 0.0,
                     0.0, 0.0, 0.0, 1.0,
                 ],
-                "color": [0.5, 0.5, 0.5, 1.0],
+                "color": list(colour) if colour is not None else None,
             }
             for index, name in enumerate(names)
         ],
@@ -115,6 +115,19 @@ class MakeProductionPartsRuleTest(unittest.TestCase):
                 _MAKE_PROPOSAL_REJECTION_FEEDBACK["make-production-parts-missing"]
             )
         )
+
+    def test_uncoloured_parts_reject_the_proposal_naming_them(self):
+        made = self._made(
+            json.dumps(_package(["owl", "nest"], colour=None)).encode(), parts=("owl", "nest")
+        )
+
+        with self.assertRaises(_MakeProposalRejected) as raised:
+            _validate_made_production_parts(made, self.run_root)
+
+        rejection = raised.exception
+        self.assertEqual(rejection.failure_code, "make-part-colours-missing")
+        self.assertIn("owl, nest", rejection.feedback)
+        self.assertIn("Color(r, g, b)", rejection.feedback)
 
     def test_single_occurrence_and_foreign_descriptors_bind_no_rule(self):
         single = self._made(json.dumps(_package(["owl"])).encode())

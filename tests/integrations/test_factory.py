@@ -351,14 +351,23 @@ class FactoryTransport:
                 return HttpResponse(
                     self.part_colors_status, {}, b'{"error":"request rejected"}'
                 )
-            merged = {part["order"]: part["color"] for part in written}
-            for part in self.assembly_parts or ():
-                if part["order"] in merged:
-                    part["color"] = merged[part["order"]]
+            if self.assembly_parts is None:
+                self.assembly_parts = []
+            by_order = {part["order"]: part for part in self.assembly_parts}
+            for entry in written:
+                current = by_order.get(entry["order"])
+                if current is None:
+                    current = {"order": entry["order"], "mesh_name": None, "part": None, "color": None}
+                    self.assembly_parts.append(current)
+                    by_order[entry["order"]] = current
+                for key in ("mesh_name", "part", "color"):
+                    if key in entry:
+                        current[key] = entry[key]
+            self.assembly_parts.sort(key=lambda part: part["order"])
             return HttpResponse(
                 200,
                 {},
-                canonical_json({"assembly_parts": self.assembly_parts or []}),
+                canonical_json({"assembly_parts": self.assembly_parts}),
             )
         if method == "PATCH" and url.endswith("/use-case"):
             self.use_case_writes += 1
@@ -438,6 +447,10 @@ class FactoryReleaseTest(unittest.TestCase):
         )
         self.made = Made.from_root(product, made_product)
         self.context = ReleaseContext(self.made)
+        import workshop.integrations.factory as factory_module
+
+        factory_module._POSED_OCCURRENCE_PROVIDER = perfect_kernel(product)
+        self.addCleanup(setattr, factory_module, "_POSED_OCCURRENCE_PROVIDER", None)
         self.release = self.root / "release"
         self.release.mkdir()
         (self.release / "MANUAL.md").write_text("# Verified Toy\n\nTurn it.\n")
@@ -1346,7 +1359,7 @@ class FactoryReleaseTest(unittest.TestCase):
                     "entryKind": "assembly",
                     "primaryPose": "assembled",
                     "parts": [
-                        {"name": "lantern", "stlPath": occurrence_path}
+                        {"name": "lantern", "stlPath": occurrence_path, "index": 0}
                     ],
                 },
             )
@@ -1906,16 +1919,63 @@ PNG_COVER = (
 )
 
 
-class AssemblyPackageHandoffTest(FactoryReleaseTest):
+def _sidecar_occurrence_names(product_root):
+    """Occurrence names a sealed product declares, in slide order."""
+
+    try:
+        document = json.loads((product_root / "assembled.step.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if isinstance(document.get("parts"), list):
+        return [item["name"] for item in document["parts"] if isinstance(item, dict)]
+    occurrences = document.get("occurrences")
+    if isinstance(occurrences, list):
+        return [item["name"] if isinstance(item, dict) else item for item in occurrences]
+    return []
+
+
+def perfect_kernel(product_root):
+    """Fake CAD kernel: every viewer group of assembled.stl is one occurrence.
+
+    Names come from the sealed descriptor in slide order, so a fixture whose
+    assembled mesh is the union of its parts poses exactly like the kernel.
+    """
+
+    def provider(step_bytes):
+        from workshop.make.cad.fe_parts import PosedOccurrence, fe_part_groups, read_stl_triangles
+
+        names = _sidecar_occurrence_names(product_root)
+        groups = fe_part_groups(read_stl_triangles((product_root / "assembled.stl").read_bytes()))
+        return tuple(
+            PosedOccurrence(
+                name=name, bbox_min=group.bbox_min, bbox_max=group.bbox_max, points=group.sample
+            )
+            for name, group in zip(names, groups.groups)
+        )
+
+    return provider
+
+
+class AssemblyPackageHandoffTest(unittest.TestCase):
     """The sealed assembly-package drives the multipart transport."""
+
+    writer = FactoryReleaseTest.writer
+    _reseal_product = FactoryReleaseTest._reseal_product
+
+    def setUp(self):
+        FactoryReleaseTest.setUp(self)
 
     def _seal_package(self, *, parts=True, step_colours=True, package_colours=True):
         product = self.made.artifact_root
         (product / "assembled.stl").write_bytes(TWO_SHELL_STL)
         if parts:
             (product / "parts").mkdir(exist_ok=True)
-            (product / "parts/owl.stl").write_bytes(TETRA_STL)
-            (product / "parts/chick.stl").write_bytes(TETRA_STL)
+            (product / "parts/owl.stl").write_bytes(
+                ("solid owl\n" + _closed_tetra(0.0) + "endsolid owl\n").encode("ascii")
+            )
+            (product / "parts/chick.stl").write_bytes(
+                ("solid chick\n" + _closed_tetra(5.0) + "endsolid chick\n").encode("ascii")
+            )
         (product / "assembled.step").write_bytes(
             step_document(
                 [("owl", "#d8dee9"), ("chick", "#d89b3c")]
@@ -1965,18 +2025,26 @@ class AssemblyPackageHandoffTest(FactoryReleaseTest):
             self.assertEqual(sidecar["schemaVersion"], 1)
             self.assertEqual(sidecar["primaryPose"], "assembled")
             self.assertEqual(
-                [(item["name"], item["stlPath"]) for item in sidecar["parts"]],
-                [("owl", "assembled_parts/owl.stl"), ("chick", "assembled_parts/chick.stl")],
+                [(item["name"], item["stlPath"], item["index"]) for item in sidecar["parts"]],
+                [("owl", "assembled_parts/owl.stl", 0), ("chick", "assembled_parts/chick.stl", 1)],
             )
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(facts["factory_assembly"]["occurrence_count"], 2)
         self.assertEqual(receipt.details["handoff_transport"], "multipart")
         self.assertEqual(receipt.details["occurrence_count"], 2)
+        self.assertEqual(receipt.details["viewer_groups"], 2)
         self.assertNotIn("handoff_transport_reason", receipt.details)
         self.assertEqual(
             transport.part_color_writes,
-            [[{"order": 0, "color": "#d8dee9"}, {"order": 1, "color": "#d89b3c"}]],
+            [
+                [
+                    {"order": 0, "part": "owl.stl", "mesh_name": "owl_sliver", "color": "#d8dee9"},
+                    {"order": 1, "part": "chick.stl", "mesh_name": "chick_sliver", "color": "#d89b3c"},
+                ]
+            ],
         )
+        intent = self.ledger.latest("verified-toy", "factory-part-colors")
+        self.assertEqual(intent.receipt.details["viewer_group_keys"], 2)
 
     def test_a_package_without_production_parts_degrades_to_one_mesh_visibly(self):
         self._seal_package(parts=False)
@@ -2005,8 +2073,42 @@ class AssemblyPackageHandoffTest(FactoryReleaseTest):
 
         self.assertEqual(
             transport.part_color_writes,
-            [[{"order": 0, "color": "#4d859e"}, {"order": 1, "color": "#d1822e"}]],
+            [
+                [
+                    {"order": 0, "part": "owl.stl", "mesh_name": "owl_sliver", "color": "#4d859e"},
+                    {"order": 1, "part": "chick.stl", "mesh_name": "chick_sliver", "color": "#d1822e"},
+                ]
+            ],
         )
+
+    def test_an_unrendered_draft_receives_the_full_keyed_table(self):
+        self._seal_package()
+        transport = FactoryTransport()
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(len(transport.part_color_writes), 1)
+        self.assertEqual(
+            [(p["order"], p["part"], p["color"]) for p in transport.assembly_parts],
+            [(0, "owl.stl", "#d8dee9"), (1, "chick.stl", "#d89b3c")],
+        )
+
+    def test_a_package_the_kernel_cannot_pose_degrades_visibly(self):
+        import workshop.integrations.factory as factory_module
+        from workshop.make.cad.posed_occurrences import PosedOccurrenceError
+
+        def failing(step_bytes):
+            raise PosedOccurrenceError("kernel unavailable")
+
+        factory_module._POSED_OCCURRENCE_PROVIDER = failing
+        self._seal_package()
+        transport = FactoryTransport()
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertEqual(receipt.details["handoff_transport"], "single-mesh")
+        self.assertIn("cannot be posed", receipt.details["handoff_transport_reason"])
 
     def test_a_single_occurrence_package_is_the_root_mesh(self):
         product = self.made.artifact_root
@@ -2029,8 +2131,14 @@ class AssemblyPackageHandoffTest(FactoryReleaseTest):
         self.assertEqual(transport.part_color_writes, [[{"order": 0, "color": "#4d859e"}]])
 
 
-class HostHandoffFilesTest(FactoryReleaseTest):
+class HostHandoffFilesTest(unittest.TestCase):
     """Host-authored history and cover ride the archive beside the sealed model."""
+
+    writer = FactoryReleaseTest.writer
+    _reseal_product = FactoryReleaseTest._reseal_product
+
+    def setUp(self):
+        FactoryReleaseTest.setUp(self)
 
     def test_history_and_cover_ride_the_handoff_and_read_back(self):
         history = b'{"type":"user","uuid":"u1","message":{"role":"user","content":"Wish"}}\n'

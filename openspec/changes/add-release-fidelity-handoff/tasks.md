@@ -29,6 +29,13 @@
 - [x] 4.4 Record `history_turns` from `GET /designs/{slug}/turns` after publish (warning on mismatch); show it in `workshop status`.
 - [x] 4.5 Update `docs/PUBLISH_SEALED_PRODUCT.md`, `docs/NATIVE_AGENT_RUNTIME.md`, and the public-example README sentence to state what the Factory listing carries when history is disclosed; add `changes/factory-session-history.added.md`.
 
+## 4b. Viewer-parity part keying (PR 5, after the first real publish)
+
+- [x] 4b.1 Reproduce the Factory viewer's part grouping in `workshop.make.cad.fe_parts` (manifold-edge shells, loose facet ownership, dense numbering, `<lead>#i` slot keys) with tests on touching solids, loose facets, and slot keys.
+- [x] 4b.2 Pose the sealed occurrences from `assembled.step` in a bounded kernel subprocess (`posed_occurrences`) and own every viewer group by production-mesh shape signature first, posed containment and proximity second; verified complete on the 35-group Ouray assembly.
+- [x] 4b.3 Replace the one-shell-per-part transport rule with the keying: sidecar parts carry `index`, the part-colours effect writes one keyed entry per coloured viewer group, receipts record `viewer_groups`; adapter tests run a perfect fake kernel.
+- [x] 4b.4 Require a sealed colour per part of a multi-part Make (`make-part-colours-missing`) with tests.
+
 ## 5. Acceptance
 
 - [x] 5.1 Run the full offline suite (`PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'`), `openspec validate add-release-fidelity-handoff --strict`, `tools/scan_secrets.py`, and `git diff --check`.

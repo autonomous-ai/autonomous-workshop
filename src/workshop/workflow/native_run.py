@@ -70,6 +70,7 @@ from workshop.make.assembly_package import (
     missing_production_parts,
     read_assembly_package,
 )
+from workshop.make.cad.step_color import read_step_part_colors
 from workshop.release.renders import (
     host_renders_stage_input,
     load_host_renders,
@@ -342,6 +343,13 @@ _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
         "shop needs one printable mesh per occurrence. Export each occurrence "
         "as parts/<occurrence-name>.stl (one shell each, named exactly as in "
         "the package) inside the product root, then rerun the Make finalizer."
+    ),
+    "make-part-colours-missing": (
+        "The sealed assembled.step.json lists two or more occurrences, so every "
+        "printed part must carry a sealed surface colour: set part.color = "
+        "Color(r, g, b) on each leaf part with channels 0..1 taken directly "
+        "from the sRGB hex you want the shop to show, regenerate the STEP and "
+        "the assembly-package, then rerun the Make finalizer."
     ),
 }
 _PLAYTEST_PROPOSAL_REJECTION_FEEDBACK = {
@@ -5737,9 +5745,11 @@ def _evaluate_make_invent_revision_stage(
 _MAKE_PRODUCTION_PARTS_RULE = (
     "When assembled.step.json (the cadgen assembly-package) lists two or more "
     "occurrences, export one printable mesh per occurrence as "
-    "parts/<occurrence-name>.stl inside the product root, one shell each. The "
-    "host rejects a multi-part Make without them; the shop renders and colours "
-    "each part from these files."
+    "parts/<occurrence-name>.stl inside the product root, one shell each, and "
+    "seal a surface colour on every leaf part (part.color = Color(r, g, b) with "
+    "channels 0..1 taken directly from the sRGB hex the shop should show). The "
+    "host rejects a multi-part Make without both; the shop renders and colours "
+    "each part from these files and colours."
 )
 
 
@@ -5776,7 +5786,35 @@ def _validate_made_production_parts(made: NativeMade, run_root: Path) -> int:
                 ", ".join(missing),
             ),
         )
+    if package.is_multipart:
+        uncoloured = _uncoloured_occurrences(made, run_root, package)
+        if uncoloured:
+            raise _MakeProposalRejected(
+                failure_code="make-part-colours-missing",
+                feedback="%s Uncoloured: %s."
+                % (
+                    _MAKE_PROPOSAL_REJECTION_FEEDBACK["make-part-colours-missing"],
+                    ", ".join(uncoloured),
+                ),
+            )
     return package.occurrence_count if package.is_multipart else 0
+
+
+def _uncoloured_occurrences(made: NativeMade, run_root: Path, package: Any) -> tuple[str, ...]:
+    """Occurrences with no sealed colour in the STEP or the assembly-package."""
+
+    colours: dict[str, str] = dict(package.part_colors())
+    step_path = run_root.joinpath(*made.product_root.split("/"), "assembled.step")
+    try:
+        for name, value in read_step_part_colors(step_path.read_bytes()).items():
+            colours.setdefault(name, value.hex)
+    except (OSError, ValueError):
+        pass
+    return tuple(
+        occurrence.name
+        for occurrence in package.occurrences
+        if occurrence.name not in colours
+    )
 
 
 def _evaluate_make_stage(

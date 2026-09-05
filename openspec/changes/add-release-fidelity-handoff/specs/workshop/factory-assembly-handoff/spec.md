@@ -26,13 +26,24 @@ The system SHALL reject a Made proposal whose assembly-package has two or more o
 - **THEN** the host gate rejects the proposal naming the missing part
 - **AND** the next Make attempt receives that reason in its inputs
 
-### Requirement: Sealed part colours reach the listing
-The system SHALL send the sealed STEP colour of every occurrence the Factory reports for the imported draft through the existing `factory-part-colors` effect, addressing meshes by `mesh_name` equal to the occurrence name, and SHALL verify the colours on authenticated readback.
+### Requirement: Sealed part colours reach the listing keyed as the viewer resolves them
+The system SHALL reproduce the Factory viewer's part grouping of the sealed `assembled.stl` (manifold-edge shells, loose facets owned by the shell they face, dense numbering in triangle order), own every group by the sealed production mesh's shape signature and the posed occurrence geometry of the sealed STEP, and send one `assembly_parts` entry per coloured viewer group (order, the slide or `<lead>#i` slot key, owner mesh name, sealed colour) through the existing `factory-part-colors` effect, verified on authenticated readback. A multipart transport SHALL require every occurrence to own at least one viewer group.
 
-#### Scenario: Colours applied after a multipart import
-- **WHEN** the Factory reports two meshes for the imported draft and the sealed STEP carries a distinct colour for each occurrence
-- **THEN** one `factory-part-colors` intent is written and sent
-- **AND** readback shows both meshes in the sealed colours before publish proceeds
+#### Scenario: A part that splits into several shells keeps its colour
+- **WHEN** a sealed occurrence appears as three shells in `assembled.stl` and the sidecar lists it once
+- **THEN** all three viewer groups are keyed with that occurrence's sealed colour, the two past the slide list by `assembled.stl#i`
+- **AND** every later group keeps its own owner's colour
+
+#### Scenario: Colours applied to an unrendered draft
+- **WHEN** the Factory has not yet rendered the imported draft and reports no meshes
+- **THEN** the full keyed table is written and read back as stored on the current version
+
+### Requirement: Make seals a colour on every part
+The system SHALL reject a Made proposal whose assembly-package has two or more occurrences unless every occurrence carries a sealed surface colour in the STEP or the package, naming the uncoloured occurrences.
+
+#### Scenario: An uncoloured part is repaired in-session
+- **WHEN** the native session finalizes a two-occurrence Make with one uncoloured part
+- **THEN** the host rejects the proposal with `make-part-colours-missing` naming that part
 
 ### Requirement: One colour convention across sealed formats
 The system SHALL report the raw colour channels sealed in a STEP or assembly-package as the sRGB hex a viewer shows, so the hex read from STEP, the GLB material as the shop displays it, host renders, and the Factory `part_colors` agree for the same occurrence.

@@ -43,12 +43,19 @@ so the shop's cover ranking selects it. A missing or failing renderer records
 
 The Factory handoff derives one production mesh per occurrence from the sealed
 cadgen assembly-package (`assembled.step.json`) and the build-group STLs under
-`parts/`, transports them as `assembled_parts/<name>.stl`, and sends the
-sealed STEP colours through the part-colours effect once the shop reports the
-meshes. A Make whose package lists two or more occurrences without those STLs
-is rejected with feedback naming the missing paths. The release receipt
-records `handoff_transport`, `occurrence_count`, and the reason a toy crossed
-as a single mesh.
+`parts/`, and transports them as `assembled_parts/<name>.stl` with an indexed
+sidecar. The shop's viewer colours the assembled mesh by groups it computes
+itself (manifold-edge shells, loose facets owned by the shell they face,
+numbered in triangle order) and keys group `i` by the `i`-th slide file, so
+the host reproduces that grouping on the sealed `assembled.stl`, owns every
+group with the production mesh's shape signature and the posed occurrence
+geometry of the sealed STEP, and writes one `assembly_parts` entry per viewer
+group (order, slide or `#slot` key, owner, sealed colour) through the
+part-colours effect, verified on readback. A Make whose package lists two or
+more occurrences without those STLs, or without a sealed colour on every
+part, is rejected with feedback naming them. The release receipt records
+`handoff_transport`, `occurrence_count`, `viewer_groups`, and the reason a
+toy crossed as a single mesh.
 
 When the run was started with `--disclose-session`, the host projects the
 main Codex rollout into a redacted `conversation.jsonl` at the archive root:
