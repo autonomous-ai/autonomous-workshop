@@ -1,0 +1,12 @@
+{
+  "name": "workshop-render",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Trusted-host product renderer for Autonomous Workshop: three.js under headless Chromium (swiftshader), no network.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "playwright": "1.61.1",
+    "three": "0.160.0"
+  }
+}

@@ -70,6 +70,14 @@ from workshop.make.assembly_package import (
     missing_production_parts,
     read_assembly_package,
 )
+from workshop.release.renders import (
+    host_renders_stage_input,
+    load_host_renders,
+    render_made_product,
+    verified_render_bytes,
+    verified_render_sources,
+)
+from workshop.release.session_history import run_session_history
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.revision import (
     MAKE_INVENT_REVISION_CAPABILITY_PATH,
@@ -3665,6 +3673,9 @@ def _prepare_effort_stage_input(
                     release_contract["manual_path"],
                     "product.json",
                 ],
+                "host_renders": host_renders_stage_input(
+                    run.run_root, made, load_host_renders(run.host_state_root, made)
+                ),
             }
             if release_contract.get("manual_design_evidence_path") is not None:
                 inputs["required_package_files"].append(
@@ -5532,10 +5543,12 @@ def _record_authorization(
     publish_requested: bool,
     create: bool,
     github_publish_requested: bool = False,
+    history_disclosure_requested: bool = False,
 ) -> Mapping[str, Any]:
     path = _authorization_path(paths)
     current = False
     current_github = False
+    current_history = False
     if path.exists() or path.is_symlink():
         try:
             identity = path.lstat()
@@ -5555,45 +5568,55 @@ def _record_authorization(
             "product_id",
             "publish_requested",
         }
-        current_expected = legacy_expected | {"github_publish_requested"}
+        github_expected = legacy_expected | {"github_publish_requested"}
+        current_expected = github_expected | {"history_disclosure_requested"}
+        expected_by_schema = {1: legacy_expected, 2: github_expected, 3: current_expected}
+        schema = value.get("schema_version")
         if (
-            set(value) not in (legacy_expected, current_expected)
-            or value["schema_version"] not in (1, 2)
-            or (value["schema_version"] == 1 and set(value) != legacy_expected)
-            or (value["schema_version"] == 2 and set(value) != current_expected)
+            schema not in expected_by_schema
+            or set(value) != expected_by_schema[schema]
             or value["kind"] != _AUTHORIZATION_KIND
             or value["product_id"] != product_id
             or type(value["publish_requested"]) is not bool
-            or (
-                value["schema_version"] == 2
-                and type(value["github_publish_requested"]) is not bool
-            )
+            or (schema >= 2 and type(value["github_publish_requested"]) is not bool)
+            or (schema >= 3 and type(value["history_disclosure_requested"]) is not bool)
         ):
             raise StateConflict("run authorization is invalid")
         current = value["publish_requested"]
-        current_github = (
-            value["github_publish_requested"]
-            if value["schema_version"] == 2
-            else False
-        )
+        current_github = value["github_publish_requested"] if schema >= 2 else False
+        current_history = value["history_disclosure_requested"] if schema >= 3 else False
     elif not create:
         raise StateConflict("run authorization is missing")
     value = {
-        "schema_version": 2,
+        "schema_version": 3,
         "kind": _AUTHORIZATION_KIND,
         "product_id": product_id,
         "publish_requested": bool(current or publish_requested),
         "github_publish_requested": bool(
             current_github or github_publish_requested
         ),
+        "history_disclosure_requested": bool(
+            current_history or history_disclosure_requested
+        ),
     }
     if (
         create
         or value["publish_requested"] != current
         or value["github_publish_requested"] != current_github
+        or value["history_disclosure_requested"] != current_history
     ):
         _write_private_json(path, value)
     return value
+
+
+def _history_disclosure_requested(run: AgentRun) -> bool:
+    authorization = _record_authorization(
+        NativeRunPaths(run.run_root, run.host_state_root),
+        product_id=run.snapshot().product_id,
+        publish_requested=False,
+        create=False,
+    )
+    return authorization["history_disclosure_requested"] is True
 
 
 def _github_publication_requested(run: AgentRun) -> bool:
@@ -5855,6 +5878,11 @@ def _evaluate_make_stage(
         # the exactness gate fail-closed, quarantine the stale proposal, and
         # return bounded repair feedback to this same Make checkpoint.
         raise _make_rejection_for_error(error) from error
+    # Host renders are enrichment of a Make that already passed: the sealed
+    # bytes are rendered by the trusted host so Release and the shop can show
+    # the exact product. A missing or failing renderer records "unavailable"
+    # and changes nothing about the gate decision.
+    host_renders = render_made_product(run.run_root, run.host_state_root, made)
     evidence = StageGateEvidence(
         stage="make",
         gate_id="make.sealed-revision-v1",
@@ -5881,6 +5909,7 @@ def _evaluate_make_stage(
             "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
             "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
             "cad_verification_passed": cad_evidence.passed,
+            "host_renders_status": host_renders.status,
         },
     )
     return StageGateDecision(evidence=evidence, transition=transition), additional
@@ -6966,6 +6995,9 @@ def _verified_release(
             package_manifest=release.package_manifest,
             manual_path=release.manual_path,
             made=made,
+            render_sources=verified_render_sources(
+                run.run_root, made, load_host_renders(run.host_state_root, made)
+            ),
         )
     product_release = ProductRelease.from_root(
         package.root,
@@ -7000,14 +7032,42 @@ def _publication_release_context(
             / "TASTE.md"
         ),
     )
+    wish = _load_wish(run.run_root)
     return ReleaseContext(
-        wish=_load_wish(run.run_root),
+        wish=wish,
         taste=taste,
         blueprint=verified.blueprint,
         made=verified.package.made,
         playtested=verified.package.playtested,
         workspace=run.run_root,
+        cover_render=verified_render_bytes(
+            run.run_root,
+            verified.made,
+            load_host_renders(run.host_state_root, verified.made),
+            "hero",
+        ),
+        session_history=_release_session_history(run, wish),
     )
+
+
+def _release_session_history(run: AgentRun, wish: Wish) -> Optional[bytes]:
+    """The redacted session the listing may carry, only when authorized.
+
+    History is disclosure, not evidence: an absent rollout or a conversion
+    failure leaves the listing without turns rather than blocking Release.
+    """
+
+    if not _history_disclosure_requested(run):
+        return None
+    try:
+        return run_session_history(
+            run.host_state_root,
+            workspace_root=run.run_root,
+            opener_text=wish.objective,
+            opener_uuid="wish-%s" % run.snapshot().wish_sha256,
+        )
+    except Exception:  # noqa: BLE001 - disclosure enrichment never blocks Release
+        return None
 
 
 def _existing_release_for_promotion(
@@ -8129,6 +8189,14 @@ def _native_receipt(
                     "page_url": receipt.details.get("page_url"),
                     "manual_url": receipt.details.get("manual_url"),
                     "cover_url": receipt.details.get("cover_url"),
+                    "handoff_transport": receipt.details.get("handoff_transport"),
+                    "occurrence_count": receipt.details.get("occurrence_count"),
+                    "part_colors": receipt.details.get("part_colors"),
+                    "cover_render_sha256": receipt.details.get("cover_render_sha256"),
+                    "session_history_sha256": receipt.details.get(
+                        "session_history_sha256"
+                    ),
+                    "history_turns": receipt.details.get("history_turns"),
                     "verified": True,
                 }
                 if receipt.is_verified_public:
@@ -8344,6 +8412,7 @@ def start_native_run(
     max_rounds: int = 4,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
+    history_disclosure_requested: bool = False,
 ) -> Mapping[str, Any]:
     """Persist one Wish and immediately start its whole-run native session.
 
@@ -8360,6 +8429,11 @@ def start_native_run(
 
     ``github_publish_requested`` grants prospective authority to commit and
     push the sanitized public snapshot after verified Factory readback. It is
+    false by default and frozen for the run.
+
+    ``history_disclosure_requested`` grants authority to ship the run's
+    redacted session history with the Factory import, where the shop replays
+    it as the listing's turns and publishes it with the design folder. It is
     false by default and frozen for the run.
 
     ``max_rounds`` freezes the Invent-Make-Playtest round budget (1-100). Every
@@ -8380,6 +8454,8 @@ def start_native_run(
         raise ContractError("legacy publication option must be boolean")
     if type(github_publish_requested) is not bool:
         raise ContractError("GitHub publication option must be boolean")
+    if type(history_disclosure_requested) is not bool:
+        raise ContractError("session history disclosure option must be boolean")
     if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
         raise ContractError("round budget must be an integer between 1 and 100")
 
@@ -8424,6 +8500,7 @@ def start_native_run(
             product_id=wish.product_id,
             publish_requested=True,
             github_publish_requested=github_publish_requested,
+            history_disclosure_requested=history_disclosure_requested,
             create=True,
         )
         checkpoint = _advance_validated_wish(run)

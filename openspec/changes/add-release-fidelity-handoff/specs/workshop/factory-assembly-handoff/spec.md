@@ -35,9 +35,9 @@ The system SHALL send the sealed STEP colour of every occurrence the Factory rep
 - **AND** readback shows both meshes in the sealed colours before publish proceeds
 
 ### Requirement: One colour convention across sealed formats
-The system SHALL treat build123d colour channels as linear RGB in every exporter and reader it ships, so the hex reported from STEP, the GLB material colour, host renders, and the Factory `part_colors` agree for the same occurrence.
+The system SHALL report the raw colour channels sealed in a STEP or assembly-package as the sRGB hex a viewer shows, so the hex read from STEP, the GLB material as the shop displays it, host renders, and the Factory `part_colors` agree for the same occurrence.
 
 #### Scenario: STEP and GLB agree
-- **WHEN** a part is authored with `srgb("#d1822e")` and exported to STEP and GLB
+- **WHEN** a part is authored with `Color(0.82, 0.51, 0.18)` and exported to STEP and GLB
 - **THEN** `read_step_part_colors` reports `#d1822e`
-- **AND** the GLB material displays `#d1822e` in an sRGB viewer
+- **AND** the GLB material displays `#d1822e` in the shop viewer

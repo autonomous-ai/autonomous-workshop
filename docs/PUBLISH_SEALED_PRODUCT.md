@@ -33,6 +33,34 @@ dependencies, unsafe page bounds, changed bytes, or missing meaningful text.
 Parser success proves structure, not beauty, comprehension, physical safety,
 or a successful print.
 
+After the Make gate passes, the host renders the sealed assembly and any
+declared exact states with its pinned three.js renderer (`tools/render/`).
+The outputs are bound to the Made product hash in a private record; the
+Release Goal may cite them in `MANUAL-DESIGN.json` as `renders/<name>.png`,
+and the Factory import ships the hero as `assembled_review/_assembled.png`
+so the shop's cover ranking selects it. A missing or failing renderer records
+`unavailable` and every step behaves as it did without host renders.
+
+The Factory handoff derives one production mesh per occurrence from the sealed
+cadgen assembly-package (`assembled.step.json`) and the build-group STLs under
+`parts/`, transports them as `assembled_parts/<name>.stl`, and sends the
+sealed STEP colours through the part-colours effect once the shop reports the
+meshes. A Make whose package lists two or more occurrences without those STLs
+is rejected with feedback naming the missing paths. The release receipt
+records `handoff_transport`, `occurrence_count`, and the reason a toy crossed
+as a single mesh.
+
+When the run was started with `--disclose-session`, the host projects the
+main Codex rollout into a redacted `conversation.jsonl` at the archive root:
+the Wish as the opening prompt, host stage Goals, the Manager's visible
+replies, and tool calls with bounded outputs. Encrypted reasoning, developer
+instructions, runtime events, plugin banners, and subagent traffic are
+omitted; host paths and secret-scanner matches are redacted; the Factory's
+own replay limits apply. The shop replays it as the listing's turns and
+publishes it with the design folder, so strangers can read it once the toy is
+public. Without that authorization nothing ships and the listing has no
+history.
+
 Before any Factory effect, the host also reruns the full-tier CAD gate on the
 exact sealed Made revision. That gate must prove the production model and its
 declared printable parts satisfy the current deterministic CAD, thickness, and

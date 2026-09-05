@@ -50,6 +50,7 @@ from workshop.make.skill_registry import (
     fingerprint_skill_tree,
     resolve_skills_root,
 )
+from workshop.release.renders import renderer_self_check
 from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.browser_login import FactoryBrowserLogin
 from workshop.runtime.execution import codex_subprocess_environment
@@ -395,6 +396,26 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
         manual_url = publication.get("manual_url")
         if isinstance(manual_url, str) and manual_url:
             print("Manual PDF: %s (hash-verified)" % manual_url)
+        transport = publication.get("handoff_transport")
+        if isinstance(transport, str) and transport:
+            count = publication.get("occurrence_count")
+            print(
+                "Shop meshes: %s%s"
+                % (
+                    transport,
+                    " (%d parts)" % count
+                    if transport == "multipart" and isinstance(count, int)
+                    else "",
+                )
+            )
+        if publication.get("cover_render_sha256"):
+            print("Shop cover: host render (hash-bound)")
+        if publication.get("session_history_sha256"):
+            turns = publication.get("history_turns")
+            print(
+                "Session history: shipped%s"
+                % (", %d turns replayed" % turns if isinstance(turns, int) else "")
+            )
         candidate_reason = publication.get("reason")
         if (
             isinstance(candidate_reason, str)
@@ -445,6 +466,7 @@ def _start_run(
     max_rounds: int = DEFAULT_MAX_ROUNDS,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
+    disclose_session: bool = False,
 ) -> Mapping[str, Any]:
     """Announce and start one native run; callers print the receipt."""
 
@@ -475,6 +497,7 @@ def _start_run(
         manager_id=manager.manager_id,
         max_rounds=max_rounds,
         github_publish_requested=github,
+        history_disclosure_requested=disclose_session,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -498,6 +521,7 @@ def _wish(args: argparse.Namespace) -> int:
         max_rounds=args.max_rounds,
         progress=progress,
         live_progress=live_progress,
+        disclose_session=bool(getattr(args, "disclose_session", False)),
     )
     if args.json:
         _print_json(receipt)
@@ -701,6 +725,7 @@ def _start(args: argparse.Namespace) -> int:
                     github=args.github,
                     progress=progress,
                     live_progress=live_progress,
+                    disclose_session=bool(getattr(args, "disclose_session", False)),
                 )
             except (WorkshopError, RuntimeError) as exc:
                 # The build session ended without a verdict (timeout, provider
@@ -1075,6 +1100,26 @@ def _doctor_optional_cli(
     )
 
 
+def _doctor_render() -> dict[str, str]:
+    """Report the host product renderer; Releases fall back without it."""
+
+    status = renderer_self_check()
+    if status.get("available"):
+        return _check_record(
+            "render", "ready", "Host product renderer: %s." % status.get("detail")
+        )
+    return _check_record(
+        "render",
+        "skipped",
+        "Host product renderer unavailable: %s. Releases fall back to Make's "
+        "own snaps and ship no host cover." % status.get("detail"),
+        next_step=(
+            "Install Node 22, run `npm ci` in tools/render, then "
+            "`npx playwright install chromium` there."
+        ),
+    )
+
+
 def _doctor(args: argparse.Namespace) -> int:
     root = _inventor_source_root(args.root)
     required = [
@@ -1099,6 +1144,7 @@ def _doctor(args: argparse.Namespace) -> int:
             supports=grok_supports_native_workshop,
             label="Grok Build",
         ),
+        _doctor_render(),
     ]
     status = (
         "ready"
@@ -1400,6 +1446,15 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     start.add_argument(
+        "--disclose-session",
+        action="store_true",
+        help=(
+            "ship the run's redacted build session with the Factory import; "
+            "the shop replays it as the listing's history and publishes it "
+            "with the design folder (default: disabled)"
+        ),
+    )
+    start.add_argument(
         "--once",
         action="store_true",
         help="dream and build one idea, then stop (default: loop until stopped)",
@@ -1520,6 +1575,15 @@ def parser() -> argparse.ArgumentParser:
         help=(
             "commit and push the generated toy folder after Release "
             "(default: disabled)"
+        ),
+    )
+    wish.add_argument(
+        "--disclose-session",
+        action="store_true",
+        help=(
+            "ship the run's redacted build session with the Factory import; "
+            "the shop replays it as the listing's history and publishes it "
+            "with the design folder (default: disabled)"
         ),
     )
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")

@@ -269,6 +269,8 @@ Every run is keyed by a Wish id. Passed-through stages create no turn, artifact,
 - a self-contained printable `MANUAL.pdf` for the box
 - authenticated public Factory readback of those CAD and manual hashes
 
+A multi-part toy crosses to the shop as one mesh per sealed occurrence in the colours Make sealed. The host renders the sealed assembly with a pinned three.js renderer (`tools/render/`, optional; see `workshop doctor`) so the manual and the listing cover show the exact product, and a run started with `--disclose-session` ships its redacted build session as the listing's history.
+
 Workshop code ends there. Printing, delivery, and Review belong to Operations. Publication does not claim a physical print, pack, or delivery.
 
 ```text

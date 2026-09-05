@@ -650,6 +650,19 @@ Codex prepares `artifacts/release/package` with at least:
 - canonical `PLAYTEST-NOT-RUN.json`, with no Playtest claims; and
 - optional editable source or accessible text companions.
 
+Two host-owned inputs sit beside the sealed Made tree for Release. After the
+Make CAD gate passes, the host renders the sealed assembly, each declared
+`presentation.states` mesh, and a signature strip with its pinned three.js
+renderer into `artifacts/make/rNNNN/renders/`, bound to the Made product hash
+in `renders.json` (private copy under the host state); `STAGE.json.host_renders`
+lists them and `MANUAL-DESIGN.json` may cite them as `renders/<name>.png`. At
+publication the host derives one production mesh per sealed occurrence from
+the assembly-package for the Factory, ships the rendered hero as the cover,
+and, only when the run was started with `--disclose-session`, projects the
+main Codex rollout into a redacted `conversation.jsonl` the shop replays as
+the listing's history. None of these can change a gate decision: an
+unavailable renderer or a missing rollout leaves Release exactly as before.
+
 Spark/Forge use NativeRelease schema v3 with `MANUAL.pdf` and product schema
 v5/`manual-ready`. Quest uses NativeRelease schema v2/product schema v4 bound
 to passing Playtest evidence. Legacy NativeRelease schema v1

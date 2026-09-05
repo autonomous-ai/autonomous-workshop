@@ -47,3 +47,14 @@ Workshop depends on `psutil` to enumerate and identity-pin every member of a
 native Codex run's isolated POSIX process session before termination. `psutil`
 is distributed under the BSD 3-Clause license; its complete license remains in
 the separately distributed dependency wheel.
+
+## Host product renderer
+
+`tools/render/` pins two npm dependencies installed per machine by `npm ci`;
+they are not vendored in this repository:
+
+- [three.js](https://github.com/mrdoob/three.js) 0.160.0, MIT License,
+  copyright 2010-2024 three.js authors.
+- [Playwright](https://github.com/microsoft/playwright) 1.61.1, Apache License
+  2.0, copyright Microsoft Corporation. Its Chromium build is downloaded by
+  `npx playwright install chromium` under the Chromium BSD-style license.

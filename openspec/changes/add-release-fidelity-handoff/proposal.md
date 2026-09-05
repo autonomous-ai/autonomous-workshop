@@ -16,7 +16,7 @@ None of the 32 Workshop-owned designs on the Factory carries a Workshop part col
 ## What Changes
 
 - **Assembly-package handoff.** The Factory adapter accepts the sealed assembly-package at `assembled.step.json`, resolves each occurrence to `parts/<name>.stl`, and produces the existing multipart transport (`assembled_parts/<name>.stl` plus the synthesized Factory sidecar). Shell rules are unchanged. The Make gate requires one production STL per occurrence when a package has two or more occurrences. The receipt records which transport was used.
-- **Part colours activate.** No new effect: once the Factory reports one mesh per occurrence, the existing `factory-part-colors` effect addresses them by `mesh_name`. One colour convention is enforced: GLB export writes cadgen's linear channels verbatim, and the CAD skill instructs `srgb("#hex")` authoring.
+- **Part colours activate.** No new effect: once the Factory reports one mesh per occurrence, the existing `factory-part-colors` effect addresses them by `mesh_name`. One colour convention is enforced on the reading side: sealed STEP channels are reported as the sRGB hex the shop viewer shows (the vendored cadgen exporter is byte-locked and already agrees with the viewer), the sealed assembly-package supplies colours when the STEP is unstyled, and the Make reference tells authors to pick channels from the sRGB hex directly.
 - **Host-owned product renders.** After the Make gate passes, the trusted host renders a hero, an optional turnaround set, and a fixed-camera state strip from the sealed part STLs, occurrence transforms, and STEP colours using a pinned headless three.js renderer. Outputs and inputs are bound in `renders.json`. Release manual visuals may cite them; the handoff ships the hero as the Factory cover. When the renderer is unavailable, Release proceeds on Make's snaps exactly as today.
 - **Session history.** The host converts the run's Codex rollout into a redacted, Claude-Code-shaped `conversation.jsonl` at the handoff root, gated by an explicit run authorization, and records the replayed turn count on readback.
 - **Readback.** After publish, the host verifies `assembly_parts` (count and colours) and records `history_turns`, `handoff_transport`, and `renders_sha256` in the release receipt and `workshop status`.
@@ -37,7 +37,7 @@ None. Factory part colours were introduced by change fragment only; their behavi
 
 - `src/workshop/integrations/factory.py`: assembly-package reader, transport precedence, `conversation.jsonl` allowlist, cover file, readback fields.
 - `src/workshop/make/native_gate.py`, new `src/workshop/make/assembly_package.py`: package parsing shared by gate and adapter; per-occurrence production STL rule.
-- `src/workshop/make/skills/cad/…/export`: linear colour channels in GLB; CAD `SKILL.md` colour rule.
+- `src/workshop/make/cad/step_color.py`: sealed channels reported as sRGB; `references/make.md`: colour authoring rule (the cad skill tree is byte-locked).
 - New `src/workshop/release/renders.py` and `tools/render/` (vendored three.js 0.160, playwright launcher): host render step, `renders.json` contract, doctor check.
 - `src/workshop/release/manual_design.py`: `product_visuals` may resolve against `renders.json`.
 - New `src/workshop/release/session_history.py`: rollout → `conversation.jsonl` converter with redaction and caps; `authorization.json` schema 3 with `history_disclosure_requested`.

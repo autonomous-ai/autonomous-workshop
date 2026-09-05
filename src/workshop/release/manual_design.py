@@ -8,7 +8,7 @@ import json
 import re
 import stat
 from pathlib import Path, PurePosixPath
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
 from workshop.artifacts import ArtifactManifest
 from workshop.errors import ContractError, StateConflict
@@ -23,6 +23,9 @@ _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _VISUAL_SUFFIXES = frozenset(
     (".3mf", ".glb", ".jpeg", ".jpg", ".obj", ".png", ".step", ".stl", ".svg", ".webp")
 )
+# Host renders are cited under this virtual prefix; their bytes are bound by
+# the host's private render record, not by the agent-authored Made manifest.
+HOST_RENDER_SOURCE_PREFIX = "renders/"
 
 
 def _strict_object(pairs: Sequence[tuple[str, Any]]) -> dict[str, Any]:
@@ -218,16 +221,41 @@ def _pdf_pages_and_embedded_fonts(manual: bytes) -> int:
     return len(pages)
 
 
+def _render_sources(value: Any) -> dict[str, str]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ContractError("manual design render sources must be a mapping")
+    sources: dict[str, str] = {}
+    for path, digest in value.items():
+        if (
+            not isinstance(path, str)
+            or not path.startswith(HOST_RENDER_SOURCE_PREFIX)
+            or not isinstance(digest, str)
+            or _SHA256.fullmatch(digest) is None
+        ):
+            raise ContractError("manual design render sources are invalid")
+        sources[path] = digest
+    return sources
+
+
 def validate_manual_design_evidence(
     package_root: Path,
     *,
     manual: bytes,
     made: NativeMade,
+    render_sources: Optional[Mapping[str, str]] = None,
 ) -> dict[str, Any]:
-    """Validate exact creative-process evidence without judging aesthetics."""
+    """Validate exact creative-process evidence without judging aesthetics.
+
+    ``render_sources`` maps ``renders/<name>.png`` to the sha256 the host's
+    private render record binds and re-verified on disk; a manual may cite
+    those beside sealed Made bytes.
+    """
 
     if not isinstance(made, NativeMade):
         raise ContractError("manual design evidence requires typed Made input")
+    host_renders = _render_sources(render_sources)
     root = Path(package_root).resolve(strict=True)
     document, unused_content = _read_evidence(root)
     del unused_content
@@ -310,7 +338,17 @@ def validate_manual_design_evidence(
         source = visual["source_path"]
         pure = PurePosixPath(source) if isinstance(source, str) else PurePosixPath(".")
         entry = made_entries.get(source)
-        if (
+        if isinstance(source, str) and source.startswith(HOST_RENDER_SOURCE_PREFIX):
+            if (
+                pure.suffix.casefold() != ".png"
+                or len(pure.parts) != 2
+                or host_renders.get(source) != visual["source_sha256"]
+                or source in seen_visuals
+            ):
+                raise ContractError(
+                    "Release manual visual differs from the host's bound render"
+                )
+        elif (
             not isinstance(source, str)
             or not source
             or pure.is_absolute()
@@ -385,6 +423,7 @@ def validate_bound_manual_design_evidence(
     package_manifest: ArtifactManifest,
     manual_path: str,
     made: NativeMade,
+    render_sources: Optional[Mapping[str, str]] = None,
 ) -> dict[str, Any]:
     """Recheck that evidence and manual are exact sealed Release bytes."""
 
@@ -408,10 +447,13 @@ def validate_bound_manual_design_evidence(
     ):
         if len(content) != entry.bytes or hashlib.sha256(content).hexdigest() != entry.sha256:
             raise StateConflict("%s differs from its sealed manifest" % label)
-    return validate_manual_design_evidence(root, manual=manual, made=made)
+    return validate_manual_design_evidence(
+        root, manual=manual, made=made, render_sources=render_sources
+    )
 
 
 __all__ = [
+    "HOST_RENDER_SOURCE_PREFIX",
     "MANUAL_DESIGN_EVIDENCE_KIND",
     "MANUAL_DESIGN_EVIDENCE_PATH",
     "MANUAL_DESIGN_EVIDENCE_SCHEMA_VERSION",

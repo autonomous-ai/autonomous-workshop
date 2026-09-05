@@ -26,6 +26,14 @@ play experience without a website, phone, QR code, or prior explanation.
 - Put an exact product-derived visual on the cover. A title over empty space,
   ASCII art, or an unstyled technical-report/manpage fallback is not an
   acceptable substitute for art direction.
+- Prefer the host renders `STAGE.json.host_renders` lists when their status is
+  `rendered`: the trusted host rendered the sealed assembly in its sealed part
+  colours (`hero`), each declared state, and the fixed-camera `signature`
+  strip with a physically based renderer. Cite them in `MANUAL-DESIGN.json`
+  by their `manual_source_path` (`renders/hero.png`, `renders/signature.png`,
+  ...) with the listed `sha256`; read the bytes at `workspace_path`. When the
+  status is `unavailable`, or a view is missing, fall back to Make's own
+  `snap/` images exactly as before. Never edit or re-save a host render.
 - Choose the physical format to suit the toy and box: a card, foldout, leaflet,
   or booklet may each be right. Decide page size, orientation, page count,
   binding, margins, and bleed deliberately instead of defaulting every toy to
@@ -106,11 +114,11 @@ consistency, and any accidental blank, clipped, or overlapping content. Do not
 add a network service or a license-incompatible runtime dependency merely to
 render it.
 
-Use Make's `snap/signature.png` as the minimum visual test of the product
-promise: the manual must teach the signature experience with exact product
-imagery, and a reader should still understand the reveal or interaction when
-the headline is hidden. Do not let Release copy assert magic that Make's exact
-views fail to show.
+Use the host `renders/signature.png` when it exists, otherwise Make's
+`snap/signature.png`, as the minimum visual test of the product promise: the
+manual must teach the signature experience with exact product imagery, and a
+reader should still understand the reveal or interaction when the headline is
+hidden. Do not let Release copy assert magic that the exact views fail to show.
 
 Read the guide once as a first-time owner and once as an operation or rules
 reference, as applicable. Resolve the complete related finding set in one

@@ -58,3 +58,6 @@ __cadgen__/
 # Private planning material (not published)
 /docs/inventor-army/
 /mockups/
+
+# Host renderer dependencies are installed per machine (workshop doctor).
+/tools/render/node_modules/

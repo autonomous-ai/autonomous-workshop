@@ -48,8 +48,11 @@ Rules:
   values, no duplicate keys, and no trailing newline.
 - `manual_sha256` identifies the final PDF after every revision.
 - Every `product_visuals` entry must name an image or model byte in the exact
-  sealed Made manifest and repeat its hash. Page lists are sorted, unique,
-  one-based, and within the final PDF. The union must include page 1.
+  sealed Made manifest and repeat its hash, or one host render exactly as
+  `STAGE.json.host_renders.outputs[]` lists it (`source_path` =
+  `manual_source_path`, for example `renders/hero.png`, and `source_sha256` =
+  its `sha256`). Page lists are sorted, unique, one-based, and within the
+  final PDF. The union must include page 1.
 - `color_pages` and `grayscale_pages` each list every page exactly once in
   ascending order. Inspect the actual renders at intended print size.
 - Use embedded fonts only. Standard PDF base fonts and operating-system

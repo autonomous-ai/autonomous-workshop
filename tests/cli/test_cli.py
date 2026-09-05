@@ -142,11 +142,13 @@ class NativeCommandTest(unittest.TestCase):
             github_publish_requested,
             activity_observer,
             timing_observer,
+            history_disclosure_requested=False,
         ):
             observed["wish"] = wish
             observed["effort"] = effort
             observed["manager_id"] = manager_id
             observed["github_publish_requested"] = github_publish_requested
+            observed["history_disclosure_requested"] = history_disclosure_requested
             timing_observer(timing_event())
             for activity in (
                 "starting",
@@ -194,8 +196,25 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
         self.assertEqual(observed["effort"], "spark")
         self.assertFalse(observed["github_publish_requested"])
+        self.assertFalse(observed["history_disclosure_requested"])
         self.assertIn("Effort: Spark", stderr.getvalue())
         native_start.assert_called_once()
+
+    def test_wish_disclose_session_freezes_history_disclosure(self):
+        observed = {}
+
+        def start(wish, **kwargs):
+            observed.update(kwargs)
+            return native_receipt()
+
+        with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
+            "cli.main.start_native_run", side_effect=start
+        ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a", "moon", "--disclose-session", "--json"))
+
+        self.assertEqual(result, 0)
+        self.assertTrue(observed["history_disclosure_requested"])
+        self.assertFalse(observed["github_publish_requested"])
 
     def test_wish_strict_wait_exits_one_without_a_publication_flag(self):
         stdout = StringIO()
@@ -216,6 +235,7 @@ class NativeCommandTest(unittest.TestCase):
             github_publish_requested,
             activity_observer,
             timing_observer,
+            history_disclosure_requested=False,
         ):
             self.assertEqual(effort, "spark")
             self.assertEqual(manager_id, "codex")
@@ -606,6 +626,7 @@ class DaydreamCommandTest(unittest.TestCase):
             max_rounds,
             activity_observer,
             timing_observer,
+            history_disclosure_requested=False,
         ):
             observed["wish"] = wish
             observed["effort"] = effort

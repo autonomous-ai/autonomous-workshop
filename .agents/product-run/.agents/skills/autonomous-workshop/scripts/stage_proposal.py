@@ -2969,6 +2969,33 @@ def _manual_design_required(inputs: Mapping[str, Any]) -> bool:
     return True
 
 
+HOST_RENDER_SOURCE_PREFIX = "renders/"
+
+
+def _host_render_sources(host_renders: Any) -> dict[str, str]:
+    """Host renders the STAGE lists as citable manual visuals, by path."""
+
+    if not isinstance(host_renders, Mapping) or host_renders.get("status") != "rendered":
+        return {}
+    outputs = host_renders.get("outputs")
+    if not isinstance(outputs, list):
+        return {}
+    sources: dict[str, str] = {}
+    for item in outputs:
+        if not isinstance(item, Mapping):
+            continue
+        path = item.get("manual_source_path")
+        digest = item.get("sha256")
+        if (
+            isinstance(path, str)
+            and path.startswith(HOST_RENDER_SOURCE_PREFIX)
+            and isinstance(digest, str)
+            and re.fullmatch(r"[0-9a-f]{64}", digest)
+        ):
+            sources[path] = digest
+    return sources
+
+
 def _validate_manual_design_evidence(
     run_root: Path,
     *,
@@ -2977,9 +3004,11 @@ def _validate_manual_design_evidence(
     manual: bytes,
     made: Mapping[str, Any],
     required: bool,
+    host_renders: Any = None,
 ) -> None:
     if not required:
         return
+    host_render_sources = _host_render_sources(host_renders)
     entry = inventory.get(MANUAL_DESIGN_EVIDENCE_PATH)
     if entry is None:
         raise ProposalError("Release package lacks MANUAL-DESIGN.json")
@@ -3072,7 +3101,17 @@ def _validate_manual_design_evidence(
         source = visual["source_path"]
         pure = PurePosixPath(source) if isinstance(source, str) else PurePosixPath(".")
         made_entry = made_entries.get(source)
-        if (
+        if isinstance(source, str) and source.startswith(HOST_RENDER_SOURCE_PREFIX):
+            if (
+                pure.suffix.casefold() != ".png"
+                or len(pure.parts) != 2
+                or host_render_sources.get(source) != visual["source_sha256"]
+                or source in seen
+            ):
+                raise ProposalError(
+                    "Release manual visual differs from the host render STAGE.json lists"
+                )
+        elif (
             not isinstance(source, str)
             or pure.is_absolute()
             or ".." in pure.parts
@@ -3342,6 +3381,7 @@ def _playtested_release_contract(
         manual=manual,
         made=made,
         required=manual_design_required,
+        host_renders=inputs.get("host_renders"),
     )
 
     product: dict[str, Any] | None = None
@@ -3459,6 +3499,7 @@ def _direct_release_contract(
         manual=manual,
         made=made,
         required=manual_design_required,
+        host_renders=inputs.get("host_renders"),
     )
 
     omission, _ = _read_regular(
