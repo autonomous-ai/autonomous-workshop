@@ -57,6 +57,14 @@ part, is rejected with feedback naming them. The release receipt records
 `handoff_transport`, `occurrence_count`, `viewer_groups`, and the reason a
 toy crossed as a single mesh.
 
+The handoff's `project.json` carries, beside the product id and title, the
+sealed Release page's own `summary`, `what_arrives`, and `limitations`, and
+the validated production `parts` names. Factory's product-page drafter and
+its claims auditor read that file in full as design notes; with only an id
+and a name an imported toy had no source text behind any use claim, so every
+draft failed the shop's copy gate. The adapter authors none of those words
+and leaves Factory's optional prompt field empty.
+
 When the run was started with `--disclose-session`, the host projects the
 main Codex rollout into a redacted `conversation.jsonl` at the archive root:
 the Wish as the opening prompt, host stage Goals, the Manager's visible

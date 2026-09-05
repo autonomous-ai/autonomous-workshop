@@ -189,6 +189,37 @@ def _canonical_sha256(value: Any) -> str:
     return hashlib.sha256(_canonical_json(value)).hexdigest()
 
 
+def _project_notes(
+    product_id: str,
+    release_page: Mapping[str, Any],
+    occurrence: Optional[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """The project.json Factory receives: identity plus the sealed page's notes.
+
+    Factory's content drafter and its copy auditor read project.json in full
+    as design notes.  Every word here is the validated Release page's own
+    (summary, what arrives, limitations) or a validated production part
+    name; the adapter authors nothing.
+    """
+
+    notes: dict[str, Any] = {
+        "id": product_id,
+        "name": release_page["title"],
+        "summary": release_page["summary"],
+    }
+    for key in ("what_arrives", "limitations"):
+        value = release_page.get(key)
+        if (
+            isinstance(value, list)
+            and value
+            and all(isinstance(item, str) and item.strip() for item in value)
+        ):
+            notes[key] = list(value)
+    if occurrence is not None:
+        notes["parts"] = [item["name"] for item in occurrence["occurrences"]]
+    return notes
+
+
 def _manual_path_for_release_product(product: Mapping[str, Any]) -> str:
     schema_version = product.get("schema_version")
     if schema_version == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
@@ -1329,8 +1360,14 @@ def _build_model_handoff(
         or manual_binding.get("sha256") != manual_sha256
     ):
         raise ContractError("Factory handoff manual facts are not exact")
+    # project.json is the one file the shop's content drafter and its
+    # claims auditor read in full as "design notes" (besides the file
+    # listing).  A bare {id, name} left an imported product with no source
+    # text behind any use claim, so every draft failed the copy gate (Ouray
+    # No. 100, 2026-09-05).  Carry the sealed page's own words — nothing is
+    # authored here — plus the validated production part names.
     project_payload = _canonical_json(
-        {"id": context.wish.product_id, "name": release_page["title"]}
+        _project_notes(context.wish.product_id, release_page, occurrence)
     ) + b"\n"
     assert_packable_content("project.json", project_payload)
     if manual_path == FACTORY_RELEASE_LEGACY_MANUAL_PATH:

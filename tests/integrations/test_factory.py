@@ -608,7 +608,13 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertIn("MANUAL.md", names)
             self.assertEqual(
                 json.loads(archive.read("project.json")),
-                {"id": "verified-toy", "name": "Verified Toy"},
+                {
+                    "id": "verified-toy",
+                    "name": "Verified Toy",
+                    "summary": "An exact toy page authored before Factory import.",
+                    "what_arrives": ["one puzzle", "one rule card"],
+                    "limitations": ["digital Playtest only"],
+                },
             )
             self.assertNotIn("main.py", names)
             self.assertNotIn("page.json", names)
@@ -818,7 +824,13 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertFalse((product / "project.json").exists())
             self.assertEqual(
                 json.loads(archive.read("project.json")),
-                {"id": "verified-toy", "name": "Verified Toy"},
+                {
+                    "id": "verified-toy",
+                    "name": "Verified Toy",
+                    "summary": "An exact toy page authored before Factory import.",
+                    "what_arrives": ["one puzzle", "one rule card"],
+                    "limitations": ["digital Playtest only"],
+                },
             )
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(
@@ -979,6 +991,11 @@ class FactoryReleaseTest(unittest.TestCase):
             sidecar = json.loads(archive.read("assembled.step.json"))
             self.assertEqual(sidecar["parts"][0]["name"], "stone_rook_a1")
             self.assertEqual(sidecar["parts"][0]["stlPath"], occurrence_path)
+            project = json.loads(archive.read("project.json"))
+            self.assertEqual(
+                project["parts"], [part["name"] for part in sidecar["parts"]]
+            )
+            self.assertEqual(project["parts"][0], "stone_rook_a1")
 
     def _seal_two_coloured_parts(self):
         """Seal an occurrence family whose STEP carries one colour per part."""
