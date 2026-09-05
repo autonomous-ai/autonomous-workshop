@@ -659,8 +659,17 @@ def artifact_manifest_from_mapping(value: Any) -> ArtifactManifest:
     return manifest
 
 
+# The one transcript-shaped file a Pack may carry: the trusted host's redacted
+# session history for the Factory import, written at the archive root only when
+# the run authorized disclosure.  Every other ``*.jsonl`` stays excluded, and a
+# Made tree that claims this exact path is rejected at the Factory boundary.
+PACK_ALLOWED_ROOT_FILES = frozenset(("conversation.jsonl",))
+
+
 def _excluded(relative: Path, extra_excludes: Set[str]) -> bool:
     parts = relative.parts
+    if len(parts) == 1 and relative.as_posix() in PACK_ALLOWED_ROOT_FILES:
+        return relative.name in extra_excludes
     if any(part.lower() in DEFAULT_EXCLUDED_DIRS for part in parts[:-1]):
         return True
     name = relative.name

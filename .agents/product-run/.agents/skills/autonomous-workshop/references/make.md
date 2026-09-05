@@ -86,6 +86,17 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
 
 - the exact nonempty root files named by `STAGE.json.required_root_files`:
   `product.json`, `assembled.step`, `assembled.step.json`, and `assembled.stl`;
+- for a combined model whose `assembled.step.json` (the cadgen
+  assembly-package) lists two or more occurrences, one printable mesh per
+  occurrence at `parts/<occurrence-name>.stl`, one shell each, named exactly
+  as the package names the occurrence (`STAGE.json.production_parts_rule`).
+  The host rejects a multi-part Make without them. The shop receives these
+  files as its addressable parts and renders each in the colour sealed on it;
+- a surface colour on every leaf part of a multi-part model, authored as
+  `Color(r, g, b)` with channels 0..1 taken directly from the sRGB hex you want
+  the shop to show (`Color(0.82, 0.51, 0.18)` shows as `#d1822e`). Do not
+  pre-convert channels to linear; the STEP, the GLB, the host renders, and the
+  listing all read the sealed channels as sRGB;
 - `product.json` with nonempty `title` and `summary` strings. Both are
   customer copy that reaches the shop unchanged: the title is a sayable name
   of one to four words with no dimensions, part counts, or sentences, and

@@ -41,6 +41,11 @@ from workshop.errors import (
 )
 from workshop.make.cad.mesh import inspect_stl_path
 from workshop.make.cad.step_color import read_step_part_colors
+from workshop.make.assembly_package import (
+    ASSEMBLY_PACKAGE_PATH,
+    is_assembly_package,
+    read_assembly_package,
+)
 from workshop.release.native import (
     DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
     FACTORY_CONTENT_BODY_MAX,
@@ -146,6 +151,19 @@ FACTORY_IMPORT_PROVEN_NO_EFFECT_STATUSES = (
 _INVENTOR_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _OCCURRENCE_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,127}$")
 _HEX_COLOUR = re.compile(r"^#[0-9a-f]{6}$")
+# Host-authored files that ride the Factory handoff beside the sealed model:
+# the disclosed session history the shop replays into design turns, and the
+# host-rendered hero the shop's own cover ranking prefers.  Neither is a Made
+# byte; a Made tree that claims either path is rejected as a reserved path.
+FACTORY_SESSION_HISTORY_PATH = "conversation.jsonl"
+FACTORY_COVER_RENDER_PATH = "assembled_review/_assembled.png"
+FACTORY_HOST_HANDOFF_PATHS = frozenset(
+    (FACTORY_SESSION_HISTORY_PATH, FACTORY_COVER_RENDER_PATH)
+)
+MAX_FACTORY_SESSION_HISTORY_BYTES = 12 * 1024 * 1024
+MAX_FACTORY_COVER_RENDER_BYTES = 8 * 1024 * 1024
+MAX_FACTORY_TRANSPORT_REASON_CHARS = 500
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -251,7 +269,7 @@ def _is_factory_model_path(
         or any(part in ("", ".", "..") for part in pure.parts)
     ):
         return False
-    if path in FACTORY_MODEL_METADATA_PATHS:
+    if path in FACTORY_MODEL_METADATA_PATHS or path in FACTORY_HOST_HANDOFF_PATHS:
         return True
     lowered = path.casefold()
     if lowered.endswith(".step.json"):
@@ -421,6 +439,121 @@ def _sealed_part_colors(root: Path, manifest: ArtifactManifest) -> Dict[str, str
     return colours
 
 
+def _package_part_colors(root: Path, manifest: ArtifactManifest) -> Dict[str, str]:
+    """Return occurrence colours from the sealed assembly-package, if any.
+
+    The STEP is the primary colour authority.  When it carries no styled
+    part at all, the same sealed bytes Make wrote beside it still name the
+    colour per occurrence, so the shop can render the intended colours
+    rather than its defaults.
+    """
+
+    entry = _manifest_entry(manifest, ASSEMBLY_PACKAGE_PATH)
+    if entry is None:
+        return {}
+    try:
+        content = _read_bound_file(root, manifest, ASSEMBLY_PACKAGE_PATH)
+    except ContractError:
+        return {}
+    try:
+        document = json.loads(content.decode("utf-8"))
+    except (UnicodeError, ValueError):
+        return {}
+    if not is_assembly_package(document):
+        return {}
+    try:
+        package = read_assembly_package(content)
+    except ContractError:
+        return {}
+    return {
+        name: colour
+        for name, colour in package.part_colors().items()
+        if _OCCURRENCE_NAME.fullmatch(name) and _HEX_COLOUR.fullmatch(colour)
+    }
+
+
+def _host_session_history(context: Any) -> Optional[bytes]:
+    """Return the host-authored session history bytes bound to this Release."""
+
+    value = getattr(context, "session_history", None)
+    if value is None:
+        return None
+    if (
+        not isinstance(value, bytes)
+        or not value
+        or len(value) > MAX_FACTORY_SESSION_HISTORY_BYTES
+    ):
+        raise ContractError("Factory session history must be bounded non-empty bytes")
+    return value
+
+
+def _host_cover_render(context: Any) -> Optional[bytes]:
+    """Return the host-rendered hero PNG bound to this Release."""
+
+    value = getattr(context, "cover_render", None)
+    if value is None:
+        return None
+    if (
+        not isinstance(value, bytes)
+        or not value.startswith(_PNG_SIGNATURE)
+        or len(value) > MAX_FACTORY_COVER_RENDER_BYTES
+    ):
+        raise ContractError("Factory cover render must be a bounded PNG")
+    return value
+
+
+def _bounded_reason(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    text = " ".join(str(value).split())
+    return text[:MAX_FACTORY_TRANSPORT_REASON_CHARS] or None
+
+
+def _handoff_proof_details(handoff: Mapping[str, Any]) -> Dict[str, Any]:
+    """Receipt details that record how the sealed model crossed to Factory."""
+
+    transport = handoff.get("transport")
+    if not isinstance(transport, Mapping):
+        raise ContractError("Factory handoff transport record is missing")
+    details: Dict[str, Any] = {
+        "handoff_transport": transport["kind"],
+        "occurrence_count": transport["occurrence_count"],
+    }
+    reason = transport.get("reason")
+    if reason is not None:
+        details["handoff_transport_reason"] = reason
+    for key in ("session_history_sha256", "cover_render_sha256"):
+        value = handoff.get(key)
+        if value is not None:
+            details[key] = require_sha256(value, "Factory handoff %s" % key)
+    return details
+
+
+def _history_turns(client: "FactoryClient", slug: str) -> Optional[int]:
+    """Best-effort count of the turns Factory replayed from conversation.jsonl.
+
+    The shop replays history after the design is already written and drops a
+    malformed transcript without failing the import, so this readback is
+    diagnostic: an unavailable or malformed count is ``None``, never an error.
+    """
+
+    try:
+        response = client.get_turns(slug)
+        if response.status != 200:
+            return None
+        body = _json_body(response, "Factory turns readback")
+    except Exception:
+        return None
+    total = body.get("total")
+    if isinstance(total, int) and not isinstance(total, bool) and total >= 0:
+        return total
+    for key in ("turns", "items", "data"):
+        items = body.get(key)
+        if isinstance(items, list):
+            return len(items)
+    return None
+
+
 def _normalized_hex(value: str) -> str:
     """Fold the hex forms Factory accepts onto the one Workshop writes.
 
@@ -540,12 +673,35 @@ def _occurrence_transport(
     if step_entry is None:
         raise ContractError("Factory occurrence sidecar requires its sealed STEP")
 
+    sidecar_bytes = _read_bound_file(root, manifest, source_sidecar)
     try:
-        sidecar: Any = json.loads(
-            _read_bound_file(root, manifest, source_sidecar).decode("utf-8")
-        )
+        sidecar: Any = json.loads(sidecar_bytes.decode("utf-8"))
     except (UnicodeError, ValueError) as exc:
         raise ContractError("Factory occurrence sidecar is malformed") from exc
+
+    if is_assembly_package(sidecar):
+        # Make seals the cadgen assembly-package at this path.  Its occurrence
+        # names are the transport identity, and the build-group contract
+        # places one production STL per occurrence under parts/.  A single
+        # occurrence is the root mesh itself and needs no occurrence family.
+        package = read_assembly_package(sidecar_bytes)
+        if not package.is_multipart:
+            return None
+        parts = []
+        for occurrence in package.occurrences:
+            production = occurrence.production_stl_path
+            if _manifest_entry(manifest, production) is None:
+                raise ContractError(
+                    "assembly-package occurrence %s lacks its sealed production STL %s"
+                    % (occurrence.name, production)
+                )
+            parts.append({"name": occurrence.name, "stlPath": production})
+        sidecar = {
+            "schemaVersion": 1,
+            "entryKind": "assembly",
+            "primaryPose": "assembled",
+            "parts": parts,
+        }
 
     has_factory_sidecar = (
         isinstance(sidecar, Mapping)
@@ -766,23 +922,27 @@ def _validated_occurrence_transport(
     manifest: ArtifactManifest,
     primary_source: str,
     transport_stem: str,
-) -> Optional[Mapping[str, Any]]:
-    """Return only a complete, safe occurrence family.
+) -> Tuple[Optional[Mapping[str, Any]], Optional[str]]:
+    """Return only a complete, safe occurrence family, plus why one is absent.
 
     The sidecar is optional metadata. A malformed, stale, product-specific, or
     otherwise unbound document must not make the sealed root assembly
-    unpublishable, nor may any paths from it enter the Factory handoff.
+    unpublishable, nor may any paths from it enter the Factory handoff.  The
+    bounded reason lets the receipt say why a toy went up as one mesh.
     """
 
     try:
-        return _occurrence_transport(
-            root,
-            manifest,
-            primary_source,
-            transport_stem,
+        return (
+            _occurrence_transport(
+                root,
+                manifest,
+                primary_source,
+                transport_stem,
+            ),
+            None,
         )
-    except ContractError:
-        return None
+    except ContractError as exc:
+        return None, _bounded_reason(str(exc))
 
 
 def _assert_archive_inventory(content: bytes, project_id: str) -> None:
@@ -1016,16 +1176,15 @@ def _build_model_handoff(
     # Keep assembled.stl at the root when Make provides it. Factory's importer
     # ranks that conventional name above all part meshes for the product viewer.
     transport_primary = primary_source
-    occurrence = (
-        _validated_occurrence_transport(
+    occurrence: Optional[Mapping[str, Any]] = None
+    transport_reason: Optional[str] = None
+    if sealed_primary["kind"] == "mesh":
+        occurrence, transport_reason = _validated_occurrence_transport(
             root,
             manifest,
             primary_source,
             PurePosixPath(transport_primary).stem,
         )
-        if sealed_primary["kind"] == "mesh"
-        else None
-    )
 
     primary_model = {
         "kind": sealed_primary["kind"],
@@ -1158,6 +1317,24 @@ def _build_model_handoff(
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(_read_bound_file(root, manifest, item["source_path"]))
                 target.chmod(0o644)
+        if any(
+            staging.joinpath(*PurePosixPath(path).parts).exists()
+            for path in FACTORY_HOST_HANDOFF_PATHS
+        ):
+            raise ContractError("Made contains a reserved Factory handoff path")
+        session_history = _host_session_history(context)
+        if session_history is not None:
+            assert_packable_content(FACTORY_SESSION_HISTORY_PATH, session_history)
+            target = staging / FACTORY_SESSION_HISTORY_PATH
+            target.write_bytes(session_history)
+            target.chmod(0o644)
+        cover_render = _host_cover_render(context)
+        if cover_render is not None:
+            assert_packable_content(FACTORY_COVER_RENDER_PATH, cover_render)
+            target = staging.joinpath(*PurePosixPath(FACTORY_COVER_RENDER_PATH).parts)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(cover_render)
+            target.chmod(0o644)
         reserved = (
             "workshop-product-facts.json",
             FACTORY_RELEASE_PAGE_PATH,
@@ -1191,6 +1368,23 @@ def _build_model_handoff(
             ).hexdigest(),
             "manual_path": manual_path,
             "manual_sha256": manual_sha256,
+            "transport": {
+                "kind": "multipart" if occurrence is not None else "single-mesh",
+                "occurrence_count": (
+                    len(occurrence["occurrences"]) if occurrence is not None else 1
+                ),
+                "reason": transport_reason,
+            },
+            "session_history_sha256": (
+                hashlib.sha256(session_history).hexdigest()
+                if session_history is not None
+                else None
+            ),
+            "cover_render_sha256": (
+                hashlib.sha256(cover_render).hexdigest()
+                if cover_render is not None
+                else None
+            ),
         }
     )
     return result
@@ -1515,6 +1709,15 @@ class FactoryClient:
             raise ContractError("Factory design slug is required")
         return self._request(
             "GET", "/designs/%s" % urllib.parse.quote(slug, safe="")
+        )
+
+    def get_turns(self, slug: str) -> HttpResponse:
+        """Read the design's turns, the replay of a shipped conversation.jsonl."""
+
+        if not isinstance(slug, str) or not slug:
+            raise ContractError("Factory design slug is required")
+        return self._request(
+            "GET", "/designs/%s/turns" % urllib.parse.quote(slug, safe="")
         )
 
     def write_use_case(
@@ -2990,10 +3193,12 @@ class FactoryReleaseWriter:
                 manual_content,
             )
         primary = handoff["primary_model"]
-        part_colors = _sealed_part_colors(
-            Path(context.made.artifact_root).resolve(strict=True),
-            context.made.artifact_manifest,
-        )
+        made_root = Path(context.made.artifact_root).resolve(strict=True)
+        part_colors = _sealed_part_colors(made_root, context.made.artifact_manifest)
+        if not part_colors:
+            part_colors = _package_part_colors(
+                made_root, context.made.artifact_manifest
+            )
         # Factory defaults an omitted category to its first active category,
         # which is not a safe classification rule for Workshop products. Send
         # the canonical Toys & Games slug explicitly; an inactive/unknown slug
@@ -3039,6 +3244,7 @@ class FactoryReleaseWriter:
             "product_page_sha256": handoff["product_page_sha256"],
             "manual_sha256": handoff["manual_sha256"],
             "content_owner": "workshop-manager",
+            **_handoff_proof_details(handoff),
         }
         if manual_path == FACTORY_RELEASE_PDF_MANUAL_PATH:
             proof["manual_path"] = manual_path
@@ -3157,10 +3363,13 @@ class FactoryPublicTransition:
         draft: Receipt,
         intent: EffectIntent,
         owner_id: str,
+        client: Optional[FactoryClient] = None,
     ) -> Receipt:
         FactoryPublicTransition._assert_exact_content(design, draft)
         FactoryPublicTransition._assert_exact_category(design, draft)
         details = dict(draft.details)
+        if client is not None and draft.details.get("session_history_sha256") is not None:
+            details["history_turns"] = _history_turns(client, draft.slug)
         if FactoryPublicTransition._is_pdf_first(draft):
             details.update(
                 self.session.verify_pdf_manual(
@@ -3356,7 +3565,7 @@ class FactoryPublicTransition:
             raise AmbiguousEffectError("Factory publication preflight is unavailable") from exc
         if before.is_verified_public:
             public = self._public_receipt(
-                before_design, draft, intent, identity.owner_id
+                before_design, draft, intent, identity.owner_id, client=client
             )
             completed = self.ledger.resolve_succeeded(
                 intent.intent_id, public, before_design
@@ -3382,7 +3591,7 @@ class FactoryPublicTransition:
         try:
             after_design = self._design(client, draft.slug)
             after = self._public_receipt(
-                after_design, draft, sending, identity.owner_id
+                after_design, draft, sending, identity.owner_id, client=client
             )
         except Exception as readback_error:
             if response is not None and response.status in PROVEN_NO_EFFECT_STATUSES:
@@ -3420,6 +3629,8 @@ class FactoryPublicTransition:
 __all__ = [
     "DEFAULT_FACTORY_API",
     "FACTORY_CONTENT_MAPPING",
+    "FACTORY_COVER_RENDER_PATH",
+    "FACTORY_SESSION_HISTORY_PATH",
     "FACTORY_TOY_CATEGORY_SLUG",
     "FactoryAgentCredentials",
     "FactoryAgentIdentity",

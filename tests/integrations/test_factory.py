@@ -18,6 +18,8 @@ from workshop.errors import (
 )
 from tests.make.step_documents import step_document
 from workshop.integrations.factory import (
+    FACTORY_COVER_RENDER_PATH,
+    FACTORY_SESSION_HISTORY_PATH,
     DEFAULT_FACTORY_API,
     FACTORY_PART_COLORS_MAPPING,
     FACTORY_TOY_CATEGORY_SLUG,
@@ -250,8 +252,11 @@ class FactoryTransport:
         category_slug=FACTORY_TOY_CATEGORY_SLUG,
         assembly_parts=None,
         part_colors_status=200,
+        history_turns=None,
     ):
         self.product_id = product_id
+        self.history_turns = history_turns
+        self.turns_reads = 0
         self.fail_get = fail_get
         self.import_status = import_status
         self.include_thumbnails = include_thumbnails
@@ -327,6 +332,13 @@ class FactoryTransport:
             self.project_file_reads += 1
             return HttpResponse(
                 200, {"Content-Type": "application/pdf"}, self.manual_bytes
+            )
+        if method == "GET" and url.endswith("/turns"):
+            self.turns_reads += 1
+            if self.history_turns is None:
+                return HttpResponse(404, {}, b'{"error":"no turns"}')
+            return HttpResponse(
+                200, {}, json.dumps({"total": self.history_turns, "turns": []}).encode()
             )
         if method == "GET" and "/designs/" in url:
             if self.fail_get:
@@ -1833,3 +1845,258 @@ class FactoryPublicTransitionTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def assembly_package_document(occurrences):
+    """The cadgen assembly-package Make seals at assembled.step.json."""
+
+    return {
+        "schemaVersion": 2,
+        "profile": "index",
+        "entryKind": "assembly",
+        "kind": "assembly-package",
+        "packageSchemaVersion": 3,
+        "rootName": "verified-toy",
+        "units": "mm",
+        "occurrences": [
+            {
+                "id": "o1.%d.1" % (index + 1),
+                "name": name,
+                "component": "c%d" % index,
+                "transform": [
+                    1.0, 0.0, 0.0, float(index * 10),
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0,
+                ],
+                "color": colour,
+            }
+            for index, (name, colour) in enumerate(occurrences)
+        ],
+        "stats": {"occurrenceCount": len(occurrences), "shapeCount": len(occurrences)},
+    }
+
+
+def _closed_tetra(offset):
+    """One closed tetrahedron (four facets) translated by ``offset`` on X."""
+
+    a, b, c, d = (
+        (0.0 + offset, 0.0, 0.0),
+        (1.0 + offset, 0.0, 0.0),
+        (0.0 + offset, 1.0, 0.0),
+        (0.0 + offset, 0.0, 1.0),
+    )
+    facets = ((a, c, b), (a, b, d), (a, d, c), (b, c, d))
+    lines = []
+    for facet in facets:
+        lines.append("  facet normal 0 0 0\n    outer loop\n")
+        for vertex in facet:
+            lines.append("      vertex %g %g %g\n" % vertex)
+        lines.append("    endloop\n  endfacet\n")
+    return "".join(lines)
+
+
+TWO_SHELL_STL = (
+    "solid workshop\n" + _closed_tetra(0.0) + _closed_tetra(5.0) + "endsolid workshop\n"
+).encode("ascii")
+
+
+PNG_COVER = (
+    b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + b"\x00" * 13 + b"host hero render"
+)
+
+
+class AssemblyPackageHandoffTest(FactoryReleaseTest):
+    """The sealed assembly-package drives the multipart transport."""
+
+    def _seal_package(self, *, parts=True, step_colours=True, package_colours=True):
+        product = self.made.artifact_root
+        (product / "assembled.stl").write_bytes(TWO_SHELL_STL)
+        if parts:
+            (product / "parts").mkdir(exist_ok=True)
+            (product / "parts/owl.stl").write_bytes(TETRA_STL)
+            (product / "parts/chick.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step").write_bytes(
+            step_document(
+                [("owl", "#d8dee9"), ("chick", "#d89b3c")]
+                if step_colours
+                else [("owl", None), ("chick", None)]
+            )
+        )
+        (product / "assembled.step.json").write_bytes(
+            canonical_json(
+                assembly_package_document(
+                    [
+                        ("owl", [0.3, 0.52, 0.62, 1.0] if package_colours else None),
+                        ("chick", [0.82, 0.51, 0.18, 1.0] if package_colours else None),
+                    ]
+                )
+            )
+            + b"\n"
+        )
+        self._reseal_product()
+
+    def _import_archive(self, transport):
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        return zipfile.ZipFile(io.BytesIO(parts["file"][0]))
+
+    def test_each_occurrence_ships_as_its_own_production_mesh(self):
+        self._seal_package()
+        transport = FactoryTransport(
+            assembly_parts=[
+                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+            ]
+        )
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        with self._import_archive(transport) as archive:
+            names = set(archive.namelist())
+            self.assertIn("assembled_parts/owl.stl", names)
+            self.assertIn("assembled_parts/chick.stl", names)
+            self.assertIn("assembled.step", names)
+            self.assertNotIn("parts/owl.stl", names)
+            sidecar = json.loads(archive.read("assembled.step.json"))
+            self.assertEqual(sidecar["schemaVersion"], 1)
+            self.assertEqual(sidecar["primaryPose"], "assembled")
+            self.assertEqual(
+                [(item["name"], item["stlPath"]) for item in sidecar["parts"]],
+                [("owl", "assembled_parts/owl.stl"), ("chick", "assembled_parts/chick.stl")],
+            )
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(facts["factory_assembly"]["occurrence_count"], 2)
+        self.assertEqual(receipt.details["handoff_transport"], "multipart")
+        self.assertEqual(receipt.details["occurrence_count"], 2)
+        self.assertNotIn("handoff_transport_reason", receipt.details)
+        self.assertEqual(
+            transport.part_color_writes,
+            [[{"order": 0, "color": "#d8dee9"}, {"order": 1, "color": "#d89b3c"}]],
+        )
+
+    def test_a_package_without_production_parts_degrades_to_one_mesh_visibly(self):
+        self._seal_package(parts=False)
+        transport = FactoryTransport()
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        with self._import_archive(transport) as archive:
+            stls = [name for name in archive.namelist() if name.endswith(".stl")]
+            self.assertEqual(stls, ["assembled.stl"])
+        self.assertEqual(receipt.details["handoff_transport"], "single-mesh")
+        self.assertEqual(receipt.details["occurrence_count"], 1)
+        self.assertIn("production STL", receipt.details["handoff_transport_reason"])
+        self.assertIsNone(self.ledger.latest("verified-toy", "factory-part-colors"))
+
+    def test_package_colours_apply_when_the_step_is_unstyled(self):
+        self._seal_package(step_colours=False)
+        transport = FactoryTransport(
+            assembly_parts=[
+                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+            ]
+        )
+
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertEqual(
+            transport.part_color_writes,
+            [[{"order": 0, "color": "#4d859e"}, {"order": 1, "color": "#d1822e"}]],
+        )
+
+    def test_a_single_occurrence_package_is_the_root_mesh(self):
+        product = self.made.artifact_root
+        (product / "assembled.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step.json").write_bytes(
+            canonical_json(assembly_package_document([("owl", [0.3, 0.52, 0.62, 1.0])]))
+            + b"\n"
+        )
+        self._reseal_product()
+        transport = FactoryTransport(
+            assembly_parts=[
+                {"order": 0, "mesh_name": "assembled", "part": "assembled.stl", "color": None}
+            ]
+        )
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertEqual(receipt.details["handoff_transport"], "single-mesh")
+        self.assertNotIn("handoff_transport_reason", receipt.details)
+        self.assertEqual(transport.part_color_writes, [[{"order": 0, "color": "#4d859e"}]])
+
+
+class HostHandoffFilesTest(FactoryReleaseTest):
+    """Host-authored history and cover ride the archive beside the sealed model."""
+
+    def test_history_and_cover_ride_the_handoff_and_read_back(self):
+        history = b'{"type":"user","uuid":"u1","message":{"role":"user","content":"Wish"}}\n'
+        self.context.session_history = history
+        self.context.cover_render = PNG_COVER
+        transport = FactoryTransport(history_turns=3)
+        writer = self.writer(transport)
+
+        draft = writer(self.context, self.release, self.manifest)
+
+        with AssemblyPackageHandoffTest._import_archive(self, transport) as archive:
+            self.assertEqual(archive.read(FACTORY_SESSION_HISTORY_PATH), history)
+            self.assertEqual(archive.read(FACTORY_COVER_RENDER_PATH), PNG_COVER)
+        self.assertEqual(
+            draft.details["session_history_sha256"], hashlib.sha256(history).hexdigest()
+        )
+        self.assertEqual(
+            draft.details["cover_render_sha256"], hashlib.sha256(PNG_COVER).hexdigest()
+        )
+        self.assertNotIn("history_turns", draft.details)
+
+        public = FactoryPublicTransition(self.ledger, writer.session).publish(draft)
+
+        self.assertTrue(public.is_verified_public)
+        self.assertEqual(public.details["history_turns"], 3)
+        self.assertEqual(transport.turns_reads, 1)
+
+    def test_turns_readback_is_best_effort(self):
+        self.context.session_history = b'{"type":"user"}\n'
+        transport = FactoryTransport(history_turns=None)
+        writer = self.writer(transport)
+
+        draft = writer(self.context, self.release, self.manifest)
+        public = FactoryPublicTransition(self.ledger, writer.session).publish(draft)
+
+        self.assertTrue(public.is_verified_public)
+        self.assertIsNone(public.details["history_turns"])
+
+    def test_no_history_means_no_turns_readback(self):
+        transport = FactoryTransport(history_turns=3)
+        writer = self.writer(transport)
+
+        draft = writer(self.context, self.release, self.manifest)
+        public = FactoryPublicTransition(self.ledger, writer.session).publish(draft)
+
+        self.assertNotIn("session_history_sha256", draft.details)
+        self.assertNotIn("history_turns", public.details)
+        self.assertEqual(transport.turns_reads, 0)
+
+    def test_a_made_tree_claiming_a_host_path_is_rejected(self):
+        product = self.made.artifact_root
+        (product / "assembled_review").mkdir()
+        (product / FACTORY_COVER_RENDER_PATH).write_bytes(PNG_COVER)
+        self._reseal_product()
+
+        with self.assertRaisesRegex(ContractError, "reserved Factory handoff path"):
+            self.writer(FactoryTransport())(self.context, self.release, self.manifest)
+
+    def test_a_cover_that_is_not_a_png_is_refused(self):
+        self.context.cover_render = b"GIF89a not a png"
+
+        with self.assertRaisesRegex(ContractError, "bounded PNG"):
+            self.writer(FactoryTransport())(self.context, self.release, self.manifest)
+
+    def test_empty_history_is_refused(self):
+        self.context.session_history = b""
+
+        with self.assertRaisesRegex(ContractError, "bounded non-empty bytes"):
+            self.writer(FactoryTransport())(self.context, self.release, self.manifest)

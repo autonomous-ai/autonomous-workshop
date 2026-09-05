@@ -64,6 +64,12 @@ from workshop.invent.vault import (
     Vault,
     VaultError,
 )
+from workshop.make.assembly_package import (
+    ASSEMBLY_PACKAGE_PATH,
+    is_assembly_package,
+    missing_production_parts,
+    read_assembly_package,
+)
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.revision import (
     MAKE_INVENT_REVISION_CAPABILITY_PATH,
@@ -322,6 +328,12 @@ _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
         "The host rejected the agent-authored Make contract. Repair the Make "
         "product and rerun the Make finalizer so made.json and agent-outcome.json "
         "are regenerated from one internally consistent artifact tree."
+    ),
+    "make-production-parts-missing": (
+        "The sealed assembled.step.json lists two or more occurrences, so the "
+        "shop needs one printable mesh per occurrence. Export each occurrence "
+        "as parts/<occurrence-name>.stl (one shell each, named exactly as in "
+        "the package) inside the product root, then rerun the Make finalizer."
     ),
 }
 _PLAYTEST_PROPOSAL_REJECTION_FEEDBACK = {
@@ -3501,6 +3513,7 @@ def _prepare_effort_stage_input(
                 "assembled.step.json",
                 "assembled.stl",
             ],
+            "production_parts_rule": _MAKE_PRODUCTION_PARTS_RULE,
         }
         if make_invent_revision_allowed:
             inputs.update(
@@ -4014,6 +4027,7 @@ def _prepare_stage_input(
                             "assembled.step.json",
                             "assembled.stl",
                         ],
+                        "production_parts_rule": _MAKE_PRODUCTION_PARTS_RULE,
                     }
                     if make_proposal_rejection is not None:
                         inputs["host_make_proposal_rejection"] = (
@@ -5697,6 +5711,51 @@ def _evaluate_make_invent_revision_stage(
     return StageGateDecision(evidence=evidence, transition="invent"), additional
 
 
+_MAKE_PRODUCTION_PARTS_RULE = (
+    "When assembled.step.json (the cadgen assembly-package) lists two or more "
+    "occurrences, export one printable mesh per occurrence as "
+    "parts/<occurrence-name>.stl inside the product root, one shell each. The "
+    "host rejects a multi-part Make without them; the shop renders and colours "
+    "each part from these files."
+)
+
+
+def _validate_made_production_parts(made: NativeMade, run_root: Path) -> int:
+    """Require one sealed production STL per occurrence of a multi-part package.
+
+    The cadgen assembly-package is agent-authored metadata; a document that is
+    not one, or is malformed, is left to the Factory adapter's visible
+    single-mesh fallback.  Only a valid multi-part package binds the rule.
+    """
+
+    entries = {entry.path for entry in made.product_manifest.entries}
+    if ASSEMBLY_PACKAGE_PATH not in entries:
+        return 0
+    path = run_root.joinpath(*made.product_root.split("/"), ASSEMBLY_PACKAGE_PATH)
+    try:
+        content = path.read_bytes()
+        document = json.loads(content.decode("utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return 0
+    if not is_assembly_package(document):
+        return 0
+    try:
+        package = read_assembly_package(content)
+    except ContractError:
+        return 0
+    missing = missing_production_parts(package, entries)
+    if missing:
+        raise _MakeProposalRejected(
+            failure_code="make-production-parts-missing",
+            feedback="%s Missing: %s."
+            % (
+                _MAKE_PROPOSAL_REJECTION_FEEDBACK["make-production-parts-missing"],
+                ", ".join(missing),
+            ),
+        )
+    return package.occurrence_count if package.is_multipart else 0
+
+
 def _evaluate_make_stage(
     proposal: AgentOutcomeProposal,
     *,
@@ -5770,6 +5829,7 @@ def _evaluate_make_stage(
         build_groups = validate_build_groups(
             invented.concept, run.run_root / Path(*made.product_root.split("/"))
         )
+        production_parts = _validate_made_production_parts(made, run.run_root)
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -5812,6 +5872,7 @@ def _evaluate_make_stage(
             "product_tree_rehashed": True,
             "build_groups": build_groups["groups"],
             "build_parts": build_groups["parts"],
+            "production_parts": production_parts,
             "upstream_bindings_valid": True,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verifier_sha256": cad_evidence.verifier_sha256,

@@ -14,6 +14,12 @@ def linear_channels(hex_color: str):
     )
 
 
+def srgb_channels(hex_color: str):
+    """The raw channels build123d seals for ``Color(r, g, b)`` picked as sRGB."""
+
+    return tuple(int(hex_color[index : index + 2], 16) / 255.0 for index in (1, 3, 5))
+
+
 def step_document(parts, *, colours=True) -> bytes:
     """Build a STEP shaped exactly like the Open CASCADE writer's output."""
 
@@ -62,7 +68,7 @@ def step_document(parts, *, colours=True) -> bytes:
                     "#%d = FILL_AREA_STYLE('',(#%d));" % (base + 13, base + 14),
                     "#%d = FILL_AREA_STYLE_COLOUR('',#%d);" % (base + 14, base + 15),
                     "#%d = COLOUR_RGB('',%.12f,%.12f,\n  %.12f);"
-                    % ((base + 15,) + linear_channels(colour)),
+                    % ((base + 15,) + srgb_channels(colour)),
                 ]
             )
         identifier += 20

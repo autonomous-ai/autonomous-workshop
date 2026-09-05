@@ -29,6 +29,7 @@ __all__ = [
     "StepPartColor",
     "linear_to_srgb_hex",
     "read_step_part_colors",
+    "srgb_channels_hex",
 ]
 
 
@@ -66,15 +67,40 @@ _RELEVANT = frozenset(
 
 @dataclass(frozen=True)
 class StepPartColor:
-    """One part name bound to one exact surface colour."""
+    """One part name bound to one exact surface colour.
+
+    ``channels`` are the raw 0..1 values sealed in the STEP.  build123d writes
+    the values a designer passed to ``Color`` unchanged, the cadgen GLB
+    exporter converts those same values from sRGB to linear for glTF, and the
+    shop viewer therefore displays them as sRGB.  ``hex`` is that displayed
+    ``#rrggbb``.
+    """
 
     name: str
     hex: str
-    linear_rgb: Tuple[float, float, float]
+    channels: Tuple[float, float, float]
+
+
+def srgb_channels_hex(rgb: Sequence[float]) -> str:
+    """Return the ``#rrggbb`` a viewer shows for raw sRGB ``rgb`` channels."""
+
+    if len(rgb) != 3:
+        raise ValueError("a colour requires exactly three channels")
+    channels = []
+    for value in rgb:
+        if not isinstance(value, float) or value != value or not 0.0 <= value <= 1.0:
+            raise ValueError("colour channel is outside 0..1")
+        # Round half up like the viewer, not to even like Python.
+        channels.append(max(0, min(255, int(value * 255.0 + 0.5))))
+    return "#%02x%02x%02x" % tuple(channels)
 
 
 def linear_to_srgb_hex(rgb: Sequence[float]) -> str:
-    """Return the ``#rrggbb`` a viewer sees for linear ``rgb`` channels."""
+    """Return the ``#rrggbb`` for linear ``rgb`` channels (sRGB transfer applied).
+
+    Kept for callers that hold genuinely linear channels; sealed STEP colours
+    are read with :func:`srgb_channels_hex` instead.
+    """
 
     if len(rgb) != 3:
         raise ValueError("a linear colour requires exactly three channels")
@@ -469,7 +495,7 @@ def read_step_part_colors(content: bytes) -> Dict[str, StepPartColor]:
             if colour is None:
                 continue
             try:
-                value = StepPartColor(product, linear_to_srgb_hex(colour), colour)
+                value = StepPartColor(product, srgb_channels_hex(colour), colour)
             except ValueError:
                 continue
             if resolved.get(product, value) != value:
