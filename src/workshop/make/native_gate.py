@@ -443,21 +443,22 @@ def _is_verifier_authored_volatile_report(path: str) -> bool:
     """Return whether ``verify_project`` owns this non-reproducible report.
 
     The fresh verifier records wall-clock timing and the isolated project path
-    in its pipeline report, and ``check_thickness`` records its invocation path
-    in one report per printable part.  Those records are useful during an
-    interactive Make pass, but they are not reproducible CAD deliverables.  Do
-    not broaden this allowlist: source, geometry, JSON evidence, and every
-    other report remain byte-sealed.
+    in its pipeline report, and ``check_thickness`` and ``check_overhang`` each
+    record their invocation path in one report per printable part.  Those
+    records are useful during an interactive Make pass, but they are not
+    reproducible CAD deliverables.  Do not broaden this allowlist beyond the
+    verifier's own path-echoing per-part reports: source, geometry, JSON
+    evidence, and every other report remain byte-sealed.
     """
 
     if path == "measure/verification-pipeline.md":
         return True
-    prefix = "measure/thickness-"
     suffix = ".md"
-    if not path.startswith(prefix) or not path.endswith(suffix):
-        return False
-    role = path[len(prefix) : -len(suffix)]
-    return bool(role) and "/" not in role
+    for prefix in ("measure/thickness-", "measure/overhang-"):
+        if path.startswith(prefix) and path.endswith(suffix):
+            role = path[len(prefix) : -len(suffix)]
+            return bool(role) and "/" not in role
+    return False
 
 
 def _is_step_exchange_file(path: str) -> bool:

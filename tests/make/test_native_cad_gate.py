@@ -81,6 +81,7 @@ class NativeCadGateTest(unittest.TestCase):
         (project / "moon.step").write_bytes(b"ISO-10303-21;\n")
         (project / "moon.stl").write_bytes(b"solid moon\nendsolid moon\n")
         (project / "measure/thickness-moon.md").write_text("old thickness\n")
+        (project / "measure/overhang-moon.md").write_text("old overhang\n")
         (project / "measure/verification-pipeline.md").write_text("old timing\n")
         (project / "measure/design-review.md").write_text("stable review\n")
         (project / "measure/fit-report.json").write_text('{"ok":true}\n')
@@ -230,6 +231,7 @@ class NativeCadGateTest(unittest.TestCase):
                 [
                     "measure/design-review.md",
                     "measure/fit-report.json",
+                    "measure/overhang-moon.md",
                     "measure/thickness-moon.md",
                     "measure/verification-pipeline.md",
                     "moon.step",
@@ -651,6 +653,9 @@ class NativeCadGateTest(unittest.TestCase):
             (copied / "measure/thickness-moon.md").write_text(
                 "project/moon.stl was checked\n"
             )
+            (copied / "measure/overhang-moon.md").write_text(
+                "/tmp/isolated/project/moon.stl --angle 45.0 --report ...\n"
+            )
             (copied / "measure/verification-pipeline.md").write_text(
                 "different path and wall-clock timing\n"
             )
@@ -659,6 +664,10 @@ class NativeCadGateTest(unittest.TestCase):
         evidence = self._verify(runner)
 
         self.assertTrue(evidence.passed)
+        self.assertEqual(
+            (self.product_root / "cad/project/measure/overhang-moon.md").read_text(),
+            "old overhang\n",
+        )
         self.assertEqual(
             observed["command"][3:], ("--fresh", "--exports", "--strict-fit")
         )
