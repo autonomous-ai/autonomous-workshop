@@ -31,6 +31,6 @@
 
 ## 5. Acceptance
 
-- [ ] 5.1 Run the full offline suite (`PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'`), `openspec validate add-release-fidelity-handoff --strict`, `tools/scan_secrets.py`, and `git diff --check`.
-- [ ] 5.2 Dry-run a Quarterhoot-shaped fixture end to end with the mock Factory: two `assembly_parts` with the sealed colours, `renders.json` rendered, `conversation.jsonl` under 12 MB, receipt fields present.
+- [x] 5.1 Run the full offline suite (`PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'`), `openspec validate add-release-fidelity-handoff --strict`, `tools/scan_secrets.py`, and `git diff --check`.
+- [x] 5.2 Dry-run a Quarterhoot-shaped fixture end to end with the mock Factory: two `assembly_parts` with the sealed colours, `renders.json` rendered, `conversation.jsonl` under 12 MB, receipt fields present.
 - [ ] 5.3 Publish one new toy on the real Factory with the change enabled; confirm on the listing: two coloured meshes in the viewer, hero cover from the host render, manual pages using the renders, turns visible after publish.

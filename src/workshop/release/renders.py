@@ -42,7 +42,6 @@ from workshop.make.assembly_package import (
 )
 from workshop.make.cad.step_color import read_step_part_colors
 from workshop.make.native import NativeMade
-from workshop.make.native_gate import _atomic_private_write
 from workshop.runtime.execution import minimal_tool_environment
 
 
@@ -441,6 +440,34 @@ class HostRenders:
 
 def renders_directory(run_root: Path, made: NativeMade) -> Path:
     return Path(run_root).joinpath(*made.product_root.split("/")[:-1], HOST_RENDERS_DIRECTORY)
+
+
+def _atomic_private_write(path: Path, content: bytes) -> None:
+    """Write host evidence atomically as a 0600 regular file."""
+
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=".%s." % path.name, suffix=".tmp", dir=str(path.parent)
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, 0o600)
+        written = 0
+        while written < len(content):
+            written += os.write(descriptor, content[written:])
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = -1
+        os.replace(str(temporary), str(path))
+        os.chmod(path, 0o600, follow_symlinks=False)
+    except OSError as exc:
+        raise ContractError("host render evidence could not be persisted") from exc
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def _private_evidence_path(host_state_root: Path, round_index: int) -> Path:
