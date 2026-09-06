@@ -234,45 +234,56 @@ EXACT_CAP = MAX_SAMPLES
 def exact_exit_distance(verts, faces, points, directions, limit):
     """Distance along each ray, exactly, to where it leaves the mesh.
 
-    Moller-Trumbore against every triangle within `limit` of the sample (plus
-    the largest triangle's own radius, so no candidate is missed). The ray
-    starts on its own triangle, so hits closer than 1e-7 mm are the start
-    itself and are skipped; the nearest remaining hit on a closed mesh is the
-    far face of the wall. A ray with no exit inside `limit` reads `limit`.
+    Moller-Trumbore, taken in chunks of samples against the triangles whose
+    bounding boxes overlap each ray's own segment. The prefilter is a fixed
+    boolean block of chunk x faces, so the working set is bounded by the chunk
+    size and never by the mesh: a spatial query keyed on triangle radius let
+    one large flat face pull most of the mesh into every sample's candidate
+    list and ran a 53,000-sample part past 10 GB. The ray starts on its own
+    triangle, so hits closer than 1e-7 mm are the start itself and are
+    skipped; the nearest remaining hit on a closed mesh is the far face of the
+    wall. A ray with no exit inside `limit` reads `limit`.
     """
-    from scipy.spatial import cKDTree
-
     out = np.full(len(points), float(limit))
     if not len(points) or not len(faces):
         return out
     tri = verts[faces]
-    centroid = tri.mean(axis=1)
-    radius = np.linalg.norm(tri - centroid[:, None, :], axis=2).max(axis=1)
-    reach = float(limit) + float(radius.max())
-    tree = cKDTree(centroid)
-    for i, candidates in enumerate(tree.query_ball_point(points, reach)):
-        if not candidates:
+    tri_lo, tri_hi = tri.min(axis=1), tri.max(axis=1)
+    a = tri[:, 0]
+    e1, e2 = tri[:, 1] - a, tri[:, 2] - a
+    # ~64 M booleans per chunk block at most, whatever the mesh.
+    chunk = int(max(1, min(4096, 64_000_000 // max(len(faces), 1))))
+    for begin in range(0, len(points), chunk):
+        P = points[begin:begin + chunk]
+        D = directions[begin:begin + chunk]
+        Q = P + D * float(limit)
+        seg_lo, seg_hi = np.minimum(P, Q) - 1e-6, np.maximum(P, Q) + 1e-6
+        overlap = np.all(
+            (seg_lo[:, None, :] <= tri_hi[None, :, :])
+            & (seg_hi[:, None, :] >= tri_lo[None, :, :]),
+            axis=2,
+        )
+        rows, cols = np.nonzero(overlap)
+        if not len(rows):
             continue
-        c = np.asarray(candidates, dtype=np.int64)
-        p, d = points[i], directions[i]
-        a = tri[c, 0]
-        e1, e2 = tri[c, 1] - a, tri[c, 2] - a
-        pvec = np.cross(d, e2)
-        det = np.einsum("ij,ij->i", e1, pvec)
+        d = D[rows]
+        pvec = np.cross(d, e2[cols])
+        det = np.einsum("ij,ij->i", e1[cols], pvec)
         usable = np.abs(det) > 1e-12
-        if not usable.any():
-            continue
         inv = np.zeros_like(det)
         inv[usable] = 1.0 / det[usable]
-        tvec = p - a
+        tvec = P[rows] - a[cols]
         u = np.einsum("ij,ij->i", tvec, pvec) * inv
-        qvec = np.cross(tvec, e1)
-        v = qvec @ d * inv
-        t = np.einsum("ij,ij->i", e2, qvec) * inv
+        qvec = np.cross(tvec, e1[cols])
+        v = np.einsum("ij,ij->i", d, qvec) * inv
+        t = np.einsum("ij,ij->i", e2[cols], qvec) * inv
         hit = (usable & (u >= -1e-9) & (v >= -1e-9) & (u + v <= 1.0 + 1e-9)
-               & (t > 1e-7))
-        if hit.any():
-            out[i] = min(float(limit), float(t[hit].min()))
+               & (t > 1e-7) & (t <= float(limit)))
+        if not hit.any():
+            continue
+        nearest = np.full(len(P), float(limit))
+        np.minimum.at(nearest, rows[hit], t[hit])
+        out[begin:begin + chunk] = nearest
     return out
 
 
