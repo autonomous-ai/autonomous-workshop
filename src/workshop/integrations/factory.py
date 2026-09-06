@@ -157,16 +157,11 @@ FACTORY_IMPORT_PROVEN_NO_EFFECT_STATUSES = (
 _INVENTOR_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _OCCURRENCE_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,127}$")
 _HEX_COLOUR = re.compile(r"^#[0-9a-f]{6}$")
-# Host-authored files that ride the Factory handoff beside the sealed model:
-# the disclosed session history the shop replays into design turns, and the
-# host-rendered hero the shop's own cover ranking prefers.  Neither is a Made
-# byte; a Made tree that claims either path is rejected as a reserved path.
-FACTORY_SESSION_HISTORY_PATH = "conversation.jsonl"
+# Host-authored file that rides the Factory handoff beside the sealed model:
+# the host-rendered hero the shop's own cover ranking prefers.  It is not a
+# Made byte; a Made tree that claims this path is rejected as a reserved path.
 FACTORY_COVER_RENDER_PATH = "assembled_review/_assembled.png"
-FACTORY_HOST_HANDOFF_PATHS = frozenset(
-    (FACTORY_SESSION_HISTORY_PATH, FACTORY_COVER_RENDER_PATH)
-)
-MAX_FACTORY_SESSION_HISTORY_BYTES = 12 * 1024 * 1024
+FACTORY_HOST_HANDOFF_PATHS = frozenset((FACTORY_COVER_RENDER_PATH,))
 MAX_FACTORY_COVER_RENDER_BYTES = 8 * 1024 * 1024
 MAX_FACTORY_TRANSPORT_REASON_CHARS = 500
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -509,21 +504,6 @@ def _package_part_colors(root: Path, manifest: ArtifactManifest) -> Dict[str, st
     }
 
 
-def _host_session_history(context: Any) -> Optional[bytes]:
-    """Return the host-authored session history bytes bound to this Release."""
-
-    value = getattr(context, "session_history", None)
-    if value is None:
-        return None
-    if (
-        not isinstance(value, bytes)
-        or not value
-        or len(value) > MAX_FACTORY_SESSION_HISTORY_BYTES
-    ):
-        raise ContractError("Factory session history must be bounded non-empty bytes")
-    return value
-
-
 def _host_cover_render(context: Any) -> Optional[bytes]:
     """Return the host-rendered hero PNG bound to this Release."""
 
@@ -561,36 +541,12 @@ def _handoff_proof_details(handoff: Mapping[str, Any]) -> Dict[str, Any]:
         details["handoff_transport_reason"] = reason
     if transport.get("viewer_groups") is not None:
         details["viewer_groups"] = int(transport["viewer_groups"])
-    for key in ("session_history_sha256", "cover_render_sha256"):
-        value = handoff.get(key)
-        if value is not None:
-            details[key] = require_sha256(value, "Factory handoff %s" % key)
+    value = handoff.get("cover_render_sha256")
+    if value is not None:
+        details["cover_render_sha256"] = require_sha256(
+            value, "Factory handoff cover_render_sha256"
+        )
     return details
-
-
-def _history_turns(client: "FactoryClient", slug: str) -> Optional[int]:
-    """Best-effort count of the turns Factory replayed from conversation.jsonl.
-
-    The shop replays history after the design is already written and drops a
-    malformed transcript without failing the import, so this readback is
-    diagnostic: an unavailable or malformed count is ``None``, never an error.
-    """
-
-    try:
-        response = client.get_turns(slug)
-        if response.status != 200:
-            return None
-        body = _json_body(response, "Factory turns readback")
-    except Exception:
-        return None
-    total = body.get("total")
-    if isinstance(total, int) and not isinstance(total, bool) and total >= 0:
-        return total
-    for key in ("turns", "items", "data"):
-        items = body.get(key)
-        if isinstance(items, list):
-            return len(items)
-    return None
 
 
 def _normalized_hex(value: str) -> str:
@@ -1456,12 +1412,6 @@ def _build_model_handoff(
             for path in FACTORY_HOST_HANDOFF_PATHS
         ):
             raise ContractError("Made contains a reserved Factory handoff path")
-        session_history = _host_session_history(context)
-        if session_history is not None:
-            assert_packable_content(FACTORY_SESSION_HISTORY_PATH, session_history)
-            target = staging / FACTORY_SESSION_HISTORY_PATH
-            target.write_bytes(session_history)
-            target.chmod(0o644)
         cover_render = _host_cover_render(context)
         if cover_render is not None:
             assert_packable_content(FACTORY_COVER_RENDER_PATH, cover_render)
@@ -1515,11 +1465,6 @@ def _build_model_handoff(
                 ),
             },
             "part_keying": occurrence["part_keying"] if occurrence is not None else None,
-            "session_history_sha256": (
-                hashlib.sha256(session_history).hexdigest()
-                if session_history is not None
-                else None
-            ),
             "cover_render_sha256": (
                 hashlib.sha256(cover_render).hexdigest()
                 if cover_render is not None
@@ -1849,15 +1794,6 @@ class FactoryClient:
             raise ContractError("Factory design slug is required")
         return self._request(
             "GET", "/designs/%s" % urllib.parse.quote(slug, safe="")
-        )
-
-    def get_turns(self, slug: str) -> HttpResponse:
-        """Read the design's turns, the replay of a shipped conversation.jsonl."""
-
-        if not isinstance(slug, str) or not slug:
-            raise ContractError("Factory design slug is required")
-        return self._request(
-            "GET", "/designs/%s/turns" % urllib.parse.quote(slug, safe="")
         )
 
     def write_use_case(
@@ -3553,8 +3489,6 @@ class FactoryPublicTransition:
         FactoryPublicTransition._assert_exact_content(design, draft)
         FactoryPublicTransition._assert_exact_category(design, draft)
         details = dict(draft.details)
-        if client is not None and draft.details.get("session_history_sha256") is not None:
-            details["history_turns"] = _history_turns(client, draft.slug)
         if FactoryPublicTransition._is_pdf_first(draft):
             details.update(
                 self.session.verify_pdf_manual(
@@ -3815,7 +3749,6 @@ __all__ = [
     "DEFAULT_FACTORY_API",
     "FACTORY_CONTENT_MAPPING",
     "FACTORY_COVER_RENDER_PATH",
-    "FACTORY_SESSION_HISTORY_PATH",
     "FACTORY_TOY_CATEGORY_SLUG",
     "FactoryAgentCredentials",
     "FactoryAgentIdentity",

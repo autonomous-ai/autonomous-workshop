@@ -21,13 +21,8 @@
 - [x] 3.5 Extend `manual_design.validate_manual_design_evidence` to accept `renders/` sources bound through `renders.json`; tests in `tests/release/test_manual_design.py` for accepted, stale, and tampered renders.
 - [x] 3.6 Update the materialized `manual-design` skill to prefer host renders for the cover and signature spread; add `assembled_review/_assembled.png` (hero) to the handoff zip and assert it in adapter tests; add `changes/host-product-renders.added.md`.
 
-## 4. Session history (PR 4)
+## 4. Session history (PR 4) — withdrawn 2026-09-06: the owner decided no build history ships with a listing; the code, its tests, and its spec were removed from the branch.
 
-- [x] 4.1 Add `authorization.json` schema 3 with `history_disclosure_requested`, `workshop wish --disclose-session`, and an Inventor-account default in config; schema-2 files read as `false`; tests in `tests/workflow`.
-- [x] 4.2 Add `src/workshop/release/session_history.py`: rollout discovery by `thread_id`, record mapping (Wish/summary opener, user Goals, assistant text, tool_use/tool_result pairs), omission of reasoning/developer/event records, redaction, caps, deterministic ordering; fixture-driven tests including a Quarterhoot-shaped rollout excerpt and an oversized tool output.
-- [x] 4.3 Ship `conversation.jsonl` at the handoff root when authorized; allow-list it in `_assert_archive_inventory`; verify `pack_sha256` changes and the ledger binds it without a schema change.
-- [x] 4.4 Record `history_turns` from `GET /designs/{slug}/turns` after publish (warning on mismatch); show it in `workshop status`.
-- [x] 4.5 Update `docs/PUBLISH_SEALED_PRODUCT.md`, `docs/NATIVE_AGENT_RUNTIME.md`, and the public-example README sentence to state what the Factory listing carries when history is disclosed; add `changes/factory-session-history.added.md`.
 
 ## 4b. Viewer-parity part keying (PR 5, after the first real publish)
 
@@ -39,5 +34,5 @@
 ## 5. Acceptance
 
 - [x] 5.1 Run the full offline suite (`PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'`), `openspec validate add-release-fidelity-handoff --strict`, `tools/scan_secrets.py`, and `git diff --check`.
-- [x] 5.2 Dry-run a Quarterhoot-shaped fixture end to end with the mock Factory: two `assembly_parts` with the sealed colours, `renders.json` rendered, `conversation.jsonl` under 12 MB, receipt fields present.
+- [x] 5.2 Dry-run a Quarterhoot-shaped fixture end to end with the mock Factory: two `assembly_parts` with the sealed colours, `renders.json` rendered, receipt fields present.
 - [ ] 5.3 Publish one new toy on the real Factory with the change enabled; confirm on the listing: two coloured meshes in the viewer, hero cover from the host render, manual pages using the renders, turns visible after publish.

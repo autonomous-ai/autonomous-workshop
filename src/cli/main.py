@@ -410,12 +410,6 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
             )
         if publication.get("cover_render_sha256"):
             print("Shop cover: host render (hash-bound)")
-        if publication.get("session_history_sha256"):
-            turns = publication.get("history_turns")
-            print(
-                "Session history: shipped%s"
-                % (", %d turns replayed" % turns if isinstance(turns, int) else "")
-            )
         candidate_reason = publication.get("reason")
         if (
             isinstance(candidate_reason, str)
@@ -466,7 +460,6 @@ def _start_run(
     max_rounds: int = DEFAULT_MAX_ROUNDS,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
-    disclose_session: bool = False,
 ) -> Mapping[str, Any]:
     """Announce and start one native run; callers print the receipt."""
 
@@ -497,7 +490,6 @@ def _start_run(
         manager_id=manager.manager_id,
         max_rounds=max_rounds,
         github_publish_requested=github,
-        history_disclosure_requested=disclose_session,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -521,7 +513,6 @@ def _wish(args: argparse.Namespace) -> int:
         max_rounds=args.max_rounds,
         progress=progress,
         live_progress=live_progress,
-        disclose_session=bool(getattr(args, "disclose_session", False)),
     )
     if args.json:
         _print_json(receipt)
@@ -725,7 +716,6 @@ def _start(args: argparse.Namespace) -> int:
                     github=args.github,
                     progress=progress,
                     live_progress=live_progress,
-                    disclose_session=bool(getattr(args, "disclose_session", False)),
                 )
             except (WorkshopError, RuntimeError) as exc:
                 # The build session ended without a verdict (timeout, provider
@@ -1446,15 +1436,6 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     start.add_argument(
-        "--disclose-session",
-        action="store_true",
-        help=(
-            "ship the run's redacted build session with the Factory import; "
-            "the shop replays it as the listing's history and publishes it "
-            "with the design folder (default: disabled)"
-        ),
-    )
-    start.add_argument(
         "--once",
         action="store_true",
         help="dream and build one idea, then stop (default: loop until stopped)",
@@ -1575,15 +1556,6 @@ def parser() -> argparse.ArgumentParser:
         help=(
             "commit and push the generated toy folder after Release "
             "(default: disabled)"
-        ),
-    )
-    wish.add_argument(
-        "--disclose-session",
-        action="store_true",
-        help=(
-            "ship the run's redacted build session with the Factory import; "
-            "the shop replays it as the listing's history and publishes it "
-            "with the design folder (default: disabled)"
         ),
     )
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")

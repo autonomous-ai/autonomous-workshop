@@ -65,17 +65,6 @@ and a name an imported toy had no source text behind any use claim, so every
 draft failed the shop's copy gate. The adapter authors none of those words
 and leaves Factory's optional prompt field empty.
 
-When the run was started with `--disclose-session`, the host projects the
-main Codex rollout into a redacted `conversation.jsonl` at the archive root:
-the Wish as the opening prompt, host stage Goals, the Manager's visible
-replies, and tool calls with bounded outputs. Encrypted reasoning, developer
-instructions, runtime events, plugin banners, and subagent traffic are
-omitted; host paths and secret-scanner matches are redacted; the Factory's
-own replay limits apply. The shop replays it as the listing's turns and
-publishes it with the design folder, so strangers can read it once the toy is
-public. Without that authorization nothing ships and the listing has no
-history.
-
 Before any Factory effect, the host also reruns the full-tier CAD gate on the
 exact sealed Made revision. That gate must prove the production model and its
 declared printable parts satisfy the current deterministic CAD, thickness, and

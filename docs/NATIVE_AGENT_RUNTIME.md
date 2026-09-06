@@ -657,11 +657,10 @@ renderer into `artifacts/make/rNNNN/renders/`, bound to the Made product hash
 in `renders.json` (private copy under the host state); `STAGE.json.host_renders`
 lists them and `MANUAL-DESIGN.json` may cite them as `renders/<name>.png`. At
 publication the host derives one production mesh per sealed occurrence from
-the assembly-package for the Factory, ships the rendered hero as the cover,
-and, only when the run was started with `--disclose-session`, projects the
-main Codex rollout into a redacted `conversation.jsonl` the shop replays as
-the listing's history. None of these can change a gate decision: an
-unavailable renderer or a missing rollout leaves Release exactly as before.
+the assembly-package for the Factory and ships the rendered hero as the
+cover. Neither can change a gate decision: an unavailable renderer leaves
+Release exactly as before. The run's Codex session stays private host state;
+no transcript ships with the listing.
 
 Spark/Forge use NativeRelease schema v3 with `MANUAL.pdf` and product schema
 v5/`manual-ready`. Quest uses NativeRelease schema v2/product schema v4 bound

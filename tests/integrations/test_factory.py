@@ -19,7 +19,6 @@ from workshop.errors import (
 from tests.make.step_documents import step_document
 from workshop.integrations.factory import (
     FACTORY_COVER_RENDER_PATH,
-    FACTORY_SESSION_HISTORY_PATH,
     DEFAULT_FACTORY_API,
     FACTORY_PART_COLORS_MAPPING,
     FACTORY_TOY_CATEGORY_SLUG,
@@ -252,11 +251,8 @@ class FactoryTransport:
         category_slug=FACTORY_TOY_CATEGORY_SLUG,
         assembly_parts=None,
         part_colors_status=200,
-        history_turns=None,
     ):
         self.product_id = product_id
-        self.history_turns = history_turns
-        self.turns_reads = 0
         self.fail_get = fail_get
         self.import_status = import_status
         self.include_thumbnails = include_thumbnails
@@ -332,13 +328,6 @@ class FactoryTransport:
             self.project_file_reads += 1
             return HttpResponse(
                 200, {"Content-Type": "application/pdf"}, self.manual_bytes
-            )
-        if method == "GET" and url.endswith("/turns"):
-            self.turns_reads += 1
-            if self.history_turns is None:
-                return HttpResponse(404, {}, b'{"error":"no turns"}')
-            return HttpResponse(
-                200, {}, json.dumps({"total": self.history_turns, "turns": []}).encode()
             )
         if method == "GET" and "/designs/" in url:
             if self.fail_get:
@@ -2149,7 +2138,7 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
 
 
 class HostHandoffFilesTest(unittest.TestCase):
-    """Host-authored history and cover ride the archive beside the sealed model."""
+    """The host-rendered cover rides the archive beside the sealed model."""
 
     writer = FactoryReleaseTest.writer
     _reseal_product = FactoryReleaseTest._reseal_product
@@ -2157,53 +2146,31 @@ class HostHandoffFilesTest(unittest.TestCase):
     def setUp(self):
         FactoryReleaseTest.setUp(self)
 
-    def test_history_and_cover_ride_the_handoff_and_read_back(self):
-        history = b'{"type":"user","uuid":"u1","message":{"role":"user","content":"Wish"}}\n'
-        self.context.session_history = history
+    def test_the_cover_rides_the_handoff_and_is_recorded(self):
         self.context.cover_render = PNG_COVER
-        transport = FactoryTransport(history_turns=3)
+        transport = FactoryTransport()
         writer = self.writer(transport)
 
         draft = writer(self.context, self.release, self.manifest)
 
         with AssemblyPackageHandoffTest._import_archive(self, transport) as archive:
-            self.assertEqual(archive.read(FACTORY_SESSION_HISTORY_PATH), history)
             self.assertEqual(archive.read(FACTORY_COVER_RENDER_PATH), PNG_COVER)
-        self.assertEqual(
-            draft.details["session_history_sha256"], hashlib.sha256(history).hexdigest()
-        )
+            self.assertNotIn("conversation.jsonl", archive.namelist())
         self.assertEqual(
             draft.details["cover_render_sha256"], hashlib.sha256(PNG_COVER).hexdigest()
         )
-        self.assertNotIn("history_turns", draft.details)
 
         public = FactoryPublicTransition(self.ledger, writer.session).publish(draft)
 
         self.assertTrue(public.is_verified_public)
-        self.assertEqual(public.details["history_turns"], 3)
-        self.assertEqual(transport.turns_reads, 1)
-
-    def test_turns_readback_is_best_effort(self):
-        self.context.session_history = b'{"type":"user"}\n'
-        transport = FactoryTransport(history_turns=None)
-        writer = self.writer(transport)
-
-        draft = writer(self.context, self.release, self.manifest)
-        public = FactoryPublicTransition(self.ledger, writer.session).publish(draft)
-
-        self.assertTrue(public.is_verified_public)
-        self.assertIsNone(public.details["history_turns"])
-
-    def test_no_history_means_no_turns_readback(self):
-        transport = FactoryTransport(history_turns=3)
-        writer = self.writer(transport)
-
-        draft = writer(self.context, self.release, self.manifest)
-        public = FactoryPublicTransition(self.ledger, writer.session).publish(draft)
-
-        self.assertNotIn("session_history_sha256", draft.details)
         self.assertNotIn("history_turns", public.details)
-        self.assertEqual(transport.turns_reads, 0)
+
+    def test_no_cover_means_no_cover_record(self):
+        writer = self.writer(FactoryTransport())
+
+        draft = writer(self.context, self.release, self.manifest)
+
+        self.assertNotIn("cover_render_sha256", draft.details)
 
     def test_a_made_tree_claiming_a_host_path_is_rejected(self):
         product = self.made.artifact_root
@@ -2218,10 +2185,4 @@ class HostHandoffFilesTest(unittest.TestCase):
         self.context.cover_render = b"GIF89a not a png"
 
         with self.assertRaisesRegex(ContractError, "bounded PNG"):
-            self.writer(FactoryTransport())(self.context, self.release, self.manifest)
-
-    def test_empty_history_is_refused(self):
-        self.context.session_history = b""
-
-        with self.assertRaisesRegex(ContractError, "bounded non-empty bytes"):
             self.writer(FactoryTransport())(self.context, self.release, self.manifest)

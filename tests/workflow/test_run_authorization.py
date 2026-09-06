@@ -21,71 +21,79 @@ class RunAuthorizationTest(unittest.TestCase):
         os.chmod(self.paths.host_state, 0o700)
         self.path = self.paths.host_state / "authorization.json"
 
-    def test_new_runs_freeze_history_disclosure_in_schema_three(self):
+    def _write(self, value):
+        self.path.write_bytes(json.dumps(value, sort_keys=True).encode("utf-8"))
+        os.chmod(self.path, 0o600)
+
+    def test_new_runs_freeze_publication_and_github_flags_in_schema_two(self):
         value = _record_authorization(
             self.paths,
             product_id="wish-1",
             publish_requested=True,
             create=True,
-            history_disclosure_requested=True,
+            github_publish_requested=True,
         )
 
-        self.assertEqual(value["schema_version"], 3)
-        self.assertTrue(value["history_disclosure_requested"])
-        self.assertFalse(value["github_publish_requested"])
-        stored = json.loads(self.path.read_bytes())
-        self.assertEqual(stored, value)
+        self.assertEqual(value["schema_version"], 2)
+        self.assertTrue(value["publish_requested"])
+        self.assertTrue(value["github_publish_requested"])
+        self.assertNotIn("history_disclosure_requested", value)
+        self.assertEqual(json.loads(self.path.read_bytes()), value)
         reread = _record_authorization(
             self.paths, product_id="wish-1", publish_requested=False, create=False
         )
-        self.assertTrue(reread["history_disclosure_requested"])
-        self.assertTrue(reread["publish_requested"])
+        self.assertEqual(reread, value)
 
-    def test_default_runs_do_not_disclose(self):
-        value = _record_authorization(
-            self.paths, product_id="wish-1", publish_requested=True, create=True
+    def test_schema_one_files_read_without_github_authority(self):
+        self._write(
+            {
+                "schema_version": 1,
+                "kind": "autonomous-workshop.run-authorization",
+                "product_id": "wish-1",
+                "publish_requested": True,
+            }
         )
-
-        self.assertFalse(value["history_disclosure_requested"])
-
-    def test_schema_two_files_read_as_undisclosed(self):
-        self.path.write_bytes(
-            json.dumps(
-                {
-                    "schema_version": 2,
-                    "kind": "autonomous-workshop.run-authorization",
-                    "product_id": "wish-1",
-                    "publish_requested": True,
-                    "github_publish_requested": True,
-                },
-                sort_keys=True,
-            ).encode("utf-8")
-        )
-        os.chmod(self.path, 0o600)
 
         value = _record_authorization(
             self.paths, product_id="wish-1", publish_requested=False, create=False
         )
 
-        self.assertEqual(value["schema_version"], 3)
-        self.assertTrue(value["github_publish_requested"])
-        self.assertFalse(value["history_disclosure_requested"])
+        self.assertEqual(value["schema_version"], 2)
+        self.assertTrue(value["publish_requested"])
+        self.assertFalse(value["github_publish_requested"])
 
-    def test_malformed_schema_three_is_rejected(self):
-        self.path.write_bytes(
-            json.dumps(
-                {
-                    "schema_version": 3,
-                    "kind": "autonomous-workshop.run-authorization",
-                    "product_id": "wish-1",
-                    "publish_requested": True,
-                    "github_publish_requested": False,
-                    "history_disclosure_requested": "yes",
-                },
-                sort_keys=True,
-            ).encode("utf-8")
+    def test_withdrawn_schema_three_files_still_read_and_drop_the_flag(self):
+        # Schema 3 briefly carried a history-disclosure flag on a branch that
+        # was withdrawn before merging; runs recorded then must still resume.
+        self._write(
+            {
+                "schema_version": 3,
+                "kind": "autonomous-workshop.run-authorization",
+                "product_id": "wish-1",
+                "publish_requested": True,
+                "github_publish_requested": True,
+                "history_disclosure_requested": True,
+            }
         )
-        os.chmod(self.path, 0o600)
+
+        value = _record_authorization(
+            self.paths, product_id="wish-1", publish_requested=False, create=False
+        )
+
+        self.assertEqual(value["schema_version"], 2)
+        self.assertTrue(value["github_publish_requested"])
+        self.assertNotIn("history_disclosure_requested", value)
+
+    def test_malformed_files_are_rejected(self):
+        self._write(
+            {
+                "schema_version": 2,
+                "kind": "autonomous-workshop.run-authorization",
+                "product_id": "wish-1",
+                "publish_requested": True,
+                "github_publish_requested": "yes",
+            }
+        )
 
         with self.assertRaises(StateConflict):
             _record_authorization(

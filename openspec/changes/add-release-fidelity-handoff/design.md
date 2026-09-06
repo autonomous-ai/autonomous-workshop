@@ -8,8 +8,6 @@ See `proposal.md` for motivation. Facts established on 2026-09-05 against the Qu
 - The Factory worker names meshes after the STL stems it finds under `<primary>_parts/` (`internal/slicer/tree.go`, `models.AssemblyPart`), and the adapter's own tests assert `assembled_parts/<name>.stl`. `_OCCURRENCE_NAME` is `^[a-z0-9][a-z0-9_-]{0,127}$`.
 - `read_step_part_colors` applied the sRGB transfer to build123d channels (cadgen's docstring calls `Color` linear), while the cadgen GLB exporter converts the same channels from sRGB to linear for glTF and the shop viewer shows them as sRGB. Quarterhoot's owl read as `#eabd76` from STEP and displays as `#d1822e` in the viewer.
 - Manual visuals are validated by `manual_design.validate_manual_design_evidence` against `made.product_manifest.entries`; the Made tree is agent-authored and any host change to it fails `NativeMadeTreeGateError`.
-- The import API finds `conversation.jsonl` at the archive root, republishes it with the folder, and replays it into `import_step` turns: one turn per user record with visible text, `isMeta` dropped, tool-result-only user records kept inside the current turn, dedupe by record `uuid`, caps 200 turns / 5 000 entries / 512 KB per entry / 12 MB. A malformed transcript costs the history, never the import.
-- The run's Codex rollout lives at `~/.codex/sessions/<date>/rollout-<ts>-<thread_id>.jsonl` (`thread_id` from state `codex-session.json`). Quarterhoot's main thread is 1 827 lines / 15 MB: 63 messages, 273 tool calls with outputs, 289 encrypted reasoning items, and 282 token-count events. Subagent threads are separate files keyed by `parent_thread_id`.
 - Existing policy: the public git example "contains no agent session, prompt, transcript, chain of thought" and the adapter deliberately omits Factory's `prompt` field. Run authorization (`authorization.json` schema 2) carries `publish_requested` and `github_publish_requested` only.
 
 ## Goals / Non-Goals
@@ -59,42 +57,26 @@ Fallback: renderer missing or failing writes `status: unavailable`; Release, the
 
 Alternatives rejected: rendering in the native session (sandbox has no node/chromium and would need network), adding files into the Made tree (breaks the sealed-tree gate), Blender now (cost and docker dependency; contract leaves the slot open).
 
-### 4. Session history is a trusted-host projection of the rollout, shipped only when authorized
+### 4. Session history — withdrawn
 
-`workshop.release.session_history.build_conversation(run_state, disclosure) -> bytes` reads the main-thread rollout for `codex-session.json.thread_id` and emits Claude-Code-shaped JSONL:
-
-- first record: a synthetic user record whose text is the exact Wish when `disclose_exact_wish` is granted, otherwise the sealed public product summary; `uuid` = its sha256. The Factory derives the listing's originating prompt from it, so the adapter keeps omitting the `prompt` form field.
-- `response_item.message` with `role: user` and visible `input_text` → `{"type":"user","uuid":<id>,"timestamp":…,"message":{"role":"user","content":"<text>"}}` (host stage Goals; trimmed to 8 KB);
-- `role: assistant` → `{"type":"assistant", …, "content":[{"type":"text","text":…}]}`;
-- `custom_tool_call` / `function_call` → assistant record with a `tool_use` block (`id` = `call_id`, `name`, parsed `input` or `{"raw": …}`); `*_call_output` → user record with a `tool_result` block, output trimmed to 16 KB;
-- `reasoning` (encrypted), `developer` messages, `event_msg`, `turn_context`, `world_state`, `compacted`, plugin banners, and `spawn_agent` payloads are omitted or marked `isMeta: true`; subagent threads are not included in v1 and their count is recorded.
-
-Redaction: workspace-relative paths kept, other absolute host paths replaced by `<host>`, `tools/scan_secrets.py` patterns applied, credential-shaped strings dropped. Caps mirror the server: ≤ 200 turns, ≤ 5 000 entries, ≤ 512 KB per entry, ≤ 12 MB total (oldest tool results trimmed first). Records are ordered by rollout ordinal and `uuid`s are the rollout item ids, so a repeat import de-duplicates.
-
-Placement: `conversation.jsonl` at the handoff archive root, allow-listed in `_assert_archive_inventory`. It is not a Made or Release manifest entry; it changes the zip bytes and therefore `pack_sha256`, so the ledger binds it without a schema change.
-
-Gate: `authorization.json` schema 3 adds `history_disclosure_requested: bool`, set by `workshop wish --disclose-session` or by an Inventor-account default in Workshop config. Without it no file ships. The Factory publishes the file on the public CDN folder and shows turns to strangers once the design is public, so the docs state this plainly.
+A trusted-host projection of the Codex rollout into `conversation.jsonl` was built and then withdrawn on 2026-09-06: the owner decided no build history ships with a listing. The run's session stays private host state, the adapter keeps omitting Factory's `prompt` field, and `authorization.json` stays at schema 2 (files briefly written as schema 3 still read; the withdrawn flag is ignored).
 
 ### 5. Readback and status
 
-`_complete_release_draft` records `handoff_transport`, `occurrence_count`, `renders_sha256` (when rendered), and after publish `history_turns` from `GET /designs/{slug}/turns` (owner token, best effort: a server-side drop is a warning, not a failure). `assembly_parts` readback already asserts colours. `workshop status` prints transport, colours, renders, and turns.
+`_complete_release_draft` records `handoff_transport`, `occurrence_count`, `viewer_groups`, and `renders_sha256` (when rendered). `assembly_parts` readback already asserts colours. `workshop status` prints transport, colours, and renders.
 
 ## Risks / Trade-offs
 
 - Host tool dependency (node, playwright, chromium). Mitigated by doctor, pinned versions, and the unavailable-fallback.
-- Zip growth (≤ 12 MB history, part STLs, one PNG) against the Factory's 100 s Cloudflare window. Measure on Quarterhoot-sized runs; keep total under 50 MB.
-- Public transcript disclosure. Mitigated by the explicit authorization, redaction, and updated policy docs; the owner decides the default.
 - Mesh naming relies on the Factory worker's `<primary>_parts/` convention, already asserted by adapter tests and observed on `five-job-checkers`.
 - Colour convention change alters GLB colours for future runs only; frozen runs are unaffected.
 
 ## Migration Plan
 
 - Frozen runs keep their materialized protocol. New runs materialize the updated skill text and finalizer inputs.
-- `authorization.json` schema 2 reads as schema 3 with `history_disclosure_requested: false`.
 - Already published toys are not re-imported. Quarterhoot can be republished as a new design once the change lands, then the old listing unpublished; this is an operator decision.
 
 ## Open Questions
 
-- Default for `history_disclosure_requested` on Workshop-owned Inventor accounts: on (owner's stated wish) or off (current policy).
 - Turnaround set on by default, or hero + strip only, given ~5 s per frame on swiftshader.
 - Whether `presentation.states` should become required for products whose Wish promises a signature motion.
