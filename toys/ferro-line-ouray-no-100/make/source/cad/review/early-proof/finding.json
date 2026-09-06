@@ -1,0 +1,30 @@
+{
+  "artifacts": {
+    "held": "review/early-proof/held.png",
+    "signature": "review/early-proof/signature.png",
+    "state_0": "review/early-proof/state-0.stl",
+    "state_1": "review/early-proof/state-1.stl",
+    "state_2": "review/early-proof/state-2.stl"
+  },
+  "checkpoint_sha256": "309fbbffabc977f5e99b1a26bdd747b45d7e1e90ae3cbfa909894bf6f3c13454",
+  "exact_relationship": {
+    "bar_diameter_mm": 2.0,
+    "hook_opening_mm": 2.4,
+    "radial_clearance_mm": 0.2,
+    "state_minimum_mean_rgb_difference": 2.338
+  },
+  "kind": "autonomous-workshop.make-early-proof-finding",
+  "limitations": [
+    "This is digital geometry and render evidence only; no physical rolling, fit, strength, or print-quality claim is made.",
+    "The proof intentionally omits final surface detail and lettering; its source must be reused for the final coupling and wheel parameters.",
+    "The source-provenance overlay gate from the sealed Invent contract remains mandatory in final Make."
+  ],
+  "root_read": {
+    "frame_0_left": "PASS: neutral engaged state. The tender-front 2.0 mm bar is seated in the engine-rear 2.4 mm downward-open hook at zero yaw; the four coupled driver positions, leading truck, diamond stack, box lamp, cab, and two-truck tender read in one side silhouette.",
+    "frame_1_middle": "PASS: approach state. The tender is 12.0 mm aft and yawed +6 degrees, producing an unmistakable open relationship while wheel spokes advance 15 degrees in the exact mesh.",
+    "frame_2_right": "PASS: uncoupled state. The tender is 24.0 mm aft at zero yaw and the gap is unmistakable; wheel spokes advance 30 degrees in the exact mesh.",
+    "held": "PASS: the neutral held view is volumetric rather than flat. The cylindrical boiler, flared diamond stack, paired domes, pilot wedge, visible wheelsets, cab, and tender establish a compact narrow-gauge 2-8-0; rectangular cab and tender masses are prototype blockout forms rather than the whole object's language. No unintended exposed interior or loose captive element is visible."
+  },
+  "schema_version": 1,
+  "verdict": "pass"
+}

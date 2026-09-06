@@ -1,0 +1,552 @@
+{
+  "selected_inventor_id": "ferro-line",
+  "ranking": [
+    {"inventor_id": "ferro-line", "rationale": "Exact ownership: period-drawing transport reconstruction, scale-graded detail, prototype-seam part trees, free-rolling wheelsets, and one fleet coupling standard are all Ferro Line's primary method."},
+    {"inventor_id": "ivy", "rationale": "Strong on sourced dimensions and honest simplification, but the Wish is a historical transport likeness rather than a physical explanation of a scientific phenomenon."},
+    {"inventor_id": "eve", "rationale": "Strong on recognizable miniature silhouette and secondary-view detail, but the subject is a public locomotive reconstructed as engineering rather than a personal cinematic world."},
+    {"inventor_id": "bob", "rationale": "Could engineer rolling spectacle, but mechanism-led motion would displace the drawing-led locomotive identity; the Wish needs passive wheel serviceability rather than a kinetic centerpiece."},
+    {"inventor_id": "pico-press", "rationale": "Owns crisp small-scale movement and could help with rolling reliability, but here wheel motion serves a scale model and is not the product's central magic."},
+    {"inventor_id": "alice", "rationale": "Can preserve a known classic while personalizing it, but this Wish asks for a historical machine reconstruction, not a personalized tabletop classic."},
+    {"inventor_id": "mira-fold", "rationale": "Compact support-free assembly judgment is useful, but a two- or three-part transformation puzzle cannot express the required prototype construction seams."},
+    {"inventor_id": "vela-bloom", "rationale": "Deployable transformation craft does not own a static historical silhouette or the specified rolling and coupling interfaces."},
+    {"inventor_id": "kestrel-knot", "rationale": "Captive topology is unrelated to the period locomotive record and would add a false mechanism."},
+    {"inventor_id": "tess-loop", "rationale": "Flat modular pattern craft does not fit a volumetric locomotive and tender reconstruction."},
+    {"inventor_id": "luma-vale", "rationale": "Hand-powered optical transformation would turn the locomotive into an image-making carrier and would not improve the required historical geometry."},
+    {"inventor_id": "orin-shadow", "rationale": "Shadow-play would turn the locomotive into an occluder and sacrifice direct scale-model fidelity."},
+    {"inventor_id": "sonora-reed", "rationale": "Passive acoustics has no role in the requested silent, free-rolling model."},
+    {"inventor_id": "leo", "rationale": "Original tabletop rules and simulation are unrelated to the requested historic scale model."},
+    {"inventor_id": "abo", "rationale": "Abstract strategy structure cannot preserve the named machine, drawing lineage, or construction-seam part tree."}
+  ],
+  "concept": {
+    "title": "Ferro Line 1:87 No. 100 “Ouray” — 1887 Silverton Railroad composite 2-8-0",
+    "summary": "A 1:87, all-FDM, support-aware desk-running reconstruction concept for Silverton Railroad No. 100 “Ouray,” the railroad's 1887 composite rebuild from Baldwin-built D&RG components: four coupled 10.51 mm driver wheelsets under a low Class 60 frame, a compact boiler and Victorian cab crowned by a diamond stack, a box headlamp and pilot, and a separately rolling tender on two swiveling four-wheel trucks with process-resolved SILVERTON R.R. CO. lettering. The exact 1888 Fort Lewis photograph establishes identity and wheel arrangement; sister Class 60/C-16 records provisionally bound dimensions. A provenance-verified period GA remains a mandatory first Make gate, so no exact-drawing fidelity is claimed at Invent. No motor, light, metal axle, purchased bearing, or commercial-kit geometry enters the design.",
+    "interaction": "The owner assembles the four driver wheelsets behind the sliding locomotive keeper, captures the pilot axle with its own keeper, pins the swiveling pilot truck to the frame, and adds the boiler, dome cluster, diamond stack, cab, headlamp, and pilot beam. The tender tank seats on its frame while two separately printed four-wheel trucks pivot below it, each with its own axle keeper. The locomotive's integral rear hook lowers over the tender's front transverse bar; the integral pilot-front hook and tender-rear transverse bar preserve the Ferro Line hook/bar polarity at both outside ends. A fingertip push is intended to rotate all nine wheelsets on a flat desk; Make must prove or falsify that behavior. Recognition comes from the 2-8-0 wheel spacing, diamond-stack profile, box headlamp marked 100, and SILVERTON R.R. CO. tender rather than packaging text.",
+    "envelope_mm": {"length_mm": 174.0, "width_mm": 31.0, "height_mm": 47.0},
+    "mechanisms": ["captured-free-rolling-axles", "fleet-hook-and-bar-coupling"],
+    "novel_mechanisms": [
+      {"id": "captured-free-rolling-axles", "definition": "A serviceable all-printed running system in which each fused wheel-and-axle part rotates in a 3.4 mm split journal closed by a longitudinal sliding keeper; the 3.0 mm axle has 0.20 mm radial design clearance and no elastic latch or purchased bearing."},
+      {"id": "fleet-hook-and-bar-coupling", "definition": "The Ferro Line rail interface with fixed polarity: the locomotive carries integral 1.6 mm thick hooks with 2.4 mm openings at its pilot-front and engine-rear ends; the tender carries removable 2.0 mm diameter transverse bars at its front and rear ends. Every coupling center is 7.0 mm above the desk and 3.0 mm behind its vehicle end face."}
+    ],
+    "signature_interaction": "The intended result is that a fingertip push turns all nine wheelsets beneath a silhouette that reads as No. 100 before the raised tender lettering is read; the one-journal proof and full digital rotation check must establish this before any success claim.",
+    "anti_generic_signature": "The model must preserve the four-coupled-axle 2-8-0 stance visible in the exact 1888 photograph, a compact Class 60-informed boiler-to-cab relationship, flared diamond stack, square kerosene headlamp carrying 100, and Silverton tender proportion; generic steam-train proportions fail even if decorated correctly. Numerical spacing remains provisional until the GA gate passes.",
+    "hardest_to_fake_magic": "A knowledgeable viewer recognizes the Silverton Railroad's 1887 composite rebuild as photographed in 1888 from a neutral side silhouette reconciled to that exact photograph and a provenance-verified period GA, while the same small object is engineered to roll and couple as a fleet piece.",
+    "coordinate_system": "Model millimetres. X=0 at the pilot tip and increases toward the tender rear; Y=0 is the longitudinal center plane; Z=0 is the flat-desk standing plane. Wheel treads touch Z=0. Each inboard flange is a 0.6 mm axial side-face relief whose outer diameter equals the tread diameter, so no flange projects below the standing plane.",
+    "scale_and_datum": {
+      "family_scale": "1:87 rail family",
+      "provisional_datum": "36.0 in sister Class 60/C-16 driver diameter becomes 10.51 mm at 1:87. This is a sealed Invent target, not an exact No. 100 measurement; Make must test it against a provenance-verified period GA and report a design-blocking contradiction instead of silently editing the target.",
+      "gauge": "10.5 mm between tread contact center planes at Y=-5.25 and Y=+5.25 mm, representing 914.4 mm three-foot gauge at 1:87 within 0.01 mm. Every wheel body is 2.0 mm axially thick; its 0.6 mm inboard flange relief lies beyond the inner wheel face but shares the tread outer diameter.",
+      "envelope_status": "The 174.0 x 31.0 x 47.0 mm assembled target is a deliberate provisional envelope inferred from Class 60 proportions, not a measured No. 100 dimension. Make may proceed only if a provenance-verified period GA is consistent with it; a material contradiction returns to Invent rather than being silently rewritten."
+    },
+    "print_stance": {
+      "process": "0.4 mm nozzle FDM; 0.20 mm layers; supports disabled for qualification.",
+      "minimums": "Rigid walls 1.6 mm, frame load paths 2.0 mm, freestanding features 0.8 mm, attached surface relief 0.4 mm high by 0.8 mm wide, handled-edge fillets or chamfers 0.4 mm.",
+      "orientation": "Frame, keepers, truck frames, pivot pins, and coupling bars lie on their broad or split-prototype faces; wheelsets print with axle axes parallel to the bed, both treads tangent to the bed, and one externally graspable 0.4 mm breakaway fin below each axle; boiler stands on the smokebox face; cab stands on its rear wall; diamond stack stands inverted on its 18.0 mm cap; tender tank stands on its rear wall; pilot and headlamp use their prototype seam faces as beds.",
+      "overhang_rule": "All hidden bore crowns use 45 degree teardrops and every visible downward face is reshaped to 45 degrees or split at a prototype seam. The only designed support is one externally graspable 0.4 mm axle fin per wheelset; no slicer support, internal support, or trapped breakaway lattice is permitted.",
+      "bed_edge_relief": "Every bed-facing mating perimeter receives a 0.4 mm horizontal by 0.8 mm vertical chamfer, excluding wheel treads and visible lettering faces."
+    },
+    "detail_grading": [
+      "Keep the provisional 10.51 mm drivers, 7.0 mm pilot wheels, 7.59 mm tender wheels, diamond stack outline, dome line, pilot bars, box headlamp, cab windows, tender flare, two-truck underframe, and wheel spacing as silhouette geometry subject to the GA source gate.",
+      "Represent handrails and fixed side rods as attached 0.8 x 0.8 mm ribs; they are not separate wires and do not move. Side-rod relief clears rotating wheel faces by 0.4 mm.",
+      "Represent rivet rows as 0.8 mm diameter by 0.3 mm high surface bosses only where the period sheet or exact photograph supports a row; omit isolated sub-0.8 mm fasteners.",
+      "Render SILVERTON R.R. CO. as process-resolved 1.8 mm cap-height raised block letters with 0.8 mm minimum stroke and 0.4 mm relief. This is an explicitly enlarged readability treatment; placement follows the period elevation.",
+      "Render headlamp 100 as 1.6 mm cap-height recessed digits with 0.8 mm minimum stroke and 0.4 mm depth; omit unreadable builder-plate text.",
+      "No functional valve gear, brake rigging, cab interior, piping below 0.8 mm, individual coal lumps, electronics, or lighting. Record each omission in the manual."
+    ],
+    "components": [
+      {
+        "key": "locomotive_frame",
+        "name": "Locomotive frame and fixed suspension relief",
+        "form": "A 77.0 mm long twin-rail chassis with four 3.4 mm open-bottom driver journals at X=41.0, 52.0, 63.0, and 74.0 mm, one pilot-truck pivot socket at X=24.0 mm, 2.0 mm load-path webs, integral cylinder blocks, fixed 0.8 x 0.8 mm side-rod ribs, and a broad rear coupling hanger extending to the tender bar.",
+        "duty": "Carries the boiler, cab, pilot, four driver wheelsets, and integral engine-rear fleet hook while keeping every axle center parallel to Y within 0.10 mm in the digital assembly.",
+        "dimensions_mm": {"length_mm": 101.0, "width_mm": 22.0, "height_mm": 10.0},
+        "placement": "The load-bearing frame spans X=18.0 to 95.0 mm and its rear coupling hanger continues to X=119.0 mm; centered at Y=0, with driver axle center plane at Z=5.255 mm.",
+        "interfaces": "Four 3.4 mm split journals accept 3.0 mm axles on 2.0 mm bearing lands centered at Y=-8.5 and +8.5 mm; two 2.4 x 1.6 mm longitudinal keeper rails use 0.25 mm clearance per side; six 3.0 mm diameter superstructure sockets use 0.25 mm radial clearance; pilot pivot bore is 3.4 mm; a broad 3.0 mm thick rear-hanger arm terminates in an integral 1.6 mm thick hook with a 2.4 mm opening centered at X=119.0 mm, Z=7.0 mm.",
+        "mates_with": ["locomotive_axle_keeper", "driver_wheelset_1", "driver_wheelset_2", "driver_wheelset_3", "driver_wheelset_4", "pilot_truck", "pilot_pivot_pin", "boiler_smokebox", "cab", "pilot_beam", "tender_front_bar"],
+        "signature": false
+      },
+      {
+        "key": "locomotive_axle_keeper",
+        "name": "Locomotive journal keeper",
+        "form": "A 74.0 mm by 18.0 mm service plate with four 3.4 mm teardrop journal lower halves and two continuous dovetail tongues.",
+        "duty": "Closes the four driver journals without a flexure and remains removable after the pilot beam is detached.",
+        "dimensions_mm": {"length_mm": 74.0, "width_mm": 18.0, "height_mm": 2.4},
+        "placement": "Slides along +X under the locomotive frame from X=19.5 to 93.5 mm at Z=1.2 mm.",
+        "interfaces": "Two dovetail tongues measure 2.4 x 1.6 mm and fit frame rails with 0.25 mm clearance per side; the pilot beam supplies the positive +X stop.",
+        "mates_with": ["locomotive_frame", "pilot_beam"],
+        "signature": false
+      },
+      {
+        "key": "driver_wheelset_1",
+        "name": "Leading driving wheelset",
+        "form": "One fused 26.0 mm long, 3.0 mm diameter axle carries 2.0 mm thick, 10.51 mm diameter eight-spoke wheels centered at Y=-5.25 and +5.25 mm; 0.6 mm axial inboard flange relief shares the tread diameter, and one externally accessible 0.4 mm breakaway fin supports the axle.",
+        "duty": "Is intended to rotate as the first of four coupled visual driver positions while supporting the front frame load; Make must prove 360 degree digital clearance and leave physical rolling unclaimed.",
+        "dimensions_mm": {"length_mm": 10.51, "width_mm": 26.0, "height_mm": 10.51},
+        "placement": "Axis lies at X=41.0 mm, Y=0, Z=5.255 mm.",
+        "interfaces": "The axle has 2.0 mm bearing lands centered at Y=-8.5 and +8.5 mm for the 3.4 mm journals, 0.20 mm radial design clearance, shoulders at Y=-6.5 and +6.5 mm, and ends at Y=-13.0 and +13.0 mm; wheel faces clear fixed side-rod ribs by 0.4 mm.",
+        "mates_with": ["locomotive_frame"],
+        "signature": false
+      },
+      {
+        "key": "driver_wheelset_2",
+        "name": "Second driving wheelset",
+        "form": "One fused 26.0 mm long, 3.0 mm diameter axle carries 2.0 mm thick, 10.51 mm diameter eight-spoke wheels centered at Y=-5.25 and +5.25 mm; 0.6 mm axial inboard flange relief shares the tread diameter, and one externally accessible 0.4 mm breakaway fin supports the axle.",
+        "duty": "Is intended to rotate at the second coupled visual driver position and support the forward boiler mass; Make must prove 360 degree digital clearance and leave physical rolling unclaimed.",
+        "dimensions_mm": {"length_mm": 10.51, "width_mm": 26.0, "height_mm": 10.51},
+        "placement": "Axis lies at X=52.0 mm, Y=0, Z=5.255 mm.",
+        "interfaces": "The axle has 2.0 mm bearing lands centered at Y=-8.5 and +8.5 mm for the 3.4 mm journals, 0.20 mm radial design clearance, shoulders at Y=-6.5 and +6.5 mm, and ends at Y=-13.0 and +13.0 mm; wheel faces clear fixed side-rod ribs by 0.4 mm.",
+        "mates_with": ["locomotive_frame"],
+        "signature": false
+      },
+      {
+        "key": "driver_wheelset_3",
+        "name": "Third driving wheelset",
+        "form": "One fused 26.0 mm long, 3.0 mm diameter axle carries 2.0 mm thick, 10.51 mm diameter eight-spoke wheels centered at Y=-5.25 and +5.25 mm; 0.6 mm axial inboard flange relief shares the tread diameter, and one externally accessible 0.4 mm breakaway fin supports the axle.",
+        "duty": "Is intended to rotate at the third coupled visual driver position and support the rear boiler mass; Make must prove 360 degree digital clearance and leave physical rolling unclaimed.",
+        "dimensions_mm": {"length_mm": 10.51, "width_mm": 26.0, "height_mm": 10.51},
+        "placement": "Axis lies at X=63.0 mm, Y=0, Z=5.255 mm.",
+        "interfaces": "The axle has 2.0 mm bearing lands centered at Y=-8.5 and +8.5 mm for the 3.4 mm journals, 0.20 mm radial design clearance, shoulders at Y=-6.5 and +6.5 mm, and ends at Y=-13.0 and +13.0 mm; wheel faces clear fixed side-rod ribs by 0.4 mm.",
+        "mates_with": ["locomotive_frame"],
+        "signature": false
+      },
+      {
+        "key": "driver_wheelset_4",
+        "name": "Trailing driving wheelset",
+        "form": "One fused 26.0 mm long, 3.0 mm diameter axle carries 2.0 mm thick, 10.51 mm diameter eight-spoke wheels centered at Y=-5.25 and +5.25 mm; 0.6 mm axial inboard flange relief shares the tread diameter, and one externally accessible 0.4 mm breakaway fin supports the axle.",
+        "duty": "Is intended to rotate at the fourth coupled visual driver position and support the cab end of the frame; Make must prove 360 degree digital clearance and leave physical rolling unclaimed.",
+        "dimensions_mm": {"length_mm": 10.51, "width_mm": 26.0, "height_mm": 10.51},
+        "placement": "Axis lies at X=74.0 mm, Y=0, Z=5.255 mm.",
+        "interfaces": "The axle has 2.0 mm bearing lands centered at Y=-8.5 and +8.5 mm for the 3.4 mm journals, 0.20 mm radial design clearance, shoulders at Y=-6.5 and +6.5 mm, and ends at Y=-13.0 and +13.0 mm; wheel faces clear fixed side-rod ribs by 0.4 mm.",
+        "mates_with": ["locomotive_frame"],
+        "signature": false
+      },
+      {
+        "key": "pilot_truck",
+        "name": "Two-wheel pilot truck",
+        "form": "A triangular 18.0 mm long truck frame with a 3.4 mm open-bottom journal, two keeper rails, and a 3.4 mm vertical pivot eye.",
+        "duty": "Carries the pilot wheelset and yaws 8 degrees left or right for desk rolling without carrying the pilot beam.",
+        "dimensions_mm": {"length_mm": 18.0, "width_mm": 18.0, "height_mm": 5.0},
+        "placement": "Centered at X=25.0 mm, Y=0, with pivot at Z=6.5 mm and wheel axis at X=23.0 mm, Z=3.5 mm.",
+        "interfaces": "A 3.4 mm pivot eye turns around the separate 3.0 mm pivot pin with 0.20 mm radial clearance; its 3.4 mm split journal and 2.4 x 1.6 mm rails accept the pilot axle keeper with 0.25 mm clearance per side.",
+        "mates_with": ["locomotive_frame", "pilot_pivot_pin", "pilot_axle_keeper", "pilot_wheelset"],
+        "signature": false
+      },
+      {
+        "key": "pilot_wheelset",
+        "name": "Pilot wheelset",
+        "form": "One fused 22.0 mm long, 3.0 mm diameter axle carries 2.0 mm thick, 7.0 mm diameter six-spoke wheels centered at Y=-5.25 and +5.25 mm; 0.6 mm axial inboard flange relief shares the tread diameter, and one accessible 0.4 mm breakaway fin supports the axle.",
+        "duty": "Is intended to rotate under the leading truck and establish the leading two wheels of the 2-8-0 arrangement; Make must prove digital clearance and leave physical rolling unclaimed.",
+        "dimensions_mm": {"length_mm": 7.0, "width_mm": 22.0, "height_mm": 7.0},
+        "placement": "Axis lies at X=23.0 mm, Y=0, Z=3.5 mm.",
+        "interfaces": "The axle has 2.0 mm bearing lands centered at Y=-8.0 and +8.0 mm for the 3.4 mm journals, 0.20 mm radial design clearance, shoulders at Y=-6.5 and +6.5 mm, and ends at Y=-11.0 and +11.0 mm.",
+        "mates_with": ["pilot_truck", "pilot_axle_keeper"],
+        "signature": false
+      },
+      {
+        "key": "pilot_axle_keeper",
+        "name": "Pilot truck axle keeper",
+        "form": "A 12.0 x 14.0 x 2.4 mm service plate with one 3.4 mm teardrop journal lower half and two short dovetail tongues.",
+        "duty": "Closes the pilot truck journal without an elastic latch and remains removable after the truck is unpinned.",
+        "dimensions_mm": {"length_mm": 12.0, "width_mm": 14.0, "height_mm": 2.4},
+        "placement": "Slides along +X under the pilot truck from X=17.0 to 29.0 mm at Z=1.2 mm.",
+        "interfaces": "Two 2.4 x 1.6 mm tongues fit the pilot truck rails with 0.25 mm clearance per side; a 1.6 mm shoulder supplies a positive travel stop.",
+        "mates_with": ["pilot_truck", "pilot_wheelset"],
+        "signature": false
+      },
+      {
+        "key": "pilot_pivot_pin",
+        "name": "Pilot truck pivot pin",
+        "form": "A 3.0 mm diameter, 8.0 mm long headed pin split on a prototype center plane for flat printing and bonded after fit selection.",
+        "duty": "Captures the pilot truck to the locomotive frame while permitting 8 degrees of yaw each side.",
+        "dimensions_mm": {"length_mm": 5.0, "width_mm": 5.0, "height_mm": 8.0},
+        "placement": "Axis is vertical at X=24.0 mm, Y=0, spanning Z=3.0 to 11.0 mm.",
+        "interfaces": "The 3.0 mm shank turns in the truck's 3.4 mm eye and seats in the frame's 3.4 mm bore; a 5.0 mm head is trapped above the truck by the frame web.",
+        "mates_with": ["locomotive_frame", "pilot_truck"],
+        "signature": false
+      },
+      {
+        "key": "boiler_smokebox",
+        "name": "Boiler, firebox, smokebox, and running boards",
+        "form": "A 64.0 mm long 25.0 mm diameter revolved boiler mass with a square firebox transition, smokebox front, 1.6 mm shell, and attached 1.6 mm running boards.",
+        "duty": "Carries the primary cylindrical mass and fixes the provisional stack, dome, headlamp, and cab datums pending the provenance-verified GA gate.",
+        "dimensions_mm": {"length_mm": 64.0, "width_mm": 25.0, "height_mm": 28.0},
+        "placement": "Spans X=25.0 to 89.0 mm, centered at Y=0, with boiler axis at Z=24.0 mm.",
+        "interfaces": "Four 3.0 mm frame pins use 3.5 mm sockets; stack socket is 4.4 mm diameter by 3.0 mm deep; dome sockets are two 3.5 mm diameter by 2.5 mm deep holes; cab rabbet is 20.0 mm wide by 2.0 mm deep; headlamp socket is 3.5 mm diameter by 2.5 mm deep.",
+        "mates_with": ["locomotive_frame", "dome_cluster", "diamond_stack", "cab", "headlamp"],
+        "signature": false
+      },
+      {
+        "key": "dome_cluster",
+        "name": "Steam and sand dome cluster",
+        "form": "Two revolved domes joined by a 1.6 mm hidden alignment web; dome bases are 10.0 and 11.0 mm diameter and total heights are 10.0 and 11.3 mm.",
+        "duty": "Sets the period dome rhythm along the boiler crown while keeping each printed feature above the 0.8 mm process floor.",
+        "dimensions_mm": {"length_mm": 22.0, "width_mm": 15.0, "height_mm": 11.3},
+        "placement": "Dome centerlines lie at X=51.0 and 65.0 mm on Y=0, with bases at Z=35.7 mm.",
+        "interfaces": "Two 3.0 mm diameter by 2.3 mm pins fit the boiler's 3.5 mm sockets with 0.25 mm radial clearance; the hidden web seats against a 0.4 mm crown flat.",
+        "mates_with": ["boiler_smokebox"],
+        "signature": false
+      },
+      {
+        "key": "diamond_stack",
+        "name": "Flared diamond spark-arresting stack",
+        "form": "A revolved 14.1 mm tall stack with a 4.0 mm lower barrel, a compact flared arrestor body, and an 18.0 mm cap, all with 1.6 mm walls and 45 degree internal transitions.",
+        "duty": "Carries the single memorable silhouette cue that distinguishes the 1888 mountain locomotive from a later straight-stack C-16.",
+        "dimensions_mm": {"length_mm": 18.0, "width_mm": 18.0, "height_mm": 14.1},
+        "placement": "Centered at X=35.0 mm, Y=0; the 2.8 mm spigot enters the boiler socket below the Z=35.7 mm shoulder and the visible cap reaches Z=47.0 mm.",
+        "interfaces": "A 4.0 mm diameter by 2.8 mm spigot fits the boiler's 4.4 mm socket with 0.20 mm radial clearance; a 7.0 mm shoulder bears on the boiler crown.",
+        "mates_with": ["boiler_smokebox"],
+        "signature": true
+      },
+      {
+        "key": "cab",
+        "name": "Victorian cab shell",
+        "form": "A 29.0 mm long cab with 1.6 mm walls, arched side windows 12.0 x 10.0 mm, two rear windows 8.0 x 10.0 mm, and a 2.0 mm thick overhanging roof.",
+        "duty": "Completes the provisional rear elevation and protects the boiler-to-cab proportion to be tested against the period GA.",
+        "dimensions_mm": {"length_mm": 29.0, "width_mm": 29.0, "height_mm": 35.0},
+        "placement": "Spans X=68.0 to 97.0 mm, centered at Y=0, with floor at Z=10.0 mm and roof crown at Z=45.0 mm.",
+        "interfaces": "Two 3.0 mm frame pins use 3.5 mm sockets; a 20.0 mm wide by 2.2 mm tongue fits the boiler's 20.0 mm rabbet with 0.10 mm vertical clearance; a rear 8.0 x 5.0 mm relief clears the integral coupling-hook hanger.",
+        "mates_with": ["locomotive_frame", "boiler_smokebox"],
+        "signature": false
+      },
+      {
+        "key": "headlamp",
+        "name": "Kerosene box headlamp marked 100",
+        "form": "A 12.0 x 12.0 x 10.0 mm hollow-backed square lamp with a 7.0 mm recessed front lens disk, 1.6 mm roof, and process-resolved recessed 100 digits.",
+        "duty": "Preserves the photographed locomotive-number landmark without electronics, transparent parts, or painted-only identity.",
+        "dimensions_mm": {"length_mm": 12.0, "width_mm": 12.0, "height_mm": 10.0},
+        "placement": "Centered at X=24.0 mm, Y=0, with base at Z=31.0 mm and face normal to -X.",
+        "interfaces": "A 3.0 mm diameter by 2.3 mm pin fits the boiler's 3.5 mm socket with 0.25 mm radial clearance; lamp back seats on a 6.0 mm diameter flat.",
+        "mates_with": ["boiler_smokebox"],
+        "signature": false
+      },
+      {
+        "key": "pilot_beam",
+        "name": "Pilot beam, cowcatcher, steps, and front fleet hook",
+        "form": "A 20.0 mm long pilot assembly with a 30.0 mm beam, nine 1.2 mm thick radial pilot bars, two 1.6 mm steps, and an integral 1.6 mm thick hook.",
+        "duty": "Protects the front silhouette, locks the axle keeper's +X travel, and supplies the standard front coupling point.",
+        "dimensions_mm": {"length_mm": 20.0, "width_mm": 30.0, "height_mm": 16.0},
+        "placement": "Spans X=0 to 20.0 mm, centered at Y=0, with hook center at Z=7.0 mm.",
+        "interfaces": "Two 3.0 mm pins fit frame sockets with 0.25 mm radial clearance; a 2.0 mm keeper-stop face overlaps the locomotive axle keeper by 1.0 mm; hook opening is 2.4 mm and its bar seat is 3.0 mm behind X=0.",
+        "mates_with": ["locomotive_frame", "locomotive_axle_keeper"],
+        "signature": false
+      },
+      {
+        "key": "tender_frame",
+        "name": "Tender underframe",
+        "form": "A 55.0 mm long ladder frame with 2.0 mm longitudinal load paths, two 3.4 mm vertical truck-pivot bores, six tank sockets, and front/rear saddles for the transverse fleet bars.",
+        "duty": "Supports the tank on the two independently swiveling trucks and carries the bar half of both internal and external fleet couplings.",
+        "dimensions_mm": {"length_mm": 55.0, "width_mm": 24.0, "height_mm": 5.0},
+        "placement": "Spans X=116.0 to 171.0 mm, centered at Y=0, from Z=7.0 to 12.0 mm; truck pivots lie at X=130.0 and 157.0 mm.",
+        "interfaces": "Two 3.4 mm pivot bores accept 3.0 mm pins at 0.20 mm radial clearance; six 3.5 mm tank sockets accept 3.0 mm pins; paired bar saddles locate 2.0 mm transverse bars at X=119.0 and 168.0 mm, Z=7.0 mm.",
+        "mates_with": ["tender_tank", "tender_truck_front", "tender_truck_rear", "tender_pivot_pin_front", "tender_pivot_pin_rear", "tender_front_bar", "tender_rear_bar"],
+        "signature": false
+      },
+      {
+        "key": "tender_tank",
+        "name": "Silverton Railroad tender tank and coal bunker",
+        "form": "A 55.0 mm long, 29.0 mm wide, 32.0 mm high hollow shell with 1.6 mm walls, coal-bunker recess, separate-looking water hatch relief, flared top rim, rear deck, and process-resolved SILVERTON R.R. CO. side lettering.",
+        "duty": "Carries the railroad identity and provisional tender silhouette while trapping the two truck-pivot pin heads after frame assembly.",
+        "dimensions_mm": {"length_mm": 55.0, "width_mm": 29.0, "height_mm": 32.0},
+        "placement": "Spans X=116.0 to 171.0 mm, centered at Y=0, with sill at Z=12.0 mm and top rim at Z=44.0 mm.",
+        "interfaces": "Six 3.0 mm pins fit frame sockets with 0.25 mm radial clearance; two 5.0 mm underside counterbores trap the pivot-pin heads without touching the rotating trucks.",
+        "mates_with": ["tender_frame", "tender_pivot_pin_front", "tender_pivot_pin_rear"],
+        "signature": false
+      },
+      {
+        "key": "tender_truck_front",
+        "name": "Front four-wheel tender truck",
+        "form": "A 22.0 mm long swiveling truck frame with two 3.4 mm open-bottom journals at X=124.0 and 136.0 mm, two keeper rails, a 3.4 mm center pivot eye, and fixed 0.8 mm spring/equalizer relief.",
+        "duty": "Carries the leading two tender wheelsets as one prototype-seam subassembly and yaws 8 degrees each side.",
+        "dimensions_mm": {"length_mm": 22.0, "width_mm": 21.0, "height_mm": 5.0},
+        "placement": "Centered at X=130.0 mm, Y=0, from Z=3.8 to 8.8 mm, with axle axes at Z=3.795 mm.",
+        "interfaces": "The 3.4 mm pivot eye turns around a 3.0 mm pin; two 3.4 mm split journals and 2.4 x 1.6 mm rails accept wheelsets and the front keeper.",
+        "mates_with": ["tender_frame", "tender_pivot_pin_front", "tender_truck_keeper_front", "tender_wheelset_1", "tender_wheelset_2"],
+        "signature": false
+      },
+      {
+        "key": "tender_truck_rear",
+        "name": "Rear four-wheel tender truck",
+        "form": "A 22.0 mm long swiveling truck frame with two 3.4 mm open-bottom journals at X=151.0 and 163.0 mm, two keeper rails, a 3.4 mm center pivot eye, and fixed 0.8 mm spring/equalizer relief.",
+        "duty": "Carries the trailing two tender wheelsets as one prototype-seam subassembly and yaws 8 degrees each side.",
+        "dimensions_mm": {"length_mm": 22.0, "width_mm": 21.0, "height_mm": 5.0},
+        "placement": "Centered at X=157.0 mm, Y=0, from Z=3.8 to 8.8 mm, with axle axes at Z=3.795 mm.",
+        "interfaces": "The 3.4 mm pivot eye turns around a 3.0 mm pin; two 3.4 mm split journals and 2.4 x 1.6 mm rails accept wheelsets and the rear keeper.",
+        "mates_with": ["tender_frame", "tender_pivot_pin_rear", "tender_truck_keeper_rear", "tender_wheelset_3", "tender_wheelset_4"],
+        "signature": false
+      },
+      {
+        "key": "tender_truck_keeper_front",
+        "name": "Front tender truck axle keeper",
+        "form": "An 18.0 x 17.0 x 2.4 mm service plate with two teardrop journal lower halves and paired dovetail tongues.",
+        "duty": "Closes both front-truck journals without elastic latches.",
+        "dimensions_mm": {"length_mm": 18.0, "width_mm": 17.0, "height_mm": 2.4},
+        "placement": "Slides along +X below the front truck, centered at X=130.0 mm and Z=1.2 mm.",
+        "interfaces": "Two 2.4 x 1.6 mm tongues fit the truck rails with 0.25 mm clearance per side; a 1.6 mm shoulder stops travel.",
+        "mates_with": ["tender_truck_front", "tender_wheelset_1", "tender_wheelset_2"],
+        "signature": false
+      },
+      {
+        "key": "tender_truck_keeper_rear",
+        "name": "Rear tender truck axle keeper",
+        "form": "An 18.0 x 17.0 x 2.4 mm service plate with two teardrop journal lower halves and paired dovetail tongues.",
+        "duty": "Closes both rear-truck journals without elastic latches.",
+        "dimensions_mm": {"length_mm": 18.0, "width_mm": 17.0, "height_mm": 2.4},
+        "placement": "Slides along +X below the rear truck, centered at X=157.0 mm and Z=1.2 mm.",
+        "interfaces": "Two 2.4 x 1.6 mm tongues fit the truck rails with 0.25 mm clearance per side; a 1.6 mm shoulder stops travel.",
+        "mates_with": ["tender_truck_rear", "tender_wheelset_3", "tender_wheelset_4"],
+        "signature": false
+      },
+      {
+        "key": "tender_pivot_pin_front",
+        "name": "Front tender truck pivot pin",
+        "form": "A 3.0 mm diameter, 8.0 mm long headed pin split on its center plane for support-free printing.",
+        "duty": "Captures the front truck while permitting yaw and is trapped by the seated tank.",
+        "dimensions_mm": {"length_mm": 5.0, "width_mm": 5.0, "height_mm": 8.0},
+        "placement": "Vertical at X=130.0 mm, Y=0, spanning Z=5.0 to 13.0 mm.",
+        "interfaces": "The 3.0 mm shank turns in 3.4 mm truck/frame bores; a 5.0 mm head seats in the tank underside counterbore.",
+        "mates_with": ["tender_frame", "tender_tank", "tender_truck_front"],
+        "signature": false
+      },
+      {
+        "key": "tender_pivot_pin_rear",
+        "name": "Rear tender truck pivot pin",
+        "form": "A 3.0 mm diameter, 8.0 mm long headed pin split on its center plane for support-free printing.",
+        "duty": "Captures the rear truck while permitting yaw and is trapped by the seated tank.",
+        "dimensions_mm": {"length_mm": 5.0, "width_mm": 5.0, "height_mm": 8.0},
+        "placement": "Vertical at X=157.0 mm, Y=0, spanning Z=5.0 to 13.0 mm.",
+        "interfaces": "The 3.0 mm shank turns in 3.4 mm truck/frame bores; a 5.0 mm head seats in the tank underside counterbore.",
+        "mates_with": ["tender_frame", "tender_tank", "tender_truck_rear"],
+        "signature": false
+      },
+      {
+        "key": "tender_wheelset_1",
+        "name": "Tender wheelset one",
+        "form": "One fused 25.0 mm long, 3.0 mm axle carries 2.0 mm thick, 7.59 mm eight-spoke wheels centered at Y=-5.25 and +5.25 mm; 0.6 mm axial inboard flange relief shares the tread diameter, and one accessible 0.4 mm breakaway fin supports the axle.",
+        "duty": "Rotates at the leading axle of the front truck; free rolling remains a Make proof target.",
+        "dimensions_mm": {"length_mm": 7.59, "width_mm": 25.0, "height_mm": 7.59},
+        "placement": "Axis lies at X=124.0 mm, Y=0, Z=3.795 mm.",
+        "interfaces": "The axle has 2.0 mm bearing lands centered at Y=-8.5 and +8.5 mm for the front truck's 3.4 mm journals, 0.20 mm radial design clearance, shoulders at Y=-6.5 and +6.5 mm, and ends at Y=-12.5 and +12.5 mm.",
+        "mates_with": ["tender_truck_front", "tender_truck_keeper_front"],
+        "signature": false
+      },
+      {
+        "key": "tender_wheelset_2",
+        "name": "Tender wheelset two",
+        "form": "One fused 25.0 mm long, 3.0 mm axle carries 2.0 mm thick, 7.59 mm eight-spoke wheels centered at Y=-5.25 and +5.25 mm; 0.6 mm axial inboard flange relief shares the tread diameter, and one accessible 0.4 mm breakaway fin supports the axle.",
+        "duty": "Rotates at the trailing axle of the front truck; free rolling remains a Make proof target.",
+        "dimensions_mm": {"length_mm": 7.59, "width_mm": 25.0, "height_mm": 7.59},
+        "placement": "Axis lies at X=136.0 mm, Y=0, Z=3.795 mm.",
+        "interfaces": "The axle has 2.0 mm bearing lands centered at Y=-8.5 and +8.5 mm for the front truck's 3.4 mm journals, 0.20 mm radial design clearance, shoulders at Y=-6.5 and +6.5 mm, and ends at Y=-12.5 and +12.5 mm.",
+        "mates_with": ["tender_truck_front", "tender_truck_keeper_front"],
+        "signature": false
+      },
+      {
+        "key": "tender_wheelset_3",
+        "name": "Tender wheelset three",
+        "form": "One fused 25.0 mm long, 3.0 mm axle carries 2.0 mm thick, 7.59 mm eight-spoke wheels centered at Y=-5.25 and +5.25 mm; 0.6 mm axial inboard flange relief shares the tread diameter, and one accessible 0.4 mm breakaway fin supports the axle.",
+        "duty": "Rotates at the leading axle of the rear truck; free rolling remains a Make proof target.",
+        "dimensions_mm": {"length_mm": 7.59, "width_mm": 25.0, "height_mm": 7.59},
+        "placement": "Axis lies at X=151.0 mm, Y=0, Z=3.795 mm.",
+        "interfaces": "The axle has 2.0 mm bearing lands centered at Y=-8.5 and +8.5 mm for the rear truck's 3.4 mm journals, 0.20 mm radial design clearance, shoulders at Y=-6.5 and +6.5 mm, and ends at Y=-12.5 and +12.5 mm.",
+        "mates_with": ["tender_truck_rear", "tender_truck_keeper_rear"],
+        "signature": false
+      },
+      {
+        "key": "tender_wheelset_4",
+        "name": "Tender wheelset four",
+        "form": "One fused 25.0 mm long, 3.0 mm axle carries 2.0 mm thick, 7.59 mm eight-spoke wheels centered at Y=-5.25 and +5.25 mm; 0.6 mm axial inboard flange relief shares the tread diameter, and one accessible 0.4 mm breakaway fin supports the axle.",
+        "duty": "Rotates at the trailing axle of the rear truck; free rolling remains a Make proof target.",
+        "dimensions_mm": {"length_mm": 7.59, "width_mm": 25.0, "height_mm": 7.59},
+        "placement": "Axis lies at X=163.0 mm, Y=0, Z=3.795 mm.",
+        "interfaces": "The axle has 2.0 mm bearing lands centered at Y=-8.5 and +8.5 mm for the rear truck's 3.4 mm journals, 0.20 mm radial design clearance, shoulders at Y=-6.5 and +6.5 mm, and ends at Y=-12.5 and +12.5 mm.",
+        "mates_with": ["tender_truck_rear", "tender_truck_keeper_rear"],
+        "signature": false
+      },
+      {
+        "key": "tender_front_bar",
+        "name": "Tender-front fleet coupling bar",
+        "form": "A removable 16.0 mm transverse bar of 2.0 mm diameter with 4.0 mm retention tabs, printed flat.",
+        "duty": "Receives the locomotive's integral rear hook and permits relative yaw without a second drawbar mechanism.",
+        "dimensions_mm": {"length_mm": 2.0, "width_mm": 16.0, "height_mm": 2.0},
+        "placement": "Axis runs along Y at X=119.0 mm, Z=7.0 mm, 3.0 mm behind the tender front face; the locomotive rear hook extends to this bar.",
+        "interfaces": "The 2.0 mm bar has 0.20 mm radial clearance in the 2.4 mm rear-hook opening and seats in frame saddles with 0.25 mm vertical clearance.",
+        "mates_with": ["tender_frame", "locomotive_frame"],
+        "signature": false
+      },
+      {
+        "key": "tender_rear_bar",
+        "name": "Tender-rear fleet coupling bar",
+        "form": "A removable 16.0 mm transverse bar of 2.0 mm diameter with 4.0 mm retention tabs, printed flat.",
+        "duty": "Supplies the standard bar-polarity interface at the model's rear for a following Ferro Line front hook.",
+        "dimensions_mm": {"length_mm": 2.0, "width_mm": 16.0, "height_mm": 2.0},
+        "placement": "Axis runs along Y at X=168.0 mm, Z=7.0 mm, 3.0 mm ahead of the tender rear face.",
+        "interfaces": "The 2.0 mm bar seats in frame saddles with 0.25 mm vertical clearance and fits a fleet 2.4 mm hook opening at 0.20 mm radial clearance.",
+        "mates_with": ["tender_frame"],
+        "signature": false
+      }
+    ],
+    "build_plan": [
+      {
+        "group": "locomotive_assembly",
+        "parts": ["locomotive_frame", "locomotive_axle_keeper", "driver_wheelset_1", "driver_wheelset_2", "driver_wheelset_3", "driver_wheelset_4", "pilot_truck", "pilot_wheelset", "pilot_axle_keeper", "pilot_pivot_pin", "boiler_smokebox", "dome_cluster", "diamond_stack", "cab", "headlamp", "pilot_beam"],
+        "exit_criteria": "First acquire and record a provenance-verified period side/front/cab-rear GA applicable either to No. 100 itself or to its documented D&RG Class 60 donor components, then reconcile it with the exact 1888 photograph. If the GA contradicts the sealed 10.51 mm datum, four 11.0 mm axle pitches, or 174 x 31 x 47 mm envelope materially, stop Make and return that design-blocking evidence to Invent; do not silently rewrite parameters. If consistent, persist the three-clearance journal coupon and one-journal frame strip before detailing. The complete locomotive must have 0.20 mm modeled radial journal clearance, 360 degree digital wheel rotation, retained pilot axle and pivot, and a source-overlay report; physical rolling remains unclaimed."
+      },
+      {
+        "group": "tender_and_coupling",
+        "parts": ["tender_frame", "tender_tank", "tender_truck_front", "tender_truck_rear", "tender_truck_keeper_front", "tender_truck_keeper_rear", "tender_pivot_pin_front", "tender_pivot_pin_rear", "tender_wheelset_1", "tender_wheelset_2", "tender_wheelset_3", "tender_wheelset_4", "tender_front_bar", "tender_rear_bar"],
+        "exit_criteria": "The two separate four-wheel trucks each yaw 8 degrees around a retained 3.0/3.4 mm pivot and their four axles each have 0.20 mm modeled radial clearance with 360 degree digital rotation. Independently gauged fleet interfaces must show the locomotive's pilot-front and engine-rear hooks accepting the 2.0 mm tender bars in 2.4 mm openings at Z=7.0 mm, including 12 degrees locomotive-to-tender yaw. Lettering is 1.8 mm high with 0.8 mm strokes, the assembly stays inside 174 x 31 x 47 mm, and every part slices support-disabled; physical fit, rolling, and coupling remain unclaimed."
+      }
+    ],
+    "make_falsification_proof": {
+      "causal_geometry": "A 28.0 x 18.0 x 12.0 mm strip containing one 3.4 mm split journal, the keeper rail, and one 10.51 mm driver/3.0 mm axle is the cheapest exact test. It fails the chosen running system if digital clearance is below 0.15 mm anywhere, if the wheel cannot rotate 360 degrees, if the keeper cannot be installed along X, or if a support-disabled slice requires internal support or leaves the external axle fin inaccessible.",
+      "clearance_coupon": "One coupon carries 3.0 mm axle and dovetail pairs at 0.20, 0.25, and 0.30 mm per-side clearance plus the 0.4 x 0.8 mm bed-edge relief. Digital checks choose none as physically proven; the coupon exists so one later print can select a real process fit.",
+      "held_view_blockout": "A neutral unlettered assembly blockout at 1:87 in left-front three-quarter view must show the locomotive as a compact engineered object that can be grasped under frame and tender, with no stack, lamp, pilot bar, or hook thinner than the stated process floor.",
+      "signature_view_blockout": "A neutral orthographic left-side blockout must reconcile the exact 1888 photograph with a provenance-verified applicable period GA and test four equal 10.51 mm drivers on 11.0 mm pitch, the leading truck, boiler/cab balance, diamond stack, box headlamp, two tender trucks, and separate tender before rivets or lettering are added. A material source contradiction blocks Make and returns to Invent."
+    },
+    "vault_lead_responses": [
+      {"lead_id": "59be573b2642e7d4", "status": "mitigated-in-concept", "response": "Make applies 0.4 x 0.8 mm bed-edge relief to mating perimeters and first authors the exact 0.20/0.25/0.30 mm clearance coupon. Wheel treads are excluded from relief. No physical first-layer or release claim is made."},
+      {"lead_id": "d3c1f8e6314d28c7", "status": "mitigated-in-concept", "response": "Every part has a deliberate show face: boiler seam goes under the running board, cab seam on the rear wall bed face, tender seam on its rear wall, stack seam under the cap, and wheel seams on inboard faces. Make must inspect shaded renders and exact slicer seam placement before sealing."},
+      {"lead_id": "c798073075bc3d1b", "status": "mitigated-in-concept", "response": "Freestanding features are at least 0.8 mm; surface relief is at least 0.4 mm high by 0.8 mm wide; tender letters use 1.8 mm caps and 0.8 mm strokes; sub-floor pipework, builder-plate text, and isolated fasteners are explicitly omitted. Make must run a 0.8 mm process-floor audit on exact meshes and toolpaths."},
+      {"lead_id": "1f34afafcb7a9751", "status": "mitigated-in-concept", "response": "The design uses no snap beam or elastic latch. Journal keepers slide along broad XY-printed dovetail rails; frame axle loads pass through 2.0 mm continuous webs; stack and superstructure pins load in compression or shear. Physical strength and fatigue remain unverified."},
+      {"lead_id": "7942542a4876a2da", "status": "mitigated-in-concept", "response": "Prototype construction seams isolate boiler, cab, fittings, pilot, frame, and tender. Bores use 45 degree teardrop crowns, downward faces are limited to 45 degrees, and each horizontal wheelset uses one externally graspable 0.4 mm designed fin. No slicer support, internal support, or trapped sacrificial lattice is permitted. Make must obtain a warning-free support-disabled slice and visible fin-removal evidence."},
+      {"lead_id": "4a63b04c26decc6c", "status": "mitigated-in-concept", "response": "Rigid shells are 1.6 mm, frame and chassis load paths are 2.0 mm, running boards are 1.6 mm, and local roof/edge members are 2.0 mm. Make must map and pass the declared wall-duty ledger at full 1.6/2.0 mm duties rather than checking only the 0.8 mm process floor."}
+    ],
+    "assumptions": [
+      "A provenance-verified period side/front/cab-rear GA applicable to No. 100 or its documented D&RG donor components can be obtained; the circulating personal-use reproduction is not authority and must not be traced unless that provenance is established.",
+      "The NPS sister Class 60/C-16 record's 36 in driver is a viable Invent target for No. 100's 1887 rebuild; Make must test that inference and the composite D&RG component history against the GA and exact photograph.",
+      "The sealed 174.0 x 31.0 x 47.0 mm envelope will remain consistent with the verified GA; if it does not, Make returns the contradiction to Invent rather than changing dependent parameters.",
+      "The model is a flat-desk free roller, not a claim of compatibility with commercial HOn3 track, turnouts, or electrical pickup."
+    ],
+    "risks": [
+      "Exact No. 100 archive drawing provenance and reuse rights are unresolved at Invent. Make cannot pass the source gate using the rejected Clipart Library copy; failure to secure an applicable provenance-verified period GA is a truthful Make blocker.",
+      "A 3.0 mm horizontally printed axle with a removable support fin can remain rough or weak in some FDM processes; the three-clearance coupon, fin-removal inspection, and one-journal early proof must precede all wheel detailing.",
+      "The 18.0 mm diamond-stack cap and 1.6 mm hollow walls can warp; Make must compare inverted and split-at-seam print stances without altering the visible profile.",
+      "Process-enlarged lettering is intentionally not exact scale thickness; its position and words are faithful while its stroke is graded to the nozzle.",
+      "Digital clearance proves absence of modeled collision, not physical rolling, friction, fit, durability, or first-layer release."
+    ]
+  },
+  "research": {
+    "method": "Index-first complete-roster ranking; top-three TOML comparison; selected Ferro Line specialist; authoritative-source search; exact-vs-analogue claim separation; design-vault lead review; quantified concept and cheap Make proof definition.",
+    "research_note": "research/manager_research.md",
+    "sources": [
+      {
+        "id": "fort-lewis-p001-iii-02-45",
+        "url": "https://www.fortlewis.edu/finding_aids/images/P001/P00130245.htm",
+        "authority": "Fort Lewis College Center of Southwest Studies institutional catalog",
+        "date_or_revision": "catalog page revised 2003-08-27; object dated 1888",
+        "license_use": "Displayed scan rights reserved; factual catalog citation and visual comparison only",
+        "claims": ["Exact object title is Silverton Railroad Engine No. 100, the Ouray", "Catalog caption identifies No. 100 as a 2-8-0 in 1888", "Call number SWP 001 III-02-45 and negative 372 provide requestable provenance"]
+      },
+      {
+        "id": "smu-baldwin-construction-index-5000-9999",
+        "url": "https://digitalcollections.smu.edu/digital/collection/rwy/id/2268/",
+        "authority": "SMU DeGolyer Library, Baldwin Locomotive Works records",
+        "date_or_revision": "manufacturer index covers 1880-03 through 1889-05; digitized archival record",
+        "license_use": "Factual archival research and citation; request exact high-resolution record from repository",
+        "claims": ["Primary Baldwin construction index covers the relevant component-build period", "Index is the preferred authority for resolving builder-number and build-date conflicts"]
+      },
+      {
+        "id": "smithsonian-ac0353-baldwin-drawing-list",
+        "url": "https://amhistory.si.edu/archives/AC0353_baldwin_locos_list.pdf",
+        "authority": "Smithsonian Institution Archives Center Baldwin Locomotive Works drawing catalog",
+        "date_or_revision": "Archives Center collection AC0353; accessed 2026-09-05",
+        "license_use": "Catalog facts only; no external geometry imported",
+        "claims": ["Catalog entries 4708 and 4709 identify a Baldwin 2-8-0 class 10-20-E-1 side elevation and matching sections, each listed as 24 x 65 in", "The catalog leaves road, date, gauge, and any connection to No. 100 unstated", "These entries establish a period drawing lead but do not establish No. 100 geometry"]
+      },
+      {
+        "id": "nps-nrhp-drgw-278",
+        "url": "https://npshistory.com/publications/cure/nr-drgw-rr-locomotive-278.pdf",
+        "authority": "National Park Service National Register record NRIS 09000223",
+        "date_or_revision": "listed 2009-04-21; accessed 2026-09-05",
+        "license_use": "Federal registration facts used; embedded third-party image rights are not assumed",
+        "claims": ["NRHP Section 7 page 1 documents a sister Class 60/C-16 three-foot-gauge 2-8-0 with 36 in drivers, 24 in pilot wheels, 26 in tender wheels, and 50 ft locomotive-plus-tender length", "NRHP Section 7 page 2 states that the tender rides on two trucks of four 26 in wheels", "All values are sister-class construction bounds, not No. 100 measurements"]
+      },
+      {
+        "id": "smu-baldwin-erecting-index-road",
+        "url": "https://www.smu.edu/~/media/Site/Libraries/degolyer/pdfs/BLW-EDWG-RoadName.pdf",
+        "authority": "SMU DeGolyer Library Baldwin erecting-drawing index",
+        "date_or_revision": "repository index accessed 2026-09-05",
+        "license_use": "Catalog facts and archival request routing",
+        "claims": ["Denver & Rio Grande 2-8-0 side elevations and cross sections are represented in the Baldwin holdings", "Exact sheet identification remains a Make-stage archival verification task"]
+      },
+      {
+        "id": "c16-locomotive-society-class-history",
+        "url": "https://c16locomotive.org/Locomotives",
+        "authority": "C-16 Locomotive Society specialist heritage source",
+        "date_or_revision": "accessed 2026-09-05",
+        "license_use": "Factual citation only",
+        "claims": ["Class 60 locomotives were later designated C-16", "Later class specification records 36.75 in drivers", "Class history bounds the NPS record's provisional 36 in datum but does not replace the exact 1888 drawing"]
+      },
+      {
+        "id": "drgw-net-silverton-roster",
+        "url": "https://www.drgw.net/info/SilvertonRailroad",
+        "authority": "specialist secondary roster",
+        "date_or_revision": "page last modified 2013-10-21",
+        "license_use": "Factual cross-check only",
+        "claims": ["Roster lists SRR 100 as Baldwin, 58,000 lb, 2-8-0, named Ouray", "Roster describes the locomotive as assembled from D&RG components and transferred to Silverton Northern No. 1 in 1896"]
+      },
+      {
+        "id": "ridgway-c16-denver-shops-drawing-lead",
+        "url": "https://ridgwayrailroadmuseum.org/RGS42.html",
+        "authority": "Ridgway Railroad Museum specialist collection page",
+        "date_or_revision": "accessed 2026-09-05; named drawing dated 1881",
+        "license_use": "Copyrighted page; factual citation and archival routing only",
+        "claims": ["Names D&RG Standard Consolidation Erection Drawings (C-16), Denver Shops, 1881, John Maxwell Collection", "Warns that later engines were modified and modern measurements include extrapolation", "Useful applicable-period GA lead, not yet a geometry source"]
+      },
+      {
+        "id": "drgw-net-drg-component-roster",
+        "url": "https://www.drgw.net/info/index.php?n=Main.DRGMisc",
+        "authority": "specialist secondary D&RG roster",
+        "date_or_revision": "accessed 2026-09-05",
+        "license_use": "Factual cross-check only",
+        "claims": ["Records D&RG 42 Anglo Saxon, Baldwin 4938 of 1880, as running gear sent to SRR 100 in November 1887", "Supports composite-rebuild wording but remains secondary evidence"]
+      },
+      {
+        "id": "pacificng-drg-283-roster",
+        "url": "https://www.pacificng.com/template.php?page=roads%2Fca%2Fusg%2Froster.htm",
+        "authority": "specialist secondary narrow-gauge roster",
+        "date_or_revision": "accessed 2026-09-05",
+        "license_use": "Factual cross-check only",
+        "claims": ["Identifies D&RG 283 as Baldwin 6057 of February 1882 and later Nevada County Narrow Gauge 8", "Corroborates the exchanged-component account without proving completed No. 100 dimensions"]
+      },
+      {
+        "id": "wikimedia-silverton-1908",
+        "url": "https://commons.wikimedia.org/wiki/File:Silverton_RR_Co._1908.jpg",
+        "authority": "historical photograph with public-domain status on Wikimedia Commons",
+        "date_or_revision": "photograph dated 1908; file page revised 2026-02-27",
+        "license_use": "Public domain in the United States; contextual appearance reference only",
+        "claims": ["Later Silverton Railroad imagery confirms a compact three-foot 2-8-0 with spark-arresting stack language", "Image is not asserted to show No. 100 in the sealed 1888 configuration"]
+      }
+    ],
+    "rejections": [
+      {
+        "query": "exact No. 100 four-view drawing reproduction",
+        "url": "https://clipart-library.com/clipart/Bcarneoqi.htm",
+        "status": "rejected",
+        "reason": "Page labels the 980 x 641 GIF personal use, supplies no archive call number or authorship, and cannot support redistributed derived geometry. It may locate a drawing but must not be traced for Make."
+      },
+      {
+        "query": "commercial Class C-16 model dimensions and part breakdown",
+        "status": "rejected",
+        "reason": "A commercial analogue is not No. 100 authority and Ferro Line expressly forbids copying a kit silhouette or part tree."
+      },
+      {
+        "query": "Library of Congress HAER Silverton Railroad No. 100 Ouray locomotive",
+        "url": "https://tile.loc.gov/storage-services/master/pnp/habshaer/co/co0000/co0020/data/co0020cap.pdf",
+        "status": "miss",
+        "reason": "Bounded search found Silverton district and modern Durango & Silverton records but no exact HAER No. 100 drawing. No LOC provenance is claimed."
+      },
+      {
+        "query": "SMU Silverton Northern Nos. 3 and 4 Erecting Card 4747",
+        "url": "https://digitalcollections.smu.edu/digital/collection/rwy/id/1570/",
+        "status": "rejected",
+        "reason": "Primary 1904 Baldwin drawing concerns larger Silverton Northern locomotives 3 and 4, class 10-26 E 315/325, not No. 100. Its dimensions and silhouette cannot be transferred."
+      }
+    ],
+    "facts_vs_decisions": {
+      "supported_facts": ["The exact 1888 subject is cataloged as Silverton Railroad No. 100 Ouray", "The institutional catalog explicitly identifies the wheel arrangement as 2-8-0", "The prototype ran on a three-foot narrow-gauge railroad", "NPS sister Class 60/C-16 evidence supports a provisional 36 in driver datum subject to exact-sheet reconciliation"],
+      "deliberate_design_decisions": ["1:87 family scale", "174 x 31 x 47 mm sealed provisional envelope", "10.5 mm desk-running gauge", "all-printed 3.0/3.4 mm axle journals", "two swiveling four-wheel tender trucks", "fixed side-rod relief instead of moving valve gear", "pilot-front and engine-rear hooks with tender-front and tender-rear bars", "process-enlarged tender and headlamp lettering", "two prototype-seam build groups"],
+      "unresolved": ["archive identity and permitted use of an applicable period side/front/cab-rear GA", "whether the sealed provisional envelope and feature stations agree with that GA", "physical printer-specific clearance selection", "physical rolling and coupling performance"]
+    },
+    "inventor_review_artifact": "research/ferro_line_inventor.md"
+  }
+}
