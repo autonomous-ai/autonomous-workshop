@@ -355,6 +355,19 @@ private generation floor makes those counters monotonic: a callback abandoned
 by an earlier launcher may finish late, but its older record is no longer
 trusted and cannot roll status backward.
 
+When a Codex turn fails after the native event stream starts, the adapter also
+atomically replaces the host-private `0600` record
+`codex-turn-failure.json`. It contains a stable failure reason, start/resume
+mode, CLI/profile settings and hashes, process exit/reap facts, stderr and
+event byte totals and maxima, decoded and oversized-record counts, and the last
+coarse event/activity class. In particular, a discarded oversized tool-result record
+is visible as the last boundary with its exact byte count even though its
+contents are not retained. The record never contains prompts, messages,
+reasoning, tool arguments or output, paths, agent or provider identities,
+thread ids, stderr text, credentials, or image bytes. It is best-effort
+diagnostic telemetry only: persistence failure cannot replace the original
+runtime failure, and the record cannot advance or invalidate a lifecycle gate.
+
 When a Manager's terminal event includes usage, Workshop also keeps one small
 host-private aggregate by stage. Gross input and output remain separate. When
 the runtime supplies the complete detail, schema v3 additionally preserves

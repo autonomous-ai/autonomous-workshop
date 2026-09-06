@@ -17,6 +17,7 @@ from unittest import mock
 import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
 from workshop.runtime.codex import (
+    CODEX_FAILURE_DIAGNOSTIC_FILENAME,
     CODEX_PERMISSION_PROFILE,
     DEFAULT_CODEX_TIMEOUT_SECONDS,
     MAX_CODEX_EVENT_BYTES,
@@ -3296,9 +3297,13 @@ class CodexNativeSessionTest(unittest.TestCase):
 
                 with self.assertRaisesRegex(
                     CodexInvocationError, "reported a failed turn"
-                ):
+                ) as caught:
                     self.start(launcher, root)
 
+                self.assertEqual(
+                    caught.exception.diagnostic.reason,
+                    "explicit-terminal-failure",
+                )
                 self.assertTrue(factory.processes[0].terminated)
 
     def test_explicit_transport_failure_events_preserve_recoverable_category(self):
@@ -3347,6 +3352,10 @@ class CodexNativeSessionTest(unittest.TestCase):
 
                 self.assertNotIn("upstream", str(caught.exception))
                 self.assertNotIn("response.completed", str(caught.exception))
+                self.assertEqual(
+                    caught.exception.diagnostic.reason,
+                    "provider-transport",
+                )
                 self.assertTrue(factory.processes[0].terminated)
 
     def test_unanchored_failed_turn_message_cannot_select_recovery(self):
@@ -3485,6 +3494,86 @@ class CodexNativeSessionTest(unittest.TestCase):
                 outcome = self.start(launcher, root)
 
                 self.assertEqual(outcome.status, "completed")
+
+    def test_incomplete_turn_persists_content_free_oversized_event_diagnostic(self):
+        secret = "image-output-must-not-be-persisted"
+        oversized = event(
+            {
+                "type": "item.completed",
+                "item": {
+                    "id": "oversized-tool-output",
+                    "type": "dynamic_tool_call",
+                    "output": secret + ("x" * (3 * MAX_CODEX_EVENT_BYTES)),
+                },
+            }
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            state_root = self.host_state(root)
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": [
+                            event(
+                                {
+                                    "type": "thread.started",
+                                    "thread_id": THREAD_ID,
+                                }
+                            ),
+                            oversized,
+                        ],
+                        "returncode": 1,
+                    }
+                ]
+            )
+
+            with self.assertRaises(CodexRecoverableInvocationError) as caught:
+                self.start(launcher, root, host_state_root=state_root)
+
+            diagnostic_path = state_root / CODEX_FAILURE_DIAGNOSTIC_FILENAME
+            raw = diagnostic_path.read_text(encoding="utf-8")
+            diagnostic = json.loads(raw)
+            details = diagnostic["diagnostic"]
+            self.assertEqual(diagnostic["cli_version"], "0.145.0")
+            self.assertEqual(diagnostic["model"], "gpt-5.6-sol")
+            self.assertEqual(diagnostic["reasoning_effort"], "high")
+            self.assertIsNone(diagnostic["auto_compact_token_limit"])
+            self.assertEqual(
+                diagnostic["timeout_seconds"], DEFAULT_CODEX_TIMEOUT_SECONDS
+            )
+            self.assertEqual(details["reason"], "terminal-event-missing")
+            self.assertEqual(details["event_records"], 2)
+            self.assertEqual(details["decoded_event_records"], 1)
+            self.assertEqual(details["oversized_event_records"], 1)
+            self.assertEqual(
+                details["total_event_bytes"],
+                len(oversized.encode("utf-8"))
+                + len(
+                    event(
+                        {
+                            "type": "thread.started",
+                            "thread_id": THREAD_ID,
+                        }
+                    ).encode("utf-8")
+                ),
+            )
+            self.assertEqual(
+                details["largest_event_bytes"], len(oversized.encode("utf-8"))
+            )
+            self.assertEqual(
+                details["event_record_limit_bytes"], MAX_CODEX_EVENT_BYTES
+            )
+            self.assertEqual(details["last_event_class"], "oversized")
+            self.assertTrue(details["thread_identity_observed"])
+            self.assertFalse(details["turn_completed"])
+            self.assertEqual(stat.S_IMODE(diagnostic_path.stat().st_mode), 0o600)
+            self.assertNotIn(secret, raw)
+            self.assertNotIn(THREAD_ID, raw)
+            self.assertEqual(
+                caught.exception.diagnostic.to_dict(),
+                details,
+            )
 
     def test_bounds_timeout_and_failures_are_terminated_and_redacted(self):
         secret = "FACTORY_PASSWORD=never-show-this"
