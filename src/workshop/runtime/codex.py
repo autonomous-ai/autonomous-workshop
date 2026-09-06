@@ -32,8 +32,11 @@ from workshop.wish.contracts import WISH_REFERENCES_DIRECTORY
 from workshop.runtime.progress import SAFE_NATIVE_ACTIVITY_CLASSES
 
 
+# The model every new run freezes. The gpt-5.6 names stay allowed so runs
+# recorded before 2026-09-06 (ADR 0043) still validate their frozen config.
+DEFAULT_WORKSHOP_MODEL = "gpt-6-astra"
 ALLOWED_WORKSHOP_MODELS = frozenset(
-    ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+    (DEFAULT_WORKSHOP_MODEL, "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
 )
 CODEX_PERMISSION_PROFILE = "workshop-product-run"
 MINIMUM_CODEX_NATIVE_RUNTIME_VERSION = (0, 145, 0)
@@ -1558,7 +1561,7 @@ class CodexNativeSessionLauncher:
     def __init__(
         self,
         *,
-        model: str = "gpt-5.6-sol",
+        model: str = DEFAULT_WORKSHOP_MODEL,
         reasoning_effort: str = "high",
         auto_compact_token_limit: Optional[int] = None,
         runtime_profile_sha256: Optional[str] = None,
@@ -1570,8 +1573,8 @@ class CodexNativeSessionLauncher:
     ) -> None:
         if model not in ALLOWED_WORKSHOP_MODELS:
             raise ContractError(
-                "Workshop Codex model must be gpt-5.6-sol, gpt-5.6-terra, "
-                "or gpt-5.6-luna"
+                "Workshop Codex model must be one of: %s"
+                % ", ".join(sorted(ALLOWED_WORKSHOP_MODELS))
             )
         if reasoning_effort not in ("low", "medium", "high", "xhigh"):
             raise ValueError("unsupported Codex reasoning effort")
@@ -3014,6 +3017,7 @@ def _is_explicit_transient_failure(stderr: str) -> bool:
 
 __all__ = [
     "ALLOWED_WORKSHOP_MODELS",
+    "DEFAULT_WORKSHOP_MODEL",
     "CODEX_PERMISSION_PROFILE",
     "CODEX_SESSION_CHECKPOINT_KIND",
     "DEFAULT_CODEX_TIMEOUT_SECONDS",

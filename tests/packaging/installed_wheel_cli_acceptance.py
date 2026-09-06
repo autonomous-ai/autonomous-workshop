@@ -684,7 +684,7 @@ def _native_wish_smoke(
         or "--ask-for-approval" not in codex_arguments
         or "never" not in codex_arguments
         or "--strict-config" not in codex_arguments
-        or ("--model", "gpt-5.6-sol") not in argument_pairs
+        or ("--model", "gpt-6-astra") not in argument_pairs
         or "--sandbox" in codex_arguments
         or 'default_permissions="workshop-product-run"' not in codex_arguments
         or 'project_root_markers=[".workshop-product-run-root"]'
