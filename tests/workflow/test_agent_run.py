@@ -25,18 +25,33 @@ from workshop.workflow import (
 EVIDENCE_SHA256 = "e" * 64
 
 
-def canonical_wish(product_id, objective):
+def canonical_wish(product_id, objective, references=None):
+    document = {
+        "schema_version": 1,
+        "product_id": product_id,
+        "objective": objective,
+        "constraints": {},
+        "context": {"source": "agent-run-test"},
+    }
+    if references:
+        document["references"] = list(references)
     return json.dumps(
-        {
-            "schema_version": 1,
-            "product_id": product_id,
-            "objective": objective,
-            "constraints": {},
-            "context": {"source": "agent-run-test"},
-        },
+        document,
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
+
+
+def reference_fixture(index, slug, content, media_type="image/png"):
+    extension = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}[media_type]
+    return {
+        "name": "ref-%02d-%s.%s" % (index, slug, extension),
+        "sha256": hashlib.sha256(content).hexdigest(),
+        "media_type": media_type,
+        "size": len(content),
+        "width": 640,
+        "height": 480,
+    }
 
 
 class AgentRunTest(unittest.TestCase):
@@ -167,6 +182,106 @@ class AgentRunTest(unittest.TestCase):
             self.assertEqual(
                 checkpoint.input_sha256s[relative], hashlib.sha256(content).hexdigest()
             )
+
+    def test_create_materializes_wish_references_read_only_with_their_own_budget(self):
+        big = b"\x89PNG" + b"\0" * (5 * 1024 * 1024)
+        small = b"\xff\xd8\xff" + b"\0" * 64
+        references = (
+            reference_fixture(1, "side", big),
+            reference_fixture(2, "front", small, "image/jpeg"),
+        )
+        wish_bytes = canonical_wish(self.product_id, "A photographed toy.", references)
+        files = {"ref-01-side.png": big, "ref-02-front.jpg": small}
+
+        run = AgentRun.create(
+            self.run_root,
+            host_state_root=self.host_state_root,
+            product_id=self.product_id,
+            wish_bytes=wish_bytes,
+            wish_reference_files=files,
+            product_run_constitution_source=self.product_run_constitution,
+            skill_root=self.skill,
+        )
+        checkpoint = run.snapshot()
+
+        references_root = run.run_root / "wish-references"
+        self.assertEqual(stat.S_IMODE(references_root.stat().st_mode), 0o500)
+        for name, content in files.items():
+            path = references_root / name
+            self.assertEqual(path.read_bytes(), content)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o400)
+            self.assertEqual(
+                checkpoint.input_sha256s["wish-references/%s" % name],
+                hashlib.sha256(content).hexdigest(),
+            )
+        # 5 MiB of image rides above the 4 MiB constitution-and-skill budget.
+        self.assertGreater(len(big), agent_run_module.MAX_AGENT_INPUT_BYTES)
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_wish_reference_files_must_match_the_wish_exactly(self):
+        content = b"\x89PNG" + b"\0" * 32
+        references = (reference_fixture(1, "side", content),)
+        wish_bytes = canonical_wish(self.product_id, "A photographed toy.", references)
+        cases = (
+            (None, "must match the references"),
+            ({}, "must match the references"),
+            ({"ref-01-side.png": content, "ref-02-front.png": content}, "must match"),
+            ({"ref-01-side.png": content + b"x"}, "differ from the Wish"),
+            ({"ref-01-side.png": "text"}, "differ from the Wish"),
+            ("ref-01-side.png", "map reference names to bytes"),
+        )
+        for files, message in cases:
+            with self.subTest(files=type(files).__name__), self.assertRaisesRegex(
+                ContractError, message
+            ):
+                AgentRun.create(
+                    self.run_root,
+                    host_state_root=self.host_state_root,
+                    product_id=self.product_id,
+                    wish_bytes=wish_bytes,
+                    wish_reference_files=files,
+                    product_run_constitution_source=self.product_run_constitution,
+                    skill_root=self.skill,
+                )
+            self.assertFalse(self.run_root.exists())
+        with self.assertRaisesRegex(ContractError, "must match the references"):
+            AgentRun.create(
+                self.run_root,
+                host_state_root=self.host_state_root,
+                product_id=self.product_id,
+                wish_bytes=canonical_wish(self.product_id, "No pictures."),
+                wish_reference_files={"ref-01-side.png": content},
+                product_run_constitution_source=self.product_run_constitution,
+                skill_root=self.skill,
+            )
+
+    def test_wish_reference_tampering_and_removal_are_detected(self):
+        content = b"\x89PNG" + b"\0" * 32
+        references = (reference_fixture(1, "side", content),)
+        run = AgentRun.create(
+            self.run_root,
+            host_state_root=self.host_state_root,
+            product_id=self.product_id,
+            wish_bytes=canonical_wish(self.product_id, "A photographed toy.", references),
+            wish_reference_files={"ref-01-side.png": content},
+            product_run_constitution_source=self.product_run_constitution,
+            skill_root=self.skill,
+        )
+        path = run.run_root / "wish-references" / "ref-01-side.png"
+        os.chmod(path.parent, 0o700)
+        os.chmod(path, 0o600)
+        path.write_bytes(content[:-1] + b"\x01")
+        os.chmod(path, 0o400)
+        with self.assertRaisesRegex(StateConflict, "immutable input bytes changed"):
+            run.snapshot()
+        path.unlink()
+        with self.assertRaisesRegex(ArtifactError, "cannot be opened"):
+            run.snapshot()
 
     def test_create_freezes_the_selected_manager(self):
         run = self.create(manager_id="grok")

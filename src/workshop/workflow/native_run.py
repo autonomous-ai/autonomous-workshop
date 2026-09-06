@@ -1869,6 +1869,21 @@ def _load_wish(run_root: Path) -> Wish:
     return wish
 
 
+def _wish_reference_bindings(wish: Wish) -> list[dict[str, Any]]:
+    """List the read-only reference images a stage packet points the agent at."""
+
+    return [
+        {
+            "path": reference.path,
+            "sha256": reference.sha256,
+            "media_type": reference.media_type,
+            "width": reference.width,
+            "height": reference.height,
+        }
+        for reference in wish.references
+    ]
+
+
 def materialized_agent_instructions_sha256(
     checkpoint: AgentRunCheckpoint,
 ) -> str:
@@ -3222,6 +3237,9 @@ def _prepare_effort_stage_input(
         "blueprint": blueprint.to_dict(),
         "blueprint_sha256": blueprint.sha256,
     }
+    wish_references = _wish_reference_bindings(_load_wish(run.run_root))
+    if wish_references:
+        base["wish_references"] = wish_references
     vault, vault_binding = _phase_design_vault(run, checkpoint)
     context["design_vault"] = vault
     if vault_binding is not None:
@@ -8406,6 +8424,7 @@ def start_native_run(
     publish_requested: Optional[bool] = None,
     github_publish_requested: bool = False,
     max_rounds: int = 4,
+    wish_reference_files: Optional[Mapping[str, bytes]] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -8430,6 +8449,12 @@ def start_native_run(
     Make revision request and every Playtest ``improve`` verdict spends one
     round, so a mechanism-heavy Wish may need more than the default four.
 
+    ``wish_reference_files`` maps every reference image the Wish declares to
+    its exact bytes; the run materializes them read-only under
+    ``wish-references/`` and re-verifies them at every checkpoint. A Wish that
+    declares references without their bytes, or bytes without a declaration,
+    is rejected before any workspace exists.
+
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
     """
@@ -8446,6 +8471,8 @@ def start_native_run(
         raise ContractError("GitHub publication option must be boolean")
     if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
         raise ContractError("round budget must be an integer between 1 and 100")
+    if wish_reference_files is not None and not isinstance(wish_reference_files, Mapping):
+        raise ContractError("Wish reference files must map reference names to bytes")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -8466,6 +8493,7 @@ def start_native_run(
                 paths.host_state,
                 product_id=wish.product_id,
                 wish_bytes=wish_bytes,
+                wish_reference_files=wish_reference_files,
                 product_run_constitution_source=assets.constitution,
                 skill_root=assets.skill_root,
                 domain_skill_roots=domain_skill_roots,

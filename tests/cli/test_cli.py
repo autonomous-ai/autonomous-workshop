@@ -142,6 +142,7 @@ class NativeCommandTest(unittest.TestCase):
             github_publish_requested,
             activity_observer,
             timing_observer,
+            wish_reference_files=None,
         ):
             observed["wish"] = wish
             observed["effort"] = effort
@@ -216,6 +217,7 @@ class NativeCommandTest(unittest.TestCase):
             github_publish_requested,
             activity_observer,
             timing_observer,
+            wish_reference_files=None,
         ):
             self.assertEqual(effort, "spark")
             self.assertEqual(manager_id, "codex")
@@ -303,6 +305,71 @@ class NativeCommandTest(unittest.TestCase):
                 main(("wish", "a moon", "--max-rounds", value, "--json"))
             self.assertEqual(caught.exception.code, 2)
             start.assert_not_called()
+
+    def test_wish_attaches_reference_images_in_order(self):
+        from PIL import Image
+
+        observed = {}
+
+        def start(wish, **kwargs):
+            observed["wish"] = wish
+            observed.update(kwargs)
+            return native_receipt()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            Image.new("RGB", (64, 48), "red").save(root / "HAER side.jpg", "JPEG")
+            Image.new("RGB", (32, 32), "blue").save(root / "front.png")
+            side_bytes = (root / "HAER side.jpg").read_bytes()
+            front_bytes = (root / "front.png").read_bytes()
+            stderr = StringIO()
+            with mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-pictures"
+            ), mock.patch(
+                "cli.main.start_native_run", side_effect=start
+            ), redirect_stdout(StringIO()), redirect_stderr(stderr):
+                result = main(
+                    (
+                        "wish",
+                        "--ref",
+                        str(root / "HAER side.jpg"),
+                        "--ref",
+                        str(root / "front.png"),
+                        "a locomotive from its drawings",
+                        "--json",
+                    )
+                )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(
+            [item.name for item in observed["wish"].references],
+            ["ref-01-haer-side.jpg", "ref-02-front.png"],
+        )
+        self.assertEqual(
+            observed["wish_reference_files"],
+            {"ref-01-haer-side.jpg": side_bytes, "ref-02-front.png": front_bytes},
+        )
+        self.assertEqual(observed["wish"].objective, "a locomotive from its drawings")
+        self.assertIn(
+            "References: 2 image(s) attached read-only under wish-references/",
+            stderr.getvalue(),
+        )
+
+    def test_wish_rejects_an_unreadable_reference_before_starting(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            notes = Path(temporary) / "notes.txt"
+            notes.write_text("not an image\n", encoding="utf-8")
+            stderr = StringIO()
+            with mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(stderr):
+                result = main(("wish", "--ref", str(notes), "a moon", "--json"))
+
+        self.assertEqual(result, 2)
+        self.assertIn(
+            "notes.txt is not a readable PNG, JPEG, or WebP", stderr.getvalue()
+        )
+        start.assert_not_called()
 
     def test_live_native_activity_repeats_only_throttled_running_updates(self):
         output = StringIO()
@@ -606,6 +673,7 @@ class DaydreamCommandTest(unittest.TestCase):
             max_rounds,
             activity_observer,
             timing_observer,
+            wish_reference_files=None,
         ):
             observed["wish"] = wish
             observed["effort"] = effort

@@ -50,6 +50,11 @@ from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER_BYTES,
 )
 from workshop.wish import Wish
+from workshop.wish.contracts import (
+    MAX_WISH_REFERENCE_BYTES,
+    MAX_WISH_REFERENCE_TOTAL_BYTES,
+    WISH_REFERENCES_DIRECTORY,
+)
 from workshop.workflow.effort import (
     EFFORT_ROUTE_CAPABILITY_PATH,
     workshop_effort,
@@ -236,7 +241,7 @@ def _canonical_wish_bytes(value: bytes, product_id: str) -> bytes:
         document = json.loads(value.decode("utf-8"), object_pairs_hook=_strict_object)
     except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
         raise ContractError("canonical Wish bytes must contain strict JSON") from exc
-    if not isinstance(document, dict) or set(document) != {
+    if not isinstance(document, dict) or set(document) - {"references"} != {
         "schema_version",
         "product_id",
         "objective",
@@ -255,6 +260,65 @@ def _canonical_wish_bytes(value: bytes, product_id: str) -> bytes:
         raise ContractError("Wish JSON bytes must use the canonical encoding")
     _reject_private_agent_bytes("WISH.json", value)
     return value
+
+
+def _is_wish_reference_path(path: str) -> bool:
+    return path.startswith(WISH_REFERENCES_DIRECTORY + "/")
+
+
+def _wish_reference_inputs(
+    wish_bytes: bytes, files: Optional[Mapping[str, bytes]]
+) -> list[tuple[PurePosixPath, bytes, int]]:
+    """Pair every reference the Wish declares with its exact bytes, or fail."""
+
+    wish = Wish(**json.loads(wish_bytes.decode("utf-8"), object_pairs_hook=_strict_object))
+    provided = {} if files is None else files
+    if not isinstance(provided, Mapping):
+        raise ContractError("Wish reference files must map reference names to bytes")
+    declared = {reference.name: reference for reference in wish.references}
+    if set(provided) != set(declared):
+        raise ContractError(
+            "Wish reference files must match the references the Wish declares"
+        )
+    inputs: list[tuple[PurePosixPath, bytes, int]] = []
+    for reference in wish.references:
+        content = provided[reference.name]
+        if (
+            not isinstance(content, bytes)
+            or len(content) != reference.size
+            or _sha256(content) != reference.sha256
+        ):
+            raise ContractError(
+                "Wish reference bytes differ from the Wish: %s" % reference.name
+            )
+        relative = PurePosixPath(reference.path)
+        _reject_private_agent_bytes(relative.as_posix(), content)
+        inputs.append((relative, content, 0o400))
+    return inputs
+
+
+def _verify_wish_reference_inputs(
+    input_content: Mapping[str, bytes], observed_paths: Sequence[str]
+) -> None:
+    """Every declared reference is present and nothing undeclared rides along."""
+
+    try:
+        wish = Wish(
+            **json.loads(
+                input_content["WISH.json"].decode("utf-8"),
+                object_pairs_hook=_strict_object,
+            )
+        )
+    except (KeyError, UnicodeError, ValueError, TypeError, ContractError) as exc:
+        raise StateConflict("agent run Wish input is invalid") from exc
+    declared = {reference.path: reference for reference in wish.references}
+    observed = {path for path in observed_paths if _is_wish_reference_path(path)}
+    if observed != set(declared):
+        raise StateConflict("agent run Wish references differ from the Wish")
+    for path, reference in declared.items():
+        content = input_content[path]
+        if len(content) != reference.size or _sha256(content) != reference.sha256:
+            raise StateConflict("agent run Wish reference bytes changed: %s" % reference.name)
 
 
 def _reject_private_agent_bytes(path: str, content: bytes) -> None:
@@ -679,12 +743,14 @@ class AgentRun:
         max_rounds: int = 4,
         effort: Optional[str] = None,
         manager_id: str = DEFAULT_MANAGER_ID,
+        wish_reference_files: Optional[Mapping[str, bytes]] = None,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
         selected_effort = workshop_effort(effort) if effort is not None else None
         selected_manager = manager_spec(manager_id)
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
+        wish_reference_inputs = _wish_reference_inputs(wish_bytes, wish_reference_files)
         try:
             requested = Path(run_root)
         except TypeError as exc:
@@ -921,15 +987,26 @@ class AgentRun:
         all_input_files.extend(domain_files)
         all_input_files.extend(inventor_skill_files)
         all_input_files.extend(inventor_agent_files)
+        all_input_files.extend(wish_reference_inputs)
         all_input_files.sort(key=lambda item: item[0].as_posix())
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
         if len(input_paths) != len(set(input_paths)):
             raise ArtifactError("agent run input paths collide")
         if len(all_input_files) > MAX_AGENT_INPUT_FILES:
             raise ArtifactError("agent run has too many input files")
-        total_input_bytes = sum(len(content) for _, content, _ in all_input_files)
+        # Reference images carry their own byte budget so a few photographs
+        # cannot crowd out the constitution and skills, and vice versa.
+        reference_input_bytes = sum(
+            len(content) for _, content, _ in wish_reference_inputs
+        )
+        total_input_bytes = (
+            sum(len(content) for _, content, _ in all_input_files)
+            - reference_input_bytes
+        )
         if total_input_bytes > MAX_AGENT_INPUT_BYTES:
             raise ArtifactError("agent run inputs exceed their total byte limit")
+        if reference_input_bytes > MAX_WISH_REFERENCE_TOTAL_BYTES:
+            raise ArtifactError("agent run Wish references exceed their byte limit")
 
         if selected.exists() or selected.is_symlink():
             raise StateConflict("agent run root already exists")
@@ -1013,6 +1090,9 @@ class AgentRun:
             ):
                 os.chmod(directory, 0o500)
             os.chmod(codex_input_root, 0o500)
+        references_root = selected / WISH_REFERENCES_DIRECTORY
+        if references_root.exists():
+            os.chmod(references_root, 0o500)
         core: dict[str, Any] = {
             "schema_version": 4 if selected_effort is not None else 3,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
@@ -1257,6 +1337,7 @@ class AgentRun:
         observed_paths = []
         input_content: dict[str, bytes] = {}
         total = 0
+        reference_total = 0
         for item in inputs:
             if not isinstance(item, Mapping) or set(item) != {
                 "path",
@@ -1266,7 +1347,12 @@ class AgentRun:
             }:
                 raise StateConflict("agent run input manifest is invalid")
             relative = _safe_relative(item["path"], "agent input path")
-            if type(item["size"]) is not int or not 0 <= item["size"] <= MAX_AGENT_INPUT_BYTES:
+            size_limit = (
+                MAX_WISH_REFERENCE_BYTES
+                if _is_wish_reference_path(item["path"])
+                else MAX_AGENT_INPUT_BYTES
+            )
+            if type(item["size"]) is not int or not 0 <= item["size"] <= size_limit:
                 raise StateConflict("agent run input size is invalid")
             if type(item["mode"]) is not int or item["mode"] not in (0o400, 0o500):
                 raise StateConflict("agent run input mode is invalid")
@@ -1279,8 +1365,15 @@ class AgentRun:
                 raise StateConflict("agent run immutable input bytes changed")
             observed_paths.append(relative.as_posix())
             input_content[relative.as_posix()] = content
-            total += size
-        if len(observed_paths) != len(set(observed_paths)) or total > MAX_AGENT_INPUT_BYTES:
+            if _is_wish_reference_path(relative.as_posix()):
+                reference_total += size
+            else:
+                total += size
+        if (
+            len(observed_paths) != len(set(observed_paths))
+            or total > MAX_AGENT_INPUT_BYTES
+            or reference_total > MAX_WISH_REFERENCE_TOTAL_BYTES
+        ):
             raise StateConflict("agent run input manifest is invalid")
         required = {
             PRODUCT_RUN_ROOT_MARKER,
@@ -1290,6 +1383,7 @@ class AgentRun:
         }
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
+        _verify_wish_reference_inputs(input_content, observed_paths)
         if any(path == "catalog" or path.startswith("catalog/") for path in observed_paths):
             raise StateConflict("product projects must not contain an Inventor catalog")
         legacy_catalog = self.run_root / "catalog"

@@ -76,7 +76,13 @@ from workshop.runtime.package_data import (
     product_run_domain_skill_roots,
 )
 from workshop.runtime.progress import WishRunTimingEvent
-from workshop.wish import Wish, generate_wish_id
+from workshop.wish import (
+    Wish,
+    generate_wish_id,
+    load_wish_references,
+    wish_reference_files,
+)
+from workshop.wish.contracts import MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY
 from workshop.workflow import native_run_status, resume_native_run, start_native_run
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
@@ -458,6 +464,7 @@ def _start_run(
     manager,
     github: bool,
     max_rounds: int = DEFAULT_MAX_ROUNDS,
+    wish_reference_files: Optional[Mapping[str, bytes]] = None,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
 ) -> Mapping[str, Any]:
@@ -478,6 +485,13 @@ def _start_run(
         file=progress,
         flush=True,
     )
+    if wish.references:
+        print(
+            "References: %d image(s) attached read-only under %s/"
+            % (len(wish.references), WISH_REFERENCES_DIRECTORY),
+            file=progress,
+            flush=True,
+        )
     print(
         "Starting one native %s session for %s..."
         % (manager.display_name, effort.enabled_stages[0].title()),
@@ -489,6 +503,7 @@ def _start_run(
         effort=effort.name,
         manager_id=manager.manager_id,
         max_rounds=max_rounds,
+        wish_reference_files=wish_reference_files,
         github_publish_requested=github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -497,10 +512,12 @@ def _start_run(
 
 def _wish(args: argparse.Namespace) -> int:
     effort = workshop_effort(args.effort)
+    loaded_references = load_wish_references(list(args.references or ()))
     wish = Wish.create(
         generate_wish_id(),
         " ".join(args.objective),
         context={"source": "workshop-cli"},
+        references=[item.reference for item in loaded_references],
     )
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
@@ -511,6 +528,7 @@ def _wish(args: argparse.Namespace) -> int:
         manager=manager,
         github=args.github,
         max_rounds=args.max_rounds,
+        wish_reference_files=wish_reference_files(loaded_references),
         progress=progress,
         live_progress=live_progress,
     )
@@ -1518,6 +1536,18 @@ def parser() -> argparse.ArgumentParser:
         "wish", help="persist one Wish and start its native Manager session"
     )
     wish.add_argument("objective", nargs="+", metavar="WISH")
+    wish.add_argument(
+        "--ref",
+        action="append",
+        dest="references",
+        type=Path,
+        metavar="IMAGE",
+        help=(
+            "attach one reference image (PNG, JPEG, or WebP; repeat for up to %d); "
+            "the run receives it read-only as %s/ref-NN-<name>"
+            % (MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY)
+        ),
+    )
     wish.add_argument(
         "--effort",
         choices=tuple(WORKSHOP_EFFORTS),

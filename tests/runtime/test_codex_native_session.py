@@ -49,6 +49,7 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
         "STAGE.json",
         "VAULT.json",
         "WISH.json",
+        "wish-references",
     )
     workspace_entries = [
         '"."="write"',

@@ -393,6 +393,8 @@ class GrokNativeSessionLauncher:
             "--deny",
             "Edit(WISH.json)",
             "--deny",
+            "Edit(wish-references/**)",
+            "--deny",
             "Edit(AGENTS.md)",
             "--deny",
             "Edit(MANAGER.json)",

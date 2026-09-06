@@ -166,6 +166,7 @@ $WORKSHOP_HOME/runs/<wish-id>/workspace/
     +-- .codex/agents/*.toml          project-scoped Inventor custom agents
     +-- .agents/skills/**             workflow and domain skills
     +-- WISH.json                     exact Wish
+    +-- wish-references/ref-NN-*      reference images attached with --ref (read-only)
     +-- STAGE.json                    current host-written stage packet
     |
     v
@@ -400,8 +401,10 @@ subject_sha256, next_transition, round, max_rounds, inputs
 ```
 
 `inputs` contains the exact upstream contracts, artifact bindings, universal
-blueprint, Inventor roster bindings, required checks, and canonical output
-paths needed by the current stage. Codex must read it and must not edit it. A
+blueprint, Inventor roster bindings, required checks, canonical output paths
+needed by the current stage, and, when the Wish carries reference images,
+`wish_references` (path, sha256, media type, and pixel size of each read-only
+file under `wish-references/`). Codex must read it and must not edit it. A
 stale proposal cannot be replayed because the host verifies both
 `checkpoint_sha256` and `subject_sha256`.
 

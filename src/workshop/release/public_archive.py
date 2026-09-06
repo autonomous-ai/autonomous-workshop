@@ -285,17 +285,23 @@ def _public_wish(
     title: str,
     summary: str,
     disclose_exact_wish: bool,
+    reference_bytes: Mapping[str, bytes],
 ) -> None:
     objective_sha256 = hashlib.sha256(wish.objective.encode("utf-8")).hexdigest()
+    disclosure = "exact" if disclose_exact_wish else "withheld"
     public = {
         "schema_version": 1,
         "kind": "autonomous-workshop.public-wish-binding",
         "product_id": wish.product_id,
         "wish_sha256": wish_sha256,
         "objective_sha256": objective_sha256,
-        "objective_disclosure": "exact" if disclose_exact_wish else "withheld",
+        "objective_disclosure": disclosure,
         "public_title": title,
         "public_summary": summary,
+        # Reference metadata (names, hashes, dimensions) is always public; the
+        # image bytes follow the same disclosure choice as the exact wording.
+        "references": [reference.to_dict() for reference in wish.references],
+        "reference_disclosure": disclosure,
     }
     if disclose_exact_wish:
         public["objective"] = wish.objective
@@ -303,15 +309,33 @@ def _public_wish(
         public["context"] = dict(wish.context)
     writer("wish/wish.json", _canonical_json(public))
     description = wish.objective if disclose_exact_wish else summary
+    reference_lines = "".join(
+        "- Reference image: `%s` (%s, %dx%d, SHA-256 `%s`)\n"
+        % (
+            reference.name,
+            reference.media_type,
+            reference.width,
+            reference.height,
+            reference.sha256,
+        )
+        for reference in wish.references
+    )
     writer(
         "wish/WISH.md",
         ((
             "# Wish\n\n%s\n\n"
             "- Exact Wish SHA-256: `%s`\n"
             "- Objective disclosure: `%s`\n"
+            "%s"
         )
-        % (description, wish_sha256, public["objective_disclosure"])).encode("utf-8"),
+        % (description, wish_sha256, disclosure, reference_lines)).encode("utf-8"),
     )
+    if disclose_exact_wish:
+        for reference in wish.references:
+            writer(
+                "wish/references/%s" % reference.name,
+                reference_bytes[reference.name],
+            )
 
 
 def _copy_made_tree(
@@ -810,6 +834,19 @@ def write_public_workflow_archive(
         raise StateConflict("Wish bytes differ from the Made binding")
     wish_document = _strict_json(wish_content, "Wish")
     wish = Wish(**wish_document)
+    reference_bytes: dict[str, bytes] = {}
+    for reference in wish.references:
+        content = _artifact_file(
+            run_root, reference.path, "Wish reference %s" % reference.name
+        )
+        if (
+            len(content) != reference.size
+            or hashlib.sha256(content).hexdigest() != reference.sha256
+        ):
+            raise StateConflict(
+                "Wish reference bytes differ from the Wish: %s" % reference.name
+            )
+        reference_bytes[reference.name] = content
     _public_wish(
         writer,
         wish,
@@ -817,6 +854,7 @@ def write_public_workflow_archive(
         title=title,
         summary=summary,
         disclose_exact_wish=disclose_exact_wish,
+        reference_bytes=reference_bytes,
     )
 
     invent_root = run_root / "artifacts/invent"

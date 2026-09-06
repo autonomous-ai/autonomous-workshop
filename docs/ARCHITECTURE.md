@@ -107,6 +107,9 @@ for the first enabled creative stage. The same session
 handles discovery, research, concept
 work, CAD, inspection, repair, manual design, and bounded
 product facts. `workshop resume` continues the exact recorded session id.
+Reference images passed with `--ref` are materialized in that project as
+read-only inputs under `wish-references/`, bound by size and SHA-256 inside
+`WISH.json`, listed in every `STAGE.json`, and re-verified at every checkpoint.
 
 Make uses a cost-aware proof funnel inside its one Goal: narrow build checks,
 an independent blind read of exact candidate renders, at most one focused

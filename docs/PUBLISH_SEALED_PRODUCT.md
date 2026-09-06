@@ -77,8 +77,14 @@ Start or continue a run with the core CLI:
 
 ```bash
 uv run workshop wish "I wish for ..."
+uv run workshop wish --ref side.jpg --ref front.png "I wish for ..."
 uv run workshop resume <wish-id>
 ```
+
+Up to eight PNG, JPEG, or WebP reference images may ride a Wish. They reach
+the run read-only under `wish-references/`; the public toy archive always
+lists their names, hashes, and pixel sizes but ships their bytes only when the
+exact Wish wording is disclosed.
 
 There is no `--publish` mode. Starting the Wish authorizes publication of that
 run's exact Release bytes, while the host keeps credentials and effect state

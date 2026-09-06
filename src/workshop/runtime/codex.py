@@ -28,6 +28,7 @@ from workshop.runtime.execution import (
     codex_subprocess_environment,
 )
 from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
+from workshop.wish.contracts import WISH_REFERENCES_DIRECTORY
 from workshop.runtime.progress import SAFE_NATIVE_ACTIVITY_CLASSES
 
 
@@ -74,6 +75,7 @@ _IMMUTABLE_PRODUCT_RUN_PATHS = (
     "STAGE.json",
     "VAULT.json",
     "WISH.json",
+    WISH_REFERENCES_DIRECTORY,
 )
 _CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES = (
     ("PYTHONHASHSEED", "0"),

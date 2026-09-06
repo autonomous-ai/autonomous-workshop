@@ -51,6 +51,7 @@ from workshop.workflow.native_run import (
     _score_trend,
     _native_token_summary,
     _native_launcher,
+    _wish_reference_bindings,
     _native_turn_limit,
     _record_native_token_usage,
     _native_run_mutation_lock,
@@ -1782,6 +1783,64 @@ class NativeHostTest(unittest.TestCase):
 
             self.assertFalse((home / "runs" / product_id).exists())
             self.assertFalse((home / "state" / product_id).exists())
+
+    def test_start_hands_wish_reference_bytes_to_the_run(self):
+        content = b"\x89PNG" + b"\0" * 16
+        reference = {
+            "name": "ref-01-side.png",
+            "sha256": hashlib.sha256(content).hexdigest(),
+            "media_type": "image/png",
+            "size": len(content),
+            "width": 64,
+            "height": 48,
+        }
+        observed = {}
+
+        def create(*args, **kwargs):
+            observed.update(kwargs)
+            raise ContractError("fixture stop")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.AgentRun.create", side_effect=create
+            ), self.assertRaisesRegex(ContractError, "fixture stop"):
+                start_native_run(
+                    Wish.create(
+                        "wish-with-picture", "a toy from a photo", references=[reference]
+                    ),
+                    effort="forge",
+                    wish_reference_files={"ref-01-side.png": content},
+                )
+            with self.assertRaisesRegex(ContractError, "map reference names"):
+                start_native_run(
+                    Wish.create("wish-bad-files", "a toy"),
+                    effort="forge",
+                    wish_reference_files=[content],
+                )
+
+        self.assertEqual(observed["wish_reference_files"], {"ref-01-side.png": content})
+        self.assertIn("references", json.loads(observed["wish_bytes"].decode("utf-8")))
+        self.assertEqual(
+            _wish_reference_bindings(
+                Wish.create("wish-b", "a toy", references=[reference])
+            ),
+            [
+                {
+                    "path": "wish-references/ref-01-side.png",
+                    "sha256": reference["sha256"],
+                    "media_type": "image/png",
+                    "width": 64,
+                    "height": 48,
+                }
+            ],
+        )
+        self.assertEqual(_wish_reference_bindings(Wish.create("wish-c", "a toy")), [])
 
     def test_create_rejects_a_legacy_source_checkout_collision(self):
         with tempfile.TemporaryDirectory() as temporary:
