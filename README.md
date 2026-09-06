@@ -13,18 +13,40 @@
 
 # Autonomous Workshop
 
-Autonomous AI Inventors daydream, invent, and make new toys and games around the clock. Each Inventor reads, researches, learns and watches, keeps a notebook, and leaves with one idea it likes. That idea runs through Invent, Make and Release under a trusted host that seals every step, and lands on the [shop](https://www.autonomous.ai/toys), where you order one and it ships in days. Nothing is made before it is wanted.
+Create your own autonomous AI Inventor. Shape its Taste, give it direction, and let it dream up and develop original toys and games for people to buy.
+
+Autonomous Workshop is the engine behind this vision: anyone can build a toy studio around their own Inventors. The creator shapes taste and direction. The Inventor researches, invents, and makes. Autonomous brings the toys to the [shop](https://www.autonomous.ai/toys), with physical production, shipping, and customer support owned by Operations.
+
+**Our first category is toys and games. Our focus is autonomous Inventors that people create and direct.** Conversation is the main creative interface; individual toy briefs and CAD edits support that relationship.
 
 [![The Autonomous Workshop loop: Daydream, Invent (optional), Make, Playtest (optional), Release, Shop, Scoreboard](docs/images/inventor-loop.svg)](docs/images/inventor-loop.svg)
 
-## Direction
+## The creator experience
 
-The Workshop is becoming the engine of an AI-native play company. The full plan, the state of the code, and the specifications are kept privately for now; the pieces below land in this repo as they ship.
+The planned [**Manage Inventors** page](https://github.com/autonomous-ai/autonomous-workshop/issues/16) gives each creator a collection of Inventors. Click **Add Inventor**, start a conversation about the toys you want to put into the world, and develop a recognizable creative point of view together. Each Inventor has one persistent workspace:
 
-- **Daydream** is the first stage. `workshop start <inventor>` runs the whole loop; its first step lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. The Inventor is shown the toys that passed the build review and the ones that failed, with the reason, so it aims at what can actually be made. `workshop daydream <inventor>` shows an idea without building it. Once started, the loop keeps dreaming and building until `workshop stop` or Ctrl-C. Outcome feedback comes next.
-- **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`WISH.json`, and every run id is a Wish id); that name is a contract, not a promise.
-- **Release explains the model**, and the first order prints and photographs the real piece so listings carry real images.
-- **An outcome scoreboard** keyed to each design feeds the Inventors, so next month's toys beat this month's.
+- **Chat:** give direction, explore ideas, discuss a particular toy, and hear about meaningful progress and customer feedback.
+- **Taste:** an editable `TASTE.md` that captures what the Inventor loves, rejects, and aims to make unmistakably its own. Clear lasting preferences from conversation become visible, versioned updates with undo; a request about one toy stays with that toy.
+- **Inventions:** the Inventor's toy library, including ideas, work in progress, released products, revision history, units sold, and buyer ratings with review counts. A new revision can be in development while an earlier revision remains on sale.
+
+Creators can have multiple Inventors with different tastes. Each works within explicit operating limits and publishing permissions. Creators return to see what their Inventors have made, learn from the results, and shape their next direction.
+
+## How we are opening the Workshop
+
+1. **Be the first creators.** We create and operate the initial Inventors ourselves, testing the same tools and product journey we intend to offer others.
+2. **Invite creators.** A small group establishes its own Inventors and toy studios, helping us prove that distinctive toys and dependable fulfillment can work beyond our own team.
+3. **Open creation to everyone.** Anyone can create and direct Inventors; shared quality requirements and operating controls apply as the community grows.
+
+Our initial Inventors seed the shop and exercise the system. The long-term platform brings together many creators, their autonomous Inventors, and people who want to buy their toys.
+
+## What works today and what comes next
+
+- **Available in the CLI:** `workshop create inventor --taste ./TASTE.md` creates a specialist bundle from your exact Taste and connects its publishing account. `workshop start <inventor>` repeatedly dreams, builds, and attempts publication until stopped or its failure limit is reached. `workshop daydream <inventor>` lets you inspect an idea before building it. See the [Quickstart](#quickstart) and [Build an Inventor](docs/BUILD_AN_INVENTOR.md).
+- **Implemented production boundary:** the host seals and checks each enabled stage, then publishes the accepted digital product and manual through Factory with authenticated readback. Operations owns physical production, hands-on checks, shipping, and customer support after that handoff. Publication alone does not prove manufacture or delivery.
+- **Planned creator workspace:** the hosted Manage Inventors page, persistent creator chat, conversation-driven Taste revisions, and invention performance views described above.
+- **Planned learning loop:** creator feedback and actual product outcomes inform future work. Today's notebook remembers previous ideas to avoid repetition; sales, playtests, and customer reviews do not yet flow back into it. Outcome feedback should improve an Inventor's judgment while preserving the creator's control over its Taste.
+
+Internally, the sealed brief that begins one product run is still called a Wish. Existing Wish commands and frozen run contracts remain part of the engine; the consumer experience centers on creating and directing an Inventor.
 
 ## Quickstart
 
@@ -99,7 +121,7 @@ uv run workshop start pico-press --manager grok     # experimental
 
 ## Inventors
 
-Each Inventor is a specialist point of view with its own lane, not a category of toy. Several can make the same kind of toy in their own way. The roster is growing toward game-night titles, kinetic machines, and owned worlds and characters; six new Inventors are drafted and land here as they pass their first runs, and you can add your own.
+Each Inventor expresses a specialist point of view. Several can make the same kind of toy in their own way. The bundled Inventors are our first studios and public examples; creators can already add their own through the CLI. The hosted creation and management experience is planned.
 
 An Inventor is a declared specialist bundle: `TASTE.md` for creative judgment, `inventor.json` for identity and skill hashes, and a required `<id>-inventor` skill. Optional extra Inventor-prefixed skills may hold scripts, references, or tested deterministic tools. For a run, `.codex/agents/*.toml` is the sole roster. Inventor code cannot launch agents, choose stages, pass gates, or perform authenticated effects.
 
