@@ -1,0 +1,1 @@
+- Clarify the vision of creators directing their own autonomous AI toy Inventors, the initial rollout, and the planned Chat, Taste, and Inventions workspace; distinguish these plans from the existing CLI and publication capabilities.
