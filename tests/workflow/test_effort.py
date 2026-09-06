@@ -110,7 +110,7 @@ class WorkshopEffortTest(unittest.TestCase):
             DEEP_ECONOMICS_V1_CAPABILITY_PATH,
             ".agents/skills/autonomous-workshop/references/deep-economics-v1.md",
         )
-        self.assertEqual(DEEP_AUTO_COMPACT_TOKEN_LIMIT, 256_000)
+        self.assertEqual(DEEP_AUTO_COMPACT_TOKEN_LIMIT, 192_000)
         self.assertEqual(DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT, 24_000)
         self.assertEqual(DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT, 16_000)
         self.assertEqual(DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS, 720)

@@ -31,8 +31,9 @@ supplies a private writable cache; proof defers the broad CAD
 skill, batches mandatory reads and deterministic CAD commands, and makes source
 the next durable action. Root inspection owns this cheap early direction check;
 independent blind critique remains mandatory at final Make.
-Playtest and Release use medium, and every stage compacts at 256k. Frozen
-deep-v9 retains that ceiling with its original proof and final-Make behavior;
+Playtest and Release use medium, and every stage compacts at 192k (256k
+before ADR 0044). Frozen deep-v9 shares that ceiling with its original proof
+and final-Make behavior;
 deep-v8 and older runs remain on the profile they started with. Effort changes
 cognitive spend, never the exact-byte CAD, manual, Playtest, evidence, or
 publication gates.
@@ -135,7 +136,7 @@ complete roster there, then reads only the best three full custom agents. Make
 first uses medium reasoning for one 16-minute proof runway, then resumes the
 same Goal at high reasoning with a 15-minute source-handoff boundary before
 normal 30-minute recovery. Playtest and Release use medium;
-every stage compacts at 256k. One profile identity binds the persistent thread
+every stage compacts at 192k. One profile identity binds the persistent thread
 while the host selects those stage-specific turn settings. The same recovery
 semantics apply, with no more than eight native turns across one CLI
 invocation. An explicit operator resume after a valid final-Make proof starts
@@ -169,7 +170,7 @@ evidence used to avoid an expensive bad direction; the later hash-bound final si
 CAD gate remain authoritative. The independent native critic remains mandatory
 for final Make's hash-bound review. Frozen deep-v11 retains its original proof
 recovery. Frozen deep-v10 retains its original Invent
-recovery plus the same exact-state Make behavior. Frozen deep-v9 retains its 256k compaction,
+recovery plus the same exact-state Make behavior. Frozen deep-v9 shares the 192k compaction ceiling,
 one-mesh viewpoint proof, and normal 30-minute final turn. Frozen deep-v8
 retains its 16-minute proof runway and 24k compaction. Frozen deep-v7 retains
 its eight-minute
