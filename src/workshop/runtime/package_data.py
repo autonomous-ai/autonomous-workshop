@@ -27,6 +27,7 @@ BUNDLED_INVENTOR_IDS = (
     "alice",
     "bob",
     "eve",
+    "ferro-line",
     "ivy",
     "kestrel-knot",
     "leo",

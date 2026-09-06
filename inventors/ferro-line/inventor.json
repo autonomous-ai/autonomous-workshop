@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "3e6ebd104b44f8719458df7942efbd7e97cd24cef63b65d6c0f1f97867c7a0c0",
+      "kind": "codex-skill",
+      "name": "ferro-line-inventor",
+      "path": "skills/ferro-line-inventor"
+    }
+  ],
+  "id": "ferro-line",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}
