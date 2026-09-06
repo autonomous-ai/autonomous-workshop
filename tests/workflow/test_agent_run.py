@@ -307,6 +307,97 @@ class AgentRunTest(unittest.TestCase):
         )
         self.assertEqual(reopened.snapshot(), checkpoint)
 
+    def test_refresh_domain_skill_tools_rebinds_manifest_and_records(self):
+        cad = self.root / "cad-skill"
+        (cad / "scripts").mkdir(parents=True)
+        (cad / "SKILL.md").write_bytes(b"# CAD skill\n")
+        checker = cad / "scripts" / "check_mesh"
+        checker.write_bytes(b"#!/bin/sh\nexit 1\n")
+        checker.chmod(0o755)
+        obsolete = cad / "scripts" / "obsolete.py"
+        obsolete.write_bytes(b"print('old')\n")
+        run = self.create(domain_skill_roots={"cad": cad})
+        before = run.snapshot()
+
+        # A source that already matches the run changes nothing.
+        self.assertEqual(run.refresh_domain_skill_tools({"cad": cad}, reason="same"), ())
+        self.assertEqual(run.snapshot(), before)
+        self.assertFalse((run.host_state_root / "host-corrections.jsonl").exists())
+
+        # The host corrects the tool, adds a helper, and retires a file. A
+        # skill the run never carried is not introduced.
+        checker.write_bytes(b"#!/bin/sh\nexit 0\n")
+        (cad / "scripts" / "helper.py").write_bytes(b"print('new')\n")
+        obsolete.unlink()
+        changes = run.refresh_domain_skill_tools(
+            {"cad": cad, "absent": cad}, reason="corrected checker"
+        )
+        self.assertEqual(
+            {item["path"] for item in changes},
+            {
+                ".agents/skills/cad/scripts/check_mesh",
+                ".agents/skills/cad/scripts/helper.py",
+                ".agents/skills/cad/scripts/obsolete.py",
+            },
+        )
+        by_path = {item["path"]: item for item in changes}
+        corrected = hashlib.sha256(b"#!/bin/sh\nexit 0\n").hexdigest()
+        self.assertEqual(by_path[".agents/skills/cad/scripts/check_mesh"]["sha256"], corrected)
+        self.assertEqual(by_path[".agents/skills/cad/scripts/check_mesh"]["mode"], 0o500)
+        self.assertIsNone(by_path[".agents/skills/cad/scripts/obsolete.py"]["sha256"])
+        self.assertIsNone(by_path[".agents/skills/cad/scripts/helper.py"]["previous_sha256"])
+
+        after = run.snapshot()
+        self.assertEqual(after.revision, before.revision + 1)
+        self.assertNotEqual(after.checkpoint_sha256, before.checkpoint_sha256)
+        self.assertEqual(after.stage, before.stage)
+        self.assertEqual(after.round_index, before.round_index)
+        self.assertEqual(after.input_sha256s[".agents/skills/cad/scripts/check_mesh"], corrected)
+        self.assertIn(".agents/skills/cad/scripts/helper.py", after.input_sha256s)
+        self.assertNotIn(".agents/skills/cad/scripts/obsolete.py", after.input_sha256s)
+        self.assertEqual(after.input_sha256s["WISH.json"], before.input_sha256s["WISH.json"])
+
+        target = run.run_root / ".agents/skills/cad/scripts/check_mesh"
+        self.assertEqual(target.read_bytes(), b"#!/bin/sh\nexit 0\n")
+        self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o500)
+        helper = run.run_root / ".agents/skills/cad/scripts/helper.py"
+        self.assertEqual(stat.S_IMODE(helper.stat().st_mode), 0o400)
+        self.assertFalse((run.run_root / ".agents/skills/cad/scripts/obsolete.py").exists())
+        for directory in (".agents", ".agents/skills", ".agents/skills/cad/scripts"):
+            self.assertEqual(
+                stat.S_IMODE((run.run_root / directory).stat().st_mode), 0o500, directory
+            )
+        self.assertFalse((run.run_root / ".agents/skills/absent").exists())
+
+        ledger = run.host_state_root / "host-corrections.jsonl"
+        self.assertEqual(stat.S_IMODE(ledger.stat().st_mode), 0o600)
+        lines = ledger.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), 1)
+        record = json.loads(lines[0])
+        self.assertEqual(record["correction"], "domain-skill-refresh")
+        self.assertEqual(record["reason"], "corrected checker")
+        self.assertEqual(record["previous_checkpoint_sha256"], before.checkpoint_sha256)
+        self.assertEqual(record["checkpoint_sha256"], after.checkpoint_sha256)
+        self.assertEqual(len(record["changes"]), 3)
+
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=after.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), after)
+
+        # The refreshed bytes are bound: a later edit is still tampering.
+        os.chmod(run.run_root / ".agents/skills/cad/scripts", 0o700)
+        os.chmod(target, 0o700)
+        target.write_bytes(b"#!/bin/sh\nexit 2\n")
+        os.chmod(target, 0o500)
+        with self.assertRaises(StateConflict):
+            reopened.snapshot()
+
+        with self.assertRaises(ContractError):
+            run.refresh_domain_skill_tools({"cad": cad}, reason="")
+
     def test_create_materializes_custom_agent_roster_and_executable_skills(self):
         cad = self.root / "cad-skill"
         (cad / "scripts").mkdir(parents=True)

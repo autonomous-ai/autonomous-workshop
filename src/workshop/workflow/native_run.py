@@ -8766,6 +8766,74 @@ def resume_native_run(
         )
 
 
+def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, Any]:
+    """Refresh one run's host-owned deterministic tools from this install.
+
+    Domain skills (the CAD verifier among them) are immutable to the native
+    agent and hash-bound in the run's input manifest.  A corrected tool reaches
+    an existing run only through this host operation: the exact run is opened
+    under the mutation lock, every domain skill it carries is rewritten
+    byte-for-byte from the installed skill source, the manifest is rebound in a
+    new checkpoint revision, and an owner-only ledger line records the change.
+    The native session, round budget, and every sealed artifact are untouched.
+    """
+
+    paths = native_run_paths(product_id)
+    with _native_run_mutation_lock(paths):
+        run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
+        before = run.snapshot()
+        changes = run.refresh_domain_skill_tools(
+            product_run_domain_skill_roots(), reason=reason
+        )
+        after = run.snapshot()
+        # The stored Manager session binds the instruction-tree hash the run
+        # started with. A refreshed tool moves that hash by design, so the
+        # same host operation rebinds the session record it owns -- and does
+        # so even when this call found the tools current, because an earlier
+        # refresh may have been interrupted before this step.
+        session_rebound = False
+        launcher = _native_launcher(after)
+        session_path = paths.host_state / launcher.session_checkpoint_name
+        if session_path.exists():
+            rebind = getattr(launcher, "rebind_session_constitution", None)
+            if rebind is None:
+                raise ContractError(
+                    "host tool refresh is not supported for the %s Manager"
+                    % after.manager_id
+                )
+            rebound = rebind(
+                product_id=product_id,
+                wish_sha256=after.wish_sha256,
+                run_root=paths.workspace,
+                host_state_root=paths.host_state,
+                constitution_sha256=materialized_agent_instructions_sha256(after),
+            )
+            session_rebound = bool(rebound["changed"])
+            if session_rebound:
+                run.record_host_correction(
+                    {
+                        "kind": "autonomous-workshop.host-correction",
+                        "schema_version": 1,
+                        "correction": "manager-session-rebind",
+                        "reason": reason.strip(),
+                        "manager_id": after.manager_id,
+                        "checkpoint_sha256": after.checkpoint_sha256,
+                        "previous_constitution_sha256": rebound[
+                            "previous_constitution_sha256"
+                        ],
+                        "constitution_sha256": rebound["constitution_sha256"],
+                    }
+                )
+    return {
+        "product_id": product_id,
+        "action": "tools-refreshed" if changes else "tools-current",
+        "previous_checkpoint_sha256": before.checkpoint_sha256,
+        "checkpoint_sha256": after.checkpoint_sha256,
+        "changed_paths": [item["path"] for item in changes],
+        "session_rebound": session_rebound,
+    }
+
+
 def native_run_status(product_id: str) -> Mapping[str, Any]:
     """Return a redacted, validated native checkpoint without running a model."""
 
@@ -8796,6 +8864,7 @@ __all__ = [
     "native_run_paths",
     "native_run_status",
     "native_stage_prompt",
+    "refresh_native_run_tools",
     "resume_native_run",
     "start_native_run",
 ]

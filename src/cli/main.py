@@ -83,7 +83,12 @@ from workshop.wish import (
     wish_reference_files,
 )
 from workshop.wish.contracts import MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY
-from workshop.workflow import native_run_status, resume_native_run, start_native_run
+from workshop.workflow import (
+    native_run_status,
+    refresh_native_run_tools,
+    resume_native_run,
+    start_native_run,
+)
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
     WORKSHOP_EFFORTS,
@@ -857,6 +862,21 @@ def _resume(args: argparse.Namespace) -> int:
         file=progress,
         flush=True,
     )
+    if getattr(args, "refresh_tools", False):
+        refreshed = refresh_native_run_tools(
+            args.product_id, reason="workshop resume --refresh-tools"
+        )
+        changed = refreshed["changed_paths"]
+        print(
+            (
+                "Host tools refreshed from this install: %d file(s) rebound (%s)."
+                % (len(changed), ", ".join(changed[:6]) + (", ..." if len(changed) > 6 else ""))
+                if changed
+                else "Host tools already match this install; nothing rebound."
+            ),
+            file=progress,
+            flush=True,
+        )
     receipt = resume_native_run(
         args.product_id,
         activity_observer=live_progress.activity,
@@ -1605,6 +1625,15 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument("product_id", help="saved Wish id")
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
     resume.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
+    resume.add_argument(
+        "--refresh-tools",
+        action="store_true",
+        help=(
+            "before resuming, rewrite the run's host-owned deterministic tools "
+            "(domain skills such as the CAD verifier) from this Workshop install and "
+            "rebind them in the run manifest; recorded in the run's private host state"
+        ),
+    )
     resume.set_defaults(handler=_resume)
 
     doctor = subcommands.add_parser(

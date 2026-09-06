@@ -117,6 +117,7 @@ _DIRECT_RELEASE_MARKER = (
     ".agents/skills/autonomous-workshop/references/direct-release-v1.md"
 )
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
+HOST_CORRECTIONS_FILE = "host-corrections.jsonl"
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
     rb"(?i)(?:password|passwd|api[_-]?key|access[_-]?token|refresh[_-]?token|"
@@ -1555,6 +1556,184 @@ class AgentRun:
             )
             for stage, paths in payload["stage_artifacts"].items()
         }
+
+    def refresh_domain_skill_tools(
+        self,
+        domain_skill_roots: Mapping[str, Path],
+        *,
+        reason: str,
+    ) -> tuple[dict[str, Any], ...]:
+        """Bring the run's host-owned domain skills up to the installed source.
+
+        Domain skills are immutable to the native agent, not to the host that
+        owns them.  When a deterministic tool a gate depends on is corrected,
+        the host rewrites the run's copy byte-for-byte from the installed skill,
+        rebinds the tamper-checked input manifest, and writes a new checkpoint
+        revision, so every byte the agent can reach stays accounted for.  Only
+        skills the run already carries are touched; a skill absent from the run
+        is never introduced.  Every refresh appends one owner-only record under
+        host state and returns the manifest changes it made.
+        """
+
+        if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
+            raise ContractError("domain skill refresh reason must be a short string")
+        if not isinstance(domain_skill_roots, Mapping):
+            raise ContractError("domain skill roots must be a mapping")
+        payload = self._load()
+        by_path: dict[str, dict[str, Any]] = {
+            item["path"]: dict(item) for item in payload["inputs"]
+        }
+        changes: list[dict[str, Any]] = []
+        writes: list[tuple[PurePosixPath, bytes, int]] = []
+        removals: list[PurePosixPath] = []
+        for name, source_root in sorted(domain_skill_roots.items()):
+            if (
+                not isinstance(name, str)
+                or _AGENT_SKILL_NAME.fullmatch(name) is None
+                or name == "autonomous-workshop"
+            ):
+                raise ContractError("domain skill name is invalid")
+            prefix = ".agents/skills/%s/" % name
+            carried = {path for path in by_path if path.startswith(prefix)}
+            if not carried:
+                continue
+            files = _source_tree_files(source_root, label="source %s skill" % name)
+            if not any(relative.as_posix() == "SKILL.md" for relative, _, _ in files):
+                raise ArtifactError("source %s skill lacks SKILL.md" % name)
+            wanted: dict[str, tuple[bytes, int]] = {}
+            for relative, content, mode in files:
+                destination = (PurePosixPath(".agents/skills") / name / relative).as_posix()
+                _reject_private_agent_bytes(destination, content)
+                wanted[destination] = (content, mode)
+            for path in sorted(carried - set(wanted)):
+                previous = by_path.pop(path)
+                removals.append(_safe_relative(path, "agent input path"))
+                changes.append(
+                    {
+                        "path": path,
+                        "previous_sha256": previous["sha256"],
+                        "previous_mode": previous["mode"],
+                        "sha256": None,
+                        "mode": None,
+                    }
+                )
+            for path, (content, mode) in sorted(wanted.items()):
+                digest = _sha256(content)
+                previous = by_path.get(path)
+                if (
+                    previous is not None
+                    and previous["sha256"] == digest
+                    and previous["mode"] == mode
+                ):
+                    continue
+                writes.append((_safe_relative(path, "agent input path"), content, mode))
+                by_path[path] = {
+                    "path": path,
+                    "sha256": digest,
+                    "size": len(content),
+                    "mode": mode,
+                }
+                changes.append(
+                    {
+                        "path": path,
+                        "previous_sha256": None if previous is None else previous["sha256"],
+                        "previous_mode": None if previous is None else previous["mode"],
+                        "sha256": digest,
+                        "mode": mode,
+                    }
+                )
+        if not changes:
+            return ()
+        inputs = sorted(by_path.values(), key=lambda item: item["path"])
+        if len(inputs) > MAX_AGENT_INPUT_FILES:
+            raise ContractError("domain skill refresh exceeds the agent input file limit")
+        total = sum(
+            item["size"] for item in inputs if not _is_wish_reference_path(item["path"])
+        )
+        if total > MAX_AGENT_INPUT_BYTES:
+            raise ContractError("domain skill refresh exceeds the agent input byte budget")
+
+        opened: list[Path] = []
+
+        def writable(directory: Path) -> None:
+            for ancestor in (directory, *directory.parents):
+                if ancestor == self.run_root or self.run_root not in ancestor.parents:
+                    break
+                if stat.S_IMODE(ancestor.stat().st_mode) != 0o700:
+                    os.chmod(ancestor, 0o700)
+                    opened.append(ancestor)
+
+        try:
+            for relative in removals:
+                target = self.run_root.joinpath(*relative.parts)
+                writable(target.parent)
+                os.unlink(target)
+            for relative, content, mode in writes:
+                target = self.run_root.joinpath(*relative.parts)
+                existing = target.parent
+                while not existing.exists():
+                    existing = existing.parent
+                writable(existing)
+                target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                for created in (target.parent, *target.parent.parents):
+                    if created == existing or self.run_root not in created.parents:
+                        break
+                    opened.append(created)
+                if target.exists() or target.is_symlink():
+                    os.unlink(target)
+                descriptor = os.open(
+                    str(target), os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode
+                )
+                try:
+                    written = 0
+                    while written < len(content):
+                        written += os.write(descriptor, content[written:])
+                    os.fsync(descriptor)
+                finally:
+                    os.close(descriptor)
+                os.chmod(target, mode)
+        finally:
+            for directory in sorted(set(opened), key=lambda path: len(path.parts), reverse=True):
+                os.chmod(directory, 0o500)
+
+        updated = dict(payload)
+        updated["inputs"] = inputs
+        previous_checkpoint = payload["checkpoint_sha256"]
+        self._write_next(payload, updated)
+        record = {
+            "kind": "autonomous-workshop.host-correction",
+            "schema_version": 1,
+            "correction": "domain-skill-refresh",
+            "reason": reason.strip(),
+            "previous_checkpoint_sha256": previous_checkpoint,
+            "checkpoint_sha256": self._expected_checkpoint_sha256,
+            "changes": changes,
+        }
+        self.record_host_correction(record)
+        return tuple(changes)
+
+    def record_host_correction(self, record: Mapping[str, Any]) -> None:
+        """Append one owner-only ledger line describing a host correction."""
+
+        if (
+            not isinstance(record, Mapping)
+            or record.get("kind") != "autonomous-workshop.host-correction"
+            or not isinstance(record.get("correction"), str)
+        ):
+            raise ContractError("host correction record is invalid")
+        ledger = self.host_state_root / HOST_CORRECTIONS_FILE
+        line = json.dumps(dict(record), sort_keys=True, separators=(",", ":")) + "\n"
+        if len(line) > 64 * 1024:
+            raise ContractError("host correction record is too large")
+        descriptor = os.open(
+            str(ledger), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600
+        )
+        try:
+            os.write(descriptor, line.encode("utf-8"))
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        os.chmod(ledger, 0o600)
 
     def snapshot(self) -> AgentRunCheckpoint:
         payload = self._load()

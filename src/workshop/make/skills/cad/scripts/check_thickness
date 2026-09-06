@@ -25,7 +25,14 @@ Three findings, from one voxel sampling of the closed surface:
 Thickness is measured by marching inward along each sample's own normal until
 the ray leaves the material, so it is wall thickness in the direction the wall
 is actually crossed -- not distance to the medial axis, which halves it, and not
-a bounding measure. It is quantised to half the grid pitch, which is printed.
+a bounding measure. The grid reading is quantised to half the grid pitch, which
+is printed, and it lands low on any wall that does not line up with the grid --
+one step on a flat wall, up to two on a curved one whose boundary voxels fall
+outside on both faces. So the grid is only the screen: every sample it reads
+under the minimum is re-measured exactly, by intersecting its own inward ray
+with the mesh triangles, and the verdict is taken on that exact distance with
+a quarter-pitch allowance for tessellation chord error. A wall drawn at exactly
+the minimum passes; a wall a tenth of a millimetre under it does not.
 
 The mesh must be closed: inside and outside are meaningless otherwise, so a
 non-watertight STL is refused rather than measured. Run `check_mesh` first.
@@ -215,6 +222,88 @@ def march(inside, origin, pitch, points, directions, limit):
     return travel, entered
 
 
+# Samples the grid reads under the minimum are re-measured exactly. A thin
+# part reads under the minimum over its whole surface -- a 0.8 mm spring coil
+# put 40,000 of 53,000 samples through this pass -- so the cap is the sample
+# cap itself; it exists so a pathological mesh cannot run unbounded. Samples
+# past it keep their grid reading and the grid's own one-step allowance, which
+# only ever errs toward failing.
+EXACT_CAP = MAX_SAMPLES
+
+
+def exact_exit_distance(verts, faces, points, directions, limit):
+    """Distance along each ray, exactly, to where it leaves the mesh.
+
+    Moller-Trumbore against every triangle within `limit` of the sample (plus
+    the largest triangle's own radius, so no candidate is missed). The ray
+    starts on its own triangle, so hits closer than 1e-7 mm are the start
+    itself and are skipped; the nearest remaining hit on a closed mesh is the
+    far face of the wall. A ray with no exit inside `limit` reads `limit`.
+    """
+    from scipy.spatial import cKDTree
+
+    out = np.full(len(points), float(limit))
+    if not len(points) or not len(faces):
+        return out
+    tri = verts[faces]
+    centroid = tri.mean(axis=1)
+    radius = np.linalg.norm(tri - centroid[:, None, :], axis=2).max(axis=1)
+    reach = float(limit) + float(radius.max())
+    tree = cKDTree(centroid)
+    for i, candidates in enumerate(tree.query_ball_point(points, reach)):
+        if not candidates:
+            continue
+        c = np.asarray(candidates, dtype=np.int64)
+        p, d = points[i], directions[i]
+        a = tri[c, 0]
+        e1, e2 = tri[c, 1] - a, tri[c, 2] - a
+        pvec = np.cross(d, e2)
+        det = np.einsum("ij,ij->i", e1, pvec)
+        usable = np.abs(det) > 1e-12
+        if not usable.any():
+            continue
+        inv = np.zeros_like(det)
+        inv[usable] = 1.0 / det[usable]
+        tvec = p - a
+        u = np.einsum("ij,ij->i", tvec, pvec) * inv
+        qvec = np.cross(tvec, e1)
+        v = qvec @ d * inv
+        t = np.einsum("ij,ij->i", e2, qvec) * inv
+        hit = (usable & (u >= -1e-9) & (v >= -1e-9) & (u + v <= 1.0 + 1e-9)
+               & (t > 1e-7))
+        if hit.any():
+            out[i] = min(float(limit), float(t[hit].min()))
+    return out
+
+
+def resolve_thin(verts, faces, points, directions, thickness, min_wall, pitch):
+    """Replace grid readings under the minimum with exact ones; return the verdict.
+
+    Returns the resolved thickness array, the thin mask, and how many of the
+    screened samples the exact measurement cleared. Unscreened samples keep
+    their grid reading; a screened sample past `EXACT_CAP` keeps the grid's own
+    one-step allowance (`thickness < min_wall - pitch / 2`), which errs toward
+    failing, never toward passing.
+    """
+    step = pitch / 2
+    resolved = np.array(thickness, dtype=float, copy=True)
+    screened = np.flatnonzero(resolved < min_wall)
+    refined = np.zeros(len(resolved), dtype=bool)
+    if len(screened):
+        chosen = screened[:EXACT_CAP]
+        resolved[chosen] = exact_exit_distance(
+            verts, faces, points[chosen], directions[chosen], min_wall + pitch)
+        refined[chosen] = True
+    # A tessellated curve is a chain of chords inside the true surface, so an
+    # exact reading across a 0.8 mm curved wall lands a few microns under 0.8.
+    # A quarter pitch (0.03 mm at a 0.4 mm nozzle) covers that; a wall short
+    # by a tenth of a millimetre is still failed.
+    thin = np.where(refined, resolved < min_wall - pitch / 4,
+                    resolved < min_wall - step)
+    cleared = int((refined & ~thin).sum())
+    return resolved, thin, cleared
+
+
 def thin_regions(points, weights, thickness, thin, link, limit=6,
                  min_wall=None, pitch=None):
     """Group the sub-minimum samples into distinct regions, worst first.
@@ -338,6 +427,28 @@ def _prism(x0, x1, half_width, height):
     return [[list(v) for v in t] for t in quads]
 
 
+def _tube(r_out, r_in, height, n):
+    """A closed tube standing on z=0: a curved wall of known thickness."""
+    import math
+    ring = [(math.cos(2 * math.pi * k / n), math.sin(2 * math.pi * k / n)) for k in range(n)]
+    tris = []
+    for k in range(n):
+        (cx0, sy0), (cx1, sy1) = ring[k], ring[(k + 1) % n]
+        o0, o1 = (r_out * cx0, r_out * sy0), (r_out * cx1, r_out * sy1)
+        i0, i1 = (r_in * cx0, r_in * sy0), (r_in * cx1, r_in * sy1)
+        def v(xy, z):
+            return [xy[0], xy[1], z]
+        # outer wall, outward
+        tris += [[v(o0, 0), v(o1, 0), v(o1, height)], [v(o0, 0), v(o1, height), v(o0, height)]]
+        # inner wall, facing the bore
+        tris += [[v(i0, 0), v(i1, height), v(i1, 0)], [v(i0, 0), v(i0, height), v(i1, height)]]
+        # top ring, +z
+        tris += [[v(o0, height), v(o1, height), v(i1, height)], [v(o0, height), v(i1, height), v(i0, height)]]
+        # bottom ring, -z
+        tris += [[v(o0, 0), v(i1, 0), v(o1, 0)], [v(o0, 0), v(i0, 0), v(i1, 0)]]
+    return tris
+
+
 def _measure(tris, min_wall, wall, pitch):
     from scipy.ndimage import distance_transform_edt
     verts, faces = weld(np.array(tris, dtype=float))
@@ -347,17 +458,17 @@ def _measure(tris, min_wall, wall, pitch):
     thickness, entered = march(inside, origin, pitch, points, directions, span)
     good = entered & np.isfinite(thickness)
     reach = distance_transform_edt(inside, sampling=pitch)
-    thin = thickness[good] < min_wall - pitch / 2
+    thickness, thin, _cleared = resolve_thin(
+        verts, faces, points[good], directions[good], thickness[good], min_wall, pitch)
     regions, found = ([], 0)
     if thin.any():
-        regions, found = thin_regions(points[good], weights[good], thickness[good], thin,
+        regions, found = thin_regions(points[good], weights[good], thickness, thin,
                                       link=4 * pitch, limit=len(points),
                                       min_wall=min_wall, pitch=pitch)
     return {
-        "median": float(np.median(thickness[good])),
+        "median": float(np.median(thickness)),
         "regions": regions,
-        "thin_share": float(weights[good][thickness[good] < min_wall - pitch / 2].sum()
-                            / weights[good].sum()),
+        "thin_share": float(weights[good][thin].sum() / weights[good].sum()),
         "hollow": float((reach > wall + pitch / 2).sum()) * pitch ** 3,
         "solid": float(inside.sum()) * pitch ** 3,
     }
@@ -395,13 +506,26 @@ def _self_check():
     biggest = got["regions"][0]
     assert biggest["kind"] == "wall", got["regions"]
     assert 0.8 < biggest["width"] < 2.4, biggest        # closed form 1.60
-    # The apex LINE of the same prism does read as a taper, and should: those
-    # samples sit on the edge itself, where any solid tapers to nothing. What
-    # decides the part is the band up the faces, which is a wall -- so a knife
-    # edge still fails, which is the direction that has to hold.
-    assert any(r["kind"] == "taper" for r in got["regions"]), got["regions"]
-    assert all(r["area"] < biggest["area"] for r in got["regions"]
-               if r["kind"] == "taper"), got["regions"]
+    # Measured exactly, the band tapers to nothing at the apex: the thinnest
+    # reading is the sampling's distance from the edge, not a grid step.
+    assert biggest["thinnest"] < 0.2, biggest
+    assert all(r["kind"] == "wall" for r in got["regions"]), got["regions"]
+
+    # A wall drawn at exactly the minimum passes. Off the grid on every axis,
+    # so the grid reads it one step low and the exact pass has to rescue it;
+    # this is the reading that once failed on its last floating-point digit.
+    got = _measure(_slab(0.037, 0.051, 0.043, 20.037, 20.051, 0.843), 0.8, 1.2, 0.4 / 3)
+    assert got["thin_share"] == 0.0, got
+    # ...and a wall a twentieth under it does not, though the grid could not
+    # tell the two apart: 0.75 reads 0.733 on a 0.133 mm grid, as 0.80 does.
+    got = _measure(_slab(0.037, 0.051, 0.043, 20.037, 20.051, 0.793), 0.8, 1.2, 0.4 / 3)
+    assert got["thin_share"] > 0.9, got
+    # A curved wall at the minimum: the grid loses a boundary voxel on both
+    # faces of a tube and reads it two steps low; exact, it is the minimum.
+    got = _measure(_tube(6.0, 5.2, 6.0, 96), 0.8, 1.2, 0.4 / 3)
+    assert got["thin_share"] < 0.02, got
+    got = _measure(_tube(6.0, 5.3, 6.0, 96), 0.8, 1.2, 0.4 / 3)
+    assert got["thin_share"] > 0.9, got
 
     # The taper side cannot be reached with flat faces -- see `_prism` -- so it
     # is asserted on the measured shape of one: a band narrower than a minimum
@@ -518,7 +642,8 @@ def main():
     span = float(np.linalg.norm(verts.max(axis=0) - verts.min(axis=0)))
     thickness, entered = march(inside, origin, pitch, points, directions, span)
     good = entered & np.isfinite(thickness)
-    thickness, weights, points = thickness[good], weights[good], points[good]
+    thickness, weights = thickness[good], weights[good]
+    points, directions = points[good], directions[good]
     total_area = float(weights.sum())
 
     from scipy.ndimage import distance_transform_edt, label
@@ -542,16 +667,19 @@ def main():
     def check(status, name, detail):
         checks.append((status, name, detail))
 
-    # A reading is quantised to one march step, and on a wall that does not line
-    # up with the grid it lands one step low -- measured on a 1.20 mm shell:
-    # 1.10 at a 0.2 mm pitch, 1.15 at 0.1, converging from below. An
-    # axis-aligned wall reads exact at every pitch, so the bias is the
-    # instrument, not the geometry. Fail on what is below the limit by more
-    # than the instrument can explain, and say so in the label.
+    # A grid reading is quantised to one march step, and on a wall that does
+    # not line up with the grid it lands low -- measured on a 1.20 mm shell:
+    # 1.10 at a 0.2 mm pitch, 1.15 at 0.1, converging from below; two steps
+    # low on a curved 0.80 mm coil whose boundary voxels fall outside on both
+    # faces. An axis-aligned wall reads exact at every pitch, so the bias is
+    # the instrument, not the geometry. A one-step allowance used to absorb it
+    # and failed a wall drawn at exactly the minimum on the last floating-point
+    # digit. Every grid reading under the minimum is therefore re-measured
+    # exactly against the mesh before it can fail, and the label says so.
     step = pitch / 2
-    thin = thickness < min_wall - step
+    thickness, thin, cleared = resolve_thin(
+        verts, faces, points, directions, thickness, min_wall, pitch)
     thin_area = float(weights[thin].sum())
-    marginal = int(((thickness >= min_wall - step) & (thickness < min_wall)).sum())
     regions, region_count = ([], 0)
     if thin.any():
         regions, region_count = thin_regions(points, weights, thickness, thin,
@@ -585,10 +713,11 @@ def main():
             elif args.strict_thin:
                 verdict += " -- failed by --strict-thin"
     check("FAIL" if thin_fails else "PASS",
-          f"wall >= {min_wall:.2f} mm (+/-{step:.2f})",
+          f"wall >= {min_wall:.2f} mm (grid +/-{step:.2f}, exact where under)",
           f"{100 * thin_area / total_area:.1f}% of surface below "
           f"({int(thin.sum())} of {len(thickness)} samples){worst}{verdict}"
-          + (f"; {marginal} more within measurement error of the limit" if marginal else ""))
+          + (f"; {cleared} grid reading(s) under the limit measured exact on the mesh"
+             if cleared else ""))
 
     percentiles = np.percentile(thickness, [50, 95]) if len(thickness) else [0, 0]
     check("PASS", "thickness distribution",
@@ -607,7 +736,8 @@ def main():
 
     head = (f"{args.stl}: {solid_volume / 1000:.2f} cm3 solid, grid {pitch:.3f} mm "
             f"({inside.shape[0]}x{inside.shape[1]}x{inside.shape[2]}), "
-            f"{len(thickness)} surface samples, thickness resolved to {pitch / 2:.3f} mm")
+            f"{len(thickness)} surface samples, grid resolved to {pitch / 2:.3f} mm, "
+            f"exact where under the minimum")
     print(head)
     failed = False
     for status, name, detail in checks:

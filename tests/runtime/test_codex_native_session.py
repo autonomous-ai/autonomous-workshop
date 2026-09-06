@@ -383,6 +383,94 @@ class CodexNativeSessionTest(unittest.TestCase):
         values.update(overrides)
         return launcher.resume(**values)
 
+    def test_rebind_session_constitution_moves_only_the_instruction_hash(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, _factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            before = json.loads(checkpoint.read_text(encoding="utf-8"))
+            corrected = "c" * 64
+
+            result = launcher.rebind_session_constitution(
+                product_id="wish-001",
+                wish_sha256=WISH_SHA256,
+                run_root=root,
+                host_state_root=self.host_state(root),
+                constitution_sha256=corrected,
+            )
+
+            self.assertTrue(result["changed"])
+            self.assertEqual(result["previous_constitution_sha256"], CONSTITUTION_SHA256)
+            self.assertEqual(result["thread_id"], before["thread_id"])
+            after = json.loads(checkpoint.read_text(encoding="utf-8"))
+            self.assertEqual(after["constitution_sha256"], corrected)
+            unchanged = {"constitution_sha256", "checkpoint_sha256"}
+            self.assertEqual(
+                {key: value for key, value in after.items() if key not in unchanged},
+                {key: value for key, value in before.items() if key not in unchanged},
+            )
+            self.assertEqual(
+                after["checkpoint_sha256"],
+                codex_runtime._sha256_json(
+                    {key: value for key, value in after.items() if key != "checkpoint_sha256"}
+                ),
+            )
+            self.assertEqual(stat.S_IMODE(checkpoint.stat().st_mode), 0o600)
+            self.assertEqual(
+                [entry.name for entry in checkpoint.parent.iterdir() if entry.name.startswith(".")],
+                [],
+            )
+
+            # Idempotent, and the old binding no longer resumes while the new one does.
+            self.assertFalse(
+                launcher.rebind_session_constitution(
+                    product_id="wish-001",
+                    wish_sha256=WISH_SHA256,
+                    run_root=root,
+                    host_state_root=self.host_state(root),
+                    constitution_sha256=corrected,
+                )["changed"]
+            )
+            with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+                self.resume(launcher, root)
+            resumed = self.resume(launcher, root, constitution_sha256=corrected)
+            self.assertEqual(resumed.binding.constitution_sha256, corrected)
+            self.assertEqual(
+                json.loads(checkpoint.read_text(encoding="utf-8"))["thread_id"],
+                before["thread_id"],
+            )
+
+            # A record bound to another Wish or a tampered record is refused.
+            with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+                launcher.rebind_session_constitution(
+                    product_id="wish-001",
+                    wish_sha256="d" * 64,
+                    run_root=root,
+                    host_state_root=self.host_state(root),
+                    constitution_sha256="e" * 64,
+                )
+            tampered = dict(after)
+            tampered["thread_id"] = "01a00000-0000-7000-8000-000000000000"
+            checkpoint.write_text(
+                json.dumps(tampered, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+                launcher.rebind_session_constitution(
+                    product_id="wish-001",
+                    wish_sha256=WISH_SHA256,
+                    run_root=root,
+                    host_state_root=self.host_state(root),
+                    constitution_sha256="e" * 64,
+                )
+
     def test_start_streams_exact_native_command_and_checkpoints_before_completion(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"

@@ -81,6 +81,12 @@ uv run workshop wish --ref side.jpg --ref front.png "I wish for ..."
 uv run workshop resume <wish-id>
 ```
 
+`workshop resume --refresh-tools` first rewrites the run's host-owned
+deterministic tools (the domain skills, CAD verifier included) from the
+installed Workshop and rebinds them in the run manifest, recording the change
+in the run's private host state; use it when a run stopped waiting on a tool
+defect the host has since corrected (ADR 0045).
+
 Up to eight PNG, JPEG, or WebP reference images may ride a Wish. They reach
 the run read-only under `wish-references/`; the public toy archive always
 lists their names, hashes, and pixel sizes but ships their bytes only when the

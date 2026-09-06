@@ -283,6 +283,49 @@ def _checkpoint_path(host_state_root: Path) -> Path:
     return host_state_root / "codex-session.json"
 
 
+def _replace_private_checkpoint(path: Path, value: Mapping[str, Any]) -> None:
+    """Atomically replace an existing owner-only session checkpoint.
+
+    Only the host rebinding a record it has already validated calls this; the
+    create path keeps its create-without-overwrite guarantee above.
+    """
+
+    source = _canonical_json(value) + b"\n"
+    if len(source) > MAX_CODEX_SESSION_CHECKPOINT_BYTES:
+        raise CodexInvocationError("Codex session checkpoint exceeded its safe size limit")
+    if path.is_symlink() or not path.is_file():
+        raise ContractError("Codex native session checkpoint is missing")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=".%s." % path.name,
+        suffix=".tmp",
+        dir=str(path.parent),
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, 0o600)
+        written = 0
+        while written < len(source):
+            written += os.write(descriptor, source[written:])
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = -1
+        os.replace(str(temporary), str(path))
+        directory_descriptor = os.open(
+            str(path.parent), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        )
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    finally:
+        if descriptor != -1:
+            os.close(descriptor)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def _write_private_checkpoint(path: Path, value: Mapping[str, Any]) -> None:
     source = _canonical_json(value) + b"\n"
     if len(source) > MAX_CODEX_SESSION_CHECKPOINT_BYTES:
@@ -1907,6 +1950,91 @@ class CodexNativeSessionLauncher:
         root = _resolve_run_root(run_root)
         state_root = _resolve_host_state_root(host_state_root, root)
         return root, state_root, _checkpoint_path(state_root)
+
+    def rebind_session_constitution(
+        self,
+        *,
+        product_id: str,
+        wish_sha256: str,
+        run_root: Path,
+        host_state_root: Path,
+        constitution_sha256: str,
+    ) -> Mapping[str, Any]:
+        """Rebind the stored session to a host-corrected instruction tree.
+
+        The stored session binds the hash of the run's AGENTS.md and skill
+        bytes so instruction drift can never reach a live thread silently.
+        When the host itself corrects a domain-skill tool inside the run, that
+        hash moves by design, and the same host operation rebinds the record.
+        The record must already be self-consistent and bound to this exact
+        product, Wish, and pair of roots; only its constitution field changes,
+        and the thread, runtime policy, and CLI version it names are kept.
+        """
+
+        root, state_root, path = self._binding_paths(
+            product_id=product_id,
+            wish_sha256=wish_sha256,
+            constitution_sha256=constitution_sha256,
+            run_root=run_root,
+            host_state_root=host_state_root,
+        )
+        payload = _read_private_checkpoint(path)
+        expected_fields = {
+            "schema_version",
+            "kind",
+            "product_id",
+            "wish_sha256",
+            "constitution_sha256",
+            "run_root_sha256",
+            "host_state_root_sha256",
+            "runtime_config_sha256",
+            "cli_version",
+            "permission_profile",
+            "native_web_search",
+            "thread_id",
+            "checkpoint_sha256",
+        }
+        if set(payload) != expected_fields:
+            raise ContractError("Codex native session checkpoint fields are invalid")
+        identity = {
+            key: payload[key] for key in expected_fields - {"checkpoint_sha256"}
+        }
+        try:
+            thread_id = _canonical_thread_id(payload["thread_id"])
+            previous = _require_sha256(
+                payload["constitution_sha256"],
+                "Codex native session constitution sha256",
+            )
+            if (
+                payload["checkpoint_sha256"] != _sha256_json(identity)
+                or payload["schema_version"] != 1
+                or payload["kind"] != CODEX_SESSION_CHECKPOINT_KIND
+                or payload["product_id"] != product_id
+                or payload["wish_sha256"] != wish_sha256
+                or payload["run_root_sha256"] != _path_sha256(root)
+                or payload["host_state_root_sha256"] != _path_sha256(state_root)
+            ):
+                raise ContractError("Codex native session checkpoint binding is invalid")
+        except ContractError as exc:
+            raise ContractError(
+                "Codex native session checkpoint binding is invalid"
+            ) from exc
+        if previous == constitution_sha256:
+            return {
+                "thread_id": thread_id,
+                "previous_constitution_sha256": previous,
+                "constitution_sha256": constitution_sha256,
+                "changed": False,
+            }
+        rebound = {**identity, "constitution_sha256": constitution_sha256}
+        digest = _sha256_json(rebound)
+        _replace_private_checkpoint(path, {**rebound, "checkpoint_sha256": digest})
+        return {
+            "thread_id": thread_id,
+            "previous_constitution_sha256": previous,
+            "constitution_sha256": constitution_sha256,
+            "changed": True,
+        }
 
     def _checkpoint_identity(
         self,
