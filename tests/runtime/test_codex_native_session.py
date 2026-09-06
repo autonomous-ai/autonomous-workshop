@@ -3304,7 +3304,112 @@ class CodexNativeSessionTest(unittest.TestCase):
                     caught.exception.diagnostic.reason,
                     "explicit-terminal-failure",
                 )
+                self.assertEqual(
+                    caught.exception.diagnostic.terminal_error.to_dict(),
+                    {
+                        "event_type": event_type,
+                        "category": "unclassified",
+                        "signature": "unclassified",
+                        "code": None,
+                        "message_bytes": 0,
+                    },
+                )
                 self.assertTrue(factory.processes[0].terminated)
+
+    def test_terminal_failure_persists_bounded_structured_diagnosis(self):
+        secret = "FACTORY_PASSWORD=never-persist-this"
+        message = "Invalid encrypted content: %s" % secret
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            state_root = self.host_state(root)
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": [
+                            event(
+                                {
+                                    "type": "thread.started",
+                                    "thread_id": THREAD_ID,
+                                }
+                            ),
+                            event(
+                                {
+                                    "type": "turn.failed",
+                                    "error": {
+                                        "code": "invalid_request_error",
+                                        "message": message,
+                                    },
+                                }
+                            ),
+                        ]
+                    }
+                ]
+            )
+
+            with self.assertRaises(CodexInvocationError) as caught:
+                self.start(launcher, root, host_state_root=state_root)
+
+            rendered = str(caught.exception)
+            self.assertIn("category=invalid-request", rendered)
+            self.assertIn("signature=invalid-encrypted-content", rendered)
+            self.assertIn("code=invalid_request_error", rendered)
+            self.assertNotIn(secret, rendered)
+            raw = (
+                state_root / CODEX_FAILURE_DIAGNOSTIC_FILENAME
+            ).read_text(encoding="utf-8")
+            persisted = json.loads(raw)
+            self.assertEqual(persisted["schema_version"], 2)
+            self.assertEqual(
+                persisted["diagnostic"]["terminal_error"],
+                {
+                    "event_type": "turn.failed",
+                    "category": "invalid-request",
+                    "signature": "invalid-encrypted-content",
+                    "code": "invalid_request_error",
+                    "message_bytes": len(message.encode("utf-8")),
+                },
+            )
+            self.assertNotIn(secret, raw)
+
+    def test_terminal_failure_rejects_unsafe_provider_code(self):
+        secret = "FACTORY_PASSWORD=never-persist-this"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            state_root = self.host_state(root)
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": [
+                            event(
+                                {
+                                    "type": "thread.started",
+                                    "thread_id": THREAD_ID,
+                                }
+                            ),
+                            event(
+                                {
+                                    "type": "turn.failed",
+                                    "error": {"code": secret},
+                                }
+                            ),
+                        ]
+                    }
+                ]
+            )
+
+            with self.assertRaises(CodexInvocationError) as caught:
+                self.start(launcher, root, host_state_root=state_root)
+
+            raw = (
+                state_root / CODEX_FAILURE_DIAGNOSTIC_FILENAME
+            ).read_text(encoding="utf-8")
+            self.assertIsNone(
+                caught.exception.diagnostic.terminal_error.code
+            )
+            self.assertNotIn(secret, str(caught.exception))
+            self.assertNotIn(secret, raw)
 
     def test_explicit_transport_failure_events_preserve_recoverable_category(self):
         failures = (
@@ -3528,7 +3633,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 ]
             )
 
-            with self.assertRaises(CodexRecoverableInvocationError) as caught:
+            with self.assertRaises(CodexInvocationError) as caught:
                 self.start(launcher, root, host_state_root=state_root)
 
             diagnostic_path = state_root / CODEX_FAILURE_DIAGNOSTIC_FILENAME
@@ -3542,7 +3647,8 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(
                 diagnostic["timeout_seconds"], DEFAULT_CODEX_TIMEOUT_SECONDS
             )
-            self.assertEqual(details["reason"], "terminal-event-missing")
+            self.assertEqual(details["reason"], "incomplete-exit")
+            self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
             self.assertEqual(details["event_records"], 2)
             self.assertEqual(details["decoded_event_records"], 1)
             self.assertEqual(details["oversized_event_records"], 1)

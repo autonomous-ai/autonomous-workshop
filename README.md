@@ -141,7 +141,10 @@ Long turns remain attached to the same session if the locally installed Codex
 CLI receives a supported in-place update. Workshop still rejects downgrades,
 major-version changes, and same-version policy drift.
 Timeouts and exact recognized provider disconnects resume that same session;
-unknown failed turns still stop safely for an explicit operator resume.
+unknown failed turns still stop safely for an explicit operator resume. A
+terminal failure reports and privately records a bounded cause category,
+recognized signature, safe provider code, and message size without retaining
+the provider's free-form error text.
 
 ## Workshop Managers
 

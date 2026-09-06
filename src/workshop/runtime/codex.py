@@ -68,6 +68,28 @@ _TRANSIENT_DIAGNOSTIC_HEADS = frozenset(
     )
 )
 _MAX_NATIVE_FAILURE_MESSAGE_CHARS = 4 * 1024
+_SAFE_TERMINAL_ERROR_CODE = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,127}$")
+_TERMINAL_ERROR_SIGNATURES = (
+    (
+        "invalid-encrypted-content",
+        ("invalid encrypted content", "encrypted content is invalid"),
+    ),
+    ("stream-disconnected", tuple(_TRANSIENT_DIAGNOSTIC_HEADS)),
+    ("rate-limited", ("rate limit", "too many requests", "quota exceeded")),
+    (
+        "context-limit",
+        ("context length", "context window", "maximum context", "too many tokens"),
+    ),
+    (
+        "unauthorized",
+        ("unauthorized", "authentication failed", "invalid api key"),
+    ),
+    ("forbidden", ("forbidden", "permission denied")),
+    ("bad-request", ("bad request", "invalid request")),
+    ("service-unavailable", ("service unavailable", "provider unavailable")),
+    ("overloaded", ("overloaded", "capacity")),
+    ("internal-server-error", ("internal server error", "server error")),
+)
 
 _IMMUTABLE_PRODUCT_RUN_PATHS = (
     ".agents",
@@ -128,6 +150,26 @@ _CODEX_SUBAGENT_ITEM_TYPES = frozenset(
 
 
 @dataclass(frozen=True)
+class CodexTerminalFailureDiagnosis:
+    """Bounded non-content diagnosis derived from one terminal event."""
+
+    event_type: str
+    category: str
+    signature: str
+    code: Optional[str]
+    message_bytes: int
+
+    def to_dict(self) -> Mapping[str, Any]:
+        return {
+            "event_type": self.event_type,
+            "category": self.category,
+            "signature": self.signature,
+            "code": self.code,
+            "message_bytes": self.message_bytes,
+        }
+
+
+@dataclass(frozen=True)
 class CodexFailureDiagnostic:
     """Content-free facts about the native stream boundary before failure."""
 
@@ -146,6 +188,7 @@ class CodexFailureDiagnostic:
     stderr_bytes: int
     stderr_overflow: bool
     process_tree_reaped: bool
+    terminal_error: Optional[CodexTerminalFailureDiagnosis] = None
 
     def to_dict(self) -> Mapping[str, Any]:
         return {
@@ -164,6 +207,11 @@ class CodexFailureDiagnostic:
             "stderr_bytes": self.stderr_bytes,
             "stderr_overflow": self.stderr_overflow,
             "process_tree_reaped": self.process_tree_reaped,
+            "terminal_error": (
+                self.terminal_error.to_dict()
+                if self.terminal_error is not None
+                else None
+            ),
         }
 
 
@@ -375,7 +423,7 @@ def _persist_codex_failure_diagnostic(
     if diagnostic is None:
         return
     core = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": CODEX_FAILURE_DIAGNOSTIC_KIND,
         "product_id": product_id,
         "wish_sha256": wish_sha256,
@@ -1906,7 +1954,7 @@ def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
 
 @dataclass
 class _NativeEventStats:
-    """Bounded counters only; never retains an event or event-owned string."""
+    """Bounded counters and sanitized terminal diagnosis, never event content."""
 
     event_records: int = 0
     decoded_event_records: int = 0
@@ -1915,6 +1963,7 @@ class _NativeEventStats:
     largest_event_bytes: int = 0
     last_event_class: str = "none"
     last_activity: Optional[str] = None
+    terminal_error: Optional[CodexTerminalFailureDiagnosis] = None
 
     def observe_record(self, size: int, *, oversized: bool) -> None:
         self.event_records += 1
@@ -1935,6 +1984,7 @@ class _NativeEventStats:
             self.last_event_class = "turn-completed"
         elif event_type in ("turn.failed", "error"):
             self.last_event_class = "terminal-error"
+            self.terminal_error = _terminal_failure_diagnosis(event)
         elif event_type in ("item.started", "item.updated", "item.completed"):
             activity = _safe_activity_for_event(event)
             suffix = activity if activity is not None else "other"
@@ -1974,6 +2024,7 @@ def _diagnosed_codex_failure(
         stderr_bytes=stderr_size,
         stderr_overflow=stderr_overflow,
         process_tree_reaped=process_tree_reaped,
+        terminal_error=stats.terminal_error,
     )
     return failure
 
@@ -2868,8 +2919,18 @@ class CodexNativeSessionLauncher:
                             "Codex native provider transport was interrupted",
                             diagnostic_code="provider-transport",
                         )
+                    diagnosis = event_stats.terminal_error
+                    detail = ""
+                    if diagnosis is not None:
+                        parts = [
+                            "category=%s" % diagnosis.category,
+                            "signature=%s" % diagnosis.signature,
+                        ]
+                        if diagnosis.code is not None:
+                            parts.append("code=%s" % diagnosis.code)
+                        detail = " (%s)" % ", ".join(parts)
                     raise CodexInvocationError(
-                        "Codex native session reported a failed turn",
+                        "Codex native session reported a failed turn%s" % detail,
                         diagnostic_code="explicit-terminal-failure",
                     )
                 if event_type == "thread.started":
@@ -3623,13 +3684,88 @@ def _has_explicit_transient_head(value: Any) -> bool:
     )
 
 
+def _terminal_failure_message(event: Mapping[str, Any]) -> Optional[str]:
+    event_type = event.get("type")
+    if event_type == "turn.failed":
+        error = event.get("error")
+        if isinstance(error, Mapping) and isinstance(error.get("message"), str):
+            return error["message"]
+    if event_type == "error" and isinstance(event.get("message"), str):
+        return event["message"]
+    return None
+
+
+def _terminal_failure_code(event: Mapping[str, Any]) -> Optional[str]:
+    candidates: list[Any] = []
+    error = event.get("error")
+    if isinstance(error, Mapping):
+        candidates.extend((error.get("code"), error.get("type")))
+    candidates.extend((event.get("code"), event.get("error_code")))
+    for value in candidates:
+        if isinstance(value, str) and _SAFE_TERMINAL_ERROR_CODE.fullmatch(value):
+            return value.casefold()
+    return None
+
+
+def _terminal_failure_diagnosis(
+    event: Mapping[str, Any],
+) -> CodexTerminalFailureDiagnosis:
+    """Reduce a terminal event to safe, stable fields without retaining text."""
+
+    event_type = event.get("type")
+    safe_event_type = (
+        event_type if event_type in ("turn.failed", "error") else "unknown"
+    )
+    message = _terminal_failure_message(event)
+    message_bytes = 0
+    normalized = ""
+    if message is not None:
+        try:
+            message_bytes = len(message.encode("utf-8"))
+        except UnicodeError:
+            message_bytes = 0
+        normalized = " ".join(
+            message[:_MAX_NATIVE_FAILURE_MESSAGE_CHARS].casefold().split()
+        )
+    signature = "unclassified"
+    for candidate, needles in _TERMINAL_ERROR_SIGNATURES:
+        if any(needle in normalized for needle in needles):
+            signature = candidate
+            break
+    if signature == "stream-disconnected":
+        category = "provider-transport"
+    elif signature == "rate-limited":
+        category = "rate-limit"
+    elif signature == "context-limit":
+        category = "context-limit"
+    elif signature in ("unauthorized", "forbidden"):
+        category = "access"
+    elif signature in (
+        "service-unavailable",
+        "overloaded",
+        "internal-server-error",
+    ):
+        category = "provider-service"
+    elif signature in ("bad-request", "invalid-encrypted-content"):
+        category = "invalid-request"
+    else:
+        category = "unclassified"
+    return CodexTerminalFailureDiagnosis(
+        event_type=safe_event_type,
+        category=category,
+        signature=signature,
+        code=_terminal_failure_code(event),
+        message_bytes=message_bytes,
+    )
+
+
 def _is_explicit_transient_event_failure(event: Mapping[str, Any]) -> bool:
     """Recognize only Codex-owned, anchored transport failure payloads.
 
     The JSONL schema puts a failed turn's diagnostic at ``error.message`` and
-    an unrecoverable stream diagnostic at top-level ``message``. The bytes are
-    used only to select this narrow typed category and are never persisted or
-    attached to the public exception.
+    an unrecoverable stream diagnostic at top-level ``message``. Raw bytes are
+    never persisted or attached to the public exception; only the bounded
+    structured diagnosis is retained.
     """
 
     event_type = event.get("type")
@@ -3674,6 +3810,7 @@ __all__ = [
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
     "CodexFinalizedWithoutTerminalError",
     "CodexFailureDiagnostic",
+    "CodexTerminalFailureDiagnosis",
     "CodexInvocationError",
     "CodexRecoverableInvocationError",
     "CodexNativeSessionBinding",
