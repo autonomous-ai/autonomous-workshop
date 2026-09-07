@@ -126,3 +126,33 @@ def test_cli_default_and_explicit_configuration(command):
         with pytest.raises(SystemExit):
             parser().parse_args((*command, "--max-tokens", value))
     assert parser().parse_args(("resume", "wish-id")).max_tokens is None
+
+
+def test_observer_accepts_followup_and_still_enforces_cap(tmp_path):
+    from pathlib import Path
+    from workshop.runtime.codex_usage import read_product_usage
+    from tests.runtime.test_codex_usage import records, usage, write, task
+
+    sessions = tmp_path / "sessions"
+    write(sessions, records() + [usage(100)])
+    child = write(sessions, records(CHILD, ROOT) + [usage(200)], CHILD)
+    paths, checkpoint = context(tmp_path)
+    budget = ProductTokenBudget(1000)
+    observer = _product_token_observer(paths, checkpoint, budget)
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage",
+                    side_effect=lambda *args: read_product_usage(
+                        sessions, thread_id=ROOT, workspace=Path("/toy"))):
+        observer()
+        assert budget.to_dict()["used_tokens"] == 330
+        import json
+        with child.open("a") as stream:
+            for event in [task("followup"), usage(300, last_token_usage=counters(100))]:
+                stream.write(json.dumps(event) + "\n")
+        observer()
+        assert budget.to_dict()["used_tokens"] == 440
+        assert not (tmp_path / "token-budget-stop.json").exists()
+        with child.open("a") as stream:
+            stream.write(json.dumps(usage(1000, last_token_usage=counters(700))) + "\n")
+        with pytest.raises(ContractError, match="limit reached"):
+            observer()
+        assert budget.to_dict()["used_tokens"] == 1210

@@ -131,3 +131,36 @@ def test_symlinks_and_duplicate_keys_fail_closed(tmp_path):
         stream.write('{"type":"event_msg","type":"event_msg"}\n')
     with pytest.raises(UsageUnavailable, match="duplicate"):
         read_thread_usage(path, thread_id=ROOT, workspace=Path("/toy"))
+
+
+def task(name):
+    return {"type": "event_msg", "payload": {"type": "task_started", "turn_id": name}}
+
+
+def test_followup_continuity_then_process_reset_counts_once(tmp_path):
+    followup = usage(300, last_token_usage=counters(100))
+    events = records(CHILD, ROOT) + [usage(200), task("followup"),
+        followup, followup, task("empty"), task("third"),
+        usage(400, last_token_usage=counters(100)), task("process-resume"),
+        usage(100), task("after-resume"), usage(200, last_token_usage=counters(100))]
+    result = read_thread_usage(write(tmp_path, events, CHILD),
+                               thread_id=CHILD, workspace=Path("/toy"))
+    assert result["tokens"] == counters(600)
+
+
+@pytest.mark.parametrize("total,last", [(250, 100), (150, 100), (300, 50)])
+def test_followup_gap_or_regression_is_not_a_reset(tmp_path, total, last):
+    events = records() + [usage(200), task("followup"),
+                          usage(total, last_token_usage=counters(last))]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("key", COUNTERS)
+def test_followup_requires_every_counter_to_reconcile(tmp_path, key):
+    total = counters(300)
+    total[key] += 1
+    events = records() + [usage(200), task("followup"),
+        usage(total_token_usage=total, last_token_usage=counters(100))]
+    with pytest.raises(UsageUnavailable):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
