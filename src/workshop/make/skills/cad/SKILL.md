@@ -170,18 +170,12 @@ gate.
     defects from geometry defects. For coupled operating mechanisms, follow
     `references/motion-presentation.md`: use exact-state animation for the
     motion read and mechanical checks for kinematics, not still-image guesses.
-    Complete the Workshop's blind
-    signature review and one coherent repair before running the integrated
-    final verifier once. The review must separately match the exact subjects,
-    action, and spatial/causal relationship; matching only nouns is a failure.
-    Enumerate every explicit positive and negative held-form requirement from
-    the Wish in the review's `critical_form_requirements`; each entry needs
-    exact blind visual evidence. Any visible departure from one of those
-    requirements belongs in `blocking_visual_defects`, not in a nonblocking
-    caveat. Use one critic and no more than two review rounds. Do not use the
-    full verifier as the visual iteration loop. Any geometry change after the
-    review invalidates it and requires a fresh blind read of the regenerated
-    images; copying old prose and replacing hashes is not a review.
+    The calling workflow owns independent semantic review, its repair budget,
+    and the decision to invoke the integrated final verifier. This skill
+    produces and inspects the exact CAD and render evidence that workflow
+    consumes. In Workshop, follow the current Make reference for that review;
+    the verifier still enforces its existing review prerequisites before
+    expensive checks.
     Judge finish against the actual Wish. Exposed mechanisms are legitimate
     design choices, not automatic failures. Unresolved visible defects and
     violated user requirements remain blocking; physical uncertainty stays

@@ -185,3 +185,13 @@ files and the host owns the isolated fresh rebuild. Explicit `--force`
 regeneration is not asserted to repair the shared-library cache defect; changed
 geometry still needs inspection and authoritative fresh verification. Protected
 empty cache directories are not deliverable bytes or blockers.
+
+## Make and CAD ownership clarification (2026-09-07)
+
+Selectively port the ownership guidance from `04f6c88b` and `63eeef74`. Make
+owns the independent review procedure and visual repair budget; CAD owns
+modeling, render evidence, and deterministic verification mechanics. Move the
+duplicated review instructions to Make without changing verifier checks, review
+schemas, frozen early-proof routing, or motion-review requirements. Concept
+image reconstruction and the source branch's verifier simplification are not
+part of this adaptation.
