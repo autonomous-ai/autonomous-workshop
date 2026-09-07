@@ -124,6 +124,7 @@ class build_py(_build_py):
             "orin-shadow",
             "pico-press",
             "sonora-reed",
+            "soren-voss",
             "tess-loop",
             "vela-bloom",
         ):

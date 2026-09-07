@@ -541,7 +541,7 @@ Fresh terminal evidence remains required across all three efforts.
 
 New runs now freeze `deep-economics-v9.md`, retaining v8's proof runway and
 prompt discipline while raising automatic compaction from 24k to 256k at every
-deep stage (lowered to 192k for every v9+ profile by ADR 0044 on 2026-09-06). Frozen v8 and older runs keep their original 24k ceiling.
+deep stage (lowered to 192k for every v9+ profile by ADR 0051 on 2026-09-06). Frozen v8 and older runs keep their original 24k ceiling.
 
 ### V8 production result: liveness recovered, state evidence and final handoff failed
 

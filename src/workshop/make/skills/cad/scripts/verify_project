@@ -57,6 +57,7 @@ import hashlib
 import json
 import os
 import re
+import runpy
 import shlex
 import shutil
 import stat
@@ -1977,7 +1978,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             signature_review_sha256 = _required_signature_review(
                 project, printables
             )
-        except ValueError as exc:
+            motion_presentation = runpy.run_path(str(SCRIPTS_DIR / "motion_presentation.py"))
+            motion_presentation["validate"](
+                project, json.loads((project / SIGNATURE_REVIEW_RELATIVE).read_bytes())
+            )
+        except (ValueError, OSError, TypeError, KeyError) as exc:
             refuse(str(exc))
 
     labels = [label for label, _reference in likeness_refs]

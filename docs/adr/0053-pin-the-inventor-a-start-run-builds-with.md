@@ -1,4 +1,4 @@
-# ADR 0046: Pin the Inventor a `workshop start` run builds and publishes with
+# ADR 0053: Pin the Inventor a `workshop start` run builds and publishes with
 
 - Status: Accepted
 - Date: 2026-09-07
@@ -23,22 +23,23 @@ command to say which Inventor must build and publish a typed brief.
 
 ## Decision
 
-The Wish context key `inventor_id` now means "this Inventor, and no other".
-`start_native_run` reads it (`wish_required_inventor_id`) and passes it to
+The Wish context key `inventor_id` means "this Inventor, and no other".
+`start_native_run` reads it from the Wish context and passes it to
 `AgentRun.create` as `required_inventor_id`, which materializes only that
-Inventor's custom agent and skills. The roster the run seals therefore has
-one entry, the Match assignment contract already requires the ranking to
-cover the roster exactly, and Release already publishes with the selected
-Inventor's credential, so the pin reaches publication without a new gate.
-The key is part of the hashed Wish, so it is immutable for the run and shown
-in every checkpoint. A Wish without the key keeps the full roster.
+Inventor's custom agent and skills (the same host pin `workshop wish
+--inventor` uses). The roster the run seals therefore has one entry, the
+Match assignment contract already requires the ranking to cover the roster
+exactly, and Release already publishes with the selected Inventor's
+credential, so the pin reaches publication without a new gate. The key is
+part of the hashed Wish, so it is immutable for the run and shown in every
+checkpoint. A Wish without the key keeps the full roster.
 
 `workshop start <inventor>` gains `--wish BRIEF`, `--ref IMAGE` (up to eight,
 `--wish` only), and `--max-rounds N`. `--wish` skips the daydream, seals the
 typed brief as the Wish with the named Inventor in its context, and runs
 once. `--wish` and `--idea` are exclusive. Daydream builds under `start`
-carry the same context and are pinned the same way; `workshop wish` is
-unchanged and remains the open-roster path.
+carry the same context and are pinned the same way; `workshop wish` without
+`--inventor` remains the open-roster path.
 
 ## Consequences
 

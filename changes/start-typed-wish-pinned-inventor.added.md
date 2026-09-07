@@ -3,4 +3,4 @@
   Wish context, the run materializes only that Inventor, Match can bind
   nobody else, and Release publishes with that Inventor's own credential.
   Daydream builds under `workshop start` are pinned the same way. See ADR
-  0046.
+  0053.

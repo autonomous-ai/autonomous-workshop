@@ -82,19 +82,20 @@ uv run workshop start <inventor-id> --wish "I wish for ..." --ref side.jpg
 uv run workshop resume <wish-id>
 ```
 
-`workshop wish` lets Match choose the Inventor from the whole roster, and
-Release then publishes with that Inventor's credential, falling back to the
-host-wide Factory login when the chosen Inventor has none. `workshop start
-<inventor-id> --wish` seals the named Inventor into the Wish instead: the run
-materializes only that Inventor's custom agent, Match can bind nobody else,
-and Release publishes with that Inventor's own account (ADR 0046). A daydream
-built by `workshop start` is pinned the same way.
+`workshop wish` without `--inventor` lets Match choose the Inventor from the
+whole roster, and Release then publishes with that Inventor's credential,
+falling back to the host-wide Factory login when the chosen Inventor has
+none. `workshop wish --inventor <id>` and `workshop start <inventor-id>
+--wish` seal the named Inventor into the Wish instead: the run materializes
+only that Inventor's custom agent, Match can bind nobody else, and Release
+publishes with that Inventor's own account (ADR 0053). A daydream built by
+`workshop start` is pinned the same way.
 
 `workshop resume --refresh-tools` first rewrites the run's host-owned
 deterministic tools (the domain skills, CAD verifier included) from the
 installed Workshop and rebinds them in the run manifest, recording the change
 in the run's private host state; use it when a run stopped waiting on a tool
-defect the host has since corrected (ADR 0045).
+defect the host has since corrected (ADR 0052).
 
 Up to eight PNG, JPEG, or WebP reference images may ride a Wish. They reach
 the run read-only under `wish-references/`; the public toy archive always

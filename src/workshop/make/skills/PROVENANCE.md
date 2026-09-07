@@ -168,3 +168,11 @@ rejects visually indistinguishable frames, while the older motion sheet remains
 truthfully documented as viewpoint presentation of one unchanged mesh. This
 closes the production gap where repeated camera angles were mistaken for
 evidence of a toy's promised transformation.
+# Local motion-presentation extension (2026-09-07)
+
+Workshop adds `cad/scripts/motion_presentation.py` and common-frame rendering
+to bind exact-state animation to CAD source, motion conditions and independent
+review. The final verifier validates this evidence for coupled mechanisms;
+existing geometry, motion, retention, mesh and thickness gates are unchanged.
+CAD skill instructions now distinguish presentation from physical validation
+and judge exposed mechanisms against the actual Wish. See ADR 0047.

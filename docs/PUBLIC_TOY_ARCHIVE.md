@@ -54,7 +54,8 @@ toys/<inventor>-<slug>/
 ```
 
 The root README is generated as a public entry point. It includes a sealed
-product render, title and summary, Factory link, frozen Manager/effort/Inventor,
+product render, title and summary, Factory link, frozen
+agent/model/effort/workflow/Inventor,
 workflow attempts, a reproduction command, archive map, and evidence
 limitations. When exact Wish disclosure was not granted, the command uses the
 public summary and labels that substitution instead of exposing private text.

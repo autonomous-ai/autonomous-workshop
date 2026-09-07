@@ -1,4 +1,4 @@
-# ADR 0045: Exact thickness readings and host-corrected run tools
+# ADR 0052: Exact thickness readings and host-corrected run tools
 
 - Status: Accepted
 - Date: 2026-09-06

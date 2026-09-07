@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "fcea3406da061081e74a7a10ac3ed27fee9c04f9a25bdce08c9387be7268adca",
+      "kind": "codex-skill",
+      "name": "soren-voss-inventor",
+      "path": "skills/soren-voss-inventor"
+    }
+  ],
+  "id": "soren-voss",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

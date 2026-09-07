@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from workshop.errors import ContractError
 from workshop.runtime.claude import (
     ClaudeNativeSessionLauncher,
     claude_subprocess_environment,
@@ -109,6 +110,99 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             (self.host_state / "claude-session.json").read_text(encoding="utf-8")
         )
         self.assertEqual(payload["session_id"], "claude-session-one")
+
+    def test_selected_opus_model_and_effort_are_bound_and_reused(self):
+        commands = []
+
+        def popen(command, **kwargs):
+            del kwargs
+            commands.append(command)
+            return _FakeProcess(
+                [
+                    json.dumps(
+                        {
+                            "type": "system",
+                            "subtype": "init",
+                            "session_id": "claude-session-one",
+                        }
+                    )
+                    + "\n"
+                ]
+            )
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.0.0",
+            model="claude-opus-5",
+            reasoning_effort="high",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+        launcher.start(
+            product_id="wish-one",
+            wish_sha256=DIGEST,
+            constitution_sha256=DIGEST,
+            run_root=self.run_root,
+            host_state_root=self.host_state,
+            prompt="invent",
+        )
+        launcher.resume(
+            product_id="wish-one",
+            wish_sha256=DIGEST,
+            constitution_sha256=DIGEST,
+            run_root=self.run_root,
+            host_state_root=self.host_state,
+            prompt="make",
+        )
+        for command in commands:
+            self.assertIn("--model", command)
+            self.assertEqual(command[command.index("--model") + 1], "claude-opus-5")
+            self.assertIn("--effort", command)
+            self.assertEqual(command[command.index("--effort") + 1], "high")
+        payload = json.loads(
+            (self.host_state / "claude-session.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(payload["schema_version"], 2)
+        self.assertEqual(payload["model"], "claude-opus-5")
+        self.assertEqual(payload["reasoning_effort"], "high")
+
+        changed = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.0.0",
+            model="claude-sonnet-5",
+            reasoning_effort="high",
+            popen_factory=popen,
+        )
+        with self.assertRaisesRegex(ContractError, "runtime binding"):
+            changed.resume(
+                product_id="wish-one",
+                wish_sha256=DIGEST,
+                constitution_sha256=DIGEST,
+                run_root=self.run_root,
+                host_state_root=self.host_state,
+                prompt="make",
+            )
+        self.assertEqual(len(commands), 2)
+
+    def test_every_supported_effort_reaches_claude_command(self):
+        observed = 0
+        for effort in ("low", "medium", "high", "xhigh"):
+            observed += 1
+            with self.subTest(effort=effort):
+                launcher = ClaudeNativeSessionLauncher(
+                    binary="/bin/claude",
+                    cli_version="2.0.0",
+                    model="claude-opus-5",
+                    reasoning_effort=effort,
+                )
+                command = launcher._command(
+                    self.run_root, "invent", session_id=None
+                )
+                self.assertEqual(
+                    command[command.index("--model") + 1], "claude-opus-5"
+                )
+                self.assertEqual(command[command.index("--effort") + 1], effort)
+        self.assertEqual(observed, 4)
 
     def test_clean_exit_without_finalizer_is_recoverable(self):
         from workshop.runtime.claude import ClaudeRecoverableInvocationError

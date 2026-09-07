@@ -60,7 +60,7 @@ from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     NativeManagerInvocationError,
     manager_launcher,
-    manager_spec,
+    manager_runtime_selection,
 )
 from workshop.runtime.package_data import default_workshop_home
 from workshop.runtime.project_boundary import (
@@ -432,6 +432,8 @@ def run_daydream(
     *,
     source_root: Path,
     manager_id: str = DEFAULT_MANAGER_ID,
+    manager_model: Optional[str] = None,
+    manager_reasoning_effort: Optional[str] = None,
     repository_root: Optional[Path] = None,
     home: Optional[Path] = None,
     launcher_factory: Callable[..., Any] = manager_launcher,
@@ -443,7 +445,12 @@ def run_daydream(
 ) -> SealedDaydream:
     """Let one Inventor dream one new idea and seal it, or explain why not."""
 
-    spec = manager_spec(manager_id)
+    runtime = manager_runtime_selection(
+        manager_id,
+        model=manager_model,
+        reasoning_effort=manager_reasoning_effort,
+    )
+    spec = runtime.spec
     manifest, taste = resolve_inventor(inventor_id, source_root=source_root)
     selected_seed = seed if seed is not None else draw_seed()
     if not isinstance(selected_seed, DaydreamSeed):
@@ -484,7 +491,15 @@ def run_daydream(
         activity_observer=activity_observer,
         finalized_files=(paths.work / IDEA_FILE_NAME,),
         label="Daydream",
-        launcher_kwargs={"timeout_seconds": DAYDREAM_TURN_TIMEOUT_SECONDS},
+        launcher_kwargs={
+            "model": runtime.model,
+            **(
+                {"reasoning_effort": runtime.reasoning_effort}
+                if runtime.reasoning_effort is not None
+                else {}
+            ),
+            "timeout_seconds": DAYDREAM_TURN_TIMEOUT_SECONDS,
+        },
     )
     # The Inventor could write anything below the workspace; only a real,
     # unlinked work directory and a fresh notebook decide what gets sealed.

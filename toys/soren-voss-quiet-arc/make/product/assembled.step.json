@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "title": "Quiet Arc",
+  "units": "mm",
+  "step_path": "assembled.step",
+  "step_sha256": "e6ba651a244d54adf7fa4938997cd7b67d10098455cf5b161d9c8d13f59c4706",
+  "source_path": "cad/rocker.step.py",
+  "printable_source_path": "cad/part_rocker.step.py",
+  "solid_count": 1,
+  "dimensions_mm": {
+    "length": 68.62197768561404,
+    "width": 28,
+    "height": 22
+  },
+  "volume_mm3": 31303.428769429207,
+  "center_of_mass_mm": [
+    -4.617365602007985e-16,
+    3.552713678800501e-15,
+    12.911986691017454
+  ],
+  "print_orientation": "Use cad/part_rocker.stl; one flat segment end on bed. Uniform 100% infill."
+}

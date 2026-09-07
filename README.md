@@ -13,18 +13,40 @@
 
 # Autonomous Workshop
 
-Autonomous AI Inventors daydream, invent, and make new toys and games around the clock. Each Inventor reads, researches, learns and watches, keeps a notebook, and leaves with one idea it likes. That idea runs through Invent, Make and Release under a trusted host that seals every step, and lands on the [shop](https://www.autonomous.ai/toys), where you order one and it ships in days. Nothing is made before it is wanted.
+Create your own autonomous AI Inventor. Shape its Taste, give it direction, and let it dream up and develop original toys and games for people to buy.
+
+Autonomous Workshop is the engine behind this vision: anyone can build a toy studio around their own Inventors. The creator shapes taste and direction. The Inventor researches, invents, and makes. Autonomous brings the toys to the [shop](https://www.autonomous.ai/toys), with physical production, shipping, and customer support owned by Operations.
+
+**Our first category is toys and games. Our focus is autonomous Inventors that people create and direct.** Conversation is the main creative interface; individual toy briefs and CAD edits support that relationship.
 
 [![The Autonomous Workshop loop: Daydream, Invent (optional), Make, Playtest (optional), Release, Shop, Scoreboard](docs/images/inventor-loop.svg)](docs/images/inventor-loop.svg)
 
-## Direction
+## The creator experience
 
-The Workshop is becoming the engine of an AI-native play company. The full plan, the state of the code, and the specifications are kept privately for now; the pieces below land in this repo as they ship.
+The planned [**Manage Inventors** page](https://github.com/autonomous-ai/autonomous-workshop/issues/16) gives each creator a collection of Inventors. Click **Add Inventor**, start a conversation about the toys you want to put into the world, and develop a recognizable creative point of view together. Each Inventor has one persistent workspace:
 
-- **Daydream** is the first stage. `workshop start <inventor>` runs the whole loop; its first step lets one Inventor dream one brand-new idea that fits its Taste: the Inventor reads its own `TASTE.md`, searches for prior art, and writes a concept card; the host lints it against every toy already made and the Inventor's notebook, then seals it. The Inventor is shown the toys that passed the build review and the ones that failed, with the reason, so it aims at what can actually be made. `workshop daydream <inventor>` shows an idea without building it. Once started, the loop keeps dreaming and building until `workshop stop` or Ctrl-C. Outcome feedback comes next.
-- **The shop, not a wish page**, is the product. The consumer-facing Wish service with price tiers is retired. Internally the sealed brief that starts a run is still called a Wish (`WISH.json`, and every run id is a Wish id); that name is a contract, not a promise. A Wish can attach reference images (`workshop wish --ref side.jpg --ref front.png "..."`); they reach the run read-only under `wish-references/`, are re-verified at every checkpoint, and ship in the public toy archive only when the exact Wish wording is disclosed.
-- **Release explains the model**, and the first order prints and photographs the real piece so listings carry real images.
-- **An outcome scoreboard** keyed to each design feeds the Inventors, so next month's toys beat this month's.
+- **Chat:** give direction, explore ideas, discuss a particular toy, and hear about meaningful progress and customer feedback.
+- **Taste:** an editable `TASTE.md` that captures what the Inventor loves, rejects, and aims to make unmistakably its own. Clear lasting preferences from conversation become visible, versioned updates with undo; a request about one toy stays with that toy.
+- **Inventions:** the Inventor's toy library, including ideas, work in progress, released products, revision history, units sold, and buyer ratings with review counts. A new revision can be in development while an earlier revision remains on sale.
+
+Creators can have multiple Inventors with different tastes. Each works within explicit operating limits and publishing permissions. Creators return to see what their Inventors have made, learn from the results, and shape their next direction.
+
+## How we are opening the Workshop
+
+1. **Be the first creators.** We create and operate the initial Inventors ourselves, testing the same tools and product journey we intend to offer others.
+2. **Invite creators.** A small group establishes its own Inventors and toy studios, helping us prove that distinctive toys and dependable fulfillment can work beyond our own team.
+3. **Open creation to everyone.** Anyone can create and direct Inventors; shared quality requirements and operating controls apply as the community grows.
+
+Our initial Inventors seed the shop and exercise the system. The long-term platform brings together many creators, their autonomous Inventors, and people who want to buy their toys.
+
+## What works today and what comes next
+
+- **Available in the CLI:** `workshop create inventor --taste ./TASTE.md` creates a specialist bundle from your exact Taste and connects its publishing account. `workshop start <inventor>` repeatedly dreams, builds, and attempts publication until stopped or its failure limit is reached. `workshop daydream <inventor>` lets you inspect an idea before building it. See the [Quickstart](#quickstart) and [Build an Inventor](docs/BUILD_AN_INVENTOR.md).
+- **Implemented production boundary:** the host seals and checks each enabled stage, then publishes the accepted digital product and manual through Factory with authenticated readback. Operations owns physical production, hands-on checks, shipping, and customer support after that handoff. Publication alone does not prove manufacture or delivery.
+- **Planned creator workspace:** the hosted Manage Inventors page, persistent creator chat, conversation-driven Taste revisions, and invention performance views described above.
+- **Planned learning loop:** creator feedback and actual product outcomes inform future work. Today's notebook remembers previous ideas to avoid repetition; sales, playtests, and customer reviews do not yet flow back into it. Outcome feedback should improve an Inventor's judgment while preserving the creator's control over its Taste.
+
+Internally, the sealed brief that begins one product run is still called a Wish. Existing Wish commands and frozen run contracts remain part of the engine; the consumer experience centers on creating and directing an Inventor.
 
 ## Quickstart
 
@@ -53,26 +75,46 @@ uv run workshop stop pico-press          # ends after the current step
 uv run workshop stop pico-press --now    # interrupts now; the current run stays resumable
 ```
 
-Three consecutive failed daydreams or builds stop the loop on their own. `--once` dreams and builds a single idea; `--max-ideas N` stops after N. `--effort` goes deeper: 🔥 Forge adds Invent (`Invent -> Make -> Release`), 🗺️ Quest adds Invent and Playtest:
+Three consecutive failed daydreams or builds stop the loop on their own. `--once` dreams and builds a single idea; `--max-ideas N` stops after N. `--workflow` goes deeper: 🔥 Forge adds Invent (`Invent -> Make -> Release`), 🗺️ Quest adds Invent and Playtest:
 
 ```bash
-uv run workshop start pico-press --effort forge
+uv run workshop start pico-press --workflow forge
 ```
 
 Want to see an idea before building? `workshop daydream pico-press` prints the card and stops. Build a saved idea later with `workshop start pico-press --idea <daydream-id>`.
 
-Have a brief of your own? `--wish` skips the daydream and builds your words as that Inventor. The Inventor id is sealed into the Wish, so the run materializes only that Inventor: Match can bind nobody else, and Release publishes with that Inventor's account. `--ref` attaches up to eight reference images (PNG, JPEG, or WebP), `--max-rounds` raises the Invent-Make round budget:
+To make just one product from your own idea, use `wish`:
 
 ```bash
-uv run workshop start ferro-line --effort forge --max-rounds 6 \
+uv run workshop wish "A small hand-cranked cam toy" --inventor soren-voss \
+  --workflow spark --agent codex --model sol --effort high
+```
+
+`start <inventor>` is the ongoing Inventor-led loop; `wish "..."` creates one
+product and stops. Omit `--inventor` on a Wish to let the Manager choose the
+best match. `start <inventor> --once` dreams and builds one Inventor-generated
+idea. `resume <wish-id>` continues the same unfinished product and session.
+
+`start <inventor> --wish "..."` builds your own brief as that Inventor without
+a daydream: the Inventor id is sealed into the Wish, so the run materializes
+only that Inventor, Match can bind nobody else, and Release publishes with
+that Inventor's account. `--ref` attaches up to eight reference images (PNG,
+JPEG, or WebP) to a `wish` or a `start --wish`; `--max-rounds` raises the
+Invent-Make round budget:
+
+```bash
+uv run workshop start ferro-line --workflow forge --max-rounds 6 \
   --ref duck.webp --wish "a wind-up robot duck that walks when you turn its key"
 ```
 
-`--manager` chooses the Workshop Manager for the daydream and the run. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
+`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at high effort; Claude Code defaults to Opus 5 at high effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
-uv run workshop start pico-press --manager grok --effort spark
+uv run workshop start pico-press --agent grok --workflow spark
+
+# Or run Codex Astra at high reasoning effort:
+uv run workshop start pico-press --agent codex --model astra --effort high
 ```
 
 Every run prints a run ID (a Wish ID). Check on it or continue the same session:
@@ -81,6 +123,31 @@ Every run prints a run ID (a Wish ID). Check on it or continue the same session:
 uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
+
+`start` and `wish` accept `--max-tokens N`, default **10,000,000** per Codex
+product. Input plus output is counted across all enabled build steps, native
+children, retries, and resumes. Cached input counts and is reported separately;
+reasoning output is already part of output. `start` gives each product its own
+allowance; the separate Daydream session is outside this build budget.
+
+```bash
+uv run workshop wish "A simple one-piece gravity desk rocker" --inventor soren-voss \
+  --workflow spark --agent codex --model astra --effort medium --max-tokens 10000000
+uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra tokens
+```
+
+Omitting `--max-tokens` on resume preserves the saved allowance. Providing it
+explicitly adopts token budgeting for an eligible older run or changes its
+total cap, retaining recovered prior usage. Token-budgeted runs no longer split
+every twenty minutes; a one-hour emergency execution watchdog remains. Native
+usage is observed after requests, so in-flight work can overshoot the threshold.
+Missing usage is not free work. This is not a dollar cap. The local usage adapter
+currently requires Codex 0.153.4; other Managers retain their existing policy.
+Live acceptance passed for [Quiet Arc](https://www.autonomous.ai/toys/product/quiet-arc):
+Spark / Codex / Astra / medium / Soren, including same-session recovery and
+verified publication, used 6,893,962 observed tokens of the 10M allowance.
+This validates one simple digital-product workflow, not physical manufacture
+or every live parameter combination.
 
 Long turns remain attached to the same session if the locally installed Codex
 CLI receives a supported in-place update. Workshop still rejects downgrades,
@@ -93,20 +160,20 @@ unknown failed turns still stop safely for an explicit operator resume.
 One run is one native coding-agent session — the shop lead. Resume cannot switch Managers.
 
 ```bash
-uv run workshop start pico-press --manager codex    # default
-uv run workshop start pico-press --manager claude   # experimental
-uv run workshop start pico-press --manager grok     # experimental
+uv run workshop start pico-press --agent codex    # Sol + high; default
+uv run workshop start pico-press --agent claude   # Opus 5 + high; experimental
+uv run workshop start pico-press --agent grok     # experimental
 ```
 
 | Manager | CLI | Status |
 |---|---|---|
-| [Codex](https://learn.chatgpt.com/docs/codex/cli) | `codex` | Default. Omit `--manager`. |
+| [Codex](https://learn.chatgpt.com/docs/codex/cli) | `codex` | Default. Omit `--agent`. |
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `claude` | Experimental. |
 | [Grok Build](https://docs.x.ai/build/overview) | `grok` | Experimental. Spark E2E: [Horn Tip](toys/pico-press-horn-tip/). |
 
 ## Inventors
 
-Each Inventor is a specialist point of view with its own lane, not a category of toy. Several can make the same kind of toy in their own way. The roster is growing toward game-night titles, kinetic machines, and owned worlds and characters; six new Inventors are drafted and land here as they pass their first runs, and you can add your own.
+Each Inventor expresses a specialist point of view. Several can make the same kind of toy in their own way. The bundled Inventors are our first studios and public examples; creators can already add their own through the CLI. The hosted creation and management experience is planned.
 
 An Inventor is a declared specialist bundle: `TASTE.md` for creative judgment, `inventor.json` for identity and skill hashes, and a required `<id>-inventor` skill. Optional extra Inventor-prefixed skills may hold scripts, references, or tested deterministic tools. For a run, `.codex/agents/*.toml` is the sole roster. Inventor code cannot launch agents, choose stages, pass gates, or perform authenticated effects.
 
@@ -209,6 +276,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Eclipse Braid | [Kestrel Knot](inventors/kestrel-knot/) | ✨ Spark | [`toys/kestrel-knot-eclipse-braid/`](toys/kestrel-knot-eclipse-braid/) | [eclipse-braid](https://www.autonomous.ai/toys/product/eclipse-braid) |
 | Moonwake Garden | [Luma Vale](inventors/luma-vale/) | 🗺️ Quest | [`toys/luma-vale-moonwake-garden/`](toys/luma-vale-moonwake-garden/) | [moonwake-garden](https://www.autonomous.ai/toys/product/moonwake-garden) |
 | Horn Tip | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/toys/product/horn-tip) |
+| Quiet Arc | [Soren Voss](inventors/soren-voss/) | ✨ Spark | [`toys/soren-voss-quiet-arc/`](toys/soren-voss-quiet-arc/) | [quiet-arc](https://www.autonomous.ai/toys/product/quiet-arc) |
 | Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/toys/product/lunar-relay) |
 | Orbit Gobbler | [Bob](inventors/bob/) | 🔥 Forge | [`toys/bob-orbit-gobbler/`](toys/bob-orbit-gobbler/) | [orbit-gobbler](https://www.autonomous.ai/toys/product/orbit-gobbler) |
 | Comet Heist | [Leo](inventors/leo/) | 🗺️ Quest | [`toys/leo-comet-heist-twin-pulse-vault-run/`](toys/leo-comet-heist-twin-pulse-vault-run/) | [comet-heist-twin-pulse-vault-run](https://www.autonomous.ai/toys/product/comet-heist-twin-pulse-vault-run) |

@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import stat
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -219,6 +220,13 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
         self.binary = self.root / "bin/codex"
         self.binary.parent.mkdir()
         shutil.copyfile(_FIXTURE_CODEX, self.binary)
+        # Use the environment running the tests, not an unrelated system
+        # python3 that may lack the deterministic fixture's dependencies.
+        content = self.binary.read_text(encoding="utf-8")
+        self.binary.write_text(
+            "#!%s\n%s" % (sys.executable, content.split("\n", 1)[1]),
+            encoding="utf-8",
+        )
         self.binary.chmod(0o700)
 
     def _environment(self, *, home=None, credentials=True):
@@ -392,7 +400,7 @@ class DeterministicNativeFidelityTest(unittest.TestCase):
             receipt,
         )
         self.assertIn(receipt["action"], {"started", "published-release"})
-        self.assertEqual(receipt["effort"], effort)
+        self.assertEqual(receipt["workflow"], effort)
         self.assertTrue(transport.public)
         self.assertTrue(transport.authenticated_requests)
         self.assertEqual(transport.import_category, FACTORY_TOY_CATEGORY_SLUG)

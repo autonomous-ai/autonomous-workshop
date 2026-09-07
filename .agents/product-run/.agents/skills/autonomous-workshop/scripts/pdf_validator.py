@@ -16,6 +16,7 @@ import math
 import os
 import signal
 import sys
+from pathlib import Path
 from collections.abc import Mapping
 from typing import Any
 
@@ -885,11 +886,28 @@ def _result(ok: bool, error: str | None) -> bytes:
 
 
 def main() -> int:
-    if sys.argv != [sys.argv[0], "--isolated-worker"]:
+    arguments = sys.argv[1:]
+    package_root = None
+    if len(arguments) == 3 and arguments[:2] == ["--isolated-worker", "--package-root"]:
+        candidate = Path(arguments[2])
+        if (
+            candidate.is_absolute()
+            and candidate.name in {"site-packages", "dist-packages"}
+            and candidate.is_dir()
+            and str(candidate.resolve()) == arguments[2]
+        ):
+            package_root = str(candidate)
+            arguments = ["--isolated-worker"]
+    if arguments != ["--isolated-worker"]:
         os.write(1, _result(False, "validator invocation is invalid"))
         return 64
     try:
         _install_resource_limits()
+        if package_root is not None:
+            # Append after the isolated standard library. Never execute .pth
+            # files or import from cwd. The host gate independently validates
+            # the same PDF in its own environment, without this override.
+            sys.path.append(package_root)
         logging.disable(logging.CRITICAL)
         content = sys.stdin.buffer.read(MAX_PDF_BYTES + 1)
         _validate(content)

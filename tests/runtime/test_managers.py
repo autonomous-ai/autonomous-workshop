@@ -9,9 +9,12 @@ from workshop.runtime.grok import GrokNativeSessionLauncher
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     MANAGER_PROJECT_KIND,
+    SUPPORTED_REASONING_EFFORTS,
     manager_launcher,
     manager_project_bytes,
+    manager_runtime_selection,
     manager_spec,
+    parse_manager_project_bytes,
 )
 
 
@@ -55,6 +58,128 @@ class ManagerRegistryTest(unittest.TestCase):
         self.assertEqual(payload["kind"], MANAGER_PROJECT_KIND)
         self.assertEqual(payload["manager_id"], "codex")
         self.assertEqual(payload["agent_directory"], ".codex/agents")
+        self.assertEqual(payload["model"], "gpt-5.6-sol")
+        self.assertEqual(payload["reasoning_effort"], "high")
+
+    def test_runtime_selection_resolves_agent_defaults_and_model_aliases(self):
+        codex = manager_runtime_selection("codex")
+        self.assertEqual(codex.model, "gpt-5.6-sol")
+        self.assertEqual(codex.reasoning_effort, "high")
+        astra = manager_runtime_selection(
+            "codex", model="astra", reasoning_effort="high"
+        )
+        self.assertEqual(astra.model, "gpt-6-astra")
+        claude = manager_runtime_selection("claude")
+        self.assertEqual(claude.model, "claude-opus-5")
+        self.assertEqual(claude.reasoning_effort, "high")
+
+    def test_runtime_selection_rejects_unsupported_agent_controls(self):
+        with self.assertRaisesRegex(ContractError, "Codex model"):
+            manager_runtime_selection("codex", model="unknown")
+        with self.assertRaisesRegex(ContractError, "reasoning-effort"):
+            manager_runtime_selection("grok", reasoning_effort="high")
+
+    def test_every_declared_model_spelling_and_effort_resolves_canonically(self):
+        codex_models = {
+            "astra": "gpt-6-astra",
+            "sol": "gpt-5.6-sol",
+            "terra": "gpt-5.6-terra",
+            "luna": "gpt-5.6-luna",
+            "gpt-6-astra": "gpt-6-astra",
+            "gpt-5.6-sol": "gpt-5.6-sol",
+            "gpt-5.6-terra": "gpt-5.6-terra",
+            "gpt-5.6-luna": "gpt-5.6-luna",
+        }
+        claude_models = {
+            "opus": "claude-opus-5",
+            "opus-5": "claude-opus-5",
+            "claude-opus-5": "claude-opus-5",
+        }
+        observed = 0
+        for agent, models in (
+            ("codex", codex_models),
+            ("claude", claude_models),
+        ):
+            for model_argument, canonical_model in models.items():
+                for effort in SUPPORTED_REASONING_EFFORTS:
+                    observed += 1
+                    with self.subTest(
+                        agent=agent, model=model_argument, effort=effort
+                    ):
+                        selection = manager_runtime_selection(
+                            agent,
+                            model=model_argument,
+                            reasoning_effort=effort,
+                        )
+                        self.assertEqual(selection.model, canonical_model)
+                        self.assertEqual(selection.reasoning_effort, effort)
+        self.assertEqual(observed, 44)
+
+    def test_every_canonical_runtime_selection_round_trips_manager_project(self):
+        canonical_models = {
+            "codex": (
+                "gpt-6-astra",
+                "gpt-5.6-sol",
+                "gpt-5.6-terra",
+                "gpt-5.6-luna",
+            ),
+            "claude": ("claude-opus-5",),
+        }
+        observed = 0
+        for agent, models in canonical_models.items():
+            for model in models:
+                for effort in SUPPORTED_REASONING_EFFORTS:
+                    observed += 1
+                    with self.subTest(agent=agent, model=model, effort=effort):
+                        selection = manager_runtime_selection(
+                            agent, model=model, reasoning_effort=effort
+                        )
+                        parsed_spec, parsed_model, parsed_effort = (
+                            parse_manager_project_bytes(
+                                manager_project_bytes(selection)
+                            )
+                        )
+                        self.assertEqual(parsed_spec.manager_id, agent)
+                        self.assertEqual(parsed_model, model)
+                        self.assertEqual(parsed_effort, effort)
+
+        grok = manager_runtime_selection("grok", model="grok-4.6")
+        parsed_spec, parsed_model, parsed_effort = parse_manager_project_bytes(
+            manager_project_bytes(grok)
+        )
+        self.assertEqual(parsed_spec.manager_id, "grok")
+        self.assertEqual(parsed_model, "grok-4.6")
+        self.assertIsNone(parsed_effort)
+        self.assertEqual(observed + 1, 21)
+
+    def test_every_effort_is_rejected_for_agent_without_effort_control(self):
+        for effort in SUPPORTED_REASONING_EFFORTS:
+            with self.subTest(effort=effort), self.assertRaisesRegex(
+                ContractError, "reasoning-effort"
+            ):
+                manager_runtime_selection(
+                    "grok", model="grok-4.6", reasoning_effort=effort
+                )
+
+    def test_manager_project_parser_preserves_schema_one_as_legacy(self):
+        spec = manager_spec("codex")
+        source = json.dumps(
+            {
+                "schema_version": 1,
+                "kind": MANAGER_PROJECT_KIND,
+                "manager_id": spec.manager_id,
+                "display_name": spec.display_name,
+                "agent_directory": spec.agent_directory,
+                "agent_suffix": spec.agent_suffix,
+                "experimental": spec.experimental,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8") + b"\n"
+        parsed, model, effort = parse_manager_project_bytes(source)
+        self.assertEqual(parsed.manager_id, "codex")
+        self.assertIsNone(model)
+        self.assertIsNone(effort)
 
 
 class ManagerCheckpointResumeTest(unittest.TestCase):

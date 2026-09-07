@@ -763,7 +763,7 @@ AUTHORS = {
 def run() -> int:
     global _LAST_FINALIZER
     if "--version" in sys.argv[1:]:
-        print("codex-cli 0.145.0")
+        print("codex-cli 0.150.0")
         return 0
     arguments = sys.argv[1:]
     try:

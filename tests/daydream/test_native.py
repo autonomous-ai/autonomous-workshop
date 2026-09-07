@@ -66,6 +66,8 @@ class _FakeLauncher:
         test,
         *,
         timeout_seconds,
+        model,
+        reasoning_effort=None,
         idea=None,
         error=None,
         expect_notebook=(),
@@ -78,6 +80,8 @@ class _FakeLauncher:
         self.finalize = finalize
         self.outcome_sha256 = outcome_sha256
         self.timeout_seconds = timeout_seconds
+        self.model = model
+        self.reasoning_effort = reasoning_effort
         self.idea = idea
         self.error = error
         self.expect_notebook = expect_notebook
@@ -165,7 +169,6 @@ class DaydreamNativeTest(unittest.TestCase):
 
         def factory(manager_id, **kwargs):
             kwargs = dict(kwargs)
-            kwargs.pop("reasoning_effort", None)
             launcher = _FakeLauncher(self, **kwargs, **options)
             launchers.append((manager_id, kwargs, launcher))
             return launcher
@@ -201,7 +204,14 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(activities, ["reasoning"])
         manager_id, kwargs, launcher = launchers[0]
         self.assertEqual(manager_id, "codex")
-        self.assertEqual(kwargs, {"timeout_seconds": DAYDREAM_TURN_TIMEOUT_SECONDS})
+        self.assertEqual(
+            kwargs,
+            {
+                "model": "gpt-5.6-sol",
+                "reasoning_effort": "high",
+                "timeout_seconds": DAYDREAM_TURN_TIMEOUT_SECONDS,
+            },
+        )
         start = launcher.starts[0]
         self.assertEqual(start["product_id"], FIRST_ID)
         self.assertEqual(start["constitution_sha256"], DAYDREAM_CONSTITUTION_SHA256)

@@ -63,6 +63,22 @@ feedback loop in Python.
   proposal for the current `STAGE.json`. If progress is truthfully blocked,
   the separate `need` finalizer records that non-ready outcome; it is not Goal
   completion.
+- Bind Goal identity to the current `subject_sha256`, not the checkpoint hash.
+  A truthful waiting outcome or another host packet refresh can advance
+  `checkpoint_sha256` while preserving the same stage attempt. On resume with
+  an unchanged subject, continue the same active Goal against the newest
+  `STAGE.json` even if its objective mentions the older checkpoint; do not
+  create a duplicate Goal or wait solely for that expected refresh. Treat a
+  resume as an environment refresh too: before repeating an access, service,
+  or tooling need, rerun its exact bounded probe once. Do not infer that the
+  condition is unchanged merely because no operator-supplied file appeared.
+- Never delegate an engineering choice back to the operator merely because a
+  component you selected has missing, ambiguous, or contradictory evidence.
+  Unless the Wish itself requires that exact component, qualify a different
+  component, redesign the mechanism, or eliminate the dependency and continue
+  the active Goal. A need is valid only for an external condition that cannot
+  be removed without violating the Wish, a deterministic gate, safety, or
+  host-only effect authority.
 - While pursuing the Goal, work as an observe -> act -> evaluate -> improve
   loop. Inspect the current artifact and evidence, make a focused change, run
   deterministic checks and independent native-agent review where useful,

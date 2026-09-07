@@ -8,6 +8,7 @@ from workshop.workflow.budgets import (
     RUN_BUDGET_SECONDS,
     STEP_BUDGET_SECONDS,
     CommandBudget,
+    LifetimeBudget,
     uses_command_budget,
 )
 
@@ -115,6 +116,49 @@ class CommandBudgetTest(unittest.TestCase):
                 {".agents/skills/autonomous-workshop/references/spark-economics-v3.md": "a" * 64}
             )
         )
+
+
+class LifetimeBudgetTest(unittest.TestCase):
+    def test_resume_retains_spend_and_crash_reservation(self):
+        budget = LifetimeBudget()
+        budget.reserve("make", 1200)
+        resumed = LifetimeBudget()
+        resumed.restore(budget.to_dict())
+        self.assertEqual(resumed.remaining("make"), 1200)
+        resumed.reserve("make", 1200)
+        self.assertEqual(resumed.exhausted("make"), "step")
+        self.assertEqual(resumed.remaining("release"), 1200)
+        self.assertIn("does not reset", resumed.exhausted_message("make", "step", "wish"))
+
+    def test_normal_settlement_refunds_only_unused_reservation(self):
+        budget = LifetimeBudget()
+        budget.reserve("make", 1200)
+        budget.settle("make", 1200, 70.01)
+        self.assertEqual(budget.spent_total, 71)
+        resumed = LifetimeBudget()
+        resumed.restore(budget.to_dict())
+        self.assertEqual(resumed.spent_total, 71)
+
+    def test_malformed_or_inconsistent_budget_fails(self):
+        import copy
+        budget = LifetimeBudget()
+        budget.reserve("make", 1200)
+        for mutate in (
+            lambda v: v["run"].update(used_seconds=0),
+            lambda v: v["steps"]["make"].update(used_seconds=-1),
+            lambda v: v["steps"]["make"].update(used_seconds=True),
+            lambda v: v["steps"].update(unknown={}),
+            lambda v: v["run"].update(limit_seconds=999999),
+        ):
+            value = copy.deepcopy(budget.to_dict())
+            mutate(value)
+            with self.assertRaises(ContractError):
+                LifetimeBudget().restore(value)
+        for seconds in (-1, float("inf"), float("nan"), True):
+            with self.assertRaises(ContractError):
+                budget.spend("make", seconds)
+        with self.assertRaises(ContractError):
+            budget.reserve("make", 2401)
 
 
 if __name__ == "__main__":

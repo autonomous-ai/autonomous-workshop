@@ -68,6 +68,8 @@ from workshop.runtime.grok import grok_supports_native_workshop
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     SUPPORTED_MANAGER_IDS,
+    SUPPORTED_REASONING_EFFORTS,
+    manager_runtime_selection,
     manager_spec,
 )
 from workshop.runtime.package_data import (
@@ -346,10 +348,35 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
     status = receipt.get("status", "unknown")
     stage = str(receipt.get("stage", "unknown")).title()
     print("Wish: %s" % product_id)
-    manager_id = receipt.get("manager")
-    if isinstance(manager_id, str) and manager_id:
-        print("Manager: %s" % manager_spec(manager_id).display_name)
+    agent_id = receipt.get("agent", receipt.get("manager"))
+    if isinstance(agent_id, str) and agent_id:
+        print("Agent: %s" % manager_spec(agent_id).display_name)
+    workflow = receipt.get("workflow")
+    if isinstance(workflow, str) and workflow:
+        print("Workflow: %s" % workflow.title())
+    model = receipt.get("model")
+    effort = receipt.get("effort")
+    if isinstance(model, str) and model:
+        print(
+            "Model: %s%s"
+            % (
+                model,
+                " · effort %s" % effort
+                if isinstance(effort, str) and effort
+                else "",
+            )
+        )
     print("%s: %s at %s" % (verb, status, stage))
+    budget = receipt.get("budget")
+    if isinstance(budget, Mapping) and budget.get("unit") == "tokens":
+        if budget.get("usage_status") == "observed":
+            print("Tokens: %s / %s observed (in-flight usage excluded)" % (
+                format(budget["used_tokens"], ","), format(budget["limit_tokens"], ",")
+            ))
+        else:
+            print("Tokens: usage not yet available; cap %s" % format(budget["limit_tokens"], ","))
+        if budget.get("last_stop_reason"):
+            print("Budget last stop: %s" % budget["last_stop_reason"])
     progress = receipt.get("progress")
     if isinstance(progress, Mapping) and progress.get("status") == "available":
         stage_attempt = progress.get("stage_attempt")
@@ -462,13 +489,24 @@ def _round_budget(value: str) -> int:
     return parsed
 
 
+def _token_budget(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("token budget must be an integer") from exc
+    if not 1_000 <= parsed <= 100_000_000:
+        raise argparse.ArgumentTypeError("token budget must be between 1000 and 100000000")
+    return parsed
+
+
 def _start_run(
     wish: Wish,
     *,
-    effort,
-    manager,
+    workflow,
+    runtime,
     github: bool,
     max_rounds: int = DEFAULT_MAX_ROUNDS,
+    max_tokens: int = 10_000_000,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
@@ -477,15 +515,28 @@ def _start_run(
 
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
     print(
-        "Effort: %s — %s" % (effort.title, effort.description),
+        "Workflow: %s — %s" % (workflow.title, workflow.description),
         file=progress,
         flush=True,
     )
     print(
-        "Manager: %s%s"
+        "Agent: %s%s"
         % (
-            manager.display_name,
-            " (experimental)" if manager.experimental else "",
+            runtime.spec.display_name,
+            " (experimental)" if runtime.spec.experimental else "",
+        ),
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Model: %s%s"
+        % (
+            runtime.model,
+            (
+                " · effort %s" % runtime.reasoning_effort
+                if runtime.reasoning_effort is not None
+                else ""
+            ),
         ),
         file=progress,
         flush=True,
@@ -499,15 +550,20 @@ def _start_run(
         )
     print(
         "Starting one native %s session for %s..."
-        % (manager.display_name, effort.enabled_stages[0].title()),
+        % (runtime.spec.display_name, workflow.enabled_stages[0].title()),
         file=progress,
         flush=True,
     )
+    if runtime.spec.manager_id == "codex":
+        print("Product token cap: %s (all stages and resumes)" % format(max_tokens, ","), file=progress, flush=True)
     return start_native_run(
         wish,
-        effort=effort.name,
-        manager_id=manager.manager_id,
+        effort=workflow.name,
+        manager_id=runtime.spec.manager_id,
+        manager_model=runtime.model,
+        manager_reasoning_effort=runtime.reasoning_effort,
         max_rounds=max_rounds,
+        **({"max_tokens": max_tokens} if max_tokens != 10_000_000 else {}),
         wish_reference_files=wish_reference_files,
         github_publish_requested=github,
         activity_observer=live_progress.activity,
@@ -516,23 +572,31 @@ def _start_run(
 
 
 def _wish(args: argparse.Namespace) -> int:
-    effort = workshop_effort(args.effort)
+    workflow = workshop_effort(args.workflow)
     loaded_references = load_wish_references(list(args.references or ()))
+    context = {"source": "workshop-cli"}
+    if args.inventor is not None:
+        context["inventor_id"] = args.inventor
     wish = Wish.create(
         generate_wish_id(),
         " ".join(args.objective),
-        context={"source": "workshop-cli"},
+        context=context,
         references=[item.reference for item in loaded_references],
     )
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
-    manager = manager_spec(args.manager)
+    runtime = manager_runtime_selection(
+        args.agent,
+        model=args.model,
+        reasoning_effort=args.effort,
+    )
     receipt = _start_run(
         wish,
-        effort=effort,
-        manager=manager,
+        workflow=workflow,
+        runtime=runtime,
         github=args.github,
         max_rounds=args.max_rounds,
+        max_tokens=args.max_tokens,
         wish_reference_files=wish_reference_files(loaded_references),
         progress=progress,
         live_progress=live_progress,
@@ -600,10 +664,10 @@ def _dream_or_load(
     args: argparse.Namespace,
     *,
     root: Path,
-    manager,
+    runtime,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
-    effort: Optional[str],
+    workflow: Optional[str],
 ):
     if args.idea is not None:
         sealed = load_sealed_daydream(args.inventor, args.idea)
@@ -611,10 +675,23 @@ def _dream_or_load(
         return sealed
     print("Inventor: %s" % args.inventor, file=progress, flush=True)
     print(
-        "Manager: %s%s"
+        "Agent: %s%s"
         % (
-            manager.display_name,
-            " (experimental)" if manager.experimental else "",
+            runtime.spec.display_name,
+            " (experimental)" if runtime.spec.experimental else "",
+        ),
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Model: %s%s"
+        % (
+            runtime.model,
+            (
+                " · effort %s" % runtime.reasoning_effort
+                if runtime.reasoning_effort is not None
+                else ""
+            ),
         ),
         file=progress,
         flush=True,
@@ -627,9 +704,11 @@ def _dream_or_load(
     return run_daydream(
         args.inventor,
         source_root=root,
-        manager_id=manager.manager_id,
+        manager_id=runtime.spec.manager_id,
+        manager_model=runtime.model,
+        manager_reasoning_effort=runtime.reasoning_effort,
         activity_observer=live_progress.activity,
-        effort=effort,
+        effort=workflow,
     )
 
 
@@ -643,16 +722,20 @@ def _login(args: argparse.Namespace) -> int:
 
 def _daydream(args: argparse.Namespace) -> int:
     root = _inventor_source_root(args.root)
-    manager = manager_spec(args.manager)
+    runtime = manager_runtime_selection(
+        args.agent,
+        model=args.model,
+        reasoning_effort=args.effort,
+    )
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
     sealed = _dream_or_load(
         args,
         root=root,
-        manager=manager,
+        runtime=runtime,
         progress=progress,
         live_progress=live_progress,
-        effort=None,
+        workflow=None,
     )
     if args.json:
         _print_json({"daydream": sealed.to_dict()})
@@ -683,8 +766,12 @@ def _start(args: argparse.Namespace) -> int:
     """
 
     root = _inventor_source_root(args.root)
-    manager = manager_spec(args.manager)
-    effort = workshop_effort(args.effort)
+    runtime = manager_runtime_selection(
+        args.agent,
+        model=args.model,
+        reasoning_effort=args.effort,
+    )
+    workflow = workshop_effort(args.workflow)
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
     typed = args.wish is not None
@@ -737,10 +824,10 @@ def _start(args: argparse.Namespace) -> int:
                     sealed = _dream_or_load(
                         args,
                         root=root,
-                        manager=manager,
+                        runtime=runtime,
                         progress=progress,
                         live_progress=live_progress,
-                        effort=effort.name,
+                        workflow=workflow.name,
                     )
                 except DaydreamError as exc:
                     if once:
@@ -771,10 +858,11 @@ def _start(args: argparse.Namespace) -> int:
             try:
                 receipt = _start_run(
                     wish,
-                    effort=effort,
-                    manager=manager,
+                    workflow=workflow,
+                    runtime=runtime,
                     github=args.github,
                     max_rounds=args.max_rounds,
+                    max_tokens=args.max_tokens,
                     wish_reference_files=reference_files,
                     progress=progress,
                     live_progress=live_progress,
@@ -921,6 +1009,8 @@ def _resume(args: argparse.Namespace) -> int:
         )
     receipt = resume_native_run(
         args.product_id,
+        **({"adopt_turn_budget": True} if args.turn_budget else {}),
+        **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -1160,12 +1250,12 @@ def _doctor_optional_cli(
             name,
             "needs-attention",
             "%s is installed but is not a Workshop-supported native Manager." % label,
-            next_step="Upgrade %s, or keep using --manager codex." % label,
+            next_step="Upgrade %s, or keep using --agent codex." % label,
         )
     return _check_record(
         name,
         "ready",
-        "%s is available as an experimental Manager via --manager %s."
+        "%s is available as an experimental Manager via --agent %s."
         % (label, name),
     )
 
@@ -1460,7 +1550,8 @@ def parser() -> argparse.ArgumentParser:
             "Start here:\n"
             "  workshop doctor\n"
             "  workshop start pico-press\n"
-            "  workshop start pico-press --effort forge"
+            "  workshop start pico-press --workflow forge\n"
+            "  workshop start pico-press --agent codex --model astra --effort high"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -1517,7 +1608,7 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     start.add_argument(
-        "--effort",
+        "--workflow",
         choices=tuple(WORKSHOP_EFFORTS),
         default=DEFAULT_WORKSHOP_EFFORT,
         metavar="MODE",
@@ -1527,14 +1618,26 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     start.add_argument(
-        "--manager",
+        "--agent",
         choices=tuple(SUPPORTED_MANAGER_IDS),
         default=DEFAULT_MANAGER_ID,
         metavar="RUNTIME",
         help=(
-            "native Manager runtime for the daydream and the run: codex (default), "
+            "native agent runtime for the daydream and run: codex (default), "
             "claude, or grok"
         ),
+    )
+    start.add_argument(
+        "--model",
+        metavar="MODEL",
+        help="agent model (default: sol for Codex; opus 5 for Claude Code)",
+    )
+    start.add_argument(
+        "--effort",
+        choices=SUPPORTED_REASONING_EFFORTS,
+        default=None,
+        metavar="LEVEL",
+        help="model reasoning effort (default: high for Codex and Claude Code)",
     )
     start.add_argument(
         "--root", type=Path, help="Workshop checkout or inventor catalog"
@@ -1576,6 +1679,8 @@ def parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="with --once: exit 1 when the run waits"
     )
     start.set_defaults(handler=_start)
+    start.add_argument("--max-tokens", type=_token_budget, default=10_000_000, metavar="N",
+                       help="Codex token cap per product across all build steps and resumes (default: 10000000); excludes the separate daydream")
 
     login = subcommands.add_parser(
         "login",
@@ -1614,11 +1719,23 @@ def parser() -> argparse.ArgumentParser:
         help="print a saved idea instead of dreaming a new one",
     )
     daydream.add_argument(
-        "--manager",
+        "--agent",
         choices=tuple(SUPPORTED_MANAGER_IDS),
         default=DEFAULT_MANAGER_ID,
         metavar="RUNTIME",
-        help="native Manager runtime for the daydream: codex (default), claude, or grok",
+        help="native agent runtime for the daydream: codex (default), claude, or grok",
+    )
+    daydream.add_argument(
+        "--model",
+        metavar="MODEL",
+        help="agent model (default: sol for Codex; opus 5 for Claude Code)",
+    )
+    daydream.add_argument(
+        "--effort",
+        choices=SUPPORTED_REASONING_EFFORTS,
+        default=None,
+        metavar="LEVEL",
+        help="model reasoning effort (default: high for Codex and Claude Code)",
     )
     daydream.add_argument(
         "--root", type=Path, help="Workshop checkout or inventor catalog"
@@ -1643,7 +1760,15 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     wish.add_argument(
-        "--effort",
+        "--inventor",
+        metavar="INVENTOR",
+        help=(
+            "require one exact Inventor id; when omitted, the native Manager "
+            "chooses the best match from the complete roster"
+        ),
+    )
+    wish.add_argument(
+        "--workflow",
         choices=tuple(WORKSHOP_EFFORTS),
         default=DEFAULT_WORKSHOP_EFFORT,
         metavar="MODE",
@@ -1654,14 +1779,26 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     wish.add_argument(
-        "--manager",
+        "--agent",
         choices=tuple(SUPPORTED_MANAGER_IDS),
         default=DEFAULT_MANAGER_ID,
         metavar="RUNTIME",
         help=(
-            "native Manager runtime: codex (default), claude, or grok; "
+            "native agent runtime: codex (default), claude, or grok; "
             "frozen for the run and cannot be changed on resume"
         ),
+    )
+    wish.add_argument(
+        "--model",
+        metavar="MODEL",
+        help="agent model (default: sol for Codex; opus 5 for Claude Code)",
+    )
+    wish.add_argument(
+        "--effort",
+        choices=SUPPORTED_REASONING_EFFORTS,
+        default=None,
+        metavar="LEVEL",
+        help="model reasoning effort (default: high for Codex and Claude Code)",
     )
     wish.add_argument(
         "--max-rounds",
@@ -1685,6 +1822,8 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
+    wish.add_argument("--max-tokens", type=_token_budget, default=10_000_000, metavar="N",
+                      help="Codex input-plus-output token cap for the whole product (default: 10000000)")
 
     status = subcommands.add_parser(
         "status", help="inspect one native Wish checkpoint without running a model"
@@ -1697,6 +1836,12 @@ def parser() -> argparse.ArgumentParser:
         "resume", help="resume the exact frozen native Manager session for one Wish"
     )
     resume.add_argument("product_id", help="saved Wish id")
+    resume.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",
+                        help="explicit total Codex token cap; prior usage remains charged; omitted keeps the saved budget")
+    resume.add_argument(
+        "--turn-budget", action="store_true",
+        help="explicitly adopt persistent 6-turn/stage, 12-turn/product accounting during the first creative stage; prior turns remain charged",
+    )
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
     resume.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     resume.add_argument(

@@ -33,10 +33,10 @@ from workshop.runtime.progress import SAFE_NATIVE_ACTIVITY_CLASSES
 
 
 # The model every new run freezes. The gpt-5.6 names stay allowed so runs
-# recorded before 2026-09-06 (ADR 0043) still validate their frozen config.
+# recorded before 2026-09-06 (ADR 0050) still validate their frozen config.
 DEFAULT_WORKSHOP_MODEL = "gpt-6-astra"
 ALLOWED_WORKSHOP_MODELS = frozenset(
-    (DEFAULT_WORKSHOP_MODEL, "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+    ("gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
 )
 CODEX_PERMISSION_PROFILE = "workshop-product-run"
 MINIMUM_CODEX_NATIVE_RUNTIME_VERSION = (0, 145, 0)
@@ -86,6 +86,27 @@ _CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES = (
     ("PYTHONNOUSERSITE", "1"),
 )
 _CODEX_NATIVE_FEATURES = ("goals", "multi_agent")
+_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS = (
+    "api.step.parts",
+    "www.step.parts",
+    "media.githubusercontent.com",
+    "*.public.blob.vercel-storage.com",
+)
+_CODEX_COMPONENT_NETWORK_DOMAINS = (
+    *_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS,
+    "datasheets.raspberrypi.com",
+    "dfimg.dfrobot.com",
+    "files.seeedstudio.com",
+    "files.waveshare.com",
+    "iflight-public.oss-cn-hongkong.aliyuncs.com",
+    "wiki.dfrobot.com",
+    "www.dfrobot.com",
+    "www.iflight.cn",
+    "www.iflight.com",
+    "www.visaton.de",
+    "www.waveshare.com",
+    "www.waveshare.net",
+)
 _CODEX_REASONING_ITEM_TYPES = frozenset(("reasoning",))
 _CODEX_TOOL_ITEM_TYPES = frozenset(
     (
@@ -488,11 +509,12 @@ def _run_policy_before_workshop_python(
     unchanged.
     """
 
-    workshop_python = (
-        "WORKSHOP_PYTHON",
-        str(Path(sys.executable).absolute()),
+    workshop_python = tuple(
+        entry
+        for entry in run_policy.environment_overrides
+        if entry[0] == "WORKSHOP_PYTHON"
     )
-    if run_policy.environment_overrides.count(workshop_python) != 1:
+    if len(workshop_python) != 1:
         raise CodexInvocationError(
             "Codex runtime policy has no unique Workshop Python binding"
         )
@@ -504,8 +526,173 @@ def _run_policy_before_workshop_python(
         environment_overrides=tuple(
             entry
             for entry in run_policy.environment_overrides
-            if entry != workshop_python
+            if entry != workshop_python[0]
         ),
+    )
+
+
+def _run_policy_has_component_network(run_policy: _CodexRunPolicy) -> bool:
+    """Return whether the exact Step.parts proxy policy is present."""
+
+    return "features.network_proxy=true" in run_policy.permission_config_arguments
+
+
+def _run_policy_before_component_network(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Reconstruct the exact policy before scoped component downloads.
+
+    Product runs originally disabled command networking even though the locked
+    Step.parts skill requires its public API and checksum-addressed asset
+    hosts. Preserve that exact predecessor for already-checkpointed sessions;
+    do not broaden it or accept arbitrary network-policy drift.
+    """
+
+    if not _run_policy_has_component_network(run_policy):
+        raise CodexInvocationError(
+            "Codex runtime policy has no scoped component network binding"
+        )
+    return _CodexRunPolicy(
+        permission_config_arguments=_permission_config_arguments(
+            run_root,
+            run_policy.trusted_python_runtime_paths,
+            run_policy.trusted_codex_runtime_paths,
+            component_network=False,
+        ),
+        trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
+        trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
+        environment_allowlist=run_policy.environment_allowlist,
+        environment_overrides=run_policy.environment_overrides,
+    )
+
+
+def _run_policy_before_supplier_drawings(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Reconstruct the first scoped proxy before supplier drawing hosts."""
+
+    current_domains = "permissions.%s.network.domains={%s}" % (
+        CODEX_PERMISSION_PROFILE,
+        ",".join(
+            '%s="allow"' % _toml_string(domain)
+            for domain in _CODEX_COMPONENT_NETWORK_DOMAINS
+        ),
+    )
+    if current_domains not in run_policy.permission_config_arguments:
+        raise CodexInvocationError(
+            "Codex runtime policy has no supplier drawing network binding"
+        )
+    return _CodexRunPolicy(
+        permission_config_arguments=_permission_config_arguments(
+            run_root,
+            run_policy.trusted_python_runtime_paths,
+            run_policy.trusted_codex_runtime_paths,
+            component_network_domains=(
+                _CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS
+            ),
+        ),
+        trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
+        trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
+        environment_allowlist=run_policy.environment_allowlist,
+        environment_overrides=run_policy.environment_overrides,
+    )
+
+
+def _canonical_workshop_python() -> str:
+    """Return the real executable path safe for managed-sandbox execution."""
+
+    try:
+        resolved = Path(sys.executable).resolve(strict=True)
+        identity = resolved.stat()
+    except OSError as exc:
+        raise CodexInvocationError(
+            "Workshop Python runtime is unavailable to the Codex sandbox"
+        ) from exc
+    if not stat.S_ISREG(identity.st_mode) or identity.st_mode & 0o111 == 0:
+        raise CodexInvocationError(
+            "Workshop Python runtime is not a regular executable"
+        )
+    return str(resolved)
+
+
+def _workshop_python_package_root() -> str:
+    """Return the exact host environment package tree used by CAD tools."""
+
+    value = sysconfig.get_path("purelib")
+    if not isinstance(value, str) or not value:
+        raise CodexInvocationError("Workshop Python package root is unavailable")
+    try:
+        resolved = Path(value).resolve(strict=True)
+    except OSError as exc:
+        raise CodexInvocationError(
+            "Workshop Python package root is unavailable"
+        ) from exc
+    if not resolved.is_dir():
+        raise CodexInvocationError("Workshop Python package root is unavailable")
+    return str(resolved)
+
+
+def _python_runtime_library_directory() -> Optional[Path]:
+    """Return the native-library directory required by this Python build."""
+
+    value = sysconfig.get_config_var("LIBDIR")
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        resolved = Path(value).resolve(strict=True)
+    except OSError:
+        return None
+    return resolved if resolved.is_dir() else None
+
+
+def _run_policy_before_canonical_workshop_runtime(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Reconstruct the exact policy immediately before canonical Python.
+
+    Older sessions exposed the possibly-symlinked ``sys.executable``, omitted
+    the exact venv package root, and granted only ``libpython`` rather than its
+    sibling native dependency directory. Preserve that one predecessor so a
+    checkpoint can resume under the corrected, strictly derived boundary.
+    """
+
+    canonical = ("WORKSHOP_PYTHON", _canonical_workshop_python())
+    package_root = ("PYTHONPATH", _workshop_python_package_root())
+    if run_policy.environment_overrides.count(canonical) != 1 or (
+        run_policy.environment_overrides.count(package_root) != 1
+    ):
+        raise CodexInvocationError(
+            "Codex runtime policy lacks the canonical Workshop Python bindings"
+        )
+    previous_python = (
+        "WORKSHOP_PYTHON",
+        str(Path(sys.executable).absolute()),
+    )
+    previous_overrides = tuple(
+        previous_python if entry == canonical else entry
+        for entry in run_policy.environment_overrides
+        if entry != package_root
+    )
+    library_directory = _python_runtime_library_directory()
+    previous_paths = tuple(
+        identity
+        for identity in run_policy.trusted_python_runtime_paths
+        if library_directory is None or identity.path != str(library_directory)
+    )
+    return _CodexRunPolicy(
+        permission_config_arguments=_permission_config_arguments(
+            run_root,
+            previous_paths,
+            run_policy.trusted_codex_runtime_paths,
+            component_network=_run_policy_has_component_network(run_policy),
+        ),
+        trusted_python_runtime_paths=previous_paths,
+        trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
+        environment_allowlist=run_policy.environment_allowlist,
+        environment_overrides=previous_overrides,
     )
 
 
@@ -561,6 +748,7 @@ def _run_policy_before_codex_fs_helper(
             run_root,
             run_policy.trusted_python_runtime_paths,
             (),
+            component_network=_run_policy_has_component_network(run_policy),
         ),
         trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
         trusted_codex_runtime_paths=(),
@@ -608,6 +796,7 @@ def _run_policy_before_venv_launcher_directory(
             run_root,
             predecessor_paths,
             run_policy.trusted_codex_runtime_paths,
+            component_network=_run_policy_has_component_network(run_policy),
         ),
         trusted_python_runtime_paths=predecessor_paths,
         trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
@@ -796,6 +985,12 @@ def _python_runtime_permission_identities(
             resolved_library = None
         if resolved_library is not None and resolved_library.is_file():
             candidates.add(resolved_library)
+    runtime_library_directory = _python_runtime_library_directory()
+    if runtime_library_directory is not None:
+        # Extension modules such as ssl and sqlite link to sibling runtime
+        # libraries. Grant the exact interpreter-owned directory read-only so
+        # the loader cannot silently fall back to ABI-incompatible system libs.
+        candidates.add(runtime_library_directory)
     return tuple(
         _trusted_runtime_path_identity(path)
         for path in sorted(candidates, key=lambda candidate: str(candidate))
@@ -847,6 +1042,9 @@ def _permission_config_arguments(
     run_root: Path,
     trusted_python_runtime_paths: tuple[_TrustedRuntimePathIdentity, ...],
     trusted_codex_runtime_paths: tuple[_TrustedRuntimePathIdentity, ...],
+    *,
+    component_network: bool = True,
+    component_network_domains: Optional[tuple[str, ...]] = None,
 ) -> tuple[str, ...]:
     """Build one non-composable, exact-root Codex permission profile.
 
@@ -896,6 +1094,31 @@ def _permission_config_arguments(
     entries.append(
         "%s=\"deny\"" % _toml_string(str(run_root / "**/.env*"))
     )
+    network_values = (
+        (
+            "features.network_proxy=true",
+            "permissions.%s.network.enabled=true" % CODEX_PERMISSION_PROFILE,
+            'permissions.%s.network.mode="limited"' % CODEX_PERMISSION_PROFILE,
+            "permissions.%s.network.domains={%s}"
+            % (
+                CODEX_PERMISSION_PROFILE,
+                ",".join(
+                    '%s="allow"' % _toml_string(domain)
+                    for domain in (
+                        _CODEX_COMPONENT_NETWORK_DOMAINS
+                        if component_network_domains is None
+                        else component_network_domains
+                    )
+                ),
+            ),
+            "shell_environment_policy.ignore_default_excludes=false",
+            'shell_environment_policy.filters={"OPENAI_*"="exclude","CODEX_API_KEY"="exclude"}',
+        )
+        if component_network
+        else (
+            "permissions.%s.network.enabled=false" % CODEX_PERMISSION_PROFILE,
+        )
+    )
     values = (
         'default_permissions="%s"' % CODEX_PERMISSION_PROFILE,
         'permissions.%s.description="Isolated Autonomous Workshop product run"'
@@ -904,7 +1127,7 @@ def _permission_config_arguments(
         % (CODEX_PERMISSION_PROFILE, _toml_string(root)),
         "permissions.%s.filesystem={%s}"
         % (CODEX_PERMISSION_PROFILE, ",".join(entries)),
-        'permissions.%s.network.enabled=false' % CODEX_PERMISSION_PROFILE,
+        *network_values,
         'project_root_markers=["%s"]' % PRODUCT_RUN_ROOT_MARKER,
     )
     arguments: list[str] = []
@@ -925,7 +1148,8 @@ def _codex_run_policy(run_root: Path, binary: str) -> _CodexRunPolicy:
         ("TMP", private_temp),
         ("TEMP", private_temp),
         ("XDG_CACHE_HOME", private_cache),
-        ("WORKSHOP_PYTHON", str(Path(sys.executable).absolute())),
+        ("WORKSHOP_PYTHON", _canonical_workshop_python()),
+        ("PYTHONPATH", _workshop_python_package_root()),
         *_CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES,
     )
     return _CodexRunPolicy(
@@ -993,9 +1217,9 @@ def _codex_run_environment(
         for name in ("TMPDIR", "TMP", "TEMP")
     ) or overrides.get("XDG_CACHE_HOME") != private_cache or overrides.get(
         "WORKSHOP_PYTHON"
-    ) != str(
-        Path(sys.executable).absolute()
-    ):
+    ) != _canonical_workshop_python() or overrides.get(
+        "PYTHONPATH"
+    ) != _workshop_python_package_root():
         raise CodexInvocationError(
             "Codex product-run environment does not match its bound policy"
         )
@@ -1616,8 +1840,8 @@ class CodexNativeSessionLauncher:
     ) -> None:
         if model not in ALLOWED_WORKSHOP_MODELS:
             raise ContractError(
-                "Workshop Codex model must be one of: %s"
-                % ", ".join(sorted(ALLOWED_WORKSHOP_MODELS))
+                "Workshop Codex model must be gpt-6-astra, gpt-5.6-sol, "
+                "gpt-5.6-terra, or gpt-5.6-luna"
             )
         if reasoning_effort not in ("low", "medium", "high", "xhigh"):
             raise ValueError("unsupported Codex reasoning effort")
@@ -1646,6 +1870,9 @@ class CodexNativeSessionLauncher:
         self.auto_compact_token_limit = auto_compact_token_limit
         self.runtime_profile_sha256 = runtime_profile_sha256
         self.timeout_seconds = timeout_seconds
+        # Trusted host callback only. Never serialized into model configuration
+        # or forwarded to the native subprocess environment.
+        self.token_budget_observer = None
         self._popen_factory = popen_factory
         self._version_runner = version_runner
         self.cli_version = cli_version or self._read_cli_version()
@@ -1834,9 +2061,21 @@ class CodexNativeSessionLauncher:
                 else None
             ),
         )
-        policy_before_private_cache = _run_policy_before_private_cache(
+        policy_before_supplier_drawings = _run_policy_before_supplier_drawings(
             root,
             run_policy,
+        )
+        policy_before_component_network = _run_policy_before_component_network(
+            root,
+            policy_before_supplier_drawings,
+        )
+        legacy_python_policy = _run_policy_before_canonical_workshop_runtime(
+            root,
+            policy_before_component_network,
+        )
+        policy_before_private_cache = _run_policy_before_private_cache(
+            root,
+            policy_before_component_network,
         )
         policy_before_venv_directory = (
             _run_policy_before_venv_launcher_directory(
@@ -1854,6 +2093,9 @@ class CodexNativeSessionLauncher:
             historical_policy,
         )
         predecessor_policies: list[tuple[_CodexRunPolicy, bool]] = [
+            (policy_before_supplier_drawings, True),
+            (policy_before_component_network, True),
+            (legacy_python_policy, True),
             (policy_before_private_cache, True),
             (
                 _run_policy_before_workshop_python(historical_policy),
@@ -1872,6 +2114,45 @@ class CodexNativeSessionLauncher:
                 0,
                 (policy_before_venv_directory, True),
             )
+        legacy_before_private_cache = _run_policy_before_private_cache(
+            root,
+            legacy_python_policy,
+        )
+        legacy_before_venv_directory = (
+            _run_policy_before_venv_launcher_directory(
+                root,
+                legacy_before_private_cache,
+            )
+        )
+        legacy_historical_policy = (
+            legacy_before_private_cache
+            if legacy_before_venv_directory is None
+            else legacy_before_venv_directory
+        )
+        legacy_before_codex_helper = _run_policy_before_codex_fs_helper(
+            root,
+            legacy_historical_policy,
+        )
+        predecessor_policies.extend(
+            (
+                (legacy_before_private_cache, True),
+                (
+                    _run_policy_before_workshop_python(
+                        legacy_historical_policy
+                    ),
+                    True,
+                ),
+                (legacy_before_codex_helper, False),
+                (
+                    _run_policy_before_workshop_python(
+                        legacy_before_codex_helper
+                    ),
+                    False,
+                ),
+            )
+        )
+        if legacy_before_venv_directory is not None:
+            predecessor_policies.append((legacy_before_venv_directory, True))
         predecessor_runtime_config_sha256s = tuple(
             dict.fromkeys(
                 _runtime_config_sha256(
@@ -2331,14 +2612,28 @@ class CodexNativeSessionLauncher:
                 process_session_identity,
             )
             finalization_watch: Optional[_FinalizationMarkerWatch] = None
+            usage_stop = threading.Event()
+            usage_failure = []
+            usage_thread = None
+            def watch_usage():
+                while not usage_stop.wait(2.0):
+                    try:
+                        self.token_budget_observer()
+                    except Exception:
+                        usage_failure.append(True)
+                        process_guard.reap()
+                        return
             try:
+                if self.token_budget_observer is not None:
+                    usage_thread = threading.Thread(target=watch_usage, name="workshop-token-budget", daemon=True)
+                    usage_thread.start()
                 finalization_watch = _FinalizationMarkerWatch(
                     finalization_marker,
                     process_guard,
                     deadline,
                 )
                 finalization_watch.start()
-                return self._stream(
+                result = self._stream(
                     command=command,
                     prompt=prompt,
                     run_root=run_root,
@@ -2351,6 +2646,13 @@ class CodexNativeSessionLauncher:
                     _finalization_watch=finalization_watch,
                     _deadline=deadline,
                 )
+                if usage_failure:
+                    raise CodexInvocationError("product token budget stopped native execution; inspect Workshop status")
+                return result
+            except (CodexInvocationError, ContractError):
+                if usage_failure:
+                    raise CodexInvocationError("product token budget stopped native execution; inspect Workshop status") from None
+                raise
             finally:
                 # This is deliberately outside every ``Exception`` classifier.
                 # Graceful host exits must never strand the dedicated Codex
@@ -2359,7 +2661,22 @@ class CodexNativeSessionLauncher:
                 if finalization_watch is not None:
                     finalization_watch.close()
                 process_guard.reap()
+                usage_stop.set()
+                final_usage_failed = False
+                if usage_thread is not None:
+                    usage_thread.join(timeout=10)
+                    if usage_thread.is_alive():
+                        _close_process_streams(process_guard.process)
+                        raise CodexInvocationError("token budget monitor did not stop safely")
+                    # Recover the final observed requests even after timeout or
+                    # cancellation. The ledger is already durable per sample.
+                    try:
+                        self.token_budget_observer()
+                    except Exception:
+                        final_usage_failed = True
                 _close_process_streams(process_guard.process)
+                if final_usage_failed and sys.exc_info()[0] is None:
+                    raise CodexInvocationError("product token budget stopped native execution; inspect Workshop status")
 
         process_guard = _process_guard
         finalization_watch = _finalization_watch
@@ -2606,7 +2923,11 @@ class CodexNativeSessionLauncher:
                 # this category matters. Require an identity event from this
                 # invocation so a wrapper/preflight failure before Codex starts
                 # cannot masquerade as a recoverable native turn.
-                if observed_thread_id is not None:
+                # An unknown nonzero exit is an actual process failure, not
+                # evidence of the missing-terminal compatibility issue. Only
+                # a clean exit may use this fallback; recognized transport
+                # failures retain their explicit category above.
+                if observed_thread_id is not None and returncode == 0:
                     activity_reporter.observe("failed")
                     activity_reporter.close()
                     raise CodexRecoverableInvocationError(

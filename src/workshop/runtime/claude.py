@@ -27,6 +27,7 @@ from workshop.errors import ContractError
 from workshop.runtime.managers import (
     NativeManagerInvocationError,
     NativeManagerRecoverableError,
+    SUPPORTED_REASONING_EFFORTS,
 )
 
 
@@ -41,6 +42,7 @@ MAX_CLAUDE_PROMPT_BYTES = 1 * 1024 * 1024
 MAX_CLAUDE_SESSION_CHECKPOINT_BYTES = 32 * 1024
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SESSION_ID = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
+_MODEL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 CLAUDE_SUBPROCESS_ENVIRONMENT_ALLOWLIST = (
     "PATH",
     "HOME",
@@ -193,17 +195,32 @@ class ClaudeNativeSessionLauncher:
         self,
         *,
         binary: Optional[str] = None,
+        model: Optional[str] = None,
+        reasoning_effort: Optional[str] = None,
         timeout_seconds: int = DEFAULT_CLAUDE_TIMEOUT_SECONDS,
         popen_factory: Any = subprocess.Popen,
         version_runner: Any = subprocess.run,
         cli_version: Optional[str] = None,
         uuid_factory: Any = uuid.uuid4,
     ) -> None:
+        if (model is None) != (reasoning_effort is None):
+            raise ContractError(
+                "Claude model and reasoning effort must be selected together"
+            )
+        if model is not None and _MODEL_ID.fullmatch(model) is None:
+            raise ContractError("Workshop Claude model is invalid")
+        if (
+            reasoning_effort is not None
+            and reasoning_effort not in SUPPORTED_REASONING_EFFORTS
+        ):
+            raise ContractError("Workshop Claude reasoning effort is invalid")
         if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600:
             raise ValueError("Claude timeout_seconds must be from 1 to 3,600")
         self.binary = (
             binary or os.environ.get("WORKSHOP_CLAUDE_BIN") or shutil.which("claude")
         )
+        self.model = model
+        self.reasoning_effort = reasoning_effort
         self.timeout_seconds = timeout_seconds
         self._popen_factory = popen_factory
         self._version_runner = version_runner
@@ -294,6 +311,18 @@ class ClaudeNativeSessionLauncher:
             or payload.get("constitution_sha256") != constitution_sha256
         ):
             raise ContractError("Claude native session checkpoint binding is invalid")
+        schema_version = payload.get("schema_version")
+        if schema_version == 1:
+            if self.model is not None or self.reasoning_effort is not None:
+                raise ContractError("Claude native session runtime binding is invalid")
+        elif schema_version == 2:
+            if (
+                payload.get("model") != self.model
+                or payload.get("reasoning_effort") != self.reasoning_effort
+            ):
+                raise ContractError("Claude native session runtime binding is invalid")
+        else:
+            raise ContractError("Claude native session checkpoint schema is invalid")
         session_id = _canonical_session_id(payload.get("session_id"))
         self._stream(
             command=self._command(Path(run_root), prompt, session_id=session_id),
@@ -322,8 +351,8 @@ class ClaudeNativeSessionLauncher:
     ) -> dict[str, Any]:
         _require_sha256(wish_sha256, "Claude Wish sha256")
         _require_sha256(constitution_sha256, "Claude constitution sha256")
-        return {
-            "schema_version": 1,
+        identity = {
+            "schema_version": 2 if self.model is not None else 1,
             "kind": CLAUDE_SESSION_CHECKPOINT_KIND,
             "product_id": product_id,
             "wish_sha256": wish_sha256,
@@ -333,6 +362,10 @@ class ClaudeNativeSessionLauncher:
             "cli_version": self.cli_version,
             "session_id": session_id,
         }
+        if self.model is not None:
+            identity["model"] = self.model
+            identity["reasoning_effort"] = self.reasoning_effort
+        return identity
 
     def _command(
         self,
@@ -353,6 +386,10 @@ class ClaudeNativeSessionLauncher:
             "--permission-mode",
             CLAUDE_PERMISSION_MODE,
         ]
+        if self.model is not None:
+            command.extend(
+                ("--model", self.model, "--effort", self.reasoning_effort)
+            )
         if session_id is not None:
             command.extend(("--resume", session_id))
         command.append(prompt)

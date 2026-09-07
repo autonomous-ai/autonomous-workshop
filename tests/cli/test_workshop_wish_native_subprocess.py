@@ -122,7 +122,7 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
             self.assertEqual(receipt["wish"]["context"], {"source": "workshop-cli"})
             self.assertEqual(receipt["kind"], "native-agent-run")
             self.assertEqual(receipt["stage"], "make")
-            self.assertEqual(receipt["effort"], "spark")
+            self.assertEqual(receipt["workflow"], "spark")
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertIn(
                 "Native Codex: reported progress for the current stage.",

@@ -40,6 +40,7 @@ from workshop.release.public_archive import write_public_workflow_archive
 from workshop.runtime import Receipt
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
+    manager_runtime_selection,
     manager_spec,
 )
 
@@ -1078,7 +1079,9 @@ def _reproduce_markdown(
     *,
     summary: str,
     manager_id: str,
-    effort: str,
+    workflow: str,
+    manager_model: Optional[str],
+    manager_reasoning_effort: Optional[str],
     github_requested: bool,
 ) -> str:
     wish = _read_json_object(staging / "wish" / "wish.json") or {}
@@ -1090,11 +1093,14 @@ def _reproduce_markdown(
         "run",
         "workshop",
         "wish",
-        "--manager",
+        "--agent",
         manager_id,
-        "--effort",
-        effort,
     ]
+    if manager_model is not None:
+        arguments.extend(("--model", manager_model))
+    if manager_reasoning_effort is not None:
+        arguments.extend(("--effort", manager_reasoning_effort))
+    arguments.extend(("--workflow", workflow))
     if github_requested:
         arguments.append("--github")
     arguments.append(objective)
@@ -1102,7 +1108,7 @@ def _reproduce_markdown(
     return (
         "## Reproduce\n\n"
         "From a checkout of this repository, verify the host and run the same "
-        "Manager and effort route. This command uses the %s; a later run follows "
+        "agent and workflow. This command uses the %s; a later run follows "
         "the same route but does not replay these exact CAD bytes.\n\n"
         "```bash\n"
         "uv run workshop doctor\n"
@@ -1147,6 +1153,8 @@ def materialize_public_example(
     disclose_exact_wish: bool = False,
     manager_id: str = DEFAULT_MANAGER_ID,
     effort: Optional[str] = None,
+    manager_model: Optional[str] = None,
+    manager_reasoning_effort: Optional[str] = None,
     github_requested: bool = False,
     token_summary: Optional[Mapping[str, Any]] = None,
     wish_id: Optional[str] = None,
@@ -1167,6 +1175,15 @@ def materialize_public_example(
     if type(disclose_exact_wish) is not bool:
         raise ContractError("public example Wish disclosure must be boolean")
     manager = manager_spec(manager_id)
+    runtime = (
+        manager_runtime_selection(
+            manager_id,
+            model=manager_model,
+            reasoning_effort=manager_reasoning_effort,
+        )
+        if manager_model is not None or manager_reasoning_effort is not None
+        else None
+    )
     if effort is not None:
         selected_effort = workshop_effort(effort)
     else:
@@ -1437,6 +1454,26 @@ def materialize_public_example(
             if pdf_first
             else "the exact sealed public manual"
         )
+        runtime_rows = (
+            "| Agent | %s (`--agent %s`) |\n"
+            "| Workflow | %s (`--workflow %s`) |\n"
+            % (
+                manager.display_name,
+                manager.manager_id,
+                workshop_effort(resolved_effort).title,
+                resolved_effort,
+            )
+        )
+        if runtime is not None:
+            runtime_rows += "| Model | %s (`--model %s`) |\n" % (
+                runtime.model,
+                runtime.model,
+            )
+            if runtime.reasoning_effort is not None:
+                runtime_rows += "| Effort | %s (`--effort %s`) |\n" % (
+                    runtime.reasoning_effort.title(),
+                    runtime.reasoning_effort,
+                )
         readme = (
             "# %s\n\n"
             "%s"
@@ -1444,8 +1481,7 @@ def materialize_public_example(
             "[View the verified public product page](%s)\n\n"
             "| Frozen on this run | Value |\n"
             "|---|---|\n"
-            "| Manager | %s (`--manager %s`) |\n"
-            "| Effort | %s (`--effort %s`) |\n"
+            "%s"
             "| Inventor | [%s](../../inventors/%s/) |\n"
             "| Factory | %s |\n\n"
             "%s\n"
@@ -1477,10 +1513,7 @@ def materialize_public_example(
             ),
             summary,
             page_url,
-            manager.display_name,
-            manager.manager_id,
-            workshop_effort(resolved_effort).title,
-            resolved_effort,
+            runtime_rows,
             _display_inventor_id(inventor_id) or inventor_id,
             inventor_id,
             page_url,
@@ -1491,7 +1524,11 @@ def materialize_public_example(
                 staging,
                 summary=summary,
                 manager_id=manager.manager_id,
-                effort=resolved_effort,
+                workflow=resolved_effort,
+                manager_model=(None if runtime is None else runtime.model),
+                manager_reasoning_effort=(
+                    None if runtime is None else runtime.reasoning_effort
+                ),
                 github_requested=github_requested,
             ),
             (
@@ -1573,6 +1610,8 @@ def materialize_public_example_if_source_checkout(
     disclose_exact_wish: bool = False,
     manager_id: str = DEFAULT_MANAGER_ID,
     effort: Optional[str] = None,
+    manager_model: Optional[str] = None,
+    manager_reasoning_effort: Optional[str] = None,
     github_requested: bool = False,
     token_summary: Optional[Mapping[str, Any]] = None,
     wish_id: Optional[str] = None,
@@ -1591,6 +1630,8 @@ def materialize_public_example_if_source_checkout(
         disclose_exact_wish=disclose_exact_wish,
         manager_id=manager_id,
         effort=effort,
+        manager_model=manager_model,
+        manager_reasoning_effort=manager_reasoning_effort,
         github_requested=github_requested,
         token_summary=token_summary,
         wish_id=wish_id,

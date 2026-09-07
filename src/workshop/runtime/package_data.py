@@ -36,6 +36,7 @@ BUNDLED_INVENTOR_IDS = (
     "orin-shadow",
     "pico-press",
     "sonora-reed",
+    "soren-voss",
     "tess-loop",
     "vela-bloom",
 )

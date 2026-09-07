@@ -1,4 +1,4 @@
-# ADR 0043: New runs freeze gpt-6-astra
+# ADR 0050: New runs freeze gpt-6-astra
 
 - Status: Accepted
 - Date: 2026-09-06

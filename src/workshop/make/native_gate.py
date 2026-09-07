@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import signal
 import stat
 import subprocess
@@ -443,26 +444,65 @@ def _is_verifier_authored_volatile_report(path: str) -> bool:
     """Return whether ``verify_project`` owns this non-reproducible report.
 
     The fresh verifier records wall-clock timing and the isolated project path
-    in its pipeline report, and ``check_thickness`` and ``check_overhang`` each
-    record their invocation path in one report per printable part.  Those
-    records are useful during an interactive Make pass, but they are not
-    reproducible CAD deliverables.  Do not broaden this allowlist beyond the
-    verifier's own path-echoing per-part reports: source, geometry, JSON
-    evidence, and every other report remain byte-sealed.
+    in its pipeline report, and ``check_thickness`` records its invocation path
+    in one report per printable part.  Those records are useful during an
+    interactive Make pass, but they are not reproducible CAD deliverables.  Do
+    not broaden this allowlist: source, geometry, JSON evidence, and every
+    other report remain byte-sealed.  Overhang reports are not volatile; the
+    gate compares them exactly apart from their directory-location metadata.
     """
 
     if path == "measure/verification-pipeline.md":
         return True
     suffix = ".md"
-    for prefix in ("measure/thickness-", "measure/overhang-"):
-        if path.startswith(prefix) and path.endswith(suffix):
-            role = path[len(prefix) : -len(suffix)]
-            return bool(role) and "/" not in role
-    return False
+    prefix = "measure/thickness-"
+    if not path.startswith(prefix) or not path.endswith(suffix):
+        return False
+    role = path[len(prefix) : -len(suffix)]
+    return bool(role) and "/" not in role
 
 
 def _is_step_exchange_file(path: str) -> bool:
     return path.lower().endswith((".step", ".stp"))
+
+
+def _is_overhang_report(path: str) -> bool:
+    return re.fullmatch(r"measure/overhang-[^/]+\.md", path) is not None
+
+
+def _overhang_report_without_location(content: bytes, relative: str) -> bytes:
+    """Normalize only the two path-bearing metadata lines of a known report.
+
+    Unlike the volatile timing-report exemption, all measurements, options,
+    checks, regions and prose remain exact. Unknown report formats fail closed.
+    The mesh and report must refer to the same project directory and role.
+    """
+    try:
+        lines = content.decode("utf-8").splitlines(keepends=True)
+    except UnicodeError as exc:
+        raise ArtifactError("invalid overhang report encoding") from exc
+    if len(lines) < 7 or lines[:2] != ["# Overhang and support\n", "\n"]:
+        raise ArtifactError("unsupported overhang report format")
+    command = re.fullmatch(
+        r"`([^`\r\n]+) --angle ([0-9]+(?:\.[0-9]+)?) --report ([^`\r\n]+)`\n",
+        lines[2],
+    )
+    if command is None:
+        raise ArtifactError("unsupported overhang report invocation")
+    mesh, angle, report = command.groups()
+    role = relative[len("measure/overhang-"):-len(".md")]
+    mesh_name = PurePosixPath(mesh).name
+    if (
+        mesh_name not in (role + ".stl", "part_" + role + ".stl")
+        or not report.endswith(relative)
+        or mesh[:-len(mesh_name)] != report[:-len(relative)]
+        or lines[3] != "\n"
+        or not lines[4].startswith(mesh + ": ")
+    ):
+        raise ArtifactError("overhang report path bindings differ")
+    lines[2] = f"`{mesh_name} --angle {angle} --report {relative}`\n"
+    lines[4] = mesh_name + lines[4][len(mesh):]
+    return "".join(lines).encode("utf-8")
 
 
 def _assert_copied_inputs_unchanged(
@@ -477,8 +517,10 @@ def _assert_copied_inputs_unchanged(
     graph (``canonical_step_digest``) rather than by bytes: Open CASCADE hands
     out presentation-style entity ids in pointer order, so a faithful fresh
     re-export of the same model can differ byte-for-byte while describing the
-    identical geometry, colours, and assembly. Every other declared file, and a
-    STEP file whose graph changed, still fails closed. ``sealed_root`` is the
+    identical geometry, colours, and assembly. Known overhang reports may change
+    only their directory-location metadata, never measurements or check results.
+    Every other declared file, and a STEP file whose graph changed, still fails
+    closed. ``sealed_root`` is the
     exact sealed project the isolated copy was made from; without it STEP
     files stay byte-compared.
     """
@@ -496,6 +538,30 @@ def _assert_copied_inputs_unchanged(
             if bool(identity.st_mode & stat.S_IXUSR) != entry.executable:
                 raise ArtifactError(
                     "CAD verifier changed a declared report mode: %s" % entry.path
+                )
+            continue
+        if sealed_root is not None and _is_overhang_report(entry.path):
+            content, identity = _read_regular(
+                project_root.joinpath(*relative.parts),
+                "isolated overhang report", MAX_NATIVE_CAD_VOLATILE_REPORT_BYTES,
+            )
+            sealed, _ = _read_regular(
+                sealed_root.joinpath(*relative.parts), "sealed overhang report", entry.bytes,
+            )
+            if (
+                bool(identity.st_mode & stat.S_IXUSR) != entry.executable
+                or len(sealed) != entry.bytes
+                or hashlib.sha256(sealed).hexdigest() != entry.sha256
+            ):
+                raise ArtifactError(
+                    "CAD verifier changed a declared project file: %s" % entry.path
+                )
+            if content != sealed and (
+                _overhang_report_without_location(content, entry.path)
+                != _overhang_report_without_location(sealed, entry.path)
+            ):
+                raise ArtifactError(
+                    "CAD verifier changed a declared project file: %s" % entry.path
                 )
             continue
         if sealed_root is not None and _is_step_exchange_file(entry.path):

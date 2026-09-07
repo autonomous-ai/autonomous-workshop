@@ -24,12 +24,13 @@ from tests.invent.fake_gamevault import FakeGameVaultTransport, fake_client, ins
 from tests.invent.test_vault import write_vault
 from types import SimpleNamespace
 from workshop.workflow.budgets import (
+    BUDGETS_CAPABILITY_PATH,
     MAX_BUDGETED_TURNS,
     MIN_USEFUL_TURN_SECONDS,
     CommandBudget,
+    LifetimeBudget,
 )
 from workshop.workflow.native_run import (
-    wish_required_inventor_id,
     _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
     _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
@@ -45,6 +46,7 @@ from workshop.workflow.native_run import (
     NativeRunPaths,
     _NativeProgressTracker,
     _best_round,
+    _budgeted_turn_launcher,
     _phase_design_vault,
     _playtest_score_history,
     _record_playtest_evidence,
@@ -70,6 +72,7 @@ from workshop.runtime import (
     CodexInvocationError,
     CodexRecoverableInvocationError,
 )
+from workshop.runtime.codex import CodexNativeSessionLauncher
 from workshop.runtime.progress import NativeRunProgress
 from workshop.wish import Wish
 from workshop.workflow.agent_run import (
@@ -461,7 +464,15 @@ class NativeHostTest(unittest.TestCase):
         self.gamevault = install_fake_gamevault(self)
 
     @staticmethod
-    def _launcher_checkpoint(*, effort, economics_capability, stage="make"):
+    def _launcher_checkpoint(
+        *,
+        effort,
+        economics_capability,
+        stage="make",
+        manager_id="codex",
+        manager_model=None,
+        manager_reasoning_effort=None,
+    ):
         capability_paths = {
             "deep-v1": DEEP_ECONOMICS_V1_CAPABILITY_PATH,
             "deep-v2": DEEP_ECONOMICS_V2_CAPABILITY_PATH,
@@ -562,28 +573,10 @@ class NativeHostTest(unittest.TestCase):
             stage_artifacts={},
             invalidated_stages=(),
             effort=effort,
-            manager_id="codex",
+            manager_id=manager_id,
+            manager_model=manager_model,
+            manager_reasoning_effort=manager_reasoning_effort,
         )
-
-    def test_wish_context_names_the_inventor_that_must_build_it(self):
-        pinned = Wish.create(
-            "wish-pinned",
-            "a wind-up duck",
-            context={"source": "workshop-start", "inventor_id": "ferro-line"},
-        )
-        self.assertEqual(wish_required_inventor_id(pinned), "ferro-line")
-        self.assertIsNone(
-            wish_required_inventor_id(Wish.create("wish-open", "a wind-up duck"))
-        )
-        for bad in ("Ferro Line", "ferro_line", "", 7):
-            with self.subTest(inventor_id=bad), self.assertRaisesRegex(
-                ContractError, "inventor_id must be an Inventor id slug"
-            ):
-                wish_required_inventor_id(
-                    Wish.create(
-                        "wish-bad", "a wind-up duck", context={"inventor_id": bad}
-                    )
-                )
 
     def test_grid_keepalive_service_cannot_create_repeating_wishes(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -624,6 +617,161 @@ class NativeHostTest(unittest.TestCase):
             auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
             timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
         )
+
+    def test_new_runtime_choice_overrides_legacy_stage_reasoning_profile(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark",
+            economics_capability="v3",
+            manager_model="gpt-6-astra",
+            manager_reasoning_effort="high",
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint)
+
+        launcher_type.assert_called_once_with(
+            model="gpt-6-astra",
+            reasoning_effort="high",
+            auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+            timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+        )
+
+    def test_budgeted_spark_full_launcher_path_enforces_twenty_minutes(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v3",
+            manager_model="gpt-6-astra", manager_reasoning_effort="high",
+        )
+        checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+        with mock.patch(
+            "workshop.runtime.codex._resolved_codex_binary", return_value=None
+        ):
+            launcher = _native_launcher(checkpoint)
+            full_budget = _budgeted_turn_launcher(checkpoint, launcher, 3600)
+            closing_budget = _budgeted_turn_launcher(checkpoint, launcher, 600)
+            repeated = _budgeted_turn_launcher(checkpoint, full_budget, 3600)
+
+        self.assertEqual(full_budget.timeout_seconds, 1200)
+        self.assertEqual(closing_budget.timeout_seconds, 600)
+        self.assertIs(repeated, full_budget)
+        self.assertEqual(full_budget.model, "gpt-6-astra")
+        self.assertEqual(full_budget.reasoning_effort, "high")
+        self.assertEqual(
+            full_budget.runtime_profile_sha256,
+            checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH],
+        )
+
+    def test_budgeted_turn_ceiling_preserves_other_profiles_and_shorter_turns(self):
+        for workflow, capability, budgeted, initial_seconds, remaining, expected in (
+            ("spark", "v3", False, 3600, 3600, 3600),
+            ("spark", "v2", True, 3600, 3600, 3600),
+            ("spark", "v3", True, 300, 3600, 300),
+            ("spark", "v3", True, 3600, 600, 600),
+            ("forge", "deep-v13", True, 900, 3600, 900),
+            ("quest", "deep-v13", True, 3600, 3600, 3600),
+        ):
+            with self.subTest(workflow=workflow, capability=capability,
+                              budgeted=budgeted, initial=initial_seconds,
+                              remaining=remaining), mock.patch(
+                "workshop.runtime.codex._resolved_codex_binary", return_value=None
+            ):
+                checkpoint = self._launcher_checkpoint(
+                    effort=workflow, economics_capability=capability
+                )
+                if budgeted:
+                    checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+                popen = mock.Mock(side_effect=AssertionError("must not launch Codex"))
+                launcher = CodexNativeSessionLauncher(
+                    timeout_seconds=initial_seconds,
+                    popen_factory=popen, cli_version="999.0.0",
+                )
+                bounded = _budgeted_turn_launcher(checkpoint, launcher, remaining)
+                self.assertEqual(bounded.timeout_seconds, expected)
+                self.assertIs(bounded._popen_factory, popen)
+                popen.assert_not_called()
+
+    def test_every_supported_runtime_combination_reaches_native_launcher(self):
+        workflows = ("spark", "forge", "quest")
+        efforts = ("low", "medium", "high", "xhigh")
+        codex_models = (
+            "gpt-6-astra",
+            "gpt-5.6-sol",
+            "gpt-5.6-terra",
+            "gpt-5.6-luna",
+        )
+        observed = 0
+        for workflow in workflows:
+            capability = "v3" if workflow == "spark" else "deep-v13"
+            for model in codex_models:
+                for effort in efforts:
+                    observed += 1
+                    checkpoint = self._launcher_checkpoint(
+                        effort=workflow,
+                        economics_capability=capability,
+                        manager_model=model,
+                        manager_reasoning_effort=effort,
+                    )
+                    with self.subTest(
+                        workflow=workflow,
+                        agent="codex",
+                        model=model,
+                        effort=effort,
+                    ), mock.patch(
+                        "workshop.workflow.native_run.CodexNativeSessionLauncher"
+                    ) as launcher_type:
+                        _native_launcher(checkpoint)
+
+                    self.assertEqual(launcher_type.call_args.kwargs["model"], model)
+                    self.assertEqual(
+                        launcher_type.call_args.kwargs["reasoning_effort"], effort
+                    )
+
+            for effort in efforts:
+                observed += 1
+                checkpoint = self._launcher_checkpoint(
+                    effort=workflow,
+                    economics_capability=None,
+                    manager_id="claude",
+                    manager_model="claude-opus-5",
+                    manager_reasoning_effort=effort,
+                )
+                with self.subTest(
+                    workflow=workflow,
+                    agent="claude",
+                    model="claude-opus-5",
+                    effort=effort,
+                ), mock.patch(
+                    "workshop.workflow.native_run.manager_launcher"
+                ) as launcher:
+                    _native_launcher(checkpoint)
+
+                launcher.assert_called_once_with(
+                    "claude",
+                    model="claude-opus-5",
+                    reasoning_effort=effort,
+                )
+
+            observed += 1
+            checkpoint = self._launcher_checkpoint(
+                effort=workflow,
+                economics_capability=None,
+                manager_id="grok",
+                manager_model="grok-4.6",
+                manager_reasoning_effort=None,
+            )
+            with self.subTest(
+                workflow=workflow,
+                agent="grok",
+                model="grok-4.6",
+                effort=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.manager_launcher"
+            ) as launcher:
+                _native_launcher(checkpoint)
+
+            launcher.assert_called_once_with("grok", model="grok-4.6")
+
+        self.assertEqual(observed, 63)
 
     def test_v2_spark_retains_compaction_without_shorter_turn_boundary(self):
         checkpoint = self._launcher_checkpoint(
@@ -2141,6 +2289,17 @@ class NativeHostTest(unittest.TestCase):
             self.assertIn("inspecting, acting, evaluating, and improving", prompt)
             self.assertIn("prior proposal failed its host gate", prompt)
             self.assertIn("current subject is a new stage attempt", prompt)
+            self.assertIn(
+                "subject hash, not the checkpoint hash, identifies the Goal attempt",
+                prompt,
+            )
+            self.assertIn("continue the same active Goal", prompt)
+            self.assertIn("resume is also an environment refresh", prompt)
+            self.assertIn("rerun its exact bounded probe once", prompt)
+            self.assertIn("Never delegate an engineering choice", prompt)
+            self.assertIn("qualify a different component", prompt)
+            self.assertIn("redesign the mechanism", prompt)
+            self.assertIn("eliminate the dependency", prompt)
             self.assertIn("never rerun the finalizer", prompt)
             self.assertIn("resubmit unchanged rejected bytes", prompt)
             self.assertIn("complete the goal", prompt)
@@ -2151,12 +2310,56 @@ class NativeHostTest(unittest.TestCase):
             self.assertNotIn("FACTORY", prompt)
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
-            self.assertEqual(receipt["effort"], "spark")
-            self.assertIn("Effort: Spark", stderr.getvalue())
+            self.assertEqual(receipt["workflow"], "spark")
+            self.assertEqual(receipt["agent"], "codex")
+            self.assertEqual(receipt["model"], "gpt-5.6-sol")
+            self.assertEqual(receipt["effort"], "high")
+            self.assertIn("Workflow: Spark", stderr.getvalue())
+            self.assertIn("Model: gpt-5.6-sol · effort high", stderr.getvalue())
             self.assertIn(
                 "Starting one native Codex session for Make",
                 stderr.getvalue(),
             )
+
+    def test_wish_can_pin_the_only_materialized_native_inventor(self):
+        launcher = _FakeLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            stdout = StringIO()
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+                result = main(
+                    (
+                        "wish",
+                        "a stationary desk robot",
+                        "--inventor",
+                        "soren-voss",
+                        "--json",
+                    )
+                )
+
+            self.assertEqual(result, 0)
+            receipt = json.loads(stdout.getvalue())
+            workspace = home / "runs" / receipt["product_id"] / "workspace"
+            wish = json.loads((workspace / "WISH.json").read_text(encoding="utf-8"))
+            self.assertEqual(wish["context"]["inventor_id"], "soren-voss")
+            self.assertEqual(
+                [path.name for path in (workspace / ".codex/agents").iterdir()],
+                ["soren-voss.toml"],
+            )
+            inventor_skills = sorted(
+                path.name
+                for path in (workspace / ".agents/skills").iterdir()
+                if path.name.endswith("-inventor")
+            )
+            self.assertEqual(inventor_skills, ["soren-voss-inventor"])
 
     def test_wish_runs_without_the_vault_when_it_is_unreachable(self):
         launcher = _FakeLauncher()
@@ -2782,7 +2985,106 @@ class NativeHostTest(unittest.TestCase):
                 )
             )
 
+    def test_token_cap_is_persisted_and_resume_never_grants_fresh_allowance(self):
+        from workshop.workflow.token_budget import ProductTokenBudget
+        from tests.workflow.test_token_budget import observation
+
+        class MeteredFakeBudget(ProductTokenBudget):
+            def settle(self, stage, reserved, elapsed):
+                self.observe(observation(1000))
+
+        launcher = _AlwaysUnfinishedLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root", return_value=None
+            ), mock.patch(
+                "workshop.workflow.native_run.ProductTokenBudget", MeteredFakeBudget
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher", return_value=launcher
+            ):
+                with self.assertRaisesRegex(WorkshopError, "persistent token limit"):
+                    start_native_run(Wish.create("token-budget-test", "a small toy"), max_tokens=1000)
+                self.assertEqual(len(launcher.starts), 1)
+                self.assertIn("Limit: 1000", launcher.starts[0]["prompt"])
+                with self.assertRaisesRegex(WorkshopError, "persistent token limit"):
+                    resume_native_run("token-budget-test")
+                self.assertEqual(len(launcher.resumes), 0)
+                receipt = native_run_status("token-budget-test")
+                self.assertEqual(receipt["budget"]["used_tokens"], 1100)
+                self.assertEqual(receipt["budget"]["limit_tokens"], 1000)
+                self.assertEqual(receipt["budget"]["scope"], "product-tokens")
+
+    def test_lifetime_budget_exhaustion_survives_explicit_resume(self):
+        self.enterContext(mock.patch(
+            "workshop.workflow.native_run.TOKEN_BUDGET_CAPABILITY_PATH", "absent-token-capability"
+        ))
+        # Model a frozen run without the newer turn capability.
+        self.enterContext(mock.patch(
+            "workshop.workflow.native_run.TURN_BUDGETS_CAPABILITY_PATH", "absent-in-legacy-fixture"
+        ))
+        class Clock:
+            def __init__(self):
+                self.now = 0
+
+            def __call__(self):
+                self.now += 600
+                return self.now
+
+        clock = Clock()
+
+        class TimedBudget(LifetimeBudget):
+            def __init__(self):
+                super().__init__(clock=clock)
+
+        launcher = _AlwaysUnfinishedLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root", return_value=None
+            ), mock.patch(
+                "workshop.workflow.native_run.LifetimeBudget", TimedBudget
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher", return_value=launcher
+            ):
+                with self.assertRaisesRegex(WorkshopError, "persistent step"):
+                    start_native_run(Wish.create("lifetime-budget-test", "a small toy"))
+                attempts = len(launcher.starts) + len(launcher.resumes)
+                self.assertEqual(attempts, 4)
+                with self.assertRaisesRegex(WorkshopError, "persistent step"):
+                    resume_native_run("lifetime-budget-test")
+                self.assertEqual(len(launcher.starts) + len(launcher.resumes), attempts)
+                receipt = native_run_status("lifetime-budget-test")
+                self.assertEqual(receipt["budget"]["run"]["used_seconds"], 2400)
+
+    def test_persistent_turn_budget_stops_after_six_and_resume_does_not_reset(self):
+        self.enterContext(mock.patch(
+            "workshop.workflow.native_run.TOKEN_BUDGET_CAPABILITY_PATH", "absent-token-capability"
+        ))
+        launcher = _AlwaysUnfinishedLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root", return_value=None
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher", return_value=launcher
+            ):
+                with self.assertRaisesRegex(WorkshopError, "persistent step native-turn"):
+                    start_native_run(Wish.create("turn-budget-test", "a small toy"))
+                self.assertEqual(len(launcher.starts) + len(launcher.resumes), 6)
+                for adoption in (False, True):
+                    with self.assertRaisesRegex(WorkshopError, "persistent step native-turn"):
+                        resume_native_run("turn-budget-test", adopt_turn_budget=adoption)
+                self.assertEqual(len(launcher.starts) + len(launcher.resumes), 6)
+                receipt = native_run_status("turn-budget-test")
+                self.assertEqual(receipt["budget"]["run"]["used_turns"], 6)
+                self.assertEqual(receipt["budget"]["scope"], "lifetime-native-turns")
+
     def test_budgeted_runs_continue_through_unfinished_turns_until_a_clock_runs_out(self):
+        # Exercise frozen v1 command clocks, not the new lifetime capability.
+        self.enterContext(mock.patch(
+            "workshop.workflow.native_run._load_lifetime_budget", return_value=None
+        ))
         # The two clocks replace every counter: an unfinished turn is ordinary
         # and costs only the minutes it used.
         class _Clock:
@@ -2844,6 +3146,9 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(status["native_turns"], turns)
 
     def test_normal_unfinished_turns_stop_early_and_remain_resumable(self):
+        self.enterContext(mock.patch(
+            "workshop.workflow.native_run._load_lifetime_budget", return_value=None
+        ))
         # These rails are frozen historical behaviour: a run without the
         # budgets capability still stops on its counters.
         self.enterContext(
@@ -2925,6 +3230,9 @@ class NativeHostTest(unittest.TestCase):
             )
 
     def test_recoverable_interruptions_stop_early_and_remain_resumable(self):
+        self.enterContext(mock.patch(
+            "workshop.workflow.native_run._load_lifetime_budget", return_value=None
+        ))
         # These rails are frozen historical behaviour: a run without the
         # budgets capability still stops on its counters.
         self.enterContext(

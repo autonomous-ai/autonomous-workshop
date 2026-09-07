@@ -17,24 +17,28 @@ and evolving artifact determine any additional specialist method or evidence.
 Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
 
-For Codex, new Spark projects freeze low reasoning, a 64k automatic
-context-compaction ceiling across their one Make-to-Release session, and a
-20-minute boundary per native turn. New Forge and Quest projects begin Invent
-with 20 minutes at high reasoning and use a 10-minute medium source handoff
+New projects freeze a schema-v2 `MANAGER.json` with the selected native agent,
+model, and reasoning effort. The CLI defaults are Codex `gpt-5.6-sol` at high
+effort and Claude Code `claude-opus-5` at high effort; `--model astra` resolves
+to `gpt-6-astra`. The selected reasoning effort remains fixed across the
+persistent daydream and product session. Workflow profiles still own
+compaction ceilings and turn boundaries: Spark uses 64k across Make and
+Release, while Forge and Quest begin Invent with a 20-minute turn and use a
+10-minute source handoff
 when needed: an existing source is finalized before any reading or refinement;
 otherwise the first edit writes source and the next action finalizes it. Codex
 ranks a compact complete-roster Taste index before opening
-the best three full agents. Make uses one 16-minute medium real-state proof
-runway, then resumes the same Goal at high reasoning for a 15-minute source
+the best three full agents. Make uses one 16-minute real-state proof runway,
+then resumes the same Goal for a 15-minute source
 handoff before normal 30-minute recovery after a valid proof marker. The host
 supplies a private writable cache; proof defers the broad CAD
 skill, batches mandatory reads and deterministic CAD commands, and makes source
 the next durable action. Root inspection owns this cheap early direction check;
 independent blind critique remains mandatory at final Make.
-Playtest and Release use medium, and every stage compacts at 192k (256k
-before ADR 0044). Frozen deep-v9 shares that ceiling with its original proof
-and final-Make behavior;
-deep-v8 and older runs remain on the profile they started with. Effort changes
+Every deep stage compacts at 192k (256k before ADR 0051). Frozen
+deep-v9 retains that ceiling with its original proof and final-Make behavior;
+schema-v1 Manager projects retain the stage-shaped reasoning profile they
+started with. Model effort changes
 cognitive spend, never the exact-byte CAD, manual, Playtest, evidence, or
 publication gates.
 
@@ -126,18 +130,20 @@ continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For new Forge and Quest runs, the frozen `deep-economics-v13.md` capability
-begins Invent with high reasoning for 20 minutes and gives a recoverable
-continuation 10 minutes at medium as a source handoff. Its first action checks
+For Forge and Quest runs, the frozen `deep-economics-v13.md` capability
+begins Invent with a 20-minute turn and gives a recoverable continuation 10
+minutes as a source handoff. Its first action checks
 only whether source exists; existing source goes straight to the finalizer,
 while missing source is written in the first edit and finalized next. The stage packet
 contains a compact index derived from every exact Taste header; Codex ranks the
 complete roster there, then reads only the best three full custom agents. Make
-first uses medium reasoning for one 16-minute proof runway, then resumes the
-same Goal at high reasoning with a 15-minute source-handoff boundary before
-normal 30-minute recovery. Playtest and Release use medium;
+first uses one 16-minute proof runway, then resumes the same Goal with a
+15-minute source-handoff boundary before normal 30-minute recovery.
 every stage compacts at 192k. One profile identity binds the persistent thread
-while the host selects those stage-specific turn settings. The same recovery
+while the host selects those stage-specific time and compaction settings. New
+schema-v2 Manager projects keep their selected reasoning effort throughout;
+older Manager projects retain the original stage-shaped high/medium settings.
+The same recovery
 semantics apply, with no more than eight native turns across one CLI
 invocation. An explicit operator resume after a valid final-Make proof starts
 directly in normal recovery instead of replaying the source handoff. If fixed

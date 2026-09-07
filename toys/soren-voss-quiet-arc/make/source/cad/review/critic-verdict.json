@@ -1,0 +1,35 @@
+{
+  "reviewer": "independent-native-agent-visual-critic",
+  "method": "Blind review of iso.png, signature.png and ordered decoded frames before reading WISH.json, spark-source.json, balance.json and print-preflight.md. No geometry edits.",
+  "blind_findings": {
+    "held_object": "A palm-sized balance or rocking block; scale was an impression, not evidenced by the images.",
+    "volumetric_form": "Broad extruded circular-segment body with teal curved-profile sides, flat mustard-gold rectangular top, and softened upper corners and edges.",
+    "subjects": "One abstract object; no recognizable character, creature, person or scene.",
+    "action": "The whole rigid block rocks left and right on its convex underside.",
+    "relationships": "No separate interacting parts or internal linkage visible. Flat top and curved contact surface define the interaction.",
+    "distinctive_signature": "Restrained boat-like circular-segment silhouette with a broad finger-accessible top.",
+    "observed_motion": "Ordered frames show alternating tilt with diminishing amplitude toward level, visually consistent with a damped rocker.",
+    "visible_defects_or_limits": ["Soft contact shadow makes the underside appear slightly floating.", "Face-color split alone cannot establish materials or assembly.", "No hand or scale reference proves actual handling comfort."],
+    "desirability": "Clean, calm, friendly desktop tactile form with softened edges. Novelty is modest and the visible interaction is limited to rocking."
+  },
+  "reveal_assessment": {
+    "wish_alignment": "PASS: deliberate minimalism, one solid adult desk rocker and absence of decoration are exactly requested; modest novelty is appropriate.",
+    "positive_held_form_constraints": ["Approximately palm-sized: exact reported envelope 68.622 x 28 x 22 mm supports the intended scale, without physical handling verification.", "Rounded convex underside and broad flat top visibly support finger nudging and whole-body rocking.", "One homogeneous solid is reported by exact CAD; no separate parts are required.", "Flat segment end permits a constant-section print orientation; deterministic print preflight reports PASS."],
+    "negative_held_form_constraints": "PASS: no decorative character, separate parts, assembly, joints, bearings, springs, hardware, electronics or hidden mechanism are visible or specified.",
+    "motion": "PASS as an illustrative exact-CAD motion demonstration. Alternating whole-body tilt and return toward level match Quiet Arc. The damping is prescribed, not measured or solved physical settling performance.",
+    "restoring_geometry": "PASS within stated homogeneous-mass and no-slip level-plane assumptions: COM is 27.088 mm below curvature center; sampled torque opposes tilt through +/-20 degrees and potential rises away from level.",
+    "shadow_resolution": "The apparent floating is a rendering convention, not a demonstrated geometry defect: reported transformed minimum Z remains zero within numerical tolerance at sampled poses.",
+    "color_resolution": "Teal/gold face colors are software shading, not evidence of multiple materials or parts.",
+    "physical_claim_limits": "No physical print, hand fit, actual damping, friction, settling time, durability or user desirability has been verified."
+  },
+  "critical_requirements": ["Keep the released print one solid part and preserve the homogeneous-mass assumption with uniform 100 percent infill.", "Keep owner guidance to gentle nudges on a level desk and explain that large pushes can overturn it.", "Describe animation damping as illustrative and do not claim physical testing.", "Retain required exact CAD, print checks, printable download and truthful manual through normal host-controlled Release."],
+  "largest_risk": "A reader may mistake the smooth decaying animation for verified real-world settling behavior; actual dissipation depends on print and surface.",
+  "risk_resolution": "Existing evidence explicitly labels prescribed damping and no physical test. Carry the same limitation into the manual and public facts; gravity-restoring geometry is supported independently of that animation.",
+  "positive_constraints_satisfied": true,
+  "negative_constraints_satisfied": true,
+  "motion_matches_concept": true,
+  "physical_performance_verified": false,
+  "has_blocking_defects": false,
+  "blocking_defects": [],
+  "verdict": "PASS for the requested minimal CAD-stage product. No visual or held-form blocker persists after reveal. This review does not approve publication or certify physical performance."
+}

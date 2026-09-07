@@ -1,4 +1,4 @@
-# ADR 0044: Lower the deep compaction ceiling to 192k
+# ADR 0051: Lower the deep compaction ceiling to 192k
 
 - Status: Accepted
 - Date: 2026-09-06
@@ -14,7 +14,7 @@ by itself; deep sessions on sol survived long Make work only because Codex
 compacted when the provider rejected an oversized request. The Ouray run of
 2026-09-05 reached 225k of context and compacted six times that way.
 
-The first Forge run on `gpt-6-astra` (ADR 0043) never compacted. Its Make
+The first Forge run on `gpt-6-astra` (ADR 0050) never compacted. Its Make
 round 4 turn failed twice in a row at the first model call that started above
 roughly 210k tokens: Codex reported `turn.failed` after seven to ten minutes
 of silence, the host saw no transient transport diagnostic, and every resume
