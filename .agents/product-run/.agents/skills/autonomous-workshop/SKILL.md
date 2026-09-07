@@ -130,7 +130,9 @@ Goal, not another program or runtime. Native subagents may supply specialist
 work or independent judgment, but the root Manager synthesizes the result.
 Keep the root Manager on the critical path: establish a conforming artifact
 and its deterministic checks early, delegate only bounded concrete work, and
-never make successful finalization depend on a child agent.
+never make successful finalization depend on optional creative child work.
+Required independent blind and manual reviews are exceptions; if they cannot
+run, finalize a truthful need instead of substituting self-review.
 
 Complete the Goal only after the ready-stage finalizer succeeds, then return
 control to the host immediately. Do not begin the next stage. If work is

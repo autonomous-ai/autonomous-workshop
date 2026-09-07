@@ -18,6 +18,10 @@ roster once from `STAGE.json`'s compact `inventor_discovery_index`, read only
 the best three full custom-agent TOMLs, select the Inventor whose Taste owns
 the hardest-to-fake magic, and write one compact source with exactly
 `selected_inventor_id`, roster-covering `ranking`, `concept`, and `research`.
+For the exact source schema, read only the **Artifact and gate** section of
+[invent.md](invent.md#artifact-and-gate). That section also defines Spark's
+creative source; it does not enable an Invent stage. Use this documented
+contract before inspecting finalizer implementation to rediscover fields.
 
 During a frozen deep-v8 or deep-v9 proof turn, follow the host prompt literally. Create or
 continue the Make Goal immediately, then inspect the required stable
@@ -69,6 +73,22 @@ skill deferral. This ownership split does not change their handoff or introduce
 a direct Make route.
 
 Use one product funnel:
+
+For Spark too, inspect the smallest exact held-form and signature blockout
+before detailing the complete product. Save a compact root finding with the
+draft: what visibly satisfies the Wish, what is still missing, and the next
+specific geometry change. This is work inside Make, not a new stage or an extra
+critic. A toy whose magic is a shadow must show the projected shadow; a state
+sheet of the held object alone does not prove that outcome. Prove claimed
+motion from geometry, paths, contacts, and clearances rather than merely placing
+the model in separate poses. Keep unresolved claims explicit.
+
+Local audits must query built geometry for claimed fit, clearance, assembly,
+or motion. Constant `True`, comparisons of a value with itself, and arithmetic
+on intended parameters do not prove the resulting CAD. Preserve the independent
+critic's actual blind response separately with its image hashes before revealing
+the Wish. Do not rewrite that response after repair or copy old affirmative
+claims onto new hashes; changed geometry needs the allowed fresh blind read.
 
 1. Write the smallest viable parametric baseline with exactly one non-part
    combined `*.step.py` entry and one `part_<role>.step.py` per printable part.
