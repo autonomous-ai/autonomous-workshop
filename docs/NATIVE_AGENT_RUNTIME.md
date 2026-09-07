@@ -392,10 +392,14 @@ one immutable Wish-bound Inventor; without it, the Manager receives the full
 roster and chooses the best match. Wishes created by `workshop start <id>`
 carry the originating Inventor as the same exact override. Each file
 binds the exact host-materialized identity, Taste, and declared skill paths.
-That directory is the sole Inventor roster in the toy project. Codex owns
-spawning, routing, waiting, and synthesis. Workshop does not spawn another
-OS-level `codex` process: the host starts and resumes only the root product-run
-session.
+That directory is the sole Inventor roster in the toy project. Codex CLI
+0.153.4 does not discover project-scoped agent files by itself, so the host
+registers each one on the start and resume command line as
+`--config agents."<id>".config_file="<run root>/.codex/agents/<id>.toml"`;
+`spawn_agent` then exposes every roster Inventor through `agent_type`
+(ADR 0054). Codex owns spawning, routing, waiting, and synthesis. Workshop
+does not spawn another OS-level `codex` process: the host starts and resumes
+only the root product-run session.
 
 See the official Codex [Subagents and custom agents
 documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents)

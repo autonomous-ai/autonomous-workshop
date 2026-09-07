@@ -873,6 +873,48 @@ def _toml_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
+_INVENTOR_AGENT_FILE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}\.toml$")
+
+
+def inventor_agent_config_arguments(run_root: Path) -> tuple[str, ...]:
+    """Register every materialized Inventor custom agent as a Codex agent role.
+
+    Codex CLI 0.153.4 loads custom agents only from ``$CODEX_HOME/agents`` or
+    from explicit ``agents."<name>".config_file`` configuration; it does not
+    discover the project-scoped ``.codex/agents/*.toml`` files the host
+    materializes into a run root, so ``spawn_agent`` exposed no ``agent_type``
+    and the Manager could not dispatch the bound Inventor (ADR 0054). Each
+    regular ``<id>.toml`` in the run's ``.codex/agents`` directory becomes one
+    ``--config`` pair pointing at that exact file; symlinks and other names are
+    ignored, and a run without the directory registers nothing. The files are
+    already hash-bound in the run manifest, so these arguments are derived
+    from sealed inputs rather than being part of the launch policy identity.
+    """
+
+    directory = Path(run_root) / ".codex" / "agents"
+    try:
+        entries = sorted(directory.iterdir(), key=lambda item: item.name)
+    except OSError:
+        return ()
+    arguments: list[str] = []
+    for entry in entries:
+        if (
+            entry.is_symlink()
+            or not entry.is_file()
+            or _INVENTOR_AGENT_FILE.fullmatch(entry.name) is None
+        ):
+            continue
+        name = entry.name[: -len(".toml")]
+        arguments.extend(
+            (
+                "--config",
+                "agents.%s.config_file=%s"
+                % (_toml_string(name), _toml_string(str(entry))),
+            )
+        )
+    return tuple(arguments)
+
+
 def _trusted_runtime_path_identity(
     path: Path,
     *,
@@ -2495,6 +2537,7 @@ class CodexNativeSessionLauncher:
             'model_reasoning_effort="%s"' % self.reasoning_effort,
             *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
+            *inventor_agent_config_arguments(run_root),
             "-C",
             str(run_root),
             "--model",
@@ -2529,6 +2572,7 @@ class CodexNativeSessionLauncher:
             'model_reasoning_effort="%s"' % self.reasoning_effort,
             *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
+            *inventor_agent_config_arguments(run_root),
             "--model",
             self.model,
             thread_id,
@@ -3484,4 +3528,5 @@ __all__ = [
     "CodexNativeSessionLauncher",
     "CodexNativeSessionOutcome",
     "codex_supports_native_workshop",
+    "inventor_agent_config_arguments",
 ]

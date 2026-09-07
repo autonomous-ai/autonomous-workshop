@@ -29,6 +29,7 @@ from workshop.runtime.codex import (
     CodexRecoverableInvocationError,
     CodexNativeSessionLauncher,
     codex_supports_native_workshop,
+    inventor_agent_config_arguments,
 )
 
 
@@ -304,6 +305,55 @@ class ImmediateTimer:
 
 
 class CodexNativeSessionTest(unittest.TestCase):
+    def test_materialized_inventor_agents_register_as_codex_roles(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            self.assertEqual(inventor_agent_config_arguments(root), ())
+            agents = root / ".codex" / "agents"
+            agents.mkdir(parents=True)
+            (agents / "alice.toml").write_text('name = "alice"\n', encoding="utf-8")
+            (agents / "ferro-line.toml").write_text(
+                'name = "ferro-line"\n', encoding="utf-8"
+            )
+            (agents / "README.md").write_text("not an agent\n", encoding="utf-8")
+            (agents / "Bad_Name.toml").write_text("nope\n", encoding="utf-8")
+            (agents / "link.toml").symlink_to(agents / "alice.toml")
+            (agents / "nested.toml").mkdir()
+
+            self.assertEqual(
+                inventor_agent_config_arguments(root),
+                (
+                    "--config",
+                    'agents."alice".config_file=%s' % json.dumps(str(agents / "alice.toml")),
+                    "--config",
+                    'agents."ferro-line".config_file=%s'
+                    % json.dumps(str(agents / "ferro-line.toml")),
+                ),
+            )
+
+    def test_start_and_resume_commands_carry_the_inventor_agent_roles(self):
+        launcher = CodexNativeSessionLauncher(
+            model="gpt-6-astra",
+            reasoning_effort="high",
+            binary=TEST_CODEX_BINARY,
+            cli_version="0.150.0",
+        )
+        roles = ("--config", 'agents."alice".config_file="/run/.codex/agents/alice.toml"')
+        with mock.patch(
+            "workshop.runtime.codex.inventor_agent_config_arguments", return_value=roles
+        ), mock.patch.object(
+            CodexNativeSessionLauncher, "_auto_compact_config_arguments", return_value=()
+        ):
+            policy = mock.Mock(permission_config_arguments=("--config", "x=1"))
+            start = launcher._start_command(Path("/run"), policy)
+            resume = launcher._resume_command(THREAD_ID, Path("/run"), policy)
+        for command in (start, resume):
+            index = command.index(roles[1])
+            self.assertEqual(command[index - 1], "--config")
+            self.assertEqual(command[index - 3 : index - 1], ["--config", "x=1"])
+        self.assertEqual(start[start.index(roles[1]) + 1], "-C")
+        self.assertEqual(resume[resume.index(roles[1]) + 1], "--model")
+
     def launcher(
         self,
         scripts,
