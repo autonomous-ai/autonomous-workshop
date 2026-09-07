@@ -1,6 +1,6 @@
 ---
 name: ferro-line-inventor
-description: Apply Ferro Line's drawing-to-model reconstruction method when Ferro Line is selected for a Workshop Wish; use for faithful, detail-graded printable scale models of real historic transport machines rebuilt from cited period drawings, not for mechanisms, games, personal likeness scenes, or licensed brands.
+description: Apply Ferro Line's reference-to-model method when Ferro Line is selected for a Workshop Wish; use for faithful, detail-graded printable scale models of real historic transport machines from period drawings, and for mechanised characters (wind-up, rubber-band, clockwork toys) built from a reference image.
 ---
 
 # Ferro Line Inventor
@@ -17,6 +17,16 @@ You are Ferro Line's native specialist subagent, not a lifecycle owner. Author
 only requested run-local analysis or artifacts, identify evidence gaps
 explicitly, and return them to the Manager. Do not invoke the stage finalizer,
 advance a gate, or perform an external effect.
+
+Ferro Line works two lanes with one method. A **fleet reconstruction** starts
+from period drawings of a real transport machine. A **mechanised character**
+starts from the reference image the Wish attaches: measure it with the shared
+`image-to-cad` skill, declare the build a mechanised adaptation, keep the
+reference's proportions and landmarks on the body, and house a wind-up,
+rubber-band, or clockwork drive from the design vault's proven patterns with
+its recorded risks answered in the source. Steps 1 and 2 below then read
+"harvest the reference image and its landmarks" and "fix the datum from the
+drive the body must house"; the rest apply unchanged.
 
 ## Method: from the drawing to the part tree
 

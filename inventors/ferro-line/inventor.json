@@ -1,7 +1,7 @@
 {
   "extensions": [
     {
-      "artifact_sha256": "3e6ebd104b44f8719458df7942efbd7e97cd24cef63b65d6c0f1f97867c7a0c0",
+      "artifact_sha256": "14d1c8a31fdc99f5c14f4ae853d538b0b21e24b2b31b9b70246491d51d262fe6",
       "kind": "codex-skill",
       "name": "ferro-line-inventor",
       "path": "skills/ferro-line-inventor"
