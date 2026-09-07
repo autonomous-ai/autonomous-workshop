@@ -2054,6 +2054,14 @@ def _phase_design_vault(
     """
 
     if checkpoint.stage not in _VAULT_STAGES:
+        if checkpoint.stage == "release":
+            # Make's last lessons (a budget stop, a final rejection) queue
+            # after the last vault phase; Release is the only phase left to
+            # send them, and it needs no snapshot of its own.
+            try:
+                _flush_pending_vault_writes(run, _gamevault_client())
+            except GameVaultUnavailable:
+                pass
         return None, None
     directory = _vault_state_directory(run, create=True)
     cache = directory / (checkpoint.checkpoint_sha256 + ".json")
@@ -6302,6 +6310,11 @@ def _evaluate_make_stage(
                 label="Spark native Invented contract",
             )
             invented.assert_context(assignment)
+            # Spark seals its concept inside Make; expose it the way Forge
+            # and Quest do so the Make lessons hooks can name the product's
+            # mechanisms and post its page.
+            context["assignment"] = assignment  # type: ignore[index]
+            context["invented"] = invented  # type: ignore[index]
         else:
             artifact = _ready_contract_artifact(
                 proposal,
