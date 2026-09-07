@@ -194,7 +194,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertIn("Starting one native Codex session", stderr.getvalue())
         self.assertEqual(observed["manager_id"], "codex")
         self.assertEqual(observed["manager_model"], "gpt-5.6-sol")
-        self.assertEqual(observed["manager_reasoning_effort"], "high")
+        self.assertEqual(observed["manager_reasoning_effort"], "medium")
         self.assertIn("reasoning about the current stage", stderr.getvalue())
         self.assertIn("process is still running", stderr.getvalue())
         self.assertIn("using a tool for the current stage", stderr.getvalue())
@@ -213,7 +213,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(observed["effort"], "spark")
         self.assertFalse(observed["github_publish_requested"])
         self.assertIn("Workflow: Spark", stderr.getvalue())
-        self.assertIn("Model: gpt-5.6-sol · effort high", stderr.getvalue())
+        self.assertIn("Model: gpt-5.6-sol · effort medium", stderr.getvalue())
         native_start.assert_called_once()
 
     def test_custom_token_cap_and_exact_trial_params_reach_host(self):
@@ -254,7 +254,7 @@ class NativeCommandTest(unittest.TestCase):
             self.assertEqual(effort, "spark")
             self.assertEqual(manager_id, "codex")
             self.assertEqual(manager_model, "gpt-5.6-sol")
-            self.assertEqual(manager_reasoning_effort, "high")
+            self.assertEqual(manager_reasoning_effort, "medium")
             self.assertFalse(github_publish_requested)
             del wish, activity_observer
             timing_observer(timing_event(operation="stage.prepare"))
@@ -324,7 +324,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(start.call_args.kwargs["manager_model"], "gpt-6-astra")
         self.assertEqual(start.call_args.kwargs["manager_reasoning_effort"], "high")
 
-    def test_wish_claude_defaults_to_opus_5_and_high(self):
+    def test_wish_claude_defaults_to_opus_5_and_medium(self):
         with mock.patch(
             "cli.main.generate_wish_id", return_value="wish-claude"
         ), mock.patch(
@@ -333,7 +333,7 @@ class NativeCommandTest(unittest.TestCase):
             result = main(("wish", "a moon", "--agent", "claude", "--json"))
         self.assertEqual(result, 0)
         self.assertEqual(start.call_args.kwargs["manager_model"], "claude-opus-5")
-        self.assertEqual(start.call_args.kwargs["manager_reasoning_effort"], "high")
+        self.assertEqual(start.call_args.kwargs["manager_reasoning_effort"], "medium")
 
     def test_wish_mock_covers_every_supported_runtime_combination(self):
         cases = []
@@ -413,8 +413,8 @@ class NativeCommandTest(unittest.TestCase):
 
     def test_wish_mock_covers_defaults_for_every_agent_and_workflow(self):
         defaults = {
-            "codex": ("gpt-5.6-sol", "high"),
-            "claude": ("claude-opus-5", "high"),
+            "codex": ("gpt-5.6-sol", "medium"),
+            "claude": ("claude-opus-5", "medium"),
             "grok": ("grok-4.6", None),
         }
         observed = 0
@@ -790,7 +790,7 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(observed["inventor_id"], "sample")
         self.assertEqual(observed["manager_id"], "codex")
         self.assertEqual(observed["manager_model"], "gpt-5.6-sol")
-        self.assertEqual(observed["manager_reasoning_effort"], "high")
+        self.assertEqual(observed["manager_reasoning_effort"], "medium")
         self.assertIsNone(observed["effort"])
         self.assertTrue(Path(observed["source_root"]).is_dir())
         output = stdout.getvalue()
@@ -864,7 +864,7 @@ class DaydreamCommandTest(unittest.TestCase):
         native_start.assert_called_once()
         self.assertEqual(run.call_args.kwargs["manager_id"], "codex")
         self.assertEqual(run.call_args.kwargs["manager_model"], "gpt-5.6-sol")
-        self.assertEqual(run.call_args.kwargs["manager_reasoning_effort"], "high")
+        self.assertEqual(run.call_args.kwargs["manager_reasoning_effort"], "medium")
         self.assertEqual(run.call_args.kwargs["effort"], "spark")
         wish = observed["wish"]
         self.assertEqual(wish.product_id, "wish-one")
@@ -876,7 +876,7 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(observed["effort"], "spark")
         self.assertEqual(observed["manager_id"], "codex")
         self.assertEqual(observed["manager_model"], "gpt-5.6-sol")
-        self.assertEqual(observed["manager_reasoning_effort"], "high")
+        self.assertEqual(observed["manager_reasoning_effort"], "medium")
         self.assertFalse(observed["github"])
         payload = json.loads(stdout.getvalue())
         self.assertEqual(set(payload), {"daydream", "run"})
@@ -983,8 +983,8 @@ class DaydreamCommandTest(unittest.TestCase):
     def test_start_mock_covers_defaults_for_every_agent_and_workflow(self):
         sealed = sample_sealed()
         defaults = {
-            "codex": ("gpt-5.6-sol", "high"),
-            "claude": ("claude-opus-5", "high"),
+            "codex": ("gpt-5.6-sol", "medium"),
+            "claude": ("claude-opus-5", "medium"),
             "grok": ("grok-4.6", None),
         }
         observed = 0

@@ -162,7 +162,7 @@ _SPECS = {
         agent_suffix=".toml",
         session_checkpoint_name="codex-session.json",
         default_model="gpt-5.6-sol",
-        default_reasoning_effort="high",
+        default_reasoning_effort="medium",
     ),
     "claude": ManagerRuntimeSpec(
         manager_id="claude",
@@ -171,7 +171,7 @@ _SPECS = {
         agent_suffix=".md",
         session_checkpoint_name="claude-session.json",
         default_model="claude-opus-5",
-        default_reasoning_effort="high",
+        default_reasoning_effort="medium",
         experimental=True,
     ),
     "grok": ManagerRuntimeSpec(

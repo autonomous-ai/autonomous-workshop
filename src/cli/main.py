@@ -1490,7 +1490,7 @@ def parser() -> argparse.ArgumentParser:
         choices=SUPPORTED_REASONING_EFFORTS,
         default=None,
         metavar="LEVEL",
-        help="model reasoning effort (default: high for Codex and Claude Code)",
+        help="model reasoning effort (default: medium for Codex and Claude Code)",
     )
     start.add_argument(
         "--root", type=Path, help="Workshop checkout or inventor catalog"
@@ -1588,7 +1588,7 @@ def parser() -> argparse.ArgumentParser:
         choices=SUPPORTED_REASONING_EFFORTS,
         default=None,
         metavar="LEVEL",
-        help="model reasoning effort (default: high for Codex and Claude Code)",
+        help="model reasoning effort (default: medium for Codex and Claude Code)",
     )
     daydream.add_argument(
         "--root", type=Path, help="Workshop checkout or inventor catalog"
@@ -1639,7 +1639,7 @@ def parser() -> argparse.ArgumentParser:
         choices=SUPPORTED_REASONING_EFFORTS,
         default=None,
         metavar="LEVEL",
-        help="model reasoning effort (default: high for Codex and Claude Code)",
+        help="model reasoning effort (default: medium for Codex and Claude Code)",
     )
     wish.add_argument(
         "--max-rounds",

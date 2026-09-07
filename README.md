@@ -95,7 +95,7 @@ product and stops. Omit `--inventor` on a Wish to let the Manager choose the
 best match. `start <inventor> --once` dreams and builds one Inventor-generated
 idea. `resume <wish-id>` continues the same unfinished product and session.
 
-`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at high effort; Claude Code defaults to Opus 5 at high effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
+`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at medium effort; Claude Code defaults to Opus 5 at medium effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
@@ -151,7 +151,7 @@ the provider's free-form error text.
 One run is one native coding-agent session — the shop lead. Resume cannot switch Managers.
 
 ```bash
-uv run workshop start pico-press --agent codex    # Sol + high; default
+uv run workshop start pico-press --agent codex    # Sol + medium; default
 uv run workshop start pico-press --agent claude   # Opus 5 + high; experimental
 uv run workshop start pico-press --agent grok     # experimental
 ```

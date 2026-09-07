@@ -59,19 +59,26 @@ class ManagerRegistryTest(unittest.TestCase):
         self.assertEqual(payload["manager_id"], "codex")
         self.assertEqual(payload["agent_directory"], ".codex/agents")
         self.assertEqual(payload["model"], "gpt-5.6-sol")
-        self.assertEqual(payload["reasoning_effort"], "high")
+        self.assertEqual(payload["reasoning_effort"], "medium")
 
     def test_runtime_selection_resolves_agent_defaults_and_model_aliases(self):
         codex = manager_runtime_selection("codex")
         self.assertEqual(codex.model, "gpt-5.6-sol")
-        self.assertEqual(codex.reasoning_effort, "high")
+        self.assertEqual(codex.reasoning_effort, "medium")
         astra = manager_runtime_selection(
             "codex", model="astra", reasoning_effort="high"
         )
         self.assertEqual(astra.model, "gpt-6-astra")
         claude = manager_runtime_selection("claude")
         self.assertEqual(claude.model, "claude-opus-5")
-        self.assertEqual(claude.reasoning_effort, "high")
+        self.assertEqual(claude.reasoning_effort, "medium")
+
+    def test_astra_uses_medium_unless_explicitly_overridden(self):
+        self.assertEqual(manager_runtime_selection("codex", model="astra").reasoning_effort, "medium")
+        for agent in ("codex", "claude"):
+            with self.subTest(agent=agent):
+                frozen = manager_project_bytes(manager_runtime_selection(agent, reasoning_effort="high"))
+                self.assertEqual(parse_manager_project_bytes(frozen)[2], "high")
 
     def test_runtime_selection_rejects_unsupported_agent_controls(self):
         with self.assertRaisesRegex(ContractError, "Codex model"):

@@ -35,11 +35,16 @@ The public start surfaces are:
 model, and reasoning vocabulary. `--workflow` is absent from `daydream`
 because a standalone daydream does not execute a product lifecycle.
 
-Codex defaults to `gpt-5.6-sol` at `high`; `astra`, `sol`, `terra`, and `luna`
+Codex defaults to `gpt-5.6-sol` at `medium`; `astra`, `sol`, `terra`, and `luna`
 are friendly aliases for their exact Codex model ids. Claude Code defaults to
-`claude-opus-5` at `high`; `opus` and `opus-5` resolve to that exact id. Grok
+`claude-opus-5` at `medium`; `opus` and `opus-5` resolve to that exact id. Grok
 Build retains its pinned `grok-4.6` model and exposes no reasoning-effort
 control until its CLI has an equivalent stable contract.
+
+On 2026-09-07 the new-selection reasoning default changed from high to medium.
+The model defaults are unchanged. Omitting `--effort` with `--model astra`
+now selects Astra/medium. Explicit overrides and frozen run selections retain
+their exact reasoning levels; this is not a migration of existing sessions.
 
 For each new product run, the host writes schema-v2 `MANAGER.json` containing
 the canonical agent, model, and reasoning effort. That file is immutable,
@@ -69,7 +74,7 @@ selection under each adapter's compatibility rules.
 - `workshop start pico-press --agent codex --model astra --effort high` uses
   `gpt-6-astra` at high effort for both daydream and build.
 - `workshop start pico-press --agent claude` resolves to
-  `claude-opus-5` at high effort.
+  `claude-opus-5` at medium effort.
 - Status and run receipts expose `workflow`, `agent`, `model`, and `effort`.
 - Existing schema-v1 runs remain resumable without acquiring new defaults.
 
