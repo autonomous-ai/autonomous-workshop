@@ -3,13 +3,29 @@
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
-  `1e56c145586fa9be230443612c1d9d47c957e4f8` (2026-09-03), resynced from
-  `4800bbe89c92366995960f73650e994e96e52756` (2026-08-28).
+  `9e75609bb53bf880429353e57201995a4c0482e6` (2026-09-07), resynced from
+  `1e56c145586fa9be230443612c1d9d47c957e4f8` (2026-09-03).
 - The reviewed snapshot includes the complete upstream trees for all five
   skills. `cad` includes the vendored `cadgen` 0.4.19 source, bought-part mount
   tooling, run-cost guidance, and the strengthened image-derived verification
   runner. The image workflow includes clipped-reference rejection, reference
   silhouette preparation, and stored-camera replay for lower-cost iteration.
+- The 2026-09-07 resync takes upstream's single-commit fix that makes every
+  verified run leave a `.step` behind. `cad`'s `verify_project` now passes
+  `--write` unconditionally in quick mode, which previously built the combined
+  entry, wrote the render package and wrote no CAD file at all, so a
+  preview-only project was indistinguishable from one whose STEP write had
+  failed. A new `--self-check` fixture holds `--write` in the planned quick-mode
+  `gen` command, and `SKILL.md` step 7 plus the `--quick` help stop reading as
+  permission to skip the write. `design-reference`,
+  `electromechanical-integration`, `image-to-cad` and `step-parts` are
+  byte-identical to the previous snapshot; `cadgen` stays at 0.4.19 and both
+  `requirements.txt` files are unchanged. The upstream delta was three-way
+  merged so Workshop's local `--print-preflight` mode, materialized-skill-root
+  command shapes, and `SKILL.md` step 6 single-combined-entry rule survive
+  intact; the only local reconciliation is the new "every mode writes STEP"
+  runner note, which also names `--print-preflight` because this copy has that
+  third mode and it already generates with `--write`.
 - The 2026-09-03 resync takes upstream's build-direction and resolution work.
   `cad` gains two gates: `check_overhang`, which is the only thing in the
   toolchain that knows which way is up and splits down-facing surface into
