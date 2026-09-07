@@ -68,6 +68,37 @@ def test_descendants_pending_and_unrelated_payloads(tmp_path):
     assert result["total_tokens"] == 330
 
 
+def test_duplicate_unrelated_session_identity_is_ignored(tmp_path):
+    write(tmp_path, records() + [usage()])
+    write(tmp_path, records("unrelated", cwd="/elsewhere"), "unrelated-first")
+    write(tmp_path, records("unrelated", cwd="/elsewhere"), "unrelated-second")
+
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+
+    assert result["total_tokens"] == 110
+    assert [thread["thread_id"] for thread in result["threads"]] == [ROOT]
+
+
+@pytest.mark.parametrize(("duplicate_id", "parent"), [
+    (ROOT, None),
+    (CHILD, ROOT),
+])
+def test_duplicate_selected_session_identity_fails_closed(
+    tmp_path, duplicate_id, parent,
+):
+    write(tmp_path, records() + [usage()])
+    if duplicate_id == CHILD:
+        write(tmp_path, records(CHILD, ROOT) + [usage()], "child-first")
+    write(
+        tmp_path,
+        records(duplicate_id, parent) + [usage()],
+        "duplicate-selected",
+    )
+
+    with pytest.raises(UsageUnavailable, match="ambiguous native session identity"):
+        read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+
+
 @pytest.mark.parametrize("events", [
     records(version="0.153.5") + [usage()],
     records(cwd="/elsewhere") + [usage()],
