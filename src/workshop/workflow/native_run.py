@@ -104,6 +104,12 @@ from workshop.playtest.vault_evidence import (
     gamevault_dismissals,
     gamevault_rows,
 )
+from workshop.make.vault_lessons import (
+    build_make_rows,
+    gamevault_make_design,
+    gamevault_make_rows,
+    make_lessons,
+)
 from workshop.product import ToyBlueprint
 from workshop.product.blueprints import SCORE_AMBIGUOUS_SPREAD
 from workshop.release.contracts import ProductRelease, ReleaseContext
@@ -2119,6 +2125,156 @@ def _send_vault_writes(client: GameVaultClient, payload: Mapping[str, Any]) -> N
         client.post_review(payload["dismissals"], label=label)
 
 
+def _queue_or_send_vault_payload(
+    run: AgentRun, payload: Mapping[str, Any], *, name: str
+) -> bool:
+    """Send one vault write now, or queue it under host state for the next phase.
+
+    Returns whether it was sent. A vault that cannot be reached must never
+    undo the durable gate receipt or checkpoint the payload describes, so the
+    payload waits as ``vault/pending/<name>`` and rides the next snapshot
+    fetch (:func:`_flush_pending_vault_writes`).
+    """
+
+    try:
+        _send_vault_writes(_gamevault_client(), payload)
+    except GameVaultUnavailable:
+        pending = _pending_vault_writes_directory(run, create=True) / name
+        _atomic_private_write(pending, _canonical_json_bytes(payload) + b"\n", mode=0o600)
+        return False
+    return True
+
+
+def _make_concept_and_mechanisms(
+    run: AgentRun, context: Mapping[str, Any]
+) -> tuple[Optional[Mapping[str, Any]], list[str]]:
+    """The sealed concept a Make worked from and its vault mechanism nodes.
+
+    Forge and Quest carry the Invented contract in the phase context; a Spark
+    round has none until its own creative source is sealed. Mechanism names
+    resolve against the run's frozen ``VAULT.json`` when one is bound; a phase
+    without a vault reports the concept alone.
+    """
+
+    invented = context.get("invented")
+    concept = getattr(invented, "concept", None)
+    if not isinstance(concept, Mapping):
+        return None, []
+    snapshot = run.run_root / RUN_VAULT_PATH
+    try:
+        if snapshot.is_symlink() or not snapshot.is_file():
+            return concept, []
+        vault = Vault.from_packed_bytes(snapshot.read_bytes())
+        resolved = vault.resolve_concept_mechanisms(concept)
+    except (OSError, VaultError):
+        return concept, []
+    return concept, sorted({path for path in resolved.values() if path})
+
+
+def _record_make_evidence(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    context: Mapping[str, Any],
+    *,
+    failures: Sequence[Mapping[str, Any]],
+    verdict: str,
+    name: str,
+) -> dict[str, Any]:
+    """Bank what one Make outcome taught, the way Playtest banks its round.
+
+    ``failures`` are host-verified (a failed CAD gate, a proposal the host
+    refused) or the Manager's own sealed words (a revision request, a need);
+    :func:`build_make_rows` keeps only the ones that name a design failure.
+    A passed Make posts the product page alone so every Spark and Forge wish
+    leaves a ``games/<product_id>`` node behind.
+    """
+
+    concept, mechanisms = _make_concept_and_mechanisms(run, context)
+    rows = gamevault_make_rows(
+        build_make_rows(checkpoint.product_id, checkpoint.round_index, failures, mechanisms)
+    )
+    payload: dict[str, Any] = {
+        "label": "workshop %s r%d make" % (checkpoint.product_id, checkpoint.round_index),
+        "rows": rows,
+        "dismissals": [],
+    }
+    if concept is not None:
+        payload["design"] = gamevault_make_design(
+            checkpoint.product_id,
+            checkpoint.round_index,
+            concept=concept,
+            mechanisms=mechanisms,
+            verdict=verdict,
+            rows=rows,
+        )
+    report = {"rows": len(rows), "design": "design" in payload}
+    if not rows and "design" not in payload:
+        return {**report, "sent": True}
+    sent = _queue_or_send_vault_payload(
+        run, payload, name="%s-make-%s.json" % (checkpoint.checkpoint_sha256, name)
+    )
+    return {**report, "sent": sent}
+
+
+def _cad_gate_failure(rejection: NativeCadGateError, checkpoint: AgentRunCheckpoint) -> dict[str, Any]:
+    evidence = rejection.evidence
+    tail = ""
+    for stream in (evidence.stderr, evidence.stdout):
+        text = " ".join(str(getattr(stream, "text", "") or "").split())
+        if text:
+            tail = text[-400:]
+            break
+    return {
+        "code": rejection.failure_code,
+        "finding": "Make round %d failed the host CAD gate %s (%s tier). %s"
+        % (checkpoint.round_index, rejection.failure_code, evidence.verification_tier, tail),
+        "evidence_class": "deterministic-cad-gate",
+        "severity": "block",
+    }
+
+
+def _queue_make_budget_lesson(
+    paths: NativeRunPaths, checkpoint: AgentRunCheckpoint, budget: Any
+) -> None:
+    """Queue the budget stop as a Make lesson; the observer thread has no vault."""
+
+    if checkpoint.stage != "make":
+        return
+    used = getattr(budget, "used_tokens", None)
+    limit = getattr(budget, "limit", None)
+    rows = gamevault_make_rows(
+        build_make_rows(
+            checkpoint.product_id,
+            checkpoint.round_index,
+            [
+                {
+                    "code": "make-token-budget-stop",
+                    "finding": "Make round %d stopped at the product token cap (%s of %s tokens observed) "
+                    "before sealing a product; the repair loop did not converge inside its budget."
+                    % (checkpoint.round_index, used, limit),
+                    "evidence_class": "deterministic-host-budget",
+                    "severity": "improve",
+                }
+            ],
+            [],
+        )
+    )
+    if not rows:  # pragma: no cover - the code always classifies
+        return
+    payload = {
+        "label": "workshop %s r%d make" % (checkpoint.product_id, checkpoint.round_index),
+        "rows": rows,
+        "dismissals": [],
+    }
+    directory = paths.host_state / _VAULT_STATE_DIRECTORY / _VAULT_PENDING_DIRECTORY
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    _atomic_private_write(
+        directory / ("%s-make-budget.json" % checkpoint.checkpoint_sha256),
+        _canonical_json_bytes(payload) + b"\n",
+        mode=0o600,
+    )
+
+
 def _flush_pending_vault_writes(run: AgentRun, client: GameVaultClient) -> int:
     """Send every queued write-back before a phase fetches fresh knowledge.
 
@@ -2386,15 +2542,10 @@ def _record_playtest_evidence(
     }
     if not payload["rows"] and not payload["dismissals"] and "design" not in payload:
         return {**report, "sent": True}
-    try:
-        _send_vault_writes(_gamevault_client(), payload)
-    except GameVaultUnavailable:
-        pending = _pending_vault_writes_directory(run, create=True) / (
-            checkpoint.checkpoint_sha256 + ".json"
-        )
-        _atomic_private_write(pending, _canonical_json_bytes(payload) + b"\n", mode=0o600)
-        return {**report, "sent": False}
-    return {**report, "sent": True}
+    sent = _queue_or_send_vault_payload(
+        run, payload, name=checkpoint.checkpoint_sha256 + ".json"
+    )
+    return {**report, "sent": sent}
 
 
 def _checkpoint_effort(checkpoint: AgentRunCheckpoint):
@@ -3442,6 +3593,7 @@ def _prepare_effort_stage_input(
                     )
                 }
             inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
+            inputs["make_lessons"] = make_lessons(vault, lead_concept)
         subject = _stage_subject("invent", subject_inputs)
         context.update(
             {
@@ -3475,6 +3627,14 @@ def _prepare_effort_stage_input(
                     "assignment_contract_path": assignment_path,
                     "invented_contract_path": invented_path,
                 }
+            )
+            # Spark seals its concept inside Make, so the lessons come from
+            # the mechanisms the Wish itself names.
+            common["make_lessons"] = make_lessons(
+                vault,
+                {"mechanisms": list(vault.mechanisms_named_in(_load_wish(run.run_root).objective))}
+                if vault is not None
+                else None,
             )
         else:
             (
@@ -3515,6 +3675,7 @@ def _prepare_effort_stage_input(
             common["vault_leads"] = (
                 vault.leads_for_concept(invented.concept) if vault is not None else []
             )
+            common["make_lessons"] = make_lessons(vault, invented.concept)
         feedback_artifact: Optional[AgentArtifact] = None
         prior = checkpoint.stage_artifacts.get("playtest")
         if prior and "playtest" in checkpoint.invalidated_stages:
@@ -4021,6 +4182,7 @@ def _prepare_stage_input(
                         )
                     }
                 inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
+                inputs["make_lessons"] = make_lessons(vault, lead_concept)
         else:
             invented_artifact = _stage_primary(checkpoint, "invent")
             invented = _read_contract(
@@ -4035,6 +4197,8 @@ def _prepare_stage_input(
             common["vault_leads"] = (
                 vault.leads_for_concept(invented.concept) if vault is not None else []
             )
+            if stage == "make":
+                common["make_lessons"] = make_lessons(vault, invented.concept)
             common["invented_artifact"] = {
                 **_artifact_binding(invented_artifact),
                 "invented_sha256": invented.invented_sha256,
@@ -4454,6 +4618,10 @@ def _product_token_observer(paths, checkpoint, budget):
             _write_private_json(paths.host_state / "token-budget-stop.json", {
                 "reason": "product token limit reached", "product_id": checkpoint.product_id,
             })
+            try:
+                _queue_make_budget_lesson(paths, checkpoint, budget)
+            except (WorkshopError, OSError):
+                pass  # the stop record above is the authority; the lesson is enrichment
             raise ContractError("product token limit reached")
     return observe
 
@@ -5975,6 +6143,9 @@ def _evaluate_make_invent_revision_stage(
         context["invented"],
         expected_round=checkpoint.round_index,
     )
+    # Stash the sealed request so the gate hook can bank its feedback as Make
+    # lessons once the decision is persisted.
+    context["make_revision_request"] = request  # type: ignore[index]
     canonical = request.validate_evidence_tree(run.run_root)
     additional = _manifest_agent_artifacts(
         request.evidence_root, request.evidence_manifest
@@ -7828,12 +7999,38 @@ def _process_agent_outcome_inner(
         except NativeCadGateError as rejection:
             _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
             _remove_agent_outcome(run.run_root)
+            # The gate receipt is durable; bank what it proves before the
+            # next turn repairs it, so the lesson survives a run that never
+            # converges.
+            _record_make_evidence(
+                run,
+                checkpoint,
+                context,
+                failures=[_cad_gate_failure(rejection, checkpoint)],
+                verdict="make-cad-gate-failed",
+                name="cad-gate-%04d" % checkpoint.revision,
+            )
             return checkpoint
         except _MakeProposalRejected as rejection:
             persisted = _persist_make_proposal_rejection(
                 run, checkpoint, proposal, rejection
             )
             _remove_rejected_agent_outcome(run, persisted)
+            _record_make_evidence(
+                run,
+                checkpoint,
+                context,
+                failures=[
+                    {
+                        "code": rejection.failure_code,
+                        "finding": rejection.feedback,
+                        "evidence_class": "deterministic-host-gate",
+                        "severity": "block",
+                    }
+                ],
+                verdict="make-rejected",
+                name="rejected-%04d" % checkpoint.revision,
+            )
             return checkpoint
     elif checkpoint.stage == "playtest":
         try:
@@ -7954,6 +8151,37 @@ def _process_agent_outcome_inner(
         raise TransitionError("native stage cannot consume an agent proposal")
 
     _persist_gate_decision(run, checkpoint, decision)
+    if checkpoint.stage == "make":
+        # Bank the Make outcome BEFORE the transition is applied, as Playtest
+        # does: a refused transition still leaves the sealed evidence behind.
+        request = context.get("make_revision_request")
+        if decision.transition == "invent" and request is not None:
+            _record_make_evidence(
+                run,
+                checkpoint,
+                context,
+                failures=[
+                    {
+                        "code": item.code,
+                        "finding": item.finding,
+                        "change": item.change,
+                        "evidence_class": "codex-authored-revision-request",
+                        "severity": "block",
+                    }
+                    for item in request.feedback
+                ],
+                verdict="make-revision-to-invent",
+                name="revision-%04d" % checkpoint.revision,
+            )
+        elif decision.receipt.passed:
+            _record_make_evidence(
+                run,
+                checkpoint,
+                context,
+                failures=[],
+                verdict="make-passed",
+                name="passed-%04d" % checkpoint.revision,
+            )
     if checkpoint.stage == "playtest":
         # Bank what Playtest found BEFORE the transition is applied: a refused
         # transition (2026-08-29: "round budget is exhausted" on the last
@@ -8984,6 +9212,29 @@ def _resume_native_run_locked(
             _rebind_existing_progress(
                 paths, checkpoint, updated, activity="completed"
             )
+            if (
+                updated.status == "waiting"
+                and updated.stage == "make"
+                and updated.needs
+            ):
+                # A Make that parks on a need (2026-09-07: "host authorization
+                # for a further repair", "likeness floor") is a lesson too.
+                _record_make_evidence(
+                    run,
+                    updated,
+                    context,
+                    failures=[
+                        {
+                            "code": "make-need",
+                            "finding": need,
+                            "evidence_class": "codex-authored-need",
+                            "severity": "block",
+                        }
+                        for need in updated.needs
+                    ],
+                    verdict="make-waiting",
+                    name="need-%04d" % updated.revision,
+                )
             if updated.status == "waiting":
                 renewed_wait = _read_release_effect_wait(run, updated)
                 action = (

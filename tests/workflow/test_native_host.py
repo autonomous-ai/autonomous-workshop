@@ -50,6 +50,8 @@ from workshop.workflow.native_run import (
     _phase_design_vault,
     _playtest_score_history,
     _record_playtest_evidence,
+    _record_make_evidence,
+    _queue_make_budget_lesson,
     _repair_base,
     _score_trend,
     _native_token_summary,
@@ -2586,6 +2588,70 @@ class NativeHostTest(unittest.TestCase):
                     _record_playtest_evidence(run, checkpoint, {"sealed_playtest": {"playtested": SimpleNamespace(to_dict=lambda: {"checks": [], "feedback": []}), "leads": [], "mechanisms": []}}),
                     {"rows": 0, "dismissals": 0, "design": False, "sent": True},
                 )
+
+    def test_make_evidence_banks_design_failures_and_queues_when_the_vault_is_away(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            run = SimpleNamespace(run_root=base / "run", host_state_root=base / "state")
+            run.run_root.mkdir()
+            run.host_state_root.mkdir(mode=0o700)
+            checkpoint = SimpleNamespace(
+                product_id="wish-a", round_index=2, revision=7, checkpoint_sha256="e" * 64, stage="make"
+            )
+            concept = {"title": "Duck", "summary": "A wind-up duck.", "mechanisms": ["rubber-band-motor"]}
+            context = {"invented": SimpleNamespace(concept=concept)}
+            transport = FakeGameVaultTransport()
+            with mock.patch(
+                "workshop.workflow.native_run._gamevault_client",
+                return_value=fake_client(transport),
+            ):
+                report = _record_make_evidence(
+                    run,
+                    checkpoint,
+                    context,
+                    failures=[
+                        {"code": "make-need", "finding": "Likeness IoU 0.69 below the 0.90 floor.", "evidence_class": "codex-authored-need"},
+                        {"code": "make-contract-invalid", "finding": "thickness", "evidence_class": "deterministic-host-gate"},
+                    ],
+                    verdict="make-waiting",
+                    name="need-0007",
+                )
+                self.assertEqual(report, {"rows": 1, "design": True, "sent": True})
+                posted = transport.evidence[-1]
+                self.assertEqual(posted["rows"][0]["id"], "r0002-make-need")
+                self.assertEqual(posted["rows"][0]["symptom"], "anti-patterns/likeness-wall")
+                self.assertEqual(posted["rows"][0]["source"], "workshop-make")
+                self.assertEqual((posted["design"]["slug"], posted["design"]["verdict"]), ("wish-a", "make-waiting"))
+                self.assertEqual(posted["design"]["mechanisms"], [])  # no VAULT.json bound: names stay unresolved
+                # A passed Make leaves only the product page behind.
+                self.assertEqual(
+                    _record_make_evidence(run, checkpoint, context, failures=[], verdict="make-passed", name="passed-0007"),
+                    {"rows": 0, "design": True, "sent": True},
+                )
+                self.assertNotIn("rows", transport.evidence[-1])
+                # No concept and nothing classified: nothing is sent at all.
+                self.assertEqual(
+                    _record_make_evidence(run, checkpoint, {}, failures=[{"code": "make-artifact-invalid", "finding": "x"}], verdict="make-rejected", name="rejected-0007"),
+                    {"rows": 0, "design": False, "sent": True},
+                )
+                transport.fail = True
+                report = _record_make_evidence(
+                    run, checkpoint, context,
+                    failures=[{"code": "cad-gate", "finding": "wall thickness under minimum", "evidence_class": "deterministic-cad-gate"}],
+                    verdict="make-cad-gate-failed", name="cad-gate-0007",
+                )
+                self.assertEqual(report, {"rows": 1, "design": True, "sent": False})
+                queued = run.host_state_root / "vault" / "pending" / ("e" * 64 + "-make-cad-gate-0007.json")
+                self.assertEqual(stat.S_IMODE(queued.stat().st_mode), 0o600)
+                self.assertEqual(json.loads(queued.read_text())["rows"][0]["symptom"], "anti-patterns/underbuilt-shell")
+            paths = SimpleNamespace(host_state=run.host_state_root)
+            _queue_make_budget_lesson(paths, checkpoint, SimpleNamespace(used_tokens=30_062_707, limit=30_000_000))
+            budget = run.host_state_root / "vault" / "pending" / ("e" * 64 + "-make-budget.json")
+            row = json.loads(budget.read_text())["rows"][0]
+            self.assertEqual((row["symptom"], row["severity"], row["source"]), ("anti-patterns/unbounded-repair-loop", "medium", "workshop-make"))
+            self.assertIn("30062707 of 30000000", row["claim"])
+            _queue_make_budget_lesson(paths, SimpleNamespace(**{**checkpoint.__dict__, "stage": "playtest"}), SimpleNamespace(used_tokens=1, limit=1))
+            self.assertEqual(sorted(p.name for p in budget.parent.iterdir()), sorted([budget.name, "e" * 64 + "-make-cad-gate-0007.json"]))
 
     def test_score_history_reads_only_host_gate_receipts(self):
         with tempfile.TemporaryDirectory() as temporary:
