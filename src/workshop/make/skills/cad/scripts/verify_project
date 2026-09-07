@@ -11,6 +11,11 @@ queue.
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --dry-run
 
+Every mode writes STEP.  Quick mode writes the combined entry's;
+print-preflight writes one per printable entry; final mode writes the
+combined entry's and one per part entry.  A project this runner has
+touched always carries a .step that came from the source it just checked.
+
 Final mode (the default) runs layout, design-reference provenance, multi-target
 generation with STEP writes, print fit, local audits, bought-part mounts,
 powered-system integration and motion when declared (or required by a
@@ -943,6 +948,15 @@ def _quick(
     *,
     preview_tolerance: float,
 ) -> int:
+    """Preview the combined entry, and write its STEP.
+
+    ``--write`` is not optional here.  Quick mode is the only workflow that
+    used to leave a project with no ``.step`` at all, so a run that ended in
+    it produced a render package and a CAD deliverable that did not exist --
+    and the next reader could not tell a preview-only project from one whose
+    STEP write had failed.  The build is already paid for by the preview; the
+    STEP is the serialisation of a shape this call has in hand.
+    """
     assembly_arg = _path_arg(assembly, runner.cwd)
     if not _run_or_stop(
         runner,
@@ -950,6 +964,7 @@ def _quick(
             sys.executable,
             SCRIPTS_DIR / "gen",
             assembly_arg,
+            "--write",
             "--mesh-tolerance",
             str(preview_tolerance),
             "--json",
@@ -1765,6 +1780,26 @@ def self_check() -> int:
             print(f"{'ok  ' if hit else 'FAIL'} an argument typo cannot rewrite project evidence")
             ok &= hit
 
+            # every mode has to leave a .step behind; quick mode is the one
+            # that used to plan a build and write no CAD file at all
+            project = _sc_project(root)
+            import contextlib as _ctx, io as _io
+            out = _io.StringIO()
+            with _ctx.redirect_stdout(out), _ctx.redirect_stderr(_io.StringIO()):
+                try:
+                    main(["proj", "--quick", "--dry-run"])
+                except SystemExit:
+                    pass
+            planned = [line for line in out.getvalue().splitlines()
+                       if "scripts/gen" in line]
+            hit = bool(planned) and all("--write" in line for line in planned)
+            print(f"{'ok  ' if hit else 'FAIL'} quick mode writes the .step  "
+                  f"- {len(planned)} gen command(s)")
+            if not hit:
+                for line in planned:
+                    print(f"       {line.strip()}")
+            ok &= hit
+
             project = _sc_project(root)
             _sc_refuses(img + ["--report", "../outside.md"])
             hit = not (project / "measure" / "verification-pipeline.md").exists()
@@ -1792,7 +1827,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("project", help="project directory containing *.step.py entries")
     parser.add_argument("--assembly", help="combined entry; inferred when exactly one non-part entry exists")
-    parser.add_argument("--quick", action="store_true", help="combined-entry preview generation only")
+    parser.add_argument("--quick", action="store_true", help="combined-entry generation only: writes the .step and the render package, runs no gates")
     parser.add_argument("--print-preflight", action="store_true", help="before visual review: generate every printable, run strict fit, and check each mesh and 0.4 mm-nozzle wall thickness")
     parser.add_argument("--fresh", action="store_true", help="delete only this project's __cadgen__ cache before running")
     parser.add_argument("--exports", action="store_true", help="final mode: write assembly GLB and printable-entry STLs, then check each mesh and wall thickness")
