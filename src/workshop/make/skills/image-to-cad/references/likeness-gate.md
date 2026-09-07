@@ -270,3 +270,16 @@ it is blind to colour, and on a multi-material reference colour is much of what
 a human compares.
 
 Treat 0.90 as the target, not the pass mark for an unreviewed first attempt.
+
+## A reference with a transparent background
+
+A cut-out PNG, or a WebP exported with alpha, states its own silhouette:
+alpha above 127 is the subject, and the gate reads it exactly so. The
+luminance threshold and the shadow test exist for photographs, which carry no
+alpha; they are not applied to a cut-out, and neither is `--threshold`. An
+image whose alpha channel is opaque everywhere says nothing and is scored as a
+photograph. The reason this is spelled out: read through RGB, a cut-out is
+whatever colour the encoder left under its transparent pixels, and one such
+reference (2026-09-07, a wind-up duck) scored **0.66 against its own outline**,
+so no model could have passed. `measure_image.py` reads the same alpha for
+its measurements and says so in the mask notes (`"source": "alpha"`).

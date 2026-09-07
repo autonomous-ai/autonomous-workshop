@@ -215,6 +215,26 @@ def _touching(candidate: np.ndarray, anchor: np.ndarray, reach: int) -> np.ndarr
     return keep[labels]
 
 
+def alpha_mask(image: Image.Image) -> np.ndarray | None:
+    """The subject as its alpha channel says, or None when alpha carries nothing.
+
+    A reference exported with a transparent background (a cut-out PNG or a
+    WebP with alpha) states its own silhouette: alpha > 127 is the subject.
+    Converting such an image to RGB first throws that away and reads whatever
+    colour the encoder left under the transparent pixels, which is how a
+    reference once admitted 4,083 fully transparent pixels as object and
+    rejected 17,747 visible dark ones, so its own outline scored 0.66 against
+    itself. An image whose alpha is opaque everywhere says nothing about the
+    subject and falls through to the luminance mask.
+    """
+    if "A" not in image.getbands():
+        return None
+    alpha = np.asarray(image.getchannel("A"), dtype=np.uint8)
+    if not (alpha < 128).any():
+        return None
+    return alpha > 127
+
+
 def object_mask(
     rgb: np.ndarray, gray: np.ndarray, threshold: float, invert: bool,
     reject_shadow: bool = True, two_sided: bool = True,
@@ -745,13 +765,26 @@ def measure(path: Path, label: str, threshold: float, invert: bool,
     except Exception as exc:  # noqa: BLE001 - report, don't crash the batch
         return {"view": label, "file": str(path), "error": f"cannot open: {exc}"}
 
+    alpha = alpha_mask(image)
     image = image.convert("RGB")
     rgb = np.asarray(image, dtype=float)
     gray = np.asarray(image.convert("L"), dtype=float)
     # The mask is always derived from the WHOLE frame, even under --region.
     # Background estimation reads the frame's border ring, and a region cropped
     # to sit inside the object has no background in its own border to read.
-    mask, bg, mask_notes = object_mask(rgb, gray, threshold, invert, reject_shadow)
+    if alpha is not None:
+        # A transparent background states the silhouette outright; the
+        # luminance rules exist for photographs that cannot.
+        mask = alpha
+        bg = float(gray[~alpha].mean()) if (~alpha).any() else 0.0
+        mask_notes = {
+            "source": "alpha",
+            "transparent_px": int((~alpha).sum()),
+            "note": "silhouette taken from the alpha channel; the luminance "
+                    "threshold and shadow test were not applied",
+        }
+    else:
+        mask, bg, mask_notes = object_mask(rgb, gray, threshold, invert, reject_shadow)
 
     region_box: dict[str, int] | None = None
     if region is not None:
