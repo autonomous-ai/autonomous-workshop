@@ -6,7 +6,7 @@ import pytest
 
 from cli.main import parser
 from workshop.errors import ContractError, StateConflict
-from workshop.runtime.codex_usage import UsageUnavailable
+from workshop.runtime.codex_usage import UsageUnavailable, read_product_usage
 from workshop.workflow.native_run import (
     _load_lifetime_budget, _save_lifetime_budget, _product_token_observer,
     _adopt_token_budget,
@@ -14,7 +14,7 @@ from workshop.workflow.native_run import (
 from workshop.workflow.token_budget import (
     ProductTokenBudget, TOKEN_BUDGET_CAPABILITY_PATH, validate_limit,
 )
-from tests.runtime.test_codex_usage import ROOT, CHILD, counters
+from tests.runtime.test_codex_usage import ROOT, CHILD, counters, records, usage, write
 
 
 def observation(n=100, child=False):
@@ -101,6 +101,43 @@ def test_observer_stops_at_cap_and_on_lost_accounting(tmp_path):
     with mock.patch("workshop.workflow.native_run._read_product_token_usage", side_effect=UsageUnavailable("missing")):
         with pytest.raises(UsageUnavailable):
             callback()
+
+
+def test_child_followup_preserves_observed_budget_and_enforces_cap(tmp_path):
+    paths, checkpoint = context(tmp_path)
+    sessions = tmp_path / "sessions"
+    paths.workspace = tmp_path / "workspace"
+    root = records(cwd=str(paths.workspace)) + [usage(500)]
+    child = records(CHILD, ROOT, cwd=str(paths.workspace)) + [usage(200)]
+    write(sessions, root)
+    write(sessions, child, CHILD)
+    budget = ProductTokenBudget(1000)
+
+    def read_usage(*_):
+        return read_product_usage(sessions, thread_id=ROOT, workspace=paths.workspace)
+
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", side_effect=read_usage):
+        callback = _product_token_observer(paths, checkpoint, budget)
+        callback()
+        assert budget.to_dict()["used_tokens"] == 770
+
+        child += [
+            {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "second"}},
+            usage(300, last_token_usage=counters(100)),
+        ]
+        write(sessions, child, CHILD)
+        # An explicit host resume restores the ledger, never resets consumption.
+        loaded = _load_lifetime_budget(paths, checkpoint)
+        callback = _product_token_observer(paths, checkpoint, loaded)
+        callback()
+        callback()
+        assert loaded.to_dict()["used_tokens"] == 880
+        assert not (paths.host_state / "token-budget-stop.json").exists()
+
+        write(sessions, child + [usage(500, last_token_usage=counters(200))], CHILD)
+        with pytest.raises(ContractError, match="product token limit reached"):
+            callback()
+        assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 1100
 
 
 def test_pending_child_has_bounded_grace(tmp_path):

@@ -100,6 +100,7 @@ def read_thread_usage(path, *, thread_id, workspace):
         raise UsageUnavailable("native rollout usage version is not validated")
     totals = {key: 0 for key in COUNTERS}
     task_totals = None
+    task_start = False
     tasks = set()
     model = None
     models = set()
@@ -116,7 +117,7 @@ def read_thread_usage(path, *, thread_id, workspace):
             if not isinstance(turn_id, str) or not turn_id or turn_id in tasks:
                 raise UsageUnavailable("ambiguous native usage task boundary")
             tasks.add(turn_id)
-            task_totals = None
+            task_start = True
         if record.get("type") != "event_msg" or payload.get("type") != "token_count":
             continue
         info = payload.get("info")
@@ -127,13 +128,19 @@ def read_thread_usage(path, *, thread_id, workspace):
         current = _counters(info.get("total_token_usage"))
         if not tasks:
             raise UsageUnavailable("native usage lacks a task boundary")
-        if task_totals is None:
-            # exec 0.153.4 resets cumulative counters on process resume. Bind
-            # that reset to an explicit native task, never infer one from a
-            # decreasing counter (which could conceal lost history).
-            if current != _counters(info.get("last_token_usage")):
+        if task_start:
+            # exec 0.153.4 resets counters on process resume, but a continued
+            # task in the same process (including a child follow-up) retains
+            # them. Require an exact first-request baseline for either case;
+            # never infer a reset merely from a decreasing counter.
+            last = _counters(info.get("last_token_usage"))
+            if current == last:
+                task_totals = {key: 0 for key in COUNTERS}
+            elif task_totals is None or any(
+                current[key] != task_totals[key] + last[key] for key in COUNTERS
+            ):
                 raise UsageUnavailable("native usage task baseline is ambiguous")
-            task_totals = {key: 0 for key in COUNTERS}
+            task_start = False
         delta = {key: current[key] - task_totals[key] for key in COUNTERS}
         if any(v < 0 for v in delta.values()):
             raise UsageUnavailable("native token counters regressed")

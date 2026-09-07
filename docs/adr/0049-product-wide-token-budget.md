@@ -19,6 +19,11 @@ The trusted host reads bounded native rollout records using a compatibility
 adapter validated specifically for Codex 0.153.4. It binds root identity and
 workspace to private host state, follows native parent ancestry, deduplicates
 cumulative notifications and sums explicit task resets across process resumes.
+Continued tasks in the same process, including native child follow-ups, retain
+cumulative counters. At each task boundary, the adapter accepts only a reset
+whose cumulative counters equal the latest request, or continuation whose
+counters exactly equal the previous observation plus the latest request for
+every counter. It preserves prior consumption in either case.
 Unrelated conversation payloads are not read. Unsupported formats, counter
 regression, disappearing usage and ambiguous history fail closed. Native
 rollouts are not a stable public API; a future supported app-server usage
