@@ -1,0 +1,493 @@
+{
+  "volume_mm3": 31303.428769429207,
+  "solid_count": 1,
+  "center_of_mass_mm": [
+    -4.617365602007985e-16,
+    3.552713678800501e-15,
+    12.911986691017454
+  ],
+  "curvature_center_mm": [
+    0,
+    0,
+    40.0
+  ],
+  "com_below_curvature_center_mm": 27.088013308982546,
+  "bounds_mm": {
+    "min": [
+      -34.31098884280702,
+      -14.0,
+      0.0
+    ],
+    "max": [
+      34.31098884280702,
+      14.000000000000002,
+      22.000000000000004
+    ]
+  },
+  "assumption": "Homogeneous solid, uniform 100% infill. No-slip rolling on level rigid plane. Damping animation prescribed, not a dynamics or physical test.",
+  "potential": "U(theta)-U(0)=m*g*d*(1-cos(theta)); restoring generalized torque=-m*g*d*sin(theta)",
+  "range_deg": [
+    -20,
+    20
+  ],
+  "restoring_checks": [
+    {
+      "angle_deg": -20,
+      "com_rise_mm": 1.63360709078117,
+      "torque_per_unit_weight_mm": 9.264646194345833
+    },
+    {
+      "angle_deg": -19,
+      "com_rise_mm": 1.4757935492580316,
+      "torque_per_unit_weight_mm": 8.818994500916347
+    },
+    {
+      "angle_deg": -18,
+      "com_rise_mm": 1.3257817379848515,
+      "torque_per_unit_weight_mm": 8.37065645633036
+    },
+    {
+      "angle_deg": -17,
+      "com_rise_mm": 1.1836173520125364,
+      "torque_per_unit_weight_mm": 7.9197686286994085
+    },
+    {
+      "angle_deg": -16,
+      "com_rise_mm": 1.0493436959902305,
+      "torque_per_unit_weight_mm": 7.4664683628236315
+    },
+    {
+      "angle_deg": -15,
+      "com_rise_mm": 0.9230016709743007,
+      "torque_per_unit_weight_mm": 7.010893738355236
+    },
+    {
+      "angle_deg": -14,
+      "com_rise_mm": 0.8046297619694681,
+      "torque_per_unit_weight_mm": 6.553183527738086
+    },
+    {
+      "angle_deg": -13,
+      "com_rise_mm": 0.6942640262059081,
+      "torque_per_unit_weight_mm": 6.093477153936271
+    },
+    {
+      "angle_deg": -12,
+      "com_rise_mm": 0.591938082155872,
+      "torque_per_unit_weight_mm": 5.631914647964529
+    },
+    {
+      "angle_deg": -11,
+      "com_rise_mm": 0.49768309929317306,
+      "torque_per_unit_weight_mm": 5.168636606233435
+    },
+    {
+      "angle_deg": -10,
+      "com_rise_mm": 0.4115277885986591,
+      "torque_per_unit_weight_mm": 4.7037841477223745
+    },
+    {
+      "angle_deg": -9,
+      "com_rise_mm": 0.3334983938145682,
+      "torque_per_unit_weight_mm": 4.237498870993338
+    },
+    {
+      "angle_deg": -8,
+      "com_rise_mm": 0.2636186834504453,
+      "torque_per_unit_weight_mm": 3.769922811058624
+    },
+    {
+      "angle_deg": -7,
+      "com_rise_mm": 0.20190994354300784,
+      "torque_per_unit_weight_mm": 3.3011983961155993
+    },
+    {
+      "angle_deg": -6,
+      "com_rise_mm": 0.14839097117221206,
+      "torque_per_unit_weight_mm": 2.8314684041616904
+    },
+    {
+      "angle_deg": -5,
+      "com_rise_mm": 0.10307806873549336,
+      "torque_per_unit_weight_mm": 2.3608759195028233
+    },
+    {
+      "angle_deg": -4,
+      "com_rise_mm": 0.06598503898189471,
+      "torque_per_unit_weight_mm": 1.8895642891685578
+    },
+    {
+      "angle_deg": -3,
+      "com_rise_mm": 0.03712318080760204,
+      "torque_per_unit_weight_mm": 1.4176770792471909
+    },
+    {
+      "angle_deg": -2,
+      "com_rise_mm": 0.016501285814206568,
+      "torque_per_unit_weight_mm": 0.9453580311541387
+    },
+    {
+      "angle_deg": -1,
+      "com_rise_mm": 0.004125635630695795,
+      "torque_per_unit_weight_mm": 0.47275101784690843
+    },
+    {
+      "angle_deg": 0,
+      "com_rise_mm": 0.0,
+      "torque_per_unit_weight_mm": -0.0
+    },
+    {
+      "angle_deg": 1,
+      "com_rise_mm": 0.004125635630695795,
+      "torque_per_unit_weight_mm": -0.47275101784690843
+    },
+    {
+      "angle_deg": 2,
+      "com_rise_mm": 0.016501285814206568,
+      "torque_per_unit_weight_mm": -0.9453580311541387
+    },
+    {
+      "angle_deg": 3,
+      "com_rise_mm": 0.03712318080760204,
+      "torque_per_unit_weight_mm": -1.4176770792471909
+    },
+    {
+      "angle_deg": 4,
+      "com_rise_mm": 0.06598503898189471,
+      "torque_per_unit_weight_mm": -1.8895642891685578
+    },
+    {
+      "angle_deg": 5,
+      "com_rise_mm": 0.10307806873549336,
+      "torque_per_unit_weight_mm": -2.3608759195028233
+    },
+    {
+      "angle_deg": 6,
+      "com_rise_mm": 0.14839097117221206,
+      "torque_per_unit_weight_mm": -2.8314684041616904
+    },
+    {
+      "angle_deg": 7,
+      "com_rise_mm": 0.20190994354300784,
+      "torque_per_unit_weight_mm": -3.3011983961155993
+    },
+    {
+      "angle_deg": 8,
+      "com_rise_mm": 0.2636186834504453,
+      "torque_per_unit_weight_mm": -3.769922811058624
+    },
+    {
+      "angle_deg": 9,
+      "com_rise_mm": 0.3334983938145682,
+      "torque_per_unit_weight_mm": -4.237498870993338
+    },
+    {
+      "angle_deg": 10,
+      "com_rise_mm": 0.4115277885986591,
+      "torque_per_unit_weight_mm": -4.7037841477223745
+    },
+    {
+      "angle_deg": 11,
+      "com_rise_mm": 0.49768309929317306,
+      "torque_per_unit_weight_mm": -5.168636606233435
+    },
+    {
+      "angle_deg": 12,
+      "com_rise_mm": 0.591938082155872,
+      "torque_per_unit_weight_mm": -5.631914647964529
+    },
+    {
+      "angle_deg": 13,
+      "com_rise_mm": 0.6942640262059081,
+      "torque_per_unit_weight_mm": -6.093477153936271
+    },
+    {
+      "angle_deg": 14,
+      "com_rise_mm": 0.8046297619694681,
+      "torque_per_unit_weight_mm": -6.553183527738086
+    },
+    {
+      "angle_deg": 15,
+      "com_rise_mm": 0.9230016709743007,
+      "torque_per_unit_weight_mm": -7.010893738355236
+    },
+    {
+      "angle_deg": 16,
+      "com_rise_mm": 1.0493436959902305,
+      "torque_per_unit_weight_mm": -7.4664683628236315
+    },
+    {
+      "angle_deg": 17,
+      "com_rise_mm": 1.1836173520125364,
+      "torque_per_unit_weight_mm": -7.9197686286994085
+    },
+    {
+      "angle_deg": 18,
+      "com_rise_mm": 1.3257817379848515,
+      "torque_per_unit_weight_mm": -8.37065645633036
+    },
+    {
+      "angle_deg": 19,
+      "com_rise_mm": 1.4757935492580316,
+      "torque_per_unit_weight_mm": -8.818994500916347
+    },
+    {
+      "angle_deg": 20,
+      "com_rise_mm": 1.63360709078117,
+      "torque_per_unit_weight_mm": -9.264646194345833
+    }
+  ],
+  "states": [
+    {
+      "angle_deg": 20.0,
+      "translation_mm": [
+        13.962634015954636,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 14.545593781798619
+    },
+    {
+      "angle_deg": 13.011392891544043,
+      "translation_mm": [
+        9.08366584912116,
+        0,
+        0
+      ],
+      "minimum_z_mm": -7.105427357601002e-15,
+      "com_height_mm": 13.60746288713711
+    },
+    {
+      "angle_deg": 1.036641134924021e-15,
+      "translation_mm": [
+        7.237120386413978e-16,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.911986691017454
+    },
+    {
+      "angle_deg": -11.013906298063674,
+      "translation_mm": [
+        -7.6891571362940425,
+        0,
+        0
+      ],
+      "minimum_z_mm": -7.105427357601002e-15,
+      "com_height_mm": 13.410925056842835
+    },
+    {
+      "angle_deg": -14.330626211475785,
+      "translation_mm": [
+        -10.004664450514147,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 13.754869095481236
+    },
+    {
+      "angle_deg": -9.32307040096854,
+      "translation_mm": [
+        -6.508730995685158,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 13.269804017450777
+    },
+    {
+      "angle_deg": -2.2283574930054266e-15,
+      "translation_mm": [
+        -1.5556870065772483e-15,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.911986691017457
+    },
+    {
+      "angle_deg": 7.891808714288475,
+      "translation_mm": [
+        5.509521840076575,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 13.168534478731395
+    },
+    {
+      "angle_deg": 10.268342380651841,
+      "translation_mm": [
+        7.1686553305779,
+        0,
+        0
+      ],
+      "minimum_z_mm": -7.105427357601002e-15,
+      "com_height_mm": 13.345836945760187
+    },
+    {
+      "angle_deg": 6.6802718529776905,
+      "translation_mm": [
+        4.66370955051053,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 13.095893636942922
+    },
+    {
+      "angle_deg": 2.6611465248168365e-15,
+      "translation_mm": [
+        1.8578307494423514e-15,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.911986691017457
+    },
+    {
+      "angle_deg": -5.654728040846766,
+      "translation_mm": [
+        -3.947744904704979,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 13.043804106600096
+    },
+    {
+      "angle_deg": -7.357588823428847,
+      "translation_mm": [
+        -5.136565999070763,
+        0,
+        0
+      ],
+      "minimum_z_mm": -7.105427357601002e-15,
+      "com_height_mm": 13.135023241257123
+    },
+    {
+      "angle_deg": -4.7866239458032975,
+      "translation_mm": [
+        -3.3416939163628063,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 13.006459734606477
+    },
+    {
+      "angle_deg": -2.6695127298782497e-15,
+      "translation_mm": [
+        -1.8636714624110984e-15,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.911986691017447
+    },
+    {
+      "angle_deg": 4.051789694046288,
+      "translation_mm": [
+        2.8286828303792566,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.97969074720221
+    },
+    {
+      "angle_deg": 5.271942762314535,
+      "translation_mm": [
+        3.680510367162939,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 13.026574083699096
+    },
+    {
+      "angle_deg": 3.429765929110318,
+      "translation_mm": [
+        2.3944283214278994,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.96050449876742
+    },
+    {
+      "angle_deg": 2.4593007277710978e-15,
+      "translation_mm": [
+        1.7169157998519362e-15,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.911986691017454
+    },
+    {
+      "angle_deg": -2.9032341796443593,
+      "translation_mm": [
+        -2.0268398156492244,
+        0,
+        0
+      ],
+      "minimum_z_mm": -7.105427357601002e-15,
+      "com_height_mm": 12.946754162351883
+    },
+    {
+      "angle_deg": -3.7775120567512364,
+      "translation_mm": [
+        -2.6372009169636783,
+        0,
+        0
+      ],
+      "minimum_z_mm": -7.105427357601002e-15,
+      "com_height_mm": 12.970838022298437
+    },
+    {
+      "angle_deg": -2.4575346761467474,
+      "translation_mm": [
+        -1.715682863227732,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.93690018387252
+    },
+    {
+      "angle_deg": -7.83382802073967e-15,
+      "translation_mm": [
+        -5.469043679875915e-15,
+        0,
+        0
+      ],
+      "minimum_z_mm": -7.105427357601002e-15,
+      "com_height_mm": 12.911986691017443
+    },
+    {
+      "angle_deg": 2.080258191643192,
+      "translation_mm": [
+        1.4522941894302757,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.929838764537404
+    },
+    {
+      "angle_deg": 0.0,
+      "translation_mm": [
+        0.0,
+        0,
+        0
+      ],
+      "minimum_z_mm": 0.0,
+      "com_height_mm": 12.911986691017454
+    }
+  ],
+  "result": "PASS"
+}

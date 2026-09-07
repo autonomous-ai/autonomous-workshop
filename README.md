@@ -119,7 +119,7 @@ reasoning output is already part of output. `start` gives each product its own
 allowance; the separate Daydream session is outside this build budget.
 
 ```bash
-uv run workshop wish "A simple printable counting toy" --inventor ivy \
+uv run workshop wish "A simple one-piece gravity desk rocker" --inventor soren-voss \
   --workflow spark --agent codex --model astra --effort medium --max-tokens 10000000
 uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra tokens
 ```
@@ -131,7 +131,11 @@ every twenty minutes; a one-hour emergency execution watchdog remains. Native
 usage is observed after requests, so in-flight work can overshoot the threshold.
 Missing usage is not free work. This is not a dollar cap. The local usage adapter
 currently requires Codex 0.153.4; other Managers retain their existing policy.
-Token-budget live acceptance is still in progress.
+Live acceptance passed for [Quiet Arc](https://www.autonomous.ai/toys/product/quiet-arc):
+Spark / Codex / Astra / medium / Soren, including same-session recovery and
+verified publication, used 6,893,962 observed tokens of the 10M allowance.
+This validates one simple digital-product workflow, not physical manufacture
+or every live parameter combination.
 
 Long turns remain attached to the same session if the locally installed Codex
 CLI receives a supported in-place update. Workshop still rejects downgrades,
@@ -260,6 +264,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Eclipse Braid | [Kestrel Knot](inventors/kestrel-knot/) | ✨ Spark | [`toys/kestrel-knot-eclipse-braid/`](toys/kestrel-knot-eclipse-braid/) | [eclipse-braid](https://www.autonomous.ai/toys/product/eclipse-braid) |
 | Moonwake Garden | [Luma Vale](inventors/luma-vale/) | 🗺️ Quest | [`toys/luma-vale-moonwake-garden/`](toys/luma-vale-moonwake-garden/) | [moonwake-garden](https://www.autonomous.ai/toys/product/moonwake-garden) |
 | Horn Tip | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/toys/product/horn-tip) |
+| Quiet Arc | [Soren Voss](inventors/soren-voss/) | ✨ Spark | [`toys/soren-voss-quiet-arc/`](toys/soren-voss-quiet-arc/) | [quiet-arc](https://www.autonomous.ai/toys/product/quiet-arc) |
 | Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/toys/product/lunar-relay) |
 | Orbit Gobbler | [Bob](inventors/bob/) | 🔥 Forge | [`toys/bob-orbit-gobbler/`](toys/bob-orbit-gobbler/) | [orbit-gobbler](https://www.autonomous.ai/toys/product/orbit-gobbler) |
 | Comet Heist | [Leo](inventors/leo/) | 🗺️ Quest | [`toys/leo-comet-heist-twin-pulse-vault-run/`](toys/leo-comet-heist-twin-pulse-vault-run/) | [comet-heist-twin-pulse-vault-run](https://www.autonomous.ai/toys/product/comet-heist-twin-pulse-vault-run) |

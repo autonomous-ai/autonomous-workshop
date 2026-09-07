@@ -1,0 +1,24 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-07T04:07:37+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 155.12 s
+- Bed: 220 x 220 x 250 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=ee774f472f959a1a9f119898cd826cfaeb384341611ec68e5d38ab492d65048f` | note | 0.00 |
+| 2 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' repair-full/project` | rc=0 | 0.16 |
+| 3 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' repair-full/project/rocker.step.py repair-full/project/part_rocker.step.py --write --json` | rc=0 | 50.68 |
+| 4 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' repair-full/project --bed 220.0 220.0 --entry repair-full/project/part_rocker.step.py --strict` | rc=0 | 10.87 |
+| 5 | `check_spec_numbers  # NOT RUN: no *_spec.md; no written parameter claims to hold the source to` | skipped | 0.00 |
+| 6 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 7 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 8 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion' repair-full/project --manifest repair-full/project/measure/motion.json` | rc=0 | 11.00 |
+| 9 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (5 JSONL requests)` | rc=0 | 42.76 |
+| 10 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' repair-full/project/rocker.step --glb --json` | rc=0 | 3.40 |
+| 11 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' repair-full/project/part_rocker.step --stl --json` | rc=0 | 3.98 |
+| 12 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' repair-full/project/part_rocker.stl --bed 220x220x250` | rc=0 | 0.95 |
+| 13 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' repair-full/project/part_rocker.stl --angle 45.0 --report repair-full/project/measure/overhang-rocker.md` | rc=0 | 1.39 |
+| 14 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' repair-full/project/part_rocker.stl --nozzle 0.4 --report repair-full/project/measure/thickness-rocker.md` | rc=0 | 29.92 |

@@ -1,6 +1,6 @@
 # ADR 0049: Product-wide native token budgets
 
-- Status: Implemented; live acceptance pending
+- Status: Implemented; one live Spark acceptance passed
 - Date: 2026-09-07
 
 New Codex products freeze `token-budget-v1.md`. `workshop wish` and each product
@@ -48,5 +48,29 @@ The updated product-run skill passed its validator. The requested new
 Spark/Codex/Astra/medium/10M trial was prepared as a one-piece Soren balancing
 toy. Automatic approval review initially rejected the launch pending explicit
 publication approval. After the user granted it, the normal CLI started
-`wish-20260907-033621-fa3c403c`; both root and Soren usage are being observed.
-Live Make/Release acceptance remains in progress; no publication is claimed.
+`wish-20260907-033621-fa3c403c` and completed authenticated publication of
+[Quiet Arc](https://www.autonomous.ai/toys/product/quiet-arc) on 2026-09-07.
+
+The host fresh rebuild exposed a genuine harness defect: the overhang report
+included its working-directory path and failed exact comparison after
+relocation, although all source, geometry and measurements were identical.
+The builder paused paid execution, reproduced the mismatch, and added a narrow
+comparison of the two path-bearing metadata lines. All options, numeric
+results, PASS/FAIL status, region data, source, geometry and file modes remain
+exact; the report is not exempted as wholly volatile. The CAD gate suite passed
+41 tests plus 22 subtests, including regression and failure paths. The same
+product then resumed through the normal CLI and passed Make and Release.
+
+The run used 6,893,962 observed input-plus-output tokens (6,525,312 cached input)
+across its root and four native descendants, within the unchanged 10,000,000
+cap. Four native launches shared one root session; the builder interruption
+did not reset consumption. Wish-to-public-readback time was approximately
+41 minutes including diagnosis and repair. The normal resume command exited
+zero with `status=complete`, `publication.status=public` and `verified=true`.
+Legacy terminal-only telemetry remains separately labelled partial and is not
+the product-wide budget total. The sanitized public archive is under
+`toys/soren-voss-quiet-arc/`; private workspaces and host state remain private.
+
+This is one successful live digital-product acceptance, not a live matrix of
+every CLI combination. Spark truthfully records Playtest not run. The object
+has not been physically printed, tested, manufactured or delivered.

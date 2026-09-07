@@ -57,6 +57,9 @@ cached input but without counting reasoning output twice. `resume` without the
 flag retains the saved cap; an explicit value changes the total, not remaining,
 allowance and preserves recovered usage. Older eligible runs explicitly adopt
 token accounting this way. The local usage adapter currently requires Codex
-0.153.4; other adapters retain their existing policies. Live token-budget
-acceptance is in progress; request-completion reporting allows in-flight
-overshoot and is not an exact billing cap.
+0.153.4; other adapters retain their existing policies. Live acceptance passed
+for Quiet Arc with Spark/Codex/Astra/medium/Soren, same-session recovery, and
+verified publication at 6,893,962 observed tokens. Other combinations retain
+their deterministic test coverage, not a claim of live acceptance.
+Request-completion reporting allows in-flight overshoot and is not an exact
+billing cap.

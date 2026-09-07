@@ -883,7 +883,9 @@ initial reporting grace. In-flight requests may overshoot the observed cap.
 Normal twenty-minute splits and aggregate time/turn allowances are superseded;
 a one-hour emergency launch watchdog remains. Daydream is outside each product
 allowance. Other runtime adapters retain their frozen policy. See
-[ADR 0049](adr/0049-product-wide-token-budget.md). Live acceptance is pending.
+[ADR 0049](adr/0049-product-wide-token-budget.md). Quiet Arc completed a live
+Spark/Codex/Astra/medium trial with same-session recovery and verified Factory
+publication within its 10M-token allowance; physical manufacture is untested.
 
 Older marked Codex runs freeze `lifetime-budgets-v1.md`, which supersedes the
 command-clock behavior below: 40 minutes of native execution per stage and
