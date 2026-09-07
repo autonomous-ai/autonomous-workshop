@@ -39,7 +39,7 @@ def vault():
                 "anti-pattern",
                 "Fiddly Reset",
                 relations={"mitigated-by": ["rule-patterns/external-knob", "rule-patterns/service-pins"]},
-                notes="- [x:1] low: harvested reset complaint.\n- [wish-a#r0002-reset] high, survived 1 round(s): knob buried under the hood.\n",
+                notes="- [x:1] low: harvested reset complaint.\n- [wish-a#r0002-reset] high, survived 1 round(s): knob buried under the hood.\n- [wish-z#r0009-lead] DISMISSED: reset is external here.\n",
             ),
             "anti-patterns/physics-untested": node("anti-pattern", "Physics Untested"),
             "anti-patterns/likeness-wall": node(
@@ -135,12 +135,27 @@ class LessonsTest(unittest.TestCase):
             [(item["anti_pattern"], item["ref"]) for item in lessons],
             [
                 ("anti-patterns/fiddly-reset", "wish-a#r0002-reset"),
-                ("anti-patterns/fiddly-reset", "x:1"),
                 ("anti-patterns/likeness-wall", "wish-b#r0001-likeness"),
+                ("anti-patterns/fiddly-reset", "x:1"),
+                ("anti-patterns/fiddly-reset", "wish-z#r0009-lead"),
             ],
         )
         self.assertEqual(lessons[0]["fixes"], ["rule-patterns/external-knob", "rule-patterns/service-pins"])
         self.assertEqual(lessons[0]["lesson"], "high, survived 1 round(s): knob buried under the hood.")
+
+    def test_one_crowded_anti_pattern_cannot_fill_the_list(self):
+        crowded = vault()
+        notes = "".join("- [cupcall#ev-%04d] medium: harvested row %d.\n" % (i, i) for i in range(12))
+        nodes = dict(crowded.nodes)
+        nodes["anti-patterns/physics-untested"] = {**nodes["anti-patterns/physics-untested"], "notes": notes}
+        lessons = make_lessons(Vault(nodes), {"mechanisms": ["rubber-band-motor"]})
+        by_node = {}
+        for item in lessons:
+            by_node.setdefault(item["anti_pattern"], []).append(item["ref"])
+        self.assertEqual(len(by_node["anti-patterns/physics-untested"]), 3)
+        self.assertEqual(by_node["anti-patterns/likeness-wall"], ["wish-b#r0001-likeness"])
+        self.assertEqual(lessons[1]["anti_pattern"], "anti-patterns/physics-untested")
+        self.assertEqual(lessons[2]["anti_pattern"], "anti-patterns/likeness-wall")
 
     def test_lessons_without_a_concept_or_vault_stay_bounded(self):
         self.assertEqual(make_lessons(None, {"mechanisms": ["rubber-band-motor"]}), [])

@@ -34,6 +34,7 @@ MAKE_SOURCE = "workshop-make"
 MAX_MAKE_LESSONS = 10
 MAX_LESSON_CHARS = 220
 MAX_LESSON_FIXES = 3
+MAX_LESSONS_PER_NODE = 3
 MAX_FAILURES = 32
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
@@ -240,9 +241,12 @@ def gamevault_make_design(
     )
 
 
-def _lesson_rank(ref: str) -> int:
-    # Workshop products first: their rows carry the run trail a Manager can open.
-    return 0 if ref.startswith("wish-") else 1
+def _lesson_rank(row: Mapping[str, str]) -> tuple[int, int]:
+    # A lead the run dismissed explains why a risk did not apply; it ranks
+    # after every confirmed row. Workshop products then come first: their
+    # rows carry the run trail a Manager can open.
+    dismissed = 1 if row["text"].startswith("DISMISSED") else 0
+    return (dismissed, 0 if row["ref"].startswith("wish-") else 1)
 
 
 def make_lessons(
@@ -285,7 +289,7 @@ def make_lessons(
         path = "anti-patterns/" + slug
         if path in vault.nodes and path not in targets:
             targets.append(path)
-    lessons: list[dict[str, Any]] = []
+    per_node: list[list[dict[str, Any]]] = []
     for path in targets:
         node = vault.nodes[path]
         fixes = [
@@ -294,23 +298,35 @@ def make_lessons(
         ]
         rows = evidence_rows(node["notes"])
         ordered = sorted(
-            enumerate(reversed(rows)), key=lambda item: (_lesson_rank(item[1]["ref"]), item[0])
+            enumerate(reversed(rows)), key=lambda item: (_lesson_rank(item[1]), item[0])
         )
-        for _index, row in ordered:
-            lessons.append(
+        per_node.append(
+            [
                 {
                     "anti_pattern": path,
                     "ref": row["ref"][:120],
                     "lesson": row["text"][:MAX_LESSON_CHARS],
                     "fixes": fixes,
                 }
-            )
-    return lessons[:limit]
+                for _index, row in ordered[:MAX_LESSONS_PER_NODE]
+            ]
+        )
+    # Round-robin across anti-patterns so one well-documented risk cannot
+    # crowd out the Make wall the run is most likely to hit.
+    lessons: list[dict[str, Any]] = []
+    depth = 0
+    while len(lessons) < limit and any(len(rows) > depth for rows in per_node):
+        for rows in per_node:
+            if depth < len(rows) and len(lessons) < limit:
+                lessons.append(rows[depth])
+        depth += 1
+    return lessons
 
 
 __all__ = [
     "FAILURE_CLASSES",
     "MAKE_SOURCE",
+    "MAX_LESSONS_PER_NODE",
     "MAX_MAKE_LESSONS",
     "PROTOCOL_CODES",
     "build_make_rows",
