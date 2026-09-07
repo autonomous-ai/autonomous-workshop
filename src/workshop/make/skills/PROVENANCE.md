@@ -176,3 +176,12 @@ review. The final verifier validates this evidence for coupled mechanisms;
 existing geometry, motion, retention, mesh and thickness gates are unchanged.
 CAD skill instructions now distinguish presentation from physical validation
 and judge exposed mechanisms against the actual Wish. See ADR 0047.
+
+## Restricted-run cache instructions (2026-09-07)
+
+Port the cache-guidance portion of `f35bbfc4`: distinguish ordinary local cache
+cleanup from restricted Workshop runs, where the finalizer removes derived
+files and the host owns the isolated fresh rebuild. Explicit `--force`
+regeneration is not asserted to repair the shared-library cache defect; changed
+geometry still needs inspection and authoritative fresh verification. Protected
+empty cache directories are not deliverable bytes or blockers.

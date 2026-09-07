@@ -78,9 +78,13 @@ Use one product funnel:
 6. Run the integrated final verifier once. Do not use it as an iteration loop.
 7. Write product metadata and invoke the Make finalizer immediately.
 
-Do not delete `__cadgen__` or use `--fresh` inside the product sandbox. The
-trusted host owns the isolated fresh rebuild. Keep caches, temporary work,
-transcripts, and duplicate render families outside the sealed product tree.
+Do not manually delete `__cadgen__` or use `--fresh` inside the product
+sandbox. The trusted host owns the isolated fresh rebuild. The finalizer safely
+removes ordinary derived-cache files before hashing. If the sandbox protects a
+now-empty cache directory from removal, leave it in place: byte-free
+directories are ignored by both the finalizer and host gate, so never report an
+empty cache directory as a blocker. Keep temporary work, transcripts, and
+duplicate render families outside the sealed product tree.
 
 ## Required final product
 
