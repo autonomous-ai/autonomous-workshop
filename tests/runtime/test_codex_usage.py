@@ -100,3 +100,34 @@ def test_symlinks_and_duplicate_keys_fail_closed(tmp_path):
         stream.write('{"type":"event_msg","type":"event_msg"}\n')
     with pytest.raises(UsageUnavailable, match="duplicate"):
         read_thread_usage(path, thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_followup_task_continues_the_cumulative_counter(tmp_path):
+    # A subagent given a follow-up task, or the root Manager's next turn in the
+    # same process, keeps counting from the previous task's total: the first
+    # token_count shows total == previous total + last, not a reset.
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100))] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(300, last_token_usage=counters(100)),
+        usage(350, last_token_usage=counters(50)),
+    ]
+    result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == counters(350)
+    assert result["status"] == "observed"
+
+
+@pytest.mark.parametrize("first", [
+    usage(200, last_token_usage=counters(100)),  # no previous task to continue from
+])
+def test_first_task_without_a_reset_is_ambiguous(tmp_path, first):
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, records() + [first]), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_followup_task_that_does_not_add_up_is_ambiguous(tmp_path):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100))] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(320, last_token_usage=counters(100)),
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
