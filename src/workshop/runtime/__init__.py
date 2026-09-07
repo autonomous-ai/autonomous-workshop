@@ -20,6 +20,7 @@ from workshop.runtime.managers import (
     NativeManagerInvocationError,
     NativeManagerRecoverableError,
     manager_launcher,
+    manager_runtime_selection,
     manager_spec,
 )
 from workshop.runtime.effects import EffectIntent, EffectLedger
@@ -49,6 +50,7 @@ __all__ = [
     "Receipt",
     "codex_supports_native_workshop",
     "manager_launcher",
+    "manager_runtime_selection",
     "manager_spec",
     "factory_credential_environment",
     "factory_credential_file",

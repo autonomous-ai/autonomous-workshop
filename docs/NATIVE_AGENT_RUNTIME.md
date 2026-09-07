@@ -19,7 +19,11 @@ Workshop. It is authoritative together with
 [ADR 0038](adr/0038-prove-product-states-and-bound-final-source.md),
 [ADR 0039](adr/0039-make-invent-recovery-a-source-handoff.md),
 [ADR 0040](adr/0040-make-proof-recovery-a-sealing-handoff.md),
-[ADR 0042](adr/0042-browser-issued-factory-credential.md), and the repository
+[ADR 0042](adr/0042-browser-issued-factory-credential.md),
+[ADR 0043](adr/0043-freeze-agent-model-and-effort.md),
+[ADR 0044](adr/0044-scope-component-cad-network.md),
+[ADR 0045](adr/0045-own-agent-selected-dependencies.md),
+[ADR 0046](adr/0046-budgeted-spark-twenty-minute-turns.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -60,26 +64,44 @@ The root Codex session is the Workshop Manager. Native subagents are bounded
 children it can use for parallel or specialist work; they do not create a
 second product-run session or weaken the one-session continuity rule.
 
-New Codex Spark projects freeze `spark-economics-v3.md` and run that one
-session at low reasoning effort with a 64k automatic context-compaction ceiling
-across Make and Release plus a 60-minute boundary per native turn. A timeout
+An active native Goal is identified by the host gate subject, not by the
+mutable checkpoint hash. A host-accepted waiting outcome can refresh the
+checkpoint while preserving that subject; resume continues the same Goal from
+the newest `STAGE.json`. A rejection changes the subject and therefore begins
+a new stage attempt after the prior Goal is complete.
+
+New runs also freeze the canonical agent, model, and reasoning effort in a
+schema-v2 `MANAGER.json`. The CLI calls these `--agent`, `--model`, and
+`--effort`; Spark, Forge, and Quest are selected separately with `--workflow`.
+Codex defaults to `gpt-5.6-sol` at high and Claude Code defaults to
+`claude-opus-5` at high. The selected reasoning effort overrides the
+stage-shaped reasoning levels described below while leaving each workflow's
+compaction, turn boundaries, proof handoffs, and gates intact. Schema-v1
+Manager projects retain those historical stage-shaped reasoning levels.
+
+Codex Spark projects freeze `spark-economics-v3.md` and run that one
+session with a 64k automatic context-compaction ceiling
+across Make and Release. Budgeted v3 runs now cap each native turn at 20
+minutes (ADR 0046); unbudgeted sessions retain their historical boundary. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
-waiver. New Forge and Quest projects freeze `deep-economics-v13.md`: Invent
-starts with 20 minutes at high reasoning and a recoverable continuation gets
-10 minutes at medium strictly as a source handoff. Existing source is finalized
+waiver. Schema-v1 Manager projects retain Spark's historical low reasoning.
+Forge and Quest projects freeze `deep-economics-v13.md`: Invent starts with a
+20-minute turn and a recoverable continuation gets 10 minutes strictly as a
+source handoff. Existing source is finalized
 before reading or refinement; missing source is the first edit and finalization
 is the next action. A compact exact-Taste-header index
 covers the complete roster before Codex reads only the strongest three full
 agents. Make starts with one 16-minute medium real-state proof phase at 256k,
-then the same Goal resumes at high reasoning for a 15-minute source handoff
+then the same Goal resumes for a 15-minute source handoff
 before normal 60-minute recovery after the host accepts its checkpoint-bound
 proof marker into a private receipt. An explicit operator resume with that
 valid receipt starts directly in normal recovery rather than replaying the
 source handoff. A current wall-thickness
 failure may route to its saved region table and the CAD print-optimisation
 reference once before one all-regions source repair.
-Playtest and Release use medium, and every stage compacts at 256k. One CLI
+Every stage compacts at 256k. Schema-v1 Manager projects retain the historical
+high/medium stage reasoning described by their frozen profile. One CLI
 invocation launches at most eight native turns across all stages. Make's first
 persisted deliverable is the smallest exact causal/kinematic proof plus neutral
 held/signature blockout evidence under the declared CAD project; the complete
@@ -152,6 +174,13 @@ Inventors, judge semantic quality, run prompt chains, or implement a
 reward loop. Model prose and self-assessment are proposals; only the host can
 advance a gate.
 
+The product-run agent owns every dependency choice it introduces. Missing or
+contradictory evidence for an agent-selected component is repairable Make work,
+not a request for the operator to become an engineer: unless the Wish names the
+exact component, the agent qualifies a substitute, redesigns the mechanism, or
+eliminates the dependency. Waiting remains reserved for genuinely irreducible
+external conditions, safety boundaries, and host-owned effects.
+
 ## Start and resume
 
 ```text
@@ -217,7 +246,8 @@ avoid restarting broad exploration or depending on a child agent, run the
 remaining essential deterministic checks, and prioritize the stage finalizer.
 
 The private session checkpoint also binds the Codex CLI version and exact
-runtime-policy hash. Deep-v3 and deep-v4 runs bind one immutable whole-profile
+runtime-policy hash. Schema-v2 `MANAGER.json` is an immutable input binding for
+the selected model and reasoning effort. Deep-v3 and deep-v4 runs bind one immutable whole-profile
 identity, allowing their promised stage-specific reasoning, compaction, and
 turn boundaries without changing the persistent thread's security policy. A package manager may replace the installed CLI while a
 long native turn is running. Resume accepts that drift only when the saved
@@ -355,7 +385,11 @@ root Codex session: Workshop Manager
 ```
 
 The host projects every eligible Inventor into Codex's official
-project-scoped custom-agent convention at `.codex/agents/<id>.toml`. Each file
+project-scoped custom-agent convention at `.codex/agents/<id>.toml`. An
+explicit `workshop wish --inventor <id>` override narrows eligibility to that
+one immutable Wish-bound Inventor; without it, the Manager receives the full
+roster and chooses the best match. Wishes created by `workshop start <id>`
+carry the originating Inventor as the same exact override. Each file
 binds the exact host-materialized identity, Taste, and declared skill paths.
 That directory is the sole Inventor roster in the toy project. Codex owns
 spawning, routing, waiting, and synthesis. Workshop does not spawn another
@@ -695,8 +729,16 @@ sandboxed filesystem helper re-execute the already trusted binary for native
 file tools such as `apply_patch` and `view_image`; it does not expose
 `$CODEX_HOME` or the Codex package directory. The immutable project-root
 marker also prevents builder `AGENTS.md` inheritance, and dotenv files remain
-denied. Credentials never enter the Codex subprocess, prompt, run artifacts, or
-status output.
+denied. Direct command networking uses Codex's managed proxy in limited mode
+for the Step.parts API and site, GitHub media, and catalog Vercel-blob asset
+hosts, together with an exact reviewed list of official
+supplier drawing hosts needed by powered-product Make. This lets the locked
+Make skills retrieve and verify purchasable component CAD and mechanical
+drawings without granting arbitrary outbound access. Native web search remains
+a separate model tool. Codex authentication may enter the root runtime process,
+but secret-named values are excluded from model-generated command environments.
+Factory credentials never enter the Codex subprocess, prompt, run artifacts,
+or status output.
 Public publication is not evidence of physical manufacture or delivery.
 For PDF-first publication, the host also downloads the exact immutable
 `<project_url>MANUAL.pdf` from Factory's pinned public CDN without credentials
@@ -792,12 +834,12 @@ private Wish demonstrate that:
    state; and
 10. the executable Workshop run ends at Release and makes no claim of physical
     printing, delivery, or review.
-11. a v3 Codex Spark run uses frozen low reasoning, its 64k compaction ceiling,
+11. a schema-v1 v3 Codex Spark run uses frozen low reasoning, its 64k compaction ceiling,
     and a 60-minute boundary per native turn across both active stages (20
     minutes for v3 runs frozen before 2026-09-03); v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
     bindings; and
-12. a deep-v13 Codex Forge or Quest run uses index-first bounded high Invent
+12. a schema-v1 deep-v13 Codex Forge or Quest run uses index-first bounded high Invent
     with a medium source-first finalization handoff, one 16-minute medium Make proof runway
     followed by a 15-minute high source handoff and normal 30-minute recovery,
     medium later stages, 256k compaction, an eight-turn CLI invocation cap, and
@@ -810,6 +852,9 @@ private Wish demonstrate that:
     final-Make resume, and one evidence-triggered thickness-reference route,
     while older exact runs retain
     their original profile.
+13. a schema-v2 Manager project freezes the selected agent, model, and
+    reasoning effort; resume reconstructs that exact choice, while schema-v1
+    projects retain their historical stage-shaped reasoning behavior.
 
 ## Engine portability
 
@@ -826,25 +871,61 @@ custom-agent file format. Every future adapter must preserve the root Manager
 role, exact Inventor binding, host-owned gates, sandbox, checkpoint, and effect
 authority.
 
-## Timeouts: two clocks per toy
+## Product budgets and legacy timeouts
+
+New Codex runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
+10,000,000 input-plus-output tokens across all stages, native children and
+resumes. Cached input is included once; reasoning is already part of output.
+The host persists completed-request usage from a version-pinned Codex 0.153.4
+rollout adapter. Missing/regressing accounting fails closed after a bounded
+initial reporting grace. In-flight requests may overshoot the observed cap.
+`resume --max-tokens N` changes the total cap without resetting consumption.
+Normal twenty-minute splits and aggregate time/turn allowances are superseded;
+a one-hour emergency launch watchdog remains. Daydream is outside each product
+allowance. Other runtime adapters retain their frozen policy. See
+[ADR 0049](adr/0049-product-wide-token-budget.md). Live acceptance is pending.
+
+Older marked Codex runs freeze `lifetime-budgets-v1.md`, which supersedes the
+command-clock behavior below: 40 minutes of native execution per stage and
+60 minutes across the product, including explicit resumes. The host reserves
+each turn's allowance durably before launching, then settles elapsed time.
+A crash leaves its reservation charged. Resume cannot replenish it; missing
+or invalid state fails closed. Status exposes `budget` with scope
+`lifetime-native-execution`. Host verification and external effects are not
+charged to this native allowance. Token telemetry remains separate and may be
+partial. See [ADR 0047](adr/0047-motion-review-and-persistent-native-budget.md).
+
+New Make instructions also use exact-state animation for coupled mechanisms,
+with independent `MOTION-REVIEW.json` and source/state/animation hash binding.
+Still images judge appearance; mechanical gates retain their separate role.
+Spark may revise unsealed styling decisions with recorded provenance, without
+discarding the Wish's required function or constraints. Frozen older runs do
+not gain either review behavior on resume.
 
 A run frozen with `.agents/skills/autonomous-workshop/references/budgets-v1.md`
-has exactly three numbers and no counters:
+uses the following limits and no turn counters:
 
 | Clock | Limit | Bounds |
 |---|---|---|
-| One native turn | 60 minutes | one stretch of agent work |
+| One native turn | 20 minutes for budgeted Codex Spark v3; at most 60 minutes otherwise | one stretch of agent work |
 | One step | 120 minutes | all of Invent, or Make, or Playtest, or Release |
 | One toy | 6 hours | its sealed brief through its published page |
 
-A turn is bounded by 60 minutes or whatever its step has left, whichever is
-smaller, so a turn never outlives its step. A step may take as many turns as
+A turn is bounded by its launcher ceiling, its budgeted profile ceiling, and
+whatever its step and command have left, whichever is smaller. Since
+2026-09-06, budgeted Codex Spark v3 explicitly caps that result at 1,200 seconds
+(ADR 0046). Unbudgeted sessions retain their existing runtime-policy binding.
+A step may take as many turns as
 it needs; when a turn ends without the stage finalizer having run, the host
 resumes the same session and the same Goal automatically. A step gets room for
 two maximum-length turns precisely so a slow turn can be resumed rather than
 discarded. When a clock runs out the build stops with one sentence naming the
 clock and the session stays checkpointed; `workshop resume` grants fresh
 clocks.
+
+These clocks are per CLI invocation, not durable lifetime limits: repeatedly
+resuming the same toy can exceed six hours in total. A 20-minute turn limit
+does not imply a 20-minute product or bound total spend across explicit resumes.
 
 The Inventor's daydream loop (`workshop start`) is **not** bounded by these
 clocks. They are created once per toy, so the loop dreams and builds until
@@ -865,12 +946,12 @@ economics profiles, the Make review protocol, and the bounded recovery
 windows exactly as they stood; newer sections above take precedence where
 they overlap.
 
-New Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
+Schema-v1 Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
 ceiling for their one persistent Make-to-Release session, and a 60-minute
 boundary per native turn (20 minutes before 2026-09-03). A timeout resumes the
 exact session and Goal through the existing bounded recovery path; it is not a
 stage deadline.
-New Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
+Schema-v1 Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
 use a 10-minute medium source handoff only when needed: finalize an existing
 source first, or write then finalize before any refinement. A compact index
 covers every exact Taste header before Codex reads only the best three full

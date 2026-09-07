@@ -1,5 +1,8 @@
 # Run budgets v1
 
+For Codex when `lifetime-budgets-v1.md` is present, its persistent native-execution limits
+supersede the fresh-command clocks below. The following describes older runs.
+
 This run measures work in wall-clock time, not in turns. There are exactly two
 clocks and nothing else stops it. Both bound this one toy.
 

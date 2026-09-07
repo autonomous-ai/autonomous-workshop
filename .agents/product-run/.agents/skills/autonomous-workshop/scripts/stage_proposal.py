@@ -24,6 +24,7 @@ import json
 import math
 import os
 import re
+import runpy
 import stat
 import subprocess
 import sys
@@ -599,6 +600,27 @@ def _validate_pdf_manual(content: bytes) -> None:
         raise ProposalError("Release MANUAL.pdf must have a final PDF EOF marker")
     python = _workshop_python()
     validator = _pdf_validator_path()
+    # The native sandbox executes the canonical interpreter, which may be the
+    # base interpreter behind a venv. -I intentionally discards PYTHONPATH.
+    # Carry only the host's single external package directory explicitly; do
+    # not enable site processing, user-site packages, or the working directory.
+    package_arguments: tuple[str, ...] = ()
+    package_root = os.environ.get("PYTHONPATH")
+    if package_root:
+        candidate = Path(package_root)
+        try:
+            resolved_package = candidate.resolve(strict=True)
+        except OSError as exc:
+            raise ProposalError("Workshop PDF package directory is unavailable") from exc
+        if (
+            not candidate.is_absolute()
+            or os.pathsep in package_root
+            or resolved_package.name not in {"site-packages", "dist-packages"}
+            or not resolved_package.is_dir()
+            or resolved_package.is_relative_to(validator.parents[4])
+        ):
+            raise ProposalError("Workshop PDF package directory must be external and exact")
+        package_arguments = ("--package-root", str(resolved_package))
     try:
         descriptor = os.open(
             validator,
@@ -616,6 +638,7 @@ def _validate_pdf_manual(content: bytes) -> None:
                     "-B",
                     "/dev/fd/%d" % descriptor,
                     "--isolated-worker",
+                    *package_arguments,
                 ),
                 input=content,
                 stdout=subprocess.PIPE,
@@ -2034,6 +2057,13 @@ def _validate_signature_review(
             raise ProposalError(
                 "Make signature review is not bound to the final %s" % filename
             )
+    motion_path = project_path / "measure/motion.json"
+    if motion_path.exists() or motion_path.is_symlink():
+        helper = run_root / ".agents/skills/cad/scripts/motion_presentation.py"
+        try:
+            runpy.run_path(str(helper))["validate"](project_path, review)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise ProposalError("Make motion presentation is invalid: %s" % exc) from exc
 
 
 def _make_contract(

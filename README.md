@@ -75,19 +75,34 @@ uv run workshop stop pico-press          # ends after the current step
 uv run workshop stop pico-press --now    # interrupts now; the current run stays resumable
 ```
 
-Three consecutive failed daydreams or builds stop the loop on their own. `--once` dreams and builds a single idea; `--max-ideas N` stops after N. `--effort` goes deeper: 🔥 Forge adds Invent (`Invent -> Make -> Release`), 🗺️ Quest adds Invent and Playtest:
+Three consecutive failed daydreams or builds stop the loop on their own. `--once` dreams and builds a single idea; `--max-ideas N` stops after N. `--workflow` goes deeper: 🔥 Forge adds Invent (`Invent -> Make -> Release`), 🗺️ Quest adds Invent and Playtest:
 
 ```bash
-uv run workshop start pico-press --effort forge
+uv run workshop start pico-press --workflow forge
 ```
 
 Want to see an idea before building? `workshop daydream pico-press` prints the card and stops. Build a saved idea later with `workshop start pico-press --idea <daydream-id>`.
 
-`--manager` chooses the Workshop Manager for the daydream and the run. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
+To make just one product from your own idea, use `wish`:
+
+```bash
+uv run workshop wish "A small hand-cranked cam toy" --inventor soren-voss \
+  --workflow spark --agent codex --model sol --effort high
+```
+
+`start <inventor>` is the ongoing Inventor-led loop; `wish "..."` creates one
+product and stops. Omit `--inventor` on a Wish to let the Manager choose the
+best match. `start <inventor> --once` dreams and builds one Inventor-generated
+idea. `resume <wish-id>` continues the same unfinished product and session.
+
+`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at high effort; Claude Code defaults to Opus 5 at high effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
-uv run workshop start pico-press --manager grok --effort spark
+uv run workshop start pico-press --agent grok --workflow spark
+
+# Or run Codex Astra at high reasoning effort:
+uv run workshop start pico-press --agent codex --model astra --effort high
 ```
 
 Every run prints a run ID (a Wish ID). Check on it or continue the same session:
@@ -96,6 +111,27 @@ Every run prints a run ID (a Wish ID). Check on it or continue the same session:
 uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
+
+`start` and `wish` accept `--max-tokens N`, default **10,000,000** per Codex
+product. Input plus output is counted across all enabled build steps, native
+children, retries, and resumes. Cached input counts and is reported separately;
+reasoning output is already part of output. `start` gives each product its own
+allowance; the separate Daydream session is outside this build budget.
+
+```bash
+uv run workshop wish "A simple printable counting toy" --inventor ivy \
+  --workflow spark --agent codex --model astra --effort medium --max-tokens 10000000
+uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra tokens
+```
+
+Omitting `--max-tokens` on resume preserves the saved allowance. Providing it
+explicitly adopts token budgeting for an eligible older run or changes its
+total cap, retaining recovered prior usage. Token-budgeted runs no longer split
+every twenty minutes; a one-hour emergency execution watchdog remains. Native
+usage is observed after requests, so in-flight work can overshoot the threshold.
+Missing usage is not free work. This is not a dollar cap. The local usage adapter
+currently requires Codex 0.153.4; other Managers retain their existing policy.
+Token-budget live acceptance is still in progress.
 
 Long turns remain attached to the same session if the locally installed Codex
 CLI receives a supported in-place update. Workshop still rejects downgrades,
@@ -108,14 +144,14 @@ unknown failed turns still stop safely for an explicit operator resume.
 One run is one native coding-agent session — the shop lead. Resume cannot switch Managers.
 
 ```bash
-uv run workshop start pico-press --manager codex    # default
-uv run workshop start pico-press --manager claude   # experimental
-uv run workshop start pico-press --manager grok     # experimental
+uv run workshop start pico-press --agent codex    # Sol + high; default
+uv run workshop start pico-press --agent claude   # Opus 5 + high; experimental
+uv run workshop start pico-press --agent grok     # experimental
 ```
 
 | Manager | CLI | Status |
 |---|---|---|
-| [Codex](https://learn.chatgpt.com/docs/codex/cli) | `codex` | Default. Omit `--manager`. |
+| [Codex](https://learn.chatgpt.com/docs/codex/cli) | `codex` | Default. Omit `--agent`. |
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `claude` | Experimental. |
 | [Grok Build](https://docs.x.ai/build/overview) | `grok` | Experimental. Spark E2E: [Horn Tip](toys/pico-press-horn-tip/). |
 

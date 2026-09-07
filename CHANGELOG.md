@@ -8,6 +8,14 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Added
 
+- Codex products accept `--max-tokens` (default 10,000,000), persisted across
+  stages, native children and resumes; `resume --max-tokens N` changes the
+  total cap without resetting usage. Normal time/turn limits are superseded
+  for marked runs, with engineering and publication gates unchanged.
+- `workshop start`, `daydream`, and `wish` now expose `--agent`, `--model`,
+  and model `--effort`; new runs freeze those choices in `MANAGER.json`.
+  Codex defaults to Sol/high and accepts the Astra alias, while Claude Code
+  defaults to Opus 5/high.
 - The host CAD gate compares declared STEP files by their entity graph
   (`workshop.make.step_canonical`) instead of by bytes: Open CASCADE emits
   presentation-style entities in pointer order, so a faithful fresh re-export
@@ -29,6 +37,9 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Changed
 
+- Rename the public lifecycle selector from `--effort` to `--workflow` and
+  the native runtime selector from `--manager` to `--agent`; JSON run receipts
+  now report `workflow`, `agent`, `model`, and model `effort`.
 - Rename the distribution to `autonomous-workshop`, the Python package to
   `workshop`, and the internal command application to the sibling `cli`
   package.

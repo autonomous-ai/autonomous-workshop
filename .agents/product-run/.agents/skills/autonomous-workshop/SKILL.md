@@ -19,6 +19,14 @@ skill is your workflow playbook, not a separate agent process.
 2. Confirm its `stage`, `checkpoint_sha256`, `subject_sha256`, upstream
    bindings, output paths, current round, and round limit match the work you
    intend to do.
+   The checkpoint proves packet freshness; `subject_sha256` identifies the
+   stage attempt. A host-accepted waiting outcome may refresh the checkpoint
+   while preserving the subject. Continue the same active Goal from the newest
+   packet in that case, even if its objective names the prior checkpoint. A
+   resume may also change the execution environment without adding workspace
+   bytes. Before repeating an access, service, or tooling need, rerun its exact
+   bounded probe once; absence of an operator-supplied file is not proof that
+   the requested capability remains unavailable.
 3. Inspect the exact sealed upstream files named in `STAGE.json`. Durable files
    and receipts override session memory and native Goal state.
    If the packet includes a host-written rejection, the prior proposal did not
@@ -38,6 +46,11 @@ One Wish uses one native session. Continue or resume this exact session across
 stages; do not create stage-specific sessions or impersonate Python workers.
 
 ## Spend cognition where it changes the product
+
+For Codex, this run's [product token budget](references/token-budget-v1.md)
+survives resumes and covers all enabled stages and native children. It replaces
+aggregate time and turn budgets; the host reports the exact configured limit.
+Leave allowance for Release. Read the reference for measurement boundaries.
 
 The successful run is not the run with the most research, commands, agents, or
 prose. Concentrate the native session on one memorable product promise and the
@@ -91,7 +104,8 @@ few decisions and checks that make it real.
 
 For each host-authorized Invent, Make, Playtest, or Release attempt,
 create one native Goal. Keep only one Goal active at a time. If the Goal
-for this exact checkpoint is already active after a resume, continue it.
+for this exact subject is already active after a resume, continue it. A changed
+checkpoint with the same subject is a packet refresh, not a new Goal attempt.
 If a host rejection changed the current subject after a prior Goal completed,
 that completed Goal is stale for the new attempt; create a new Goal bound to
 the rejection-bearing subject.
@@ -100,7 +114,8 @@ state with a workspace file, prompt chain, or Python controller.
 
 The Goal must state:
 
-- one stage objective scoped to the current immutable `STAGE.json`;
+- one stage objective bound to the current stage subject and newest immutable
+  `STAGE.json`;
 - the upstream files and evidence to inspect first;
 - the proof artifacts, deterministic checks, and independent reviews that
   evaluate progress;
@@ -220,7 +235,13 @@ prior sealed artifacts untouched and durably return exactly one need:
 Use `failed` instead of `waiting` only when safe continuation is impossible,
 not merely difficult. Do not use `need` for ordinary unfinished work, a
 repairable artifact, a failed deterministic check, or a fixable ready-finalizer
-error; continue the active Goal and repair those. A successful `need` command
+error; continue the active Goal and repair those. A component you selected is
+also repairable work: missing, ambiguous, or contradictory supplier evidence
+requires you to qualify a different component, redesign the mechanism, or
+eliminate the dependency unless the Wish explicitly requires that exact part.
+Do not delegate that engineering choice to the operator. A need is valid only
+for an external condition that cannot be removed without violating the Wish, a
+deterministic gate, safety, or host-only effect authority. A successful `need` command
 writes a checkpoint-bound non-ready `agent-outcome.json` with no artifact or
 transition, after which you return control without claiming Goal completion.
 Never substitute chat prose, a self-score, or a large pasted JSON object for

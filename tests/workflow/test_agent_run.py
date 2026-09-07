@@ -86,6 +86,50 @@ class AgentRunTest(unittest.TestCase):
         path.write_bytes(content)
         return AgentArtifact(relative, hashlib.sha256(content).hexdigest())
 
+    def write_inventor(self, source_root, inventor_id):
+        inventor = source_root / inventor_id
+        skill_name = inventor_id + "-inventor"
+        skill = inventor / "skills" / skill_name
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\n"
+            "name: %s\n"
+            "description: %s's exact native specialist workflow.\n"
+            "---\n"
+            "# %s\nApply this Inventor's Taste to bounded delegated work.\n"
+            % (skill_name, inventor_id.title(), inventor_id.title()),
+            encoding="utf-8",
+        )
+        fingerprint = fingerprint_extension_skill(
+            skill.resolve(), expected_name=skill_name
+        )
+        (inventor / "inventor.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 8,
+                    "id": inventor_id,
+                    "status": "experimental",
+                    "source": {"kind": "local"},
+                    "extensions": [
+                        {
+                            "kind": "codex-skill",
+                            "name": skill_name,
+                            "path": "skills/" + skill_name,
+                            "artifact_sha256": fingerprint.artifact_sha256,
+                        }
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (inventor / "TASTE.md").write_text(
+            "---\nname: %s\ndescription: Exact %s products.\n---\n"
+            % (inventor_id.title(), inventor_id),
+            encoding="utf-8",
+        )
+
     def outcome(self, run, stage, transition, *, name=None, content=None):
         return AgentOutcome(
             stage=stage,
@@ -159,6 +203,8 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(checkpoint_document["schema_version"], 3)
         self.assertEqual(checkpoint_document["manager_id"], "codex")
         self.assertEqual(checkpoint.manager_id, "codex")
+        self.assertEqual(checkpoint.manager_model, "gpt-5.6-sol")
+        self.assertEqual(checkpoint.manager_reasoning_effort, "high")
         self.assertEqual(checkpoint.inventor_roster, ())
         for relative, content in expected.items():
             path = run.run_root / relative
@@ -177,6 +223,24 @@ class AgentRunTest(unittest.TestCase):
         )
         self.assertEqual(payload["manager_id"], "grok")
         self.assertEqual(payload["agent_directory"], ".grok/agents")
+        self.assertEqual(checkpoint.manager_model, "grok-4.6")
+        self.assertIsNone(checkpoint.manager_reasoning_effort)
+
+    def test_create_freezes_selected_model_and_reasoning_effort(self):
+        run = self.create(
+            manager_id="codex",
+            manager_model="astra",
+            manager_reasoning_effort="high",
+        )
+        checkpoint = run.snapshot()
+        self.assertEqual(checkpoint.manager_model, "gpt-6-astra")
+        self.assertEqual(checkpoint.manager_reasoning_effort, "high")
+        payload = json.loads(
+            (run.run_root / "MANAGER.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(payload["schema_version"], 2)
+        self.assertEqual(payload["model"], "gpt-6-astra")
+        self.assertEqual(payload["reasoning_effort"], "high")
 
     def test_create_rejects_an_unknown_manager(self):
         with self.assertRaises(ContractError):
@@ -332,6 +396,52 @@ class AgentRunTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ArtifactError, "schema_version 8"):
             self.create(inventor_source_root=inventor_source)
+        self.assertFalse(self.run_root.exists())
+
+    def test_creation_can_pin_the_exact_materialized_inventor(self):
+        inventor_source = self.root / "inventors"
+        self.write_inventor(inventor_source, "alice")
+        self.write_inventor(inventor_source, "bob")
+
+        run = self.create(
+            inventor_source_root=inventor_source,
+            required_inventor_id="bob",
+        )
+        checkpoint = run.snapshot()
+
+        self.assertEqual(
+            [item["inventor_id"] for item in checkpoint.inventor_roster],
+            ["bob"],
+        )
+        self.assertTrue((run.run_root / ".codex/agents/bob.toml").is_file())
+        self.assertTrue(
+            (run.run_root / ".agents/skills/bob-inventor/SKILL.md").is_file()
+        )
+        self.assertFalse((run.run_root / ".codex/agents/alice.toml").exists())
+        self.assertFalse((run.run_root / ".agents/skills/alice-inventor").exists())
+
+    def test_creation_rejects_an_unavailable_required_inventor(self):
+        inventor_source = self.root / "inventors"
+        self.write_inventor(inventor_source, "alice")
+
+        with self.assertRaisesRegex(
+            ArtifactError, "required Inventor is unavailable: bob"
+        ):
+            self.create(
+                inventor_source_root=inventor_source,
+                required_inventor_id="bob",
+            )
+        self.assertFalse(self.run_root.exists())
+
+    def test_creation_rejects_an_unsafe_required_inventor_id(self):
+        inventor_source = self.root / "inventors"
+        self.write_inventor(inventor_source, "alice")
+
+        with self.assertRaisesRegex(ContractError, "lowercase hyphenated"):
+            self.create(
+                inventor_source_root=inventor_source,
+                required_inventor_id="../alice",
+            )
         self.assertFalse(self.run_root.exists())
 
     def test_creation_requires_explicit_product_run_constitution_source(self):

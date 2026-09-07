@@ -51,6 +51,7 @@ INVENTORS = (
     "orin-shadow",
     "pico-press",
     "sonora-reed",
+    "soren-voss",
     "tess-loop",
     "vela-bloom",
 )
@@ -349,7 +350,7 @@ import tomllib
 from pathlib import Path
 
 if sys.argv[1:] == ["--version"]:
-    print("codex-cli 0.145.0")
+    print("codex-cli 0.150.0")
     raise SystemExit(0)
 
 run_root = Path.cwd()
@@ -608,7 +609,7 @@ def _native_wish_smoke(
         receipt.get("kind") != "native-agent-run"
         or receipt.get("status") != "waiting"
         or receipt.get("stage") != "make"
-        or receipt.get("effort") != "spark"
+        or receipt.get("workflow") != "spark"
         or receipt.get("native_turns") != 1
         or receipt.get("action") != "started"
     ):
@@ -908,9 +909,12 @@ def acceptance(
             (workshop, "wish", "--help"), cwd=away, environment=environment
         ).stdout
         if not all(
-            token in wish_help for token in ("--effort", "spark", "forge", "quest")
+            token in wish_help for token in (
+                "--workflow", "--agent", "--model", "--effort", "--inventor",
+                "spark", "forge", "quest",
+            )
         ):
-            raise AssertionError("installed Wish help lacks selectable effort routes")
+            raise AssertionError("installed Wish help lacks runtime and workflow selectors")
         login_help = _run(
             (workshop, "login", "--help"), cwd=away, environment=environment
         ).stdout

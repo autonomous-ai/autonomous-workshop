@@ -43,7 +43,9 @@ from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     MANAGER_PROJECT_PATH,
     manager_project_bytes,
+    manager_runtime_selection,
     manager_spec,
+    parse_manager_project_bytes,
 )
 from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER,
@@ -643,6 +645,8 @@ class AgentRunCheckpoint:
     invalidated_stages: tuple[str, ...]
     effort: Optional[str] = None
     manager_id: str = DEFAULT_MANAGER_ID
+    manager_model: Optional[str] = None
+    manager_reasoning_effort: Optional[str] = None
     needs: tuple[str, ...] = ()
 
     @property
@@ -676,14 +680,33 @@ class AgentRun:
         skill_root: Path,
         domain_skill_roots: Optional[Mapping[str, Path]] = None,
         inventor_source_root: Optional[Path] = None,
+        required_inventor_id: Optional[str] = None,
         max_rounds: int = 4,
         effort: Optional[str] = None,
         manager_id: str = DEFAULT_MANAGER_ID,
+        manager_model: Optional[str] = None,
+        manager_reasoning_effort: Optional[str] = None,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
         selected_effort = workshop_effort(effort) if effort is not None else None
-        selected_manager = manager_spec(manager_id)
+        selected_runtime = manager_runtime_selection(
+            manager_id,
+            model=manager_model,
+            reasoning_effort=manager_reasoning_effort,
+        )
+        selected_manager = selected_runtime.spec
+        if required_inventor_id is not None and (
+            not isinstance(required_inventor_id, str)
+            or _AGENT_SKILL_NAME.fullmatch(required_inventor_id) is None
+        ):
+            raise ContractError(
+                "required Inventor id must be a lowercase hyphenated id"
+            )
+        if required_inventor_id is not None and inventor_source_root is None:
+            raise ContractError(
+                "required Inventor id needs an Inventor source root"
+            )
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
         try:
             requested = Path(run_root)
@@ -823,6 +846,11 @@ class AgentRun:
                     continue
                 if _AGENT_SKILL_NAME.fullmatch(entry.name) is None:
                     raise ArtifactError("Inventor id is not a safe path name")
+                if (
+                    required_inventor_id is not None
+                    and entry.name != required_inventor_id
+                ):
+                    continue
                 manifest_path = entry / "inventor.json"
                 taste_path = entry / "TASTE.md"
                 if not manifest_path.is_file() or not taste_path.is_file():
@@ -897,6 +925,11 @@ class AgentRun:
                         _reject_private_agent_bytes(destination.as_posix(), content)
                         inventor_skill_files.append((destination, content, mode))
             if not inventor_roster:
+                if required_inventor_id is not None:
+                    raise ArtifactError(
+                        "required Inventor is unavailable: %s"
+                        % required_inventor_id
+                    )
                 raise ArtifactError("Inventor source root contains no Inventors")
 
         all_input_files: list[tuple[PurePosixPath, bytes, int]] = [
@@ -909,7 +942,7 @@ class AgentRun:
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
             (
                 PurePosixPath(MANAGER_PROJECT_PATH),
-                manager_project_bytes(selected_manager),
+                manager_project_bytes(selected_runtime),
                 0o400,
             ),
         ]
@@ -1465,6 +1498,19 @@ class AgentRun:
     def snapshot(self) -> AgentRunCheckpoint:
         payload = self._load()
         by_path = {item["path"]: item for item in payload["sealed_artifacts"]}
+        try:
+            manager_source = _read_regular(
+                self.run_root / MANAGER_PROJECT_PATH,
+                "materialized Workshop Manager project",
+                MAX_AGENT_INPUT_BYTES,
+            )
+            manager, manager_model, manager_reasoning_effort = (
+                parse_manager_project_bytes(manager_source)
+            )
+        except (ArtifactError, ContractError) as exc:
+            raise StateConflict("agent run Manager project is invalid") from exc
+        if manager.manager_id != payload.get("manager_id", DEFAULT_MANAGER_ID):
+            raise StateConflict("agent run Manager project differs from checkpoint")
         return AgentRunCheckpoint(
             product_id=payload["product_id"],
             stage=payload["stage"],
@@ -1486,6 +1532,8 @@ class AgentRun:
             invalidated_stages=tuple(payload["invalidated_stages"]),
             effort=payload.get("effort"),
             manager_id=payload.get("manager_id", DEFAULT_MANAGER_ID),
+            manager_model=manager_model,
+            manager_reasoning_effort=manager_reasoning_effort,
             needs=tuple(payload.get("needs", ())),
         )
 

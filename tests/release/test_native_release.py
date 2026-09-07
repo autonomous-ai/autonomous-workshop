@@ -1576,6 +1576,8 @@ class NativeReleaseTest(unittest.TestCase):
             made=self.made,
             inventor_id="eve",
             receipt=receipt,
+            manager_model="gpt-6-astra",
+            manager_reasoning_effort="high",
         )
 
         source_manual = self.run_root / release.package_root / release.manual_path
@@ -1592,7 +1594,10 @@ class NativeReleaseTest(unittest.TestCase):
         readme = (target / "README.md").read_text()
         self.assertIn("`release/MANUAL.pdf`", readme)
         self.assertIn("## Reproduce", readme)
-        self.assertIn("--manager codex --effort quest", readme)
+        self.assertIn(
+            "--agent codex --model gpt-6-astra --effort high --workflow quest",
+            readme,
+        )
         self.assertNotIn("--github", readme)
 
         github_repository = self.run_root / "github-readme-repository"
@@ -1604,10 +1609,12 @@ class NativeReleaseTest(unittest.TestCase):
             made=self.made,
             inventor_id="eve",
             receipt=self._public_receipt(release, slug="moon-nook-github"),
+            manager_model="gpt-6-astra",
+            manager_reasoning_effort="high",
             github_requested=True,
         )
         self.assertIn(
-            "--manager codex --effort quest --github",
+            "--agent codex --model gpt-6-astra --effort high --workflow quest --github",
             (github_target / "README.md").read_text(),
         )
 

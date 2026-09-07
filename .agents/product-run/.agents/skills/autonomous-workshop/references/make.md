@@ -69,7 +69,9 @@ Use one product funnel:
    view. `--motion-sheet` rotates one unchanged mesh and is only presentation
    viewpoint evidence; it can never prove a state transition. The signature
    sheet must show the promised states or interaction, not repeated angles.
-5. Give one independent native critic only those images. Record its blind held
+5. For a moving mechanism, also produce and review exact-state animation using
+   [motion review](motion-review-v1.md); still images cannot establish motion.
+   Give one independent native critic only the images and that animation. Record its blind held
    object, volumetric form, subjects, action, and relationship. Then reveal the
    Wish and concept and check every positive and negative held-form constraint.
    Make one focused repair at most and one blind rereview at most.
@@ -116,9 +118,18 @@ The canonical schema-v6 review contains exactly: `schema_version`, `kind`,
 `resolution`. Use kind `autonomous-workshop.signature-experience-review`.
 Every boolean is true; `review_rounds` is one or two; blockers are empty; each
 critical requirement has exactly `requirement`, `blind_evidence`, and
-`matches: true`. A generic object, flat/plaque form, exposed mechanism,
-ambiguous action, wrong relationship, raw prototype, or visible caveat is a
-blocker, not prose to waive.
+`matches: true`. Evaluate form against the actual Wish: an exposed mechanism
+or a flat component is not inherently a defect. Wrong required relationships,
+unresolved geometry defects, and unproved promised functions remain blockers.
+
+Separate immutable user requirements from inventor-selected styling. In Spark,
+before the final review, revise nonessential naming, species, palette or
+styling decisions when the result suggests a better fit; preserve the previous
+choice and reason in `research.design_changes`. Keep the required function,
+constraints and distinctive experience. The final concept, product, manual
+and review must agree. Never retroactively rewrite a failed review or simply
+change hashes. Forge/Quest sealed concepts still require their existing
+authorized revision path. A missing function cannot become a styling change.
 
 Then run:
 

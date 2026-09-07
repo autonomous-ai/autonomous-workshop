@@ -123,6 +123,7 @@ from workshop.runtime import (
     factory_credential_environment,
     factory_service_credential_environment,
     manager_launcher,
+    manager_runtime_selection,
     manager_spec,
 )
 from workshop.runtime.managers import NativeSessionLauncher
@@ -156,10 +157,19 @@ from workshop.workflow.agent_run import (
 )
 from workshop.workflow.budgets import (
     BUDGETS_CAPABILITY_PATH,
+    LIFETIME_BUDGETS_CAPABILITY_PATH,
+    LifetimeBudget,
+    LifetimeTurnBudget,
+    TURN_BUDGETS_CAPABILITY_PATH,
     MAX_BUDGETED_TURNS,
+    SPARK_BUDGETED_TURN_SECONDS,
     CommandBudget,
     uses_command_budget,
 )
+from workshop.workflow.token_budget import (
+    ProductTokenBudget, TOKEN_BUDGET_CAPABILITY_PATH, DEFAULT_PRODUCT_TOKENS, validate_limit,
+)
+from workshop.runtime.codex_usage import read_product_usage, UsageUnavailable
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
@@ -2427,7 +2437,24 @@ def native_stage_prompt(stage: str) -> str:
         "in that packet as authoritative proof that the prior proposal failed "
         "its host gate and that the current subject is a new stage attempt. If "
         "the prior Goal is already complete, create a new Goal bound to this "
-        "current subject. Address the exact rejection before finalizing; never "
+        "current subject. The subject hash, not the checkpoint hash, identifies "
+        "the Goal attempt: a waiting outcome or other host refresh may advance "
+        "the checkpoint while preserving the subject. When the subject is "
+        "unchanged, continue the same active Goal from the newest STAGE.json "
+        "even if its objective mentions an older checkpoint; do not create a "
+        "duplicate Goal or wait solely for that expected refresh. A resume is "
+        "also an environment refresh: before repeating an access, service, or "
+        "tooling need, rerun its exact bounded probe once. Do not infer that "
+        "the condition is unchanged merely because no operator-supplied file "
+        "appeared in the workspace. Never delegate an engineering choice back "
+        "to the operator merely because a component you selected has missing, "
+        "ambiguous, or contradictory evidence. Unless the Wish itself requires "
+        "that exact component, qualify a different component, redesign the "
+        "mechanism, or eliminate the dependency and continue the active Goal. "
+        "A need is valid only for an external condition that cannot be removed "
+        "without violating the Wish, a deterministic gate, safety, or host-only "
+        "effect authority. Address the "
+        "exact rejection before finalizing; never "
         "rerun the finalizer or resubmit unchanged rejected bytes. Create one "
         "native Goal for the "
         "current %s stage with successful finalization as its stopping condition; "
@@ -2629,6 +2656,8 @@ def _record_public_example_projection(
                 receipt=receipt,
                 manager_id=checkpoint.manager_id,
                 effort=checkpoint.effort,
+                manager_model=checkpoint.manager_model,
+                manager_reasoning_effort=checkpoint.manager_reasoning_effort,
                 github_requested=github_requested,
                 token_summary=_native_token_summary(
                     NativeRunPaths(run.run_root, run.host_state_root),
@@ -4250,6 +4279,168 @@ def _command_budget() -> CommandBudget:
     return CommandBudget()
 
 
+def _save_lifetime_budget(
+    paths: NativeRunPaths, checkpoint: AgentRunCheckpoint, budget: LifetimeBudget
+) -> None:
+    _write_private_json(paths.host_state / "native-budget.json", {
+        "schema_version": 1,
+        "product_id": checkpoint.product_id,
+        "wish_sha256": checkpoint.wish_sha256,
+        "capability_sha256": checkpoint.input_sha256s[
+            TOKEN_BUDGET_CAPABILITY_PATH
+            if TOKEN_BUDGET_CAPABILITY_PATH in checkpoint.input_sha256s
+            else TURN_BUDGETS_CAPABILITY_PATH
+            if TURN_BUDGETS_CAPABILITY_PATH in checkpoint.input_sha256s
+            else LIFETIME_BUDGETS_CAPABILITY_PATH
+        ],
+        "budget": budget.to_dict(),
+    })
+
+
+def _load_lifetime_budget(
+    paths: NativeRunPaths, checkpoint: AgentRunCheckpoint, *, initialize: bool = False
+) -> Optional[LifetimeBudget]:
+    # Only Codex exposes the host-rebindable timeout used to enforce a smaller
+    # remaining allowance. Other adapters retain their historical policy.
+    capability = (
+        TOKEN_BUDGET_CAPABILITY_PATH
+        if TOKEN_BUDGET_CAPABILITY_PATH in checkpoint.input_sha256s
+        else TURN_BUDGETS_CAPABILITY_PATH
+        if TURN_BUDGETS_CAPABILITY_PATH in checkpoint.input_sha256s
+        else LIFETIME_BUDGETS_CAPABILITY_PATH
+    )
+    if checkpoint.manager_id != DEFAULT_MANAGER_ID or capability not in checkpoint.input_sha256s:
+        return None
+    path = paths.host_state / "native-budget.json"
+    budget = ProductTokenBudget() if capability == TOKEN_BUDGET_CAPABILITY_PATH else LifetimeTurnBudget() if capability == TURN_BUDGETS_CAPABILITY_PATH else LifetimeBudget()
+    if not path.exists() and not path.is_symlink() and initialize:
+        _save_lifetime_budget(paths, checkpoint, budget)
+        return budget
+    value = _read_stable_private_json(path, label="persistent native budget", maximum_bytes=65536)
+    if (
+        set(value) != {"schema_version", "product_id", "wish_sha256", "capability_sha256", "budget"}
+        or type(value["schema_version"]) is not int
+        or value["schema_version"] != 1
+        or value["product_id"] != checkpoint.product_id
+        or value["wish_sha256"] != checkpoint.wish_sha256
+        or value["capability_sha256"] != checkpoint.input_sha256s[capability]
+    ):
+        raise StateConflict("persistent native budget binding is invalid")
+    try:
+        if isinstance(value["budget"], dict) and value["budget"].get("unit") == "tokens":
+            if capability != TOKEN_BUDGET_CAPABILITY_PATH and value["budget"].get("previous_budget") is None:
+                raise StateConflict("token-budget adoption lacks preserved prior accounting")
+            budget = ProductTokenBudget()
+        if capability == LIFETIME_BUDGETS_CAPABILITY_PATH and isinstance(value["budget"], dict) and value["budget"].get("unit") == "native_turns":
+            if value["budget"].get("previous_time_budget") is None:
+                raise StateConflict("turn-budget adoption lacks preserved prior accounting")
+            budget = LifetimeTurnBudget()
+        budget.restore(value["budget"])
+    except (ContractError, TypeError, KeyError) as exc:
+        raise StateConflict("persistent native budget is invalid") from exc
+    return budget
+
+
+def _read_product_token_usage(paths, checkpoint):
+    session = _read_stable_private_json(
+        paths.host_state / "codex-session.json", label="native token session", maximum_bytes=32768
+    )
+    identity = {key: value for key, value in session.items() if key != "checkpoint_sha256"}
+    if (
+        session.get("product_id") != checkpoint.product_id
+        or session.get("wish_sha256") != checkpoint.wish_sha256
+        or hashlib.sha256(_canonical_json_bytes(identity)).hexdigest() != session.get("checkpoint_sha256")
+        or session.get("run_root_sha256") != hashlib.sha256(str(paths.workspace).encode()).hexdigest()
+    ):
+        raise StateConflict("native token session binding is invalid")
+    sessions = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "sessions"
+    return read_product_usage(sessions, thread_id=session.get("thread_id"), workspace=paths.workspace)
+
+
+def _adopt_token_budget(paths, checkpoint, limit):
+    validate_limit(limit)
+    if checkpoint.manager_id != DEFAULT_MANAGER_ID or checkpoint.status == "complete":
+        raise ContractError("token budgeting requires an unfinished Codex product")
+    previous = _load_lifetime_budget(paths, checkpoint)
+    if previous is None:
+        raise ContractError("this frozen run lacks a supported persistent budget")
+    budget = previous if isinstance(previous, ProductTokenBudget) else ProductTokenBudget(limit)
+    if budget is not previous:
+        budget.previous_budget = previous.to_dict()
+    recovered = _read_product_token_usage(paths, checkpoint)
+    if any(thread.get("status") == "pending" for thread in recovered["threads"]):
+        raise ContractError("cannot adopt a token cap with unobserved native threads")
+    budget.observe(recovered)
+    budget.limit = limit
+    _save_lifetime_budget(paths, checkpoint, budget)
+
+
+def _product_token_observer(paths, checkpoint, budget):
+    started = time.monotonic()
+    pending_since = {}
+    def observe():
+        try:
+            value = _read_product_token_usage(paths, checkpoint)
+            for thread in value["threads"]:
+                if thread.get("status") == "pending":
+                    first_seen = pending_since.setdefault(thread["thread_id"], time.monotonic())
+                    if time.monotonic() - first_seen >= 180:
+                        raise UsageUnavailable("native thread has not reported usage within startup grace")
+                else:
+                    pending_since.pop(thread["thread_id"], None)
+            budget.observe(value)
+            _save_lifetime_budget(paths, checkpoint, budget)
+        except (WorkshopError, OSError, ValueError):
+            # Bound the initially unmetered first response. Once observations
+            # exist, loss/regression of accounting immediately fails closed.
+            if budget.observation is None and time.monotonic() - started < 180:
+                return
+            _write_private_json(paths.host_state / "token-budget-stop.json", {
+                "reason": "native token usage unavailable or inconsistent",
+                "product_id": checkpoint.product_id,
+            })
+            raise
+        if budget.exhausted(checkpoint.stage):
+            _write_private_json(paths.host_state / "token-budget-stop.json", {
+                "reason": "product token limit reached", "product_id": checkpoint.product_id,
+            })
+            raise ContractError("product token limit reached")
+    return observe
+
+
+def _adopt_turn_budget(paths: NativeRunPaths, checkpoint: AgentRunCheckpoint) -> None:
+    """Explicit operator-only adoption before the first creative stage passes.
+
+    Retain the frozen session, tool bytes and prior clock record. Conservative
+    telemetry is used only to seed this one opt-in migration, never to enforce
+    subsequent budgets. Missing or ambiguous history refuses migration.
+    """
+    budget = _load_lifetime_budget(paths, checkpoint)
+    if isinstance(budget, ProductTokenBudget):
+        raise ContractError("a token-budgeted run cannot switch back to turn accounting")
+    if isinstance(budget, LifetimeTurnBudget):
+        return  # Repeating the option must never replenish the allowance.
+    if budget is None or checkpoint.stage not in {"make", "invent"} or checkpoint.status != "active":
+        raise ContractError("turn-budget adoption requires an active first creative stage with a persistent budget")
+    path = paths.host_state / NATIVE_PROGRESS_FILENAME
+    progress = trusted_native_progress(
+        path, product_id=checkpoint.product_id, wish_sha256=checkpoint.wish_sha256,
+        checkpoint_sha256=checkpoint.checkpoint_sha256, checkpoint_stage=checkpoint.stage,
+    )
+    if (
+        progress is None
+        or progress.native_turns != native_progress_turn_floor(path)
+        or progress.stage_attempt != progress.native_turns
+        or set(budget._spent_by_step) != {checkpoint.stage}
+    ):
+        raise StateConflict("cannot safely reconstruct prior turns for budget adoption")
+    adopted = LifetimeTurnBudget()
+    adopted.used_by_stage = {checkpoint.stage: progress.native_turns}
+    adopted.previous_time_budget = budget.to_dict()
+    adopted.restore(adopted.to_dict())
+    _save_lifetime_budget(paths, checkpoint, adopted)
+
+
 def _uses_command_budget(checkpoint: AgentRunCheckpoint) -> bool:
     """Whether this frozen run replaced its turn counters with two clocks."""
 
@@ -4278,8 +4469,19 @@ def _budgeted_turn_launcher(
         # Every other Manager, every injected test launcher, and every patched
         # construction is used exactly as the caller built it.
         return launcher
+    frozen_turn_ceiling = getattr(launcher, "timeout_seconds", None)
+    effective_seconds = (
+        min(seconds, frozen_turn_ceiling)
+        if type(frozen_turn_ceiling) is int
+        else seconds
+    )
     if (
-        getattr(launcher, "timeout_seconds", None) == seconds
+        checkpoint.effort == "spark"
+        and SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        effective_seconds = min(effective_seconds, SPARK_BUDGETED_TURN_SECONDS)
+    if (
+        frozen_turn_ceiling == effective_seconds
         and getattr(launcher, "runtime_profile_sha256", None) == digest
     ):
         return launcher
@@ -4288,9 +4490,30 @@ def _budgeted_turn_launcher(
         reasoning_effort=launcher.reasoning_effort,
         auto_compact_token_limit=launcher.auto_compact_token_limit,
         runtime_profile_sha256=digest,
-        timeout_seconds=seconds,
+        timeout_seconds=effective_seconds,
         binary=launcher.binary,
         cli_version=launcher.cli_version,
+        popen_factory=launcher._popen_factory,
+        version_runner=launcher._version_runner,
+    )
+
+
+def _codex_launcher_for(
+    checkpoint: AgentRunCheckpoint,
+    *,
+    reasoning_effort: str,
+    **kwargs: Any,
+) -> NativeSessionLauncher:
+    """Apply a new run's frozen CLI choice over legacy stage-shaped defaults."""
+
+    runtime_kwargs = dict(kwargs)
+    if checkpoint.manager_model is not None:
+        runtime_kwargs["model"] = checkpoint.manager_model
+    return CodexNativeSessionLauncher(
+        reasoning_effort=(
+            checkpoint.manager_reasoning_effort or reasoning_effort
+        ),
+        **runtime_kwargs,
     )
 
 
@@ -4370,7 +4593,8 @@ def _native_launcher(
             else:
                 reasoning_effort = "medium"
                 timeout_seconds = DEEP_NATIVE_TURN_TIMEOUT_SECONDS
-            return CodexNativeSessionLauncher(
+            return _codex_launcher_for(
+                checkpoint,
                 reasoning_effort=reasoning_effort,
                 auto_compact_token_limit=(
                     DEEP_AUTO_COMPACT_TOKEN_LIMIT
@@ -4390,7 +4614,8 @@ def _native_launcher(
             checkpoint.effort in ("forge", "quest")
             and DEEP_ECONOMICS_V4_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
-            return CodexNativeSessionLauncher(
+            return _codex_launcher_for(
+                checkpoint,
                 reasoning_effort=(
                     "high" if checkpoint.stage in ("invent", "make") else "medium"
                 ),
@@ -4412,7 +4637,8 @@ def _native_launcher(
             checkpoint.effort in ("forge", "quest")
             and DEEP_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
-            return CodexNativeSessionLauncher(
+            return _codex_launcher_for(
+                checkpoint,
                 reasoning_effort=(
                     "high" if checkpoint.stage == "invent" else "medium"
                 ),
@@ -4430,7 +4656,8 @@ def _native_launcher(
             checkpoint.effort in ("forge", "quest")
             and DEEP_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
-            return CodexNativeSessionLauncher(
+            return _codex_launcher_for(
+                checkpoint,
                 # V2 bound the first stage's exact turn configuration to the
                 # persistent thread before stage-shaped resume was supported.
                 # Keep its effective all-high policy so a stopped historical
@@ -4443,7 +4670,8 @@ def _native_launcher(
             checkpoint.effort in ("forge", "quest")
             and DEEP_ECONOMICS_V1_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
-            return CodexNativeSessionLauncher(
+            return _codex_launcher_for(
+                checkpoint,
                 reasoning_effort="high",
                 auto_compact_token_limit=DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT,
                 timeout_seconds=DEEP_NATIVE_TURN_TIMEOUT_SECONDS,
@@ -4452,7 +4680,8 @@ def _native_launcher(
             checkpoint.effort == "spark"
             and SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
-            return CodexNativeSessionLauncher(
+            return _codex_launcher_for(
+                checkpoint,
                 reasoning_effort="low",
                 auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
                 timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
@@ -4461,7 +4690,8 @@ def _native_launcher(
             checkpoint.effort == "spark"
             and SPARK_ECONOMICS_V2_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
-            return CodexNativeSessionLauncher(
+            return _codex_launcher_for(
+                checkpoint,
                 reasoning_effort="low",
                 auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
             )
@@ -4471,8 +4701,16 @@ def _native_launcher(
             and SPARK_ECONOMICS_V1_CAPABILITY_PATH in checkpoint.input_sha256s
             else "high"
         )
-        return CodexNativeSessionLauncher(reasoning_effort=reasoning_effort)
-    return manager_launcher(checkpoint.manager_id)
+        return _codex_launcher_for(
+            checkpoint,
+            reasoning_effort=reasoning_effort,
+        )
+    launcher_kwargs: dict[str, Any] = {}
+    if checkpoint.manager_model is not None:
+        launcher_kwargs["model"] = checkpoint.manager_model
+    if checkpoint.manager_reasoning_effort is not None:
+        launcher_kwargs["reasoning_effort"] = checkpoint.manager_reasoning_effort
+    return manager_launcher(checkpoint.manager_id, **launcher_kwargs)
 
 
 def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
@@ -5343,6 +5581,27 @@ def _launcher_call(
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = native_stage_prompt(checkpoint.stage)
+    budget = _load_lifetime_budget(paths, checkpoint)
+    if isinstance(budget, ProductTokenBudget):
+        prompt += (
+            "\n\nHost budget authority: the entire product has one persistent "
+            "input-plus-output token budget including children and all resumes. "
+            "It supersedes aggregate time and turn-count budgets. No scheduled "
+            "twenty-minute split applies; a one-hour emergency watchdog remains. "
+            "All gates remain mandatory. Limit: %d; observed usage: %d. "
+            "Reuse existing work and repair concrete remaining checks."
+            % (budget.limit, budget.to_dict()["used_tokens"])
+        )
+    if isinstance(budget, LifetimeTurnBudget):
+        prompt += (
+            "\n\nHost budget authority: this run uses a persistent native-turn "
+            "allowance, superseding any older aggregate wall-time budget text. "
+            "One turn is one native start/resume, not one tool call. The current "
+            "launch is already charged. Exact accounting: "
+            + json.dumps(budget.to_dict(), sort_keys=True)
+            + ". Your frozen per-turn timeout still applies. Reuse existing "
+            "work; all finalizers, engineering and publication gates remain required."
+        )
     phased_make = (
         checkpoint.stage == "make"
         and _phased_deep_capability_path(checkpoint) is not None
@@ -7616,7 +7875,11 @@ def _run_native_session(
         initial_checkpoint,
         first_method=first_method,
     )
-    budget = _command_budget() if _uses_command_budget(run.snapshot()) else None
+    budget = _load_lifetime_budget(
+        paths, initial_checkpoint, initialize=first_method == "start"
+    )
+    if budget is None:
+        budget = _command_budget() if _uses_command_budget(run.snapshot()) else None
     native_turn_limit = (
         MAX_BUDGETED_TURNS if budget is not None else _native_turn_limit(run.snapshot())
     )
@@ -7717,12 +7980,36 @@ def _run_native_session(
             if initial_make_proof_boundary and not make_proof_boundary:
                 initial_make_boundaries.add(checkpoint.checkpoint_sha256)
         if budget is not None:
-            turn_launcher = _budgeted_turn_launcher(
+            if isinstance(budget, ProductTokenBudget) and isinstance(turn_launcher, _CODEX_LAUNCHER_TYPE):
+                # Host-authorized product budget; preserve the existing native
+                # policy identity rather than silently upgrading frozen tools.
+                turn_launcher = CodexNativeSessionLauncher(
+                    model=turn_launcher.model, reasoning_effort=turn_launcher.reasoning_effort,
+                    auto_compact_token_limit=turn_launcher.auto_compact_token_limit,
+                    runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
+                    binary=turn_launcher.binary, timeout_seconds=3600,
+                    cli_version=turn_launcher.cli_version,
+                    popen_factory=turn_launcher._popen_factory,
+                    version_runner=turn_launcher._version_runner,
+                )
+                if turn_launcher.cli_version != "0.153.4":
+                    raise ContractError("token-budget rollout adapter requires validated Codex 0.153.4")
+                turn_launcher.token_budget_observer = _product_token_observer(paths, checkpoint, budget)
+            else:
+                turn_launcher = _budgeted_turn_launcher(
                 checkpoint,
                 turn_launcher,
                 budget.turn_timeout_seconds(checkpoint.stage),
-            )
+                )
         turn_mark = None if budget is None else budget.started()
+        reserved_seconds = None
+        if isinstance(budget, LifetimeBudget):
+            reserved_seconds = min(
+                budget.turn_timeout_seconds(checkpoint.stage),
+                getattr(turn_launcher, "timeout_seconds", 60 * 60),
+            )
+            budget.reserve(checkpoint.stage, reserved_seconds)
+            _save_lifetime_budget(paths, checkpoint, budget)
         try:
             with wish_run_timing_span(
                 timing_observer,
@@ -7759,6 +8046,10 @@ def _run_native_session(
             raise
         else:
             progress.observe("finalizing")
+        finally:
+            if isinstance(budget, LifetimeBudget) and reserved_seconds is not None:
+                budget.settle(checkpoint.stage, reserved_seconds, max(0, budget.started() - turn_mark))
+                _save_lifetime_budget(paths, checkpoint, budget)
         try:
             _record_native_token_usage(
                 paths,
@@ -7789,7 +8080,7 @@ def _run_native_session(
             # Token telemetry is best-effort and never a lifecycle gate.
             pass
         turns += 1
-        if budget is not None and turn_mark is not None:
+        if budget is not None and turn_mark is not None and not isinstance(budget, LifetimeBudget):
             budget.spend_since(checkpoint.stage, turn_mark)
         if not _agent_outcome_exists(run.run_root):
             # A normal native turn may end before the active Goal reaches its
@@ -8155,6 +8446,24 @@ def _native_receipt(
         visible_status = "waiting"
         if _LEGACY_RELEASE_UPGRADE_NEED not in needs:
             needs.append(_LEGACY_RELEASE_UPGRADE_NEED)
+    lifetime_budget = None
+    if paths is not None and any(p in checkpoint.input_sha256s for p in (LIFETIME_BUDGETS_CAPABILITY_PATH, TURN_BUDGETS_CAPABILITY_PATH, TOKEN_BUDGET_CAPABILITY_PATH)):
+        try:
+            loaded_budget = _load_lifetime_budget(paths, checkpoint)
+            lifetime_budget = (
+                {"status": "available", "scope": "product-tokens" if isinstance(loaded_budget, ProductTokenBudget) else "lifetime-native-turns" if isinstance(loaded_budget, LifetimeTurnBudget) else "lifetime-native-execution", **loaded_budget.to_dict()}
+                if loaded_budget is not None else None
+            )
+            stop_path = paths.host_state / "token-budget-stop.json"
+            if isinstance(loaded_budget, ProductTokenBudget) and stop_path.exists():
+                stop = _read_stable_private_json(stop_path, label="token budget stop", maximum_bytes=4096)
+                if stop.get("product_id") != checkpoint.product_id or stop.get("reason") not in (
+                    "product token limit reached", "native token usage unavailable or inconsistent"
+                ):
+                    raise StateConflict("invalid token budget stop record")
+                lifetime_budget["last_stop_reason"] = stop["reason"]
+        except WorkshopError:
+            lifetime_budget = {"status": "unavailable", "scope": "lifetime-native-execution"}
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",
@@ -8175,6 +8484,7 @@ def _native_receipt(
         "native_turns": durable_turns,
         "progress": progress,
         "publication": publication,
+        **({"budget": lifetime_budget} if lifetime_budget is not None else {}),
         "tokens": (
             _native_token_summary(paths, checkpoint)
             if paths is not None
@@ -8187,8 +8497,12 @@ def _native_receipt(
         ),
     }
     if checkpoint.effort is not None:
-        receipt["effort"] = checkpoint.effort
-    receipt["manager"] = checkpoint.manager_id
+        receipt["workflow"] = checkpoint.effort
+    receipt["agent"] = checkpoint.manager_id
+    if checkpoint.manager_model is not None:
+        receipt["model"] = checkpoint.manager_model
+    if checkpoint.manager_reasoning_effort is not None:
+        receipt["effort"] = checkpoint.manager_reasoning_effort
     if needs:
         receipt["needs"] = list(needs)
     if session is not None:
@@ -8278,9 +8592,12 @@ def start_native_run(
     *,
     effort: Optional[str] = None,
     manager_id: Optional[str] = None,
+    manager_model: Optional[str] = None,
+    manager_reasoning_effort: Optional[str] = None,
     publish_requested: Optional[bool] = None,
     github_publish_requested: bool = False,
     max_rounds: int = 4,
+    max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -8290,7 +8607,12 @@ def start_native_run(
     schema-v3 lifecycle only for source-compatible programmatic callers; the
     public CLI always passes its named default.
 
-    ``manager_id`` freezes the native Manager runtime. ``None`` selects Codex.
+    ``manager_id``, ``manager_model``, and ``manager_reasoning_effort`` freeze
+    the native Manager runtime. ``None`` selects each Manager's current default.
+
+    An ``inventor_id`` in the immutable Wish context pins that exact Inventor
+    by narrowing the materialized native roster to it. Without one, the full
+    eligible roster is materialized and the native Manager chooses the match.
 
     ``publish_requested`` is a source-compatibility shim for callers of the
     former optional-publication API. Release publication is now mandatory, so
@@ -8310,11 +8632,17 @@ def start_native_run(
     """
 
     _reject_grid_keepalive_wish_start()
+    validate_limit(max_tokens)
 
     selected_effort = workshop_effort(effort) if effort is not None else None
-    selected_manager = manager_spec(
-        DEFAULT_MANAGER_ID if manager_id is None else manager_id
+    selected_runtime = manager_runtime_selection(
+        DEFAULT_MANAGER_ID if manager_id is None else manager_id,
+        model=manager_model,
+        reasoning_effort=manager_reasoning_effort,
     )
+    selected_manager = selected_runtime.spec
+    if selected_manager.manager_id != DEFAULT_MANAGER_ID and max_tokens != DEFAULT_PRODUCT_TOKENS:
+        raise ContractError("custom token budgets are currently supported only for Codex")
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
     if type(github_publish_requested) is not bool:
@@ -8334,6 +8662,7 @@ def start_native_run(
         wish_bytes = canonical_wish_bytes(wish)
         domain_skill_roots = product_run_domain_skill_roots()
         inventor_source_root = _product_run_inventor_source_root(assets)
+        required_inventor_id = wish.context.get("inventor_id")
         paths = native_run_paths(wish.product_id, create=True)
         try:
             run = AgentRun.create(
@@ -8345,9 +8674,12 @@ def start_native_run(
                 skill_root=assets.skill_root,
                 domain_skill_roots=domain_skill_roots,
                 inventor_source_root=inventor_source_root,
+                required_inventor_id=required_inventor_id,
                 max_rounds=max_rounds,
                 effort=(selected_effort.name if selected_effort is not None else None),
                 manager_id=selected_manager.manager_id,
+                manager_model=selected_runtime.model,
+                manager_reasoning_effort=selected_runtime.reasoning_effort,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
@@ -8366,6 +8698,8 @@ def start_native_run(
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
+        if TOKEN_BUDGET_CAPABILITY_PATH in checkpoint.input_sha256s and checkpoint.manager_id == DEFAULT_MANAGER_ID:
+            _save_lifetime_budget(paths, checkpoint, ProductTokenBudget(max_tokens))
         launcher = (
             None
             if _uses_dynamic_deep_profile(checkpoint)
@@ -8582,6 +8916,8 @@ def resume_native_run(
     product_id: str,
     *,
     publish_requested: Optional[bool] = None,
+    adopt_turn_budget: bool = False,
+    max_tokens: Optional[int] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -8596,6 +8932,12 @@ def resume_native_run(
 
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
+    if type(adopt_turn_budget) is not bool:
+        raise ContractError("turn-budget adoption option must be boolean")
+    if max_tokens is not None:
+        validate_limit(max_tokens)
+    if max_tokens is not None and adopt_turn_budget:
+        raise ContractError("choose token budget or legacy turn-budget adoption, not both")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -8603,6 +8945,10 @@ def resume_native_run(
     with _native_run_mutation_lock(paths):
         run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
         checkpoint = run.snapshot()
+        if adopt_turn_budget:
+            _adopt_turn_budget(paths, checkpoint)
+        if max_tokens is not None:
+            _adopt_token_budget(paths, checkpoint, max_tokens)
         return _resume_native_run_locked(
             product_id,
             run=run,

@@ -277,7 +277,10 @@ finalizing:
 Use the CAD skill's `scripts/render_product` on an exact verified STL, or
 another deterministic renderer that writes those exact paths. Choose a palette,
 views, and poses that expose the form and play affordance. If a reader cannot
-identify the signature experience from the sheet alone, repair the geometry;
+identify the signature experience from the sheet alone, distinguish missing
+time/state presentation from defective geometry. For operating mechanisms use
+[motion review](motion-review-v1.md), with exact-state animation and the
+independent mechanical checks;
 copy cannot substitute for missing product magic. Binary silhouettes from
 `image-to-cad/render_views.py` are measurement evidence, not product renders;
 keep them in a clearly named review/evidence directory. The finalizer rejects
@@ -291,7 +294,8 @@ for a shadow or optical reveal, or setup/choice/result for a rules toy. Repeated
 camera angles that do not reveal the promise do not satisfy this requirement.
 
 Once the candidate exists, give one bounded independent native visual critic
-only `snap/iso.png` and `snap/signature.png`. Use exactly one critic and at most
+only `snap/iso.png`, `snap/signature.png`, and the exact-state animation for a
+moving mechanism. Use exactly one critic and at most
 two total review rounds: the initial blind review and, only after a failed first
 read, one focused blind rereview. Do **not** reveal the Wish, title,
 concept, desired nouns, Inventor, or intended answer. First ask what physical
@@ -323,14 +327,13 @@ images. A missing or contradicted critical requirement is a blocking visual
 defect. Do not hide it in `largest_risk`, `resolution`, or concept prose while
 setting the aggregate booleans true.
 
-Fail closed on presentation quality. A blind read of “prototype,” “device,” or
-the wrong ordinary object; dominant exposed working geometry; a signature
-detail that needs zoom; raw or jagged faceting; an unclear state transition;
-or a visible caveat in `largest_risk` is a blocking visual defect even when the
-CAD is technically valid. `largest_risk` may describe a nonvisual physical
-unknown after a visual pass, but it may not launder a visible defect while
-`blocking_visual_defects` stays empty. Do not set `finished_product_desirable`
-or aggregate match booleans true merely to advance the workflow.
+Fail closed on actual presentation defects and violated Wish requirements.
+Exposed working geometry is not inherently unfinished: judge whether it serves
+the intended product. A still image's inability to establish movement is not
+a geometry failure. Use the matching evidence and preserve physical unknowns.
+Apply the Spark creative-choice revision rule in `make.md`; never rewrite
+sealed Forge/Quest concepts or waive required function. Do not set desirability
+or match booleans true merely to advance the workflow.
 
 Preserve the final review as canonical JSON at
 `<cad-project>/snap/SIGNATURE-REVIEW.json` with exactly these fields:

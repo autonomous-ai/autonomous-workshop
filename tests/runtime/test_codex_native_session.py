@@ -84,6 +84,9 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
         "INSTSONAME"
     ) or sysconfig.get_config_var("LDLIBRARY")
     if library_dir and library_name:
+        resolved_library_dir = Path(library_dir).resolve(strict=True)
+        if resolved_library_dir.is_dir():
+            runtime_paths.add(resolved_library_dir)
         shared_library = Path(library_dir) / library_name
         try:
             resolved_library = shared_library.resolve(strict=True)
@@ -122,7 +125,17 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
         "--config",
         "permissions.workshop-product-run.filesystem={%s}" % ",".join(entries),
         "--config",
-        "permissions.workshop-product-run.network.enabled=false",
+        "features.network_proxy=true",
+        "--config",
+        "permissions.workshop-product-run.network.enabled=true",
+        "--config",
+        'permissions.workshop-product-run.network.mode="limited"',
+        "--config",
+        'permissions.workshop-product-run.network.domains={"api.step.parts"="allow","www.step.parts"="allow","media.githubusercontent.com"="allow","*.public.blob.vercel-storage.com"="allow","datasheets.raspberrypi.com"="allow","dfimg.dfrobot.com"="allow","files.seeedstudio.com"="allow","files.waveshare.com"="allow","iflight-public.oss-cn-hongkong.aliyuncs.com"="allow","wiki.dfrobot.com"="allow","www.dfrobot.com"="allow","www.iflight.cn"="allow","www.iflight.com"="allow","www.visaton.de"="allow","www.waveshare.com"="allow","www.waveshare.net"="allow"}',
+        "--config",
+        "shell_environment_policy.ignore_default_excludes=false",
+        "--config",
+        'shell_environment_policy.filters={"OPENAI_*"="exclude","CODEX_API_KEY"="exclude"}',
         "--config",
         'project_root_markers=[".workshop-product-run-root"]',
     )
@@ -477,8 +490,13 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(call["env"]["PYTHONNOUSERSITE"], "1")
             self.assertEqual(
                 call["env"]["WORKSHOP_PYTHON"],
-                str(Path(sys.executable).absolute()),
+                str(Path(sys.executable).resolve(strict=True)),
             )
+            self.assertEqual(
+                call["env"]["PYTHONPATH"],
+                str(Path(sysconfig.get_path("purelib")).resolve(strict=True)),
+            )
+
             self.assertEqual(stat.S_IMODE((root / ".tmp").stat().st_mode), 0o700)
             self.assertEqual(
                 stat.S_IMODE((root / ".cache").stat().st_mode), 0o700
@@ -522,6 +540,54 @@ class CodexNativeSessionTest(unittest.TestCase):
                 "workshop-product-run"
             ]["workspace_roots"]
             self.assertEqual(workspace_roots, {str(root): True})
+            self.assertIn("features.network_proxy=true", command)
+            network_override = next(
+                value
+                for value in command
+                if value.startswith(
+                    "permissions.workshop-product-run.network.domains="
+                )
+            )
+            network = tomllib.loads(network_override)["permissions"][
+                "workshop-product-run"
+            ]["network"]
+            self.assertEqual(
+                network["domains"],
+                {
+                    "api.step.parts": "allow",
+                    "www.step.parts": "allow",
+                    "media.githubusercontent.com": "allow",
+                    "*.public.blob.vercel-storage.com": "allow",
+                    "datasheets.raspberrypi.com": "allow",
+                    "dfimg.dfrobot.com": "allow",
+                    "files.seeedstudio.com": "allow",
+                    "files.waveshare.com": "allow",
+                    "iflight-public.oss-cn-hongkong.aliyuncs.com": "allow",
+                    "wiki.dfrobot.com": "allow",
+                    "www.dfrobot.com": "allow",
+                    "www.iflight.cn": "allow",
+                    "www.iflight.com": "allow",
+                    "www.visaton.de": "allow",
+                    "www.waveshare.com": "allow",
+                    "www.waveshare.net": "allow",
+                },
+            )
+            self.assertIn(
+                "permissions.workshop-product-run.network.enabled=true",
+                command,
+            )
+            self.assertIn(
+                'permissions.workshop-product-run.network.mode="limited"',
+                command,
+            )
+            self.assertIn(
+                "shell_environment_policy.ignore_default_excludes=false",
+                command,
+            )
+            self.assertIn(
+                'shell_environment_policy.filters={"OPENAI_*"="exclude","CODEX_API_KEY"="exclude"}',
+                command,
+            )
             self.assertEqual(filesystem[str(Path(sys.executable))], "read")
             self.assertEqual(
                 filesystem[str(Path(sys.executable).resolve(strict=True))], "read"
@@ -530,6 +596,12 @@ class CodexNativeSessionTest(unittest.TestCase):
             if marker.is_file() and not marker.is_symlink():
                 self.assertEqual(
                     filesystem[str(Path(sys.executable).parent)],
+                    "read",
+                )
+            library_dir = sysconfig.get_config_var("LIBDIR")
+            if isinstance(library_dir, str) and Path(library_dir).is_dir():
+                self.assertEqual(
+                    filesystem[str(Path(library_dir).resolve(strict=True))],
                     "read",
                 )
             self.assertEqual(filesystem[TEST_CODEX_BINARY], "read")
@@ -547,6 +619,41 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(
                 private["constitution_sha256"], CONSTITUTION_SHA256
             )
+
+    def test_astra_model_is_passed_to_the_native_cli(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [{"stdout": self.start_events()}],
+                model="gpt-6-astra",
+                effort="high",
+            )
+            self.start(launcher, root)
+            command = factory.calls[0][0]
+            self.assertEqual(command[command.index("--model") + 1], "gpt-6-astra")
+            self.assertIn('model_reasoning_effort="high"', command)
+
+    def test_every_supported_model_and_effort_constructs_exact_runtime(self):
+        models = (
+            "gpt-6-astra",
+            "gpt-5.6-sol",
+            "gpt-5.6-terra",
+            "gpt-5.6-luna",
+        )
+        efforts = ("low", "medium", "high", "xhigh")
+        observed = 0
+        for model in models:
+            for effort in efforts:
+                observed += 1
+                with self.subTest(model=model, effort=effort):
+                    launcher, factory = self.launcher(
+                        [], model=model, effort=effort
+                    )
+                    self.assertEqual(launcher.model, model)
+                    self.assertEqual(launcher.reasoning_effort, effort)
+                    self.assertEqual(factory.calls, [])
+        self.assertEqual(observed, 16)
 
     def test_terminal_usage_is_reduced_to_exact_bounded_token_counters(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1083,6 +1190,120 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
             self.assertNotIn(THREAD_ID, json.dumps(resumed.to_dict()))
 
+    def test_resume_accepts_exact_step_parts_only_policy_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            started = self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
+            predecessor_policy = (
+                codex_runtime._run_policy_before_supplier_drawings(
+                    root,
+                    current_policy,
+                )
+            )
+            payload["runtime_config_sha256"] = (
+                codex_runtime._runtime_config_sha256(
+                    launcher.cli_version,
+                    launcher.model,
+                    launcher.reasoning_effort,
+                    predecessor_policy,
+                )
+            )
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":"))
+                + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            resumed = self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 2)
+            serialized = "\n".join(factory.calls[1][0])
+            self.assertIn("iflight-public.oss-cn-hongkong", serialized)
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+
+    def test_resume_accepts_exact_network_disabled_policy_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            started = self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
+            predecessor_policy = (
+                codex_runtime._run_policy_before_component_network(
+                    root,
+                    current_policy,
+                )
+            )
+            payload["runtime_config_sha256"] = (
+                codex_runtime._runtime_config_sha256(
+                    launcher.cli_version,
+                    launcher.model,
+                    launcher.reasoning_effort,
+                    predecessor_policy,
+                )
+            )
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":"))
+                + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            resumed = self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 2)
+            self.assertIn(
+                "features.network_proxy=true",
+                factory.calls[1][0],
+            )
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+            self.assertEqual(
+                resumed.binding.checkpoint_sha256,
+                payload["checkpoint_sha256"],
+            )
+
     def test_resume_accepts_exact_private_cache_policy_predecessor(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1099,6 +1320,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             current_policy = codex_runtime._codex_run_policy(
                 root,
                 launcher.binary,
+            )
+            current_policy = codex_runtime._run_policy_before_component_network(
+                root,
+                current_policy,
             )
             predecessor_policy = codex_runtime._run_policy_before_private_cache(
                 root,
@@ -1138,6 +1363,67 @@ class CodexNativeSessionTest(unittest.TestCase):
                 payload["checkpoint_sha256"],
             )
 
+    def test_resume_upgrades_the_exact_precanonical_python_runtime_policy(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            started = self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
+            current_policy = codex_runtime._run_policy_before_component_network(
+                root,
+                current_policy,
+            )
+            predecessor_policy = (
+                codex_runtime._run_policy_before_canonical_workshop_runtime(
+                    root,
+                    current_policy,
+                )
+            )
+            payload["runtime_config_sha256"] = codex_runtime._runtime_config_sha256(
+                launcher.cli_version,
+                launcher.model,
+                launcher.reasoning_effort,
+                predecessor_policy,
+            )
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            resumed = self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 2)
+            self.assertEqual(
+                factory.calls[1][1]["env"]["WORKSHOP_PYTHON"],
+                str(Path(sys.executable).resolve(strict=True)),
+            )
+            self.assertEqual(
+                factory.calls[1][1]["env"]["PYTHONPATH"],
+                str(Path(sysconfig.get_path("purelib")).resolve(strict=True)),
+            )
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+
     def test_resume_accepts_only_the_exact_workshop_python_policy_predecessor(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1154,6 +1440,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             current_policy = codex_runtime._codex_run_policy(
                 root,
                 launcher.binary,
+            )
+            current_policy = codex_runtime._run_policy_before_component_network(
+                root,
+                current_policy,
             )
             policy_before_private_cache = (
                 codex_runtime._run_policy_before_private_cache(
@@ -1198,7 +1488,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(factory.calls[1][0][-2], THREAD_ID)
             self.assertEqual(
                 factory.calls[1][1]["env"]["WORKSHOP_PYTHON"],
-                str(Path(sys.executable).absolute()),
+                str(Path(sys.executable).resolve(strict=True)),
             )
             self.assertEqual(
                 resumed.binding.runtime_config_sha256,
@@ -1259,9 +1549,15 @@ class CodexNativeSessionTest(unittest.TestCase):
                 self.assertEqual(filesystem[str(bin_dir)], "read")
                 self.assertEqual(
                     factory.calls[0][1]["env"]["WORKSHOP_PYTHON"],
-                    str(launcher_path),
+                    str(launcher_path.resolve(strict=True)),
                 )
 
+                current_policy = (
+                    codex_runtime._run_policy_before_component_network(
+                        root,
+                        current_policy,
+                    )
+                )
                 policy_before_private_cache = (
                     codex_runtime._run_policy_before_private_cache(
                         root,
@@ -1425,6 +1721,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             current_policy = codex_runtime._codex_run_policy(
                 root,
                 launcher.binary,
+            )
+            current_policy = codex_runtime._run_policy_before_component_network(
+                root,
+                current_policy,
             )
             policy_before_private_cache = (
                 codex_runtime._run_policy_before_private_cache(
@@ -1721,12 +2021,14 @@ class CodexNativeSessionTest(unittest.TestCase):
                 run_root,
                 trusted_python_paths,
                 trusted_codex_paths,
+                **kwargs,
             ):
                 return (
                     *original_permissions(
                         run_root,
                         trusted_python_paths,
                         trusted_codex_paths,
+                        **kwargs,
                     ),
                     "--config",
                     'permissions.workshop-product-run.network.enabled=true',
@@ -2137,6 +2439,41 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertTrue(process.stdout.closed)
             self.assertTrue(process.stderr.closed)
 
+    def test_token_monitor_reaps_and_is_not_automatically_recoverable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher([
+                {"stdout": self.start_events(terminal=False),
+                 "block_stdout_after_values": True, "stdout_block_timeout": 5,
+                 "hang_until_terminated": True},
+            ])
+            observed = threading.Event()
+
+            def stop_for_budget():
+                observed.set()
+                raise ContractError("product token limit reached")
+
+            launcher.token_budget_observer = stop_for_budget
+            with self.assertRaisesRegex(CodexInvocationError, "token budget") as caught:
+                self.start(launcher, root)
+            self.assertTrue(observed.is_set())
+            self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
+            self.assertTrue(factory.processes[0].terminated)
+            self.assertTrue(factory.processes[0].stdout.closed)
+            self.assertFalse(any(t.name == "workshop-token-budget" for t in threading.enumerate()))
+
+    def test_final_token_observation_is_collected_on_fast_completion(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher([{"stdout": self.start_events()}])
+            observer = mock.Mock()
+            launcher.token_budget_observer = observer
+            self.assertEqual(self.start(launcher, root).status, "completed")
+            observer.assert_called()
+            self.assertTrue(factory.processes[0].stdout.closed)
+
     def test_keyboard_interrupt_reaps_process_and_preserves_exact_resume(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -2533,7 +2870,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             ):
                 self.start(launcher, root)
 
-    def test_unrelated_private_stderr_uses_only_missing_terminal_recovery(self):
+    def test_unrelated_private_stderr_cannot_make_nonzero_exit_recoverable(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
@@ -2553,7 +2890,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             with self.assertRaises(CodexInvocationError) as caught:
                 self.start(launcher, root)
 
-            self.assertIsInstance(
+            self.assertNotIsInstance(
                 caught.exception, CodexRecoverableInvocationError
             )
             self.assertNotIn("provider transport", str(caught.exception))
@@ -2830,7 +3167,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 caught.exception, CodexRecoverableInvocationError
             )
 
-    def test_unknown_incomplete_exit_is_boundedly_recoverable(self):
+    def test_unknown_nonzero_incomplete_exit_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
@@ -2846,7 +3183,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             with self.assertRaises(CodexInvocationError) as caught:
                 self.start(launcher, root)
 
-            self.assertIsInstance(
+            self.assertNotIsInstance(
                 caught.exception, CodexRecoverableInvocationError
             )
 
@@ -2899,7 +3236,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             with self.assertRaises(CodexInvocationError) as caught:
                 self.start(launcher, root)
 
-            self.assertIsInstance(
+            self.assertNotIsInstance(
                 caught.exception, CodexRecoverableInvocationError
             )
             self.assertNotIn("provider transport", str(caught.exception))

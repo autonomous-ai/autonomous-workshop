@@ -1268,6 +1268,28 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("moon.step.py, presentation.step.py", rejected.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
+    def test_make_rejects_coupled_motion_without_animation_review(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage("make", {
+            "assignment": self.assignment.to_dict(),
+            "invented": self.invented.to_dict(), "feedback": [],
+        }, round_index=1)
+        project = product_root / "cad/project"
+        (project / "measure/motion.json").write_text(
+            '{"conditions":[{"check":"coupled_motion_collision"}]}'
+        )
+        helper = self.run_root / ".agents/skills/cad/scripts/motion_presentation.py"
+        helper.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPOSITORY / "src/workshop/make/skills/cad/scripts/motion_presentation.py", helper)
+        rejected = self.run_tool(
+            "make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path",
+            "cad/project/validation/cad-build.json", expected=2,
+        )
+        self.assertIn("motion presentation is invalid", rejected.stderr)
+        self.assertIn("MOTION-EVIDENCE.json", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_make_requires_review_bound_to_final_signature_images(self):
         product_root, _, _, _ = self.create_product()
         self.write_stage(

@@ -458,7 +458,7 @@ def _assert_route_state(
             "%s:run did not reach terminal published Release: %r"
             % (effort, receipt)
         )
-    if receipt.get("effort") != effort:
+    if receipt.get("workflow") != effort:
         raise MockSessionEvidenceError("%s:receipt effort changed" % effort)
     publication = receipt.get("publication")
     if not isinstance(publication, Mapping) or publication.get("status") != "public":

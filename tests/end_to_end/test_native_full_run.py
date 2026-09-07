@@ -3418,7 +3418,7 @@ class NativeFullRunTest(unittest.TestCase):
                     ).snapshot()
 
                 self.assertEqual(receipt["status"], "complete")
-                self.assertEqual(receipt["effort"], effort)
+                self.assertEqual(receipt["workflow"], effort)
                 self.assertEqual(checkpoint.effort, effort)
                 self.assertEqual(
                     [packet["stage"] for packet in launcher.stage_packets],

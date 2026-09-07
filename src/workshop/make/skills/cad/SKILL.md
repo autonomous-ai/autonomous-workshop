@@ -166,8 +166,11 @@ gate.
     `--motion-angles` for static-view presentation. For a static product, use
     the motion sheet as a small set of exact views that makes
     its anti-generic detail unmistakable. Judge the sheet without its title: if
-    the promised interaction or reveal is not legible, repair the product rather
-    than relying on customer copy to assert it. Complete the Workshop's blind
+    the promised interaction or reveal is not legible, distinguish presentation
+    defects from geometry defects. For coupled operating mechanisms, follow
+    `references/motion-presentation.md`: use exact-state animation for the
+    motion read and mechanical checks for kinematics, not still-image guesses.
+    Complete the Workshop's blind
     signature review and one coherent repair before running the integrated
     final verifier once. The review must separately match the exact subjects,
     action, and spatial/causal relationship; matching only nouns is a failure.
@@ -179,9 +182,11 @@ gate.
     full verifier as the visual iteration loop. Any geometry change after the
     review invalidates it and requires a fresh blind read of the regenerated
     images; copying old prose and replacing hashes is not a review.
-    A prototype/device read, dominant exposed mechanism, zoom-dependent
-    signature, raw faceting, unclear state change, or any visible caveat in
-    `largest_risk` is blocking even when deterministic CAD checks pass.
+    Judge finish against the actual Wish. Exposed mechanisms are legitimate
+    design choices, not automatic failures. Unresolved visible defects and
+    violated user requirements remain blocking; physical uncertainty stays
+    explicit. Do not reinterpret missing motion in a still image as a flaw in
+    geometry whose motion needs animation to be understood.
     Keep binary silhouettes from the image-to-CAD likeness tool under a named
     review/evidence path, never at `snap/iso.png`.
     In a restricted product run, do not manually delete `__cadgen__` or add
