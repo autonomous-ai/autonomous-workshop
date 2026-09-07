@@ -325,6 +325,7 @@ def _assert_agent_write_ownership(
                 or relative.startswith("sources/")
                 or relative.startswith("work/")
                 or relative.startswith("artifacts/%s/" % stage)
+                or (stage == "make" and relative == ".make-proof-ready.json")
             )
             if not allowed:
                 raise MockSessionEvidenceError(
@@ -363,14 +364,37 @@ def _validate_trace(
 ) -> tuple[tuple[Mapping[str, Any], ...], str]:
     trace = _read_trace(run_root)
     expected = CANONICAL_ROUTES[effort]
-    stages = tuple(value.get("stage") for value in trace)
+    boundaries = tuple(
+        index
+        for index, value in enumerate(trace)
+        if value.get("make_proof_boundary") is True
+    )
+    if len(boundaries) > 1:
+        raise MockSessionEvidenceError(
+            "%s:multiple intermediate Make proof turns were observed" % effort
+        )
+    if boundaries:
+        boundary = boundaries[0]
+        if (
+            trace[boundary].get("stage") != "make"
+            or boundary + 1 >= len(trace)
+            or trace[boundary + 1].get("stage") != "make"
+        ):
+            raise MockSessionEvidenceError(
+                "%s:intermediate Make proof boundary is not followed by Make" % effort
+            )
+    stages = tuple(
+        value.get("stage")
+        for value in trace
+        if value.get("make_proof_boundary") is not True
+    )
     if stages != expected:
         raise MockSessionEvidenceError(
             "%s:stage trace differs: expected %r, observed %r"
             % (effort, expected, stages)
         )
     methods = tuple(value.get("method") for value in trace)
-    if methods != ("start",) + ("resume",) * (len(expected) - 1):
+    if methods != ("start",) + ("resume",) * (len(trace) - 1):
         raise MockSessionEvidenceError(
             "%s:native start/resume trace differs: %r" % (effort, methods)
         )
@@ -413,14 +437,15 @@ def _validate_trace(
             raise MockSessionEvidenceError(
                 "%s:%s packet snapshot changed" % (effort, stage)
             )
-        validate_context_record(
-            run_root / value["context_record_path"],
-            run_root=run_root,
-            packet_path=packet_path,
-            agent_writes=value.get("agent_writes"),
-            proposal_artifacts=value.get("proposal_artifacts"),
-            turn_output_hashes=value.get("turn_output_hashes"),
-        )
+        if value.get("make_proof_boundary") is not True:
+            validate_context_record(
+                run_root / value["context_record_path"],
+                run_root=run_root,
+                packet_path=packet_path,
+                agent_writes=value.get("agent_writes"),
+                proposal_artifacts=value.get("proposal_artifacts"),
+                turn_output_hashes=value.get("turn_output_hashes"),
+            )
     _assert_agent_write_ownership(trace, effort=effort)
     session = read_bounded_json(host_state / "codex-session.json", 64 * 1024)
     session_id = session.get("thread_id")
@@ -716,7 +741,9 @@ def run_mock_session_acceptance(
             session_starts=1,
             session_resumes=len(trace) - 1,
             session_id=session_id,
-            context_records_verified=len(trace),
+            context_records_verified=sum(
+                value.get("make_proof_boundary") is not True for value in trace
+            ),
             context_proof="verified-final-bytes-and-run-root-inputs",
             terminal_event_fallbacks=sum(
                 _terminal_evidence_mode(
