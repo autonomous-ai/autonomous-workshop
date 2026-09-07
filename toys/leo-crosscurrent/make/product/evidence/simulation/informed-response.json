@@ -1,0 +1,36 @@
+{
+  "kind": "crosscurrent.informed-policy-response",
+  "games": 160,
+  "rules_changed": false,
+  "policy_information": "Exact expectation over opponent fixed boat pattern and uniformly random remaining arrows. Pattern is declared to responder; actual current orders remain hidden. Maximizes own immediate score minus average opponent immediate score.",
+  "results": {
+    "always_a-4p": {
+      "games": 40,
+      "responding_mean_score": 36.175,
+      "opponent_mean_score": 32.141666666666666,
+      "responding_fractional_win_rate": 0.5708333333333333
+    },
+    "always_a-5p": {
+      "games": 40,
+      "responding_mean_score": 35.85,
+      "opponent_mean_score": 34.1625,
+      "responding_fractional_win_rate": 0.32083333333333336
+    },
+    "alternate-4p": {
+      "games": 40,
+      "responding_mean_score": 34.6,
+      "opponent_mean_score": 32.95833333333333,
+      "responding_fractional_win_rate": 0.4145833333333333
+    },
+    "alternate-5p": {
+      "games": 40,
+      "responding_mean_score": 33.975,
+      "opponent_mean_score": 34.1125,
+      "responding_fractional_win_rate": 0.15416666666666667
+    }
+  },
+  "limitations": [
+    "Known-policy stress response tests exploitability; not a claim that children will infer this policy or that it is globally optimal.",
+    "No physical or human playtesting."
+  ]
+}

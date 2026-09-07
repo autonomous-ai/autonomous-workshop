@@ -1,0 +1,995 @@
+{
+  "kind": "crosscurrent.make-rules-verification",
+  "revision": 1,
+  "engine_sha256": "45375e2d8dddad26d0cf2499c19e5b8ace985d81c2c2f92c2fa40418d89d4f47",
+  "configuration": {
+    "validation_seeds": [
+      10000,
+      10999
+    ],
+    "samples_per_candidate": 16,
+    "adversarial_samples": 32,
+    "rounds": 12,
+    "player_counts": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "optimization": "public-state Monte Carlo immediate utility plus 0.12 next-position option value; no current secret opponent orders"
+  },
+  "edge_checks": [
+    "five-way reward-four crowd is zero",
+    "crowd combines both rings",
+    "all selected boats cross and drift from snapshot",
+    "unselected boats remain and do not harvest",
+    "opposing same-ring arrows cancel",
+    "worked mixed-ring reward snapshot",
+    "manual worked example",
+    "signed total -3 modulo and occupied destination",
+    "signed total 3 modulo and occupied destination",
+    "signed total -4 modulo and occupied destination",
+    "signed total 4 modulo and occupied destination",
+    "signed total -5 modulo and occupied destination",
+    "signed total 5 modulo and occupied destination",
+    "used arrow rejected",
+    "360 seeded transitions permutation invariant",
+    "360 seeded transitions A/B identity invariant",
+    "thirty full games exact termination and card conservation",
+    "thirteenth round rejected"
+  ],
+  "failures": [],
+  "main": {
+    "games": 1000,
+    "rounds": 12000,
+    "ties": 141,
+    "zero_pay_harvests": 320,
+    "harvests": 42000,
+    "congested_rounds": 5427,
+    "ring_turns_modulo6": {
+      "1": 5431,
+      "5": 5317,
+      "0": 9654,
+      "4": 1597,
+      "2": 1537,
+      "3": 464
+    },
+    "policy": {
+      "optimizing": {
+        "games": 1000,
+        "points": 32922,
+        "fractional_wins": 387.1666666666666,
+        "mean_score": 32.922,
+        "fractional_win_rate": 0.3872
+      },
+      "social": {
+        "games": 1000,
+        "points": 32665,
+        "fractional_wins": 338.0,
+        "mean_score": 32.665,
+        "fractional_win_rate": 0.338
+      },
+      "exploratory": {
+        "games": 750,
+        "points": 21734,
+        "fractional_wins": 108.33333333333331,
+        "mean_score": 28.9787,
+        "fractional_win_rate": 0.1444
+      },
+      "adversarial": {
+        "games": 500,
+        "points": 14622,
+        "fractional_wins": 127.16666666666664,
+        "mean_score": 29.244,
+        "fractional_win_rate": 0.2543
+      },
+      "greedy": {
+        "games": 250,
+        "points": 6705,
+        "fractional_wins": 39.33333333333333,
+        "mean_score": 26.82,
+        "fractional_win_rate": 0.1573
+      }
+    },
+    "seat": {
+      "2p-seat0": {
+        "games": 250,
+        "points": 9518,
+        "fractional_wins": 111.0,
+        "mean_score": 38.072,
+        "fractional_win_rate": 0.444
+      },
+      "2p-seat1": {
+        "games": 250,
+        "points": 9573,
+        "fractional_wins": 139.0,
+        "mean_score": 38.292,
+        "fractional_win_rate": 0.556
+      },
+      "3p-seat0": {
+        "games": 250,
+        "points": 8614,
+        "fractional_wins": 103.66666666666666,
+        "mean_score": 34.456,
+        "fractional_win_rate": 0.4147
+      },
+      "3p-seat1": {
+        "games": 250,
+        "points": 8395,
+        "fractional_wins": 81.66666666666667,
+        "mean_score": 33.58,
+        "fractional_win_rate": 0.3267
+      },
+      "3p-seat2": {
+        "games": 250,
+        "points": 8335,
+        "fractional_wins": 64.66666666666667,
+        "mean_score": 33.34,
+        "fractional_win_rate": 0.2587
+      },
+      "4p-seat0": {
+        "games": 250,
+        "points": 7652,
+        "fractional_wins": 74.5,
+        "mean_score": 30.608,
+        "fractional_win_rate": 0.298
+      },
+      "4p-seat1": {
+        "games": 250,
+        "points": 7523,
+        "fractional_wins": 63.50000000000001,
+        "mean_score": 30.092,
+        "fractional_win_rate": 0.254
+      },
+      "4p-seat2": {
+        "games": 250,
+        "points": 7594,
+        "fractional_wins": 56.833333333333336,
+        "mean_score": 30.376,
+        "fractional_win_rate": 0.2273
+      },
+      "4p-seat3": {
+        "games": 250,
+        "points": 7508,
+        "fractional_wins": 55.16666666666667,
+        "mean_score": 30.032,
+        "fractional_win_rate": 0.2207
+      },
+      "5p-seat0": {
+        "games": 250,
+        "points": 6796,
+        "fractional_wins": 54.666666666666664,
+        "mean_score": 27.184,
+        "fractional_win_rate": 0.2187
+      },
+      "5p-seat1": {
+        "games": 250,
+        "points": 6804,
+        "fractional_wins": 54.333333333333336,
+        "mean_score": 27.216,
+        "fractional_win_rate": 0.2173
+      },
+      "5p-seat2": {
+        "games": 250,
+        "points": 6712,
+        "fractional_wins": 43.5,
+        "mean_score": 26.848,
+        "fractional_win_rate": 0.174
+      },
+      "5p-seat3": {
+        "games": 250,
+        "points": 6772,
+        "fractional_wins": 46.166666666666664,
+        "mean_score": 27.088,
+        "fractional_win_rate": 0.1847
+      },
+      "5p-seat4": {
+        "games": 250,
+        "points": 6852,
+        "fractional_wins": 51.333333333333336,
+        "mean_score": 27.408,
+        "fractional_win_rate": 0.2053
+      }
+    }
+  },
+  "adversarial": {
+    "exploratory": {
+      "games": 80,
+      "rounds": 960,
+      "ties": 5,
+      "zero_pay_harvests": 61,
+      "harvests": 3360,
+      "congested_rounds": 475,
+      "ring_turns_modulo6": {
+        "1": 440,
+        "0": 764,
+        "4": 128,
+        "5": 436,
+        "2": 120,
+        "3": 32
+      },
+      "policy": {
+        "optimizing": {
+          "games": 80,
+          "points": 2656,
+          "fractional_wins": 49.5,
+          "mean_score": 33.2,
+          "fractional_win_rate": 0.6188
+        },
+        "exploratory": {
+          "games": 200,
+          "points": 5595,
+          "fractional_wins": 30.499999999999996,
+          "mean_score": 27.975,
+          "fractional_win_rate": 0.1525
+        }
+      },
+      "seat": {
+        "2p-seat0": {
+          "games": 20,
+          "points": 739,
+          "fractional_wins": 10.5,
+          "mean_score": 36.95,
+          "fractional_win_rate": 0.525
+        },
+        "2p-seat1": {
+          "games": 20,
+          "points": 722,
+          "fractional_wins": 9.5,
+          "mean_score": 36.1,
+          "fractional_win_rate": 0.475
+        },
+        "3p-seat0": {
+          "games": 20,
+          "points": 654,
+          "fractional_wins": 6.0,
+          "mean_score": 32.7,
+          "fractional_win_rate": 0.3
+        },
+        "3p-seat1": {
+          "games": 20,
+          "points": 669,
+          "fractional_wins": 9.5,
+          "mean_score": 33.45,
+          "fractional_win_rate": 0.475
+        },
+        "3p-seat2": {
+          "games": 20,
+          "points": 633,
+          "fractional_wins": 4.5,
+          "mean_score": 31.65,
+          "fractional_win_rate": 0.225
+        },
+        "4p-seat0": {
+          "games": 20,
+          "points": 566,
+          "fractional_wins": 4.0,
+          "mean_score": 28.3,
+          "fractional_win_rate": 0.2
+        },
+        "4p-seat1": {
+          "games": 20,
+          "points": 589,
+          "fractional_wins": 6.5,
+          "mean_score": 29.45,
+          "fractional_win_rate": 0.325
+        },
+        "4p-seat2": {
+          "games": 20,
+          "points": 574,
+          "fractional_wins": 5.5,
+          "mean_score": 28.7,
+          "fractional_win_rate": 0.275
+        },
+        "4p-seat3": {
+          "games": 20,
+          "points": 564,
+          "fractional_wins": 4.0,
+          "mean_score": 28.2,
+          "fractional_win_rate": 0.2
+        },
+        "5p-seat0": {
+          "games": 20,
+          "points": 496,
+          "fractional_wins": 3.0,
+          "mean_score": 24.8,
+          "fractional_win_rate": 0.15
+        },
+        "5p-seat1": {
+          "games": 20,
+          "points": 495,
+          "fractional_wins": 1.5,
+          "mean_score": 24.75,
+          "fractional_win_rate": 0.075
+        },
+        "5p-seat2": {
+          "games": 20,
+          "points": 509,
+          "fractional_wins": 3.333333333333333,
+          "mean_score": 25.45,
+          "fractional_win_rate": 0.1667
+        },
+        "5p-seat3": {
+          "games": 20,
+          "points": 526,
+          "fractional_wins": 5.333333333333333,
+          "mean_score": 26.3,
+          "fractional_win_rate": 0.2667
+        },
+        "5p-seat4": {
+          "games": 20,
+          "points": 515,
+          "fractional_wins": 6.833333333333334,
+          "mean_score": 25.75,
+          "fractional_win_rate": 0.3417
+        }
+      }
+    },
+    "greedy": {
+      "games": 80,
+      "rounds": 960,
+      "ties": 10,
+      "zero_pay_harvests": 49,
+      "harvests": 3360,
+      "congested_rounds": 502,
+      "ring_turns_modulo6": {
+        "1": 452,
+        "5": 445,
+        "0": 726,
+        "4": 131,
+        "2": 135,
+        "3": 31
+      },
+      "policy": {
+        "optimizing": {
+          "games": 80,
+          "points": 2559,
+          "fractional_wins": 31.5,
+          "mean_score": 31.9875,
+          "fractional_win_rate": 0.3937
+        },
+        "greedy": {
+          "games": 200,
+          "points": 5811,
+          "fractional_wins": 48.5,
+          "mean_score": 29.055,
+          "fractional_win_rate": 0.2425
+        }
+      },
+      "seat": {
+        "2p-seat0": {
+          "games": 20,
+          "points": 712,
+          "fractional_wins": 8.5,
+          "mean_score": 35.6,
+          "fractional_win_rate": 0.425
+        },
+        "2p-seat1": {
+          "games": 20,
+          "points": 721,
+          "fractional_wins": 11.5,
+          "mean_score": 36.05,
+          "fractional_win_rate": 0.575
+        },
+        "3p-seat0": {
+          "games": 20,
+          "points": 705,
+          "fractional_wins": 11.0,
+          "mean_score": 35.25,
+          "fractional_win_rate": 0.55
+        },
+        "3p-seat1": {
+          "games": 20,
+          "points": 689,
+          "fractional_wins": 7.5,
+          "mean_score": 34.45,
+          "fractional_win_rate": 0.375
+        },
+        "3p-seat2": {
+          "games": 20,
+          "points": 670,
+          "fractional_wins": 1.5,
+          "mean_score": 33.5,
+          "fractional_win_rate": 0.075
+        },
+        "4p-seat0": {
+          "games": 20,
+          "points": 553,
+          "fractional_wins": 3.5,
+          "mean_score": 27.65,
+          "fractional_win_rate": 0.175
+        },
+        "4p-seat1": {
+          "games": 20,
+          "points": 566,
+          "fractional_wins": 2.5,
+          "mean_score": 28.3,
+          "fractional_win_rate": 0.125
+        },
+        "4p-seat2": {
+          "games": 20,
+          "points": 596,
+          "fractional_wins": 7.0,
+          "mean_score": 29.8,
+          "fractional_win_rate": 0.35
+        },
+        "4p-seat3": {
+          "games": 20,
+          "points": 591,
+          "fractional_wins": 7.0,
+          "mean_score": 29.55,
+          "fractional_win_rate": 0.35
+        },
+        "5p-seat0": {
+          "games": 20,
+          "points": 545,
+          "fractional_wins": 7.5,
+          "mean_score": 27.25,
+          "fractional_win_rate": 0.375
+        },
+        "5p-seat1": {
+          "games": 20,
+          "points": 472,
+          "fractional_wins": 0.0,
+          "mean_score": 23.6,
+          "fractional_win_rate": 0.0
+        },
+        "5p-seat2": {
+          "games": 20,
+          "points": 521,
+          "fractional_wins": 2.5,
+          "mean_score": 26.05,
+          "fractional_win_rate": 0.125
+        },
+        "5p-seat3": {
+          "games": 20,
+          "points": 508,
+          "fractional_wins": 5.0,
+          "mean_score": 25.4,
+          "fractional_win_rate": 0.25
+        },
+        "5p-seat4": {
+          "games": 20,
+          "points": 521,
+          "fractional_wins": 5.0,
+          "mean_score": 26.05,
+          "fractional_win_rate": 0.25
+        }
+      }
+    },
+    "always_a": {
+      "games": 80,
+      "rounds": 960,
+      "ties": 14,
+      "zero_pay_harvests": 0,
+      "harvests": 3360,
+      "congested_rounds": 194,
+      "ring_turns_modulo6": {
+        "5": 352,
+        "1": 339,
+        "0": 969,
+        "2": 100,
+        "4": 101,
+        "3": 59
+      },
+      "policy": {
+        "optimizing": {
+          "games": 80,
+          "points": 2844,
+          "fractional_wins": 38.16666666666667,
+          "mean_score": 35.55,
+          "fractional_win_rate": 0.4771
+        },
+        "always_a": {
+          "games": 200,
+          "points": 6720,
+          "fractional_wins": 41.83333333333333,
+          "mean_score": 33.6,
+          "fractional_win_rate": 0.2092
+        }
+      },
+      "seat": {
+        "2p-seat0": {
+          "games": 20,
+          "points": 736,
+          "fractional_wins": 11.0,
+          "mean_score": 36.8,
+          "fractional_win_rate": 0.55
+        },
+        "2p-seat1": {
+          "games": 20,
+          "points": 722,
+          "fractional_wins": 9.0,
+          "mean_score": 36.1,
+          "fractional_win_rate": 0.45
+        },
+        "3p-seat0": {
+          "games": 20,
+          "points": 678,
+          "fractional_wins": 11.0,
+          "mean_score": 33.9,
+          "fractional_win_rate": 0.55
+        },
+        "3p-seat1": {
+          "games": 20,
+          "points": 663,
+          "fractional_wins": 5.0,
+          "mean_score": 33.15,
+          "fractional_win_rate": 0.25
+        },
+        "3p-seat2": {
+          "games": 20,
+          "points": 661,
+          "fractional_wins": 4.0,
+          "mean_score": 33.05,
+          "fractional_win_rate": 0.2
+        },
+        "4p-seat0": {
+          "games": 20,
+          "points": 700,
+          "fractional_wins": 6.833333333333333,
+          "mean_score": 35.0,
+          "fractional_win_rate": 0.3417
+        },
+        "4p-seat1": {
+          "games": 20,
+          "points": 689,
+          "fractional_wins": 5.833333333333333,
+          "mean_score": 34.45,
+          "fractional_win_rate": 0.2917
+        },
+        "4p-seat2": {
+          "games": 20,
+          "points": 693,
+          "fractional_wins": 5.5,
+          "mean_score": 34.65,
+          "fractional_win_rate": 0.275
+        },
+        "4p-seat3": {
+          "games": 20,
+          "points": 666,
+          "fractional_wins": 1.8333333333333333,
+          "mean_score": 33.3,
+          "fractional_win_rate": 0.0917
+        },
+        "5p-seat0": {
+          "games": 20,
+          "points": 664,
+          "fractional_wins": 1.8333333333333333,
+          "mean_score": 33.2,
+          "fractional_win_rate": 0.0917
+        },
+        "5p-seat1": {
+          "games": 20,
+          "points": 644,
+          "fractional_wins": 2.1666666666666665,
+          "mean_score": 32.2,
+          "fractional_win_rate": 0.1083
+        },
+        "5p-seat2": {
+          "games": 20,
+          "points": 676,
+          "fractional_wins": 5.333333333333333,
+          "mean_score": 33.8,
+          "fractional_win_rate": 0.2667
+        },
+        "5p-seat3": {
+          "games": 20,
+          "points": 696,
+          "fractional_wins": 7.0,
+          "mean_score": 34.8,
+          "fractional_win_rate": 0.35
+        },
+        "5p-seat4": {
+          "games": 20,
+          "points": 676,
+          "fractional_wins": 3.6666666666666665,
+          "mean_score": 33.8,
+          "fractional_win_rate": 0.1833
+        }
+      }
+    },
+    "alternate": {
+      "games": 80,
+      "rounds": 960,
+      "ties": 7,
+      "zero_pay_harvests": 0,
+      "harvests": 3360,
+      "congested_rounds": 332,
+      "ring_turns_modulo6": {
+        "1": 395,
+        "0": 865,
+        "5": 369,
+        "4": 118,
+        "2": 123,
+        "3": 50
+      },
+      "policy": {
+        "optimizing": {
+          "games": 80,
+          "points": 2631,
+          "fractional_wins": 35.833333333333336,
+          "mean_score": 32.8875,
+          "fractional_win_rate": 0.4479
+        },
+        "alternate": {
+          "games": 200,
+          "points": 6663,
+          "fractional_wins": 44.16666666666667,
+          "mean_score": 33.315,
+          "fractional_win_rate": 0.2208
+        }
+      },
+      "seat": {
+        "2p-seat0": {
+          "games": 20,
+          "points": 749,
+          "fractional_wins": 11.0,
+          "mean_score": 37.45,
+          "fractional_win_rate": 0.55
+        },
+        "2p-seat1": {
+          "games": 20,
+          "points": 743,
+          "fractional_wins": 9.0,
+          "mean_score": 37.15,
+          "fractional_win_rate": 0.45
+        },
+        "3p-seat0": {
+          "games": 20,
+          "points": 700,
+          "fractional_wins": 7.5,
+          "mean_score": 35.0,
+          "fractional_win_rate": 0.375
+        },
+        "3p-seat1": {
+          "games": 20,
+          "points": 682,
+          "fractional_wins": 6.5,
+          "mean_score": 34.1,
+          "fractional_win_rate": 0.325
+        },
+        "3p-seat2": {
+          "games": 20,
+          "points": 675,
+          "fractional_wins": 6.0,
+          "mean_score": 33.75,
+          "fractional_win_rate": 0.3
+        },
+        "4p-seat0": {
+          "games": 20,
+          "points": 678,
+          "fractional_wins": 6.0,
+          "mean_score": 33.9,
+          "fractional_win_rate": 0.3
+        },
+        "4p-seat1": {
+          "games": 20,
+          "points": 657,
+          "fractional_wins": 3.0,
+          "mean_score": 32.85,
+          "fractional_win_rate": 0.15
+        },
+        "4p-seat2": {
+          "games": 20,
+          "points": 674,
+          "fractional_wins": 6.5,
+          "mean_score": 33.7,
+          "fractional_win_rate": 0.325
+        },
+        "4p-seat3": {
+          "games": 20,
+          "points": 645,
+          "fractional_wins": 4.5,
+          "mean_score": 32.25,
+          "fractional_win_rate": 0.225
+        },
+        "5p-seat0": {
+          "games": 20,
+          "points": 598,
+          "fractional_wins": 4.833333333333333,
+          "mean_score": 29.9,
+          "fractional_win_rate": 0.2417
+        },
+        "5p-seat1": {
+          "games": 20,
+          "points": 648,
+          "fractional_wins": 6.0,
+          "mean_score": 32.4,
+          "fractional_win_rate": 0.3
+        },
+        "5p-seat2": {
+          "games": 20,
+          "points": 618,
+          "fractional_wins": 3.5,
+          "mean_score": 30.9,
+          "fractional_win_rate": 0.175
+        },
+        "5p-seat3": {
+          "games": 20,
+          "points": 611,
+          "fractional_wins": 1.3333333333333333,
+          "mean_score": 30.55,
+          "fractional_win_rate": 0.0667
+        },
+        "5p-seat4": {
+          "games": 20,
+          "points": 616,
+          "fractional_wins": 4.333333333333334,
+          "mean_score": 30.8,
+          "fractional_win_rate": 0.2167
+        }
+      }
+    },
+    "fixed_arrow": {
+      "games": 80,
+      "rounds": 960,
+      "ties": 6,
+      "zero_pay_harvests": 49,
+      "harvests": 3360,
+      "congested_rounds": 469,
+      "ring_turns_modulo6": {
+        "1": 362,
+        "5": 359,
+        "0": 704,
+        "4": 164,
+        "2": 188,
+        "3": 143
+      },
+      "policy": {
+        "optimizing": {
+          "games": 80,
+          "points": 2699,
+          "fractional_wins": 48.5,
+          "mean_score": 33.7375,
+          "fractional_win_rate": 0.6062
+        },
+        "fixed_arrow": {
+          "games": 200,
+          "points": 5558,
+          "fractional_wins": 31.5,
+          "mean_score": 27.79,
+          "fractional_win_rate": 0.1575
+        }
+      },
+      "seat": {
+        "2p-seat0": {
+          "games": 20,
+          "points": 739,
+          "fractional_wins": 11.0,
+          "mean_score": 36.95,
+          "fractional_win_rate": 0.55
+        },
+        "2p-seat1": {
+          "games": 20,
+          "points": 720,
+          "fractional_wins": 9.0,
+          "mean_score": 36.0,
+          "fractional_win_rate": 0.45
+        },
+        "3p-seat0": {
+          "games": 20,
+          "points": 647,
+          "fractional_wins": 7.0,
+          "mean_score": 32.35,
+          "fractional_win_rate": 0.35
+        },
+        "3p-seat1": {
+          "games": 20,
+          "points": 621,
+          "fractional_wins": 5.0,
+          "mean_score": 31.05,
+          "fractional_win_rate": 0.25
+        },
+        "3p-seat2": {
+          "games": 20,
+          "points": 654,
+          "fractional_wins": 8.0,
+          "mean_score": 32.7,
+          "fractional_win_rate": 0.4
+        },
+        "4p-seat0": {
+          "games": 20,
+          "points": 553,
+          "fractional_wins": 3.5,
+          "mean_score": 27.65,
+          "fractional_win_rate": 0.175
+        },
+        "4p-seat1": {
+          "games": 20,
+          "points": 581,
+          "fractional_wins": 6.0,
+          "mean_score": 29.05,
+          "fractional_win_rate": 0.3
+        },
+        "4p-seat2": {
+          "games": 20,
+          "points": 573,
+          "fractional_wins": 3.5,
+          "mean_score": 28.65,
+          "fractional_win_rate": 0.175
+        },
+        "4p-seat3": {
+          "games": 20,
+          "points": 563,
+          "fractional_wins": 7.0,
+          "mean_score": 28.15,
+          "fractional_win_rate": 0.35
+        },
+        "5p-seat0": {
+          "games": 20,
+          "points": 498,
+          "fractional_wins": 2.0,
+          "mean_score": 24.9,
+          "fractional_win_rate": 0.1
+        },
+        "5p-seat1": {
+          "games": 20,
+          "points": 528,
+          "fractional_wins": 4.5,
+          "mean_score": 26.4,
+          "fractional_win_rate": 0.225
+        },
+        "5p-seat2": {
+          "games": 20,
+          "points": 512,
+          "fractional_wins": 3.0,
+          "mean_score": 25.6,
+          "fractional_win_rate": 0.15
+        },
+        "5p-seat3": {
+          "games": 20,
+          "points": 560,
+          "fractional_wins": 5.5,
+          "mean_score": 28.0,
+          "fractional_win_rate": 0.275
+        },
+        "5p-seat4": {
+          "games": 20,
+          "points": 508,
+          "fractional_wins": 5.0,
+          "mean_score": 25.4,
+          "fractional_win_rate": 0.25
+        }
+      }
+    },
+    "collision": {
+      "games": 80,
+      "rounds": 960,
+      "ties": 16,
+      "zero_pay_harvests": 48,
+      "harvests": 3360,
+      "congested_rounds": 524,
+      "ring_turns_modulo6": {
+        "1": 432,
+        "5": 454,
+        "0": 754,
+        "2": 123,
+        "4": 115,
+        "3": 42
+      },
+      "policy": {
+        "optimizing": {
+          "games": 80,
+          "points": 2511,
+          "fractional_wins": 42.833333333333336,
+          "mean_score": 31.3875,
+          "fractional_win_rate": 0.5354
+        },
+        "collision": {
+          "games": 200,
+          "points": 5660,
+          "fractional_wins": 37.16666666666667,
+          "mean_score": 28.3,
+          "fractional_win_rate": 0.1858
+        }
+      },
+      "seat": {
+        "2p-seat0": {
+          "games": 20,
+          "points": 703,
+          "fractional_wins": 11.5,
+          "mean_score": 35.15,
+          "fractional_win_rate": 0.575
+        },
+        "2p-seat1": {
+          "games": 20,
+          "points": 705,
+          "fractional_wins": 8.5,
+          "mean_score": 35.25,
+          "fractional_win_rate": 0.425
+        },
+        "3p-seat0": {
+          "games": 20,
+          "points": 611,
+          "fractional_wins": 5.5,
+          "mean_score": 30.55,
+          "fractional_win_rate": 0.275
+        },
+        "3p-seat1": {
+          "games": 20,
+          "points": 600,
+          "fractional_wins": 4.5,
+          "mean_score": 30.0,
+          "fractional_win_rate": 0.225
+        },
+        "3p-seat2": {
+          "games": 20,
+          "points": 604,
+          "fractional_wins": 10.0,
+          "mean_score": 30.2,
+          "fractional_win_rate": 0.5
+        },
+        "4p-seat0": {
+          "games": 20,
+          "points": 568,
+          "fractional_wins": 4.0,
+          "mean_score": 28.4,
+          "fractional_win_rate": 0.2
+        },
+        "4p-seat1": {
+          "games": 20,
+          "points": 561,
+          "fractional_wins": 4.0,
+          "mean_score": 28.05,
+          "fractional_win_rate": 0.2
+        },
+        "4p-seat2": {
+          "games": 20,
+          "points": 568,
+          "fractional_wins": 7.5,
+          "mean_score": 28.4,
+          "fractional_win_rate": 0.375
+        },
+        "4p-seat3": {
+          "games": 20,
+          "points": 588,
+          "fractional_wins": 4.5,
+          "mean_score": 29.4,
+          "fractional_win_rate": 0.225
+        },
+        "5p-seat0": {
+          "games": 20,
+          "points": 545,
+          "fractional_wins": 4.0,
+          "mean_score": 27.25,
+          "fractional_win_rate": 0.2
+        },
+        "5p-seat1": {
+          "games": 20,
+          "points": 518,
+          "fractional_wins": 3.5,
+          "mean_score": 25.9,
+          "fractional_win_rate": 0.175
+        },
+        "5p-seat2": {
+          "games": 20,
+          "points": 544,
+          "fractional_wins": 4.333333333333333,
+          "mean_score": 27.2,
+          "fractional_win_rate": 0.2167
+        },
+        "5p-seat3": {
+          "games": 20,
+          "points": 538,
+          "fractional_wins": 5.333333333333333,
+          "mean_score": 26.9,
+          "fractional_win_rate": 0.2667
+        },
+        "5p-seat4": {
+          "games": 20,
+          "points": 518,
+          "fractional_wins": 2.8333333333333335,
+          "mean_score": 25.9,
+          "fractional_win_rate": 0.1417
+        }
+      }
+    }
+  },
+  "limitations": [
+    "AI rules execution only; no human playtesting or proof of fun, age suitability, duration or physical handling.",
+    "Finite policy comparisons do not prove absence of dominant strategies or global balance.",
+    "Policy assignments differ by player count; aggregate policy win rates are not a controlled ranking.",
+    "Geometry/fit/printability require separate evidence."
+  ]
+}

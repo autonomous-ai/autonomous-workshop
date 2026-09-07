@@ -1,0 +1,15 @@
+# Blind visual review
+
+Inspected only the actual `iso.png`, `signature.png`, ordered 16-frame motion contact sheet, and enlarged frames 00, 05, and 10. No Wish, concept, source, or other metadata read.
+
+- **Held-object read:** A shallow round tabletop puzzle/game board with coinlike counters. It looks liftable as a tray, but no hand or scale establishes its actual size.
+- **Volumetric form:** A broad thin circular base supports a raised annular platform and a separate central disc. Circular recesses hold low cylindrical counters, including two visibly taller stacks. The piece is recognizably three-dimensional but strongly planar.
+- **Subjects:** Abstract discs, sockets, concentric rings, and small tally/dot markings. No figurative characters, animals, or scene subjects read from the geometry.
+- **Action:** The visual invitation is to turn concentric parts and rearrange or stack counters in their seats. The still images alone do not reveal the permitted moves or objective.
+- **Relationship:** The counters belong to two concentric groups within one shared board; the fixed outside rim has repeated station markings. Stacks and inscribed faces distinguish some counters. No narrative relationship is apparent.
+- **Anti-generic signature:** The nested circular playing surfaces, repeated recesses, different stack heights, and fixed peripheral tallies together make a distinctive rotational board. The signature is moderately specific mechanically; at a glance it remains within the familiar abstract circular puzzle/game family.
+- **Blind motion observation:** Across the ordered frames, the base and outside markings stay fixed while counters and recess patterns circulate on the two concentric surfaces. The outer tall stack travels from upper left through the front and right to the back; the inner tall stack travels from lower right toward the back and left. This reads as opposing rotations of inner and outer sections. Counters remain seated on their respective sections, with no clear transfer, pickup, or stack-height change shown. Frame 15 approaches the starting arrangement. This is an observed rendered motion sequence, not evidence of a working physical mechanism.
+- **Visible limitations/defects:** Pale uniform top surfaces and dark outline-heavy shading make shallow details and disc/recess boundaries difficult to distinguish. Small inscriptions and peripheral tallies are not reliably legible; some outlines appear broken. The two still states demonstrate changed arrangement but do not visually teach a move. No obvious gross collision or detached part is visible in the sampled frames.
+- **Not established by images:** Dimensions, materials, underside construction, rotational capture, assembly route, clearances, friction, detents, printability, strength, tactile usability, complete inventory, exact symbols, rules, strategic quality, safety, or successful physical operation.
+
+Blind phase complete; comparison with the intended Wish is deferred until supplied separately.

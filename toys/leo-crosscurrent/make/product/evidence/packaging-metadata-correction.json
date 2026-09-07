@@ -1,0 +1,8 @@
+{
+  "kind": "crosscurrent.packaging-metadata-correction",
+  "prior_concept_sha256": "a18fa65a491bf37bd72bd1ca72e89a33c046922270a7239c10c311e1722ad775",
+  "current_concept_sha256": "a77c253dacd5fce4bd0757b8b5b6d3c74f49fcb2efdcdbc33e59c6743cf2a0ab",
+  "change": "The two paper accessories retain their exact descriptions under paper_accessories. The components/build_plan fields now enumerate only the eight fabricated CAD part variants, with identical geometry, rules, paper PDFs and reviewed images. Parts directory copies are byte-identical to the verified CAD STL exports.",
+  "review_binding": "Updated only the concept_sha256 bindings in canonical reviews. All independent observations, verdicts, reviewer identity, image/evidence hashes and review rounds are unchanged. No new visual evaluation is claimed.",
+  "verification": "The passing full final report remains evidence for the unchanged CAD source, geometry and printable exports. Its recorded signature hash predates this metadata-only binding correction; the finalizer validates the current review bindings."
+}

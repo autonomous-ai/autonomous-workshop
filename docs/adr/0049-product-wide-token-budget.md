@@ -87,3 +87,14 @@ the product-wide budget total. The sanitized public archive is under
 This is one successful live digital-product acceptance, not a live matrix of
 every CLI combination. Spark truthfully records Playtest not run. The object
 has not been physically printed, tested, manufactured or delivered.
+
+Crosscurrent subsequently completed Spark/Codex/Astra/high with an explicit
+100M cap and 17,724,704 observed tokens across the root and four native
+descendants. The follow-up accounting fix preserved the same root session and
+all prior usage. Make and Release passed independent host CAD verification;
+the six-page manual passed PDF checks. After the operator configured Dee as
+the shared host publisher, an effect-only resume reused the existing package
+and completed verified public readback on 2026-09-07. No additional native
+turn was needed for publication. The sanitized archive is
+`toys/leo-crosscurrent/`; credentials and raw run state remain private. Its
+rules simulations do not constitute physical testing or proof of family fun.

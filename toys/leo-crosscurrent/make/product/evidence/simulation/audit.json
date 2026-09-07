@@ -1,0 +1,5245 @@
+{
+  "kind": "crosscurrent.independent-replay-audit",
+  "transitions_replayed": 19680,
+  "trace_sha256": {
+    "traces.ndjson": "9a07088f57f5ffb01322c0c90200fe9cea3eb6ceaeb0f5146730278dc7c35929",
+    "adversarial-traces.ndjson": "94d8c9be49a0362430a7d29e7543ac1030d3862f0d246b7389b7d146f872e150",
+    "informed-response-traces.ndjson": "dc740255133c9e22200d38fa48a899cd8e9589cd8062629bf02c6c2312217cd5"
+  },
+  "independent_reference_agrees": true,
+  "oracle_trials": [
+    {
+      "seed": 900000,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900001,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.75,
+      "random_expected": 2.5,
+      "oracle_expected": 3.75,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.625
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.625
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.75
+        }
+      ]
+    },
+    {
+      "seed": 900002,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 2.875,
+      "random_expected": 2.625,
+      "oracle_expected": 2.875,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.375
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.875
+        }
+      ]
+    },
+    {
+      "seed": 900003,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900004,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 1.8125,
+      "random_expected": 1.671875,
+      "oracle_expected": 2.0625,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.25
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.5625
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.8125
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.0625
+        }
+      ]
+    },
+    {
+      "seed": 900005,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900006,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 3.0,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900007,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 3.25,
+      "random_expected": 2.25,
+      "oracle_expected": 3.25,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.75
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.25
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.25
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 1.75
+        }
+      ]
+    },
+    {
+      "seed": 900008,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 2.5,
+      "random_expected": 2.25,
+      "oracle_expected": 2.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.5
+        }
+      ]
+    },
+    {
+      "seed": 900009,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.3333333333333335,
+      "random_expected": 2.611111111111111,
+      "oracle_expected": 3.3333333333333335,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.3333333333333335
+        }
+      ]
+    },
+    {
+      "seed": 900010,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.421875,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.8125
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.125
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.75
+        }
+      ]
+    },
+    {
+      "seed": 900011,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.0
+        }
+      ]
+    },
+    {
+      "seed": 900012,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900013,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.6875,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.25
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.75
+        }
+      ]
+    },
+    {
+      "seed": 900014,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 2.75,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.0
+        }
+      ]
+    },
+    {
+      "seed": 900015,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900016,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 2.8125,
+      "random_expected": 2.40625,
+      "oracle_expected": 2.875,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.8125
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.875
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.9375
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.0
+        }
+      ]
+    },
+    {
+      "seed": 900017,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.0
+        }
+      ]
+    },
+    {
+      "seed": 900018,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.8055555555555554,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.6666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900019,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 2.78125,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.875
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.875
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.875
+        }
+      ]
+    },
+    {
+      "seed": 900020,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 2.125,
+      "random_expected": 2.0625,
+      "oracle_expected": 2.125,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.125
+        }
+      ]
+    },
+    {
+      "seed": 900021,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900022,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 2.9375,
+      "random_expected": 2.59375,
+      "oracle_expected": 2.9375,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.625
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.3125
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.9375
+        }
+      ]
+    },
+    {
+      "seed": 900023,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.0
+        }
+      ]
+    },
+    {
+      "seed": 900024,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900025,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.75,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.25
+        }
+      ]
+    },
+    {
+      "seed": 900026,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 2.5,
+      "random_expected": 2.3125,
+      "oracle_expected": 2.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.125
+        }
+      ]
+    },
+    {
+      "seed": 900027,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900028,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.875,
+      "random_expected": 2.703125,
+      "oracle_expected": 2.875,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.625
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.5625
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.875
+        }
+      ]
+    },
+    {
+      "seed": 900029,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.0,
+      "random_expected": 2.125,
+      "oracle_expected": 2.25,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.25
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.0
+        }
+      ]
+    },
+    {
+      "seed": 900030,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.8055555555555554,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900031,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.875,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.75
+        }
+      ]
+    },
+    {
+      "seed": 900032,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 2.75,
+      "random_expected": 2.25,
+      "oracle_expected": 2.75,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.75
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.75
+        }
+      ]
+    },
+    {
+      "seed": 900033,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900034,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.4375,
+      "random_expected": 2.8125,
+      "oracle_expected": 3.4375,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.625
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.3125
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.4375
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.875
+        }
+      ]
+    },
+    {
+      "seed": 900035,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900036,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900037,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 2.8125,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.25
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.5
+        }
+      ]
+    },
+    {
+      "seed": 900038,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.125,
+      "random_expected": 1.5625,
+      "oracle_expected": 2.125,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.125
+        }
+      ]
+    },
+    {
+      "seed": 900039,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.6666666666666665,
+      "random_expected": 2.6666666666666665,
+      "oracle_expected": 3.6666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.6666666666666667
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 1.6666666666666667
+        }
+      ]
+    },
+    {
+      "seed": 900040,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.640625,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3125
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6875
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.5625
+        }
+      ]
+    },
+    {
+      "seed": 900041,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.0,
+      "random_expected": 2.0,
+      "oracle_expected": 2.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.0
+        }
+      ]
+    },
+    {
+      "seed": 900042,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 2.8333333333333335,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900043,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 1.25,
+      "random_expected": 1.25,
+      "oracle_expected": 1.25,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.25
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.25
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.25
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 1.25
+        }
+      ]
+    },
+    {
+      "seed": 900044,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 2.5,
+      "random_expected": 2.375,
+      "oracle_expected": 2.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.25
+        }
+      ]
+    },
+    {
+      "seed": 900045,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 4.0,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 4.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 4.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.3333333333333335
+        }
+      ]
+    },
+    {
+      "seed": 900046,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 3.1875,
+      "random_expected": 2.8125,
+      "oracle_expected": 3.1875,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.8125
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.8125
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.1875
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.4375
+        }
+      ]
+    },
+    {
+      "seed": 900047,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.25,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.5
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900048,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900049,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.5,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900050,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 2.125,
+      "random_expected": 2.125,
+      "oracle_expected": 2.125,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.125
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.125
+        }
+      ]
+    },
+    {
+      "seed": 900051,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 4.0,
+      "random_expected": 3.0,
+      "oracle_expected": 4.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 4.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 4.0
+        }
+      ]
+    },
+    {
+      "seed": 900052,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 2.4375,
+      "random_expected": 2.09375,
+      "oracle_expected": 2.5625,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.625
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.75
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.4375
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.5625
+        }
+      ]
+    },
+    {
+      "seed": 900053,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 4.0,
+      "random_expected": 3.0,
+      "oracle_expected": 4.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 4.0
+        }
+      ]
+    },
+    {
+      "seed": 900054,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 2.9166666666666665,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900055,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.5,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.25
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.375
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.375
+        }
+      ]
+    },
+    {
+      "seed": 900056,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 2.75,
+      "random_expected": 2.625,
+      "oracle_expected": 2.75,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.5
+        }
+      ]
+    },
+    {
+      "seed": 900057,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900058,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 2.9375,
+      "random_expected": 2.6875,
+      "oracle_expected": 2.9375,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.4375
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.6875
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.9375
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.6875
+        }
+      ]
+    },
+    {
+      "seed": 900059,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.25,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900060,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900061,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.875,
+      "random_expected": 2.5,
+      "oracle_expected": 2.875,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.875
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.875
+        }
+      ]
+    },
+    {
+      "seed": 900062,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 2.75,
+      "random_expected": 2.5,
+      "oracle_expected": 2.75,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.25
+        }
+      ]
+    },
+    {
+      "seed": 900063,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 4.0,
+      "random_expected": 2.8333333333333335,
+      "oracle_expected": 4.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 4.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 4.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.6666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900064,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.96875,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.9375
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.9375
+        }
+      ]
+    },
+    {
+      "seed": 900065,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 2.0,
+      "random_expected": 2.0,
+      "oracle_expected": 2.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.0
+        }
+      ]
+    },
+    {
+      "seed": 900066,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 2.9444444444444446,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900067,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.25,
+      "random_expected": 3.0,
+      "oracle_expected": 3.25,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.25
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.75
+        }
+      ]
+    },
+    {
+      "seed": 900068,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.5,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900069,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.6666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.6666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.6666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900070,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.4375,
+      "random_expected": 2.296875,
+      "oracle_expected": 3.4375,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 1.6875
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.6875
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.375
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.4375
+        }
+      ]
+    },
+    {
+      "seed": 900071,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 4.0,
+      "random_expected": 3.0,
+      "oracle_expected": 4.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 4.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.0
+        }
+      ]
+    },
+    {
+      "seed": 900072,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900073,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 2.5,
+      "random_expected": 2.5,
+      "oracle_expected": 2.875,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.875
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.875
+        }
+      ]
+    },
+    {
+      "seed": 900074,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.5625,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.125
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900075,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900076,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.4375,
+      "random_expected": 2.75,
+      "oracle_expected": 3.4375,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.4375
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.625
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.4375
+        }
+      ]
+    },
+    {
+      "seed": 900077,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 1.5,
+      "random_expected": 1.5,
+      "oracle_expected": 1.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 1.5
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.5
+        }
+      ]
+    },
+    {
+      "seed": 900078,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 2.8055555555555554,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900079,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.125,
+      "random_expected": 2.8125,
+      "oracle_expected": 3.125,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.125
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.125
+        }
+      ]
+    },
+    {
+      "seed": 900080,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.5,
+      "random_expected": 2.375,
+      "oracle_expected": 2.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.25
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.5
+        }
+      ]
+    },
+    {
+      "seed": 900081,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900082,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 2.75,
+      "random_expected": 2.6875,
+      "oracle_expected": 2.75,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6875
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.625
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.6875
+        }
+      ]
+    },
+    {
+      "seed": 900083,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 1.0,
+      "random_expected": 1.0,
+      "oracle_expected": 1.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.0
+        }
+      ]
+    },
+    {
+      "seed": 900084,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900085,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.25,
+      "random_expected": 2.90625,
+      "oracle_expected": 3.25,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.625
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.25
+        }
+      ]
+    },
+    {
+      "seed": 900086,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.5,
+      "random_expected": 2.375,
+      "oracle_expected": 2.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.25
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.5
+        }
+      ]
+    },
+    {
+      "seed": 900087,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900088,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0625,
+      "random_expected": 2.34375,
+      "oracle_expected": 3.0625,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.375
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0625
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.875
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.0625
+        }
+      ]
+    },
+    {
+      "seed": 900089,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.0,
+      "random_expected": 1.75,
+      "oracle_expected": 2.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.0
+        }
+      ]
+    },
+    {
+      "seed": 900090,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.888888888888889,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.5
+        }
+      ]
+    },
+    {
+      "seed": 900091,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 3.0,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.5
+        }
+      ]
+    },
+    {
+      "seed": 900092,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 3.0,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.5
+        }
+      ]
+    },
+    {
+      "seed": 900093,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.5833333333333335,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900094,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 2.75,
+      "random_expected": 2.28125,
+      "oracle_expected": 2.75,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6875
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.75
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 1.9375
+        }
+      ]
+    },
+    {
+      "seed": 900095,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.5,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.0
+        }
+      ]
+    },
+    {
+      "seed": 900096,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900097,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 3.0625,
+      "oracle_expected": 3.25,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.25
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.75
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.25
+        }
+      ]
+    },
+    {
+      "seed": 900098,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 2.75,
+      "random_expected": 2.5,
+      "oracle_expected": 2.75,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.25
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.75
+        }
+      ]
+    },
+    {
+      "seed": 900099,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.6666666666666665,
+      "random_expected": 2.888888888888889,
+      "oracle_expected": 3.6666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.6666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900100,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        0,
+        0
+      ],
+      "chosen_expected": 2.9375,
+      "random_expected": 2.4375,
+      "oracle_expected": 2.9375,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.9375
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.6875
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.1875
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 1.9375
+        }
+      ]
+    },
+    {
+      "seed": 900101,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 2.0,
+      "random_expected": 1.75,
+      "oracle_expected": 2.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 1.5
+        }
+      ]
+    },
+    {
+      "seed": 900102,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 2.8333333333333335,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.5
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900103,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.375,
+      "random_expected": 2.1875,
+      "oracle_expected": 2.375,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.375
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.375
+        }
+      ]
+    },
+    {
+      "seed": 900104,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 2.5,
+      "random_expected": 2.5,
+      "oracle_expected": 2.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.5
+        }
+      ]
+    },
+    {
+      "seed": 900105,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        0,
+        1
+      ],
+      "chosen_expected": 4.0,
+      "random_expected": 2.611111111111111,
+      "oracle_expected": 4.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 4.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.6666666666666667
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.3333333333333335
+        }
+      ]
+    },
+    {
+      "seed": 900106,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.9375,
+      "random_expected": 2.75,
+      "oracle_expected": 2.9375,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.5625
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.9375
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.5625
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.9375
+        }
+      ]
+    },
+    {
+      "seed": 900107,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.5,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900108,
+      "round": 1,
+      "player": 0,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.722222222222222,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900109,
+      "round": 2,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.5,
+      "random_expected": 2.9375,
+      "oracle_expected": 3.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.25
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.5
+        }
+      ]
+    },
+    {
+      "seed": 900110,
+      "round": 3,
+      "player": 2,
+      "chosen": [
+        0,
+        -1
+      ],
+      "chosen_expected": 2.5,
+      "random_expected": 2.4375,
+      "oracle_expected": 2.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.375
+        }
+      ]
+    },
+    {
+      "seed": 900111,
+      "round": 4,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 4.0,
+      "random_expected": 2.8333333333333335,
+      "oracle_expected": 4.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 4.0
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 1.8333333333333333
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 4.0
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.6666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900112,
+      "round": 5,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.1875,
+      "random_expected": 2.859375,
+      "oracle_expected": 3.1875,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.9375
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.1875
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.125
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.1875
+        }
+      ]
+    },
+    {
+      "seed": 900113,
+      "round": 6,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 1.5,
+      "random_expected": 1.25,
+      "oracle_expected": 1.5,
+      "actions": [
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 1.0
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.5
+        }
+      ]
+    },
+    {
+      "seed": 900114,
+      "round": 7,
+      "player": 0,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.1666666666666665,
+      "random_expected": 2.7777777777777772,
+      "oracle_expected": 3.1666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 2.6666666666666665
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.5
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.1666666666666665
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.6666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900115,
+      "round": 8,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 3.25,
+      "random_expected": 2.75,
+      "oracle_expected": 3.25,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.0
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.125
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.625
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 3.25
+        }
+      ]
+    },
+    {
+      "seed": 900116,
+      "round": 9,
+      "player": 0,
+      "chosen": [
+        1,
+        -1
+      ],
+      "chosen_expected": 3.0,
+      "random_expected": 2.5,
+      "oracle_expected": 3.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 2.0
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 3.0
+        }
+      ]
+    },
+    {
+      "seed": 900117,
+      "round": 10,
+      "player": 1,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 3.6666666666666665,
+      "random_expected": 2.555555555555556,
+      "oracle_expected": 3.6666666666666665,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 3.6666666666666665
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 1.6666666666666667
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.3333333333333335
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 1.6666666666666667
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 3.6666666666666665
+        }
+      ]
+    },
+    {
+      "seed": 900118,
+      "round": 11,
+      "player": 1,
+      "chosen": [
+        1,
+        0
+      ],
+      "chosen_expected": 2.75,
+      "random_expected": 2.078125,
+      "oracle_expected": 2.75,
+      "actions": [
+        {
+          "order": [
+            0,
+            -1
+          ],
+          "expected": 1.375
+        },
+        {
+          "order": [
+            0,
+            0
+          ],
+          "expected": 1.75
+        },
+        {
+          "order": [
+            1,
+            -1
+          ],
+          "expected": 2.4375
+        },
+        {
+          "order": [
+            1,
+            0
+          ],
+          "expected": 2.75
+        }
+      ]
+    },
+    {
+      "seed": 900119,
+      "round": 12,
+      "player": 3,
+      "chosen": [
+        1,
+        1
+      ],
+      "chosen_expected": 2.0,
+      "random_expected": 1.25,
+      "oracle_expected": 2.0,
+      "actions": [
+        {
+          "order": [
+            0,
+            1
+          ],
+          "expected": 0.5
+        },
+        {
+          "order": [
+            1,
+            1
+          ],
+          "expected": 2.0
+        }
+      ]
+    }
+  ],
+  "oracle_summary": {
+    "chosen_expected": 2.9803819444444444,
+    "random_expected": 2.5419415509259258,
+    "oracle_expected": 2.9940972222222224
+  },
+  "controlled_by_player_count": {
+    "exploratory": {
+      "2": {
+        "games": 20,
+        "optimizing_mean_score": 39.25,
+        "opponent_mean_score": 33.8,
+        "optimizing_fractional_win_rate": 0.925,
+        "equal_strength_reference": 0.5
+      },
+      "3": {
+        "games": 20,
+        "optimizing_mean_score": 35.65,
+        "opponent_mean_score": 31.075,
+        "optimizing_fractional_win_rate": 0.775,
+        "equal_strength_reference": 0.3333333333333333
+      },
+      "4": {
+        "games": 20,
+        "optimizing_mean_score": 29.35,
+        "opponent_mean_score": 28.433333333333334,
+        "optimizing_fractional_win_rate": 0.225,
+        "equal_strength_reference": 0.25
+      },
+      "5": {
+        "games": 20,
+        "optimizing_mean_score": 28.55,
+        "opponent_mean_score": 24.625,
+        "optimizing_fractional_win_rate": 0.55,
+        "equal_strength_reference": 0.2
+      }
+    },
+    "greedy": {
+      "2": {
+        "games": 20,
+        "optimizing_mean_score": 35.75,
+        "opponent_mean_score": 35.9,
+        "optimizing_fractional_win_rate": 0.475,
+        "equal_strength_reference": 0.5
+      },
+      "3": {
+        "games": 20,
+        "optimizing_mean_score": 35.9,
+        "opponent_mean_score": 33.65,
+        "optimizing_fractional_win_rate": 0.6,
+        "equal_strength_reference": 0.3333333333333333
+      },
+      "4": {
+        "games": 20,
+        "optimizing_mean_score": 29.9,
+        "opponent_mean_score": 28.466666666666665,
+        "optimizing_fractional_win_rate": 0.325,
+        "equal_strength_reference": 0.25
+      },
+      "5": {
+        "games": 20,
+        "optimizing_mean_score": 26.4,
+        "opponent_mean_score": 25.4875,
+        "optimizing_fractional_win_rate": 0.175,
+        "equal_strength_reference": 0.2
+      }
+    },
+    "always_a": {
+      "2": {
+        "games": 20,
+        "optimizing_mean_score": 39.3,
+        "opponent_mean_score": 33.6,
+        "optimizing_fractional_win_rate": 0.9,
+        "equal_strength_reference": 0.5
+      },
+      "3": {
+        "games": 20,
+        "optimizing_mean_score": 34.6,
+        "opponent_mean_score": 32.75,
+        "optimizing_fractional_win_rate": 0.45,
+        "equal_strength_reference": 0.3333333333333333
+      },
+      "4": {
+        "games": 20,
+        "optimizing_mean_score": 36.95,
+        "opponent_mean_score": 33.483333333333334,
+        "optimizing_fractional_win_rate": 0.5166666666666666,
+        "equal_strength_reference": 0.25
+      },
+      "5": {
+        "games": 20,
+        "optimizing_mean_score": 31.35,
+        "opponent_mean_score": 34.1125,
+        "optimizing_fractional_win_rate": 0.041666666666666664,
+        "equal_strength_reference": 0.2
+      }
+    },
+    "alternate": {
+      "2": {
+        "games": 20,
+        "optimizing_mean_score": 39.3,
+        "opponent_mean_score": 35.3,
+        "optimizing_fractional_win_rate": 0.9,
+        "equal_strength_reference": 0.5
+      },
+      "3": {
+        "games": 20,
+        "optimizing_mean_score": 36.45,
+        "opponent_mean_score": 33.2,
+        "optimizing_fractional_win_rate": 0.725,
+        "equal_strength_reference": 0.3333333333333333
+      },
+      "4": {
+        "games": 20,
+        "optimizing_mean_score": 31.2,
+        "opponent_mean_score": 33.833333333333336,
+        "optimizing_fractional_win_rate": 0.15,
+        "equal_strength_reference": 0.25
+      },
+      "5": {
+        "games": 20,
+        "optimizing_mean_score": 24.6,
+        "opponent_mean_score": 32.4875,
+        "optimizing_fractional_win_rate": 0.016666666666666666,
+        "equal_strength_reference": 0.2
+      }
+    },
+    "fixed_arrow": {
+      "2": {
+        "games": 20,
+        "optimizing_mean_score": 40.1,
+        "opponent_mean_score": 32.85,
+        "optimizing_fractional_win_rate": 0.9,
+        "equal_strength_reference": 0.5
+      },
+      "3": {
+        "games": 20,
+        "optimizing_mean_score": 35.05,
+        "opponent_mean_score": 30.525,
+        "optimizing_fractional_win_rate": 0.65,
+        "equal_strength_reference": 0.3333333333333333
+      },
+      "4": {
+        "games": 20,
+        "optimizing_mean_score": 31.25,
+        "opponent_mean_score": 27.416666666666668,
+        "optimizing_fractional_win_rate": 0.45,
+        "equal_strength_reference": 0.25
+      },
+      "5": {
+        "games": 20,
+        "optimizing_mean_score": 28.55,
+        "opponent_mean_score": 25.4375,
+        "optimizing_fractional_win_rate": 0.425,
+        "equal_strength_reference": 0.2
+      }
+    },
+    "collision": {
+      "2": {
+        "games": 20,
+        "optimizing_mean_score": 36.2,
+        "opponent_mean_score": 34.2,
+        "optimizing_fractional_win_rate": 0.825,
+        "equal_strength_reference": 0.5
+      },
+      "3": {
+        "games": 20,
+        "optimizing_mean_score": 31.3,
+        "opponent_mean_score": 29.725,
+        "optimizing_fractional_win_rate": 0.525,
+        "equal_strength_reference": 0.3333333333333333
+      },
+      "4": {
+        "games": 20,
+        "optimizing_mean_score": 28.9,
+        "opponent_mean_score": 28.45,
+        "optimizing_fractional_win_rate": 0.325,
+        "equal_strength_reference": 0.25
+      },
+      "5": {
+        "games": 20,
+        "optimizing_mean_score": 29.15,
+        "opponent_mean_score": 26.0,
+        "optimizing_fractional_win_rate": 0.4666666666666667,
+        "equal_strength_reference": 0.2
+      }
+    }
+  },
+  "failures": [],
+  "limitations": [
+    "Independent reference authored by same specialist agent; separate formulation catches implementation errors but is not independent human review.",
+    "Oracle is exact only for one-step scoring against uniform legal opponents, not globally optimal play.",
+    "Twenty validation games per opponent/player-count cell are exploratory and not proof of strategy dominance."
+  ]
+}
