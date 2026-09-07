@@ -61,6 +61,13 @@ uv run workshop start pico-press --effort forge
 
 Want to see an idea before building? `workshop daydream pico-press` prints the card and stops. Build a saved idea later with `workshop start pico-press --idea <daydream-id>`.
 
+Have a brief of your own? `--wish` skips the daydream and builds your words as that Inventor. The Inventor id is sealed into the Wish, so the run materializes only that Inventor: Match can bind nobody else, and Release publishes with that Inventor's account. `--ref` attaches up to eight reference images (PNG, JPEG, or WebP), `--max-rounds` raises the Invent-Make round budget:
+
+```bash
+uv run workshop start ferro-line --effort forge --max-rounds 6 \
+  --ref duck.webp --wish "a wind-up robot duck that walks when you turn its key"
+```
+
 `--manager` chooses the Workshop Manager for the daydream and the run. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash

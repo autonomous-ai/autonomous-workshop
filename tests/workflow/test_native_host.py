@@ -29,6 +29,7 @@ from workshop.workflow.budgets import (
     CommandBudget,
 )
 from workshop.workflow.native_run import (
+    wish_required_inventor_id,
     _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
     _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
@@ -563,6 +564,26 @@ class NativeHostTest(unittest.TestCase):
             effort=effort,
             manager_id="codex",
         )
+
+    def test_wish_context_names_the_inventor_that_must_build_it(self):
+        pinned = Wish.create(
+            "wish-pinned",
+            "a wind-up duck",
+            context={"source": "workshop-start", "inventor_id": "ferro-line"},
+        )
+        self.assertEqual(wish_required_inventor_id(pinned), "ferro-line")
+        self.assertIsNone(
+            wish_required_inventor_id(Wish.create("wish-open", "a wind-up duck"))
+        )
+        for bad in ("Ferro Line", "ferro_line", "", 7):
+            with self.subTest(inventor_id=bad), self.assertRaisesRegex(
+                ContractError, "inventor_id must be an Inventor id slug"
+            ):
+                wish_required_inventor_id(
+                    Wish.create(
+                        "wish-bad", "a wind-up duck", context={"inventor_id": bad}
+                    )
+                )
 
     def test_grid_keepalive_service_cannot_create_repeating_wishes(self):
         with tempfile.TemporaryDirectory() as temporary:

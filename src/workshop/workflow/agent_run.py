@@ -745,9 +745,19 @@ class AgentRun:
         effort: Optional[str] = None,
         manager_id: str = DEFAULT_MANAGER_ID,
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
+        required_inventor_id: Optional[str] = None,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
+        if required_inventor_id is not None and (
+            not isinstance(required_inventor_id, str)
+            or _AGENT_SKILL_NAME.fullmatch(required_inventor_id) is None
+        ):
+            raise ContractError("required Inventor id must be a canonical slug")
+        if required_inventor_id is not None and inventor_source_root is None:
+            raise ContractError(
+                "a required Inventor needs an Inventor source root"
+            )
         selected_effort = workshop_effort(effort) if effort is not None else None
         selected_manager = manager_spec(manager_id)
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
@@ -890,6 +900,13 @@ class AgentRun:
                     continue
                 if _AGENT_SKILL_NAME.fullmatch(entry.name) is None:
                     raise ArtifactError("Inventor id is not a safe path name")
+                if (
+                    required_inventor_id is not None
+                    and entry.name != required_inventor_id
+                ):
+                    # The Wish names its Inventor: only that custom agent is
+                    # materialized, so Match can bind nobody else.
+                    continue
                 manifest_path = entry / "inventor.json"
                 taste_path = entry / "TASTE.md"
                 if not manifest_path.is_file() or not taste_path.is_file():
@@ -964,6 +981,11 @@ class AgentRun:
                         _reject_private_agent_bytes(destination.as_posix(), content)
                         inventor_skill_files.append((destination, content, mode))
             if not inventor_roster:
+                if required_inventor_id is not None:
+                    raise ArtifactError(
+                        "Inventor source root has no Inventor %s"
+                        % required_inventor_id
+                    )
                 raise ArtifactError("Inventor source root contains no Inventors")
 
         all_input_files: list[tuple[PurePosixPath, bytes, int]] = [

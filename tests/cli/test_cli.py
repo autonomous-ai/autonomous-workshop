@@ -757,6 +757,95 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertNotIn("Build it:", stdout.getvalue())
         self.assertIn("Wish: wish-", stdout.getvalue())
 
+    def test_start_with_a_typed_brief_pins_the_inventor_and_never_dreams(self):
+        from PIL import Image
+
+        observed = {}
+
+        def start(wish, **kwargs):
+            observed["wish"] = wish
+            observed.update(kwargs)
+            return native_receipt()
+
+        stdout = StringIO()
+        stderr = StringIO()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            Image.new("RGB", (32, 32), "blue").save(root / "front.png")
+            front_bytes = (root / "front.png").read_bytes()
+            with mock.patch("cli.main.run_daydream") as run, mock.patch(
+                "cli.main.load_sealed_daydream"
+            ) as load, mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-typed"
+            ), mock.patch(
+                "cli.main.start_native_run", side_effect=start
+            ) as native_start, redirect_stdout(stdout), redirect_stderr(stderr):
+                result = main(
+                    (
+                        "start",
+                        "sample",
+                        "--wish",
+                        "a wind-up duck that walks",
+                        "--ref",
+                        str(root / "front.png"),
+                        "--effort",
+                        "forge",
+                        "--max-rounds",
+                        "6",
+                        "--json",
+                    )
+                )
+
+        self.assertEqual(result, 0)
+        run.assert_not_called()
+        load.assert_not_called()
+        native_start.assert_called_once()
+        wish = observed["wish"]
+        self.assertEqual(wish.product_id, "wish-typed")
+        self.assertEqual(wish.objective, "a wind-up duck that walks")
+        self.assertEqual(
+            dict(wish.context), {"source": "workshop-start", "inventor_id": "sample"}
+        )
+        self.assertEqual([item.name for item in wish.references], ["ref-01-front.png"])
+        self.assertEqual(
+            observed["wish_reference_files"], {"ref-01-front.png": front_bytes}
+        )
+        self.assertEqual(observed["effort"], "forge")
+        self.assertEqual(observed["max_rounds"], 6)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(set(payload), {"run"})
+        progress = stderr.getvalue()
+        self.assertIn("Inventor: sample", progress)
+        self.assertIn(
+            "Sealing your brief as this run's Wish; sample builds and publishes it.",
+            progress,
+        )
+        self.assertIn("References: 1 image(s) attached read-only", progress)
+        self.assertNotIn("Daydreaming", progress)
+        self.assertNotIn("Loop:", progress)
+
+    def test_start_typed_brief_options_are_bounded(self):
+        args = parser().parse_args(("start", "pico-press"))
+        self.assertIsNone(args.wish)
+        self.assertIsNone(args.references)
+        self.assertEqual(args.max_rounds, 4)
+        for arguments, message in (
+            (("start", "sample", "--wish", "a duck", "--idea", "dd-1"), "exclusive"),
+            (("start", "sample", "--ref", "front.png"), "attaches reference images"),
+        ):
+            stderr = StringIO()
+            with self.subTest(arguments=arguments), mock.patch(
+                "cli.main.run_daydream"
+            ) as run, mock.patch("cli.main.start_native_run") as start, mock.patch(
+                "cli.main.acquire_loop"
+            ) as lease, redirect_stdout(StringIO()), redirect_stderr(stderr):
+                result = main(arguments)
+            self.assertEqual(result, 2)
+            self.assertIn(message, stderr.getvalue())
+            run.assert_not_called()
+            start.assert_not_called()
+            lease.assert_not_called()
+
     def test_daydream_with_a_saved_idea_only_prints_it(self):
         sealed = sample_sealed()
         stdout = StringIO()

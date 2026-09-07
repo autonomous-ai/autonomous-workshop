@@ -661,15 +661,38 @@ def _daydream(args: argparse.Namespace) -> int:
     return 0
 
 
+def _typed_wish(args: argparse.Namespace) -> tuple[Wish, Mapping[str, bytes]]:
+    """Seal a typed brief as one Wish pinned to the named Inventor."""
+
+    loaded_references = load_wish_references(list(args.references or ()))
+    wish = Wish.create(
+        generate_wish_id(),
+        args.wish,
+        context={"source": "workshop-start", "inventor_id": args.inventor},
+        references=[item.reference for item in loaded_references],
+    )
+    return wish, wish_reference_files(loaded_references)
+
+
 def _start(args: argparse.Namespace) -> int:
-    """Dream and build until stopped; ``--once`` or ``--idea`` does one idea."""
+    """Dream and build until stopped; ``--once``, ``--idea``, or ``--wish`` does one.
+
+    ``--wish`` skips the daydream: the typed brief becomes the Wish, and the
+    named Inventor is sealed into it, so the host materializes only that
+    Inventor for the run and Release publishes with its credential.
+    """
 
     root = _inventor_source_root(args.root)
     manager = manager_spec(args.manager)
     effort = workshop_effort(args.effort)
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
-    once = args.once or args.idea is not None
+    typed = args.wish is not None
+    if typed and args.idea is not None:
+        raise WorkshopError("--wish and --idea are exclusive: type a brief or build a saved idea")
+    if args.references and not typed:
+        raise WorkshopError("--ref attaches reference images to a typed --wish brief")
+    once = args.once or args.idea is not None or typed
     if args.max_ideas is not None and args.max_ideas < 1:
         raise WorkshopError("--max-ideas must be at least 1")
     if args.max_failures < 1:
@@ -696,47 +719,63 @@ def _start(args: argparse.Namespace) -> int:
                 break
             if not once and ideas:
                 print("", file=progress, flush=True)
-            try:
-                sealed = _dream_or_load(
-                    args,
-                    root=root,
-                    manager=manager,
-                    progress=progress,
-                    live_progress=live_progress,
-                    effort=effort.name,
+            sealed = None
+            reference_files: Optional[Mapping[str, bytes]] = None
+            if typed:
+                wish, reference_files = _typed_wish(args)
+                ideas += 1
+                lease.update(ideas=ideas)
+                print("Inventor: %s" % args.inventor, file=progress, flush=True)
+                print(
+                    "Sealing your brief as this run's Wish; %s builds and publishes it."
+                    % args.inventor,
+                    file=progress,
+                    flush=True,
                 )
-            except DaydreamError as exc:
-                if once:
-                    raise
-                failures += 1
-                lease.update(consecutive_failures=failures)
-                print("Daydream failed: %s" % exc, file=progress, flush=True)
-                if failures >= args.max_failures:
-                    reason = "%d consecutive failures" % failures
-                    exit_code = 1
+            else:
+                try:
+                    sealed = _dream_or_load(
+                        args,
+                        root=root,
+                        manager=manager,
+                        progress=progress,
+                        live_progress=live_progress,
+                        effort=effort.name,
+                    )
+                except DaydreamError as exc:
+                    if once:
+                        raise
+                    failures += 1
+                    lease.update(consecutive_failures=failures)
+                    print("Daydream failed: %s" % exc, file=progress, flush=True)
+                    if failures >= args.max_failures:
+                        reason = "%d consecutive failures" % failures
+                        exit_code = 1
+                        break
+                    continue
+                ideas += 1
+                lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
+                if not once and lease.stop_requested():
+                    # A stop that arrived during the daydream lands here, before
+                    # a 20-minute build starts; the sealed idea stays buildable.
+                    if not args.json:
+                        _print_daydream_card(sealed, stream=progress, offer_build=True)
+                    else:
+                        _print_json({"daydream": sealed.to_dict()})
+                    reason = "stopped by workshop stop"
                     break
-                continue
-            ideas += 1
-            lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
-            if not once and lease.stop_requested():
-                # A stop that arrived during the daydream lands here, before a
-                # 20-minute build starts; the sealed idea stays buildable.
                 if not args.json:
-                    _print_daydream_card(sealed, stream=progress, offer_build=True)
-                else:
-                    _print_json({"daydream": sealed.to_dict()})
-                reason = "stopped by workshop stop"
-                break
-            if not args.json:
-                _print_daydream_card(sealed, stream=progress, offer_build=False)
-            wish = wish_from_daydream(sealed)
-            print("Sealing the idea as this run's brief.", file=progress, flush=True)
+                    _print_daydream_card(sealed, stream=progress, offer_build=False)
+                wish = wish_from_daydream(sealed)
+                print("Sealing the idea as this run's brief.", file=progress, flush=True)
             try:
                 receipt = _start_run(
                     wish,
                     effort=effort,
                     manager=manager,
                     github=args.github,
+                    max_rounds=args.max_rounds,
+                    wish_reference_files=reference_files,
                     progress=progress,
                     live_progress=live_progress,
                 )
@@ -778,9 +817,12 @@ def _start(args: argparse.Namespace) -> int:
                 last_wish_id=wish.product_id,
             )
             if args.json:
+                payload = {"run": receipt}
+                if sealed is not None:
+                    payload["daydream"] = sealed.to_dict()
                 print(
                     json.dumps(
-                        {"daydream": sealed.to_dict(), "run": receipt},
+                        payload,
                         sort_keys=True,
                         separators=(",", ":"),
                         ensure_ascii=False,
@@ -1429,7 +1471,8 @@ def parser() -> argparse.ArgumentParser:
     start = subcommands.add_parser(
         "start",
         help=(
-            "let one Inventor daydream, judge, and build brand-new toys until stopped"
+            "let one Inventor daydream, judge, and build brand-new toys until "
+            "stopped, or build one typed brief as that Inventor"
         ),
     )
     start.add_argument(
@@ -1441,6 +1484,37 @@ def parser() -> argparse.ArgumentParser:
         "--idea",
         metavar="DAYDREAM_ID",
         help="build a saved idea instead of dreaming a new one",
+    )
+    start.add_argument(
+        "--wish",
+        metavar="BRIEF",
+        help=(
+            "build this typed brief instead of dreaming; the Inventor is sealed "
+            "into the Wish, so it alone designs the toy and publishes it "
+            "(implies --once)"
+        ),
+    )
+    start.add_argument(
+        "--ref",
+        action="append",
+        dest="references",
+        type=Path,
+        metavar="IMAGE",
+        help=(
+            "with --wish: attach one reference image (PNG, JPEG, or WebP; repeat "
+            "for up to %d); the run receives it read-only as %s/ref-NN-<name>"
+            % (MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY)
+        ),
+    )
+    start.add_argument(
+        "--max-rounds",
+        type=_round_budget,
+        default=DEFAULT_MAX_ROUNDS,
+        metavar="N",
+        help=(
+            "Invent-Make-Playtest round budget per run, 1-100 (default: %d)"
+            % DEFAULT_MAX_ROUNDS
+        ),
     )
     start.add_argument(
         "--effort",

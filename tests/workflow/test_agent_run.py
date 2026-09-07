@@ -540,6 +540,79 @@ class AgentRunTest(unittest.TestCase):
             self.create(inventor_source_root=inventor_source)
         self.assertFalse(self.run_root.exists())
 
+    def _inventor(self, source, name):
+        folder = source / name
+        skill = folder / "skills" / (name + "-inventor")
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\nname: %s-inventor\ndescription: %s's workflow.\n---\n# %s\n"
+            % (name, name.title(), name.title()),
+            encoding="utf-8",
+        )
+        fingerprint = fingerprint_extension_skill(
+            skill.resolve(), expected_name=name + "-inventor"
+        )
+        (folder / "inventor.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 8,
+                    "id": name,
+                    "status": "experimental",
+                    "source": {"kind": "local"},
+                    "extensions": [
+                        {
+                            "kind": "codex-skill",
+                            "name": name + "-inventor",
+                            "path": "skills/" + name + "-inventor",
+                            "artifact_sha256": fingerprint.artifact_sha256,
+                        }
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (folder / "TASTE.md").write_text(
+            "---\nname: %s\ndescription: %s's Taste.\n---\n"
+            % (name.title(), name.title()),
+            encoding="utf-8",
+        )
+
+    def test_a_required_inventor_is_the_whole_roster(self):
+        inventor_source = self.root / "inventors"
+        self._inventor(inventor_source, "alice")
+        self._inventor(inventor_source, "bob")
+
+        run = self.create(
+            inventor_source_root=inventor_source, required_inventor_id="bob"
+        )
+        checkpoint = run.snapshot()
+
+        self.assertEqual(
+            [item["inventor_id"] for item in checkpoint.inventor_roster], ["bob"]
+        )
+        self.assertTrue((run.run_root / ".codex" / "agents" / "bob.toml").is_file())
+        self.assertFalse((run.run_root / ".codex" / "agents" / "alice.toml").exists())
+        self.assertIn(".agents/skills/bob-inventor/SKILL.md", checkpoint.input_sha256s)
+        self.assertNotIn(
+            ".agents/skills/alice-inventor/SKILL.md", checkpoint.input_sha256s
+        )
+
+    def test_a_required_inventor_must_exist_and_be_a_slug(self):
+        inventor_source = self.root / "inventors"
+        self._inventor(inventor_source, "alice")
+
+        with self.assertRaisesRegex(ArtifactError, "no Inventor carol"):
+            self.create(inventor_source_root=inventor_source, required_inventor_id="carol")
+        self.assertFalse(self.run_root.exists())
+        with self.assertRaisesRegex(ContractError, "canonical slug"):
+            self.create(
+                inventor_source_root=inventor_source, required_inventor_id="Ferro Line"
+            )
+        with self.assertRaisesRegex(ContractError, "Inventor source root"):
+            self.create(required_inventor_id="alice")
+
     def test_creation_requires_explicit_product_run_constitution_source(self):
         repository_agents = self.root / "AGENTS.md"
         repository_agents.write_bytes(b"# Builder-only repository guidance\n")

@@ -8416,6 +8416,30 @@ def _reject_grid_keepalive_wish_start() -> None:
         )
 
 
+_WISH_INVENTOR_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+
+
+def wish_required_inventor_id(wish: Wish) -> Optional[str]:
+    """Return the Inventor a Wish names in its context, if any.
+
+    ``workshop start <inventor>`` seals the Inventor id into the Wish context,
+    for a daydream and for a typed brief alike. The id is part of the hashed
+    Wish, so the pin is immutable for the run: the host materializes only that
+    Inventor's custom agent, Match can bind nobody else, and Release publishes
+    with that Inventor's credential. A Wish without the key keeps the full
+    roster.
+    """
+
+    if not isinstance(wish, Wish):
+        raise ContractError("wish_required_inventor_id requires a Wish")
+    value = wish.context.get("inventor_id")
+    if value is None:
+        return None
+    if not isinstance(value, str) or _WISH_INVENTOR_ID.fullmatch(value) is None:
+        raise ContractError("Wish context inventor_id must be an Inventor id slug")
+    return value
+
+
 def start_native_run(
     wish: Wish,
     *,
@@ -8476,6 +8500,7 @@ def start_native_run(
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
+    required_inventor_id = wish_required_inventor_id(wish)
     with wish_run_timing_span(
         timing_observer,
         product_id=wish.product_id,
@@ -8498,6 +8523,7 @@ def start_native_run(
                 skill_root=assets.skill_root,
                 domain_skill_roots=domain_skill_roots,
                 inventor_source_root=inventor_source_root,
+                required_inventor_id=required_inventor_id,
                 max_rounds=max_rounds,
                 effort=(selected_effort.name if selected_effort is not None else None),
                 manager_id=selected_manager.manager_id,
@@ -8867,4 +8893,5 @@ __all__ = [
     "refresh_native_run_tools",
     "resume_native_run",
     "start_native_run",
+    "wish_required_inventor_id",
 ]

@@ -30,6 +30,7 @@ _NATIVE_HOST_EXPORTS = (
     "refresh_native_run_tools",
     "resume_native_run",
     "start_native_run",
+    "wish_required_inventor_id",
 )
 
 
