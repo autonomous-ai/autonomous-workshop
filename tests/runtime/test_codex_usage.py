@@ -52,6 +52,39 @@ def test_counts_resumes_and_deduplicates_notifications(tmp_path):
     assert result["status"] == "observed"
 
 
+def test_followup_task_keeps_cumulative_usage_then_process_resume_resets(tmp_path):
+    events = records() + [usage(200)] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(300, last_token_usage=counters(100)),
+        usage(300, last_token_usage=counters(100)),
+        usage(400, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "resume"}},
+        usage(100),
+    ]
+    result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == counters(500)
+
+
+def test_product_counts_child_followup_without_reset_or_double_charge(tmp_path):
+    write(tmp_path, records() + [usage(100)])
+    write(tmp_path, records(CHILD, ROOT) + [usage(200),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(300, last_token_usage=counters(100)),
+    ], CHILD)
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    assert result["total_tokens"] == 440
+
+
+@pytest.mark.parametrize("current,last", [(300, 50), (100, 50), (300, 200)])
+def test_followup_with_unexplained_baseline_fails_closed(tmp_path, current, last):
+    events = records() + [usage(200),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(current, last_token_usage=counters(last)),
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
 def test_descendants_pending_and_unrelated_payloads(tmp_path):
     write(tmp_path, records() + [usage()])
     child = write(tmp_path, records(CHILD, ROOT), CHILD)

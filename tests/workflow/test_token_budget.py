@@ -1,4 +1,5 @@
 import copy
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
@@ -6,7 +7,7 @@ import pytest
 
 from cli.main import parser
 from workshop.errors import ContractError, StateConflict
-from workshop.runtime.codex_usage import UsageUnavailable
+from workshop.runtime.codex_usage import UsageUnavailable, read_product_usage
 from workshop.workflow.native_run import (
     _load_lifetime_budget, _save_lifetime_budget, _product_token_observer,
     _adopt_token_budget,
@@ -14,7 +15,7 @@ from workshop.workflow.native_run import (
 from workshop.workflow.token_budget import (
     ProductTokenBudget, TOKEN_BUDGET_CAPABILITY_PATH, validate_limit,
 )
-from tests.runtime.test_codex_usage import ROOT, CHILD, counters
+from tests.runtime.test_codex_usage import ROOT, CHILD, counters, records, usage, write
 
 
 def observation(n=100, child=False):
@@ -46,6 +47,32 @@ def test_global_cap_counts_cache_once_and_survives_reload(tmp_path):
         assert loaded.exhausted(stage) == "run"
         with pytest.raises(ContractError):
             loaded.reserve(stage, 1)
+
+
+def test_native_child_followup_survives_host_reload_and_enforces_cap(tmp_path):
+    paths, checkpoint = context(tmp_path / "state")
+    paths.host_state.mkdir()
+    sessions = tmp_path / "sessions"
+    write(sessions, records() + [usage(300)])
+    child_events = records(CHILD, ROOT) + [usage(300)]
+    write(sessions, child_events, CHILD)
+    budget = ProductTokenBudget(1000)
+
+    def read(_paths, _checkpoint):
+        return read_product_usage(sessions, thread_id=ROOT, workspace=Path("/toy"))
+
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", side_effect=read):
+        _product_token_observer(paths, checkpoint, budget)()
+        loaded = _load_lifetime_budget(paths, checkpoint)
+        assert loaded.to_dict()["used_tokens"] == 660
+        child_events += [
+            {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+            usage(700, last_token_usage=counters(400)),
+        ]
+        write(sessions, child_events, CHILD)
+        with pytest.raises(ContractError, match="limit reached"):
+            _product_token_observer(paths, checkpoint, loaded)()
+        assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 1100
 
 
 @pytest.mark.parametrize("limit", [True, 999, 100000001, 1000.0, "1000", None])
