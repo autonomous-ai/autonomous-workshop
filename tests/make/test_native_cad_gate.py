@@ -674,6 +674,67 @@ class NativeCadGateTest(unittest.TestCase):
             "old timing\n",
         )
 
+    @staticmethod
+    def _overhang_report(prefix):
+        return (
+            "# Overhang and support\n\n"
+            f"`{prefix}moon.stl --angle 45.0 --report {prefix}measure/overhang-moon.md`\n\n"
+            f"{prefix}moon.stl: 65.5 cm2 of surface, 0 unsupported samples\n\n"
+            "| check | status | detail |\n|---|---|---|\n"
+            "| overhang | PASS | 0 regions need support |\n"
+        )
+
+    def _seal_overhang_report(self):
+        path = self.product_root / "cad/project/measure/overhang-moon.md"
+        path.write_text(self._overhang_report("artifacts/make/r0001/product/cad/project/"))
+        self._rebuild_made_manifest()
+        return path
+
+    def test_overhang_report_relocation_preserves_every_measurement(self):
+        sealed = self._seal_overhang_report()
+        before = sealed.read_bytes()
+
+        def runner(command, **arguments):
+            Path(command[2], "measure/overhang-moon.md").write_text(
+                self._overhang_report("project/")
+            )
+            return VerifierProcessResult.from_bytes(0)
+
+        self.assertTrue(self._verify(runner).passed)
+        self.assertEqual(sealed.read_bytes(), before)
+
+    def test_overhang_report_content_changes_fail_closed(self):
+        self._seal_overhang_report()
+        for old, new in (
+            ("65.5", "65.6"), ("PASS", "FAIL"), ("45.0", "30.0"),
+            ("0 regions", "1 regions"), ("moon.stl", "other.stl"),
+            ("# Overhang and support", "# Custom report"),
+        ):
+            with self.subTest(old=old):
+                def runner(command, **arguments):
+                    Path(command[2], "measure/overhang-moon.md").write_text(
+                        self._overhang_report("project/").replace(old, new)
+                    )
+                    return VerifierProcessResult.from_bytes(0)
+                with self.assertRaises(NativeCadGateError) as caught:
+                    self._verify(runner)
+                self.assertEqual(caught.exception.failure_code, "declared-cad-output-changed")
+
+    def test_overhang_report_mode_and_symlink_changes_fail_closed(self):
+        self._seal_overhang_report()
+        for link in (False, True):
+            with self.subTest(link=link):
+                def runner(command, **arguments):
+                    path = Path(command[2], "measure/overhang-moon.md")
+                    if link:
+                        path.unlink()
+                        path.symlink_to(Path(command[2], "moon.stl"))
+                    else:
+                        path.chmod(0o700)
+                    return VerifierProcessResult.from_bytes(0)
+                with self.assertRaises(NativeCadGateError):
+                    self._verify(runner)
+
     def test_arbitrary_report_change_still_fails_closed(self):
         def runner(command, **arguments):
             del arguments
