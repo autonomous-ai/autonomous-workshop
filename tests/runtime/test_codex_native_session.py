@@ -94,6 +94,11 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
             resolved_library = None
         if resolved_library is not None and resolved_library.is_file():
             runtime_paths.add(resolved_library)
+    framework = codex_runtime._python_framework_library()
+    if framework is not None:
+        runtime_paths.add(framework)
+        runtime_paths.update(codex_runtime._python_framework_launcher_directories())
+        runtime_paths.update(codex_runtime._python_framework_dependencies())
     runtime_paths.add(Path(binary).resolve(strict=True))
     entries = [
         '":root"="deny"',
@@ -1189,6 +1194,25 @@ class CodexNativeSessionTest(unittest.TestCase):
                 started.binding.checkpoint_sha256,
             )
             self.assertNotIn(THREAD_ID, json.dumps(resumed.to_dict()))
+
+    def test_resume_accepts_exact_pre_framework_policy(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher([
+                {"stdout": self.start_events()},
+                {"stdout": self.start_events(message="resumed")},
+            ])
+            original = codex_runtime._python_runtime_permission_identities
+            with mock.patch.object(
+                codex_runtime, "_python_runtime_permission_identities",
+                side_effect=lambda **kwargs: original(include_framework=False),
+            ):
+                started = self.start(launcher, root)
+            resumed = self.resume(launcher, root)
+            self.assertEqual(len(factory.calls), 2)
+            self.assertEqual(resumed.status, "completed")
+            self.assertEqual(resumed.binding.checkpoint_sha256, started.binding.checkpoint_sha256)
 
     def test_resume_accepts_exact_step_parts_only_policy_predecessor(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -2609,8 +2633,12 @@ class CodexNativeSessionTest(unittest.TestCase):
                 timeout_seconds=1,
             )
 
+            # Measure the native timeout, excluding platform library discovery.
+            dependencies = codex_runtime._python_framework_dependencies()
             started_at = time.monotonic()
             with mock.patch.object(
+                codex_runtime, "_python_framework_dependencies", return_value=dependencies,
+            ), mock.patch.object(
                 codex_runtime,
                 "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
                 2.0,
