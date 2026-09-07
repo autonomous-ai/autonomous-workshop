@@ -874,7 +874,7 @@ authority.
 ## Product budgets and legacy timeouts
 
 New Codex runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
-10,000,000 input-plus-output tokens across all stages, native children and
+30,000,000 input-plus-output tokens across all stages, native children and
 resumes. Cached input is included once; reasoning is already part of output.
 The host persists completed-request usage from a version-pinned Codex 0.153.4
 rollout adapter. Missing/regressing accounting fails closed after a bounded

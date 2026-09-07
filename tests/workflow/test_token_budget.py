@@ -145,7 +145,8 @@ def test_pending_child_has_bounded_grace(tmp_path):
 
 @pytest.mark.parametrize("command", [("wish", "a simple toy"), ("start", "ivy")])
 def test_cli_default_and_explicit_configuration(command):
-    assert parser().parse_args(command).max_tokens == 10000000
+    assert parser().parse_args(command).max_tokens == 30000000
+    assert parser().parse_args((*command, "--max-tokens", "10000000")).max_tokens == 10000000
     args = parser().parse_args((*command, "--workflow", "spark", "--agent", "codex",
                                 "--model", "astra", "--effort", "medium", "--max-tokens", "2000000"))
     assert args.max_tokens == 2000000
@@ -153,3 +154,15 @@ def test_cli_default_and_explicit_configuration(command):
         with pytest.raises(SystemExit):
             parser().parse_args((*command, "--max-tokens", value))
     assert parser().parse_args(("resume", "wish-id")).max_tokens is None
+
+
+@pytest.mark.parametrize("saved_limit", [10000000, 100000000])
+def test_new_default_does_not_change_persisted_run_limits(tmp_path, saved_limit):
+    assert ProductTokenBudget().limit == 30000000
+    paths, checkpoint = context(tmp_path)
+    budget = ProductTokenBudget(saved_limit)
+    budget.observe(observation(200))
+    _save_lifetime_budget(paths, checkpoint, budget)
+    restored = _load_lifetime_budget(paths, checkpoint)
+    assert restored.limit == saved_limit
+    assert restored.to_dict()["used_tokens"] == 220

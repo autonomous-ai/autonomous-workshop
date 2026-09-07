@@ -4,11 +4,17 @@
 - Date: 2026-09-07
 
 New Codex products freeze `token-budget-v1.md`. `workshop wish` and each product
-created by `workshop start` default to `--max-tokens 10000000`. The allowance
+created by `workshop start` default to `--max-tokens 30000000`. The allowance
 includes every enabled stage, revision, native child and explicit resume. It
 does not include the separate daydream selection loop. Input plus output is
 counted, including cached input once and reasoning as part of output. No
 pricing table or dollar estimate participates in enforcement.
+
+The default was raised from 10M to 30M on 2026-09-07 after Crosscurrent's
+verified digital package used 17,724,704 tokens before publication. This gives
+complex products repair headroom; it is a ceiling, not a target. Existing runs
+retain their persisted limits, including explicit 10M and 100M runs, unless
+the operator explicitly changes the total cap on resume.
 
 `workshop resume ID --max-tokens N` sets the total allowance, not an increment
 or reset. Supported older persistent-budget products may adopt it explicitly

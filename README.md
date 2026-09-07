@@ -112,7 +112,7 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
-`start` and `wish` accept `--max-tokens N`, default **10,000,000** per Codex
+`start` and `wish` accept `--max-tokens N`, default **30,000,000** per Codex
 product. Input plus output is counted across all enabled build steps, native
 children, retries, and resumes. Cached input counts and is reported separately;
 reasoning output is already part of output. `start` gives each product its own

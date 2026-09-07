@@ -79,6 +79,7 @@ from workshop.runtime.package_data import (
 from workshop.runtime.progress import WishRunTimingEvent
 from workshop.wish import Wish, generate_wish_id
 from workshop.workflow import native_run_status, resume_native_run, start_native_run
+from workshop.workflow.token_budget import DEFAULT_PRODUCT_TOKENS
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
     WORKSHOP_EFFORTS,
@@ -480,7 +481,7 @@ def _start_run(
     runtime,
     github: bool,
     max_rounds: int = DEFAULT_MAX_ROUNDS,
-    max_tokens: int = 10_000_000,
+    max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
 ) -> Mapping[str, Any]:
@@ -529,7 +530,7 @@ def _start_run(
         manager_model=runtime.model,
         manager_reasoning_effort=runtime.reasoning_effort,
         max_rounds=max_rounds,
-        **({"max_tokens": max_tokens} if max_tokens != 10_000_000 else {}),
+        **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
         github_publish_requested=github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -1531,8 +1532,8 @@ def parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="with --once: exit 1 when the run waits"
     )
     start.set_defaults(handler=_start)
-    start.add_argument("--max-tokens", type=_token_budget, default=10_000_000, metavar="N",
-                       help="Codex token cap per product across all build steps and resumes (default: 10000000); excludes the separate daydream")
+    start.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
+                       help="Codex token cap per product across all build steps and resumes (default: %(default)s); excludes the separate daydream")
 
     login = subcommands.add_parser(
         "login",
@@ -1662,8 +1663,8 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
-    wish.add_argument("--max-tokens", type=_token_budget, default=10_000_000, metavar="N",
-                      help="Codex input-plus-output token cap for the whole product (default: 10000000)")
+    wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
+                      help="Codex input-plus-output token cap for the whole product (default: %(default)s)")
 
     status = subcommands.add_parser(
         "status", help="inspect one native Wish checkpoint without running a model"
