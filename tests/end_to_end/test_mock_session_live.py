@@ -42,7 +42,7 @@ class RealCodexMockSessionEndToEndTest(unittest.TestCase):
         )
         self.assertEqual(report.stages, CANONICAL_ROUTES[report.effort])
         self.assertEqual(report.session_starts, 1)
-        self.assertEqual(report.session_resumes, len(report.stages) - 1)
+        self.assertGreaterEqual(report.session_resumes, len(report.stages) - 1)
         self.assertEqual(report.context_records_verified, len(report.stages))
         self.assertEqual(report.final_stage, "release")
         self.assertEqual(report.final_status, "complete")

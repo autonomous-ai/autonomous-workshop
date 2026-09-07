@@ -23,7 +23,8 @@ Workshop. It is authoritative together with
 [ADR 0043](adr/0043-freeze-agent-model-and-effort.md),
 [ADR 0044](adr/0044-scope-component-cad-network.md),
 [ADR 0045](adr/0045-own-agent-selected-dependencies.md),
-[ADR 0046](adr/0046-budgeted-spark-twenty-minute-turns.md), and the repository
+[ADR 0046](adr/0046-budgeted-spark-twenty-minute-turns.md),
+[ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -267,9 +268,12 @@ recoverable native-turn categories. If the interrupted turn already wrote a
 checkpoint-bound `agent-outcome.json`, the host evaluates that proposal once
 through the normal gate before considering any continuation. Provider
 transport classification uses only exact anchored diagnostics on private,
-bounded native channels. Diagnostic bytes select the typed category and are
-then discarded; they are never persisted, returned, or treated as model
-output. Generic or unrecognized diagnostics fail closed.
+bounded native channels. Diagnostic bytes select the typed category and a
+bounded non-content diagnosis, then the raw bytes are discarded. The diagnosis
+may retain only the terminal event type, stable category and recognized
+signature, a syntax-restricted provider code, and the original message byte
+count; it never retains or returns the provider's free-form message. Generic or
+unrecognized diagnostics are recorded as `unclassified` and fail closed.
 
 Codex has a suspected terminal-event compatibility issue that is not reproduced
 by the currently retained mock-session rollouts. As a temporary fail-open, a
@@ -354,6 +358,22 @@ current stage-attempt number exactly like any other native turn. A separate
 private generation floor makes those counters monotonic: a callback abandoned
 by an earlier launcher may finish late, but its older record is no longer
 trusted and cannot roll status backward.
+
+When a Codex turn fails after the native event stream starts, the adapter also
+atomically replaces the host-private `0600` record
+`codex-turn-failure.json`. It contains a stable failure reason, start/resume
+mode, CLI/profile settings and hashes, process exit/reap facts, stderr and
+event byte totals and maxima, decoded and oversized-record counts, and the last
+coarse event/activity class. Schema v2 also records the bounded structured
+terminal diagnosis described above. In particular, a discarded oversized
+tool-result record is visible as the last boundary with its exact byte count
+even though its contents are not retained. The record never contains prompts,
+free-form provider messages, reasoning, tool arguments or output, paths, agent
+or provider identities, thread ids, stderr text, credentials, or image bytes.
+Historical schema-v1 records remain readable as ordinary JSON but have no
+terminal diagnosis to recover. This is best-effort diagnostic telemetry only:
+persistence failure cannot replace the original runtime failure, and the record
+cannot advance or invalidate a lifecycle gate.
 
 When a Manager's terminal event includes usage, Workshop also keeps one small
 host-private aggregate by stage. Gross input and output remain separate. When

@@ -71,6 +71,14 @@ terminal checkpoint. A loopback Factory server replaces only the two outbound
 HTTP transports. The wrapper adds one generic context-proof request; it does
 not contain stage schemas, lifecycle recipes, or artifact-writing recipes.
 
+For frozen phased Make runs, the wrapper recognizes one intermediate proof
+handoff only when the canonical checkpoint-bound marker matches the host's
+explicit proof request. That turn may finish without final-product context
+proof; it must be followed by Make in the same session. Final Make still needs
+normal context and artifact evidence. Reports count the extra resume separately
+from verified final-stage context records. Recreated markers without the host
+request, duplicate boundaries, and missing Make continuations are rejected.
+
 Prerequisites are a supported `codex` on `PATH`, an active `codex login`, the
 locked Python environment (including `build123d` and `cadgen`), permission to
 bind a loopback port, and enough time for real model turns. Check prerequisites

@@ -25,13 +25,14 @@ The trusted host reads bounded native rollout records using a compatibility
 adapter validated specifically for Codex 0.153.4. It binds root identity and
 workspace to private host state, follows native parent ancestry, deduplicates
 cumulative notifications and sums explicit task resets across process resumes.
-In-process follow-up tasks retain cumulative counters instead. The adapter
-accepts that boundary only when the new total exactly equals the preceding
-observed total plus the native last-request counters, field by field. It does
-not recharge the preceding task or reset the product allowance. This case was
-missed by the first acceptance: Crosscurrent stopped when Leo received a
-follow-up task. Regression tests cover child follow-ups, subsequent process
-resets, duplicate notifications, and unexplained boundary counters.
+Continued tasks in the same process, including native child follow-ups, retain
+cumulative counters. At each task boundary, the adapter accepts only a reset
+whose cumulative counters equal the latest request, or continuation whose
+counters exactly equal the previous observation plus the latest request for
+every counter. It preserves prior consumption in either case.
+This case was missed by the first acceptance: Crosscurrent stopped when Leo
+received a follow-up task. Regression tests cover child follow-ups, subsequent
+process resets, duplicate notifications, and unexplained boundary counters.
 Unrelated conversation payloads are not read. Unsupported formats, counter
 regression, disappearing usage and ambiguous history fail closed. Native
 rollouts are not a stable public API; a future supported app-server usage

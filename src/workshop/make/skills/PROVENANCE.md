@@ -3,13 +3,29 @@
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
-  `1e56c145586fa9be230443612c1d9d47c957e4f8` (2026-09-03), resynced from
-  `4800bbe89c92366995960f73650e994e96e52756` (2026-08-28).
+  `9e75609bb53bf880429353e57201995a4c0482e6` (2026-09-07), resynced from
+  `1e56c145586fa9be230443612c1d9d47c957e4f8` (2026-09-03).
 - The reviewed snapshot includes the complete upstream trees for all five
   skills. `cad` includes the vendored `cadgen` 0.4.19 source, bought-part mount
   tooling, run-cost guidance, and the strengthened image-derived verification
   runner. The image workflow includes clipped-reference rejection, reference
   silhouette preparation, and stored-camera replay for lower-cost iteration.
+- The 2026-09-07 resync takes upstream's single-commit fix that makes every
+  verified run leave a `.step` behind. `cad`'s `verify_project` now passes
+  `--write` unconditionally in quick mode, which previously built the combined
+  entry, wrote the render package and wrote no CAD file at all, so a
+  preview-only project was indistinguishable from one whose STEP write had
+  failed. A new `--self-check` fixture holds `--write` in the planned quick-mode
+  `gen` command, and `SKILL.md` step 7 plus the `--quick` help stop reading as
+  permission to skip the write. `design-reference`,
+  `electromechanical-integration`, `image-to-cad` and `step-parts` are
+  byte-identical to the previous snapshot; `cadgen` stays at 0.4.19 and both
+  `requirements.txt` files are unchanged. The upstream delta was three-way
+  merged so Workshop's local `--print-preflight` mode, materialized-skill-root
+  command shapes, and `SKILL.md` step 6 single-combined-entry rule survive
+  intact; the only local reconciliation is the new "every mode writes STEP"
+  runner note, which also names `--print-preflight` because this copy has that
+  third mode and it already generates with `--write`.
 - The 2026-09-03 resync takes upstream's build-direction and resolution work.
   `cad` gains two gates: `check_overhang`, which is the only thing in the
   toolchain that knows which way is up and splits down-facing surface into
@@ -176,3 +192,22 @@ review. The final verifier validates this evidence for coupled mechanisms;
 existing geometry, motion, retention, mesh and thickness gates are unchanged.
 CAD skill instructions now distinguish presentation from physical validation
 and judge exposed mechanisms against the actual Wish. See ADR 0047.
+
+## Restricted-run cache instructions (2026-09-07)
+
+Port the cache-guidance portion of `f35bbfc4`: distinguish ordinary local cache
+cleanup from restricted Workshop runs, where the finalizer removes derived
+files and the host owns the isolated fresh rebuild. Explicit `--force`
+regeneration is not asserted to repair the shared-library cache defect; changed
+geometry still needs inspection and authoritative fresh verification. Protected
+empty cache directories are not deliverable bytes or blockers.
+
+## Make and CAD ownership clarification (2026-09-07)
+
+Selectively port the ownership guidance from `04f6c88b` and `63eeef74`. Make
+owns the independent review procedure and visual repair budget; CAD owns
+modeling, render evidence, and deterministic verification mechanics. Move the
+duplicated review instructions to Make without changing verifier checks, review
+schemas, frozen early-proof routing, or motion-review requirements. Concept
+image reconstruction and the source branch's verifier simplification are not
+part of this adaptation.

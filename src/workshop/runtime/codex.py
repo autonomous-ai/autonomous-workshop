@@ -46,7 +46,10 @@ MAX_CODEX_PROMPT_BYTES = 1 * 1024 * 1024
 MAX_CODEX_MESSAGE_BYTES = 64 * 1024
 MAX_CODEX_STDERR_BYTES = 256 * 1024
 MAX_CODEX_SESSION_CHECKPOINT_BYTES = 32 * 1024
+MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES = 16 * 1024
 CODEX_SESSION_CHECKPOINT_KIND = "autonomous-workshop-native-codex-session"
+CODEX_FAILURE_DIAGNOSTIC_KIND = "autonomous-workshop-codex-turn-failure"
+CODEX_FAILURE_DIAGNOSTIC_FILENAME = "codex-turn-failure.json"
 _MAX_TRANSIENT_DIAGNOSTIC_CHARS = 64 * 1024
 _CODEX_TERMINAL_EXIT_GRACE_SECONDS = 0.25
 # A successful finalizer is followed by native Goal completion and the public
@@ -65,6 +68,28 @@ _TRANSIENT_DIAGNOSTIC_HEADS = frozenset(
     )
 )
 _MAX_NATIVE_FAILURE_MESSAGE_CHARS = 4 * 1024
+_SAFE_TERMINAL_ERROR_CODE = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,127}$")
+_TERMINAL_ERROR_SIGNATURES = (
+    (
+        "invalid-encrypted-content",
+        ("invalid encrypted content", "encrypted content is invalid"),
+    ),
+    ("stream-disconnected", tuple(_TRANSIENT_DIAGNOSTIC_HEADS)),
+    ("rate-limited", ("rate limit", "too many requests", "quota exceeded")),
+    (
+        "context-limit",
+        ("context length", "context window", "maximum context", "too many tokens"),
+    ),
+    (
+        "unauthorized",
+        ("unauthorized", "authentication failed", "invalid api key"),
+    ),
+    ("forbidden", ("forbidden", "permission denied")),
+    ("bad-request", ("bad request", "invalid request")),
+    ("service-unavailable", ("service unavailable", "provider unavailable")),
+    ("overloaded", ("overloaded", "capacity")),
+    ("internal-server-error", ("internal server error", "server error")),
+)
 
 _IMMUTABLE_PRODUCT_RUN_PATHS = (
     ".agents",
@@ -124,8 +149,82 @@ _CODEX_SUBAGENT_ITEM_TYPES = frozenset(
 )
 
 
+@dataclass(frozen=True)
+class CodexTerminalFailureDiagnosis:
+    """Bounded non-content diagnosis derived from one terminal event."""
+
+    event_type: str
+    category: str
+    signature: str
+    code: Optional[str]
+    message_bytes: int
+
+    def to_dict(self) -> Mapping[str, Any]:
+        return {
+            "event_type": self.event_type,
+            "category": self.category,
+            "signature": self.signature,
+            "code": self.code,
+            "message_bytes": self.message_bytes,
+        }
+
+
+@dataclass(frozen=True)
+class CodexFailureDiagnostic:
+    """Content-free facts about the native stream boundary before failure."""
+
+    reason: str
+    event_records: int
+    decoded_event_records: int
+    oversized_event_records: int
+    total_event_bytes: int
+    largest_event_bytes: int
+    event_record_limit_bytes: int
+    last_event_class: str
+    last_activity: Optional[str]
+    thread_identity_observed: bool
+    turn_completed: bool
+    returncode: Optional[int]
+    stderr_bytes: int
+    stderr_overflow: bool
+    process_tree_reaped: bool
+    terminal_error: Optional[CodexTerminalFailureDiagnosis] = None
+
+    def to_dict(self) -> Mapping[str, Any]:
+        return {
+            "reason": self.reason,
+            "event_records": self.event_records,
+            "decoded_event_records": self.decoded_event_records,
+            "oversized_event_records": self.oversized_event_records,
+            "total_event_bytes": self.total_event_bytes,
+            "largest_event_bytes": self.largest_event_bytes,
+            "event_record_limit_bytes": self.event_record_limit_bytes,
+            "last_event_class": self.last_event_class,
+            "last_activity": self.last_activity,
+            "thread_identity_observed": self.thread_identity_observed,
+            "turn_completed": self.turn_completed,
+            "returncode": self.returncode,
+            "stderr_bytes": self.stderr_bytes,
+            "stderr_overflow": self.stderr_overflow,
+            "process_tree_reaped": self.process_tree_reaped,
+            "terminal_error": (
+                self.terminal_error.to_dict()
+                if self.terminal_error is not None
+                else None
+            ),
+        }
+
+
 class CodexInvocationError(RuntimeError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        diagnostic_code: str = "runtime-failure",
+    ) -> None:
+        self.diagnostic_code = diagnostic_code
+        self.diagnostic: Optional[CodexFailureDiagnostic] = None
+        super().__init__(message)
 
 
 class CodexRecoverableInvocationError(CodexInvocationError):
@@ -297,6 +396,88 @@ def _resolve_host_state_root(value: Path, run_root: Path) -> Path:
 
 def _checkpoint_path(host_state_root: Path) -> Path:
     return host_state_root / "codex-session.json"
+
+
+def _failure_diagnostic_path(host_state_root: Path) -> Path:
+    return host_state_root / CODEX_FAILURE_DIAGNOSTIC_FILENAME
+
+
+def _persist_codex_failure_diagnostic(
+    path: Path,
+    *,
+    product_id: str,
+    wish_sha256: str,
+    operation: str,
+    runtime_config_sha256: str,
+    cli_version: str,
+    model: str,
+    reasoning_effort: str,
+    auto_compact_token_limit: Optional[int],
+    timeout_seconds: int,
+    session_checkpoint_sha256: Optional[str],
+    failure: CodexInvocationError,
+) -> None:
+    """Best-effort atomic persistence of safe counters, never failure authority."""
+
+    diagnostic = failure.diagnostic
+    if diagnostic is None:
+        return
+    core = {
+        "schema_version": 2,
+        "kind": CODEX_FAILURE_DIAGNOSTIC_KIND,
+        "product_id": product_id,
+        "wish_sha256": wish_sha256,
+        "operation": operation,
+        "runtime_config_sha256": runtime_config_sha256,
+        "cli_version": cli_version,
+        "model": model,
+        "reasoning_effort": reasoning_effort,
+        "auto_compact_token_limit": auto_compact_token_limit,
+        "timeout_seconds": timeout_seconds,
+        "session_checkpoint_sha256": session_checkpoint_sha256,
+        "recorded_at_ms": time.time_ns() // 1_000_000,
+        "diagnostic": diagnostic.to_dict(),
+    }
+    source = _canonical_json(
+        {**core, "diagnostic_sha256": _sha256_json(core)}
+    ) + b"\n"
+    if len(source) > MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES:
+        return
+    descriptor = -1
+    temporary: Optional[Path] = None
+    try:
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=".%s." % path.name,
+            suffix=".tmp",
+            dir=str(path.parent),
+        )
+        temporary = Path(temporary_name)
+        os.fchmod(descriptor, 0o600)
+        written = 0
+        while written < len(source):
+            written += os.write(descriptor, source[written:])
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = -1
+        os.replace(temporary, path)
+        directory_descriptor = os.open(
+            str(path.parent), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        )
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    except OSError:
+        # Diagnostic telemetry cannot replace the original native failure.
+        return
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        if temporary is not None:
+            try:
+                temporary.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def _write_private_checkpoint(path: Path, value: Mapping[str, Any]) -> None:
@@ -1771,6 +1952,83 @@ def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
     return None
 
 
+@dataclass
+class _NativeEventStats:
+    """Bounded counters and sanitized terminal diagnosis, never event content."""
+
+    event_records: int = 0
+    decoded_event_records: int = 0
+    oversized_event_records: int = 0
+    total_event_bytes: int = 0
+    largest_event_bytes: int = 0
+    last_event_class: str = "none"
+    last_activity: Optional[str] = None
+    terminal_error: Optional[CodexTerminalFailureDiagnosis] = None
+
+    def observe_record(self, size: int, *, oversized: bool) -> None:
+        self.event_records += 1
+        self.total_event_bytes += size
+        self.largest_event_bytes = max(self.largest_event_bytes, size)
+        if oversized:
+            self.oversized_event_records += 1
+            self.last_event_class = "oversized"
+
+    def observe_event(self, event: Mapping[str, Any]) -> None:
+        self.decoded_event_records += 1
+        event_type = event.get("type")
+        if event_type == "thread.started":
+            self.last_event_class = "thread-started"
+        elif event_type == "turn.started":
+            self.last_event_class = "turn-started"
+        elif event_type == "turn.completed":
+            self.last_event_class = "turn-completed"
+        elif event_type in ("turn.failed", "error"):
+            self.last_event_class = "terminal-error"
+            self.terminal_error = _terminal_failure_diagnosis(event)
+        elif event_type in ("item.started", "item.updated", "item.completed"):
+            activity = _safe_activity_for_event(event)
+            suffix = activity if activity is not None else "other"
+            self.last_event_class = "item-%s-%s" % (
+                event_type.split(".", 1)[1],
+                suffix,
+            )
+        else:
+            self.last_event_class = "other"
+
+
+def _diagnosed_codex_failure(
+    failure: CodexInvocationError,
+    stats: _NativeEventStats,
+    *,
+    reason: Optional[str] = None,
+    observed_thread_id: Optional[str],
+    turn_completed: bool,
+    returncode: Optional[int],
+    stderr_size: int,
+    stderr_overflow: bool,
+    process_tree_reaped: bool,
+) -> CodexInvocationError:
+    failure.diagnostic = CodexFailureDiagnostic(
+        reason=reason or failure.diagnostic_code,
+        event_records=stats.event_records,
+        decoded_event_records=stats.decoded_event_records,
+        oversized_event_records=stats.oversized_event_records,
+        total_event_bytes=stats.total_event_bytes,
+        largest_event_bytes=stats.largest_event_bytes,
+        event_record_limit_bytes=MAX_CODEX_EVENT_BYTES,
+        last_event_class=stats.last_event_class,
+        last_activity=stats.last_activity,
+        thread_identity_observed=observed_thread_id is not None,
+        turn_completed=turn_completed,
+        returncode=(returncode if type(returncode) is int else None),
+        stderr_bytes=stderr_size,
+        stderr_overflow=stderr_overflow,
+        process_tree_reaped=process_tree_reaped,
+        terminal_error=stats.terminal_error,
+    )
+    return failure
+
+
 class CodexNativeSessionLauncher:
     """Launch or resume the one native Codex session for an entire Wish."""
 
@@ -1936,16 +2194,33 @@ class CodexNativeSessionLauncher:
                 {**identity, "checkpoint_sha256": persisted_sha256},
             )
 
-        used_web_search, observed_thread_id, token_usage = self._stream(
-            command=self._start_command(root, run_policy),
-            prompt=prompt,
-            run_root=root,
-            run_policy=run_policy,
-            expected_thread_id=None,
-            bind_thread=bind_thread,
-            activity_observer=activity_observer,
-            finalization_marker=finalization_marker,
-        )
+        try:
+            used_web_search, observed_thread_id, token_usage = self._stream(
+                command=self._start_command(root, run_policy),
+                prompt=prompt,
+                run_root=root,
+                run_policy=run_policy,
+                expected_thread_id=None,
+                bind_thread=bind_thread,
+                activity_observer=activity_observer,
+                finalization_marker=finalization_marker,
+            )
+        except CodexInvocationError as exc:
+            _persist_codex_failure_diagnostic(
+                _failure_diagnostic_path(state_root),
+                product_id=product_id,
+                wish_sha256=wish_sha256,
+                operation="start",
+                runtime_config_sha256=runtime_config_sha256,
+                cli_version=self.cli_version,
+                model=self.model,
+                reasoning_effort=self.reasoning_effort,
+                auto_compact_token_limit=self.auto_compact_token_limit,
+                timeout_seconds=self.timeout_seconds,
+                session_checkpoint_sha256=persisted_sha256,
+                failure=exc,
+            )
+            raise
         if observed_thread_id is None or persisted_sha256 is None:
             raise CodexInvocationError(
                 "Codex native session returned no valid session identity"
@@ -2134,16 +2409,33 @@ class CodexNativeSessionLauncher:
             runtime_config_sha256=runtime_config_sha256,
             predecessor_runtime_config_sha256s=predecessor_runtime_config_sha256s,
         )
-        used_web_search, unused_observed_thread_id, token_usage = self._stream(
-            command=self._resume_command(thread_id, root, run_policy),
-            prompt=prompt,
-            run_root=root,
-            run_policy=run_policy,
-            expected_thread_id=thread_id,
-            bind_thread=None,
-            activity_observer=activity_observer,
-            finalization_marker=finalization_marker,
-        )
+        try:
+            used_web_search, unused_observed_thread_id, token_usage = self._stream(
+                command=self._resume_command(thread_id, root, run_policy),
+                prompt=prompt,
+                run_root=root,
+                run_policy=run_policy,
+                expected_thread_id=thread_id,
+                bind_thread=None,
+                activity_observer=activity_observer,
+                finalization_marker=finalization_marker,
+            )
+        except CodexInvocationError as exc:
+            _persist_codex_failure_diagnostic(
+                _failure_diagnostic_path(state_root),
+                product_id=product_id,
+                wish_sha256=wish_sha256,
+                operation="resume",
+                runtime_config_sha256=runtime_config_sha256,
+                cli_version=self.cli_version,
+                model=self.model,
+                reasoning_effort=self.reasoning_effort,
+                auto_compact_token_limit=self.auto_compact_token_limit,
+                timeout_seconds=self.timeout_seconds,
+                session_checkpoint_sha256=checkpoint_sha256,
+                failure=exc,
+            )
+            raise
         return CodexNativeSessionOutcome(
             self._public_binding(
                 product_id=product_id,
@@ -2602,6 +2894,7 @@ class CodexNativeSessionLauncher:
         token_usage: Optional[tuple[int, int]] = None
         turn_completed = False
         stream_failure: Optional[BaseException] = None
+        event_stats = _NativeEventStats()
         try:
             try:
                 process.stdin.write(prompt)
@@ -2612,19 +2905,33 @@ class CodexNativeSessionLauncher:
                     "Codex native session could not receive its prompt"
                 ) from None
 
-            for text in _bounded_native_event_lines(process.stdout):
+            for text in _bounded_native_event_lines(process.stdout, event_stats):
                 event = _decode_native_event(text)
+                event_stats.observe_event(event)
                 event_type = event.get("type")
                 activity = _safe_activity_for_event(event)
                 if activity is not None:
+                    event_stats.last_activity = activity
                     activity_reporter.observe(activity)
                 if event_type in ("turn.failed", "error"):
                     if _is_explicit_transient_event_failure(event):
                         raise CodexRecoverableInvocationError(
-                            "Codex native provider transport was interrupted"
+                            "Codex native provider transport was interrupted",
+                            diagnostic_code="provider-transport",
                         )
+                    diagnosis = event_stats.terminal_error
+                    detail = ""
+                    if diagnosis is not None:
+                        parts = [
+                            "category=%s" % diagnosis.category,
+                            "signature=%s" % diagnosis.signature,
+                        ]
+                        if diagnosis.code is not None:
+                            parts.append("code=%s" % diagnosis.code)
+                        detail = " (%s)" % ", ".join(parts)
                     raise CodexInvocationError(
-                        "Codex native session reported a failed turn"
+                        "Codex native session reported a failed turn%s" % detail,
+                        diagnostic_code="explicit-terminal-failure",
                     )
                 if event_type == "thread.started":
                     if observed_thread_id is not None:
@@ -2718,45 +3025,84 @@ class CodexNativeSessionLauncher:
         activity_reporter.stop()
         process_tree_reaped = process_guard.reap()
 
+        def diagnosed(
+            failure: CodexInvocationError,
+            reason: Optional[str] = None,
+        ) -> CodexInvocationError:
+            return _diagnosed_codex_failure(
+                failure,
+                event_stats,
+                reason=reason,
+                observed_thread_id=observed_thread_id,
+                turn_completed=turn_completed,
+                returncode=returncode,
+                stderr_size=stderr_size,
+                stderr_overflow=stderr_overflow.is_set(),
+                process_tree_reaped=process_tree_reaped,
+            )
+
         if timed_out.is_set():
             activity_reporter.observe("failed")
             activity_reporter.close()
             stderr_thread.join(timeout=_CODEX_ACTIVITY_DELIVERY_TIMEOUT_SECONDS)
             if stderr_thread.is_alive() or stderr_overflow.is_set():
-                raise CodexInvocationError(
-                    "Codex native diagnostic stream exceeded its safe size limit"
+                raise diagnosed(
+                    CodexInvocationError(
+                        "Codex native diagnostic stream exceeded its safe size limit"
+                    ),
+                    "diagnostic-overflow",
                 )
             if stream_failure is not None:
-                if isinstance(stream_failure, (CodexInvocationError, ContractError)):
+                if isinstance(stream_failure, CodexInvocationError):
+                    raise diagnosed(stream_failure) from None
+                if isinstance(stream_failure, ContractError):
                     raise stream_failure from None
-                raise CodexInvocationError(
-                    "Codex native session event stream was invalid"
+                raise diagnosed(
+                    CodexInvocationError(
+                        "Codex native session event stream was invalid"
+                    ),
+                    "event-stream-invalid",
                 ) from None
             if not process_tree_reaped:
-                raise CodexInvocationError(
-                    "Codex native session could not be terminated safely"
+                raise diagnosed(
+                    CodexInvocationError(
+                        "Codex native session could not be terminated safely"
+                    ),
+                    "unsafe-process-reap",
                 )
-            raise CodexRecoverableInvocationError(
-                "Codex native session timed out"
+            raise diagnosed(
+                CodexRecoverableInvocationError(
+                    "Codex native session timed out",
+                    diagnostic_code="timeout",
+                )
             )
         if stderr_thread.is_alive() or stderr_overflow.is_set():
             activity_reporter.observe("failed")
             activity_reporter.close()
-            raise CodexInvocationError(
-                "Codex native diagnostic stream exceeded its safe limit"
+            raise diagnosed(
+                CodexInvocationError(
+                    "Codex native diagnostic stream exceeded its safe limit"
+                ),
+                "diagnostic-overflow",
             )
         if not process_tree_reaped:
             activity_reporter.observe("failed")
             activity_reporter.close()
-            raise CodexInvocationError(
-                "Codex native session could not be terminated safely"
+            raise diagnosed(
+                CodexInvocationError(
+                    "Codex native session could not be terminated safely"
+                ),
+                "unsafe-process-reap",
             )
         if stream_failure is not None:
             activity_reporter.close()
-            if isinstance(stream_failure, (CodexInvocationError, ContractError)):
+            if isinstance(stream_failure, CodexInvocationError):
+                raise diagnosed(stream_failure) from None
+            if isinstance(stream_failure, ContractError):
                 raise stream_failure from None
-            raise CodexInvocationError(
-                "Codex native session event stream was invalid"
+            raise diagnosed(
+                CodexInvocationError("Codex native session event stream was invalid"),
+                "event-stream-invalid",
             ) from None
         finalized_without_terminal = bool(
             finalization_watch is not None and finalization_watch.triggered
@@ -2764,8 +3110,11 @@ class CodexNativeSessionLauncher:
         if intentionally_terminated and returncode is None:
             activity_reporter.observe("failed")
             activity_reporter.close()
-            raise CodexInvocationError(
-                "Codex native session could not be terminated safely"
+            raise diagnosed(
+                CodexInvocationError(
+                    "Codex native session could not be terminated safely"
+                ),
+                "unsafe-process-reap",
             )
         if not finalized_without_terminal and (
             not turn_completed
@@ -2779,8 +3128,11 @@ class CodexNativeSessionLauncher:
             ):
                 activity_reporter.observe("failed")
                 activity_reporter.close()
-                raise CodexRecoverableInvocationError(
-                    "Codex native provider transport was interrupted"
+                raise diagnosed(
+                    CodexRecoverableInvocationError(
+                        "Codex native provider transport was interrupted",
+                        diagnostic_code="provider-transport",
+                    )
                 )
             if not turn_completed:
                 # Temporary fail-open for the upstream missing-terminal bug.
@@ -2797,18 +3149,27 @@ class CodexNativeSessionLauncher:
                 if observed_thread_id is not None and returncode == 0:
                     activity_reporter.observe("failed")
                     activity_reporter.close()
-                    raise CodexRecoverableInvocationError(
-                        "Codex native session did not complete "
-                        "(terminal event missing)"
+                    raise diagnosed(
+                        CodexRecoverableInvocationError(
+                            "Codex native session did not complete "
+                            "(terminal event missing)",
+                            diagnostic_code="terminal-event-missing",
+                        )
                     )
             activity_reporter.observe("failed")
             activity_reporter.close()
-            raise CodexInvocationError("Codex native session did not complete")
+            raise diagnosed(
+                CodexInvocationError("Codex native session did not complete"),
+                "nonzero-exit" if turn_completed else "incomplete-exit",
+            )
         if expected_thread_id is None and observed_thread_id is None:
             activity_reporter.observe("failed")
             activity_reporter.close()
-            raise CodexInvocationError(
-                "Codex native session returned no valid session identity"
+            raise diagnosed(
+                CodexInvocationError(
+                    "Codex native session returned no valid session identity"
+                ),
+                "missing-session-identity",
             )
         # Temporary fail-open liveness behavior: Codex can finish a native
         # subagent, atomically finalize the exact proposal, and then omit the
@@ -2852,7 +3213,10 @@ def _ends_native_event_line(raw: Any) -> bool:
     return raw.endswith(b"\n") if isinstance(raw, bytes) else raw.endswith("\n")
 
 
-def _bounded_native_event_lines(stream: Any) -> Iterator[str]:
+def _bounded_native_event_lines(
+    stream: Any,
+    stats: Optional[_NativeEventStats] = None,
+) -> Iterator[str]:
     """Yield JSONL records with constant memory per discarded event.
 
     The Codex event channel is a stream, not an evidence buffer.  A long native
@@ -2891,20 +3255,37 @@ def _bounded_native_event_lines(stream: Any) -> Iterator[str]:
             raw = read_chunk()
             if raw in ("", b""):
                 return
+            record_size = _native_event_bytes(raw)
             if not _ends_native_event_line(raw):
                 # Either the stream ended without a trailing newline or the
                 # record continues past the chunk and is oversized.
                 following = read_chunk()
                 if following in ("", b""):
-                    if _native_event_bytes(raw) <= MAX_CODEX_EVENT_BYTES:
+                    if stats is not None:
+                        stats.observe_record(
+                            record_size,
+                            oversized=record_size > MAX_CODEX_EVENT_BYTES,
+                        )
+                    if record_size <= MAX_CODEX_EVENT_BYTES:
                         yield _stream_text(raw)
                     return
                 while not _ends_native_event_line(following):
+                    record_size += _native_event_bytes(following)
                     following = read_chunk()
                     if following in ("", b""):
+                        if stats is not None:
+                            stats.observe_record(record_size, oversized=True)
                         return
+                record_size += _native_event_bytes(following)
+                if stats is not None:
+                    stats.observe_record(record_size, oversized=True)
                 continue
-            if _native_event_bytes(raw) > MAX_CODEX_EVENT_BYTES:
+            if stats is not None:
+                stats.observe_record(
+                    record_size,
+                    oversized=record_size > MAX_CODEX_EVENT_BYTES,
+                )
+            if record_size > MAX_CODEX_EVENT_BYTES:
                 continue
             yield _stream_text(raw)
         return
@@ -2916,7 +3297,13 @@ def _bounded_native_event_lines(stream: Any) -> Iterator[str]:
             "Codex native session event stream was invalid"
         ) from None
     for raw in iterator:
-        if _native_event_bytes(raw) > MAX_CODEX_EVENT_BYTES:
+        record_size = _native_event_bytes(raw)
+        if stats is not None:
+            stats.observe_record(
+                record_size,
+                oversized=record_size > MAX_CODEX_EVENT_BYTES,
+            )
+        if record_size > MAX_CODEX_EVENT_BYTES:
             continue
         yield _stream_text(raw)
 
@@ -3297,13 +3684,88 @@ def _has_explicit_transient_head(value: Any) -> bool:
     )
 
 
+def _terminal_failure_message(event: Mapping[str, Any]) -> Optional[str]:
+    event_type = event.get("type")
+    if event_type == "turn.failed":
+        error = event.get("error")
+        if isinstance(error, Mapping) and isinstance(error.get("message"), str):
+            return error["message"]
+    if event_type == "error" and isinstance(event.get("message"), str):
+        return event["message"]
+    return None
+
+
+def _terminal_failure_code(event: Mapping[str, Any]) -> Optional[str]:
+    candidates: list[Any] = []
+    error = event.get("error")
+    if isinstance(error, Mapping):
+        candidates.extend((error.get("code"), error.get("type")))
+    candidates.extend((event.get("code"), event.get("error_code")))
+    for value in candidates:
+        if isinstance(value, str) and _SAFE_TERMINAL_ERROR_CODE.fullmatch(value):
+            return value.casefold()
+    return None
+
+
+def _terminal_failure_diagnosis(
+    event: Mapping[str, Any],
+) -> CodexTerminalFailureDiagnosis:
+    """Reduce a terminal event to safe, stable fields without retaining text."""
+
+    event_type = event.get("type")
+    safe_event_type = (
+        event_type if event_type in ("turn.failed", "error") else "unknown"
+    )
+    message = _terminal_failure_message(event)
+    message_bytes = 0
+    normalized = ""
+    if message is not None:
+        try:
+            message_bytes = len(message.encode("utf-8"))
+        except UnicodeError:
+            message_bytes = 0
+        normalized = " ".join(
+            message[:_MAX_NATIVE_FAILURE_MESSAGE_CHARS].casefold().split()
+        )
+    signature = "unclassified"
+    for candidate, needles in _TERMINAL_ERROR_SIGNATURES:
+        if any(needle in normalized for needle in needles):
+            signature = candidate
+            break
+    if signature == "stream-disconnected":
+        category = "provider-transport"
+    elif signature == "rate-limited":
+        category = "rate-limit"
+    elif signature == "context-limit":
+        category = "context-limit"
+    elif signature in ("unauthorized", "forbidden"):
+        category = "access"
+    elif signature in (
+        "service-unavailable",
+        "overloaded",
+        "internal-server-error",
+    ):
+        category = "provider-service"
+    elif signature in ("bad-request", "invalid-encrypted-content"):
+        category = "invalid-request"
+    else:
+        category = "unclassified"
+    return CodexTerminalFailureDiagnosis(
+        event_type=safe_event_type,
+        category=category,
+        signature=signature,
+        code=_terminal_failure_code(event),
+        message_bytes=message_bytes,
+    )
+
+
 def _is_explicit_transient_event_failure(event: Mapping[str, Any]) -> bool:
     """Recognize only Codex-owned, anchored transport failure payloads.
 
     The JSONL schema puts a failed turn's diagnostic at ``error.message`` and
-    an unrecoverable stream diagnostic at top-level ``message``. The bytes are
-    used only to select this narrow typed category and are never persisted or
-    attached to the public exception.
+    an unrecoverable stream diagnostic at top-level ``message``. Raw bytes are
+    never persisted or attached to the public exception; only the bounded
+    structured diagnosis is retained.
     """
 
     event_type = event.get("type")
@@ -3333,10 +3795,13 @@ def _is_explicit_transient_failure(stderr: str) -> bool:
 
 __all__ = [
     "ALLOWED_WORKSHOP_MODELS",
+    "CODEX_FAILURE_DIAGNOSTIC_FILENAME",
+    "CODEX_FAILURE_DIAGNOSTIC_KIND",
     "CODEX_PERMISSION_PROFILE",
     "CODEX_SESSION_CHECKPOINT_KIND",
     "DEFAULT_CODEX_TIMEOUT_SECONDS",
     "MAX_CODEX_EVENT_BYTES",
+    "MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES",
     "MAX_CODEX_MESSAGE_BYTES",
     "MAX_CODEX_PROMPT_BYTES",
     "MAX_CODEX_SESSION_CHECKPOINT_BYTES",
@@ -3344,6 +3809,8 @@ __all__ = [
     "MINIMUM_CODEX_AUTO_COMPACT_VERSION",
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
     "CodexFinalizedWithoutTerminalError",
+    "CodexFailureDiagnostic",
+    "CodexTerminalFailureDiagnosis",
     "CodexInvocationError",
     "CodexRecoverableInvocationError",
     "CodexNativeSessionBinding",

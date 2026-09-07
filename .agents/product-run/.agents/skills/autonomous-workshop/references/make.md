@@ -51,6 +51,23 @@ deterministic commands:
   --motion-angles=-12,0,12
 ```
 
+## Ownership and pipeline
+
+Make owns the stage inputs and output paths, independent blind review, bounded
+visual repair, final product contract, and Make finalizer. The materialized
+`cad` skill owns CAD planning, modeling methods, applicable progressive
+references, source layout, generation, exports, printability, geometry checks,
+image-derived checks, rendering mechanics, and CAD verification. Inventor
+guidance owns specialist form and character judgment. A CAD artifact or gate
+named here is a required Make outcome, not a replacement for an applicable
+CAD-skill step. The host retains stage authority and the final deterministic
+product gate.
+
+Follow the applicable CAD pipeline when the frozen Make profile permits loading
+the skill. Existing early-proof turns keep their prescribed narrow commands and
+skill deferral. This ownership split does not change their handoff or introduce
+a direct Make route.
+
 Use one product funnel:
 
 1. Write the smallest viable parametric baseline with exactly one non-part
@@ -78,9 +95,25 @@ Use one product funnel:
 6. Run the integrated final verifier once. Do not use it as an iteration loop.
 7. Write product metadata and invoke the Make finalizer immediately.
 
-Do not delete `__cadgen__` or use `--fresh` inside the product sandbox. The
-trusted host owns the isolated fresh rebuild. Keep caches, temporary work,
-transcripts, and duplicate render families outside the sealed product tree.
+Complete the blind signature review and, if needed, one coherent repair before
+running the integrated final verifier once. The review must separately match the exact subjects,
+action, and spatial/causal relationship; matching only nouns is a failure.
+Enumerate every explicit positive and negative held-form requirement from
+the Wish in the review's `critical_form_requirements`; each entry needs
+exact blind visual evidence. Any visible departure from one of those
+requirements belongs in `blocking_visual_defects`, not in a nonblocking
+caveat. Use one critic and no more than two review rounds. Do not use the
+full verifier as the visual iteration loop. Any geometry change after the
+review invalidates it and requires a fresh blind read of the regenerated
+images; copying old prose and replacing hashes is not a review.
+
+Do not manually delete `__cadgen__` or use `--fresh` inside the product
+sandbox. The trusted host owns the isolated fresh rebuild. The finalizer safely
+removes ordinary derived-cache files before hashing. If the sandbox protects a
+now-empty cache directory from removal, leave it in place: byte-free
+directories are ignored by both the finalizer and host gate, so never report an
+empty cache directory as a blocker. Keep temporary work, transcripts, and
+duplicate render families outside the sealed product tree.
 
 ## Required final product
 

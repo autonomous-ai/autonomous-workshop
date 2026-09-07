@@ -22,7 +22,7 @@ from workshop.integrations.factory import (
 )
 from workshop.runtime.codex import CodexNativeSessionLauncher
 
-from tests.end_to_end.mock_codex_passthrough import DIRECTIVE
+from tests.end_to_end.mock_codex_passthrough import DIRECTIVE, _make_proof_boundary
 from tests.end_to_end.mock_session_evidence import (
     FIXTURE_SECRETS,
     MAX_CONTEXT_RECORD_BYTES,
@@ -41,9 +41,11 @@ from tests.end_to_end.mock_session_evidence import (
 from tests.end_to_end.mock_session_factory import MockSessionFactoryServer
 from tests.end_to_end.mock_session_harness import (
     MockSessionPrerequisiteError,
+    TRACE_KIND,
     _assert_agent_write_ownership,
     _fixed_wish,
     _terminal_evidence_mode,
+    _validate_trace,
     preflight_codex,
     run_bounded_process,
 )
@@ -405,6 +407,46 @@ class MockSessionContextRecordTest(unittest.TestCase):
 
 
 class MockSessionArchitectureTest(unittest.TestCase):
+    def test_proof_marker_rejects_stale_malformed_linked_and_wrong_stage(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            packet = {"stage": "make", "checkpoint_sha256": "a" * 64}
+            marker = {"schema_version": 1,
+                      "kind": "autonomous-workshop.make-proof-ready",
+                      "checkpoint_sha256": "a" * 64}
+            content = json.dumps(marker, sort_keys=True, separators=(",", ":"))
+            path = root / ".make-proof-ready.json"
+            self.assertFalse(_make_proof_boundary(root, packet, content))
+            for invalid in (b"broken", content.encode(),
+                            (content.replace("a" * 64, "b" * 64) + "\n").encode()):
+                path.write_bytes(invalid)
+                self.assertFalse(_make_proof_boundary(root, packet, content))
+            path.write_text(content + "\n")
+            self.assertTrue(_make_proof_boundary(root, packet, content))
+            self.assertFalse(_make_proof_boundary(root, {**packet, "stage": "release"}, content))
+            target = root / "linked-marker"
+            path.rename(target)
+            path.symlink_to(target)
+            self.assertFalse(_make_proof_boundary(root, packet, content))
+
+    def test_trace_rejects_duplicate_or_uncontinued_proof_boundaries(self):
+        cases = (
+            ([{"stage": "make", "make_proof_boundary": True}] * 2, "multiple intermediate"),
+            ([{"stage": "make", "make_proof_boundary": True}], "not followed by Make"),
+            ([{"stage": "invent", "make_proof_boundary": True}, {"stage": "make"}], "not followed by Make"),
+            ([{"stage": "make", "make_proof_boundary": True}, {"stage": "release"}], "not followed by Make"),
+        )
+        for trace, message in cases:
+            with self.subTest(trace=trace), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                folder = root / ".mock-session"
+                folder.mkdir()
+                (folder / "turns.jsonl").write_text(
+                    "".join(json.dumps({"kind": TRACE_KIND, **row}) + "\n" for row in trace)
+                )
+                with self.assertRaisesRegex(MockSessionEvidenceError, message):
+                    _validate_trace(root, root, effort="forge")
+
     def test_generic_directive_contains_no_route_or_finalizer_recipe(self):
         validate_generic_directive(DIRECTIVE)
         self.assertIn("bounded native child agent", DIRECTIVE)
@@ -901,6 +943,71 @@ for event in events:
         self.assertEqual(missing.returncode, 126)
         self.assertNotIn("turn.completed", missing.stdout)
         self.assertIn("context proof failed", missing.stderr)
+
+    def test_exact_make_proof_marker_allows_intermediate_terminal_without_context(self):
+        self.fake_codex()
+        fake = self.bin / "codex"
+        source = fake.read_text(encoding="utf-8")
+        source = source.replace(
+            "context.write_text(json.dumps(record))",
+            """marker = root / '.make-proof-ready.json'
+marker.write_text(json.dumps({
+    'schema_version': 1,
+    'kind': 'autonomous-workshop.make-proof-ready',
+    'checkpoint_sha256': checkpoint,
+}, sort_keys=True, separators=(',', ':')) + '\\n')""",
+        )
+        fake.write_text(source, encoding="utf-8")
+        result = subprocess.run(
+            [str(self.wrapper), "exec", "--model", "gpt-5.6-sol", "-"],
+            cwd=self.root,
+            env=self.environment(),
+            input=(
+                "proof prompt\n"
+                '{"checkpoint_sha256":"%s","kind":'
+                '"autonomous-workshop.make-proof-ready","schema_version":1}'
+                % self.checkpoint
+            ),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("turn.completed", result.stdout)
+        trace = json.loads((self.root / ".mock-session/turns.jsonl").read_text())
+        self.assertTrue(trace["make_proof_boundary"])
+        self.assertEqual(trace["turn_output_hashes"], {})
+        self.assertIsNone(trace["context_proof_error"])
+
+    def test_marker_recreated_without_host_proof_request_is_not_a_second_boundary(self):
+        self.fake_codex()
+        fake = self.bin / "codex"
+        source = fake.read_text(encoding="utf-8")
+        source = source.replace(
+            "context.write_text(json.dumps(record))",
+            """marker = root / '.make-proof-ready.json'
+marker.write_text(json.dumps({
+    'schema_version': 1,
+    'kind': 'autonomous-workshop.make-proof-ready',
+    'checkpoint_sha256': checkpoint,
+}, sort_keys=True, separators=(',', ':')) + '\\n')""",
+        )
+        fake.write_text(source, encoding="utf-8")
+
+        result = subprocess.run(
+            [str(self.wrapper), "exec", "--model", "gpt-5.6-sol", "-"],
+            cwd=self.root,
+            env=self.environment(),
+            input="final Make continuation",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 126)
+        trace = json.loads((self.root / ".mock-session/turns.jsonl").read_text())
+        self.assertFalse(trace["make_proof_boundary"])
+        self.assertIsNotNone(trace["context_proof_error"])
 
     def test_same_checkpoint_repair_uses_distinct_subject_bound_packet(self):
         self.fake_codex()
