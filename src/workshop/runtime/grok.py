@@ -33,7 +33,7 @@ from workshop.runtime.managers import (
 PINNED_GROK_NATIVE_RUNTIME_VERSION = "1.0.5 (5115b46bc909)"
 MINIMUM_GROK_NATIVE_RUNTIME_VERSION = (1, 0, 5)
 GROK_MODEL = "grok-4.6"
-GROK_PERMISSION_MODE = "dontAsk"
+GROK_PERMISSION_MODE = "bypassPermissions"
 GROK_SESSION_CHECKPOINT_KIND = "autonomous-workshop-native-grok-session"
 GROK_SESSION_CHECKPOINT_NAME = "grok-session.json"
 DEFAULT_GROK_TIMEOUT_SECONDS = 3_600
@@ -159,12 +159,47 @@ def _write_private_checkpoint(path: Path, value: Mapping[str, Any]) -> None:
     os.replace(temporary, path)
 
 
+_GROK_PROGRESS_SKIP_TYPES = frozenset(
+    (
+        "available_commands",
+        "end",
+        "first_token",
+        "loop_started",
+        "mcp_config_resolved",
+        "mcp_init_completed",
+        "mcp_server_failed",
+        "mcp_server_starting",
+        "phase_changed",
+        "text",
+        "turn_ended",
+        "turn_started",
+        "usage",
+    )
+)
+_GROK_TOOL_EVENT_TYPES = frozenset(
+    (
+        "permission_requested",
+        "tool_call",
+        "tool_completed",
+        "tool_started",
+    )
+)
+_GROK_REASONING_EVENT_TYPES = frozenset(("reasoning", "think", "thinking", "thought"))
+
+
 def _classify_event(event: Mapping[str, Any]) -> Optional[str]:
+    event_type = str(event.get("type") or "").strip().lower()
+    if event_type in _GROK_PROGRESS_SKIP_TYPES:
+        return None
+    if event_type in _GROK_TOOL_EVENT_TYPES or event.get("tool_name"):
+        return "tool"
+    if event_type in _GROK_REASONING_EVENT_TYPES:
+        return "reasoning"
     raw = " ".join(
         str(event.get(key) or "")
         for key in ("type", "subtype", "kind", "method")
     ).lower()
-    if "tool" in raw or "command" in raw:
+    if "tool" in raw:
         return "tool"
     if "agent" in raw or "subagent" in raw:
         return "subagent"
@@ -381,13 +416,13 @@ class GrokNativeSessionLauncher:
             "--output-format",
             "streaming-json",
             "--allow",
-            "Read(./**)",
+            "Read",
             "--allow",
             "Edit(artifacts/**)",
             "--allow",
             "Edit(work/**)",
             "--allow",
-            "Bash(*)",
+            "Bash",
             "--deny",
             "Edit(STAGE.json)",
             "--deny",
@@ -454,32 +489,41 @@ class GrokNativeSessionLauncher:
         stderr_thread.start()
         stdout = process.stdout
         try:
-            if stdout is not None:
-                for raw in stdout:
-                    if time.monotonic() > deadline:
-                        process.kill()
-                        raise GrokRecoverableInvocationError(
-                            "Grok native session timed out"
-                        )
-                    line = raw.strip()
-                    if not line or len(line.encode("utf-8")) > MAX_GROK_EVENT_BYTES:
-                        continue
-                    try:
-                        event = json.loads(line)
-                    except (TypeError, ValueError):
-                        continue
-                    if not isinstance(event, Mapping):
-                        continue
-                    activity = _classify_event(event)
-                    if activity is not None and activity_observer is not None:
-                        activity_observer(activity)
-            returncode = process.wait(timeout=max(0.1, deadline - time.monotonic()))
-        except subprocess.TimeoutExpired as exc:
-            process.kill()
-            raise GrokRecoverableInvocationError(
-                "Grok native session timed out"
-            ) from exc
-        stderr_thread.join(timeout=1.0)
+            try:
+                if stdout is not None:
+                    for raw in stdout:
+                        if time.monotonic() > deadline:
+                            process.kill()
+                            raise GrokRecoverableInvocationError(
+                                "Grok native session timed out"
+                            )
+                        line = raw.strip()
+                        if not line or len(line.encode("utf-8")) > MAX_GROK_EVENT_BYTES:
+                            continue
+                        try:
+                            event = json.loads(line)
+                        except (TypeError, ValueError):
+                            continue
+                        if not isinstance(event, Mapping):
+                            continue
+                        activity = _classify_event(event)
+                        if activity is not None and activity_observer is not None:
+                            activity_observer(activity)
+                returncode = process.wait(
+                    timeout=max(0.1, deadline - time.monotonic())
+                )
+            except subprocess.TimeoutExpired as exc:
+                process.kill()
+                raise GrokRecoverableInvocationError(
+                    "Grok native session timed out"
+                ) from exc
+            except (KeyboardInterrupt, SystemExit):
+                process.kill()
+                raise
+        finally:
+            if process.poll() is None:
+                process.kill()
+            stderr_thread.join(timeout=1.0)
         if returncode not in (0, None):
             detail = "".join(stderr_chunks).strip().replace("\n", " ")
             if detail:
