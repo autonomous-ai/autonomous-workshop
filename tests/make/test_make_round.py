@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 import unittest
@@ -48,6 +49,14 @@ class MakeRoundTest(unittest.TestCase):
         self.assertEqual((parsed["verdict"], parsed["thinnest_mm"]), ("FAIL", 0.71))
         self.assertEqual(module.diff_parts({"a": "x"}, {"a": "x", "b": "y"}), ["b"])
         self.assertEqual(module.parse_refs(["hero=ref/hero.png"], []), [("hero", "ref/hero.png")])
+        # render_views --json prints one pretty-printed object whose ``views`` carry the IoU.
+        stdout = json.dumps(
+            {"source": "/p/cad/duck.step.py", "views": [{"label": "hero", "iou": 0.9029, "ok": True, "az": -82.5, "el": -1.875}], "ok": True},
+            indent=2,
+        )
+        self.assertEqual(module.parse_render_views(stdout, "hero")["iou"], 0.9029)
+        self.assertIsNone(module.parse_render_views(stdout, "side"))
+        self.assertIsNone(module.parse_render_views("no json here\n", "hero"))
         summary = {
             "round": 1, "project": "/p", "parts": ["a"], "changed": ["a"], "checked": ["a"],
             "thickness": {"a": {"verdict": "PASS", "thinnest_mm": None, "failures": []}},

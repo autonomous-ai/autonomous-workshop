@@ -163,6 +163,31 @@ def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS) -> subprocess.
     return done
 
 
+def parse_render_views(stdout: str, label: str):
+    """The matching view from render_views --json output, or None.
+
+    render_views prints one pretty-printed object (its ``views`` list carries
+    the per-label IoU); an older shape used ``results`` on one line. Both are
+    read from the first line that opens an object to the end of the output.
+    """
+
+    lines = stdout.splitlines()
+    for index, line in enumerate(lines):
+        if not line.lstrip().startswith("{"):
+            continue
+        try:
+            payload = json.loads("\n".join(lines[index:]))
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        for item in payload.get("views") or payload.get("results") or []:
+            if isinstance(item, dict) and item.get("label") == label and "iou" in item:
+                return item
+        return None
+    return None
+
+
 def tail(text: str) -> str:
     return " ".join((text or "").split())[-MAX_TAIL_CHARS:]
 
@@ -243,17 +268,7 @@ def make_round(args) -> int:
         if previous_poses and Path(previous_poses).is_file():
             command += ["--poses-from", str(previous_poses)]
         done = run(command, cwd=project, log=out / ("likeness-%s.log" % label))
-        result = None
-        for line in reversed(done.stdout.splitlines()):
-            if line.startswith("{"):
-                try:
-                    payload = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                for item in payload.get("results", []):
-                    if item.get("label") == label:
-                        result = item
-                break
+        result = parse_render_views(done.stdout, label)
         if result is None:
             likeness.append({"label": label, "error": "render_views exit %d: %s" % (done.returncode, tail(done.stderr or done.stdout)[:80])})
             continue
@@ -360,6 +375,16 @@ def self_check() -> int:
     check(diff_parts({}, {"a": "1", "b": "2"}) == ["a", "b"], "the first round checks every part")
     check(diff_parts({"a": "1", "b": "2"}, {"a": "1", "b": "3", "c": "4"}) == ["b", "c"], "later rounds check only changed or new parts")
     check(parse_refs(["hero=ref/hero.png", "side=/abs/side.png"], []) == [("hero", "ref/hero.png"), ("side", "/abs/side.png")], "--ref pairs parse")
+    pretty = (
+        'rendering hero...\n{\n  "source": "/p/cad/duck.step.py",\n  "poses": {"hero": {"az": -82.5}},\n'
+        '  "views": [\n    {\n      "label": "hero",\n      "kind": "replay-match",\n      "iou": 0.9029,\n'
+        '      "ok": true,\n      "az": -82.5,\n      "el": -1.875\n    }\n  ],\n  "ok": true\n}\n'
+    )
+    view = parse_render_views(pretty, "hero")
+    check(view is not None and view["iou"] == 0.9029 and view["az"] == -82.5, "render_views' pretty-printed views block yields the labelled IoU")
+    check(parse_render_views(pretty, "side") is None, "a label the render did not score yields nothing")
+    check(parse_render_views('{"results": [{"label": "hero", "iou": 0.5}]}\n', "hero")["iou"] == 0.5, "the one-line results shape still parses")
+    check(parse_render_views("Traceback (most recent call last):\n  boom\n", "hero") is None, "a crash yields nothing")
     with tempfile.TemporaryDirectory() as tmp:
         spec = Path(tmp) / "duck_spec.md"
         spec.write_text("# spec\n- `hero=ref/hero.png`\nfront=ref/front.png\nnot a ref line\n", encoding="utf-8")
