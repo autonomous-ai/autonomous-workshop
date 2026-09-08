@@ -23,18 +23,19 @@ authenticated readback can reconcile them. That fence protects the remote
 effect and leaves Release waiting rather than claiming success or blindly
 repeating a possibly completed publication.
 
-Multipart occurrence transport is optional. The adapter includes component
-STLs and a STEP sidecar only when the complete Factory sidecar, or the exact
-hash-bound native CAD descriptor and product inventory from which it is
-derived, validates. Product-owned, stale, or malformed `*.step.json` files do
-not cross the effect boundary; the handoff safely narrows to the sealed root
-`assembled.stl` instead.
+The handoff carries every sealed regular file produced by Make except content
+inside `__cadgen__` or `__pycache__`. Paths, sizes, and hashes are recorded in
+the handoff facts so source, exports, renders, and evidence cross the Factory
+import boundary as exact bytes. Make files that collide with Release-owned
+root metadata are preserved under `_workshop/make/`; the canonical Release
+version retains the root path.
 
-For native Made results, the handoff also carries every sealed `.py` file under
-the exact declared CAD project path so a later Factory edit can regenerate the
-exports. Their paths, sizes, and hashes are recorded in the handoff facts.
-Python outside that project, `__cadgen__`/`__pycache__` content, renders, and
-verification output remain excluded.
+Multipart occurrence transport remains optional. When the complete Factory
+sidecar, or the exact hash-bound native CAD descriptor and product inventory
+from which it is derived, validates, the adapter additionally writes Factory's
+canonical assembly aliases. Original Make bytes remain present, with conflicting
+`*.step.json` files preserved under `_workshop/make/` so Factory cannot interpret
+unvalidated metadata as its transport sidecar.
 
 Public API: `workshop.integrations` exports the canonical Factory credentials,
 session, client, Release writer, and public transition. The adapter depends on
