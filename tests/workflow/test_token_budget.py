@@ -30,7 +30,7 @@ def context(tmp_path):
     return SimpleNamespace(host_state=tmp_path), SimpleNamespace(
         manager_id="codex", product_id="test", wish_sha256="a" * 64,
         input_sha256s={TOKEN_BUDGET_CAPABILITY_PATH: "b" * 64},
-        stage="make", status="active",
+        stage="make", status="active", round_index=1, checkpoint_sha256="c" * 64,
     )
 
 
@@ -98,6 +98,8 @@ def test_observer_stops_at_cap_and_on_lost_accounting(tmp_path):
         with pytest.raises(ContractError, match="limit reached"):
             callback()
     assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 1100
+    queued = tmp_path / "vault" / "pending" / ("%s-make-budget.json" % ("c" * 64))
+    assert "make-token-budget-stop" in queued.read_text(encoding="utf-8")
     with mock.patch("workshop.workflow.native_run._read_product_token_usage", side_effect=UsageUnavailable("missing")):
         with pytest.raises(UsageUnavailable):
             callback()
