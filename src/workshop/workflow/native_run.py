@@ -174,6 +174,8 @@ from workshop.workflow.agent_run import (
     AgentRun,
     AgentRunCheckpoint,
     DeterministicGateReceipt,
+    HOST_DECISION_KIND,
+    MAX_HOST_DECISIONS_IN_PACKET,
 )
 from workshop.workflow.budgets import (
     BUDGETS_CAPABILITY_PATH,
@@ -3946,6 +3948,7 @@ def _prepare_effort_stage_input(
         else:  # pragma: no cover - effort membership is checked above
             raise TransitionError("effort route cannot prepare this stage")
 
+    inputs["host_decisions"] = _host_decisions_for_packet(run)
     packet = {
         "schema_version": 1,
         "kind": _STAGE_INPUT_KIND,
@@ -4418,6 +4421,7 @@ def _prepare_stage_input(
                             )
                         subject = _stage_subject("release", subject_inputs)
 
+    inputs["host_decisions"] = _host_decisions_for_packet(run)
     packet = {
         "schema_version": 1,
         "kind": _STAGE_INPUT_KIND,
@@ -9374,6 +9378,91 @@ def resume_native_run(
             activity_observer=activity_observer,
             timing_observer=timing_observer,
         )
+
+
+
+def _utc_now_iso() -> str:
+    """Second-resolution UTC timestamp for owner-only ledgers."""
+
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _host_decisions_for_packet(run: AgentRun) -> list[dict[str, Any]]:
+    """The newest operator decisions, oldest first, as the stage packet lists them.
+
+    Each entry keeps what the Manager needs to match an answer to its own
+    question: when it was recorded, which checkpoint, stage and round the
+    run was at, the needs that were open, and the person's text. Nothing
+    here enters the stage subject.
+    """
+
+    decisions = run.host_decisions()[-MAX_HOST_DECISIONS_IN_PACKET:]
+    return [
+        {
+            "recorded_at": item.get("recorded_at"),
+            "checkpoint_sha256": item.get("checkpoint_sha256"),
+            "stage": item.get("stage"),
+            "round": item.get("round"),
+            "answers_needs": list(item.get("answers_needs") or []),
+            "source": item.get("source"),
+            "text": item.get("text"),
+            "meaning": (
+                "An explicit decision by the person who owns this run, answering "
+                "the needs listed. Act on it where the protocol provides a human "
+                "decision path (a recorded likeness acceptance, an authorization, "
+                "a component choice); it never waives a deterministic gate that "
+                "has no such path."
+            ),
+        }
+        for item in decisions
+    ]
+
+
+def record_native_run_decision(
+    product_id: str, text: str, *, source: str
+) -> Mapping[str, Any]:
+    """Record one operator decision for a run, under the mutation lock.
+
+    The decision answers the needs the current checkpoint carries; the next
+    stage packet (a resume prepares one) lists it under
+    ``inputs.host_decisions``. The native session, budgets, sealed artifacts,
+    and the stage subject are untouched.
+    """
+
+    if not isinstance(text, str) or not text.strip():
+        raise ContractError("a host decision needs text")
+    if not isinstance(source, str) or not source.strip() or len(source) > 80:
+        raise ContractError("a host decision needs a short source label")
+    paths = native_run_paths(product_id)
+    with _native_run_mutation_lock(paths):
+        run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
+        checkpoint = run.snapshot()
+        record = {
+            "kind": HOST_DECISION_KIND,
+            "schema_version": 1,
+            "recorded_at": _utc_now_iso(),
+            "product_id": product_id,
+            "checkpoint_sha256": checkpoint.checkpoint_sha256,
+            "stage": checkpoint.stage,
+            "round": checkpoint.round_index,
+            "status": checkpoint.status,
+            "answers_needs": list(checkpoint.needs or ()),
+            "source": source.strip(),
+            "text": text.strip(),
+        }
+        run.record_host_decision(record)
+        count = len(run.host_decisions())
+    return {
+        "product_id": product_id,
+        "action": "decision-recorded",
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "stage": checkpoint.stage,
+        "round": checkpoint.round_index,
+        "answers_needs": record["answers_needs"],
+        "decisions_recorded": count,
+    }
 
 
 def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, Any]:

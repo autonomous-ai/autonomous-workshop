@@ -93,7 +93,10 @@ uv run workshop wish "A small hand-cranked cam toy" --inventor soren-voss \
 `start <inventor>` is the ongoing Inventor-led loop; `wish "..."` creates one
 product and stops. Omit `--inventor` on a Wish to let the Manager choose the
 best match. `start <inventor> --once` dreams and builds one Inventor-generated
-idea. `resume <wish-id>` continues the same unfinished product and session.
+idea. `resume <wish-id>` continues the same unfinished product and session;
+`resume <wish-id> --decide "..."` first records your answer to a need the
+Manager raised (a likeness acceptance below the floor, an authorization) so
+the next stage packet carries it.
 
 `start <inventor> --wish "..."` builds your own brief as that Inventor without
 a daydream: the Inventor id is sealed into the Wish, so the run materializes

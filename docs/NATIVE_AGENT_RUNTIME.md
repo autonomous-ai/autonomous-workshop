@@ -196,6 +196,7 @@ $WORKSHOP_HOME/runs/<wish-id>/workspace/
     +-- .agents/skills/**             workflow and domain skills
     +-- WISH.json                     exact Wish
     +-- wish-references/ref-NN-*      reference images attached with --ref, files or links (read-only)
+    (host state: host-decisions.jsonl   operator decisions from `resume --decide`, listed in STAGE.json inputs.host_decisions)
     +-- STAGE.json                    current host-written stage packet
     |
     v

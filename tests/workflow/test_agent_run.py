@@ -371,6 +371,31 @@ class AgentRunTest(unittest.TestCase):
         )
         self.assertEqual(reopened.snapshot(), checkpoint)
 
+    def test_host_decisions_are_an_owner_only_ledger_with_validated_text(self):
+        run = self.create()
+        self.assertEqual(run.host_decisions(), ())
+        record = {
+            "kind": "autonomous-workshop.host-decision",
+            "schema_version": 1,
+            "recorded_at": "2026-09-08T14:00:00Z",
+            "text": "Accept revision 34 below the floor.",
+            "source": "test",
+        }
+        run.record_host_decision(record)
+        run.record_host_decision({**record, "text": "And keep the webbed feet."})
+        ledger = run.host_state_root / "host-decisions.jsonl"
+        self.assertEqual(stat.S_IMODE(ledger.stat().st_mode), 0o600)
+        self.assertEqual(
+            [item["text"] for item in run.host_decisions()],
+            ["Accept revision 34 below the floor.", "And keep the webbed feet."],
+        )
+        for bad in ({**record, "kind": "other"}, {**record, "text": ""}, {**record, "text": "x" * 2001}, {**record, "text": "tab\there"}):
+            with self.assertRaises(ContractError):
+                run.record_host_decision(bad)
+        ledger.write_text("{not json\n", encoding="utf-8")
+        with self.assertRaises(StateConflict):
+            run.host_decisions()
+
     def test_refresh_domain_skill_tools_rebinds_manifest_and_records(self):
         cad = self.root / "cad-skill"
         (cad / "scripts").mkdir(parents=True)

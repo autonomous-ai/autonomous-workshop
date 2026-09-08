@@ -120,6 +120,10 @@ _DIRECT_RELEASE_MARKER = (
 )
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 HOST_CORRECTIONS_FILE = "host-corrections.jsonl"
+HOST_DECISIONS_FILE = "host-decisions.jsonl"
+HOST_DECISION_KIND = "autonomous-workshop.host-decision"
+MAX_HOST_DECISION_CHARS = 2000
+MAX_HOST_DECISIONS_IN_PACKET = 10
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
     rb"(?i)(?:password|passwd|api[_-]?key|access[_-]?token|refresh[_-]?token|"
@@ -1744,6 +1748,60 @@ class AgentRun:
         }
         self.record_host_correction(record)
         return tuple(changes)
+
+    def record_host_decision(self, record: Mapping[str, Any]) -> None:
+        """Append one owner-only ledger line carrying an operator decision.
+
+        A decision is the person's explicit answer to a need the native
+        session raised (a likeness acceptance below the floor, an
+        authorization, a component choice). It lives in private host state,
+        never in the sealed workspace, and every later stage packet lists
+        the newest ones under ``inputs.host_decisions`` so the Manager can
+        read the answer on resume. The packet binding leaves the stage
+        subject untouched: a decision answers a Goal, it does not start one.
+        """
+
+        if not isinstance(record, Mapping) or record.get("kind") != HOST_DECISION_KIND:
+            raise ContractError("host decision record must carry its kind")
+        text = record.get("text")
+        if (
+            not isinstance(text, str)
+            or not text.strip()
+            or len(text) > MAX_HOST_DECISION_CHARS
+            or any(ch != "\n" and not ch.isprintable() for ch in text)
+        ):
+            raise ContractError(
+                "host decision text must be 1-%d printable characters" % MAX_HOST_DECISION_CHARS
+            )
+        ledger = self.host_state_root / HOST_DECISIONS_FILE
+        line = json.dumps(dict(record), sort_keys=True, separators=(",", ":")) + "\n"
+        descriptor = os.open(
+            str(ledger), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600
+        )
+        try:
+            os.write(descriptor, line.encode("utf-8"))
+        finally:
+            os.close(descriptor)
+        os.chmod(ledger, 0o600)
+
+    def host_decisions(self) -> tuple[dict[str, Any], ...]:
+        """Every recorded operator decision, oldest first; a missing ledger is empty."""
+
+        ledger = self.host_state_root / HOST_DECISIONS_FILE
+        if not ledger.is_file():
+            return ()
+        decisions: list[dict[str, Any]] = []
+        for raw in ledger.read_text(encoding="utf-8").splitlines():
+            if not raw.strip():
+                continue
+            try:
+                record = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                raise StateConflict("host decision ledger is corrupt") from exc
+            if not isinstance(record, dict) or record.get("kind") != HOST_DECISION_KIND:
+                raise StateConflict("host decision ledger holds a foreign record")
+            decisions.append(record)
+        return tuple(decisions)
 
     def record_host_correction(self, record: Mapping[str, Any]) -> None:
         """Append one owner-only ledger line describing a host correction."""
