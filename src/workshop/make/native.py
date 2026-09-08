@@ -351,7 +351,12 @@ class NativeMade:
         )
         if cad_project.is_symlink() or not cad_project.is_dir():
             raise ArtifactError("native Made CAD project is unavailable")
-        return Made(product_root, self.product_manifest, page)
+        return Made(
+            product_root,
+            self.product_manifest,
+            page,
+            self.cad_project_path,
+        )
 
 
 __all__ = [
