@@ -332,3 +332,23 @@ This correction makes declared motion evidence measure the intended geometry;
 it cannot infer an omitted retention requirement, prove a continuous path from
 samples, or establish physical snap performance. Frozen runs retain their
 materialized tool version. Private diagnostic products remain outside Git.
+
+
+## Per-pixel depth for CAD review (2026-09-08)
+
+Sorting triangles by their mean depth painted parts of a rear surface over a
+nearer one. A sloped quad behind a small square reproduced the occlusion error;
+changing only the quad diagonal also changed the resulting image.
+
+`render_review` now selects the nearest surface at each pixel using barycentric
+depth interpolation for its orthographic projection. Small row batches bound
+temporary arrays for large projected faces. Occurrence placements, materials,
+lighting, camera and tessellation remain unchanged. Regression coverage includes
+near and far surfaces, crossing planes, alternative triangulations, occurrence
+order, triangle order and cyclic corner order.
+
+This corrects image visibility, not geometry or physical behavior. Edge coverage
+uses pixel centres and may differ from the previous polygon fill. Truly
+coplanar overlapping materials have no unique geometric depth ordering. Frozen
+runs retain their existing renderer and review artifacts; private diagnostic
+models and rendered comparisons stay outside Git.

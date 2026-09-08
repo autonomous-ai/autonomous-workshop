@@ -65,6 +65,8 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Fixed
 
+- Make CAD review resolves visibility at each pixel, preventing rear surfaces
+  from painting over nearer parts when whole-triangle depth ordering is wrong.
 - Make motion checks intersect the actual solids of nested assemblies and
   include every ancestor placement when resolving a named part. Grouped
   mechanisms no longer appear collision-free merely because the assembly
