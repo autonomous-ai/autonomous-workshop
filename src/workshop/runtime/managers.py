@@ -154,6 +154,9 @@ _MODEL_ALIASES = {
 }
 
 
+# The host materializes the Inventor roster at ``.codex/agents/<id>.toml`` for
+# every Manager (see ``workflow.agent_run`` and ``runtime.agent_assets``), so
+# each spec projects that one directory and suffix.
 _SPECS = {
     "codex": ManagerRuntimeSpec(
         manager_id="codex",
@@ -167,8 +170,8 @@ _SPECS = {
     "claude": ManagerRuntimeSpec(
         manager_id="claude",
         display_name="Claude Code",
-        agent_directory=".claude/agents",
-        agent_suffix=".md",
+        agent_directory=".codex/agents",
+        agent_suffix=".toml",
         session_checkpoint_name="claude-session.json",
         default_model="claude-opus-5",
         default_reasoning_effort="medium",
@@ -177,8 +180,8 @@ _SPECS = {
     "grok": ManagerRuntimeSpec(
         manager_id="grok",
         display_name="Grok Build",
-        agent_directory=".grok/agents",
-        agent_suffix=".md",
+        agent_directory=".codex/agents",
+        agent_suffix=".toml",
         session_checkpoint_name="grok-session.json",
         default_model="grok-4.6",
         default_reasoning_effort=None,

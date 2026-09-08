@@ -1,5 +1,12 @@
 # Frozen Spark economics profile v3
 
+> **Precedence.** When `MANAGER.json` carries a reasoning effort and
+> `token-budget-v1.md` is materialized, that effort is Wish-wide (it replaces
+> the low reasoning level below) and the 20-minute figure is a pacing target,
+> not an enforced boundary; the host launches every turn with a 60-minute
+> emergency watchdog and enforces the token budget and 64k compaction. See
+> `token-budget-v1.md`. The frozen numbers below are otherwise unchanged.
+
 This immutable marker freezes the Codex Manager's low reasoning-effort profile,
 a 64,000-token automatic context-compaction ceiling, and a 20-minute native
 turn boundary for a new Spark run. The same settings apply to Make and Release

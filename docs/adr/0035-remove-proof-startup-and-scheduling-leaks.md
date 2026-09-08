@@ -1,6 +1,6 @@
 # ADR 0035: Remove proof startup and scheduling leaks
 
-- Status: Superseded by ADR 0036 for new runs
+- Status: Superseded by ADR 0036
 - Date: 2026-08-31
 - Owners: Runtime, workflow, product-run protocol, and CAD-skill maintainers
 - Supersedes for new runs: ADR 0034's `deep-economics-v6` profile

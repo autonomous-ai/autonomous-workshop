@@ -7,7 +7,7 @@
   `$WORKSHOP_HOME/daydreams/`.
 - `workshop start` seals the idea as the run's brief (internally still a Wish,
   so `status` and `resume` are unchanged) and starts Make -> Release (Spark)
-  by default; `--effort forge` adds Invent and `--effort quest` adds Playtest;
+  by default; `--workflow forge` adds Invent and `--workflow quest` adds Playtest;
   `--idea <daydream-id>` builds a previously saved idea. `workshop daydream
   <inventor-id>` dreams and prints the card without building.
 - `workshop start` is a loop: after each build it dreams the next idea, until

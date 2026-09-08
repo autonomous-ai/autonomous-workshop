@@ -18,7 +18,9 @@ the installed host, CLI default, or product-run playbook changes.
 
 ## Decision
 
-`workshop wish --effort <mode>` accepts three public effort names:
+`workshop wish --effort <mode>` accepts three public effort names (ADR 0043
+later renamed this route selector to `--workflow <mode>` and reused `--effort`
+for the model reasoning level; the routes are unchanged):
 
 ```text
 Spark: Wish -> Make -> Release

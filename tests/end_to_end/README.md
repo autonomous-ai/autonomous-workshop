@@ -89,7 +89,9 @@ uv run --frozen python tools/run_mock_session_e2e.py --preflight-only
 uv run --frozen python tools/run_mock_session_e2e.py --help
 ```
 
-Run one selectable route explicitly:
+Run one selectable route explicitly (`--effort` is this mock tool's own
+route flag; the product CLI selects the route with `--workflow` and uses
+`--effort` for the reasoning level):
 
 ```bash
 uv run --frozen python tools/run_mock_session_e2e.py \

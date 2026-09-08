@@ -1,3 +1,12 @@
+> **Status: partly superseded.** The Concept stage, Match turn, Deliver
+> stage, schema-v7 manifest, and the check ids `game-simulation`/`print-test`
+> described here are not current; see `docs/adr/0016-selectable-effort-routes.md`
+> and the current Invented schema 5 contract in
+> `.agents/product-run/.agents/skills/autonomous-workshop/references/invent.md`.
+> Current facts: the `abo` bundle is an Inventor manifest of schema v8 and the
+> baseline Playtest check ids are `agent-playtest`, `mechanical-check`, and
+> `printability-check` (`src/workshop/product/blueprints.py`).
+
 ## Purpose
 
 ABO's Playtest is the half of the lane nothing in this repository could previously satisfy: executable seeded games in the thousands, model-driven seats that report what a scripted policy cannot, and deterministic manufacturing measurement — all bound to the exact revision they tested, and all returned as findings a later round can act on rather than as a score.
@@ -6,7 +15,7 @@ ABO's Playtest is the half of the lane nothing in this repository could previous
 
 ### Requirement: ABO returns every result its lane requires
 
-An ABO run's Playtest stage SHALL seal a check for every id the `invented-games` blueprint requires of that lane — `agent-playtest`, `game-simulation`, `mechanical-test` and `print-test` — each appearing exactly once, with no check the lane did not ask for.
+An ABO run's Playtest stage SHALL seal a check for every id the `invented-games` blueprint requires of that lane — `agent-playtest`, `mechanical-check` and `printability-check` — each appearing exactly once, with no check the lane did not ask for.
 
 ABO SHALL NOT own a Playtest stage of its own. The shared native Playtest stage produces these checks; ABO contributes the lane's judgment and its declared deterministic tools, and the host's gate decides whether the round passes.
 
@@ -19,7 +28,7 @@ A required check that is missing, malformed, stale, unevidenced, or bound to dif
 #### Scenario: All four results are present
 
 - **WHEN** the Playtest stage seals a round for an ABO run
-- **THEN** it carries checks identified as `agent-playtest`, `game-simulation`, `mechanical-test` and `print-test`, each exactly once
+- **THEN** it carries checks identified as `agent-playtest`, `mechanical-check` and `printability-check`, each exactly once
 - **AND** a result missing one of them, or carrying an id the lane did not require, is refused
 
 #### Scenario: A missing result blocks Instructions

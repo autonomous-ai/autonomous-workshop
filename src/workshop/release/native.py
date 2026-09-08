@@ -29,7 +29,12 @@ from workshop.artifacts import (
     build_artifact_manifest,
 )
 from workshop.errors import ArtifactError, ContractError
-from workshop.make.contracts import Made
+from workshop.make.contracts import (
+    MAX_CUSTOMER_SUMMARY_CHARS,
+    MAX_CUSTOMER_TITLE_CHARS,
+    Made,
+    customer_copy_text,
+)
 from workshop.make.native import NativeMade
 from workshop.playtest.contracts import Playtested
 from workshop.playtest.native import NativePlaytested
@@ -651,8 +656,12 @@ def _validate_legacy_release_product(product: Mapping[str, Any]) -> dict[str, An
         "schema_version": LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION,
         "kind": "workshop.release-package",
         "status": LEGACY_RELEASE_PRODUCT_STATUS,
-        "title": _page_text(product.get("title"), "native Release title", 300),
-        "summary": _page_text(product.get("summary"), "native Release summary", 2_000),
+        "title": customer_copy_text(
+            product.get("title"), "native Release title", MAX_CUSTOMER_TITLE_CHARS
+        ),
+        "summary": customer_copy_text(
+            product.get("summary"), "native Release summary", MAX_CUSTOMER_SUMMARY_CHARS
+        ),
         "hero": _page_section(
             product.get("hero"),
             "native Release hero",
@@ -722,8 +731,12 @@ def _validate_manual_release_product(product: Mapping[str, Any]) -> dict[str, An
         "schema_version": RELEASE_PRODUCT_SCHEMA_VERSION,
         "kind": "workshop.release-package",
         "status": RELEASE_PRODUCT_STATUS,
-        "title": _page_text(product.get("title"), "native Release title", 300),
-        "summary": _page_text(product.get("summary"), "native Release summary", 2_000),
+        "title": customer_copy_text(
+            product.get("title"), "native Release title", MAX_CUSTOMER_TITLE_CHARS
+        ),
+        "summary": customer_copy_text(
+            product.get("summary"), "native Release summary", MAX_CUSTOMER_SUMMARY_CHARS
+        ),
         "what_arrives": _page_text_list(
             product.get("what_arrives"),
             "native Release what_arrives",
@@ -768,8 +781,12 @@ def _validate_direct_release_product(product: Mapping[str, Any]) -> dict[str, An
         "schema_version": DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
         "kind": "workshop.release-package",
         "status": RELEASE_PRODUCT_STATUS,
-        "title": _page_text(product.get("title"), "native Release title", 300),
-        "summary": _page_text(product.get("summary"), "native Release summary", 2_000),
+        "title": customer_copy_text(
+            product.get("title"), "native Release title", MAX_CUSTOMER_TITLE_CHARS
+        ),
+        "summary": customer_copy_text(
+            product.get("summary"), "native Release summary", MAX_CUSTOMER_SUMMARY_CHARS
+        ),
         "what_arrives": _page_text_list(
             product.get("what_arrives"),
             "native Release what_arrives",

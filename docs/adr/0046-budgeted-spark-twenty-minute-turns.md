@@ -1,10 +1,12 @@
 # ADR 0046: Explicit twenty-minute turns for budgeted Spark
 
-- Status: Accepted
+- Status: Superseded by ADR 0049
 - Date: 2026-09-06
 - Scope: Codex Spark v3 runs with the budgets-v1 capability
 
 ## Context
+
+> Supersession note: Superseded in part: ADR 0049 removed the twenty-minute split for token-budgeted products, and ADR 0051 records the 60-minute per-turn emergency watchdog that now bounds every turn of such runs. Frozen unbudgeted Spark v3 sessions keep the ceiling described here.
 
 The Crescent run remained in Make for more than a day across explicit
 resumes. An initial diagnosis incorrectly assumed Spark's launcher constant

@@ -30,7 +30,10 @@ from workshop.workflow.budgets import (
     CommandBudget,
     LifetimeBudget,
 )
+from workshop.workflow.token_budget import ProductTokenBudget
 from workshop.workflow.native_run import (
+    _launcher_call,
+    _token_budgeted_launcher,
     _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
     _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
@@ -2254,9 +2257,9 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(receipt["workflow"], "spark")
             self.assertEqual(receipt["agent"], "codex")
             self.assertEqual(receipt["model"], "gpt-5.6-sol")
-            self.assertEqual(receipt["effort"], "high")
+            self.assertEqual(receipt["effort"], "medium")
             self.assertIn("Workflow: Spark", stderr.getvalue())
-            self.assertIn("Model: gpt-5.6-sol · effort high", stderr.getvalue())
+            self.assertIn("Model: gpt-5.6-sol · effort medium", stderr.getvalue())
             self.assertIn(
                 "Starting one native Codex session for Make",
                 stderr.getvalue(),
@@ -3667,6 +3670,160 @@ class NativeHostTest(unittest.TestCase):
         )
         with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
             command.parse_args(("wish", "a moon", "--publish"))
+
+
+class TokenBudgetedTurnTest(unittest.TestCase):
+    """Under a product token budget the host must not claim minute boundaries."""
+
+    _HARD_BOUNDARY_PHRASES = (
+        "16-minute medium runway",
+        "15-minute source handoff boundary",
+        "ten-minute boundary",
+    )
+
+    def _assert_no_hard_boundary(self, prompt):
+        for phrase in self._HARD_BOUNDARY_PHRASES:
+            self.assertNotIn(phrase, prompt)
+        # no "has one N-minute ..." / "N-minute ... boundary" claim survives
+        self.assertNotRegex(prompt, r"has (one|a) \d+-minute")
+        self.assertNotRegex(prompt, r"\b(ten|\d+)-minute (medium runway|source handoff|boundary)")
+        self.assertIn("product token budget", prompt)
+        self.assertIn("60-minute emergency watchdog", prompt)
+
+    def test_budgeted_deep_make_prompts_phrase_minutes_as_pacing_targets(self):
+        for capability in ("deep-v13", "deep-v12", "deep-v9", "deep-v8"):
+            checkpoint = NativeHostTest._launcher_checkpoint(
+                effort="quest", economics_capability=capability
+            )
+            with self.subTest(capability=capability):
+                frozen = _deep_make_critical_path_prompt(checkpoint)
+                budgeted = _deep_make_critical_path_prompt(
+                    checkpoint, token_budgeted=True
+                )
+                self.assertIn("16-minute medium runway", frozen)
+                self._assert_no_hard_boundary(budgeted)
+                self.assertIn("about 16 minutes", budgeted)
+                # everything but the boundary sentence is unchanged
+                self.assertIn("make-proof-ready", budgeted)
+                self.assertIn(checkpoint.checkpoint_sha256, budgeted)
+
+    def test_budgeted_v13_final_make_handoff_is_a_pacing_target(self):
+        checkpoint = NativeHostTest._launcher_checkpoint(
+            effort="forge", economics_capability="deep-v13"
+        )
+        frozen = _deep_make_critical_path_prompt(checkpoint, proof_boundary=False)
+        budgeted = _deep_make_critical_path_prompt(
+            checkpoint, proof_boundary=False, token_budgeted=True
+        )
+        self.assertIn("15-minute source handoff boundary", frozen)
+        self._assert_no_hard_boundary(budgeted)
+        self.assertIn("about 15 minutes", budgeted)
+        self.assertIn("Keep the same Make Goal", budgeted)
+
+    def test_budgeted_invent_recovery_is_a_pacing_target(self):
+        checkpoint = NativeHostTest._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v13", stage="invent"
+        )
+        frozen = _deep_invent_recovery_prompt(checkpoint)
+        budgeted = _deep_invent_recovery_prompt(checkpoint, token_budgeted=True)
+        self.assertIn("ten-minute boundary is repair reserve", frozen)
+        self._assert_no_hard_boundary(budgeted)
+        self.assertIn("about ten minutes", budgeted)
+        self.assertIn("agent-outcome.json is the only stopping condition", budgeted)
+
+    def test_launcher_call_passes_the_token_budget_to_the_prompt_builders(self):
+        checkpoint = NativeHostTest._launcher_checkpoint(
+            effort="quest", economics_capability="deep-v13"
+        )
+        launcher = mock.Mock()
+        launcher.start.return_value = "started"
+        paths = SimpleNamespace(
+            workspace=Path("/tmp/workspace"), host_state=Path("/tmp/host-state")
+        )
+        with mock.patch(
+            "workshop.workflow.native_run._load_lifetime_budget",
+            return_value=ProductTokenBudget(1_000_000),
+        ), mock.patch(
+            "workshop.workflow.native_run.materialized_agent_instructions_sha256",
+            return_value="a" * 64,
+        ):
+            _launcher_call(
+                launcher, "start", checkpoint=checkpoint, paths=paths,
+                make_proof_boundary=True,
+            )
+        budgeted_prompt = launcher.start.call_args.kwargs["prompt"]
+        self._assert_no_hard_boundary(budgeted_prompt)
+        with mock.patch(
+            "workshop.workflow.native_run._load_lifetime_budget", return_value=None
+        ), mock.patch(
+            "workshop.workflow.native_run.materialized_agent_instructions_sha256",
+            return_value="a" * 64,
+        ):
+            _launcher_call(
+                launcher, "start", checkpoint=checkpoint, paths=paths,
+                make_proof_boundary=True,
+            )
+        frozen_prompt = launcher.start.call_args.kwargs["prompt"]
+        self.assertIn("16-minute medium runway", frozen_prompt)
+
+    def test_token_budget_rebuilds_every_turn_launcher_with_the_hour_watchdog(self):
+        paths = SimpleNamespace(
+            workspace=Path("/tmp/workspace"), host_state=Path("/tmp/host-state")
+        )
+        popen = mock.Mock(side_effect=AssertionError("must not launch Codex"))
+        # frozen per-turn profiles: Spark low/20 min, deep proof medium/16 min,
+        # deep final high/15 min, deep Invent recovery medium/10 min
+        cases = (
+            ("spark", "v3", "make", "low", SPARK_AUTO_COMPACT_TOKEN_LIMIT, 1200),
+            ("forge", "deep-v13", "make", "medium", None, 16 * 60),
+            ("quest", "deep-v13", "make", "high", None, 15 * 60),
+            ("quest", "deep-v13", "invent", "medium", None, 10 * 60),
+        )
+        for effort, capability, stage, reasoning, compaction, frozen_seconds in cases:
+            checkpoint = NativeHostTest._launcher_checkpoint(
+                effort=effort, economics_capability=capability, stage=stage
+            )
+            checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+            with self.subTest(
+                effort=effort, capability=capability, stage=stage, reasoning=reasoning
+            ), mock.patch.dict(os.environ, {}, clear=True), mock.patch(
+                "workshop.runtime.codex.shutil.which", return_value=None
+            ):
+                frozen = CodexNativeSessionLauncher(
+                    reasoning_effort=reasoning,
+                    auto_compact_token_limit=compaction,
+                    timeout_seconds=frozen_seconds,
+                    popen_factory=popen,
+                    cli_version="0.153.4",
+                )
+                self.assertLess(frozen.timeout_seconds, 3600)
+                rebuilt = _token_budgeted_launcher(
+                    paths, checkpoint, frozen, ProductTokenBudget(1_000_000)
+                )
+                self.assertEqual(rebuilt.timeout_seconds, 3600)
+                self.assertEqual(rebuilt.model, frozen.model)
+                self.assertEqual(rebuilt.reasoning_effort, frozen.reasoning_effort)
+                self.assertEqual(
+                    rebuilt.auto_compact_token_limit, frozen.auto_compact_token_limit
+                )
+                self.assertEqual(rebuilt.runtime_profile_sha256, "f" * 64)
+                self.assertIs(rebuilt._popen_factory, popen)
+                self.assertIsNotNone(rebuilt.token_budget_observer)
+                popen.assert_not_called()
+        checkpoint = NativeHostTest._launcher_checkpoint(
+            effort="spark", economics_capability="v3"
+        )
+        with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
+            "workshop.runtime.codex.shutil.which", return_value=None
+        ):
+            stale = CodexNativeSessionLauncher(
+                reasoning_effort="low", timeout_seconds=1200,
+                popen_factory=popen, cli_version="0.152.0",
+            )
+            with self.assertRaisesRegex(ContractError, "Codex 0.153.4"):
+                _token_budgeted_launcher(
+                    paths, checkpoint, stale, ProductTokenBudget(1_000_000)
+                )
 
 
 if __name__ == "__main__":

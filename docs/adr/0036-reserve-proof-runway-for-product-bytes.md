@@ -1,11 +1,13 @@
 # ADR 0036: Reserve the proof runway for product bytes
 
-- Status: Accepted
+- Status: Superseded by ADR 0037
 - Date: 2026-08-31
 - Owners: Runtime, workflow, and product-run protocol maintainers
 - Supersedes for new runs: ADR 0035's `deep-economics-v7` profile
 
 ## Context
+
+> Supersession note: ADR 0037 raised the deep compaction ceiling this decision assumed; the proof-runway split survives only as pacing guidance for token-budgeted runs (ADR 0049).
 
 The identical Three-Sky Seed production Quest tested deep-v7 through the
 regular CLI in an untouched persistent Codex session. Invent passed after its

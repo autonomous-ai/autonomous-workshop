@@ -1,5 +1,11 @@
 # Wish and Match contracts
 
+> **Match is not an active stage for effort-routed runs.** Spark, Forge, and
+> Quest fold Inventor selection into their first creative stage (Make for
+> Spark; Invent for Forge and Quest) and never receive a Match `STAGE.json`.
+> The Match sections below apply only to frozen historical runs that still
+> receive a Match packet when resumed. The Wish section applies to every run.
+
 ## Wish is a host boundary
 
 **Input:** The person's exact words and explicitly supplied constraints or

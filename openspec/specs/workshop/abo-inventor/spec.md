@@ -1,3 +1,12 @@
+> **Status: partly superseded.** The Concept stage, Match turn, Deliver
+> stage, schema-v7 manifest, and the check ids `game-simulation`/`print-test`
+> described here are not current; see `docs/adr/0016-selectable-effort-routes.md`
+> and the current Invented schema 5 contract in
+> `.agents/product-run/.agents/skills/autonomous-workshop/references/invent.md`.
+> Current facts: the `abo` bundle is an Inventor manifest of schema v8 and the
+> baseline Playtest check ids are `agent-playtest`, `mechanical-check`, and
+> `printability-check` (`src/workshop/product/blueprints.py`).
+
 ## Purpose
 
 Abstract Boardgame Oracle is an `invented-games` inventor whose taste is abstract structure rather than personal reference: a small number of piece types on a rich board, depth from combinatorial complexity rather than from added rules, and every distinction carried by shape because the pipeline assigns no colour. This capability defines its identity, the boundary that separates it from the other inventor in its lane, the provenance of the tree it was built from, and what it waits for when a capability is absent.
@@ -143,7 +152,7 @@ Concept is the first place this bites: with the image capability unconfigured, t
 
 ### Requirement: ABO is a declarative invented-games Inventor bundle
 
-The Workshop SHALL carry an inventor identified as `abo`, named Abstract Boardgame Oracle, whose folder is named for that id. Its manifest SHALL be schema v7 and SHALL declare exactly one capability — the lane `invented-games` — alongside its identity, its status, its source, and a hash-bound inventory of its extensions.
+The Workshop SHALL carry an inventor identified as `abo`, named Abstract Boardgame Oracle, whose folder is named for that id. Its manifest SHALL be schema v8 and SHALL declare exactly one capability — the lane `invented-games` — alongside its identity, its status, its source, and a hash-bound inventory of its extensions.
 
 ABO owns no product contract and no evidence contract, because an inventor is declarative data: it contributes taste and specialist instruction, and the host runs every stage the same way for every inventor. ABO's extensions are static bytes the host fingerprints and makes available to the native session; the host never imports or executes them, and there is no entry point to run.
 

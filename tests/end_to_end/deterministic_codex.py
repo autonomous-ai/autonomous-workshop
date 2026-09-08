@@ -380,8 +380,27 @@ def author_invent(root: Path, stage) -> None:
         authored["concept"].pop("title", None)
     if "invent-physical" in scenario:
         authored["concept"].pop("interaction", None)
+    authored["concept"]["vault_lead_responses"] = lead_responses(
+        stage["inputs"].get("vault_leads", [])
+    )
     write_json(root / source, authored)
     finalizer(root, "invent", "--source", source)
+
+
+def lead_responses(leads) -> list:
+    """Answer every issued design-vault lead the way the finalizer requires."""
+
+    return [
+        {
+            "lead_id": lead["id"],
+            "status": "accepted-risk",
+            "response": (
+                "The deterministic fixture keeps the %s risk visible and accepts it."
+                % lead["nodes"][-1]
+            ),
+        }
+        for lead in leads
+    ]
 
 
 def write_render(project: Path) -> None:
@@ -402,6 +421,9 @@ def author_make(root: Path, stage) -> None:
         creative_source = "authored/spark-make.json"
         authored = invented_source(include_selection=True)
         authored["ranking"] = ranking(stage)
+        authored["concept"]["vault_lead_responses"] = lead_responses(
+            inputs.get("vault_leads", [])
+        )
         write_json(root / creative_source, authored)
     product_root_value = inputs["product_root"]
     product_root = root / product_root_value

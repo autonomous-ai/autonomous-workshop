@@ -1,11 +1,13 @@
 # ADR 0037: Raise the deep compaction ceiling to 256k
 
-- Status: Accepted
+- Status: Superseded by ADR 0038
 - Date: 2026-08-31
 - Owners: Runtime, workflow, and product-run protocol maintainers
 - Supersedes for new runs: ADR 0036's `deep-economics-v8` profile
 
 ## Context
+
+> Supersession note: ADR 0038 builds on the 256k ceiling; the ceiling itself remains in force for deep routes.
 
 A real Forge Invent turn using the default `gpt-5.6-sol` session compacted
 multiple times despite a short wall-clock duration. The observed 24k ceiling,

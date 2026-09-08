@@ -182,7 +182,10 @@ def test_pending_child_has_bounded_grace(tmp_path):
 
 @pytest.mark.parametrize("command", [("wish", "a simple toy"), ("start", "ivy")])
 def test_cli_default_and_explicit_configuration(command):
-    assert parser().parse_args(command).max_tokens == 30000000
+    from cli.main import _product_token_cap
+    default_args = parser().parse_args(command)
+    assert default_args.max_tokens is None
+    assert _product_token_cap(default_args) == 30000000
     assert parser().parse_args((*command, "--max-tokens", "10000000")).max_tokens == 10000000
     args = parser().parse_args((*command, "--workflow", "spark", "--agent", "codex",
                                 "--model", "astra", "--effort", "medium", "--max-tokens", "2000000"))

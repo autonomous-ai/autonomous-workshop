@@ -1,7 +1,9 @@
 # ADR 0049: Product-wide native token budgets
 
-- Status: Implemented; one live Spark acceptance passed
+- Status: Accepted
 - Date: 2026-09-07
+
+Implemented; one live Spark acceptance (Quiet Arc) passed. Relates to ADR 0051, which records the 60-minute per-turn emergency watchdog this decision keeps.
 
 New Codex products freeze `token-budget-v1.md`. `workshop wish` and each product
 created by `workshop start` default to `--max-tokens 30000000`. The allowance

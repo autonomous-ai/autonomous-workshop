@@ -1,7 +1,8 @@
-- Remove the repository-authored `product-to-cad` skill. The Concept stage now
-  owns the build spec, the frozen visual target, and the researched physical
-  facts that skill restated, and Make reaches CAD through the materialized
-  `cad`, `image-to-cad`, `design-reference`, and `step-parts` skills directly.
+- Remove the repository-authored `product-to-cad` skill. The sealed Invent
+  concept (or Spark Make's compact concept) carries the build spec and
+  researched physical facts that skill restated, and Make reaches CAD through
+  the materialized `cad`, `image-to-cad`, `design-reference`, and
+  `step-parts` skills directly.
 - **Materialized instruction bytes changed**: `product-to-cad` is no longer
   materialized into a product run, the vendored `cad/SKILL.md` no longer points
   at it, and every Inventor's `<id>-inventor/SKILL.md` plus the

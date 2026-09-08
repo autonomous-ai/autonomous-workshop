@@ -1,11 +1,13 @@
 # ADR 0038: Prove product states and bound the final-source handoff
 
-- Status: Accepted
+- Status: Superseded by ADR 0039
 - Date: 2026-08-31
 - Owners: Runtime, workflow, Make tooling, and product-run protocol maintainers
 - Supersedes for new runs: ADR 0037's `deep-economics-v9` profile
 
 ## Context
+
+> Supersession note: ADR 0039 turned Invent recovery into a source handoff; the product-state proof remains in force.
 
 The production Quest `wish-20260831-123720-43b4ec40` validated v8's liveness
 fix: early Make authored source in 5m44s and completed its proof marker in

@@ -208,7 +208,7 @@ class DaydreamNativeTest(unittest.TestCase):
             kwargs,
             {
                 "model": "gpt-5.6-sol",
-                "reasoning_effort": "high",
+                "reasoning_effort": "medium",
                 "timeout_seconds": DAYDREAM_TURN_TIMEOUT_SECONDS,
             },
         )

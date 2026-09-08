@@ -15,7 +15,9 @@ The native Manager writes `artifacts/release/package` with at least:
 - canonical `MANUAL.pdf`, self-contained and ready to print for the box;
 - canonical `product.json`, bound to the exact Made artifact and either Quest's
   passing Playtest evidence or Spark/Forge's explicit Playtest `not-run`
-  omission; and
+  omission;
+- `MANUAL-DESIGN.json`, the manual-design evidence that binds the approved
+  manual to its visual-review findings; and
 - evidence-derived claims, contents, limitations, and optional editable manual
   source or accessible text companions.
 

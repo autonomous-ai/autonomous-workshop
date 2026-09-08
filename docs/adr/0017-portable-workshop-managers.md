@@ -16,7 +16,8 @@ ADR number 0013, which on `main` already means manual-first Release.
 ## Decision
 
 Freeze one Manager runtime on each new run (`manager_id` on the host
-checkpoint, default `codex`). The CLI accepts `--manager {codex,claude,grok}`.
+checkpoint, default `codex`). The CLI accepts `--manager {codex,claude,grok}`
+(renamed `--agent` by ADR 0043; the semantics are unchanged).
 Resume cannot switch Managers.
 
 A `NativeSessionLauncher` port owns start/resume, session checkpoint filename,

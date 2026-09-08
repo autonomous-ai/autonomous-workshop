@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 from types import MappingProxyType
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Sequence
 
 from workshop._validation import (
     copy_json_mapping,
@@ -17,7 +17,7 @@ from workshop._validation import (
     require_sha256,
 )
 from workshop.errors import ContractError, StateConflict
-from workshop.invent.native import NativeInvented
+from workshop.invent.native import NativeInvented, validate_vault_lead_responses
 from workshop.invent.vault import Vault, VaultError, assert_concept_compatible
 from workshop.match.native import NativeMatchAssignment, InventorRoster
 from workshop.workflow.agent_run import (
@@ -41,12 +41,15 @@ INVENTED_PATH = "artifacts/invent/invented.json"
 VALIDATOR_VERSION = "2.0.0"
 STAGE_SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _GATE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
+# Make's forward target is effort-dependent: Forge and Spark seal straight
+# into Release, Quest plays first.  The run-local finalizer's FORWARD table
+# encodes the same pair so both sides refuse the same transitions.
 _FORWARD = {
-    "match": "invent",
-    "invent": "make",
-    "make": "playtest",
-    "playtest": "release",
-    "release": "complete",
+    "match": ("invent",),
+    "invent": ("make",),
+    "make": ("playtest", "release"),
+    "playtest": ("release",),
+    "release": ("complete",),
 }
 
 
@@ -252,11 +255,6 @@ class StageGateDecision:
                     "failed Make revision gate must return explicit feedback to Invent"
                 )
         elif self.evidence.passed:
-            if self.evidence.stage == "make" and self.transition in (
-                "playtest",
-                "release",
-            ):
-                return
             if self.evidence.stage == "release" and self.transition in (
                 "complete",
                 "deliver",
@@ -265,7 +263,7 @@ class StageGateDecision:
                 # immutable pre-terminal-Release finalizer still proposes that
                 # historical transition. New runs complete at Release.
                 return
-            if expected is None or self.transition != expected:
+            if expected is None or self.transition not in expected:
                 raise ContractError("passed stage gate has an invalid transition")
         elif self.transition is not None:
             raise ContractError("failed stage gate cannot authorize a transition")
@@ -412,11 +410,17 @@ def evaluate_match_stage(
     return StageGateDecision(evidence=evidence, transition="invent")
 
 
-def _vault_checks(vault: Optional[Vault], concept: Mapping[str, Any]) -> dict[str, Any]:
+def _vault_checks(
+    vault: Optional[Vault],
+    concept: Mapping[str, Any],
+    *,
+    issued_lead_ids: Sequence[str] = (),
+) -> dict[str, Any]:
     """Re-apply the run-local design vault rules to a sealed Invent concept.
 
     With a vault snapshot every mechanism resolves or is declared novel, and no
-    declared conflict or unmet requirement survives.  Without one (a run that
+    declared conflict or unmet requirement survives; every lead the packet
+    issued is answered in ``vault_lead_responses``.  Without one (a run that
     predates the vault) the gate is unchanged.
     """
 
@@ -426,7 +430,12 @@ def _vault_checks(vault: Optional[Vault], concept: Mapping[str, Any]) -> dict[st
         binding = assert_concept_compatible(vault, concept)
     except VaultError as exc:
         raise ContractError("Invent concept is refused by the design vault: %s" % exc) from exc
-    return {"design_vault_sha256": vault.sha256, "vault_leads": len(binding["leads"])}
+    responses = validate_vault_lead_responses(concept, issued_lead_ids)
+    return {
+        "design_vault_sha256": vault.sha256,
+        "vault_leads": len(binding["leads"]),
+        "vault_lead_responses": len(responses),
+    }
 
 
 def evaluate_invent_stage(
@@ -438,6 +447,7 @@ def evaluate_invent_stage(
     expected_subject_sha256: Optional[str] = None,
     expected_artifact_path: str = INVENTED_PATH,
     vault: Optional[Vault] = None,
+    issued_lead_ids: Sequence[str] = (),
 ) -> StageGateDecision:
     """Validate Invented against the accepted Match assignment and the vault."""
 
@@ -475,7 +485,9 @@ def evaluate_invent_stage(
         _artifact_document(run_root, artifact, label="Invented artifact")
     )
     invented.assert_context(assignment)
-    vault_checks = _vault_checks(vault, invented.concept)
+    vault_checks = _vault_checks(
+        vault, invented.concept, issued_lead_ids=issued_lead_ids
+    )
     source_artifact = outcome.artifacts[1] if len(outcome.artifacts) == 2 else None
     if source_artifact is not None:
         source = _artifact_document(
@@ -525,6 +537,7 @@ def evaluate_routed_invent_stage(
     assignment_artifact_path: str,
     invented_artifact_path: str,
     vault: Optional[Vault] = None,
+    issued_lead_ids: Sequence[str] = (),
 ) -> StageGateDecision:
     """Validate combined selection + invention from one routed Invent turn."""
 
@@ -564,7 +577,9 @@ def evaluate_routed_invent_stage(
         _artifact_document(run_root, invented_artifact, label="routed Invented artifact")
     )
     invented.assert_context(assignment)
-    vault_checks = _vault_checks(vault, invented.concept)
+    vault_checks = _vault_checks(
+        vault, invented.concept, issued_lead_ids=issued_lead_ids
+    )
     source = _artifact_document(
         run_root, source_artifact, label="routed Invent authored source"
     )

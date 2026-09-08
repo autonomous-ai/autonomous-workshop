@@ -1,3 +1,10 @@
+> **Status: superseded / not implemented.** This spec describes a topology
+> (a separate Concept stage, Match and Deliver turns, older schema versions)
+> that no current route contains. See `docs/adr/0016-selectable-effort-routes.md`
+> and the current Invented schema 5 contract in
+> `.agents/product-run/.agents/skills/autonomous-workshop/references/invent.md`.
+> It is kept as history and is not a requirement on current code.
+
 ## Purpose
 
 Defines what Make receives from Concept and what following a concept actually obliges it to do — which parts of the concept are binding, what the Workshop checks at the boundary, and how a rejected build revises the design rather than only the geometry.

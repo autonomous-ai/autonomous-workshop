@@ -7,6 +7,11 @@ from pathlib import Path
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError
 from workshop.invent.native import NativeInvented
+from workshop.make.contracts import (
+    CUSTOMER_COPY_BANNED_WORDS,
+    CUSTOMER_COPY_BANNED_WORDS_ANY_CASE,
+    validate_product_copy,
+)
 from workshop.make.native import NativeMade
 from workshop.match.native import (
     MatchRankingEntry,
@@ -107,6 +112,94 @@ class NativeMadeTest(unittest.TestCase):
             cad_verification_sha256=_sha(verification),
         )
         return made, product_root
+
+    def _write_review(self, product_root, concept_sha256):
+        snap = product_root / "cad/project/snap"
+        snap.mkdir(parents=True, exist_ok=True)
+        review = {
+            "schema_version": 6,
+            "kind": "autonomous-workshop.signature-experience-review",
+            "concept_sha256": concept_sha256,
+            "reviewer": "independent-native-visual-critic",
+        }
+        (snap / "SIGNATURE-REVIEW.json").write_bytes(_canonical(review) + b"\n")
+
+    def test_signature_review_must_bind_the_sealed_concept(self):
+        made, product_root = self._made()
+        with self.assertRaisesRegex(ContractError, "requires a signature review"):
+            made.assert_signature_review_bound(self.run_root, self.invented)
+        self._write_review(product_root, "f" * 64)
+        with self.assertRaisesRegex(ContractError, "concept_sha256 differs"):
+            made.assert_signature_review_bound(self.run_root, self.invented)
+        self._write_review(product_root, self.invented.concept_sha256)
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        self.assertEqual(
+            made.assert_signature_review_bound(self.run_root, self.invented),
+            _sha(review_path.read_bytes()),
+        )
+        other = NativeInvented(
+            wish_sha256=self.wish_sha256,
+            assignment_sha256=self.assignment.assignment_sha256,
+            taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.assignment.blueprint_sha256,
+            concept={"title": "Sun Nook", "summary": "A tiny solar observatory."},
+            research=self.invented.to_dict()["research"],
+        )
+        with self.assertRaisesRegex(ContractError, "concept_sha256 differs"):
+            made.assert_signature_review_bound(self.run_root, other)
+        review_path.write_bytes(b"{not json")
+        with self.assertRaises(ContractError):
+            made.assert_signature_review_bound(self.run_root, self.invented)
+        with self.assertRaises(ContractError):
+            made.assert_signature_review_bound(self.run_root, "not-invented")
+
+    def test_product_copy_follows_the_release_rule_at_make(self):
+        made, _ = self._made()
+        for label, product in (
+            ("untrimmed title", dict(made.product, title=" Moon Nook")),
+            ("carriage return", dict(made.product, title="Moon\rNook")),
+            ("title over 300", dict(made.product, title="x" * 301)),
+            ("summary over 2000", dict(made.product, summary="x" * 2_001)),
+            ("vocabulary in title", dict(made.product, title="Playtest Moon Nook")),
+            ("vocabulary in summary", dict(made.product, summary="The Inventor's promise.")),
+            ("case-insensitive", dict(made.product, summary="a FINALIZER of the moon")),
+        ):
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(ContractError, r"\(customer-copy\)"):
+                    NativeMade(
+                        round=made.round,
+                        wish_sha256=made.wish_sha256,
+                        assignment_sha256=made.assignment_sha256,
+                        taste_sha256=made.taste_sha256,
+                        blueprint_sha256=made.blueprint_sha256,
+                        invented_sha256=made.invented_sha256,
+                        product_root=made.product_root,
+                        cad_project_path=made.cad_project_path,
+                        product_manifest=made.product_manifest,
+                        product=product,
+                        product_json_sha256=made.product_json_sha256,
+                        cad_verification_path=made.cad_verification_path,
+                        cad_verification_sha256=made.cad_verification_sha256,
+                    )
+                with self.assertRaisesRegex(ContractError, r"\(customer-copy\)"):
+                    validate_product_copy(product, "Made product")
+        # substrings of banned words are not whole words, and ordinary
+        # English words that the Workshop also uses internally stay allowed
+        # (published toys are named "Starling Gate"; a lantern "sparks").
+        validate_product_copy(
+            {
+                "title": "Starling Gate",
+                "summary": "Make a wish: a spark, a forge, a quest, a goal, "
+                "one artifact at the gate. Wishful inventors playtested it.",
+            },
+            "Made product",
+        )
+        with self.assertRaisesRegex(ContractError, r"found 'Wish'"):
+            validate_product_copy(
+                {"title": "Gateway", "summary": "One Wish."}, "Made product"
+            )
+        self.assertEqual(CUSTOMER_COPY_BANNED_WORDS, ("Wish", "Taste", "Inventor"))
+        self.assertEqual(CUSTOMER_COPY_BANNED_WORDS_ANY_CASE, ("playtest", "finalizer"))
 
     def test_round_trip_rehashes_tree_and_binds_upstream(self):
         made, product_root = self._made()

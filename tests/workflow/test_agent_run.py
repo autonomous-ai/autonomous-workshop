@@ -204,7 +204,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(checkpoint_document["manager_id"], "codex")
         self.assertEqual(checkpoint.manager_id, "codex")
         self.assertEqual(checkpoint.manager_model, "gpt-5.6-sol")
-        self.assertEqual(checkpoint.manager_reasoning_effort, "high")
+        self.assertEqual(checkpoint.manager_reasoning_effort, "medium")
         self.assertEqual(checkpoint.inventor_roster, ())
         for relative, content in expected.items():
             path = run.run_root / relative
@@ -222,7 +222,7 @@ class AgentRunTest(unittest.TestCase):
             (run.run_root / "MANAGER.json").read_text(encoding="utf-8")
         )
         self.assertEqual(payload["manager_id"], "grok")
-        self.assertEqual(payload["agent_directory"], ".grok/agents")
+        self.assertEqual(payload["agent_directory"], ".codex/agents")
         self.assertEqual(checkpoint.manager_model, "grok-4.6")
         self.assertIsNone(checkpoint.manager_reasoning_effort)
 
@@ -771,10 +771,13 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual((checkpoint.stage, checkpoint.round_index), ("invent", 2))
         self.assertEqual(checkpoint.stage_artifacts["invent"], prior_invent)
         self.assertEqual(checkpoint.stage_artifacts["make"], revision.artifacts)
+        # Forge never runs Playtest: the finalizer's literal marker still names
+        # it, but the persisted set is filtered to the frozen effort's stages.
         self.assertEqual(
             checkpoint.invalidated_stages,
-            ("invent", "make", "playtest", "release"),
+            ("invent", "make", "release"),
         )
+        self.assertNotIn("playtest", checkpoint.invalidated_stages)
 
         revised_invent = self.outcome(
             run,
@@ -791,7 +794,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertNotIn("make", checkpoint.stage_artifacts)
         self.assertEqual(
             checkpoint.invalidated_stages,
-            ("make", "playtest", "release"),
+            ("make", "release"),
         )
 
     def test_make_to_invent_requires_frozen_capability_and_invent_stage(self):

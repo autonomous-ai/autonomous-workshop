@@ -1,7 +1,9 @@
 # ADR 0048: Persistent native-turn budgets
 
-- Status: Superseded for new runs by ADR 0049; retained for frozen compatibility
+- Status: Superseded by ADR 0049
 - Date: 2026-09-07
+
+Superseded in part: ADR 0049 replaces these turn counts for new runs; frozen runs that materialized this policy keep it.
 
 Peekabud exhausted two twenty-minute native turns without finishing Make.
 Neither turn reported complete terminal token usage. ADR 0049 subsequently

@@ -1,8 +1,7 @@
 # ADR 0041: Resume final Make at recovery
 
-## Status
-
-Accepted — 2026-08-31.
+- Status: Accepted
+- Date: 2026-08-31
 
 ## Context
 

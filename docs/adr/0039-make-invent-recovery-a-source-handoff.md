@@ -1,11 +1,13 @@
 # ADR 0039: Make Invent recovery a source handoff
 
-- Status: Accepted
+- Status: Superseded by ADR 0040
 - Date: 2026-08-31
 - Owners: Runtime, workflow, and product-run protocol maintainers
 - Supersedes for new runs: ADR 0038's `deep-economics-v10` profile
 
 ## Context
+
+> Supersession note: ADR 0040 turned proof recovery into a sealing handoff; this source-handoff shape remains in force for Invent recovery.
 
 Production Quest `wish-20260831-153128-dde436ba` exhausted its 20-minute Invent
 turn and 10-minute medium recovery without a proposal. The recovery wrote a

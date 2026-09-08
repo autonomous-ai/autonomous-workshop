@@ -1,10 +1,12 @@
 # ADR 0040: Make proof recovery a sealing handoff
 
-- Status: Accepted
+- Status: Superseded by ADR 0041
 - Date: 2026-08-31
 - Supersedes for new runs: ADR 0039's `deep-economics-v11` profile
 
 ## Context
+
+> Supersession note: ADR 0041 resumes final Make at recovery; this sealing handoff remains in force for proof recovery.
 
 Production Quest `wish-20260831-163206-abbea127` produced three visibly distinct
 fixed-camera states, but proof recovery repeatedly edited geometry, generated

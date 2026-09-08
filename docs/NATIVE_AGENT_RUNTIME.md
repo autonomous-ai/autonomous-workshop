@@ -12,22 +12,32 @@ Workshop. It is authoritative together with
 [ADR 0021](adr/0021-compacted-spark-and-signature-review.md),
 [ADR 0022](adr/0022-blind-review-before-final-verification.md),
 [ADR 0023](adr/0023-bounded-spark-turn-and-semantic-review.md),
-[ADR 0031](adr/0031-bind-deep-profile-and-bound-first-proof.md),
-[ADR 0032](adr/0032-restore-make-depth-and-blindly-review-first-proof.md),
-[ADR 0036](adr/0036-reserve-proof-runway-for-product-bytes.md),
+[ADR 0024](adr/0024-comparative-quality-economics.md),
+[ADR 0025](adr/0025-bind-review-to-form-and-cad-project.md),
+[ADR 0026](adr/0026-preserve-wish-form-through-make.md),
+[ADR 0027](adr/0027-bind-all-printables-before-visual-review.md),
+[ADR 0028](adr/0028-bound-deep-effort-turns.md),
+[ADR 0029](adr/0029-host-owned-fresh-cad-rebuild.md),
 [ADR 0037](adr/0037-raise-deep-compaction-ceiling.md),
-[ADR 0038](adr/0038-prove-product-states-and-bound-final-source.md),
-[ADR 0039](adr/0039-make-invent-recovery-a-source-handoff.md),
-[ADR 0040](adr/0040-make-proof-recovery-a-sealing-handoff.md),
+[ADR 0041](adr/0041-resume-final-make-at-recovery.md) (the end of the
+0030-0041 deep-profile chain; the earlier records in that chain are
+superseded and kept for frozen runs),
 [ADR 0042](adr/0042-browser-issued-factory-credential.md),
 [ADR 0043](adr/0043-freeze-agent-model-and-effort.md),
 [ADR 0044](adr/0044-scope-component-cad-network.md),
 [ADR 0045](adr/0045-own-agent-selected-dependencies.md),
-[ADR 0046](adr/0046-budgeted-spark-twenty-minute-turns.md),
-[ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md), and the repository
+[ADR 0047](adr/0047-motion-review-and-persistent-native-budget.md) (motion
+evidence only),
+[ADR 0049](adr/0049-product-wide-token-budget.md),
+[ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md),
+[ADR 0051](adr/0051-sixty-minute-turn-watchdog.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
-executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
+executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route;
+ADR 0043 renamed the selectors of ADR 0016 and ADR 0017 to `--workflow` and
+`--agent`; ADR 0049 supersedes the turn clocks of ADR 0046, 0047, and 0048 for
+token-budgeted runs, whose only per-turn clock is the 60-minute emergency
+watchdog of ADR 0051. The full index is in [adr/README.md](adr/README.md).
 
 ## Two different agent contexts
 
@@ -75,15 +85,22 @@ New runs also freeze the canonical agent, model, and reasoning effort in a
 schema-v2 `MANAGER.json`. The CLI calls these `--agent`, `--model`, and
 `--effort`; Spark, Forge, and Quest are selected separately with `--workflow`.
 Codex defaults to `gpt-5.6-sol` at medium and Claude Code defaults to
-`claude-opus-5` at medium. The selected reasoning effort overrides the
-stage-shaped reasoning levels described below while leaving each workflow's
-compaction, turn boundaries, proof handoffs, and gates intact. Schema-v1
-Manager projects retain those historical stage-shaped reasoning levels.
+`claude-opus-5` at medium (ADR 0043). The selected reasoning effort is
+Wish-wide: it overrides the stage-shaped low/high reasoning levels described
+below for every stage while leaving each workflow's compaction ceilings, proof
+handoffs, and gates intact. Schema-v1 Manager projects retain those historical
+stage-shaped reasoning levels. For token-budgeted Codex runs (every new Codex
+product, ADR 0049) the per-stage minute figures below are pacing guidance that
+the host does not enforce; every native turn instead ends at a 60-minute
+emergency watchdog (ADR 0051), and the command is bounded by the token cap and
+a 200-turn loop guard rather than the eight- or 32-turn caps, which apply only
+to unbudgeted sessions.
 
 Codex Spark projects freeze `spark-economics-v3.md` and run that one
 session with a 64k automatic context-compaction ceiling
-across Make and Release. Budgeted v3 runs now cap each native turn at 20
-minutes (ADR 0046); unbudgeted sessions retain their historical boundary. A timeout
+across Make and Release. Token-budgeted v3 runs give each native turn a
+60-minute emergency watchdog (ADR 0051; the 20-minute ceiling of ADR 0046
+applies only to frozen unbudgeted Spark v3 sessions). A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
 waiver. Schema-v1 Manager projects retain Spark's historical low reasoning.
@@ -95,15 +112,16 @@ is the next action. A compact exact-Taste-header index
 covers the complete roster before Codex reads only the strongest three full
 agents. Make starts with one 16-minute medium real-state proof phase at 256k,
 then the same Goal resumes for a 15-minute source handoff
-before normal 60-minute recovery after the host accepts its checkpoint-bound
-proof marker into a private receipt. An explicit operator resume with that
+before normal recovery (60-minute watchdog) after the host accepts its
+checkpoint-bound proof marker into a private receipt. An explicit operator resume with that
 valid receipt starts directly in normal recovery rather than replaying the
 source handoff. A current wall-thickness
 failure may route to its saved region table and the CAD print-optimisation
 reference once before one all-regions source repair.
 Every stage compacts at 256k. Schema-v1 Manager projects retain the historical
-high/medium stage reasoning described by their frozen profile. One CLI
-invocation launches at most eight native turns across all stages. Make's first
+high/medium stage reasoning described by their frozen profile. One unbudgeted
+CLI invocation launches at most eight native turns across all stages;
+token-budgeted commands stop at the token cap or the 200-turn loop guard. Make's first
 persisted deliverable is the smallest exact causal/kinematic proof plus neutral
 held/signature blockout evidence under the declared CAD project; the complete
 part tree comes only after the root checks those early images against the
@@ -238,7 +256,8 @@ exponential delay with deterministic per-run jitter, and resumes that exact
 session for another turn. Two consecutive recoverable turn failures stop the
 current command early with the same session checkpointed; an explicit
 `workshop resume` starts a fresh two-failure recovery window. Every such turn
-also consumes the existing 32-turn command budget. The delay is capped at 30
+also consumes the existing 32-turn command budget of an unbudgeted session
+(token-budgeted commands use the 200-turn loop guard). The delay is capped at 30
 seconds and prevents a persistent provider outage or repeated profile-bound
 timeout from becoming an unattended reconnect storm.
 The one automatic recovery turn receives a fixed, non-cognitive instruction to
@@ -309,9 +328,10 @@ turn transcript. Each individual event has a hard byte limit and is decoded,
 validated, classified into safe progress, and then discarded; an oversized or
 malformed record still fails closed. A legitimate long turn may emit more than
 that limit in aggregate because cumulative bytes consume no growing host
-buffer. The frozen per-run process timeout (60 minutes per Codex Spark or deep
-turn since 2026-09-03; 20 or 30 minutes for runs frozen before that), isolated-process cleanup, per-message limit, and
-whole-run native-turn budget remain the surrounding resource bounds.
+buffer. The per-turn process timeout (a 60-minute emergency watchdog for every
+turn of a token-budgeted Codex run; 20 or 30 minutes for unbudgeted runs
+frozen before 2026-09-03), isolated-process cleanup, per-message limit, and
+the command's turn budget or token cap remain the surrounding resource bounds.
 
 ### Privacy-safe progress status
 
@@ -528,8 +548,10 @@ written the required proposal. Three consecutive normally returned turns
 without a proposal stop the invocation early, mark progress failed, and report
 the exact `workshop resume <wish-id>` command while preserving the checkpoint.
 An explicit resume starts a fresh three-turn unfinished-work window in that
-same root session. The independent 32-turn invocation budget still bounds all
-native turns, including gate repairs and provider-transport continuations.
+same root session. For unbudgeted sessions the independent 32-turn invocation
+budget still bounds all native turns, including gate repairs and
+provider-transport continuations; token-budgeted commands are bounded by the
+token cap and the 200-turn loop guard instead.
 This unfinished-work continuation is not a lifecycle stage attempt. Missing
 session identity and either bound exhaustion still fail closed.
 
@@ -648,7 +670,10 @@ Inventor roster, universal blueprint, and canonical assignment and Invented
 paths. The one Invent finalizer seals both `NativeMatchAssignment` and
 `NativeInvented`. Spark performs the same bounded selection and compact concept
 handoff inside Make, sealing assignment, Invented, and Made contracts from one
-turn. Python never chooses the Inventor or concept. The `NativeInvented` result
+turn; the daydream card is the sealed brief and Spark Make authors the compact
+concept from it. When the run was created by `workshop start <inventor>` (or
+`wish --inventor <id>`), the roster is pinned to that one Inventor and Make or
+Invent only confirms it. Python never chooses the Inventor or concept. The `NativeInvented` result
 contains:
 
 - `concept` — the selected product direction and the physical facts Make must
@@ -854,15 +879,20 @@ private Wish demonstrate that:
    state; and
 10. the executable Workshop run ends at Release and makes no claim of physical
     printing, delivery, or review.
-11. a schema-v1 v3 Codex Spark run uses frozen low reasoning, its 64k compaction ceiling,
-    and a 60-minute boundary per native turn across both active stages (20
-    minutes for v3 runs frozen before 2026-09-03); v2, v1,
+11. a v3 Codex Spark run uses its 64k compaction ceiling and, when
+    token-budgeted, a 60-minute emergency watchdog per native turn across both
+    active stages (schema-v1 Manager projects keep the profile's low
+    reasoning; schema-v2 projects use the Wish-wide effort; unbudgeted v3
+    sessions frozen before 2026-09-03 keep a 20-minute boundary); v2, v1,
     and unmarked historical runs retain their prior exact runtime-policy
     bindings; and
 12. a schema-v1 deep-v13 Codex Forge or Quest run uses index-first bounded high Invent
     with a medium source-first finalization handoff, one 16-minute medium Make proof runway
-    followed by a 15-minute high source handoff and normal 30-minute recovery,
-    medium later stages, 256k compaction, an eight-turn CLI invocation cap, and
+    followed by a 15-minute high source handoff and normal recovery (these
+    minutes are pacing for token-budgeted runs, whose turns end at the
+    60-minute watchdog), medium later stages unless a Wish-wide effort is
+    frozen, 256k compaction, an eight-turn CLI invocation cap for unbudgeted
+    sessions only, and
     one-time proof-turn marker accepted into a private checkpoint-bound receipt
     with no gate authority, a private run cache, deferred broad CAD guidance,
     one batched mandatory read, immediate source work, root early inspection,
@@ -929,7 +959,7 @@ uses the following limits and no turn counters:
 
 | Clock | Limit | Bounds |
 |---|---|---|
-| One native turn | 20 minutes for budgeted Codex Spark v3; at most 60 minutes otherwise | one stretch of agent work |
+| One native turn | 60-minute emergency watchdog for every turn of a token-budgeted Codex run (frozen unbudgeted Spark v3 keeps 20 minutes) | one stretch of agent work |
 | One step | 120 minutes | all of Invent, or Make, or Playtest, or Release |
 | One toy | 6 hours | its sealed brief through its published page |
 
@@ -946,8 +976,8 @@ clock and the session stays checkpointed; `workshop resume` grants fresh
 clocks.
 
 These clocks are per CLI invocation, not durable lifetime limits: repeatedly
-resuming the same toy can exceed six hours in total. A 20-minute turn limit
-does not imply a 20-minute product or bound total spend across explicit resumes.
+resuming the same toy can exceed six hours in total. A per-turn watchdog
+does not imply a one-hour product or bound total spend across explicit resumes.
 
 The Inventor's daydream loop (`workshop start`) is **not** bounded by these
 clocks. They are created once per toy, so the loop dreams and builds until
@@ -968,9 +998,11 @@ economics profiles, the Make review protocol, and the bounded recovery
 windows exactly as they stood; newer sections above take precedence where
 they overlap.
 
-Schema-v1 Codex Spark runs freeze low reasoning, a 64k automatic context-compaction
-ceiling for their one persistent Make-to-Release session, and a 60-minute
-boundary per native turn (20 minutes before 2026-09-03). A timeout resumes the
+Schema-v1 Codex Spark runs freeze low reasoning and a 64k automatic
+context-compaction ceiling for their one persistent Make-to-Release session
+(schema-v2 projects use the Wish-wide `--effort`); token-budgeted runs give each
+native turn a 60-minute emergency watchdog (20 minutes for unbudgeted v3
+sessions frozen before 2026-09-03). A timeout resumes the
 exact session and Goal through the existing bounded recovery path; it is not a
 stage deadline.
 Schema-v1 Forge and Quest runs begin Invent with a 20-minute high-reasoning turn and
@@ -980,9 +1012,11 @@ covers every exact Taste header before Codex reads only the best three full
 Inventors. Make starts with one 16-minute medium real-state proof runway at 256k
 context; after exact proof bytes are durable, a checkpoint-bound marker returns
 control to the host and the same Make Goal resumes at high reasoning with a
-15-minute source handoff before normal 60-minute recovery (30 minutes before
-2026-09-03). Playtest and Release use medium, every stage compacts at 256k,
-and one CLI invocation stops after eight native turns. The host binds a private
+15-minute source handoff before normal recovery (60-minute watchdog; 30
+minutes for unbudgeted runs frozen before 2026-09-03; every minute figure here
+is pacing for token-budgeted runs). Playtest and Release use medium unless a
+Wish-wide effort is frozen, every stage compacts at 256k, and one unbudgeted
+CLI invocation stops after eight native turns. The host binds a private
 writable cache; the proof turn defers the broad CAD skill, batches its required
 reads, makes source the next durable action, and batches generate/export/render
 in one foreground call. It uses three distinct exact-state STLs and root
@@ -1055,7 +1089,8 @@ the same checkpointed Goal automatically, explicitly reminding the session
 that its finalizer has not run. Three consecutive normally returned turns
 without a proposal stop that command early with the exact session still
 resumable; this prevents one stuck Goal from silently consuming the shared
-32-turn command budget. An explicit `workshop resume` starts a fresh bounded
+32-turn command budget of an unbudgeted session (200-turn loop guard for
+token-budgeted commands). An explicit `workshop resume` starts a fresh bounded
 continuation window without creating a second root session.
 A native timeout or recognized provider disconnect follows a separate, smaller
 window: two consecutive recoverable turn failures stop the command with the

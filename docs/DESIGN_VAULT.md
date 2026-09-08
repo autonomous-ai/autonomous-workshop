@@ -45,7 +45,10 @@ Nothing fails; you just build without recorded design knowledge.
 
 For offline work:
 
-- `workshop vault lint` and `workshop vault check <paths>` accept
-  `--root <dir>` to read a local vault checkout instead of the API.
+- `workshop vault lint` and `workshop vault check <paths>` are the only vault
+  CLI commands; both accept `--root <dir>` to read a local vault checkout
+  instead of the API. There is no bundled seed, `workshop vault seed`,
+  `workshop vault review`, or `workshop evidence` command; write-backs go
+  to the API after a sealed Playtest.
 - Tests never reach the network: `tests/invent/fake_gamevault.py` installs an
   in-memory transport at the module's single HTTP seam (`_TRANSPORT`).

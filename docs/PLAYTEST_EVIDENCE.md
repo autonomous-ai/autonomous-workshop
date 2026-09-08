@@ -1,8 +1,9 @@
 # Playtest evidence
 
 > Current status: ADR 0016 activates this contract for Quest effort and retains
-> it for frozen historical runs. Spark and Forge pass through Playtest and
-> record `playtest_status: not-run` instead.
+> it for frozen historical runs. Spark and Forge skip Playtest entirely (no
+> turn, artifact, gate, or evidence) and Release records
+> `playtest_status: not-run` instead.
 
 Playtest is a native-agent review of one exact Made revision plus deterministic
 evidence. It is not a Python role process, a model score, a human test, or proof

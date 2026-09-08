@@ -1,3 +1,10 @@
+> **Status: superseded / not implemented.** This spec describes a topology
+> (a separate Concept stage, Match and Deliver turns, older schema versions)
+> that no current route contains. See `docs/adr/0016-selectable-effort-routes.md`
+> and the current Invented schema 5 contract in
+> `.agents/product-run/.agents/skills/autonomous-workshop/references/invent.md`.
+> It is kept as history and is not a requirement on current code.
+
 ## Purpose
 
 The concept image set is the concrete visual answer to an abstract Wish: a locked brief of physical facts plus a group of images that all depict one and the same design, sealed so that what Make is shown cannot drift from what Make was handed.

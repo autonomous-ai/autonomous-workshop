@@ -1775,6 +1775,20 @@ class AgentRun:
             stage: list(paths) for stage, paths in payload["stage_artifacts"].items()
         }
         invalidated = set(payload["invalidated_stages"])
+        # Only stages this run's frozen effort can ever reach are invalidated:
+        # a Forge Make->Invent revision must not persist ``playtest`` as owed
+        # work that the route never runs. The finalizer's literal invalidation
+        # marker contract is unchanged; only the persisted set is filtered.
+        run_effort = _run_effort(payload)
+        enabled_stages = (
+            None if run_effort is None else set(run_effort.enabled_stages)
+        )
+
+        def _routed(stages: tuple[str, ...]) -> tuple[str, ...]:
+            if enabled_stages is None:
+                return stages
+            return tuple(stage for stage in stages if stage in enabled_stages)
+
         if outcome.stage in ("invent", "make"):
             old_paths = stage_artifacts.get(outcome.stage)
             old_binding: tuple[tuple[str, str], ...] = ()
@@ -1787,7 +1801,7 @@ class AgentRun:
                 (artifact.path, artifact.sha256) for artifact in all_artifacts
             )
             if old_binding and old_binding != new_binding:
-                downstream = (
+                downstream = _routed(
                     _DOWNSTREAM_OF_INVENT
                     if outcome.stage == "invent"
                     else _DOWNSTREAM_OF_MAKE
@@ -1812,7 +1826,7 @@ class AgentRun:
             outcome.stage == "playtest" and transition in ("make", "invent")
         ) or (outcome.stage == "make" and transition == "invent"):
             round_index += 1
-            invalidation = (
+            invalidation = _routed(
                 ("invent", *_DOWNSTREAM_OF_INVENT)
                 if transition == "invent"
                 else _DOWNSTREAM_OF_MAKE

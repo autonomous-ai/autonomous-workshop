@@ -145,7 +145,9 @@ build/export/verification activity inside the one timed-out turn; a single
 stage attempt was not a meaningful inner-loop bound.
 
 Spark v3 addresses those two evidenced leaks without lowering quality gates.
-Each new native Spark turn has a frozen 20-minute boundary; one critic gets at
+Each native Spark turn gained a frozen 20-minute boundary (since replaced,
+for token-budgeted runs, by the token cap and a 60-minute emergency watchdog
+per turn, ADR 0049 and ADR 0051); one critic gets at
 most two rounds and must compare subjects, action, and relationship separately;
 and the integrated final CAD verifier refuses to begin until the exact
 hash-bound review exists. Quick checks remain available for iteration. The next

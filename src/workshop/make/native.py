@@ -22,10 +22,13 @@ from workshop.artifacts import (
 )
 from workshop.errors import ArtifactError, ContractError
 from workshop.invent.native import NativeInvented
-from workshop.make.contracts import Made
+from workshop.make.contracts import Made, validate_product_copy
 from workshop.match.native import NativeMatchAssignment
 
 
+SIGNATURE_REVIEW_RELATIVE = PurePosixPath("snap/SIGNATURE-REVIEW.json")
+SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
+MAX_SIGNATURE_REVIEW_BYTES = 64 * 1024
 NATIVE_MADE_KIND = "autonomous-workshop.made"
 MAKE_GROUP_KIND = "autonomous-workshop.make-group"
 PARTS_DIRECTORY = "parts"
@@ -209,6 +212,7 @@ class NativeMade:
             raise ContractError("native Made requires an ArtifactManifest")
         self.product_manifest.assert_valid()
         product = copy_json_mapping(self.product, "native Made product", nonempty=True)
+        validate_product_copy(product, "native Made product")
         frozen_product = _freeze(product)
         object.__setattr__(self, "product", frozen_product)
         paths = {entry.path for entry in self.product_manifest.entries}
@@ -315,6 +319,47 @@ class NativeMade:
         ):
             raise ContractError("native Made belongs to different Workshop inputs")
 
+    def assert_signature_review_bound(
+        self, run_root: Path, invented: NativeInvented
+    ) -> str:
+        """Bind the in-project signature review to the sealed concept.
+
+        The run-local finalizer refuses a review whose ``concept_sha256`` is
+        not the sealed Invented concept; the host re-applies the same rule so
+        a hand-written review (or one carried over from another concept)
+        cannot pass the Make gate.  Returns the review's sha256.
+        """
+
+        if not isinstance(invented, NativeInvented):
+            raise ContractError("native Made review binding requires an Invented contract")
+        root = Path(run_root).resolve(strict=True)
+        product_root = root.joinpath(
+            *_safe_relative(self.product_root, "native Made product_root").parts
+        )
+        review_path = product_root.joinpath(
+            *_safe_relative(self.cad_project_path, "native Made CAD project path").parts,
+            *SIGNATURE_REVIEW_RELATIVE.parts,
+        )
+        if review_path.is_symlink() or not review_path.is_file():
+            raise ContractError(
+                "native Made requires a signature review at <cad-project>/%s"
+                % SIGNATURE_REVIEW_RELATIVE.as_posix()
+            )
+        review, review_bytes = _strict_json_object(
+            review_path, "native Made signature review"
+        )
+        if len(review_bytes) > MAX_SIGNATURE_REVIEW_BYTES:
+            raise ContractError("native Made signature review exceeds its byte limit")
+        if (
+            review.get("kind") != SIGNATURE_REVIEW_KIND
+            or review.get("concept_sha256") != invented.concept_sha256
+        ):
+            raise ContractError(
+                "native Made signature review is not bound to the sealed Invented "
+                "concept (concept_sha256 differs)"
+            )
+        return hashlib.sha256(review_bytes).hexdigest()
+
     def validate_product_tree(self, run_root: Path) -> Made:
         """Rehash the exact product tree and return the canonical Made contract."""
 
@@ -360,6 +405,8 @@ __all__ = [
     "NATIVE_MADE_KIND",
     "PARTS_DIRECTORY",
     "NativeMade",
+    "SIGNATURE_REVIEW_KIND",
+    "SIGNATURE_REVIEW_RELATIVE",
     "group_path",
     "part_path",
     "validate_build_groups",

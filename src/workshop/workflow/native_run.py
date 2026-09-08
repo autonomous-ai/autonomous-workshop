@@ -50,7 +50,7 @@ from workshop.integrations.git import (
     GitPushError,
     push_toy_directory,
 )
-from workshop.invent.native import NativeInvented
+from workshop.invent.native import NativeInvented, validate_vault_lead_responses
 from workshop.invent.gamevault import (
     GameVaultClient,
     GameVaultError,
@@ -63,6 +63,7 @@ from workshop.invent.vault import (
     RUN_VAULT_TOOL_PATH,
     Vault,
     VaultError,
+    assert_concept_compatible,
 )
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.revision import (
@@ -149,6 +150,7 @@ from workshop.runtime.progress import (
 )
 from workshop.wish import Wish
 from workshop.workflow.agent_run import (
+    MAX_AGENT_NEED_CHARS,
     AgentArtifact,
     AgentOutcome,
     AgentRun,
@@ -319,9 +321,13 @@ _PRODUCT_RUN_EFFORT_ROUTES_INPUT = EFFORT_ROUTE_CAPABILITY_PATH
 _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
     "make-product-metadata-invalid": (
         "The host rejected product.json metadata. Add both title and summary "
-        "as non-empty text values of at most 2000 characters, then rerun "
-        "the Make finalizer so made.json, its manifest, and agent-outcome.json "
-        "are regenerated from the repaired bytes."
+        "as customer-facing text: a title of at most 300 characters and a "
+        "summary of at most 2000, each without leading or trailing whitespace "
+        "or carriage returns and free of Workshop-internal vocabulary (Wish, "
+        "Taste, Goal, Make, Release, Playtest, Spark, Forge, Quest, artifact, "
+        "gate, finalizer, Inventor), then rerun the Make finalizer so "
+        "made.json, its manifest, and agent-outcome.json are regenerated from "
+        "the repaired bytes."
     ),
     "make-artifact-invalid": (
         "The host could not safely identify the exact Make artifact tree. "
@@ -1239,8 +1245,11 @@ def _make_rejection_for_error(error: ContractError) -> _MakeProposalRejected:
     if isinstance(error, StateConflict) or not isinstance(error, ContractError):
         raise StateConflict("Make proposal rejection classification is invalid")
     message = str(error)
-    if message.startswith("Made product title ") or message.startswith(
-        "Made product summary "
+    if (
+        message.startswith("Made product title ")
+        or message.startswith("Made product summary ")
+        or message.startswith("native Made product title ")
+        or message.startswith("native Made product summary ")
     ):
         failure_code = "make-product-metadata-invalid"
         return _MakeProposalRejected(
@@ -3397,6 +3406,9 @@ def _prepare_effort_stage_input(
                     )
                 }
             inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
+            context["vault_lead_ids"] = [
+                lead["id"] for lead in inputs["vault_leads"]
+            ]
         subject = _stage_subject("invent", subject_inputs)
         context.update(
             {
@@ -3424,6 +3436,22 @@ def _prepare_effort_stage_input(
                 }
             )
             assignment = invented = None
+            if vault is not None:
+                # Spark has no Invent turn, so the leads Invent round one
+                # would have answered (the mechanisms the Wish itself names
+                # plus every constraint) reach the Make turn instead.
+                common["vault_leads"] = vault.leads_for_concept(
+                    {
+                        "mechanisms": list(
+                            vault.mechanisms_named_in(
+                                _load_wish(run.run_root).objective
+                            )
+                        )
+                    }
+                )
+                context["vault_lead_ids"] = [
+                    lead["id"] for lead in common["vault_leads"]
+                ]
             context.update(
                 {
                     "routed_make_creative": True,
@@ -3498,6 +3526,7 @@ def _prepare_effort_stage_input(
         make_invent_revision_allowed = _checkpoint_allows_make_invent_revision(
             checkpoint
         )
+        final_round = checkpoint.round_index >= checkpoint.max_rounds
         if make_invent_revision_allowed:
             subject_inputs["make_invent_revision_capability_sha256"] = (
                 checkpoint.input_sha256s[MAKE_INVENT_REVISION_CAPABILITY_PATH]
@@ -3530,8 +3559,17 @@ def _prepare_effort_stage_input(
                 "assembled.step.json",
                 "assembled.stl",
             ],
+            # The last Invent-Make-Playtest round has no backward edge: the
+            # finalizer refuses Make->Invent there and the packet says so up
+            # front instead of letting the agent discover it at the gate.
+            "final_round": final_round,
+            "backward_transition_allowed": (
+                make_invent_revision_allowed and not final_round
+            ),
         }
-        if make_invent_revision_allowed:
+        if make_invent_revision_allowed and final_round:
+            inputs["invent_revision_allowed"] = False
+        elif make_invent_revision_allowed:
             inputs.update(
                 {
                     "invent_revision_allowed": True,
@@ -3622,9 +3660,12 @@ def _prepare_effort_stage_input(
                     playtest_proposal_rejection["rejection_sha256"]
                 )
             subject = _stage_subject("playtest", subject_inputs)
+            playtest_final_round = checkpoint.round_index >= checkpoint.max_rounds
             inputs = {
                 **common,
                 "round": checkpoint.round_index,
+                "final_round": playtest_final_round,
+                "backward_transition_allowed": not playtest_final_round,
                 "host_cad_gate_rejection": cad_gate_rejection,
                 "required_check_ids": list(blueprint.required_playtest_checks()),
                 **(
@@ -3972,6 +4013,9 @@ def _prepare_stage_input(
                         )
                     }
                 inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
+                context["vault_lead_ids"] = [
+                    lead["id"] for lead in inputs["vault_leads"]
+                ]
         else:
             invented_artifact = _stage_primary(checkpoint, "invent")
             invented = _read_contract(
@@ -4043,6 +4087,12 @@ def _prepare_stage_input(
                             "assembled.step.json",
                             "assembled.stl",
                         ],
+                        # A frozen (pre-effort) Make has no Make->Invent edge;
+                        # the flags still say whether this is the last round.
+                        "final_round": (
+                            checkpoint.round_index >= checkpoint.max_rounds
+                        ),
+                        "backward_transition_allowed": False,
                     }
                     if make_proposal_rejection is not None:
                         inputs["host_make_proposal_rejection"] = (
@@ -4084,9 +4134,14 @@ def _prepare_stage_input(
                                 "host_playtest_proposal_rejection_sha256"
                             ] = playtest_proposal_rejection["rejection_sha256"]
                         subject = _stage_subject("playtest", subject_inputs)
+                        legacy_final_round = (
+                            checkpoint.round_index >= checkpoint.max_rounds
+                        )
                         inputs = {
                             **common,
                             "round": checkpoint.round_index,
+                            "final_round": legacy_final_round,
+                            "backward_transition_allowed": not legacy_final_round,
                             "host_cad_gate_rejection": cad_gate_rejection,
                             "required_check_ids": list(
                                 blueprint.required_playtest_checks()
@@ -4736,10 +4791,28 @@ def _native_turn_limit(checkpoint: AgentRunCheckpoint) -> int:
     return _MAX_NATIVE_TURNS
 
 
+def _pacing_clause(minutes: str, phase: str, *, token_budgeted: bool, hard: str) -> str:
+    """Phrase a frozen minute figure as a hard boundary or a pacing target.
+
+    A token-budgeted run rebuilds every Codex turn with the one-hour
+    emergency watchdog, so its prompt must not claim the frozen per-turn
+    minute boundary that non-budgeted runs still enforce.
+    """
+
+    if not token_budgeted:
+        return hard
+    return (
+        "Pace this %s to about %s minutes; the enforced limit is the product "
+        "token budget and a 60-minute emergency watchdog, not a hard minute "
+        "boundary." % (phase, minutes)
+    )
+
+
 def _deep_make_critical_path_prompt(
     checkpoint: AgentRunCheckpoint,
     *,
     proof_boundary: bool = True,
+    token_budgeted: bool = False,
 ) -> str:
     """Return the versioned first-proof instruction for an initial Make turn."""
 
@@ -4776,10 +4849,18 @@ def _deep_make_critical_path_prompt(
             )
         ):
             profile_name = _phased_deep_profile_name(checkpoint)
+            handoff = _pacing_clause(
+                "15",
+                "final-product source handoff",
+                token_budgeted=token_budgeted,
+                hard=(
+                    "This first final-product continuation has a 15-minute "
+                    "source handoff boundary."
+                ),
+            )
             return (
-                f" The checkpoint-bound {profile_name} proof marker is valid. This first "
-                "final-product continuation has a 15-minute source handoff "
-                "boundary. Keep the same Make Goal. In one bounded first call, "
+                f" The checkpoint-bound {profile_name} proof marker is valid. {handoff}"
+                " Keep the same Make Goal. In one bounded first call, "
                 "read STAGE.json, the exact early-proof source/finding, the "
                 "current Make reference, and the CAD SKILL.md. Your next action "
                 "must write the complete final product source by reusing the "
@@ -4951,8 +5032,14 @@ def _deep_make_critical_path_prompt(
             == DEEP_ECONOMICS_V9_CAPABILITY_PATH
             else "v8"
         )
+        runway = _pacing_clause(
+            "16",
+            "proof phase",
+            token_budgeted=token_budgeted,
+            hard=f"This {profile_name} proof turn has one 16-minute medium runway.",
+        )
         return prompt + (
-        f" This {profile_name} proof turn has one 16-minute medium runway. The production v7 "
+        f" {runway} The production v7 "
         "trace proved that separate reads consume the whole phase, so do not "
         "read stable instructions in separate tool calls and do not call get_goal. "
         "Create or continue the current Make Goal immediately, then use one "
@@ -4987,8 +5074,14 @@ def _deep_make_critical_path_prompt(
         % (_MAKE_PROOF_READY_NAME, checkpoint.checkpoint_sha256)
         )
     profile_name = _phased_deep_profile_name(checkpoint)
+    runway = _pacing_clause(
+        "16",
+        "proof phase",
+        token_budgeted=token_budgeted,
+        hard=f"This {profile_name} proof turn has one 16-minute medium runway.",
+    )
     return prompt + (
-        f" This {profile_name} proof turn has one 16-minute medium runway. Create or continue "
+        f" {runway} Create or continue "
         "the Make Goal immediately without get_goal, then batch the mandatory "
         "root, Workshop, Make, STAGE, and sealed-concept reads once. Do not open "
         "the broad CAD skill, optional references, --help, an empty tree, or an "
@@ -5181,7 +5274,9 @@ def _deep_make_recovery_prompt(
     )
 
 
-def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
+def _deep_invent_recovery_prompt(
+    checkpoint: AgentRunCheckpoint, *, token_budgeted: bool = False
+) -> str:
     """Return the frozen phased-deep decisive Invent recovery instruction."""
 
     if not (
@@ -5209,8 +5304,13 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
             "again. If the source does not exist, make the first file edit the "
             "smallest contract-complete source from the strongest decision "
             "already in context, and make the next action the exact finalizer. "
-            "The ten-minute boundary is repair reserve; agent-outcome.json is "
-            "the only stopping condition."
+            + _pacing_clause(
+                "ten",
+                "Invent recovery repair reserve",
+                token_budgeted=token_budgeted,
+                hard="The ten-minute boundary is repair reserve;",
+            )
+            + " agent-outcome.json is the only stopping condition."
         )
     return (
         " Do not restart roster comparison, research, exploration, or "
@@ -5582,7 +5682,8 @@ def _launcher_call(
     runtime = manager_spec(checkpoint.manager_id)
     prompt = native_stage_prompt(checkpoint.stage)
     budget = _load_lifetime_budget(paths, checkpoint)
-    if isinstance(budget, ProductTokenBudget):
+    token_budgeted = isinstance(budget, ProductTokenBudget)
+    if token_budgeted:
         prompt += (
             "\n\nHost budget authority: the entire product has one persistent "
             "input-plus-output token budget including children and all resumes. "
@@ -5613,6 +5714,7 @@ def _launcher_call(
         prompt += _deep_make_critical_path_prompt(
             checkpoint,
             proof_boundary=make_proof_boundary,
+            token_budgeted=token_budgeted,
         )
     if unfinished_continuation:
         prompt += (
@@ -5640,7 +5742,9 @@ def _launcher_call(
             checkpoint,
             proof_boundary=make_proof_boundary,
         )
-        prompt += _deep_invent_recovery_prompt(checkpoint)
+        prompt += _deep_invent_recovery_prompt(
+            checkpoint, token_budgeted=token_budgeted
+        )
     arguments = {
         "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256,
@@ -6010,6 +6114,22 @@ def _evaluate_make_stage(
                 label="Spark native Invented contract",
             )
             invented.assert_context(assignment)
+            # Spark seals its concept inside Make, so the design-vault rules
+            # the Forge/Quest Invent gate applies land here instead: every
+            # mechanism resolves or is declared novel, no declared conflict
+            # or unmet requirement survives, and every issued lead is
+            # answered. A run without a vault snapshot is unchanged.
+            spark_vault = context.get("design_vault")
+            if spark_vault is not None:
+                try:
+                    assert_concept_compatible(spark_vault, invented.concept)
+                except VaultError as exc:
+                    raise ContractError(
+                        "Spark Make concept is refused by the design vault: %s" % exc
+                    ) from exc
+                validate_vault_lead_responses(
+                    invented.concept, context.get("vault_lead_ids", ())
+                )
         else:
             artifact = _ready_contract_artifact(
                 proposal,
@@ -6026,6 +6146,9 @@ def _evaluate_make_stage(
             assignment, invented, expected_round=checkpoint.round_index
         )
         canonical = made.validate_product_tree(run.run_root)
+        signature_review_sha256 = made.assert_signature_review_bound(
+            run.run_root, invented
+        )
         build_groups = validate_build_groups(
             invented.concept, run.run_root / Path(*made.product_root.split("/"))
         )
@@ -6068,6 +6191,8 @@ def _evaluate_make_stage(
             "round": checkpoint.round_index,
             "made_sha256": made.made_sha256,
             "product_artifact_sha256": canonical.artifact_sha256,
+            "signature_review_sha256": signature_review_sha256,
+            "signature_review_concept_bound": True,
             "product_tree_rehashed": True,
             "build_groups": build_groups["groups"],
             "build_parts": build_groups["parts"],
@@ -7572,6 +7697,48 @@ def _agent_outcome_exists(run_root: Path) -> bool:
     return True
 
 
+def _host_need_text(text: str) -> str:
+    """Bound host-authored need text to the agent-outcome need contract."""
+
+    cleaned = "".join(
+        character if ord(character) >= 32 and ord(character) != 127 else " "
+        for character in str(text)
+    ).strip()
+    if not cleaned:
+        cleaned = "the host refused the finalized proposal"
+    limit = MAX_AGENT_NEED_CHARS
+    if len(cleaned) > limit:
+        cleaned = cleaned[: limit - 3].rstrip() + "..."
+    return cleaned
+
+
+def _fail_refused_proposal(
+    run: AgentRun,
+    proposal: AgentOutcomeProposal,
+    *,
+    reason: str,
+) -> AgentRunCheckpoint:
+    """Convert a host refusal into one durable failed outcome.
+
+    A proposal the host cannot apply (a backward edge on the final round, a
+    Release contract the host rejects) used to leave agent-outcome.json in
+    place so every resume re-read and re-refused the same bytes. Persist the
+    refusal as the run's failed outcome and discard the stale proposal so the
+    run reaches a truthful terminal state instead of looping. Any gate
+    decision or Playtest evidence already persisted stays where it is.
+    """
+
+    failed = AgentOutcome(
+        stage=proposal.outcome.stage,
+        status="failed",
+        artifacts=proposal.outcome.artifacts,
+        needs=(_host_need_text(reason),),
+    )
+    updated = run.apply_outcome(failed)
+    _remove_agent_outcome(run.run_root)
+    return updated
+
+
 def _process_agent_outcome(
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
@@ -7660,6 +7827,7 @@ def _process_agent_outcome_inner(
                     ],
                     invented_artifact_path=context["invent_contract_path"],
                     vault=context.get("design_vault"),
+                    issued_lead_ids=context.get("vault_lead_ids", ()),
                 )
             else:
                 decision = evaluate_invent_stage(
@@ -7670,6 +7838,7 @@ def _process_agent_outcome_inner(
                     expected_artifact_path=context["invent_contract_path"],
                     assignment=context["assignment"],
                     vault=context.get("design_vault"),
+                    issued_lead_ids=context.get("vault_lead_ids", ()),
                 )
     elif checkpoint.stage == "make":
         try:
@@ -7696,6 +7865,16 @@ def _process_agent_outcome_inner(
             )
             _remove_rejected_agent_outcome(run, persisted)
             return checkpoint
+        except TransitionError as refused:
+            return _fail_refused_proposal(
+                run,
+                proposal,
+                reason=(
+                    "The host refused the finalized Make->Invent revision: %s. "
+                    "A backward transition is not available on the final "
+                    "round; start a new run to revise the concept." % refused
+                ),
+            )
     elif checkpoint.stage == "playtest":
         try:
             with wish_run_timing_span(
@@ -7811,6 +7990,25 @@ def _process_agent_outcome_inner(
                 need=need,
             )
             return updated
+        except (ArtifactError, ContractError) as error:
+            # NativeCadGateError is handled above; only agent-authored contract
+            # errors reach this clause.
+            # Release has no repair round: a sealed Release the host rejects
+            # (title drift from Made, claims that differ from the Playtest
+            # evidence, a package that changed under validation) cannot be
+            # retried unchanged, so fail durably rather than leaving the stale
+            # proposal in place for every resume to re-reject.
+            if isinstance(error, StateConflict):
+                raise
+            return _fail_refused_proposal(
+                run,
+                proposal,
+                reason=(
+                    "The host rejected the sealed Release contract: %s. Start "
+                    "a repaired Make revision in a new run rather than editing "
+                    "Release." % error
+                ),
+            )
     else:  # pragma: no cover - guarded by packet preparation
         raise TransitionError("native stage cannot consume an agent proposal")
 
@@ -7822,12 +8020,32 @@ def _process_agent_outcome_inner(
         # remember. The gate decision is already persisted, so the rows are
         # backed by the same evidence either way.
         _record_playtest_evidence(run, checkpoint, context)
-    updated = run.apply_outcome(
-        proposal.outcome,
-        gate=decision.receipt,
-        gate_subject_sha256=subject_sha256,
-        additional_artifacts=additional,
-    )
+    try:
+        updated = run.apply_outcome(
+            proposal.outcome,
+            gate=decision.receipt,
+            gate_subject_sha256=subject_sha256,
+            additional_artifacts=additional,
+        )
+    except TransitionError as refused:
+        # The gate decision (and Playtest evidence) above are already durable.
+        # A transition the protocol refuses -- a backward edge on the final
+        # round from a finalizer that did not check -- must not wedge every
+        # resume on the same agent-outcome.json.
+        return _fail_refused_proposal(
+            run,
+            proposal,
+            reason=(
+                "The host refused the finalized %s transition to %s: %s. A "
+                "backward transition is not available on the final round; "
+                "start a new run to continue."
+                % (
+                    checkpoint.stage,
+                    proposal.outcome.proposed_transition,
+                    refused,
+                )
+            ),
+        )
     _remove_agent_outcome(run.run_root)
     if checkpoint.stage == "release" and updated.stage == "deliver":
         # A frozen historical finalizer proposed ``deliver``. Publication has
@@ -7846,6 +8064,41 @@ def _rebind_existing_progress(
 ) -> None:
     tracker = _NativeProgressTracker.existing(paths, previous)
     tracker.rebind(updated, activity=activity)
+
+
+TOKEN_BUDGET_EMERGENCY_WATCHDOG_SECONDS = 3600
+
+
+def _token_budgeted_launcher(
+    paths: NativeRunPaths,
+    checkpoint: AgentRunCheckpoint,
+    turn_launcher: CodexNativeSessionLauncher,
+    budget: ProductTokenBudget,
+) -> CodexNativeSessionLauncher:
+    """Rebuild a frozen Codex launcher under the product token budget.
+
+    The product token budget supersedes every per-turn minute boundary (Spark
+    and deep Make/Invent alike): each turn keeps its frozen model, reasoning,
+    and compaction identity but runs to the one-hour emergency watchdog, and
+    the budget observer is the authority that ends it. Host-authorized
+    product budget; preserve the existing native policy identity rather than
+    silently upgrading frozen tools.
+    """
+
+    rebuilt = CodexNativeSessionLauncher(
+        model=turn_launcher.model, reasoning_effort=turn_launcher.reasoning_effort,
+        auto_compact_token_limit=turn_launcher.auto_compact_token_limit,
+        runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
+        binary=turn_launcher.binary,
+        timeout_seconds=TOKEN_BUDGET_EMERGENCY_WATCHDOG_SECONDS,
+        cli_version=turn_launcher.cli_version,
+        popen_factory=turn_launcher._popen_factory,
+        version_runner=turn_launcher._version_runner,
+    )
+    if rebuilt.cli_version != "0.153.4":
+        raise ContractError("token-budget rollout adapter requires validated Codex 0.153.4")
+    rebuilt.token_budget_observer = _product_token_observer(paths, checkpoint, budget)
+    return rebuilt
 
 
 def _run_native_session(
@@ -7981,20 +8234,9 @@ def _run_native_session(
                 initial_make_boundaries.add(checkpoint.checkpoint_sha256)
         if budget is not None:
             if isinstance(budget, ProductTokenBudget) and isinstance(turn_launcher, _CODEX_LAUNCHER_TYPE):
-                # Host-authorized product budget; preserve the existing native
-                # policy identity rather than silently upgrading frozen tools.
-                turn_launcher = CodexNativeSessionLauncher(
-                    model=turn_launcher.model, reasoning_effort=turn_launcher.reasoning_effort,
-                    auto_compact_token_limit=turn_launcher.auto_compact_token_limit,
-                    runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
-                    binary=turn_launcher.binary, timeout_seconds=3600,
-                    cli_version=turn_launcher.cli_version,
-                    popen_factory=turn_launcher._popen_factory,
-                    version_runner=turn_launcher._version_runner,
+                turn_launcher = _token_budgeted_launcher(
+                    paths, checkpoint, turn_launcher, budget
                 )
-                if turn_launcher.cli_version != "0.153.4":
-                    raise ContractError("token-budget rollout adapter requires validated Codex 0.153.4")
-                turn_launcher.token_budget_observer = _product_token_observer(paths, checkpoint, budget)
             else:
                 turn_launcher = _budgeted_turn_launcher(
                 checkpoint,

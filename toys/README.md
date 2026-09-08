@@ -14,7 +14,9 @@ After Factory publication and public readback succeed, the host can create a
 sanitized, workflow-shaped, content-addressed projection here under
 `<inventor>-<product-slug>/`.
 [`pico-press-horn-tip/`](pico-press-horn-tip/) is a Spark example produced by
-`--manager grok`; its README has the exact CLI used to create it.
+`--agent grok` (older snapshot READMEs print the flag under its former name,
+`--manager`, and the route under `--effort` rather than `--workflow`); its
+README has the exact CLI used to create it.
 Workflow-shaped snapshots include a README table of public stage attempts
 from each `ATTEMPTS.json` plus a step-by-step account of each stage's input
 and output. That account names the actual Wish or sanitized public summary,

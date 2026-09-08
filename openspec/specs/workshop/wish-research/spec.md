@@ -1,3 +1,10 @@
+> **Status: superseded / not implemented.** This spec describes a topology
+> (a separate Concept stage, Match and Deliver turns, older schema versions)
+> that no current route contains. See `docs/adr/0016-selectable-effort-routes.md`
+> and the current Invented schema 5 contract in
+> `.agents/product-run/.agents/skills/autonomous-workshop/references/invent.md`.
+> It is kept as history and is not a requirement on current code.
+
 ## Purpose
 
 Wish research is the step that turns a person's words into the physical facts a design can actually be built from. It reads the Wish against real-world knowledge — what the named object is, how big it really is, what parts it is made of — and returns a breakdown in which every number is either taken from a named source or recorded as a decision the Workshop made, so that Concept, Make, and CAD work from findings rather than from placeholders.

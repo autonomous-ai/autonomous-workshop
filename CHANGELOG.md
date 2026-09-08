@@ -8,14 +8,16 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Added
 
-- Codex products accept `--max-tokens` (default 10,000,000), persisted across
+- Codex products accept `--max-tokens` (initially 10,000,000; now
+  30,000,000), persisted across
   stages, native children and resumes; `resume --max-tokens N` changes the
   total cap without resetting usage. Normal time/turn limits are superseded
   for marked runs, with engineering and publication gates unchanged.
 - `workshop start`, `daydream`, and `wish` now expose `--agent`, `--model`,
   and model `--effort`; new runs freeze those choices in `MANAGER.json`.
-  Codex defaults to Sol/high and accepts the Astra alias, while Claude Code
-  defaults to Opus 5/high.
+  Codex defaults to Sol and accepts the Astra alias, while Claude Code
+  defaults to Opus 5; both default to medium reasoning effort (initially
+  high).
 - The host CAD gate compares declared STEP files by their entity graph
   (`workshop.make.step_canonical`) instead of by bytes: Open CASCADE emits
   presentation-style entities in pointer order, so a faithful fresh re-export
@@ -39,7 +41,8 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 - Rename the public lifecycle selector from `--effort` to `--workflow` and
   the native runtime selector from `--manager` to `--agent`; JSON run receipts
-  now report `workflow`, `agent`, `model`, and model `effort`.
+  now report `workflow`, `agent`, `model`, and model `effort` (the reasoning
+  level). Spark is the default workflow.
 - Rename the distribution to `autonomous-workshop`, the Python package to
   `workshop`, and the internal command application to the sibling `cli`
   package.
@@ -48,9 +51,11 @@ Keep a Changelog and uses semantic versioning for released distributions.
 - Make component package roots the canonical Python APIs, keep the root import
   surface as a behavior-free 0.x facade, and enforce an acyclic module-load
   graph plus one-way provider boundaries in architecture tests.
-- Move durable receipt and publication contracts, including their byte-identical
-  schemas, from Integrations to Runtime; external adapters now implement ports
-  declared by Make, Release, Deliver, and Runtime.
+- (Historical, pre-native runtime) Move durable receipt and publication
+  contracts, including their byte-identical schemas, from Integrations to
+  Runtime; external adapters implemented ports declared by Make, Release,
+  Deliver, and Runtime. Deliver is no longer a Workshop stage: Workshop ends
+  at published Release (ADR 0014).
 - Compose default workers only in `workshop.bootstrap`; bundled and generated
   inventor profiles call that application boundary explicitly.
 - Materialize an installed inventor catalog into a content-addressed,
@@ -73,9 +78,12 @@ Keep a Changelog and uses semantic versioning for released distributions.
 - Reject invented-game simulator contracts that the pinned Playtest cannot
   replay before they reach Make, and keep Make's reward gate scoped to concept
   fidelity and verified geometry rather than future Playtest evidence.
-- Run long-form structured Invent and Make creators at bounded low reasoning
-  and allow their actions up to twenty minutes while retaining the Workshop's
-  sixty-minute outer worker bound.
+- (Historical, pre-native runtime) Run long-form structured Invent and Make
+  creators at bounded low reasoning and allow their actions up to twenty
+  minutes while retaining the Workshop's sixty-minute outer worker bound.
+  Those Python creators were removed by ADR 0012; today the only per-turn
+  clock for token-budgeted runs is the 60-minute emergency watchdog
+  (ADR 0051).
 
 ## Change fragments
 

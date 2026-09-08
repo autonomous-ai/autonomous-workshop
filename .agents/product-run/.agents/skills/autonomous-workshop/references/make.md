@@ -8,7 +8,21 @@ Create or continue one Make Goal. Its objective is the exact printable product
 that satisfies the sealed concept and Wish. Its stopping condition is a
 successful `make` finalizer writing `agent-outcome.json`. Only an exact
 build-blocking contradiction may use the optional
-`make-invent-revision-v1.md` route.
+`make-invent-revision-v1.md` route, and only while `STAGE.json` sets
+`invent_revision_allowed: true`. On the last lifecycle round the packet sets
+`final_round: true` and `invent_revision_allowed: false`: a Make -> Invent
+revision cannot be finalized, so either finish a conforming build from the
+sealed concept or return a truthful `need`.
+
+`inputs.vault_leads`, when present, lists what the design vault records
+against the concept's mechanisms: `risk` entries with the anti-pattern, the
+recorded `suggested_fixes`, banked `evidence`, and a stable `id`. They are
+computed by the host from the phase's `VAULT.json` snapshot, not authored by a
+model. Forge and Quest packets carry leads for the sealed Invent concept; Spark
+packets carry leads derived from the mechanisms the Wish itself names. Read
+them before building; a lead is a lead, not a verdict, and Make answers them
+with the built product rather than a written response (Quest Playtest later
+answers each lead explicitly).
 
 ## Critical path
 
@@ -18,38 +32,62 @@ roster once from `STAGE.json`'s compact `inventor_discovery_index`, read only
 the best three full custom-agent TOMLs, select the Inventor whose Taste owns
 the hardest-to-fake magic, and write one compact source with exactly
 `selected_inventor_id`, roster-covering `ranking`, `concept`, and `research`.
+The Spark `concept` is sealed by the same finalizer code as a Forge/Quest
+Invent, so it must satisfy the complete Invented schema-5 contract in
+[invent.md](invent.md): `title`, `summary`, `interaction`, `envelope_mm`,
+`mechanisms` (with `novel_mechanisms` for any slug the vault does not know),
+`components` with exactly the nine fields, a `build_plan`, hedge-free
+quantities, and the vault rules when `VAULT.json` is materialized. Spark may
+read `invent.md` for that contract even though it runs no Invent stage.
 
-During a frozen deep-v8 or deep-v9 proof turn, follow the host prompt literally. Create or
-continue the Make Goal immediately, then inspect the required stable
-instructions, stage packet, and sealed concept in one bounded batch rather than
-separate tool calls. Write source and its parent directories in the next file
-edit before optional reading or help discovery. The broad CAD skill is
-deliberately not applicable until the proof marker exists: the host already
-supplies the complete proof interface. Do not inspect an empty product tree,
-create an empty directory as separate work, or spawn an early critic. Persist
-exact mechanism/relationship evidence, neutral held/signature blockout images,
-and one compact root visual finding under
-`<cad-project>/review/early-proof/`. The canonical independent blind critic
-remains mandatory during final Make. The host-provided
-`.make-proof-ready.json` marker ends only that native turn; it never advances
-Make. The resumed high-reasoning turn must reuse the passing proof rather than
-restart, and only then loads the broad CAD skill.
+During the current deep-v13 Forge/Quest proof turn (the same exact-state
+proof as v10 through v12), follow the host prompt literally. Create or continue
+the Make Goal immediately, then inspect the required stable instructions, stage
+packet, and sealed concept in one bounded batch rather than separate tool
+calls. In the next file edit, author the shared helper
+`review/early-proof/proof.py` plus three exact-state entries
+`state-0.step.py`, `state-1.step.py`, and `state-2.step.py` under
+`<cad-project>/review/early-proof/`, before optional reading or help discovery.
+The broad CAD skill is deliberately not applicable until the proof marker
+exists: the host already supplies the complete proof interface. Do not inspect
+an empty product tree, create an empty directory as separate work, or spawn an
+early critic. Persist the three STEP/STL states, one neutral held image, one
+state sheet, and one compact `finding.json` that records what is visibly
+distinct in each frame and whether the Wish's form, subjects, action, and
+relationship survive. The canonical independent blind critic remains mandatory
+during final Make. The host-provided `.make-proof-ready.json` marker ends only
+that native turn; it never advances Make. The host accepts it only when the
+helper, three state sources, three STEP files, three distinct STL files, held
+image, state sheet, and finding are stable regular files at least as new as
+their sources. The resumed final-Make turn must reuse the passing proof rather
+than restart, and only then loads the broad CAD skill.
 
 Replace the bracketed paths from `STAGE.json`; do not invoke help to rediscover
 this interface or configure a cache. The host binds a private writable
-`XDG_CACHE_HOME`. The proof entry defines exactly one module-scope `gen_step()`
-and returns the build123d shape. Generate, export, and render it in this order
-inside one foreground tool call so no agent reasoning cycle separates the
+`XDG_CACHE_HOME`. Each state entry defines exactly one module-scope `gen_step()`
+and returns that state's build123d shape. Generate, export, and render in this
+order inside one foreground tool call so no agent reasoning cycle separates the
 deterministic commands:
 
 ```bash
-"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/gen <entry.step.py> --write
-"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/export <entry.step> --stl
-"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/render_product <entry.stl> \
+for s in 0 1 2; do
+  "$WORKSHOP_PYTHON" .agents/skills/cad/scripts/gen <cad-project>/review/early-proof/state-$s.step.py --write
+  "$WORKSHOP_PYTHON" .agents/skills/cad/scripts/export <cad-project>/review/early-proof/state-$s.step --stl
+done
+"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/render_product <cad-project>/review/early-proof/state-0.stl \
   -o <cad-project>/review/early-proof/held.png \
-  --motion-sheet <cad-project>/review/early-proof/signature.png \
-  --motion-angles=-12,0,12
+  --state-sheet <cad-project>/review/early-proof/signature.png \
+  --state-stl <cad-project>/review/early-proof/state-0.stl \
+  --state-stl <cad-project>/review/early-proof/state-1.stl \
+  --state-stl <cad-project>/review/early-proof/state-2.stl
 ```
+
+The renderer rejects visually indistinguishable state frames. `--motion-sheet`
+rotates one unchanged mesh and is viewpoint evidence only; it never proves a
+state transition, so it is not the proof sheet. Frozen older profiles
+(deep-v8/v9 single-entry `--motion-sheet` proof, and earlier) keep the exact
+commands their own materialized profile prescribes; read the materialized
+`deep-economics-v<N>.md` for that run.
 
 ## Ownership and pipeline
 
@@ -75,6 +113,9 @@ Use one product funnel:
 2. Generate explicit source targets with
    `.agents/skills/cad/scripts/gen <entry.step.py> --write`. Export STL from the
    fresh STEP with `.agents/skills/cad/scripts/export <entry.step> --stl`.
+   When the sealed concept carries a `build_plan` (Invented schema 5), also
+   export every component to `<product_root>/parts/<component-key>.stl` in
+   print orientation and seal each group; see "Build groups" below.
 3. Run only narrow checks affected by an edit. Once the baseline is plausible,
    run `.agents/skills/cad/scripts/verify_project <cad-project>
    --print-preflight` without `--fresh`. It must cover every printable at the
@@ -115,6 +156,38 @@ directories are ignored by both the finalizer and host gate, so never report an
 empty cache directory as a blocker. Keep temporary work, transcripts, and
 duplicate render families outside the sealed product tree.
 
+## Build groups
+
+The sealed concept's `build_plan` (Invented schema 5; concepts sealed as
+schema 3 or 4 need no groups) orders its components into named groups. Make's
+discipline is to work group by group: build that group's parts, export each to
+`<product_root>/parts/<component-key>.stl`, run the narrow checks, satisfy the
+group's `exit_criteria`, and then seal the group:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . make-group --product-root <STAGE product_root> --group <group>
+```
+
+For Spark, also pass the same `--source <spark-source.json>` that the `make`
+finalizer takes; the group is sealed against that authored concept's
+`build_plan`. `make-group` refuses `--source` when `STAGE.json` already carries
+sealed inputs, refuses a product root other than
+`artifacts/make/r<round>/product`, and refuses a group name absent from the
+plan. It requires a nonempty regular `parts/<key>.stl` for every part in the
+group, hashes those bytes, and writes
+`<product_root>/groups/<group>.json` (`schema_version` 1, kind
+`autonomous-workshop.make-group`, `group`, `parts`, `files` keyed by component
+key). Re-run it for a group after any change to its parts.
+
+What the host and the `make` finalizer verify: every group in the plan has a
+sealed `groups/<group>.json` whose `parts` list equals the plan and whose
+`files` hashes match the current `parts/<key>.stl` bytes for every component.
+Sealing order, stopping at a group that will not seal, and `exit_criteria` are
+your discipline, not host-enforced checks; the host does not read
+`exit_criteria`. Building later groups on an unsealed group is still the wrong
+order because later groups mate with it.
+
 ## Required final product
 
 Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
@@ -122,10 +195,15 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
 - the exact nonempty root files named by `STAGE.json.required_root_files`:
   `product.json`, `assembled.step`, `assembled.step.json`, and `assembled.stl`;
 - `product.json` with nonempty `title` and `summary` strings. Both are
-  customer copy that reaches the shop unchanged: the title is a sayable name
-  of one to four words with no dimensions, part counts, or sentences, and
-  neither may use Workshop vocabulary (Wish, Taste, Goal, Make, Release,
-  Playtest, Spark, Forge, Quest, artifact, gate);
+  customer copy that reaches the shop unchanged. Enforced deterministically
+  at Make and again at Release: the title is at most 300 characters, already
+  stripped (no leading or trailing whitespace), contains no carriage return,
+  and neither title nor summary may contain the whole words `Wish`, `Taste`,
+  or `Inventor` (capitalized) or `playtest` or `finalizer` (any case).
+  Guidance, not enforced: the title is a sayable name of one to four words
+  with no dimensions, part counts, or sentences, and it avoids the other
+  Workshop terms (Goal, Make, Release, Spark, Forge, Quest, artifact, gate)
+  unless they are the ordinary customer word ("Starling Gate");
 - the self-contained CAD project, source, generated STEP/STL, measurements,
   passing `measure/print-preflight.md`, and final
   `measure/verification-pipeline.md`;

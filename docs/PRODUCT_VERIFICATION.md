@@ -49,7 +49,9 @@ even handled it. The level also does not by itself mean that an artifact is
 print-ready. A lower-tier CAD receipt explicitly marked
 `digitally-verified-not-print-ready` omits wall-thickness evidence while
 retaining the other deterministic CAD gates; it cannot support print-ready
-copy.
+copy. Current finalizers always run the thickness check, so that tier is
+reachable only by frozen runs whose older materialized finalizer omitted it;
+the host keeps validating those receipts under their original rules.
 
 The public manifest fixes its scope to:
 

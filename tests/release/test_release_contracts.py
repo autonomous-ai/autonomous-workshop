@@ -190,3 +190,44 @@ class ProductReleaseContractTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReleaseCustomerCopyTest(unittest.TestCase):
+    """Release re-applies the Make customer-copy rule to title and summary."""
+
+    def _product(self, **overrides):
+        product = {
+            "schema_version": 4,
+            "kind": "workshop.release-package",
+            "status": "manual-ready",
+            "title": "Moon Nook",
+            "summary": "A tiny lunar observatory.",
+            "what_arrives": ["One tested product revision", "One manual"],
+            "limitations": [],
+            "product_artifact_sha256": "a" * 64,
+            "playtest_evidence_artifact_sha256": "b" * 64,
+            "claims": {"check": {"passed": True}},
+        }
+        product.update(overrides)
+        return product
+
+    def test_manual_release_product_refuses_internal_vocabulary(self):
+        from workshop.release.native import _validate_manual_release_product
+
+        validated = _validate_manual_release_product(self._product())
+        self.assertEqual(validated["title"], "Moon Nook")
+        for label, overrides in (
+            ("vocabulary in title", {"title": "Moon Nook Playtest"}),
+            ("vocabulary in summary", {"summary": "The Wish, realized."}),
+            ("case-insensitive", {"summary": "A tiny FINALIZER of the moon."}),
+            ("untrimmed title", {"title": "Moon Nook "}),
+            ("carriage return", {"summary": "A tiny\r\nlunar observatory."}),
+            ("title over 300", {"title": "x" * 301}),
+        ):
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(ContractError, r"\(customer-copy\)"):
+                    _validate_manual_release_product(self._product(**overrides))
+        # whole words only: substrings stay customer copy
+        _validate_manual_release_product(
+            self._product(title="Gateway Forgery", summary="Questing artifacts.")
+        )

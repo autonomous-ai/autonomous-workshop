@@ -19,7 +19,7 @@ Autonomous Workshop is the engine behind this vision: anyone can build a toy stu
 
 **Our first category is toys and games. Our focus is autonomous Inventors that people create and direct.** Conversation is the main creative interface; individual toy briefs and CAD edits support that relationship.
 
-[![The Autonomous Workshop loop: Daydream, Invent (optional), Make, Playtest (optional), Release, Shop, Scoreboard](docs/images/inventor-loop.svg)](docs/images/inventor-loop.svg)
+[![The Autonomous Workshop loop: Daydream, Invent (Forge and Quest), Make, Playtest (Quest), Release, then Shop and Operations (printing, delivery, review) feeding the Scoreboard](docs/images/inventor-loop.svg)](docs/images/inventor-loop.svg)
 
 ## The creator experience
 
@@ -62,7 +62,7 @@ When an Inventor is not yet connected, Workshop opens [Connect Inventor](https:/
 
 Each Inventor has its own owner-only credential file under `$WORKSHOP_HOME/credentials/inventors/`. The browser returns only a short-lived, one-time authorization code; Workshop exchanges it directly with the Autonomous Toys API. Publishing credentials never enter a browser URL, product workspace, or coding-agent session. To choose a different account later, run `uv run workshop login <inventor-id>`.
 
-One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
+One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager), and then Pico Press dreams the next one. The daydream card becomes the sealed brief; Spark has no Invent stage, so Make authors the compact concept from that brief before building. `start <inventor>` also pins the roster to that Inventor, so the run does not re-select a specialist:
 
 ```bash
 uv run workshop start pico-press
@@ -75,7 +75,7 @@ uv run workshop stop pico-press          # ends after the current step
 uv run workshop stop pico-press --now    # interrupts now; the current run stays resumable
 ```
 
-Three consecutive failed daydreams or builds stop the loop on their own. `--once` dreams and builds a single idea; `--max-ideas N` stops after N. `--workflow` goes deeper: 🔥 Forge adds Invent (`Invent -> Make -> Release`), 🗺️ Quest adds Invent and Playtest:
+Three consecutive failed daydreams or builds stop the loop on their own. `--once` dreams and builds a single idea; `--max-ideas N` stops after N. `--workflow` goes deeper: 🔥 Forge adds Invent (`Invent <-> Make -> Release`; Make can return to Invent with exact evidence that the sealed concept blocks every conforming build), 🗺️ Quest adds Invent and Playtest (`Invent <-> Make <-> Playtest -> Release`, and Playtest can also return straight to Invent):
 
 ```bash
 uv run workshop start pico-press --workflow forge
@@ -152,7 +152,7 @@ One run is one native coding-agent session — the shop lead. Resume cannot swit
 
 ```bash
 uv run workshop start pico-press --agent codex    # Sol + medium; default
-uv run workshop start pico-press --agent claude   # Opus 5 + high; experimental
+uv run workshop start pico-press --agent claude   # Opus 5 + medium; experimental
 uv run workshop start pico-press --agent grok     # experimental
 ```
 
@@ -248,13 +248,28 @@ Mechanical shadow-play toys whose held form casts a hidden creature, place, or
 event under ordinary light. Orin authors the solid object, its negative space,
 and its hand-powered projected transformation as one printable mechanism.
 
+### More bundled Inventors
+
+The remaining six bundles ship with the same contract; each description is the Taste frontmatter Invent (Forge and Quest) or Make (Spark) reads when it selects a specialist.
+
+| Inventor | Chooses it for | Not for |
+|---|---|---|
+| [ABO](inventors/abo/TASTE.md) (`abo`, Abstract Boardgame Oracle) | Original abstract strategy games: a handful of piece types on a rich board, depth from combinatorial structure, every distinction carried by shape | A game built around a person, a relationship, a place, or a private reference |
+| [Tess Loop](inventors/tess-loop/TASTE.md) (`tess-loop`) | Flat-print modular pattern toys whose pieces combine into many tactile arrangements | Figurines, electronics, licensed themes, or rule-heavy board games |
+| [Luma Vale](inventors/luma-vale/TASTE.md) (`luma-vale`) | Hand-powered light, shadow, moiré, aperture, and silhouette toys | Electronics, figurines, rule-heavy games, or color-only effects |
+| [Mira Fold](inventors/mira-fold/TASTE.md) (`mira-fold`) | Compact, support-free tactile puzzles with two or three robust printed parts | Electronics, licensed characters, fragile sculpture, or complex mechanisms |
+| [Pico Press](inventors/pico-press/TASTE.md) (`pico-press`) | Compact support-free toys where crisp push, spin, roll, or wobble mechanics are themselves the magic | Silhouette, optical, or story reveals where motion is only the carrier |
+| [Soren Voss](inventors/soren-voss/TASTE.md) (`soren-voss`) | Ingenious mechanical objects and creatures whose assembled 3D-printed parts produce surprising, expressive motion, using clever mechanisms rather than electronics | Electronics-driven motion |
+
+Bundle ids: `abo`, `alice`, `bob`, `eve`, `ivy`, `kestrel-knot`, `leo`, `luma-vale`, `mira-fold`, `orin-shadow`, `pico-press`, `sonora-reed`, `soren-voss`, `tess-loop`, `vela-bloom` (see [`inventors/README.md`](inventors/README.md)).
+
 ## Toys
 
 Toys that already left the Workshop. After Factory publication, a sanitized snapshot lands in [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.
 
 ![Horn Tip](docs/images/horn-tip.jpg)
 
-| Toy | Inventor | Effort | Snapshot | Factory |
+| Toy | Inventor | Workflow | Snapshot | Factory |
 |---|---|---|---|---|
 | Moonwake Turn | [Luma Vale](inventors/luma-vale/) | Spark | [`toys/luma-vale-moonwake-turn/`](toys/luma-vale-moonwake-turn/) | [moonwake-turn](https://www.autonomous.ai/toys/product/moonwake-turn) |
 | Mooncoil Dragon | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-mooncoil-dragon/`](toys/pico-press-mooncoil-dragon/) | [mooncoil-dragon](https://www.autonomous.ai/toys/product/mooncoil-dragon) |
@@ -271,10 +286,22 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/toys/product/lunar-relay) |
 | Orbit Gobbler | [Bob](inventors/bob/) | 🔥 Forge | [`toys/bob-orbit-gobbler/`](toys/bob-orbit-gobbler/) | [orbit-gobbler](https://www.autonomous.ai/toys/product/orbit-gobbler) |
 | Comet Heist | [Leo](inventors/leo/) | 🗺️ Quest | [`toys/leo-comet-heist-twin-pulse-vault-run/`](toys/leo-comet-heist-twin-pulse-vault-run/) | [comet-heist-twin-pulse-vault-run](https://www.autonomous.ai/toys/product/comet-heist-twin-pulse-vault-run) |
+| Crosscurrent | [Leo](inventors/leo/) | ✨ Spark | [`toys/leo-crosscurrent/`](toys/leo-crosscurrent/) | [crosscurrent](https://www.autonomous.ai/toys/product/crosscurrent) |
+| Gutterfall | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-gutterfall/`](toys/bob-gutterfall/) | [gutterfall](https://www.autonomous.ai/toys/product/gutterfall) |
+| Frosting Aloft | [Orin Shadow](inventors/orin-shadow/) | ✨ Spark | [`toys/orin-shadow-frosting-aloft/`](toys/orin-shadow-frosting-aloft/) | [frosting-aloft](https://www.autonomous.ai/toys/product/frosting-aloft) |
+| Neststomp | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-neststomp/`](toys/pico-press-neststomp/) | [neststomp](https://www.autonomous.ai/toys/product/neststomp) |
+| Pearlturn | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-pearlturn/`](toys/pico-press-pearlturn/) | [pearlturn](https://www.autonomous.ai/toys/product/pearlturn) |
+| Ember Knock | [Sonora Reed](inventors/sonora-reed/) | ✨ Spark | [`toys/sonora-reed-ember-knock/`](toys/sonora-reed-ember-knock/) | [ember-knock](https://www.autonomous.ai/toys/product/ember-knock) |
+| Tempest Lull | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-tempest-lull/`](toys/pico-press-tempest-lull/) | [tempest-lull](https://www.autonomous.ai/toys/product/tempest-lull) |
+| Orbit Cradle | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-orbit-cradle/`](toys/pico-press-orbit-cradle/) | [orbit-cradle](https://www.autonomous.ai/toys/product/orbit-cradle) |
+| Comet Pebble | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-comet-pebble/`](toys/pico-press-comet-pebble/) | [comet-pebble](https://www.autonomous.ai/toys/product/comet-pebble) |
+| Lantern Menagerie | [Orin Shadow](inventors/orin-shadow/) | 🗺️ Quest | [`toys/orin-shadow-lantern-menagerie-the-three-moon-shadow-reel/`](toys/orin-shadow-lantern-menagerie-the-three-moon-shadow-reel/) | [lantern-menagerie-the-three-moon-shadow-reel](https://www.autonomous.ai/toys/product/lantern-menagerie-the-three-moon-shadow-reel) |
+| Moon-Moth Bloom | [Vela Bloom](inventors/vela-bloom/) | 🔥 Forge | [`toys/vela-bloom-moon-moth-bloom/`](toys/vela-bloom-moon-moth-bloom/) | [moon-moth-bloom](https://www.autonomous.ai/toys/product/moon-moth-bloom) |
+| Night-Sky Weave | [Tess Loop](inventors/tess-loop/) | ✨ Spark | [`toys/tess-loop-night-sky-weave/`](toys/tess-loop-night-sky-weave/) | [night-sky-weave](https://www.autonomous.ai/toys/product/night-sky-weave) |
 | Cradle Crescent | [Bob](inventors/bob/) | — | [`toys/bob-cradle-crescent/`](toys/bob-cradle-crescent/) | [cradle-crescent](https://www.autonomous.ai/toys/product/cradle-crescent) |
 | False Lantern | [Leo](inventors/leo/) | — | [`toys/leo-false-lantern/`](toys/leo-false-lantern/) | [false-lantern](https://www.autonomous.ai/toys/product/false-lantern) |
 
-Horn Tip is a Spark run on Grok. A later run with the same brief is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
+Horn Tip is a Spark run on Grok. A later run with the same brief is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older flat-layout snapshots that predate the workflow-shaped archive and record no route.
 
 Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. New
 toy READMEs report best-effort gross, cached, and uncached Manager input plus
@@ -314,9 +341,10 @@ Daydream -> one liked idea -> a frozen effort route:
 ✨ Spark: Make -> Release                          (default)
 🔥 Forge: Invent <-> Make -> Release
 🗺️ Quest: Invent <-> Make <-> Playtest -> Release
+          ^__________________|   (Playtest can also return straight to Invent)
 
-Release -> Shop (order one, printed to order, photographed, ships in days)
-Shop -> Scoreboard (views, orders, prints, returns) -> back to Daydream
+Release -> Shop (order one; Operations prints to order, photographs, ships in days)
+Shop -> Scoreboard (views, orders, prints, returns, reviews) -> back to Daydream
 ```
 
 Route diagrams: [Spark](docs/images/effort-spark.svg) · [Forge](docs/images/effort-forge.svg) · [Quest](docs/images/effort-quest.svg).
@@ -335,7 +363,7 @@ Every run is keyed by a Wish id. Passed-through stages create no turn, artifact,
 - a self-contained printable `MANUAL.pdf` for the box
 - authenticated public Factory readback of those CAD and manual hashes
 
-Workshop code ends there. Printing, delivery, and Review belong to Operations. Publication does not claim a physical print, pack, or delivery.
+Workshop code ends there: Release hands the sealed product to the Shop. Operations (printing, delivery, review) owns every physical step and feeds the Scoreboard. Publication does not claim a physical print, pack, or delivery.
 
 ```text
 inventors/          reusable Inventor sources (Taste, skills, tools)

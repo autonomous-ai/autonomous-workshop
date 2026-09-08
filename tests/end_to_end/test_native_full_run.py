@@ -359,6 +359,22 @@ def _fixture_components():
     }
 
 
+def _lead_responses(leads):
+    """Answer every issued design-vault lead the way the finalizer requires."""
+
+    return [
+        {
+            "lead_id": lead["id"],
+            "status": "accepted-risk",
+            "response": (
+                "The fixture revision keeps the %s risk visible and accepts it."
+                % lead["nodes"][-1]
+            ),
+        }
+        for lead in leads
+    ]
+
+
 class _OneSessionProductAgent:
     """A deterministic stand-in for one resumed native Codex session."""
 
@@ -370,6 +386,7 @@ class _OneSessionProductAgent:
         self.stage_packets = []
         self.finalizer_commands = []
         self.playtest_plan = list(playtest_plan) if playtest_plan else []
+        self.sealed_spark_lead_responses = []
         self.confirm_first_lead = confirm_first_lead
         self.product_contract_name_collisions = product_contract_name_collisions
 
@@ -530,6 +547,9 @@ class _OneSessionProductAgent:
                     "ranking": self._ranking(stage),
                 }
             )
+        authored["concept"]["vault_lead_responses"] = _lead_responses(
+            stage["inputs"].get("vault_leads", [])
+        )
         _write_json(run_root / source, authored)
         self._run_finalizer(run_root, "invent", "--source", source)
 
@@ -586,6 +606,12 @@ class _OneSessionProductAgent:
                     "scope": "Compact evidence sufficient for the Spark build.",
                 },
             }
+            spark_authored["concept"]["vault_lead_responses"] = _lead_responses(
+                inputs.get("vault_leads", [])
+            )
+            self.sealed_spark_lead_responses = spark_authored["concept"][
+                "vault_lead_responses"
+            ]
             _write_json(run_root / spark_source, spark_authored)
             invented = {"concept": spark_authored["concept"]}
         if not invented["concept"]["title"].startswith("Orbit Dog Draughts"):
@@ -1866,6 +1892,7 @@ class NativeFullRunTest(unittest.TestCase):
         context_source,
         launcher=None,
         effort=None,
+        objective="Build a pocket draughts set inspired by my orbit-loving dog.",
     ):
         if launcher is None:
             launcher = _OneSessionProductAgent(playtest_plan=playtest_plan)
@@ -1894,7 +1921,7 @@ class NativeFullRunTest(unittest.TestCase):
             )
             wish = Wish.create(
                 wish_name,
-                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                objective,
                 constraints={"audience": "14+", "manufacture": "not-authorized"},
                 context={"source": context_source},
             )
@@ -2052,6 +2079,38 @@ class NativeFullRunTest(unittest.TestCase):
         self.assertEqual(len(launcher.starts), 1)
         self.assertGreaterEqual(len(launcher.resumes), 2)
         self.assertTrue(launcher.received_continuation_prompt)
+
+    def test_spark_make_receives_the_vault_leads_invent_would_have_seen(self):
+        # The Wish names two vault mechanisms; Spark has no Invent turn, so
+        # its Make packet carries the same round-one leads and the sealed
+        # concept must answer them (the finalizer refuses otherwise).
+        launcher, checkpoint = self._run_playtest_routing_case(
+            effort="spark",
+            playtest_plan=[],
+            wish_name="spark-vault-leads",
+            context_source="spark-vault-leads-test",
+            objective=(
+                "Build a square grid, stacking and balancing draughts set "
+                "inspired by my orbit-loving dog."
+            ),
+        )
+
+        self.assertTrue(checkpoint.complete)
+        make_packet = launcher.stage_packets[0]
+        self.assertEqual(make_packet["stage"], "make")
+        leads = make_packet["inputs"]["vault_leads"]
+        self.assertIsInstance(leads, list)
+        self.assertGreater(len(leads), 0)
+        lead_ids = [lead["id"] for lead in leads]
+        self.assertEqual(len(set(lead_ids)), len(lead_ids))
+        invented_artifact = next(
+            artifact
+            for artifact in checkpoint.stage_artifacts["make"]
+            if artifact.path == "artifacts/make/r0001/invented.json"
+        )
+        self.assertEqual(invented_artifact.path, "artifacts/make/r0001/invented.json")
+        responses = launcher.sealed_spark_lead_responses
+        self.assertEqual([item["lead_id"] for item in responses], lead_ids)
 
     def test_spark_release_uses_exact_creative_contract_paths(self):
         launcher = _OneSessionProductAgent(product_contract_name_collisions=True)
@@ -2433,6 +2492,29 @@ class NativeFullRunTest(unittest.TestCase):
         self.assertEqual(
             [len(packet["inputs"]["score_history"]) for packet in make_packets],
             [0, 1, 2, 3],
+        )
+        # Only the last round is final: every packet says so up front so the
+        # finalizer's final-round refusal never surprises the agent.
+        playtest_packets = [
+            packet for packet in launcher.stage_packets if packet["stage"] == "playtest"
+        ]
+        for packets in (make_packets, playtest_packets):
+            self.assertEqual(
+                [packet["inputs"]["final_round"] for packet in packets],
+                [False, False, False, True],
+            )
+        self.assertEqual(
+            [packet["inputs"]["backward_transition_allowed"] for packet in playtest_packets],
+            [True, True, True, False],
+        )
+        # This frozen (pre-effort) run has no Make->Invent edge at all.
+        self.assertEqual(
+            [packet["inputs"].get("invent_revision_allowed") for packet in make_packets],
+            [None, None, None, None],
+        )
+        self.assertEqual(
+            [packet["inputs"]["backward_transition_allowed"] for packet in make_packets],
+            [False, False, False, False],
         )
         self.assertEqual(make_packets[1]["inputs"]["regression"], {})
         # round 2 scored 6 against round 1's 8: the next Make is told so

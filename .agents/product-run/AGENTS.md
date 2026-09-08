@@ -13,19 +13,34 @@ Forge: Wish -> Invent -> Make -> Release
 Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
 
-For a new Codex run, the host may freeze a versioned economics profile for this
-entire session. Spark uses its low-reasoning fast profile. Current Forge and
-Quest runs use an index-first bounded high-reasoning Invent turn with decisive
-medium recovery, then one 16-minute medium real-state Make proof runway followed
-by a 15-minute source-first high-reasoning final-Make handoff and normal recovery;
-Playtest and Release use medium. Make's minimal exact mechanism/form evidence
-is the first persisted deliverable. Its proof-ready marker ends only that
-native turn, while recovery stays inside the same Goal. A later explicit
-operator resume with valid proof continues normal final-Make recovery without
-replaying the source handoff. Treat every profile
-as a focus constraint, not permission to make
-a generic product or skip proof. Other Managers and frozen older runs keep
-their own bound runtime profile.
+For a new Codex run, the host freezes a versioned economics profile for this
+entire session: Spark materializes `spark-economics-v3.md`; Forge and Quest
+materialize `deep-economics-v13.md`. Each profile describes a pacing shape.
+Spark is one fast session across Make and Release. Forge and Quest shape an
+index-first Invent turn with decisive recovery, then one short real-state Make
+proof runway followed by a source-first final-Make handoff and normal recovery;
+Make's minimal exact mechanism/form evidence is the first persisted
+deliverable, its proof-ready marker ends only that native turn, recovery stays
+inside the same Goal, and a later explicit operator resume with valid proof
+continues normal final-Make recovery without replaying the source handoff.
+
+When `MANAGER.json` carries a reasoning effort and `token-budget-v1.md` is
+materialized (every new Codex run), the following is what the host actually
+enforces:
+
+- every stage runs at the one Wish-wide reasoning effort frozen in
+  `MANAGER.json` (CLI `--effort`, default medium); the profile's per-stage
+  low/high/medium levels are not applied;
+- the only enforced limits are the product token budget, a 60-minute
+  emergency watchdog on every native turn, and automatic context compaction
+  (64k for Spark, 256k for Forge/Quest);
+- the profile's 20/10/16/15/30-minute figures and its turn counts are pacing
+  targets for planning your work, not boundaries the host cuts at.
+
+Treat every profile as a focus constraint, not permission to make a generic
+product or skip proof. Claude Code and Grok Build Managers run one flat
+runtime profile for every stage under the legacy command clocks in
+`budgets-v1.md`; frozen older runs keep their own bound runtime profile.
 
 The Workshop is a thin harness around you. Codex performs the research,
 reasoning, creation, inspection, evaluation, and repair. The outer host owns

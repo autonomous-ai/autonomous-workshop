@@ -1,3 +1,10 @@
+> **Status: superseded / not implemented.** This spec describes a topology
+> (a separate Concept stage, Match and Deliver turns, older schema versions)
+> that no current route contains. See `docs/adr/0016-selectable-effort-routes.md`
+> and the current Invented schema 5 contract in
+> `.agents/product-run/.agents/skills/autonomous-workshop/references/invent.md`.
+> It is kept as history and is not a requirement on current code.
+
 ## Purpose
 
 Concept is the run stage that turns an invented idea into one decided, visualized design before any geometry exists. The native session researches the Wish and commits the design's physical facts; the host validates that commitment, seals it, and binds Make to it — so Make builds to a design that was decided, rather than reinterpreting a title and a summary.

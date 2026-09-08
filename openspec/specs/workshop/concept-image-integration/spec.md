@@ -1,3 +1,10 @@
+> **Status: superseded / not implemented.** This spec describes a topology
+> (a separate Concept stage, Match and Deliver turns, older schema versions)
+> that no current route contains. See `docs/adr/0016-selectable-effort-routes.md`
+> and the current Invented schema 5 contract in
+> `.agents/product-run/.agents/skills/autonomous-workshop/references/invent.md`.
+> It is kept as history and is not a requirement on current code.
+
 ## Purpose
 
 The host-side adapter that turns the drawing instructions a concept authored into the actual image set that concept ships. It is transport and verification only: it carries what the native session specified to an image provider, checks what comes back, and seals it — so the Workshop can visualize a design without the host ever deciding what the design looks like, and without a credential ever reaching the agent.

@@ -1,10 +1,12 @@
 # ADR 0047: Match evidence to motion and persist native execution budgets
 
-- Status: Motion evidence implemented; clock policy superseded by ADR 0049
+- Status: Superseded by ADR 0048
 - Date: 2026-09-07
 - Scope: new materialized product runs; frozen older instructions are unchanged
 
 ## Problem
+
+> Supersession note: the motion-evidence review in this ADR is implemented and remains in force. Its persistent native execution budget was superseded by ADR 0048 (persistent turn budgets), which ADR 0049 in turn superseded with one product-wide token budget; ADR 0051 records the 60-minute per-turn watchdog.
 
 Mooncalf passed printable preflight but exhausted its two blind reviews. A
 calf/hippo styling mismatch and inability to infer reverse walking from still

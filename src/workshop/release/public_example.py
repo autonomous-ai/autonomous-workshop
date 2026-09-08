@@ -1103,6 +1103,12 @@ def _reproduce_markdown(
     arguments.extend(("--workflow", workflow))
     if github_requested:
         arguments.append("--github")
+    # The archive's Match assignment pins the Inventor who made this toy; a
+    # reproduction without it would let the Manager choose from the whole roster.
+    assignment = _read_json_object(staging / "match" / "assignment.json") or {}
+    inventor_id = assignment.get("selected_inventor_id")
+    if isinstance(inventor_id, str) and inventor_id:
+        arguments.extend(("--inventor", inventor_id))
     arguments.append(objective)
     command = " ".join(shlex.quote(part) for part in arguments)
     return (

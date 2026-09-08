@@ -54,12 +54,16 @@ PLAYTEST_INVENT_INVALIDATES = (
 )
 PLAYTEST_FEEDBACK_INVALIDATES = frozenset(PLAYTEST_INVENT_INVALIDATES)
 MAKE_INVENT_REVISION_INVALIDATES = PLAYTEST_INVENT_INVALIDATES
+# Make's forward target depends on the frozen effort: Forge and Spark skip
+# Playtest and seal straight into Release, Quest plays first.  Both are
+# encoded here so the host gate table and this finalizer agree on one set.
+MAKE_FORWARD = ("playtest", "release")
 FORWARD = {
-    "match": "invent",
-    "invent": "make",
-    "make": "release",
-    "playtest": "release",
-    "release": "complete",
+    "match": ("invent",),
+    "invent": ("make",),
+    "make": MAKE_FORWARD,
+    "playtest": ("release",),
+    "release": ("complete",),
 }
 STAGE_FIELDS = {
     "schema_version",
@@ -177,9 +181,10 @@ INVENTOR_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 PRODUCT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 CHECK_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 
-# Invent concept contract (Invented schema 4).  Schema 3 is the legacy shape
-# that only bound `title` and `summary`; sealed runs that predate the contract
-# keep resuming on it.  New Invent finalizations always emit schema 4.
+# Invent concept contract (Invented schema 5).  Schema 3 is the legacy shape
+# that only bound `title` and `summary`; schema 4 added the concept contract;
+# schema 5 adds the build plan.  Sealed runs that predate a schema keep
+# resuming on it.  New Invent finalizations always emit schema 5.
 INVENTED_SCHEMA_VERSIONS = (3, 4, 5)
 BUILD_GROUP_FIELDS = frozenset(("group", "parts", "exit_criteria"))
 MAX_BUILD_GROUPS = 16
@@ -1072,12 +1077,7 @@ def _load_stage(run_root: Path, expected_stage: str) -> dict[str, Any]:
         raise ProposalError("STAGE.json describes another stage")
     _sha256(stage["checkpoint_sha256"], "STAGE checkpoint_sha256")
     _sha256(stage["subject_sha256"], "STAGE subject_sha256")
-    allowed_transitions = (
-        ("playtest", "release")
-        if expected_stage == "make"
-        else (FORWARD[expected_stage],)
-    )
-    if stage["next_transition"] not in allowed_transitions:
+    if stage["next_transition"] not in FORWARD[expected_stage]:
         raise ProposalError("STAGE.json next_transition is invalid")
     maximum = _positive_int(stage["max_rounds"], "STAGE max_rounds")
     if expected_stage in ("match", "invent"):
@@ -1273,7 +1273,7 @@ def _assert_concept_vault_compatible(run_root: Path, concept: Mapping[str, Any])
 
 
 def _validate_concept_contract(concept: Mapping[str, Any]) -> None:
-    """Deterministic buildability checks on an Invent concept (schema 4).
+    """Deterministic buildability checks on an Invent concept (schema 4+).
 
     Every rule here is one an agent asked to self-check its own concept will
     report as satisfied: unbound quantities, orphaned mates, decoration parts,
@@ -1374,23 +1374,34 @@ def _validate_concept_contract(concept: Mapping[str, Any]) -> None:
 def _validate_build_plan(concept: Mapping[str, Any]) -> list[dict[str, Any]]:
     """A complete partition of components into build groups (schema 5)."""
 
-    plan = _array(concept.get("build_plan"), "Invented concept build_plan", nonempty=True)
+    try:
+        plan = _array(concept.get("build_plan"), "Invented concept build_plan", nonempty=True)
+    except ProposalError as exc:
+        raise ProposalError("%s (build-plan)" % exc) from None
     if len(plan) > MAX_BUILD_GROUPS:
-        raise ProposalError("Invented concept build_plan exceeds %d groups" % MAX_BUILD_GROUPS)
+        raise ProposalError(
+            "Invented concept build_plan exceeds %d groups (build-plan)" % MAX_BUILD_GROUPS
+        )
     components = {item["key"]: item for item in concept["components"]}
     placed: dict[str, int] = {}
     groups: list[dict[str, Any]] = []
     for index, raw in enumerate(plan):
-        group = _fields(raw, BUILD_GROUP_FIELDS, "Invented build group")
+        try:
+            group = _fields(raw, BUILD_GROUP_FIELDS, "Invented build group")
+        except ProposalError as exc:
+            raise ProposalError("%s (build-plan)" % exc) from None
         name = group["group"]
         if (
             not isinstance(name, str)
             or CONCEPT_SLUG_RE.fullmatch(name) is None
             or any(item["group"] == name for item in groups)
         ):
-            raise ProposalError("Invented build group name must be a unique slug")
-        _bounded_text(group["exit_criteria"], "Invented build group %s exit_criteria" % name, 2_000)
-        parts = _array(group["parts"], "Invented build group %s parts" % name, nonempty=True)
+            raise ProposalError("Invented build group name must be a unique slug (build-plan)")
+        try:
+            _bounded_text(group["exit_criteria"], "Invented build group %s exit_criteria" % name, 2_000)
+            parts = _array(group["parts"], "Invented build group %s parts" % name, nonempty=True)
+        except ProposalError as exc:
+            raise ProposalError("%s (build-plan)" % exc) from None
         for part in parts:
             if not isinstance(part, str) or part not in components:
                 raise ProposalError(
@@ -1598,11 +1609,106 @@ def _invent_contract(
         stage["inputs"], {"assignment"}, "Invent STAGE inputs"
     )
     assignment = _validate_assignment(inputs["assignment"])
-    return _invent_contract_for_assignment(run_root, assignment, source)
+    return _invent_contract_for_assignment(
+        run_root, assignment, source, vault_leads=inputs.get("vault_leads")
+    )
+
+
+VAULT_LEAD_RESPONSE_FIELDS = frozenset(("lead_id", "status", "response"))
+VAULT_LEAD_RESPONSE_STATUSES = ("addressed", "accepted-risk", "not-applicable")
+VAULT_LEAD_RESPONSE_MIN_CHARS = 20
+VAULT_LEAD_RESPONSE_MAX_CHARS = 2_000
+
+
+def _issued_vault_lead_ids(value: Any) -> list[str]:
+    """Lead ids the host issued in STAGE inputs (``vault_leads``)."""
+
+    if value is None:
+        return []
+    leads = _array(value, "STAGE vault_leads")
+    ids: list[str] = []
+    for lead in leads:
+        if not isinstance(lead, Mapping) or not isinstance(lead.get("id"), str):
+            raise ProposalError("STAGE vault_leads entries must carry a string id")
+        ids.append(lead["id"])
+    if len(set(ids)) != len(ids):
+        raise ProposalError("STAGE vault_leads ids must be unique")
+    return ids
+
+
+def _validate_vault_lead_responses(
+    concept: Mapping[str, Any], lead_ids: Sequence[str]
+) -> None:
+    """Every issued design-vault lead is answered exactly once (vault-lead-response).
+
+    With no issued leads the field is optional and may only be empty.
+    """
+
+    expected = list(lead_ids)
+    responses = concept.get("vault_lead_responses")
+    if responses is None:
+        if expected:
+            raise ProposalError(
+                "Invented concept must carry vault_lead_responses answering the "
+                "issued design-vault leads %s (vault-lead-response)"
+                % ", ".join(expected)
+            )
+        return
+    if not isinstance(responses, list):
+        raise ProposalError(
+            "Invented concept vault_lead_responses must be a list (vault-lead-response)"
+        )
+    if not expected and responses:
+        raise ProposalError(
+            "Invented concept vault_lead_responses must be empty when no "
+            "design-vault leads were issued (vault-lead-response)"
+        )
+    seen: set[str] = set()
+    for raw in responses:
+        if not isinstance(raw, Mapping) or set(raw) != VAULT_LEAD_RESPONSE_FIELDS:
+            raise ProposalError(
+                "vault_lead_responses entries need exactly lead_id, status, and "
+                "response (vault-lead-response)"
+            )
+        lead_id = raw["lead_id"]
+        if not isinstance(lead_id, str) or lead_id not in expected or lead_id in seen:
+            raise ProposalError(
+                "vault_lead_responses entry %r must name one issued lead exactly "
+                "once (vault-lead-response)" % (lead_id,)
+            )
+        if raw["status"] not in VAULT_LEAD_RESPONSE_STATUSES:
+            raise ProposalError(
+                "vault lead %s status must be one of %s (vault-lead-response)"
+                % (lead_id, ", ".join(VAULT_LEAD_RESPONSE_STATUSES))
+            )
+        response = raw["response"]
+        if (
+            not isinstance(response, str)
+            or not VAULT_LEAD_RESPONSE_MIN_CHARS
+            <= len(response.strip())
+            <= VAULT_LEAD_RESPONSE_MAX_CHARS
+            or any(ord(character) < 32 and character not in "\n\t" for character in response)
+        ):
+            raise ProposalError(
+                "vault lead %s response must be %d to %d characters of text "
+                "(vault-lead-response)"
+                % (lead_id, VAULT_LEAD_RESPONSE_MIN_CHARS, VAULT_LEAD_RESPONSE_MAX_CHARS)
+            )
+        seen.add(lead_id)
+    missing = [lead_id for lead_id in expected if lead_id not in seen]
+    if missing:
+        raise ProposalError(
+            "Invented concept vault_lead_responses leaves design-vault leads "
+            "unanswered: %s (vault-lead-response)" % ", ".join(missing)
+        )
 
 
 def _invent_contract_for_assignment(
-    run_root: Path, assignment: Mapping[str, Any], source: Mapping[str, Any]
+    run_root: Path,
+    assignment: Mapping[str, Any],
+    source: Mapping[str, Any],
+    *,
+    vault_leads: Any = None,
 ) -> dict[str, Any]:
     assignment = _validate_assignment(assignment)
     authored = _fields(source, {"concept", "research"}, "Invent authored source")
@@ -1611,6 +1717,7 @@ def _invent_contract_for_assignment(
     _validate_concept_contract(concept)
     _validate_build_plan(concept)
     _assert_concept_vault_compatible(run_root, concept)
+    _validate_vault_lead_responses(concept, _issued_vault_lead_ids(vault_leads))
     identity = {
         "schema_version": 5,
         "kind": INVENTED_KIND,
@@ -1709,6 +1816,7 @@ def _spark_creative_contracts(
         run_root,
         assignment,
         {"concept": authored["concept"], "research": authored["research"]},
+        vault_leads=_mapping(stage["inputs"], "Make STAGE inputs").get("vault_leads"),
     )
     return assignment, invented
 
@@ -2144,8 +2252,12 @@ def _make_contract(
         "Make product.json",
     )
     product = _mapping(product_document, "Make product.json", nonempty=True)
-    _bounded_text(product.get("title"), "Make product title", 2_000)
-    _bounded_text(product.get("summary"), "Make product summary", 2_000)
+    _customer_copy_text(
+        product.get("title"), "Make product title", MAX_CUSTOMER_TITLE_CHARS
+    )
+    _customer_copy_text(
+        product.get("summary"), "Make product summary", MAX_CUSTOMER_SUMMARY_CHARS
+    )
     verification_sha256, _, _ = _hash_regular(
         run_root,
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
@@ -2314,6 +2426,39 @@ def _feedback(value: Any) -> dict[str, Any]:
             "Make repair feedback must invalidate playtest and release"
         )
     return dict(item)
+
+
+def _assert_backward_transition_available(
+    stage: Mapping[str, Any], *, command: str
+) -> None:
+    """Refuse a Playtest->Make/Invent or Make->Invent edge on the final round.
+
+    The host applies the same rule; sealing the proposal anyway would leave a
+    finalized outcome the host can only refuse, so the finalizer says so first
+    and names the two truthful exits.
+    """
+
+    current_round = stage["round"]
+    maximum = stage["max_rounds"]
+    if current_round < maximum:
+        return
+    if command == "playtest":
+        exits = (
+            "seal a passing Playtest (verdict pass) when the product truly "
+            "passes, or record the truthful failure with "
+            "`need --stage playtest --status failed --reason ...`"
+        )
+    else:
+        exits = (
+            "finish Make forward with the `make` command when the product can "
+            "be built, or record the truthful failure with "
+            "`need --stage make --status failed --reason ...`"
+        )
+    raise ProposalError(
+        "round %d is the final round of %d: a backward transition to Invent or "
+        "Make is not available on the final round (final-round); %s"
+        % (current_round, maximum, exits)
+    )
 
 
 def _playtest_transition(playtested: Mapping[str, Any]) -> str:
@@ -2605,6 +2750,64 @@ def _direct_release_claims() -> dict[str, Any]:
     }
 
 
+# Customer-facing copy (Make and Release title and summary) is what a buyer
+# reads.  Workshop-internal vocabulary must never leak into it; the rule is
+# deterministic whole-word matching so the agent can act on the rejection.
+CUSTOMER_COPY_BANNED_WORDS = (
+    # Case-sensitive: these read as Workshop nouns only when capitalized;
+    # lowercase "wish", "taste", and "inventor" are ordinary customer words.
+    "Wish",
+    "Taste",
+    "Inventor",
+)
+CUSTOMER_COPY_BANNED_WORDS_ANY_CASE = (
+    # No ordinary customer sentence needs these in any case.
+    "playtest",
+    "finalizer",
+)
+# Goal, Make, Release, Spark, Forge, Quest, artifact, and gate stay guidance
+# only: published toys legitimately use them ("Starling Gate", "a spark of
+# light"), so a deterministic ban would reject truthful customer copy.
+CUSTOMER_COPY_BANNED_RE = re.compile(
+    r"(?<![A-Za-z0-9])(?:%s|(?i:%s))(?![A-Za-z0-9])"
+    % (
+        "|".join(re.escape(word) for word in CUSTOMER_COPY_BANNED_WORDS),
+        "|".join(re.escape(word) for word in CUSTOMER_COPY_BANNED_WORDS_ANY_CASE),
+    )
+)
+MAX_CUSTOMER_TITLE_CHARS = 300
+MAX_CUSTOMER_SUMMARY_CHARS = 2_000
+
+
+def _customer_copy_text(value: Any, label: str, maximum: int) -> str:
+    """Customer-facing text: stripped, no carriage returns, bounded, and free
+    of Workshop-internal vocabulary (customer-copy)."""
+
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or value != value.strip()
+        or len(value) > maximum
+        or any(
+            ord(character) < 32 and character not in "\n\t"
+            for character in value
+        )
+        or any(ord(character) == 127 for character in value)
+    ):
+        raise ProposalError(
+            "%s must be bounded substantive text of at most %d characters "
+            "without leading or trailing whitespace or carriage returns "
+            "(customer-copy)" % (label, maximum)
+        )
+    leaked = CUSTOMER_COPY_BANNED_RE.search(value)
+    if leaked is not None:
+        raise ProposalError(
+            "%s must not contain Workshop-internal vocabulary; found %r "
+            "(customer-copy)" % (label, leaked.group(0))
+        )
+    return value
+
+
 def _release_page_text(value: Any, label: str, maximum: int) -> str:
     if (
         not isinstance(value, str)
@@ -2664,9 +2867,11 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
             "schema_version": 4,
             "kind": "workshop.release-package",
             "status": "manual-ready",
-            "title": _release_page_text(product["title"], "Release title", 300),
-            "summary": _release_page_text(
-                product["summary"], "Release summary", 2_000
+            "title": _customer_copy_text(
+                product["title"], "Release title", MAX_CUSTOMER_TITLE_CHARS
+            ),
+            "summary": _customer_copy_text(
+                product["summary"], "Release summary", MAX_CUSTOMER_SUMMARY_CHARS
             ),
             "what_arrives": _release_page_text_list(
                 product["what_arrives"],
@@ -2715,8 +2920,12 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
         "schema_version": 5,
         "kind": "workshop.release-package",
         "status": "manual-ready",
-        "title": _release_page_text(product["title"], "Release title", 300),
-        "summary": _release_page_text(product["summary"], "Release summary", 2_000),
+        "title": _customer_copy_text(
+            product["title"], "Release title", MAX_CUSTOMER_TITLE_CHARS
+        ),
+        "summary": _customer_copy_text(
+            product["summary"], "Release summary", MAX_CUSTOMER_SUMMARY_CHARS
+        ),
         "what_arrives": _release_page_text_list(
             product["what_arrives"],
             "Release what_arrives",
@@ -3895,6 +4104,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 run_root,
                 assignment,
                 {"concept": authored["concept"], "research": authored["research"]},
+                vault_leads=inputs.get("vault_leads"),
             )
             assignment_path = _safe_relative(
                 inputs.get("assignment_contract_path"),
@@ -3939,6 +4149,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
         transition = stage["next_transition"]
     elif args.command == "make-revision":
+        _assert_backward_transition_available(stage, command="make-revision")
         source, source_content, _ = _read_json(
             run_root, args.source, "Make Invent-revision authored source"
         )
@@ -3964,6 +4175,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             evidence_root_value=args.evidence_root,
         )
         transition = _playtest_transition(contract)
+        if transition != "release":
+            _assert_backward_transition_available(stage, command="playtest")
     elif args.command == "release":
         contract = _release_contract(
             run_root,

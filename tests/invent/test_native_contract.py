@@ -2,7 +2,12 @@ import copy
 import unittest
 
 from workshop.errors import ContractError
-from workshop.invent.native import NativeInvented, validate_build_plan
+from workshop.invent.native import (
+    VAULT_LEAD_RESPONSE_STATUSES,
+    NativeInvented,
+    validate_build_plan,
+    validate_vault_lead_responses,
+)
 from workshop.match.native import (
     MatchRankingEntry,
     NativeMatchAssignment,
@@ -269,6 +274,65 @@ class InventedContractTest(unittest.TestCase):
         broken = v5_concept()
         broken["build_plan"] = "not checked at schema 4"
         self.invented(schema_version=4, concept=broken)
+
+    def test_every_build_plan_rejection_carries_the_build_plan_tag(self):
+        for name, mutate, _pattern in BUILD_PLAN_VIOLATIONS:
+            concept = v5_concept()
+            mutate(concept)
+            with self.subTest(violation=name):
+                with self.assertRaisesRegex(ContractError, r"\(build-plan\)$"):
+                    validate_build_plan(concept)
+
+    def test_vault_lead_responses_answer_every_issued_lead(self):
+        answer = {
+            "lead_id": "c" * 16,
+            "status": "addressed",
+            "response": "The shared token stays visible between hand-offs.",
+        }
+        concept = v5_concept()
+        # no leads: the field is optional and may only be empty
+        self.assertEqual(validate_vault_lead_responses(concept, ()), {})
+        concept["vault_lead_responses"] = []
+        self.assertEqual(validate_vault_lead_responses(concept, ()), {})
+        concept["vault_lead_responses"] = [answer]
+        with self.assertRaisesRegex(ContractError, r"must be empty.*\(vault-lead-response\)"):
+            validate_vault_lead_responses(concept, ())
+        # one lead: exactly one well-formed answer
+        self.assertEqual(
+            validate_vault_lead_responses(concept, ["c" * 16]), {"c" * 16: "addressed"}
+        )
+        for label, value in (
+            ("missing", None),
+            ("not a list", {"lead_id": "c" * 16}),
+            ("empty", []),
+            ("extra field", [dict(answer, note="x")]),
+            ("missing field", [{"lead_id": "c" * 16, "status": "addressed"}]),
+            ("unknown lead", [dict(answer, lead_id="d" * 16)]),
+            ("duplicate", [answer, dict(answer)]),
+            ("unknown status", [dict(answer, status="ignored")]),
+            ("short response", [dict(answer, response="ok")]),
+            ("long response", [dict(answer, response="x" * 2_001)]),
+            ("control character", [dict(answer, response="a\x00" + "b" * 30)]),
+            ("non-text response", [dict(answer, response=42)]),
+        ):
+            concept = v5_concept()
+            if value is not None:
+                concept["vault_lead_responses"] = value
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(ContractError, r"\(vault-lead-response\)"):
+                    validate_vault_lead_responses(concept, ["c" * 16])
+        for status in VAULT_LEAD_RESPONSE_STATUSES:
+            concept = v5_concept()
+            concept["vault_lead_responses"] = [dict(answer, status=status)]
+            self.assertEqual(
+                validate_vault_lead_responses(concept, ["c" * 16]), {"c" * 16: status}
+            )
+        # the responses are part of the sealed concept hash
+        sealed = self.invented(schema_version=5, concept=concept)
+        self.assertNotEqual(
+            sealed.concept_sha256,
+            self.invented(schema_version=5, concept=v5_concept()).concept_sha256,
+        )
 
     def test_schema_3_stays_readable_for_sealed_runs(self):
         legacy = self.invented(schema_version=3)

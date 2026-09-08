@@ -63,6 +63,26 @@ public summary and labels that substitution instead of exposing private text.
 Skipped lifecycle stages are absent. Publication is separate because it is a
 host-owned authenticated effect, not agent-authored Release evidence.
 
+## Legacy flat layout
+
+Two snapshots predate the workflow-shaped projector:
+[`toys/bob-cradle-crescent/`](../toys/bob-cradle-crescent/) and
+[`toys/leo-false-lantern/`](../toys/leo-false-lantern/). They carry a flat
+tree (`product.json`, `PUBLICATION.json`, `MANUAL.pdf`, model or print
+files, `renders/`, and a README) with no
+`wish/`, `match/`, `make/`, or `release/` stage directories, no
+`ATTEMPTS.json`, and no recorded route, so the README toy table shows no
+workflow for them. They are legacy evidence and are never rewritten into the
+current layout.
+
+## Daydream lineage
+
+The public archive does not disclose daydream lineage. A run started by
+`workshop start <inventor>` seals the daydream card as its brief, but the
+projection carries only the Wish hash (and, with explicit consent, the Wish
+text) under `wish/`; the daydream id, the Inventor's notebook, and the rejected
+sibling ideas stay private under `$WORKSHOP_HOME/daydreams/`.
+
 ## Evidence and privacy
 
 - Exact Made and Release bytes are rehashed before projection.

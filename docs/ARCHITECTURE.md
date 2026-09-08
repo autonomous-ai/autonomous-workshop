@@ -2,8 +2,9 @@
 
 Autonomous Workshop turns one person's Wish into one evidence-backed physical
 product design. It is a thin workflow harness over a pluggable coding-agent
-runtime, not a Python agent framework. Codex is implemented first; Claude Code
-and Grok Build are future adapters to the same boundary.
+runtime, not a Python agent framework. Codex is the default production
+Manager; Claude Code and Grok Build are experimental adapters to the same
+boundary that run a flat launcher under the legacy command clocks.
 
 ## Product scope
 
@@ -18,13 +19,17 @@ Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
 
 New projects freeze a schema-v2 `MANAGER.json` with the selected native agent,
-model, and reasoning effort. The CLI defaults are Codex `gpt-5.6-sol` at high
-effort and Claude Code `claude-opus-5` at high effort; `--model astra` resolves
-to `gpt-6-astra`. The selected reasoning effort remains fixed across the
-persistent daydream and product session. Workflow profiles still own
-compaction ceilings and turn boundaries: Spark uses 64k across Make and
-Release, while Forge and Quest begin Invent with a 20-minute turn and use a
-10-minute source handoff
+model, and reasoning effort. The CLI defaults are Codex `gpt-5.6-sol` at
+medium effort and Claude Code `claude-opus-5` at medium effort (ADR 0043);
+`--model astra` resolves to `gpt-6-astra`. The selected reasoning effort is
+Wish-wide: it remains fixed across the persistent daydream and product session
+and shadows the profile's per-stage low/high hints. Workflow profiles still own
+compaction ceilings: Spark uses 64k across Make and Release, and the deep
+routes 256k. The profile minutes below are pacing guidance for token-budgeted
+Codex runs, whose every native turn instead ends at a 60-minute emergency
+watchdog (ADR 0051) and which are bounded by the token cap (default 30M) and
+a 200-turn loop guard rather than a turn count. Forge and Quest begin Invent
+with a 20-minute turn and use a 10-minute source handoff
 when needed: an existing source is finalized before any reading or refinement;
 otherwise the first edit writes source and the next action finalizes it. Codex
 ranks a compact complete-roster Taste index before opening
@@ -48,6 +53,7 @@ publication gates.
 Spark: Wish -> Make -> Release
 Forge: Wish -> Invent <-> Make -> Release
 Quest: Wish -> Invent <-> Make <-> Playtest -> Release
+                 ^__________________|   (Playtest -> Invent for concept defects)
 
 Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
@@ -121,11 +127,13 @@ and one final complete manual-review packet instead of rerendering after every
 small evidence edit. These are native work instructions plus deterministic
 artifact boundaries, not a Python planner or aesthetic judge.
 
-For a v3 Spark, each native Make or Release turn has a frozen 20-minute process
-boundary. A timeout follows the same bounded recovery mechanism below and
-continues the exact session and Goal from durable bytes. This limits one runaway
-turn; it does not promise a 20-minute stage, create a replacement session, or
-permit incomplete evidence.
+For a token-budgeted v3 Spark, each native Make or Release turn has a 60-minute
+emergency watchdog (ADR 0051); the profile's 20-minute figure is pacing, and
+only frozen unbudgeted Spark v3 sessions keep it as a process boundary. A
+timeout follows the same bounded recovery mechanism below and continues the
+exact session and Goal from durable bytes. This limits one runaway turn; it
+does not promise a 20-minute stage, create a replacement session, or permit
+incomplete evidence.
 
 For Forge and Quest runs, the frozen `deep-economics-v13.md` capability
 begins Invent with a 20-minute turn and gives a recoverable continuation 10
@@ -140,9 +148,11 @@ every stage compacts at 256k. One profile identity binds the persistent thread
 while the host selects those stage-specific time and compaction settings. New
 schema-v2 Manager projects keep their selected reasoning effort throughout;
 older Manager projects retain the original stage-shaped high/medium settings.
-The same recovery
-semantics apply, with no more than eight native turns across one CLI
-invocation. An explicit operator resume after a valid final-Make proof starts
+The same recovery semantics apply. For token-budgeted runs the minute
+boundaries above are pacing and each turn ends at the 60-minute watchdog;
+the eight-native-turn cap per CLI invocation applies only to unbudgeted deep
+sessions, while budgeted commands stop at the token cap or a 200-turn loop
+guard. An explicit operator resume after a valid final-Make proof starts
 directly in normal recovery instead of replaying the source handoff. If fixed
 preflight currently fails wall thickness, recovery may read the complete saved
 region table and the single print-optimisation reference before one
@@ -312,8 +322,9 @@ already bound, the host resumes the same Goal and immutable stage subject with
 a fixed reminder that the required finalizer has not written a proposal. Three
 consecutive normally returned turns without a proposal stop the command early;
 the run remains active, failed progress is visible, and an explicit
-`workshop resume` continues the same session with a fresh bounded window. The
-independent 32-turn invocation budget still applies across every continuation.
+`workshop resume` continues the same session with a fresh bounded window. For
+unbudgeted sessions the independent 32-turn invocation budget still applies
+across every continuation; token-budgeted commands use the 200-turn loop guard.
 No proposal, lifecycle attempt, or evidence is fabricated. An unbound session
 or exhausted budget still fails closed.
 
@@ -389,8 +400,10 @@ not call a model or pass a gate. The host verifies the proposal binding, rereads
 the whole artifact tree, reruns trusted checks, seals accepted bytes, and alone
 advances the durable checkpoint.
 
-For new direct-Release runs, a changed Make revision invalidates Release and
-must pass the full CAD gate again. Frozen pre-ADR-0015 runs retain their
+For new direct-Release (Spark and Forge) runs, a changed Make revision
+invalidates Release and must pass the full CAD gate again. Quest runs route
+`Wish -> Invent <-> Make <-> Playtest -> Release`, and Playtest may return
+directly to Invent as well as to Make. Frozen pre-ADR-0015 runs retain their
 materialized Playtest routing and evidence contracts; the host does not
 reinterpret those historical checkpoints.
 
@@ -433,9 +446,11 @@ at least:
 - optional editable manual source or accessible text companions that do not
   contradict the PDF.
 
-The current contract pair is NativeRelease schema v3 with `MANUAL.pdf` and
-product schema v5/`manual-ready`. NativeRelease schema v2/product schema v4
-remains valid for frozen Playtest runs. Legacy NativeRelease schema v1 remains
+The current contract pair for direct-Release routes (Spark and Forge) is
+NativeRelease schema v3 with `MANUAL.pdf` and product schema v5/`manual-ready`.
+Quest, which includes Playtest, currently uses NativeRelease schema v2 with
+`MANUAL.pdf` and product schema v4/`manual-ready`; that is its live contract,
+not a frozen one. Legacy NativeRelease schema v1 remains
 readable only with `MANUAL.md` and product schema v3/`page-ready`; the host
 validates it under those original rules but cannot report it as a successful
 current Release without an explicit migration through today's gates.
@@ -549,9 +564,9 @@ Manager runtime support is intentionally pluggable:
 
 | Manager runtime | Status |
 |---|---|
-| Codex | Implemented |
-| Claude Code | Planned adapter |
-| Grok Build | Planned adapter |
+| Codex | Implemented; default and production path |
+| Claude Code | Experimental adapter (`--agent claude`); flat launcher under legacy command clocks |
+| Grok Build | Experimental adapter (`--agent grok`); flat launcher under legacy command clocks; one Spark E2E (Horn Tip) |
 
 The adapter seam is session start/resume, native specialist delegation, and the
 toy-project protocol—not the content of Codex prompts or one vendor's custom

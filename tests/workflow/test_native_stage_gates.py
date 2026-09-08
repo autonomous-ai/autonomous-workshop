@@ -361,6 +361,60 @@ class NativeStageGateTest(unittest.TestCase):
         self.assertTrue(legacy.passed)
         self.assertIsNone(legacy.evidence.checks["design_vault_sha256"])
         self.assertEqual(legacy.evidence.checks["vault_leads"], 0)
+    def test_invent_gate_requires_answers_to_issued_vault_leads(self):
+        vault = Vault.from_directory(write_vault(self.root / "vault"))
+        leads = vault.leads_for_concept({"mechanisms": ["hand-off", "single-token"]})
+        self.assertEqual(len(leads), 1)
+        lead_id = leads[0]["id"]
+
+        def invented_for(**extra):
+            concept = v4_concept()
+            concept["mechanisms"] = ["hand-off", "single-token"]
+            concept.update(extra)
+            return NativeInvented(
+                wish_sha256=self.assignment.wish_sha256,
+                assignment_sha256=self.assignment.assignment_sha256,
+                taste_sha256=self.assignment.selected_taste_sha256,
+                blueprint_sha256=self.assignment.blueprint_sha256,
+                schema_version=4,
+                concept=concept,
+                research={"sources": [{"url": "https://example.test/x", "claim": "x"}]},
+            )
+
+        def decide(invented, *, issued):
+            artifact = self.artifact(INVENTED_PATH, invented.to_dict())
+            proposal = self.ready_proposal(
+                "invent", "make", artifact, invent_gate_subject_sha256(self.assignment)
+            )
+            return evaluate_invent_stage(
+                proposal,
+                run_root=self.run_root,
+                expected_checkpoint_sha256=self.checkpoint_sha256,
+                assignment=self.assignment,
+                vault=vault,
+                issued_lead_ids=issued,
+            )
+
+        answer = {
+            "lead_id": lead_id,
+            "status": "not-applicable",
+            "response": "The fixture revision has no idle-player exposure at all.",
+        }
+        with self.assertRaisesRegex(ContractError, r"\(vault-lead-response\)"):
+            decide(invented_for(), issued=[lead_id])
+        with self.assertRaisesRegex(ContractError, r"\(vault-lead-response\)"):
+            decide(
+                invented_for(vault_lead_responses=[dict(answer, status="later")]),
+                issued=[lead_id],
+            )
+        accepted = decide(invented_for(vault_lead_responses=[answer]), issued=[lead_id])
+        self.assertTrue(accepted.passed)
+        self.assertEqual(accepted.evidence.checks["vault_lead_responses"], 1)
+        # no issued leads: optional, may only be empty
+        self.assertTrue(decide(invented_for(), issued=()).passed)
+        with self.assertRaisesRegex(ContractError, r"\(vault-lead-response\)"):
+            decide(invented_for(vault_lead_responses=[answer]), issued=())
+
     def test_routed_invent_gate_rejects_substituted_artifact_vectors(self):
         invented = NativeInvented(
             wish_sha256=self.assignment.wish_sha256,

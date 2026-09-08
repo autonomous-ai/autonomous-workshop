@@ -250,7 +250,9 @@ class StageProposalToolTest(unittest.TestCase):
         path.write_bytes(content)
         return path
 
-    def write_stage(self, stage, inputs, *, round_index=None, writable=False):
+    def write_stage(
+        self, stage, inputs, *, round_index=None, writable=False, max_rounds=4
+    ):
         path = self.run_root / "STAGE.json"
         if path.exists() or path.is_symlink():
             path.unlink()
@@ -274,7 +276,7 @@ class StageProposalToolTest(unittest.TestCase):
             "subject_sha256": "2" * 64,
             "next_transition": FORWARD[stage],
             "round": round_index,
-            "max_rounds": 4,
+            "max_rounds": max_rounds,
             "inputs": inputs,
         }
         path.write_bytes(canonical_json(document))
@@ -1718,6 +1720,38 @@ class StageProposalToolTest(unittest.TestCase):
                 {"title": "Moon Nook", "summary": "Tiny\u0000 observatory"},
                 "Make product summary",
             ),
+            # The Make rule is the Release rule: a sealed Made title must
+            # always be releasable byte-for-byte.
+            (
+                "title longer than the Release limit",
+                {"title": "x" * 301, "summary": "A tiny lunar observatory."},
+                "Make product title",
+            ),
+            (
+                "untrimmed title",
+                {"title": " Moon Nook ", "summary": "A tiny lunar observatory."},
+                "Make product title",
+            ),
+            (
+                "carriage return in summary",
+                {"title": "Moon Nook", "summary": "A tiny\r\nlunar observatory."},
+                "Make product summary",
+            ),
+            (
+                "internal vocabulary in title",
+                {"title": "Make a Moon Nook", "summary": "A tiny lunar observatory."},
+                "Make product title",
+            ),
+            (
+                "internal vocabulary in summary",
+                {"title": "Moon Nook", "summary": "The Wish, in a tiny lunar observatory."},
+                "Make product summary",
+            ),
+            (
+                "internal vocabulary is case-insensitive",
+                {"title": "Moon Nook", "summary": "An ARTIFACT of the moon."},
+                "Make product summary",
+            ),
         )
 
         for label, product, error_label in invalid_products:
@@ -2464,6 +2498,310 @@ class StageProposalToolTest(unittest.TestCase):
             "artifacts/playtest/r0001/evidence",
         )
 
+    def _playtest_fixture(self, *, max_rounds):
+        made = self.create_made()
+        evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
+        evidence_root.mkdir(parents=True)
+        (evidence_root / "config.json").write_bytes(b'{"seed":42,"version":1}\n')
+        checks = []
+        for check_id in self.blueprint.required_playtest_checks():
+            evidence_ref = "%s.json" % check_id
+            (evidence_root / evidence_ref).write_bytes(
+                canonical_json({"check": check_id, "ok": True}) + b"\n"
+            )
+            checks.append(
+                {
+                    "check_id": check_id,
+                    "passed": True,
+                    "evaluator": "workshop-host",
+                    "evaluator_version": "1.0.0",
+                    "config_ref": "config.json",
+                    "evidence_ref": evidence_ref,
+                    "observed_at": "2026-08-26T00:00:00Z",
+                    "observations": {"ok": True},
+                }
+            )
+        self.write_stage(
+            "playtest",
+            {
+                "made": made.to_dict(),
+                "required_check_ids": list(
+                    self.blueprint.required_playtest_checks()
+                ),
+                "final_round": max_rounds == 1,
+                "backward_transition_allowed": max_rounds != 1,
+            },
+            round_index=1,
+            max_rounds=max_rounds,
+        )
+        return checks
+
+    def test_playtest_refuses_a_backward_transition_on_the_final_round(self):
+        checks = self._playtest_fixture(max_rounds=1)
+        failed = dict(checks[0], passed=False, observations={"ok": False})
+        feedback = {
+            "code": "repair-%s" % failed["check_id"],
+            "area": "playtest",
+            "severity": "improve",
+            "finding": "The deterministic check failed.",
+            "change": "Revise the exact product and rerun the check.",
+            "evidence_refs": [failed["evidence_ref"]],
+            "invalidates": ["playtest", "release"],
+        }
+        for verdict, invalidates in (
+            ("improve", ["playtest", "release"]),
+            ("block", ["invent", "make", "playtest", "release"]),
+        ):
+            with self.subTest(verdict=verdict):
+                feedback["severity"] = verdict
+                feedback["invalidates"] = invalidates
+                self.write_json(
+                    "drafts/playtest-failed.json",
+                    {
+                        "checks": [failed, *checks[1:]],
+                        "feedback": [feedback],
+                        "verdict": verdict,
+                    },
+                )
+                rejected = self.run_tool(
+                    "playtest",
+                    "--source",
+                    "drafts/playtest-failed.json",
+                    "--evidence-root",
+                    "artifacts/playtest/r0001/evidence",
+                    expected=2,
+                )
+                self.assertIn("final round", rejected.stderr)
+                self.assertIn("(final-round)", rejected.stderr)
+                self.assertIn("need --stage playtest --status failed", rejected.stderr)
+                self.assertFalse((self.run_root / "agent-outcome.json").exists())
+                self.assertFalse(
+                    (self.run_root / "artifacts/playtest/r0001/playtested.json").exists()
+                )
+
+        # The two truthful exits still work: a passing Playtest ...
+        self.write_json(
+            "drafts/playtest.json",
+            {"checks": checks, "feedback": [], "verdict": "pass"},
+        )
+        self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+        )
+        _, playtested_bytes = self.assert_canonical_file(
+            "artifacts/playtest/r0001/playtested.json"
+        )
+        self.assert_outcome(
+            "playtest",
+            "artifacts/playtest/r0001/playtested.json",
+            playtested_bytes,
+            "release",
+        )
+        # ... or a truthful failed need.
+        (self.run_root / "agent-outcome.json").unlink()
+        self.run_tool(
+            "need",
+            "--stage",
+            "playtest",
+            "--status",
+            "failed",
+            "--reason",
+            "The final round still fails the mechanical check.",
+        )
+        outcome = json.loads((self.run_root / "agent-outcome.json").read_bytes())
+        self.assertEqual(outcome["outcome"]["status"], "failed")
+
+    def test_playtest_backward_transition_is_available_before_the_final_round(self):
+        checks = self._playtest_fixture(max_rounds=2)
+        failed = dict(checks[0], passed=False, observations={"ok": False})
+        self.write_json(
+            "drafts/playtest-failed.json",
+            {
+                "checks": [failed, *checks[1:]],
+                "feedback": [
+                    {
+                        "code": "repair-%s" % failed["check_id"],
+                        "area": "playtest",
+                        "severity": "improve",
+                        "finding": "The deterministic check failed.",
+                        "change": "Revise the exact product and rerun the check.",
+                        "evidence_refs": [failed["evidence_ref"]],
+                        "invalidates": ["playtest", "release"],
+                    }
+                ],
+                "verdict": "improve",
+            },
+        )
+        self.run_tool(
+            "playtest",
+            "--source",
+            "drafts/playtest-failed.json",
+            "--evidence-root",
+            "artifacts/playtest/r0001/evidence",
+        )
+        _, failed_bytes = self.assert_canonical_file(
+            "artifacts/playtest/r0001/playtested.json"
+        )
+        self.assert_outcome(
+            "playtest", "artifacts/playtest/r0001/playtested.json", failed_bytes, "make"
+        )
+
+    def test_make_revision_refuses_to_return_to_invent_on_the_final_round(self):
+        evidence_root = self.run_root / "artifacts/make/r0001/revision-evidence"
+        evidence_root.mkdir(parents=True)
+        (evidence_root / "geometry-check.json").write_bytes(
+            b'{"clearance_mm":-0.3,"passed":false}\n'
+        )
+        contract_path = "artifacts/make/r0001/invent-revision-request.json"
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                # exactly what the host materializes on the final round
+                "invent_revision_allowed": False,
+                "final_round": True,
+                "backward_transition_allowed": False,
+            },
+            round_index=1,
+            max_rounds=1,
+        )
+        self.write_json(
+            "drafts/make-revision.json",
+            {
+                "feedback": [
+                    {
+                        "code": "forced-overlap",
+                        "area": "keel-index-interface",
+                        "severity": "block",
+                        "finding": "The sealed dimensions force a 0.3 mm overlap.",
+                        "change": "Move the index capsule or revise its dimensions.",
+                        "evidence_refs": ["geometry-check.json"],
+                        "invalidates": ["invent", "make", "playtest", "release"],
+                    }
+                ]
+            },
+        )
+        rejected = self.run_tool(
+            "make-revision",
+            "--source",
+            "drafts/make-revision.json",
+            "--evidence-root",
+            "artifacts/make/r0001/revision-evidence",
+            expected=2,
+        )
+        self.assertIn("final round", rejected.stderr)
+        self.assertIn("(final-round)", rejected.stderr)
+        self.assertIn("need --stage make --status failed", rejected.stderr)
+        self.assertFalse((self.run_root / contract_path).exists())
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_invent_must_answer_issued_vault_leads(self):
+        self.materialize_vault()
+        vault = Vault.from_packed_bytes((self.run_root / "VAULT.json").read_bytes())
+        leads = vault.leads_for_concept({"mechanisms": ["hand-off", "single-token"]})
+        self.assertEqual(len(leads), 1)
+        lead_id = leads[0]["id"]
+        self.write_stage(
+            "invent",
+            {"assignment": self.assignment.to_dict(), "vault_leads": leads},
+        )
+        answer = {
+            "lead_id": lead_id,
+            "status": "accepted-risk",
+            "response": "The idle player reads the shared token between hand-offs.",
+        }
+        rejected_sources = (
+            ("missing responses", {}),
+            ("not a list", {"vault_lead_responses": {"lead_id": lead_id}}),
+            ("empty list", {"vault_lead_responses": []}),
+            (
+                "unknown status",
+                {"vault_lead_responses": [dict(answer, status="ignored")]},
+            ),
+            (
+                "short response",
+                {"vault_lead_responses": [dict(answer, response="fine")]},
+            ),
+            (
+                "extra field",
+                {"vault_lead_responses": [dict(answer, note="x")]},
+            ),
+            (
+                "unknown lead",
+                {"vault_lead_responses": [dict(answer, lead_id="f" * 16)]},
+            ),
+            (
+                "duplicate answer",
+                {"vault_lead_responses": [answer, dict(answer)]},
+            ),
+        )
+        for label, extra in rejected_sources:
+            with self.subTest(label=label):
+                self.write_json(
+                    "drafts/invent.json",
+                    self.invent_source(["hand-off", "single-token"], **extra),
+                )
+                completed = self.run_tool(
+                    "invent", "--source", "drafts/invent.json", expected=2
+                )
+                self.assertIn("(vault-lead-response)", completed.stderr)
+                self.assertFalse((self.run_root / "agent-outcome.json").exists())
+        self.write_json(
+            "drafts/invent.json",
+            self.invent_source(
+                ["hand-off", "single-token"], vault_lead_responses=[answer]
+            ),
+        )
+        self.run_tool("invent", "--source", "drafts/invent.json")
+        document, _ = self.assert_canonical_file("artifacts/invent/invented.json")
+        self.assertEqual(document["concept"]["vault_lead_responses"], [answer])
+        NativeInvented.from_mapping(document)
+
+        # Without issued leads the field is optional and may only be empty.
+        (self.run_root / "artifacts/invent/invented.json").unlink()
+        (self.run_root / "agent-outcome.json").unlink()
+        self.write_stage("invent", {"assignment": self.assignment.to_dict()})
+        self.write_json(
+            "drafts/invent.json",
+            self.invent_source(["hand-off", "single-token"], vault_lead_responses=[answer]),
+        )
+        completed = self.run_tool("invent", "--source", "drafts/invent.json", expected=2)
+        self.assertIn("(vault-lead-response)", completed.stderr)
+        self.write_json(
+            "drafts/invent.json",
+            self.invent_source(["hand-off", "single-token"], vault_lead_responses=[]),
+        )
+        self.run_tool("invent", "--source", "drafts/invent.json")
+
+    def test_invent_build_plan_rejections_carry_the_build_plan_tag(self):
+        self.write_stage("invent", {"assignment": self.assignment.to_dict()})
+        base = self.invent_source([])
+        plan = base["concept"]["build_plan"]
+        variants = {
+            "missing": None,
+            "not an array": "body",
+            "empty": [],
+            "empty group": [dict(plan[0], parts=[]), *plan[1:]],
+            "duplicate group": [plan[0], dict(plan[1], group=plan[0]["group"])],
+            "group fields": [{"group": "body"}, *plan[1:]],
+        }
+        for label, value in variants.items():
+            with self.subTest(label=label):
+                source = self.invent_source([])
+                if value is None:
+                    del source["concept"]["build_plan"]
+                else:
+                    source["concept"]["build_plan"] = value
+                self.write_json("drafts/invent.json", source)
+                completed = self.run_tool(
+                    "invent", "--source", "drafts/invent.json", expected=2
+                )
+                self.assertIn("(build-plan)", completed.stderr)
+
     def test_release_seals_exact_codex_authored_page_and_matches_native_release(self):
         made = self.create_made()
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
@@ -2543,7 +2881,6 @@ class StageProposalToolTest(unittest.TestCase):
             ),
             "claims": expected_claims,
         }
-        (package_root / "product.json").write_bytes(canonical_json(product))
         (package_root / "trace.json").write_bytes(
             canonical_json({"made_sha256": made.made_sha256})
         )
@@ -2552,6 +2889,16 @@ class StageProposalToolTest(unittest.TestCase):
             {"made": made.to_dict(), "playtested": playtested.to_dict()},
             round_index=1,
         )
+        # Customer copy at Release obeys the same vocabulary ban as Make.
+        leaked = dict(product, summary="The Playtest of the tested Moon Nook.")
+        (package_root / "product.json").write_bytes(canonical_json(leaked))
+        rejected = self.run_tool(
+            "release", "--package-root", "artifacts/release/package", expected=2
+        )
+        self.assertIn("(customer-copy)", rejected.stderr)
+        self.assertIn("'Playtest'", rejected.stderr)
+        self.assertFalse((self.run_root / "artifacts/release/release.json").exists())
+        (package_root / "product.json").write_bytes(canonical_json(product))
         self.run_tool(
             "release", "--package-root", "artifacts/release/package"
         )

@@ -94,7 +94,10 @@ Make and Release can verify them.
 Write one authored JSON source with exactly `selected_inventor_id`, `ranking`,
 `concept`, and `research`. `ranking` must cover every immutable roster Inventor
 exactly once, place the selected Inventor first, and give a bounded rationale
-for each position. The selected `concept` is Make's sealed design authority, so it must contain the
+for each position. Legacy packet shape: when `STAGE.json` already carries
+`inputs.assignment` (a frozen pre-effort run whose Match stage sealed the
+Inventor), the source is exactly `{concept, research}` and the finalizer binds
+it to that sealed assignment instead. The selected `concept` is Make's sealed design authority, so it must contain the
 physical decisions needed to build without a separate design stage: object and
 category, envelope and wall thickness, print stance, distinctive features,
 each component's form, dimensions, placement, and interfaces, intended
@@ -120,14 +123,23 @@ contract deterministically. Required `concept` fields (extra fields such as
 - `build_plan`: 1 to 16 groups, each exactly `{"group": <slug>, "parts":
   [component keys], "exit_criteria": <text>}`, in build order. Every
   component appears in exactly one group; put parts that must be measured
-  against each other in the same group. Make seals one group at a time and
-  stops at the first group it cannot seal.
+  against each other in the same group. Make's discipline is to seal one
+  group at a time and stop at the first group it cannot seal; what the host
+  checks is that every group is sealed against the exact part bytes.
+- `vault_lead_responses`: required when `STAGE.json` carries a non-empty
+  `inputs.vault_leads`, otherwise omit it. Exactly one entry per lead id, each
+  exactly `{lead_id, status, response}` with `status` one of `addressed`,
+  `accepted-risk`, or `not-applicable` and `response` 20 to 2000 characters.
+  The finalizer rejects a missing, extra, duplicated, or malformed entry as
+  **vault-lead-response**.
 
 The finalizer rejects, naming the rule in parentheses:
 
-- **unbound** — `form`, `duty`, `placement`, or `interfaces` hedges a quantity
-  (`roughly 20 mm`, `~4 mm`, `several`, `a few`, `enough`, `as needed`).
-  State the number.
+- **unbound** — `form`, `duty`, `placement`, or `interfaces` hedges a quantity.
+  A number preceded by `roughly`, `about`, `approximately`, `around`, `circa`,
+  or `~` is rejected, as is any of the words `some`, `several`, `a few`,
+  `a number of`, `a couple of`, `multiple`, `various`, `enough`, `as needed`,
+  or `or so` (case-insensitive, whole words). State the number.
 - **envelope** — a component's sorted dimensions exceed the sorted envelope.
 - **component-orphan** — `mates_with` names an unknown component, the
   component itself, or the same mate twice.
@@ -137,7 +149,12 @@ The finalizer rejects, naming the rule in parentheses:
   name never appears in `interaction`. Give it a role or remove it.
 - **mechanism-unknown** — a mechanism that is neither a vault node nor a
   declared novel mechanism; **mechanism-not-novel** — a `novel_mechanisms`
-  entry that resolves to an existing node.
+  entry that resolves to an existing node. These two rules and the two vault
+  rules below apply only when the host materialized `VAULT.json` at the run
+  root. When the vault was unreachable the host records a bypass for that
+  checkpoint: no `VAULT.json`, no `vault_leads`, and the finalizer and gate
+  skip the mechanism/vault rules for that checkpoint (slug syntax is still
+  checked).
 - **build-plan** — a group names an unknown component, a component sits in
   two groups or in none, a group is empty, or a group name repeats.
 - **vault-conflict** / **vault-requirement** — the resolved mechanisms plus
@@ -149,7 +166,7 @@ The finalizer rejects, naming the rule in parentheses:
   for every mechanism the Wish names outright (plus the constraints), on a
   repair round the findings Make or Playtest saw against the sealed concept
   being revised. Read them before drafting and answer each one in the
-  concept's `vault_lead_responses` (`lead_id`, `status`, `response`).
+  concept's `vault_lead_responses` described above.
 
 Then run:
 

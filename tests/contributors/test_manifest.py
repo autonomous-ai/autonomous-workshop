@@ -41,25 +41,14 @@ class RegistryTest(unittest.TestCase):
     def test_bundled_inventors_are_valid_v8_skill_bundles(self):
         root = Path(__file__).resolve().parents[2]
         manifests = discover_inventors(root)
-        self.assertEqual(
-            [item.inventor_id for item in manifests],
-            [
-                "abo",
-                "alice",
-                "bob",
-                "eve",
-                "ivy",
-                "kestrel-knot",
-                "leo",
-                "luma-vale",
-                "mira-fold",
-                "orin-shadow",
-                "pico-press",
-                "sonora-reed",
-                "tess-loop",
-                "vela-bloom",
-            ],
+        bundled = sorted(
+            entry.name
+            for entry in (root / "inventors").iterdir()
+            if entry.is_dir() and (entry / "inventor.json").is_file()
         )
+        self.assertEqual([item.inventor_id for item in manifests], bundled)
+        self.assertEqual(len(bundled), 15)
+        self.assertIn("soren-voss", bundled)
         for manifest in manifests:
             with self.subTest(inventor_id=manifest.inventor_id):
                 self.assertEqual(manifest.schema_version, 8)

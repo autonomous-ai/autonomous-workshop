@@ -12,7 +12,7 @@ ordinary CAD mistake, a merely difficult build, a preference, or an issue Make
 can repair while preserving the sealed concept.
 
 Make must preserve deterministic or independently inspected evidence under the
-canonical `revision_evidence_root` from `STAGE.json`, then author feedback whose
+canonical `invent_revision_evidence_root` from `STAGE.json`, then author feedback whose
 every item:
 
 - has severity `block`;
@@ -26,7 +26,7 @@ Finalize with:
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . make-revision \
   --source <make-revision-source.json> \
-  --evidence-root <STAGE revision_evidence_root>
+  --evidence-root <STAGE invent_revision_evidence_root>
 ```
 
 Successful finalization completes the current Make Goal truthfully; it does

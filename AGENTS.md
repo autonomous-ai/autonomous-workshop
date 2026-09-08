@@ -13,8 +13,9 @@ root `AGENTS.md` and nested `.agents/skills/autonomous-workshop/SKILL.md`.
 ## Shared runtime architecture
 
 Autonomous Workshop is a thin, trustworthy workflow harness around a native
-coding-agent runtime. Codex is the implemented Manager runtime; Claude Code and
-Grok Build are planned adapters to the same boundary. One product run gives the
+coding-agent runtime. Codex is the default, production Manager runtime; Claude
+Code and Grok Build are experimental adapters (`--agent claude|grok`) to the
+same boundary that run a flat launcher under the legacy command clocks. One product run gives the
 selected runtime the cognitive and tool-using work. The Workshop host retains
 lifecycle order, durable state, deterministic gates, budgets, and authorized
 external effects.
@@ -35,18 +36,26 @@ All implementation and product-run work must preserve these boundaries:
 - Native Codex performs Inventor selection, research, concept exploration,
   creation, inspection, and repair with its own tools and applicable skills.
 - New runs freeze one selectable lifecycle: Spark is `Wish -> Make -> Release`,
-  Forge is `Wish -> Invent -> Make -> Release`, and Quest is
-  `Wish -> Invent -> Make -> Playtest -> Release`. Passed-through stages create
+  Forge is `Wish -> Invent <-> Make -> Release` (Make may return to Invent
+  with exact contradiction evidence), and Quest is
+  `Wish -> Invent <-> Make <-> Playtest -> Release` (Playtest may also return
+  directly to Invent). Spark is the default. Passed-through stages create
   no turn, artifact, gate, or evidence. Spark/Forge Release explicitly records
   Playtest `not-run`; Quest requires passing Playtest evidence. Frozen older
   runs retain their materialized protocol when resumed.
 - New Codex Spark runs also freeze their versioned economics capability and use
-  one low-reasoning native session across Make and Release. Current v3 runs add
-  a 64k automatic-compaction ceiling and a 20-minute boundary per native turn;
-  same-session recovery remains bounded. Forge, Quest, other Managers, and
-  older Spark runs retain their frozen runtime profile. This changes cognitive
-  spend only; every deterministic product and publication gate remains
-  identical.
+  one persistent native session across Make and Release at the Wish-wide
+  reasoning effort chosen by `--effort` (default medium for Codex and Claude
+  Code, ADR 0043); the profile's per-stage low/high hints are shadowed by that
+  Wish-wide setting. Current v3 Spark runs compact at 64k (deep routes at
+  256k). Every token-budgeted Codex run (default cap 30,000,000 tokens, ADR
+  0049) gives each native turn a 60-minute emergency watchdog; the profile's
+  20/10/16/15/30-minute boundaries and its 8-turn command cap are pacing
+  guidance that the host does not enforce for such runs, which are instead
+  bounded by the token cap and a 200-turn loop guard. Forge, Quest, other
+  Managers, and older frozen runs retain their materialized profile. This
+  changes cognitive spend only; every deterministic product and publication
+  gate remains identical.
 - A capable Forge or Quest Make attempt may return directly to Invent only when
   exact preserved evidence proves that the sealed concept prevents any
   conforming build. Quest Playtest returns directly to Make for implementation
@@ -96,44 +105,51 @@ model calls, profile subprocesses, and Python-owned scoring or reward loops are
 not extension points. Never add Python prompt chains, browsing strategy,
 candidate fan-out, model judges, stage-role views, or repair reasoning.
 
-Read `docs/NATIVE_AGENT_RUNTIME.md`,
-`docs/adr/0012-codex-orchestrated-runtime.md`, and
-`docs/adr/0013-manual-first-release.md`, and
-`docs/adr/0014-terminal-published-release.md`, and
-`docs/adr/0015-defer-playtest.md`, and
-`docs/adr/0016-selectable-effort-routes.md`, and
-`docs/adr/0019-frozen-spark-economics-profile.md`, and
-`docs/adr/0020-signature-experience-evidence.md`, and
-`docs/adr/0021-compacted-spark-and-signature-review.md`, and
-`docs/adr/0022-blind-review-before-final-verification.md`, and
-`docs/adr/0023-bounded-spark-turn-and-semantic-review.md`, and
-`docs/adr/0050-structured-terminal-failure-diagnostics.md` before changing the CLI, runtime,
-workflow, product-run instructions, or lifecycle orchestration. ADR 0013
-supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
-optional-publication and executable-Deliver details. ADR 0015 supersedes the
-active Playtest stage while preserving truthful omission and frozen-run
-compatibility. ADR 0016 supersedes ADR 0015's fixed topology for new runs while
-preserving its truthful omission contract for Spark and Forge. The
-native-session path is the production architecture. ADR 0019 freezes a
-lower-cost Codex profile only for new marked Spark runs without changing their
-gates or upgrading older sessions. ADR 0020 adds exact signature-experience
-evidence and batched manual review without adding a host-side judge. ADR 0021
-adds a frozen Spark compaction ceiling, final signature-review evidence, and a
-bounded simple-manual path without splitting the Wish-wide session. ADR 0022
-makes the review blind, places it before one final integrated verifier, rejects
-duplicate final render families, and distinguishes core creative ownership from
-carrier mechanics.
-ADR 0023 adds a frozen 20-minute Spark native-turn boundary, requires the blind
-critic to agree separately on subjects, action, and relationship, bounds that
-critic to two rounds, and makes the integrated final CAD verifier refuse to run
-before the hash-bound review exists.
-ADR 0024 treats “10x quality at 0.1x cost” as a comparative North Star rather
-than a literal lifecycle threshold. ADR 0025 extends the blind review to exact
-form and the concept's anti-generic signature, binds it to the canonical concept
-hash, and requires the final verification report inside the declared
-self-contained CAD project.
-ADR 0050 retains a bounded structured diagnosis for terminal provider failures
-while continuing to discard unsafe free-form provider text.
+Read `docs/NATIVE_AGENT_RUNTIME.md` and the ADRs under `docs/adr/` before
+changing the CLI, runtime, workflow, product-run instructions, or lifecycle
+orchestration. `docs/adr/README.md` carries the full index and supersession
+table; the effective rule at the end of each chain is:
+
+- **Runtime and Release (0012 -> 0013 -> 0014, 0050):** one native Codex
+  session is the Manager; Workshop ends at a published, print-ready Release
+  with authenticated readback (0014 supersedes 0013's optional publication and
+  0012's page-first Release and executable Deliver). Terminal provider
+  failures keep a bounded structured diagnosis (0050).
+- **Topology (0015 -> 0016, 0018):** three selectable routes, Spark default,
+  Playtest evidence required only by Quest and truthfully recorded `not-run`
+  elsewhere (0016 supersedes 0015's fixed topology). Make returns to Invent
+  only with exact contradiction evidence within one shared revision budget
+  (0018).
+- **Managers and selectors (0017 -> 0043):** `--agent` freezes one runtime
+  (`--manager` in 0017 was renamed), and `--workflow`, `--model`, and
+  `--effort` freeze the route, model, and Wish-wide reasoning effort, default
+  medium (0043; the route selector was `--effort` in 0016).
+- **Make evidence (0020 -> 0021 -> 0022 -> 0023 -> 0025 -> 0026 -> 0027,
+  0029, 0047 motion evidence):** exact signature-experience renders reviewed
+  blind by one independent critic before a final integrated CAD verifier,
+  bound to the canonical concept hash and the declared self-contained CAD
+  project; every printable is bound before visual review; Wish-critical form
+  survives repair; the host alone performs the destructive fresh rebuild;
+  coupled mechanisms add hash-bound exact-state animation.
+- **Spark economics (0019 -> 0021 -> 0023 -> 0046 -> 0049, 0024):** a frozen
+  Spark capability with a 64k compaction ceiling. The 20-minute turn boundary
+  (0023, 0046) is superseded for token-budgeted runs by 0049 and the 60-minute
+  per-turn watchdog (0051). 0024 keeps "10x quality at 0.1x cost" comparative.
+- **Deep (Forge/Quest) economics (0028 -> 0030 -> ... -> 0041):** the deep
+  profile compacts at 256k (0037); Make starts at a proof checkpoint bound to
+  executable CAD entrypoints, product-state proof, and sealing/source
+  handoffs for recovery (0033-0040), and final Make resumes at recovery
+  (0041). The per-stage minute boundaries in that chain are pacing for
+  token-budgeted runs.
+- **Budgets (0046 -> 0047 -> 0048 -> 0049, 0051):** one product-wide native
+  token budget (`--max-tokens`, default 30M) replaces persistent turn counts
+  and per-turn clocks for marked runs; each turn keeps a 60-minute emergency
+  watchdog; frozen runs keep their materialized ceilings.
+- **Effects and dependencies (0042, 0044, 0045):** browser-issued per-Inventor
+  Factory credentials never enter the agent session; component CAD network
+  access is scoped; agent-selected dependencies are owned by the run.
+
+The native-session path is the production architecture.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

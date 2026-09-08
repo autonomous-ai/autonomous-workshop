@@ -50,7 +50,17 @@ stages; do not create stage-specific sessions or impersonate Python workers.
 For Codex, this run's [product token budget](references/token-budget-v1.md)
 survives resumes and covers all enabled stages and native children. It replaces
 aggregate time and turn budgets; the host reports the exact configured limit.
-Leave allowance for Release. Read the reference for measurement boundaries.
+Leave allowance for Release: that is planning guidance, not a host-enforced
+reservation, so nothing stops you from spending the whole allowance before
+Release. Read the reference for measurement boundaries.
+
+When `MANAGER.json` carries a reasoning effort and the token budget is
+materialized, every stage runs at that one frozen effort; the enforced limits
+are the token budget, a 60-minute emergency watchdog per native turn, and
+context compaction (64k for Spark, 256k for Forge/Quest). The minute figures
+below come from the frozen economics profile and are pacing targets only.
+Claude Code and Grok Build Managers run one flat runtime profile for every
+stage under the `budgets-v1.md` command clocks.
 
 The successful run is not the run with the most research, commands, agents, or
 prose. Concentrate the native session on one memorable product promise and the
@@ -78,17 +88,20 @@ few decisions and checks that make it real.
 - Prefer one complete artifact followed by one evidence-driven revision over
   many partial drafts. Save concise findings with the artifact; do not preserve
   raw transcripts or internal reasoning.
-- For Spark, treat the low reasoning profile as a focus constraint rather than
+- For Spark, treat the fast profile as a focus constraint rather than
   a quality waiver: choose the signature interaction early, keep one complete
   build on the critical path, batch independent tool work, and spend additional
   cycles only on a concrete failing check or visible product defect.
-- For Forge and Quest, spend high reasoning where it changes the concept and
-  exact final product. Invent begins with a 20-minute high-reasoning turn and
-  receives one decisive 10-minute medium recovery when needed. Make begins
-  with one 16-minute medium proof runway and resumes the same Goal at high
-  reasoning as soon as its exact proof-ready marker exists. Later turns retain
-  60 minutes, and every stage compacts at 256k. These
-  boundaries and compacted context are focus constraints, not quality waivers. In Make, the
+- For Forge and Quest, spend reasoning where it changes the concept and
+  exact final product. The frozen profile's pacing shape is: Invent aims at a
+  20-minute opening turn and one decisive 10-minute recovery; Make aims at one
+  16-minute proof runway, then resumes the same Goal for a 15-minute
+  source-first final-Make handoff as soon as its exact proof-ready marker
+  exists. Those minutes are targets, not cuts; every native turn has the same
+  60-minute emergency watchdog, and every stage compacts at 256k. The
+  profile's per-stage reasoning levels are shadowed by the one frozen
+  `MANAGER.json` effort. These
+  targets and compacted context are focus constraints, not quality waivers. In Make, the
   first persisted deliverable is the smallest exact causal or kinematic proof
   plus neutral held/signature blockout renders under
   `<cad-project>/review/early-proof/`. Inspect it before authoring the complete
@@ -211,7 +224,8 @@ run the materialized finalizer:
 ```
 
 Use `--help` for exact arguments. The active ready commands are `invent`,
-`make`, `make-revision`, `playtest`, and `release`; the stage references
+`make`, `make-revision`, `playtest`, and `release`; `make-group` seals one
+build group inside Make without finalizing the stage. The stage references
 describe their inputs. Frozen historical runs may still receive Match. The
 finalizer validates and hashes exact bytes, writes the canonical contract under
 `artifacts/`, and atomically writes `agent-outcome.json` bound to the current

@@ -42,6 +42,7 @@ from workshop.daydream import (
     run_daydream,
     wish_from_daydream,
 )
+from workshop.daydream.catalog import source_checkout_root
 from workshop.errors import WorkshopError
 from workshop.invent.gamevault import default_client as default_gamevault_client
 from workshop.invent.vault import Vault, VaultError
@@ -537,8 +538,19 @@ def _start_run(
     )
 
 
+def _product_token_cap(args: argparse.Namespace) -> int:
+    """Resolve ``--max-tokens``; an explicit cap is a Codex-only control."""
+
+    if args.max_tokens is None:
+        return DEFAULT_PRODUCT_TOKENS
+    if args.agent != "codex":
+        raise WorkshopError("--max-tokens applies to the Codex Manager only")
+    return args.max_tokens
+
+
 def _wish(args: argparse.Namespace) -> int:
     workflow = workshop_effort(args.workflow)
+    max_tokens = _product_token_cap(args)
     context = {"source": "workshop-cli"}
     if args.inventor is not None:
         context["inventor_id"] = args.inventor
@@ -560,7 +572,7 @@ def _wish(args: argparse.Namespace) -> int:
         runtime=runtime,
         github=args.github,
         max_rounds=args.max_rounds,
-        max_tokens=args.max_tokens,
+        max_tokens=max_tokens,
         progress=progress,
         live_progress=live_progress,
     )
@@ -659,6 +671,13 @@ def _dream_or_load(
         file=progress,
         flush=True,
     )
+    if source_checkout_root() is None:
+        print(
+            "Published-toy catalog: unavailable outside a source checkout; novelty "
+            "is checked against %s's notebook only." % args.inventor,
+            file=progress,
+            flush=True,
+        )
     print(
         "Daydreaming one brand-new idea that fits %s's Taste..." % args.inventor,
         file=progress,
@@ -717,6 +736,7 @@ def _start(args: argparse.Namespace) -> int:
         reasoning_effort=args.effort,
     )
     workflow = workshop_effort(args.workflow)
+    max_tokens = _product_token_cap(args)
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
     once = args.once or args.idea is not None
@@ -787,7 +807,7 @@ def _start(args: argparse.Namespace) -> int:
                     workflow=workflow,
                     runtime=runtime,
                     github=args.github,
-                    max_tokens=args.max_tokens,
+                    max_tokens=max_tokens,
                     progress=progress,
                     live_progress=live_progress,
                 )
@@ -908,8 +928,16 @@ def _status(args: argparse.Namespace) -> int:
 def _resume(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress)
+    saved = native_run_status(args.product_id)
+    manager_id = saved.get("agent", saved.get("manager"))
+    manager_name = (
+        manager_spec(manager_id).display_name
+        if isinstance(manager_id, str) and manager_id
+        else "Manager"
+    )
     print(
-        "Resuming the exact native Codex session for %s..." % args.product_id,
+        "Resuming the exact native %s session for %s..."
+        % (manager_name, args.product_id),
         file=progress,
         flush=True,
     )
@@ -1447,7 +1475,7 @@ def parser() -> argparse.ArgumentParser:
     start = subcommands.add_parser(
         "start",
         help=(
-            "let one Inventor daydream, judge, and build brand-new toys until stopped"
+            "let one Inventor daydream and build brand-new toys until stopped"
         ),
     )
     start.add_argument(
@@ -1532,8 +1560,8 @@ def parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="with --once: exit 1 when the run waits"
     )
     start.set_defaults(handler=_start)
-    start.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
-                       help="Codex token cap per product across all build steps and resumes (default: %(default)s); excludes the separate daydream")
+    start.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",
+                       help="Codex token cap per product across all build steps and resumes (default: %d); excludes the separate daydream; Codex only" % DEFAULT_PRODUCT_TOKENS)
 
     login = subcommands.add_parser(
         "login",
@@ -1559,7 +1587,7 @@ def parser() -> argparse.ArgumentParser:
 
     daydream = subcommands.add_parser(
         "daydream",
-        help="let one Inventor dream and judge one brand-new toy idea without building it",
+        help="let one Inventor dream one brand-new toy idea without building it",
     )
     daydream.add_argument(
         "inventor",
@@ -1663,8 +1691,8 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
-    wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
-                      help="Codex input-plus-output token cap for the whole product (default: %(default)s)")
+    wish.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",
+                      help="Codex input-plus-output token cap for the whole product (default: %d); Codex only" % DEFAULT_PRODUCT_TOKENS)
 
     status = subcommands.add_parser(
         "status", help="inspect one native Wish checkpoint without running a model"

@@ -225,9 +225,38 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(start.call_args.kwargs["manager_model"], "gpt-6-astra")
         self.assertEqual(start.call_args.kwargs["manager_reasoning_effort"], "medium")
         self.assertEqual(start.call_args.args[0].context["inventor_id"], "ivy")
-        with mock.patch("cli.main.resume_native_run", return_value=native_receipt()) as resume, redirect_stdout(StringIO()):
+        with mock.patch("cli.main.resume_native_run", return_value=native_receipt()) as resume, mock.patch(
+            "cli.main.native_run_status", return_value=native_receipt()
+        ), redirect_stdout(StringIO()):
             main(("resume", "wish-one", "--max-tokens", "3000000"))
         self.assertEqual(resume.call_args.kwargs["max_tokens"], 3000000)
+
+    def test_max_tokens_is_refused_for_non_codex_agents_before_any_run(self):
+        for arguments in (
+            ("wish", "a moon", "--agent", "claude", "--max-tokens", "2000000"),
+            ("wish", "a moon", "--agent", "grok", "--max-tokens", "2000000"),
+            ("start", "sample", "--once", "--agent", "claude", "--max-tokens", "2000000"),
+        ):
+            stderr = StringIO()
+            with self.subTest(arguments=arguments), mock.patch(
+                "cli.main.start_native_run"
+            ) as start, mock.patch("cli.main.run_daydream") as dream, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(stderr):
+                self.assertEqual(main(arguments), 2)
+            start.assert_not_called()
+            dream.assert_not_called()
+            self.assertIn(
+                "workshop: --max-tokens applies to the Codex Manager only",
+                stderr.getvalue(),
+            )
+
+    def test_default_token_cap_is_not_forwarded_for_non_codex_agents(self):
+        with mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            self.assertEqual(main(("wish", "a moon", "--agent", "claude", "--json")), 0)
+        self.assertNotIn("max_tokens", start.call_args.kwargs)
 
     def test_wish_strict_wait_exits_one_without_a_publication_flag(self):
         stdout = StringIO()
@@ -662,7 +691,10 @@ class NativeCommandTest(unittest.TestCase):
         stderr = StringIO()
         with mock.patch(
             "cli.main.resume_native_run", side_effect=resume_run
-        ) as resume, redirect_stdout(stdout), redirect_stderr(stderr):
+        ) as resume, mock.patch(
+            "cli.main.native_run_status",
+            return_value={**native_receipt(stage="make"), "agent": "codex"},
+        ), redirect_stdout(stdout), redirect_stderr(stderr):
             result = main(("resume", "wish-one", "--strict", "--json"))
         self.assertEqual(result, 1)
         resume.assert_called_once()
@@ -670,15 +702,40 @@ class NativeCommandTest(unittest.TestCase):
         self.assertTrue(callable(resume.call_args.kwargs["activity_observer"]))
         self.assertTrue(callable(resume.call_args.kwargs["timing_observer"]))
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "make")
-        self.assertIn("exact native Codex session", stderr.getvalue())
+        self.assertIn("exact native Codex session for wish-one", stderr.getvalue())
         self.assertIn("using a tool for the current stage", stderr.getvalue())
         self.assertIn("operation=session.resume state=started", stderr.getvalue())
         self.assertIn("state=completed elapsed_ms=911", stderr.getvalue())
 
     def test_resume_explicitly_requests_turn_budget_adoption(self):
-        with mock.patch("cli.main.resume_native_run", return_value=native_receipt(stage="make")) as resume, redirect_stdout(StringIO()):
+        with mock.patch("cli.main.resume_native_run", return_value=native_receipt(stage="make")) as resume, mock.patch(
+            "cli.main.native_run_status", return_value=native_receipt(stage="make")
+        ), redirect_stdout(StringIO()):
             main(("resume", "wish-one", "--turn-budget"))
         self.assertIs(resume.call_args.kwargs["adopt_turn_budget"], True)
+
+    def test_resume_names_the_saved_manager_not_codex(self):
+        for manager_id, display_name in (("claude", "Claude Code"), ("grok", "Grok Build")):
+            stdout = StringIO()
+            with self.subTest(manager=manager_id), mock.patch(
+                "cli.main.resume_native_run", return_value=native_receipt(stage="make")
+            ), mock.patch(
+                "cli.main.native_run_status",
+                return_value={**native_receipt(stage="make"), "agent": manager_id},
+            ), redirect_stdout(stdout):
+                main(("resume", "wish-one"))
+            self.assertIn(
+                "Resuming the exact native %s session for wish-one..." % display_name,
+                stdout.getvalue(),
+            )
+            self.assertNotIn("native Codex session", stdout.getvalue())
+
+    def test_resume_looks_up_the_saved_run_before_resuming(self):
+        with mock.patch("cli.main.resume_native_run") as resume, mock.patch(
+            "cli.main.native_run_status", side_effect=DaydreamError("no such Wish")
+        ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            self.assertEqual(main(("resume", "wish-missing")), 2)
+        resume.assert_not_called()
 
     def test_failed_native_run_exits_one_even_without_strict(self):
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
@@ -807,6 +864,37 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertIn(
             "workshop start sample --idea %s" % sealed.daydream_id, output
         )
+        # This test runs from a source checkout, where the toy catalog exists.
+        self.assertNotIn("Published-toy catalog", output)
+
+    def test_daydream_says_when_the_toy_catalog_is_unavailable(self):
+        sealed = sample_sealed()
+        for command in (("daydream", "sample"), ("start", "sample", "--once")):
+            stdout = StringIO()
+            stderr = StringIO()
+            with self.subTest(command=command), mock.patch(
+                "cli.main.run_daydream", return_value=sealed
+            ), mock.patch("cli.main.source_checkout_root", return_value=None), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt(stage="make")
+            ), redirect_stdout(stdout), redirect_stderr(stderr):
+                self.assertEqual(main(command), 0, stderr.getvalue())
+            output = stdout.getvalue()
+            self.assertIn(
+                "Published-toy catalog: unavailable outside a source checkout; "
+                "novelty is checked against sample's notebook only.",
+                output,
+            )
+            self.assertLess(
+                output.index("Published-toy catalog"),
+                output.index("Daydreaming one brand-new idea"),
+            )
+
+    def test_help_text_no_longer_promises_a_retired_judge(self):
+        command = parser()
+        self.assertNotIn("judge", command.format_help())
+        help_text = " ".join(command.format_help().split())
+        self.assertIn("daydream and build brand-new toys until stopped", help_text)
+        self.assertIn("dream one brand-new toy idea without building it", help_text)
 
     def test_daydream_json_emits_one_object_and_keeps_stdout_clean(self):
         sealed = sample_sealed()

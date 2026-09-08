@@ -2,7 +2,10 @@ import json
 import sys
 import unittest
 
+from pathlib import PurePosixPath
+
 from workshop.errors import ContractError
+from workshop.match.native import InventorRosterEntry
 from workshop.runtime.codex import CodexNativeSessionLauncher
 from workshop.runtime.claude import ClaudeNativeSessionLauncher
 from workshop.runtime.grok import GrokNativeSessionLauncher
@@ -52,6 +55,28 @@ class ManagerRegistryTest(unittest.TestCase):
             manager_launcher("claude", cli_version="2.0.0", binary=sys.executable),
             ClaudeNativeSessionLauncher,
         )
+
+    def test_every_manager_reads_the_roster_from_the_codex_agent_directory(self):
+        # The host materializes one roster at .codex/agents/<id>.toml for every
+        # Manager (workflow.agent_run), so every spec projects that same path.
+        materialized = (PurePosixPath(".codex/agents") / ("alice" + ".toml")).as_posix()
+        roster_entry = InventorRosterEntry(
+            inventor_id="alice",
+            agent_path=".codex/agents/alice.toml",
+            agent_sha256="a" * 64,
+            source_manifest_sha256="b" * 64,
+            taste_sha256="c" * 64,
+        )
+        for manager_id in ("codex", "claude", "grok"):
+            with self.subTest(manager=manager_id):
+                spec = manager_spec(manager_id)
+                self.assertEqual(spec.agent_directory, ".codex/agents")
+                self.assertEqual(spec.agent_suffix, ".toml")
+                self.assertEqual(spec.agent_path("alice"), materialized)
+                self.assertEqual(spec.agent_path("alice"), roster_entry.agent_path)
+                payload = json.loads(manager_project_bytes(spec))
+                self.assertEqual(payload["agent_directory"], ".codex/agents")
+                self.assertEqual(payload["agent_suffix"], ".toml")
 
     def test_manager_project_bytes_are_canonical(self):
         payload = json.loads(manager_project_bytes(manager_spec("codex")))

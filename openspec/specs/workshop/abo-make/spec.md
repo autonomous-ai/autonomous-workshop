@@ -1,3 +1,12 @@
+> **Status: partly superseded.** The Concept stage, Match turn, Deliver
+> stage, schema-v7 manifest, and the check ids `game-simulation`/`print-test`
+> described here are not current; see `docs/adr/0016-selectable-effort-routes.md`
+> and the current Invented schema 5 contract in
+> `.agents/product-run/.agents/skills/autonomous-workshop/references/invent.md`.
+> Current facts: the `abo` bundle is an Inventor manifest of schema v8 and the
+> baseline Playtest check ids are `agent-playtest`, `mechanical-check`, and
+> `printability-check` (`src/workshop/product/blueprints.py`).
+
 ## Purpose
 
 ABO's Make turns a sealed, already-invented game into the exact files that make it playable and printable: an executable model of the rules that Playtest can run thousands of times, and STEP-first parametric CAD of every piece built to the brief's millimetres. It writes both into one immutable product tree, so the evidence that follows is bound to the same bytes a customer would receive.

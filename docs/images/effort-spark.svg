@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-labelledby="title description">
   <title id="title">Spark effort route: Daydream to Make to Release</title>
-  <desc id="description">Spark is the default and shortest Autonomous Workshop route. New Codex Spark runs freeze low reasoning effort, a 64k automatic context-compaction ceiling, and a 20-minute boundary per native turn across one persistent session. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Make. A fixed preflight generates every printable and requires strict fit, mesh validity, and 0.4 mm-nozzle thickness before one independent critic blindly reads the exact form, subjects, action, and relationship. The critic binds that passing report, then checks every explicit held-form constraint and the anti-generic signature with no blocking visual defect. Make permits at most two review rounds, then requires one passing full-tier CAD report. Invent and Playtest are passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
+  <desc id="description">Spark is the default and shortest Autonomous Workshop route. New Codex Spark runs freeze a 64k automatic context-compaction ceiling across one persistent session; the Wish-wide reasoning effort (default medium) applies to every stage, and each native turn of a token-budgeted run ends at a 60-minute emergency watchdog. Each active stage attempt receives one Codex Goal. Inventor selection happens inside Make. A fixed preflight generates every printable and requires strict fit, mesh validity, and 0.4 mm-nozzle thickness before one independent critic blindly reads the exact form, subjects, action, and relationship. The critic binds that passing report, then checks every explicit held-form constraint and the anti-generic signature with no blocking visual defect. Make permits at most two review rounds, then requires one passing full-tier CAD report. Invent and Playtest are passed through without a turn, artifact, gate, or evidence. Release verifies the CAD and manual, records Playtest as not-run, publishes with public hash readback, and hands the product to Operations.</desc>
   <defs>
     <filter id="shadow" x="-20%" y="-25%" width="140%" height="170%">
       <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#17202a" flood-opacity="0.10"/>
@@ -37,7 +37,7 @@
     <rect x="55" y="185" width="1090" height="68" rx="18" class="manager"/>
   </g>
   <text x="83" y="212" class="eyebrow" fill="#376b61">WORKSHOP MANAGER</text>
-  <text x="83" y="237" class="body">Codex Spark: low reasoning · 64k compaction · 20m/turn; every gate and Goal stays intact.</text>
+  <text x="83" y="237" class="body">Codex Spark: Wish-wide effort (default medium) · 64k compaction · 60m watchdog; every gate and Goal stays intact.</text>
 
   <path class="route" d="M 225 355 H 295"/>
   <path class="route" d="M 555 355 H 625"/>

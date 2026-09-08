@@ -13,7 +13,7 @@ import math
 import re
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Sequence
 
 from workshop._validation import bounded_text, copy_json_mapping, require_sha256
 from workshop.errors import ContractError
@@ -22,9 +22,9 @@ from workshop.match.native import NativeMatchAssignment
 
 INVENTED_KIND = "autonomous-workshop.invented"
 MAX_INVENTED_BYTES = 2 * 1024 * 1024
-# Schema 3 bound only `title` and `summary`; schema 4 adds the concept
-# contract below.  Both stay readable so sealed runs keep resuming; the
-# run-local finalizer emits schema 4 only.
+# Schema 3 bound only `title` and `summary`; schema 4 added the concept
+# contract below; schema 5 adds the build plan.  All stay readable so sealed
+# runs keep resuming; the run-local finalizer emits schema 5 only.
 INVENTED_SCHEMA_VERSIONS = (3, 4, 5)
 BUILD_GROUP_FIELDS = frozenset(("group", "parts", "exit_criteria"))
 MAX_BUILD_GROUPS = 16
@@ -102,7 +102,7 @@ def _exact_fields(value: Any, expected: frozenset, label: str) -> dict[str, Any]
 
 
 def validate_concept_contract(concept: Mapping[str, Any]) -> None:
-    """Host mirror of the run-local Invent concept contract (schema 4).
+    """Host mirror of the run-local Invent concept contract (schema 4+).
 
     The finalizer applies the same rules where the agent can act on them; the
     host re-applies them so a hand-written invented.json cannot bypass them.
@@ -241,23 +241,34 @@ def validate_build_plan(concept: Mapping[str, Any]) -> list[dict[str, Any]]:
     of building on it.
     """
 
-    plan = _list(concept.get("build_plan"), "Invented concept build_plan", nonempty=True)
+    try:
+        plan = _list(concept.get("build_plan"), "Invented concept build_plan", nonempty=True)
+    except ContractError as exc:
+        raise ContractError("%s (build-plan)" % exc) from None
     if len(plan) > MAX_BUILD_GROUPS:
-        raise ContractError("Invented concept build_plan exceeds %d groups" % MAX_BUILD_GROUPS)
+        raise ContractError(
+            "Invented concept build_plan exceeds %d groups (build-plan)" % MAX_BUILD_GROUPS
+        )
     components = {item["key"]: item for item in concept["components"]}
     placed: dict[str, int] = {}
     groups: list[dict[str, Any]] = []
     for index, raw in enumerate(plan):
-        group = _exact_fields(raw, BUILD_GROUP_FIELDS, "Invented build group")
+        try:
+            group = _exact_fields(raw, BUILD_GROUP_FIELDS, "Invented build group")
+        except ContractError as exc:
+            raise ContractError("%s (build-plan)" % exc) from None
         name = group["group"]
         if (
             not isinstance(name, str)
             or CONCEPT_SLUG_RE.fullmatch(name) is None
             or any(item["group"] == name for item in groups)
         ):
-            raise ContractError("Invented build group name must be a unique slug")
-        bounded_text(group["exit_criteria"], "Invented build group %s exit_criteria" % name, 2_000)
-        parts = _list(group["parts"], "Invented build group %s parts" % name, nonempty=True)
+            raise ContractError("Invented build group name must be a unique slug (build-plan)")
+        try:
+            bounded_text(group["exit_criteria"], "Invented build group %s exit_criteria" % name, 2_000)
+            parts = _list(group["parts"], "Invented build group %s parts" % name, nonempty=True)
+        except ContractError as exc:
+            raise ContractError("%s (build-plan)" % exc) from None
         for part in parts:
             if not isinstance(part, str) or part not in components:
                 raise ContractError(
@@ -278,6 +289,85 @@ def validate_build_plan(concept: Mapping[str, Any]) -> list[dict[str, Any]]:
         )
     return groups
 
+
+
+VAULT_LEAD_RESPONSE_FIELDS = frozenset(("lead_id", "status", "response"))
+VAULT_LEAD_RESPONSE_STATUSES = ("addressed", "accepted-risk", "not-applicable")
+VAULT_LEAD_RESPONSE_MIN_CHARS = 20
+VAULT_LEAD_RESPONSE_MAX_CHARS = 2_000
+
+
+def validate_vault_lead_responses(
+    concept: Mapping[str, Any], lead_ids: Sequence[str]
+) -> dict[str, str]:
+    """Host mirror of the ``vault_lead_responses`` rule (vault-lead-response).
+
+    When the stage packet issued design-vault leads, the sealed concept must
+    answer every one of them exactly once with ``{lead_id, status, response}``.
+    Without leads the field is optional and may only be empty.  Returns the
+    ``lead_id -> status`` map so a gate can bind it into evidence.
+    """
+
+    expected = list(lead_ids)
+    if len(set(expected)) != len(expected):
+        raise ContractError("vault lead ids must be unique (vault-lead-response)")
+    responses = concept.get("vault_lead_responses")
+    if responses is None:
+        if expected:
+            raise ContractError(
+                "Invented concept must carry vault_lead_responses answering the "
+                "issued design-vault leads %s (vault-lead-response)"
+                % ", ".join(expected)
+            )
+        return {}
+    if not isinstance(responses, (list, tuple)):
+        raise ContractError(
+            "Invented concept vault_lead_responses must be a list (vault-lead-response)"
+        )
+    if not expected and responses:
+        raise ContractError(
+            "Invented concept vault_lead_responses must be empty when no "
+            "design-vault leads were issued (vault-lead-response)"
+        )
+    seen: dict[str, str] = {}
+    for raw in responses:
+        if not isinstance(raw, Mapping) or set(raw) != VAULT_LEAD_RESPONSE_FIELDS:
+            raise ContractError(
+                "vault_lead_responses entries need exactly lead_id, status, and "
+                "response (vault-lead-response)"
+            )
+        lead_id = raw["lead_id"]
+        if not isinstance(lead_id, str) or lead_id not in expected or lead_id in seen:
+            raise ContractError(
+                "vault_lead_responses entry %r must name one issued lead exactly "
+                "once (vault-lead-response)" % (lead_id,)
+            )
+        if raw["status"] not in VAULT_LEAD_RESPONSE_STATUSES:
+            raise ContractError(
+                "vault lead %s status must be one of %s (vault-lead-response)"
+                % (lead_id, ", ".join(VAULT_LEAD_RESPONSE_STATUSES))
+            )
+        response = raw["response"]
+        if (
+            not isinstance(response, str)
+            or not VAULT_LEAD_RESPONSE_MIN_CHARS
+            <= len(response.strip())
+            <= VAULT_LEAD_RESPONSE_MAX_CHARS
+            or any(ord(character) < 32 and character not in "\n\t" for character in response)
+        ):
+            raise ContractError(
+                "vault lead %s response must be %d to %d characters of text "
+                "(vault-lead-response)"
+                % (lead_id, VAULT_LEAD_RESPONSE_MIN_CHARS, VAULT_LEAD_RESPONSE_MAX_CHARS)
+            )
+        seen[lead_id] = raw["status"]
+    missing = [lead_id for lead_id in expected if lead_id not in seen]
+    if missing:
+        raise ContractError(
+            "Invented concept vault_lead_responses leaves design-vault leads "
+            "unanswered: %s (vault-lead-response)" % ", ".join(missing)
+        )
+    return seen
 
 
 @dataclass(frozen=True)
@@ -400,6 +490,8 @@ __all__ = [
     "INVENTED_SCHEMA_VERSIONS",
     "MAX_INVENTED_BYTES",
     "NativeInvented",
+    "VAULT_LEAD_RESPONSE_STATUSES",
     "validate_build_plan",
     "validate_concept_contract",
+    "validate_vault_lead_responses",
 ]

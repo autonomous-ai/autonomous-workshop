@@ -199,8 +199,8 @@ class RenderBriefTest(unittest.TestCase):
             "Steers clear of: Decorative objects with no repeatable interaction\n"
             "Printed parts (estimate): 2\n"
             "\n"
-            "Match should bind Pico Press, who dreamed this, unless the Taste "
-            "rejects the final concept."
+            "This brief is pinned to Pico Press, who dreamed it; the Manager "
+            "selects that Inventor in the first creative stage."
         )
         self.assertEqual(brief, expected)
         self.assertEqual(

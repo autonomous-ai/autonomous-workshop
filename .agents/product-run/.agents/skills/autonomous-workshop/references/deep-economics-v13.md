@@ -1,5 +1,13 @@
 # Frozen Forge and Quest economics profile v13
 
+> **Precedence.** When `MANAGER.json` carries a reasoning effort and
+> `token-budget-v1.md` is materialized, that effort is Wish-wide (it replaces
+> every high/medium level named below) and the 20/10/16/15/30-minute figures
+> and the eight-turn cap are pacing targets, not enforced boundaries; the host
+> launches every turn with a 60-minute emergency watchdog and enforces the
+> token budget and 256k compaction. See `token-budget-v1.md`. The frozen
+> handoff sequence and gates below are otherwise unchanged.
+
 This immutable profile keeps v12's 256,000-token compaction, action-first
 Invent recovery, exact-state proof, proof-sealing handoff, final-source
 handoff, one native Codex thread, and one Goal per active stage. It removes

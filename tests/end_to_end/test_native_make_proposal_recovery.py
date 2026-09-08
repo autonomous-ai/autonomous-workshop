@@ -48,7 +48,10 @@ class _FrozenAliasMakeAgent(_OneSessionProductAgent):
         rejection = stage["inputs"].get("host_make_proposal_rejection")
         if rejection is not None:
             if rejection["failure_code"] != "make-product-metadata-invalid":
-                raise AssertionError("Make retry received the wrong host rejection")
+                raise AssertionError(
+                    "Make retry received the wrong host rejection: %s"
+                    % rejection["failure_code"]
+                )
             if "title" not in rejection["feedback"] or "summary" not in rejection[
                 "feedback"
             ]:
@@ -60,6 +63,7 @@ class _FrozenAliasMakeAgent(_OneSessionProductAgent):
         product_root = run_root / stage["inputs"]["product_root"]
         product_path = product_root / "product.json"
         product = _read_json(product_path)
+        original_product = dict(product)
         product["name"] = product.pop("title")
         product["description"] = product.pop("summary")
         _write_json(product_path, product)
@@ -70,6 +74,10 @@ class _FrozenAliasMakeAgent(_OneSessionProductAgent):
             product_root,
             created_at=old_made["product_manifest"]["created_at"],
         )
+        # Today's host contract refuses the alias product outright, so the
+        # frozen document is authored by hand exactly as the old finalizer
+        # sealed it: the valid contract shape with the alias product swapped in
+        # and the identity hash recomputed over the canonical bytes.
         made = NativeMade(
             round=old_made["round"],
             wish_sha256=old_made["wish_sha256"],
@@ -80,14 +88,20 @@ class _FrozenAliasMakeAgent(_OneSessionProductAgent):
             product_root=old_made["product_root"],
             cad_project_path=old_made["cad_project_path"],
             product_manifest=manifest,
-            product=product,
+            product=original_product,
             product_json_sha256=_sha256(product_path.read_bytes()),
             cad_verification_path=old_made["cad_verification_path"],
             cad_verification_sha256=_sha256(
                 (product_root / old_made["cad_verification_path"]).read_bytes()
             ),
         )
-        made_bytes = _canonical_json(made.to_dict())
+        made_document = made.to_dict()
+        made_document["product"] = product
+        made_identity = {
+            key: value for key, value in made_document.items() if key != "made_sha256"
+        }
+        made_document["made_sha256"] = _sha256(_canonical_json(made_identity))
+        made_bytes = _canonical_json(made_document)
         made_path.write_bytes(made_bytes)
         outcome = AgentOutcome(
             stage="make",

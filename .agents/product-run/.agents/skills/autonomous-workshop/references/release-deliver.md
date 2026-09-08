@@ -79,10 +79,15 @@ Both reach a shopper unchanged, so write them as customer copy:
   are names; "185 Mm Tall" and "210mm retro-futuristic helical dice tower with
   a funnel hopper" are not.
 - The summary says what it is and what it does, in the words a buyer uses.
-- Never put Workshop vocabulary in customer copy. The words Wish, Taste,
-  Inventor id, Goal, Make, Release, Playtest, Spark, Forge, Quest, artifact,
-  gate, and finalizer are internal. A shopper reading "the mechanism is the
-  Wish" learns nothing.
+- Never put Workshop vocabulary in customer copy. The finalizer and host
+  reject, deterministically at Make and again at Release, a title or summary
+  containing the whole words `Wish`, `Taste`, or `Inventor` (capitalized) or
+  `playtest` or `finalizer` (any case). Goal, Make, Release, Spark, Forge,
+  Quest, artifact, and gate are guidance only, because they are also ordinary
+  customer words ("Starling Gate").
+  The title is also limited to 300 characters, must be stripped, and may not
+  contain a carriage return; the one-to-four-word rule above is guidance. A
+  shopper reading "the mechanism is the Wish" learns nothing.
 - `what_arrives`: non-empty list of included-item descriptions;
 - `limitations`: list of supported limitations, which may be empty;
 - `product_artifact_sha256`: exact Made product artifact hash;

@@ -439,8 +439,8 @@ def render_brief(idea: Idea, *, inventor_name: str, inventor_id: str) -> str:
             "Steers clear of: %s" % "; ".join(idea.taste_fit.steers_clear_of),
             "Printed parts (estimate): %d" % idea.parts_estimate,
             "",
-            "Match should bind %s, who dreamed this, unless the Taste rejects the "
-            "final concept." % inventor_name,
+            "This brief is pinned to %s, who dreamed it; the Manager selects that "
+            "Inventor in the first creative stage." % inventor_name,
         )
     )
     return "\n".join(lines)

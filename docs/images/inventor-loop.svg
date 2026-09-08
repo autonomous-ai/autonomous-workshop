@@ -45,7 +45,7 @@
   <text class="k optional" x="156" y="274">OPTIONAL · FORGE AND QUEST</text>
   <text class="h optional" x="156" y="298">INVENT</text>
   <text class="t" x="156" y="320">Research and specify the concept. Seal it.</text>
-  <text class="t" x="156" y="337">Concept renders.</text>
+  <text class="t" x="156" y="337">Sealed JSON only; no renders.</text>
 
   <path class="line" d="M310 346 L310 374" marker-end="url(#arrow)"/>
 

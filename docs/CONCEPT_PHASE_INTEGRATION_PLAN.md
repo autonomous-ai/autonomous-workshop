@@ -1,14 +1,20 @@
 # Concept Phase Incremental Integration Plan
 
-- Status: Adopted integration plan
+- Status: Adopted integration plan; **Phase 3 (a separate Concept stage) is
+  NOT implemented**. Commit ba513aba bypassed the Concept stage the day after
+  it landed and no current route contains it. The current Invent contract
+  (Invented schema 5, sealed JSON only, no concept renders) in
+  `.agents/product-run/.agents/skills/autonomous-workshop/references/invent.md`
+  is authoritative; Spark Make authors its compact concept from the sealed
+  brief. The Concept sequences below are historical sketches.
 - Recorded: 2026-08-27
 - Target: `main`
 - Source: `feat/concept-phase`
 
 > Lifecycle note: ADR 0016 defines three selectable routes for new runs. Spark
-> is `Wish -> Make -> Release`, Forge is
-> `Wish -> Invent -> Make -> Release` (the default), and Quest is
-> `Wish -> Invent -> Make -> Playtest -> Release`. New runs have no separate
+> is `Wish -> Make -> Release` (the default), Forge is
+> `Wish -> Invent <-> Make -> Release`, and Quest is
+> `Wish -> Invent <-> Make <-> Playtest -> Release`. New runs have no separate
 > Match turn; Inventor selection is part of the first active creative stage.
 > Concept sequences below are future integration sketches and must be adapted
 > to these effort routes before activation.

@@ -59,8 +59,9 @@ host-only and outside the product workspace. If session memory conflicts with
 sealed files or host-provided receipts, follow the durable evidence and note
 the discrepancy.
 
-If a Match, Invent, Make, or Release Goal is active for that exact
-checkpoint, continue it instead of creating a duplicate. Reestablish its
+If an Invent, Make, Playtest, or Release Goal is active for that exact
+checkpoint (or a Match Goal in a frozen historical run that still receives a
+Match packet), continue it instead of creating a duplicate. Reestablish its
 objective, proof artifacts, and stopping condition from `STAGE.json`, then
 resume the observe -> act -> evaluate -> improve work. Goal state is not
 recovery authority: if it names another checkpoint or contradicts sealed
