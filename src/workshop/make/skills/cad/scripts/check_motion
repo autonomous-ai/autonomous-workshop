@@ -134,22 +134,27 @@ def index_parts(shape) -> dict[str, object]:
     on the way together. Nested labels are also reachable by their dotted path,
     so a repeated label stays addressable.
     """
+    from build123d import Location
+
     found: dict[str, list[object]] = {}
 
-    def walk(node, trail: list[str]) -> None:
+    def walk(node, trail: list[str], parent_pose) -> None:
         label = getattr(node, "label", "") or ""
         path = trail + ([label] if label else [])
+        # Tree locations are relative to their parent, including the root.
+        pose = parent_pose * node.location
+        placed = node.located(pose)
         if label and trail:
             # Sub-assemblies are addressable too. A Compound's solids() reaches
             # its descendants, so a whole fuselage section moves as one body --
             # which is the granularity a motion check usually wants, well above
             # the individual windows and doors underneath it.
-            found.setdefault(label, []).append(node)
-            found.setdefault(".".join(path), []).append(node)
+            found.setdefault(label, []).append(placed)
+            found.setdefault(".".join(path), []).append(placed)
         for child in list(getattr(node, "children", []) or []):
-            walk(child, path)
+            walk(child, path, pose)
 
-    walk(shape, [])
+    walk(shape, [], Location())
     parts = {name: shapes[0] for name, shapes in found.items() if len(shapes) == 1}
     parts["__ambiguous__"] = sorted(name for name, shapes in found.items() if len(shapes) > 1)
     # The assembly's own children, kept apart from the nested labels underneath
@@ -189,6 +194,14 @@ def overlap_volume(a, b) -> float:
     most steps of a real motion are nowhere near the obstacle, and a boolean is
     far more expensive than six float comparisons.
     """
+    from build123d import Compound
+
+    # Assembly children contribute to solids() and bounds, but their parent
+    # can have an empty wrapped topology. Intersect the actual placed solids.
+    if getattr(a, "children", None):
+        a = Compound(a.solids())
+    if getattr(b, "children", None):
+        b = Compound(b.solids())
     if boxes_apart(a, b):
         return 0.0
     with contextlib.suppress(Exception):

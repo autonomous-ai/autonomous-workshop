@@ -309,3 +309,26 @@ printability. Regression coverage includes thin ledges, rotated bridges and
 cantilevers, disconnected small surfaces, sample symmetry, shared-edge crossings,
 actual support separation and CLI/report agreement. Private native artifacts and
 slicer comparisons stay outside this repository.
+
+
+## Nested assembly motion geometry (2026-09-08)
+
+A build123d assembly created with `Compound(children=...)` exposes the placed
+solids through `solids()` but can have an empty wrapped topology for Boolean
+intersection. Two coincident boxes reproduced a false clear result when one
+was addressed as a group; the equivalent wrapped compound correctly reported
+8 cubic millimetres of overlap. Named descendants also retained local poses
+when an ancestor was translated or rotated.
+
+`check_motion` now intersects compounds made from the actual placed solids on
+both sides of a collision query. Its part index composes every ancestor
+location, including the root, without mutating the source assembly. Linear,
+rotational, coupled and proxy checks retain their existing thresholds and
+manifest contracts. Regression coverage exercises grouped movers and
+obstacles, equivalent wrapped geometry, nested placement aliases, clear paths,
+and real translation/rotation collisions.
+
+This correction makes declared motion evidence measure the intended geometry;
+it cannot infer an omitted retention requirement, prove a continuous path from
+samples, or establish physical snap performance. Frozen runs retain their
+materialized tool version. Private diagnostic products remain outside Git.
