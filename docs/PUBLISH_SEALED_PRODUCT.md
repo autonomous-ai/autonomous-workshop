@@ -77,7 +77,7 @@ Start or continue a run with the core CLI:
 
 ```bash
 uv run workshop wish "I wish for ..."
-uv run workshop wish --ref side.jpg --ref front.png "I wish for ..."
+uv run workshop wish --ref side.jpg --ref https://example.com/front.png "I wish for ..."
 uv run workshop start <inventor-id> --wish "I wish for ..." --ref side.jpg
 uv run workshop resume <wish-id>
 ```

@@ -565,6 +565,66 @@ class NativeCommandTest(unittest.TestCase):
             stderr.getvalue(),
         )
 
+    def test_wish_downloads_a_reference_link_and_seals_where_it_came_from(self):
+        from PIL import Image
+
+        observed = {}
+
+        def start(wish, **kwargs):
+            observed["wish"] = wish
+            observed["wish_reference_files"] = kwargs.get("wish_reference_files")
+            return native_receipt()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            Image.new("RGB", (32, 32), "blue").save(root / "front.png")
+            front_bytes = (root / "front.png").read_bytes()
+            link = "https://pictures.test/ducks/Grey%20Duck.png?raw=1"
+            fetched = []
+
+            def fetch(url):
+                fetched.append(url)
+                return front_bytes
+
+            stderr = StringIO()
+            with mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-linked"
+            ), mock.patch(
+                "workshop.wish.references._FETCH", side_effect=fetch
+            ), mock.patch(
+                "cli.main.start_native_run", side_effect=start
+            ), redirect_stdout(StringIO()), redirect_stderr(stderr):
+                result = main(("wish", "--ref", link, "a duck from a photo", "--json"))
+
+        self.assertEqual(result, 0)
+        self.assertEqual(fetched, [link])
+        wish = observed["wish"]
+        self.assertEqual([item.name for item in wish.references], ["ref-01-grey-duck.png"])
+        self.assertEqual(observed["wish_reference_files"], {"ref-01-grey-duck.png": front_bytes})
+        self.assertEqual(
+            dict(wish.context),
+            {"source": "workshop-cli", "reference_sources": {"ref-01-grey-duck.png": link}},
+        )
+        self.assertIn("ref-01-grey-duck.png downloaded from %s" % link, stderr.getvalue())
+
+    def test_wish_rejects_a_dead_reference_link_before_starting(self):
+        from workshop.errors import ContractError
+
+        stderr = StringIO()
+        with mock.patch(
+            "workshop.wish.references._FETCH",
+            side_effect=ContractError(
+                "reference image link returned HTTP 404: https://pictures.test/gone.png"
+            ),
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(stderr):
+            result = main(("wish", "--ref", "https://pictures.test/gone.png", "a moon", "--json"))
+
+        self.assertEqual(result, 2)
+        self.assertIn("returned HTTP 404: https://pictures.test/gone.png", stderr.getvalue())
+        start.assert_not_called()
+
     def test_wish_rejects_an_unreadable_reference_before_starting(self):
         with tempfile.TemporaryDirectory() as temporary:
             notes = Path(temporary) / "notes.txt"

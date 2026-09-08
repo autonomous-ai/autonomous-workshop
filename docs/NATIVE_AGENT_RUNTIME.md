@@ -195,7 +195,7 @@ $WORKSHOP_HOME/runs/<wish-id>/workspace/
     +-- .codex/agents/*.toml          project-scoped Inventor custom agents
     +-- .agents/skills/**             workflow and domain skills
     +-- WISH.json                     exact Wish
-    +-- wish-references/ref-NN-*      reference images attached with --ref (read-only)
+    +-- wish-references/ref-NN-*      reference images attached with --ref, files or links (read-only)
     +-- STAGE.json                    current host-written stage packet
     |
     v

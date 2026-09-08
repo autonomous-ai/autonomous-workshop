@@ -83,6 +83,7 @@ from workshop.wish import (
     generate_wish_id,
     load_wish_references,
     wish_reference_files,
+    wish_reference_sources,
 )
 from workshop.wish.contracts import MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY
 from workshop.workflow import (
@@ -548,6 +549,14 @@ def _start_run(
             file=progress,
             flush=True,
         )
+        sources = wish.context.get("reference_sources") or {}
+        for reference in wish.references:
+            if reference.name in sources:
+                print(
+                    "  %s downloaded from %s" % (reference.name, sources[reference.name]),
+                    file=progress,
+                    flush=True,
+                )
     print(
         "Starting one native %s session for %s..."
         % (runtime.spec.display_name, workflow.enabled_stages[0].title()),
@@ -574,9 +583,12 @@ def _start_run(
 def _wish(args: argparse.Namespace) -> int:
     workflow = workshop_effort(args.workflow)
     loaded_references = load_wish_references(list(args.references or ()))
-    context = {"source": "workshop-cli"}
+    context: dict = {"source": "workshop-cli"}
     if args.inventor is not None:
         context["inventor_id"] = args.inventor
+    reference_sources = wish_reference_sources(loaded_references)
+    if reference_sources:
+        context["reference_sources"] = reference_sources
     wish = Wish.create(
         generate_wish_id(),
         " ".join(args.objective),
@@ -748,10 +760,14 @@ def _typed_wish(args: argparse.Namespace) -> tuple[Wish, Mapping[str, bytes]]:
     """Seal a typed brief as one Wish pinned to the named Inventor."""
 
     loaded_references = load_wish_references(list(args.references or ()))
+    context: dict = {"source": "workshop-start", "inventor_id": args.inventor}
+    reference_sources = wish_reference_sources(loaded_references)
+    if reference_sources:
+        context["reference_sources"] = reference_sources
     wish = Wish.create(
         generate_wish_id(),
         args.wish,
-        context={"source": "workshop-start", "inventor_id": args.inventor},
+        context=context,
         references=[item.reference for item in loaded_references],
     )
     return wish, wish_reference_files(loaded_references)
@@ -1589,11 +1605,12 @@ def parser() -> argparse.ArgumentParser:
         "--ref",
         action="append",
         dest="references",
-        type=Path,
-        metavar="IMAGE",
+        type=str,
+        metavar="IMAGE_OR_URL",
         help=(
-            "with --wish: attach one reference image (PNG, JPEG, or WebP; repeat "
-            "for up to %d); the run receives it read-only as %s/ref-NN-<name>"
+            "with --wish: attach one reference image, a local file or an http(s) "
+            "link (PNG, JPEG, or WebP; repeat for up to %d); a link is downloaded "
+            "once now, and the run receives the bytes read-only as %s/ref-NN-<name>"
             % (MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY)
         ),
     )
@@ -1751,11 +1768,12 @@ def parser() -> argparse.ArgumentParser:
         "--ref",
         action="append",
         dest="references",
-        type=Path,
-        metavar="IMAGE",
+        type=str,
+        metavar="IMAGE_OR_URL",
         help=(
-            "attach one reference image (PNG, JPEG, or WebP; repeat for up to %d); "
-            "the run receives it read-only as %s/ref-NN-<name>"
+            "attach one reference image, a local file or an http(s) link (PNG, "
+            "JPEG, or WebP; repeat for up to %d); a link is downloaded once now, "
+            "and the run receives the bytes read-only as %s/ref-NN-<name>"
             % (MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY)
         ),
     )

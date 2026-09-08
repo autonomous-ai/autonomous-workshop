@@ -99,12 +99,14 @@ idea. `resume <wish-id>` continues the same unfinished product and session.
 a daydream: the Inventor id is sealed into the Wish, so the run materializes
 only that Inventor, Match can bind nobody else, and Release publishes with
 that Inventor's account. `--ref` attaches up to eight reference images (PNG,
-JPEG, or WebP) to a `wish` or a `start --wish`; `--max-rounds` raises the
-Invent-Make round budget:
+JPEG, or WebP) to a `wish` or a `start --wish`, each a local file or an
+`http(s)` link that is downloaded once at Wish time and sealed by its bytes;
+`--max-rounds` raises the Invent-Make round budget:
 
 ```bash
 uv run workshop start ferro-line --workflow forge --max-rounds 6 \
-  --ref duck.webp --wish "a wind-up robot duck that walks when you turn its key"
+  --ref duck.webp --ref https://example.com/duck-side.png \
+  --wish "a wind-up robot duck that walks when you turn its key"
 ```
 
 `--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at high effort; Claude Code defaults to Opus 5 at high effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):

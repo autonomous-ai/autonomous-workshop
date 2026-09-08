@@ -8,8 +8,10 @@ from workshop.wish.contracts import (
 )
 from workshop.wish.references import (
     LoadedWishReference,
+    is_reference_url,
     load_wish_references,
     wish_reference_files,
+    wish_reference_sources,
 )
 
 __all__ = [
@@ -18,6 +20,8 @@ __all__ = [
     "Wish",
     "WishReference",
     "generate_wish_id",
+    "is_reference_url",
     "load_wish_references",
     "wish_reference_files",
+    "wish_reference_sources",
 ]

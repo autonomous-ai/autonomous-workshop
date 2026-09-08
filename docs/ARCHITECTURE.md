@@ -112,9 +112,12 @@ for the first enabled creative stage. The same session
 handles discovery, research, concept
 work, CAD, inspection, repair, manual design, and bounded
 product facts. `workshop resume` continues the exact recorded session id.
-Reference images passed with `--ref` are materialized in that project as
-read-only inputs under `wish-references/`, bound by size and SHA-256 inside
-`WISH.json`, listed in every `STAGE.json`, and re-verified at every checkpoint.
+Reference images passed with `--ref`, local files or `http(s)` links the CLI
+downloads once at Wish time, are materialized in that project as read-only
+inputs under `wish-references/`, bound by size and SHA-256 inside `WISH.json`
+(a downloaded reference also records its link under
+`context.reference_sources`), listed in every `STAGE.json`, and re-verified at
+every checkpoint. The run never fetches anything itself.
 
 Make uses a cost-aware proof funnel inside its one Goal: narrow build checks,
 an independent blind read of exact candidate renders, at most one focused
