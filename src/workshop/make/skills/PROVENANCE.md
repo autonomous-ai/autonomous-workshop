@@ -248,3 +248,16 @@ missing part, or failed checker cannot supply that evidence. The final check
 still reruns. This corrects when an existing manufacturing defect is reported;
 it does not prove physical printing or general Make quality. Frozen runs retain
 their materialized skills.
+
+## Nested assembly review colors and placements (2026-09-08)
+
+A transformed subassembly containing separately colored parts was tessellated
+as one object by `render_review`, replacing leaf colors with a group or fallback
+color. Review now traverses all leaf occurrences and composes their ancestor
+placements before tessellation. Explicit leaf colors take precedence; uncolored
+leaves retain an available group color. The original hierarchy stays untouched.
+Regression coverage compares nested and flat assemblies, rendered pixels, STEP
+round trips, repeated instances, inherited colors, and tessellation failures.
+This corrects the CAD review renderer's existing color-preservation promise;
+STL presentation and physical-product acceptance remain separate questions.
+Existing materialized skill bytes remain frozen.

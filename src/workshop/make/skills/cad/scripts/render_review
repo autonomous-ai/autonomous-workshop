@@ -129,9 +129,28 @@ def _shape_colour(shape, index: int) -> tuple[int, int, int]:
     return tuple(_linear_to_srgb(float(value)) for value in channels[:3])
 
 
-def _leaves(shape):
+def _leaves(shape, parent_location=None, inherited_colour=None):
+    """Yield placed leaves without changing the source assembly hierarchy.
+
+    A group's tessellation merges its children and loses their materials.
+    Children retain local placements, so descend with the accumulated parent
+    transform rather than tessellating unplaced leaves directly.
+    """
+    colour = getattr(shape, "color", None)
+    if colour is None:
+        colour = inherited_colour
     children = list(getattr(shape, "children", ()) or ())
-    return children if children else [shape]
+    if children:
+        location = shape.location
+        if parent_location is not None:
+            location = parent_location * location
+        for child in children:
+            yield from _leaves(child, location, colour)
+    else:
+        placed = shape if parent_location is None else shape.moved(parent_location)
+        if getattr(placed, "color", None) is None and colour is not None:
+            placed.color = colour
+        yield placed
 
 
 def tessellate_occurrences(shape, tolerance: float):
