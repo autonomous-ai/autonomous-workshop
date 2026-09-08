@@ -223,3 +223,16 @@ package, change clearance values, skip an audit, or rewrite older frozen skills.
 Subprocess regressions cover relocated skills, paths with spaces, project and
 inherited dependencies, helper precedence, and invalid-fit failure propagation.
 This is an import-transport correction, not evidence of general Make quality.
+
+## Exact printable-body connectivity (2026-09-08)
+
+A native Make draft exposed a false connection in `check_fit`: two frame solids
+were separated by more than 2 mm, but overlapping bounding boxes caused the
+checker to count one body. Bounding boxes now exclude distant pairs only;
+remaining pairs require exact shape separation within the unchanged contact
+tolerance before their groups merge. Touching compounds remain supported, and
+failed or invalid distance queries become build errors. Deterministic geometry
+regressions include a separate island inside a frame, touching and overlapping
+solids, transitive contacts, tolerance boundaries, and query failures. This
+improves one diagnostic; it does not establish mechanism function, print success,
+or overall Make quality. Existing materialized skill bytes remain unchanged.

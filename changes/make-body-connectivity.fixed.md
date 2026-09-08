@@ -1,0 +1,1 @@
+Make's printable-part checker now measures actual solid separation before treating overlapping bounding boxes as one body. Disconnected pieces inside a shared bounding envelope are reported, while touching compounds retain the existing contact tolerance. Failed distance measurements fail the check instead of implying a connection.
