@@ -2254,9 +2254,9 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(receipt["workflow"], "spark")
             self.assertEqual(receipt["agent"], "codex")
             self.assertEqual(receipt["model"], "gpt-5.6-sol")
-            self.assertEqual(receipt["effort"], "high")
+            self.assertEqual(receipt["effort"], "medium")
             self.assertIn("Workflow: Spark", stderr.getvalue())
-            self.assertIn("Model: gpt-5.6-sol · effort high", stderr.getvalue())
+            self.assertIn("Model: gpt-5.6-sol · effort medium", stderr.getvalue())
             self.assertIn(
                 "Starting one native Codex session for Make",
                 stderr.getvalue(),

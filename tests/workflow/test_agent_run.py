@@ -204,7 +204,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(checkpoint_document["manager_id"], "codex")
         self.assertEqual(checkpoint.manager_id, "codex")
         self.assertEqual(checkpoint.manager_model, "gpt-5.6-sol")
-        self.assertEqual(checkpoint.manager_reasoning_effort, "high")
+        self.assertEqual(checkpoint.manager_reasoning_effort, "medium")
         self.assertEqual(checkpoint.inventor_roster, ())
         for relative, content in expected.items():
             path = run.run_root / relative
