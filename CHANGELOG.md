@@ -65,6 +65,11 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Fixed
 
+- Make CAD support checks use the preceding layer's material and actual bridge
+  spans. This catches cantilevers and thin ledges, preserves short rotated
+  bridges and supported collars, and keeps decisions stable when equivalent STL
+  triangle records or cyclic vertex orders change.
+
 - Allow generated inventor commands to parse run options and positional Wish
   text in either order.
 - Preserve an Inventor's ordered two-shore token rules, token order, and

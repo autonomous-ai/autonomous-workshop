@@ -274,3 +274,38 @@ after both succeed. Final verification rejects missing or mismatched early
 assembly evidence and still reruns its own checks. Frozen runs keep their
 materialized skills. This is earlier deterministic feedback, not proof of
 native repair reliability, physical assembly or product acceptance.
+
+
+## Support geometry and mesh-order invariance (2026-09-08)
+
+The support checker could turn the same STL geometry from failing to passing
+when only its triangle records were reordered. Its single sampled-region
+centroid could sit between supports while an outer cantilever remained
+unsupported. A fused flat cap on one narrow stem reproduced that false bridge
+classification independently of any product artifact.
+
+The checker now uses equal-area subtriangle centroids with a corner-symmetric
+sample set, canonicalizes oriented triangles before welding, and groups samples
+by shared edges of the actual down-facing surfaces. Every non-bed down-facing
+sample is checked against the preceding layer's mesh section. The angle and
+layer height define a lateral allowance of `layer / tan(angle)`, so a thin step
+can rest on the preceding layer without being mislabeled as a bridge. The same
+geometric principle is used in [OrcaSlicer 2.4.2's angle-based support detection](https://github.com/OrcaSlicer/OrcaSlicer/blob/v2.4.2/src/libslic3r/Support/SupportMaterial.cpp#L1434);
+this is an independent implementation, not a slicer port.
+
+The deterministic `mesh_support.py` helper measures exact section boundaries,
+deduplicates coincident oriented crossings, and finds real support separation.
+It tests X/Y and the direction toward the nearest boundary point, allowing
+rotated slots without an arbitrary angular grid. Bounded batches limit temporary
+intersection matrices. Voxels only describe air gaps in reports; they no longer
+select which surfaces can fail. Existing angle, layer, bridge-length, sample
+budget and minimum-region-area limits remain. Frozen materialized runs retain
+their prior bytes.
+
+Area remains sampled, the bridge directions are a bounded search, and grouping
+by a connected down-facing surface can combine unsupported subsets separated
+by accepted samples. These checks do not establish slicer equivalence or physical
+printability. Regression coverage includes thin ledges, rotated bridges and
+cantilevers, disconnected small surfaces, sample symmetry, shared-edge crossings,
+actual support separation and CLI/report agreement. Private native artifacts and
+slicer comparisons stay outside this repository.
