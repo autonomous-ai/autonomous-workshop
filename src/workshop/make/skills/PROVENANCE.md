@@ -261,3 +261,16 @@ round trips, repeated instances, inherited colors, and tessellation failures.
 This corrects the CAD review renderer's existing color-preservation promise;
 STL presentation and physical-product acceptance remain separate questions.
 Existing materialized skill bytes remain frozen.
+
+## Assembly screening before visual review (2026-09-08)
+
+Printable-only preflight could pass a model whose combined assembly still had
+part clashes, leaving the existing final interference check to reject it after
+review. Preflight now generates the selected combined entry with the printables
+and batches the existing assembly validity and interference checks first. The
+1.0 mm3 contact threshold matches final verification; no gate is relaxed.
+The review-bound report records the selected assembly and fixed checks only
+after both succeed. Final verification rejects missing or mismatched early
+assembly evidence and still reruns its own checks. Frozen runs keep their
+materialized skills. This is earlier deterministic feedback, not proof of
+native repair reliability, physical assembly or product acceptance.

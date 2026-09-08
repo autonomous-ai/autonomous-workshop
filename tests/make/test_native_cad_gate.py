@@ -887,6 +887,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             b"- Result: **PASS** (exit 0)\n\n"
             b"| # | command | result | seconds |\n"
             b"|---:|---|---:|---:|\n"
+            b'| 0 | `assembly preflight  # NOTE: {"assembly":"assembly.step.py","checks":["validate","interfere"],"interference_tolerance_mm3":1.0}` | note | 0.00 |\n'
             b"| 1 | `check_mesh part_token.stl` | rc=0 | 0.01 |\n"
             b"| 2 | `check_thickness part_token.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
             b"| 3 | `check_overhang part_token.stl --angle 45.0` | rc=0 | 0.01 |\n"
@@ -1113,7 +1114,10 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         self.assertIn("--nozzle 0.4", completed.stdout)
         self.assertIn("check_overhang", completed.stdout)
         self.assertIn("--angle 45.0", completed.stdout)
-        self.assertNotIn("inspect batch", completed.stdout)
+        self.assertIn("inspect batch", completed.stdout)
+        self.assertIn('"id":"validate:assembly"', completed.stdout)
+        self.assertIn('"id":"interfere:assembly"', completed.stdout)
+        self.assertNotIn('"id":"refs:assembly"', completed.stdout)
         self.assertNotIn("SIGNATURE-REVIEW", completed.stderr)
 
     def test_print_preflight_refuses_weakened_overhang_profile(self):

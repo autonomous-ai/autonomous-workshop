@@ -12,9 +12,9 @@ queue.
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --dry-run
 
 Every mode writes STEP.  Quick mode writes the combined entry's;
-print-preflight writes one per printable entry; final mode writes the
-combined entry's and one per part entry.  A project this runner has
-touched always carries a .step that came from the source it just checked.
+print-preflight writes the combined entry's and one per printable entry;
+final mode writes the combined entry's and one per part entry. A project
+this runner has touched always carries a .step from the source it just checked.
 
 Final mode (the default) runs layout, design-reference provenance, multi-target
 generation with STEP writes, print fit, local audits, bought-part mounts,
@@ -44,9 +44,11 @@ Image-derived final verification requires an explicit power classification:
 pass `--powered` for any functional electrical load, which requires
 `measure/power.json`, or `--unpowered` when there is none.
 
-Print-preflight mode is the one cheap gate allowed before visual review. It
-generates every declared printable entry, runs strict bed fit, exports each
-STL, and checks every mesh, unsupported overhang at 45 degrees, and wall
+Print-preflight mode screens the candidate before visual review. It generates
+the selected combined entry and every declared printable, checks assembly
+validity and interference at the final 1.0 mm3 contact threshold, then runs
+strict printable bed fit, exports each STL, and checks every mesh,
+unsupported overhang at 45 degrees, and wall
 thickness at the fixed 0.4 mm nozzle profile used by the normal final gate.
 It writes `measure/print-preflight.md`; lowering either profile is refused
 rather than turning an ordinary-FDM failure into a local pass.
@@ -211,8 +213,18 @@ def _resolve_inside_project(raw: str | None, project: Path, cwd: Path) -> Path |
     return candidate
 
 
-def _required_print_preflight(project: Path, printables: list[Path]) -> str:
-    """Require a passing standard-profile report for every printable entry."""
+def _assembly_preflight_detail(assembly: Path) -> str:
+    return json.dumps(
+        {"assembly": assembly.name, "checks": ["validate", "interfere"],
+         "interference_tolerance_mm3": 1.0},
+        sort_keys=True, separators=(",", ":"),
+    )
+
+
+def _required_print_preflight(
+    project: Path, printables: list[Path], assembly: Path,
+) -> str:
+    """Require early assembly screening and every standard-profile printable."""
 
     report_path = project / "measure" / "print-preflight.md"
     try:
@@ -240,6 +252,14 @@ def _required_print_preflight(project: Path, printables: list[Path]) -> str:
     ):
         raise ValueError("print preflight is not a passing print-preflight record")
     lines = text.splitlines()
+    assembly_record = (
+        f"| `assembly preflight  # NOTE: {_assembly_preflight_detail(assembly)}` | note |"
+    )
+    if not any(assembly_record in line for line in lines):
+        raise ValueError(
+            "print preflight lacks passing assembly validity and standard "
+            f"interference checks for {assembly.name}"
+        )
     for printable in printables:
         stl_name = _stl_for_entry(printable).name
         mesh_passed = any(
@@ -268,7 +288,9 @@ def _required_print_preflight(project: Path, printables: list[Path]) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def _required_signature_review(project: Path, printables: list[Path]) -> str:
+def _required_signature_review(
+    project: Path, printables: list[Path], assembly: Path,
+) -> str:
     """Bind the expensive final workflow to an already completed blind review."""
 
     review_path = project / SIGNATURE_REVIEW_RELATIVE
@@ -308,7 +330,7 @@ def _required_signature_review(project: Path, printables: list[Path]) -> str:
         preflight_sha256
     ):
         raise ValueError("signature review print preflight hash is invalid")
-    if preflight_sha256 != _required_print_preflight(project, printables):
+    if preflight_sha256 != _required_print_preflight(project, printables, assembly):
         raise ValueError("signature review is not bound to the passing print preflight")
     for key in (
         "reviewer",
@@ -990,17 +1012,29 @@ def _print_preflight(
     project: Path,
     printables: list[Path],
     *,
+    assembly: Path,
     bed: tuple[float, float, float],
 ) -> int:
-    """Prove every printable mesh at the fixed final manufacturing profile."""
+    """Screen assembly geometry and every printable at the final profile."""
 
-    printable_args = [_path_arg(path, runner.cwd) for path in printables]
+    entries = list(dict.fromkeys([assembly, *printables]))
+    entry_args = [_path_arg(path, runner.cwd) for path in entries]
     if not _run_or_stop(
         runner,
-        [sys.executable, SCRIPTS_DIR / "gen", *printable_args, "--write", "--json"],
+        [sys.executable, SCRIPTS_DIR / "gen", *entry_args, "--write", "--json"],
         warm=True,
     ):
         return 1
+    assembly_arg = _path_arg(assembly, runner.cwd)
+    if runner.inspect_batch([
+        {"id": "validate:assembly", "argv": ["validate", assembly_arg]},
+        {"id": "interfere:assembly",
+         "argv": ["interfere", assembly_arg, "--tolerance", "1.0"]},
+    ]) != 0:
+        return 1
+    # Bind the pre-review report to the selected combined entry and fixed
+    # checks. The final verifier still reruns both against the final assembly.
+    runner.note("assembly preflight", _assembly_preflight_detail(assembly))
     fit_args: list[str | Path] = [
         sys.executable,
         SCRIPTS_DIR / "check_fit",
@@ -1442,7 +1476,9 @@ def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
             for path in project.glob(f"{PART_PREFIX}*{ENTRY_SUFFIX}")
         ),
     ]
-    preflight_rows = []
+    preflight_rows = [
+        f"| 0 | `assembly preflight  # NOTE: {_assembly_preflight_detail(project / 'widget.step.py')}` | note | 0.00 |"
+    ]
     for index, stem in enumerate(printable_stems, 1):
         preflight_rows.extend(
             (
@@ -1854,7 +1890,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("project", help="project directory containing *.step.py entries")
     parser.add_argument("--assembly", help="combined entry; inferred when exactly one non-part entry exists")
     parser.add_argument("--quick", action="store_true", help="combined-entry generation only: writes the .step and the render package, runs no gates")
-    parser.add_argument("--print-preflight", action="store_true", help="before visual review: generate every printable, run strict fit, and check each mesh and 0.4 mm-nozzle wall thickness")
+    parser.add_argument("--print-preflight", action="store_true", help="before visual review: screen assembly validity/interference and every printable at the fixed final print profile")
     parser.add_argument("--fresh", action="store_true", help="delete only this project's __cadgen__ cache before running")
     parser.add_argument("--exports", action="store_true", help="final mode: write assembly GLB and printable-entry STLs, then check each mesh and wall thickness")
     parser.add_argument("--strict-fit", action="store_true", help="final mode: promote check_fit advisory notes to failures")
@@ -2039,7 +2075,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not args.quick and not args.print_preflight and not args.dry_run:
         try:
             signature_review_sha256 = _required_signature_review(
-                project, printables
+                project, printables, assembly
             )
             motion_presentation = runpy.run_path(str(SCRIPTS_DIR / "motion_presentation.py"))
             motion_presentation["validate"](
@@ -2096,6 +2132,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 runner,
                 project,
                 printables,
+                assembly=assembly,
                 bed=bed,
             )
         elapsed = time.perf_counter() - workflow_started

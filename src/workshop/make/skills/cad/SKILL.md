@@ -146,8 +146,10 @@ gate.
 12. **Render before the expensive final gate.** After plausible exact draft
     geometry exists, run
     `scripts/verify_project <project> --print-preflight`. This fixed
-    cheap gate generates every declared printable, runs strict bed fit, exports
-    every STL, and checks each mesh, unsupported overhangs at 45 degrees,
+    preflight generates the combined assembly and every declared printable,
+    checks assembly validity and interference at the final 1.0 mm3 contact
+    threshold, then runs strict printable bed fit, exports every STL, and checks
+    each mesh, unsupported overhangs at 45 degrees,
     and wall thickness at the final 0.4 mm nozzle profile. Repair and regenerate before review if it fails. Never use
     an assembly-only STL, omit a printable, or lower the nozzle/threshold to
     manufacture a pass; never spend a visual-review round on geometry that
