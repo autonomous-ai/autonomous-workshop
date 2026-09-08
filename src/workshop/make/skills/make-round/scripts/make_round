@@ -188,6 +188,28 @@ def parse_render_views(stdout: str, label: str):
     return None
 
 
+def resolve_reference(ref: str, project: Path):
+    """A reference path as the Manager wrote it: absolute, project-relative,
+    cwd-relative, or relative to the run workspace (the directory holding
+    WISH.json above the project). The first that exists wins; None if none
+    does. Round 27 of the goose run (2026-09-08) wrote a workspace-relative
+    path and lost its score for it."""
+
+    candidate = Path(ref)
+    if candidate.is_absolute():
+        return candidate if candidate.is_file() else None
+    roots = [project, Path.cwd()]
+    for parent in [project, *project.parents]:
+        if (parent / "WISH.json").is_file():
+            roots.append(parent)
+            break
+    for root in roots:
+        path = root / candidate
+        if path.is_file():
+            return path
+    return None
+
+
 SEARCH_HALF_WINDOW_DEG = 30.0
 SEARCH_STEP_DEG = 10.0
 SEARCH_REFINE_ROUNDS = 2
@@ -281,8 +303,8 @@ def make_round(args) -> int:
     likeness = []
     previous_poses = state.get("poses_path")
     for label, ref in refs:
-        ref_path = Path(ref) if Path(ref).is_absolute() else (project / ref)
-        if not ref_path.is_file():
+        ref_path = resolve_reference(ref, project)
+        if ref_path is None:
             likeness.append({"label": label, "error": "reference missing: %s" % ref})
             continue
         view_dir = out / "likeness"
@@ -420,6 +442,13 @@ def self_check() -> int:
     check(parse_render_views(pretty, "side") is None, "a label the render did not score yields nothing")
     check(parse_render_views('{"results": [{"label": "hero", "iou": 0.5}]}\n', "hero")["iou"] == 0.5, "the one-line results shape still parses")
     check(parse_render_views("Traceback (most recent call last):\n  boom\n", "hero") is None, "a crash yields nothing")
+    with tempfile.TemporaryDirectory() as tmp:
+        workspace = Path(tmp); project = workspace / "artifacts" / "make" / "r0001" / "product" / "goose"
+        (project / "ref").mkdir(parents=True); (workspace / "WISH.json").write_text("{}", encoding="utf-8")
+        (project / "ref" / "hero.jpg").write_bytes(b"x")
+        check(resolve_reference("ref/hero.jpg", project) == project / "ref" / "hero.jpg", "a project-relative reference resolves")
+        check(resolve_reference("artifacts/make/r0001/product/goose/ref/hero.jpg", project) == project / "ref" / "hero.jpg", "a workspace-relative reference resolves through WISH.json")
+        check(resolve_reference("ref/missing.jpg", project) is None, "a missing reference stays missing")
     window = search_window(-118.125, -75.0)
     check(window[0] == "--search-az=-148.125,-88.125,10" and window[1] == "--search-el=-90,-45,10" and window[-2:] == ["--refine", "2"], "the search window brackets the replayed camera and clamps elevation")
     with tempfile.TemporaryDirectory() as tmp:
