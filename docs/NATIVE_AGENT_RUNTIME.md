@@ -900,6 +900,9 @@ The host persists completed-request usage from a version-pinned Codex 0.153.4
 rollout adapter. Missing/regressing accounting fails closed after a bounded
 initial reporting grace. Oversized native compaction records are validated
 in bounded chunks without retaining their history or recounting embedded usage.
+Ancestry discovery reads only a bounded first metadata record from each
+candidate; an unrelated large body cannot exhaust the selected-file size bound.
+The root and discovered descendants still retain that full file limit.
 Other record and file bounds remain; malformed or ambiguous accounting still
 stops the run. In-flight requests may overshoot the observed cap.
 `resume --max-tokens N` changes the total cap without resetting consumption.

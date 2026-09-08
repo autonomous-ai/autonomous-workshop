@@ -82,8 +82,27 @@ def _records(path):
 
 
 def _identity(path):
-    record = next(_records(path), None)
-    if not record or record.get("type") != "session_meta":
+    """Read a bounded identity before deciding whose body may be inspected.
+
+    An unrelated rollout can exceed the selected-file size limit. Discovery
+    needs only its first metadata record; _records still enforces the full
+    file bound for the root and every ancestry-bound descendant.
+    """
+    try:
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        with os.fdopen(fd, "rb") as stream:
+            info = os.fstat(stream.fileno())
+            if not stat.S_ISREG(info.st_mode):
+                raise UsageUnavailable("native usage file exceeds safe bounds")
+            line = stream.readline(min(MAX_LINE_BYTES + 1, info.st_size))
+            if len(line) > MAX_LINE_BYTES:
+                raise UsageUnavailable("native session metadata exceeds safe bounds")
+            if not line.endswith(b"\n"):
+                raise UsageUnavailable("native usage file lacks session identity")
+            record = json.loads(line, object_pairs_hook=_object)
+    except (OSError, ValueError, UnicodeError) as exc:
+        raise UsageUnavailable("native usage file is unavailable or malformed") from exc
+    if not isinstance(record, dict) or record.get("type") != "session_meta":
         raise UsageUnavailable("native usage file lacks session identity")
     payload = record.get("payload")
     if not isinstance(payload, dict):

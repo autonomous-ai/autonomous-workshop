@@ -269,3 +269,76 @@ def test_large_compaction_does_not_bypass_file_size_bound(tmp_path, monkeypatch)
     monkeypatch.setattr(module, "MAX_ROLLOUT_BYTES", 2048)
     with pytest.raises(UsageUnavailable, match="file exceeds"):
         read_thread_usage(path, thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_oversized_unrelated_rollout_body_does_not_stop_product_usage(tmp_path, monkeypatch):
+    import workshop.runtime.codex_usage as module
+
+    monkeypatch.setattr(module, "MAX_ROLLOUT_BYTES", 2048)
+    write(tmp_path, records() + [usage(100)])
+    write(tmp_path, records(CHILD, ROOT) + [usage(200)], CHILD)
+    other = write(tmp_path, records("unrelated", cwd="/elsewhere")[:1], "unrelated")
+    with other.open("ab") as stream:
+        # A body unrelated to this product is never a usage input, regardless
+        # of its size or format. Its bounded identity is still validated.
+        stream.write(b"not conversation JSON\n" * 200)
+
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+
+    assert result["tokens"] == counters(300)
+    assert result["total_tokens"] == 330
+    assert {row["thread_id"] for row in result["threads"]} == {ROOT, CHILD}
+
+
+@pytest.mark.parametrize("target_thread,parent", [(ROOT, None), (CHILD, ROOT)])
+def test_identity_discovery_does_not_relax_selected_rollout_size_limit(
+    tmp_path, monkeypatch, target_thread, parent,
+):
+    import workshop.runtime.codex_usage as module
+
+    monkeypatch.setattr(module, "MAX_ROLLOUT_BYTES", 2048)
+    write(tmp_path, records() + [usage(100)])
+    target = write(tmp_path, records(target_thread, parent) + [usage(200)], target_thread)
+    with target.open("ab") as stream:
+        stream.write(b" " * 2048)
+
+    with pytest.raises(UsageUnavailable, match="file exceeds safe bounds"):
+        read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("header", [
+    b"",
+    b'{"type":"session_meta","payload":{"id":"unrelated"}}',
+    b'{"type":"event_msg","payload":{}}\n',
+    b'[]\n',
+    b'{"type":"session_meta","payload":[]}\n',
+    b'{"type":"session_meta","type":"session_meta","payload":{}}\n',
+    b'{"type":"session_meta","payload":{"id":"unrelated","id":"duplicate"}}\n',
+    b'\xff\n',
+])
+def test_unattributable_discovery_identity_is_not_skipped(tmp_path, header):
+    write(tmp_path, records() + [usage(100)])
+    other = write(tmp_path, [], "unrelated")
+    other.write_bytes(header)
+
+    with pytest.raises(UsageUnavailable):
+        read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("excess", [0, 1])
+def test_discovery_identity_record_byte_bound_includes_newline(tmp_path, monkeypatch, excess):
+    import workshop.runtime.codex_usage as module
+
+    limit = 512
+    monkeypatch.setattr(module, "MAX_LINE_BYTES", limit)
+    write(tmp_path, records() + [usage(100)])
+    other = write(tmp_path, [], "unrelated")
+    prefix = b'{"type":"session_meta","payload":{"id":"unrelated","padding":"'
+    suffix = b'"}}\n'
+    other.write_bytes(prefix + b'x' * (limit + excess - len(prefix) - len(suffix)) + suffix)
+
+    if excess:
+        with pytest.raises(UsageUnavailable, match="metadata exceeds safe bounds"):
+            read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    else:
+        assert read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))["tokens"] == counters(100)
