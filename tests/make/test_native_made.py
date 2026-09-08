@@ -118,6 +118,7 @@ class NativeMadeTest(unittest.TestCase):
         self.assertEqual(canonical.artifact_root, product_root)
         self.assertEqual(canonical.artifact_sha256, made.product_manifest.artifact_sha256)
         self.assertEqual(canonical.product["title"], "Moon Nook")
+        self.assertEqual(canonical.cad_project_path, "cad/project")
 
     def test_tampered_tree_or_context_fails_closed(self):
         made, product_root = self._made()

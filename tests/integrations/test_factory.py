@@ -542,6 +542,35 @@ class FactoryReleaseTest(unittest.TestCase):
             self.release, created_at="content-addressed"
         )
 
+    def _add_cad_python_project(self):
+        product = self.made.artifact_root
+        project = product / "cad/project"
+        (project / "parts").mkdir(parents=True)
+        (project / "__cadgen__").mkdir()
+        sources = {
+            "cad/project/assembled.step.py": b"from build import gen_step\n",
+            "cad/project/build.py": b"def gen_step():\n    return None\n",
+            "cad/project/parts/token.py": b"def token():\n    return None\n",
+        }
+        for relative, content in sources.items():
+            (product / relative).write_bytes(content)
+        (project / "__cadgen__/cached.py").write_bytes(b"generated cache\n")
+        self.made = Made.from_root(
+            product,
+            self.made.product,
+            cad_project_path="cad/project",
+        )
+        self.context = ReleaseContext(self.made)
+        release_page_path = self.release / "product.json"
+        release_page = json.loads(release_page_path.read_text(encoding="utf-8"))
+        release_page["product_artifact_sha256"] = self.made.artifact_sha256
+        release_page_path.write_bytes(canonical_json(release_page))
+        self.page = release_page
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+        return sources
+
     def test_private_import_is_model_only_hash_bound_and_idempotent(self):
         transport = FactoryTransport()
         receipt = self.writer(transport)(self.context, self.release, self.manifest)
@@ -801,6 +830,71 @@ class FactoryReleaseTest(unittest.TestCase):
             )
             self.assertEqual(facts["wish"], self.context.wish.to_dict())
             self.assertEqual(facts["product"], dict(self.made.product))
+
+    def test_mesh_handoff_includes_only_declared_cad_project_python_sources(self):
+        sources = self._add_cad_python_project()
+        transport = FactoryTransport()
+
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            self.assertTrue(set(sources) <= names)
+            self.assertNotIn("main.py", names)
+            self.assertNotIn("unrelated.py", names)
+            self.assertNotIn("cad/project/__cadgen__/cached.py", names)
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            declaration = facts["cad_python_sources"]
+            self.assertEqual(declaration["project_path"], "cad/project")
+            self.assertEqual(
+                [item["path"] for item in declaration["files"]],
+                sorted(sources),
+            )
+            for item in declaration["files"]:
+                content = archive.read(item["path"])
+                self.assertEqual(content, sources[item["path"]])
+                self.assertEqual(item["bytes"], len(content))
+                self.assertEqual(item["sha256"], hashlib.sha256(content).hexdigest())
+
+    def test_client_rejects_changed_declared_cad_python_source(self):
+        self._add_cad_python_project()
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        tampered = io.BytesIO()
+        with (
+            zipfile.ZipFile(io.BytesIO(parts["file"][0])) as source,
+            zipfile.ZipFile(tampered, "w", zipfile.ZIP_DEFLATED) as target,
+        ):
+            for item in source.infolist():
+                content = source.read(item.filename)
+                if item.filename == "cad/project/build.py":
+                    content += b"# changed\n"
+                target.writestr(item, content)
+
+        client = FactoryClient(
+            lambda *_args, **_kwargs: self.fail("tampered handoff reached transport")
+        )
+        with self.assertRaisesRegex(ContractError, "CAD Python source differs"):
+            client.import_model(
+                filename="model-handoff.zip",
+                content=tampered.getvalue(),
+                metadata={
+                    "status": "draft",
+                    "title": "Verified Toy",
+                    "description": "An exact toy page authored before Factory import.",
+                    "category": FACTORY_TOY_CATEGORY_SLUG,
+                    "tags": ["toy"],
+                },
+                idempotency_key="test-tampered-cad-python-source",
+            )
 
     def test_release_manual_supersedes_made_manual_at_factory_boundary(self):
         product = self.made.artifact_root
