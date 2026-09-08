@@ -889,6 +889,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             b"|---:|---|---:|---:|\n"
             b"| 1 | `check_mesh part_token.stl` | rc=0 | 0.01 |\n"
             b"| 2 | `check_thickness part_token.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
+            b"| 3 | `check_overhang part_token.stl --angle 45.0` | rc=0 | 0.01 |\n"
         )
         (self.project / "measure/print-preflight.md").write_bytes(preflight)
         review = {
@@ -1110,8 +1111,21 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         self.assertIn("check_mesh", completed.stdout)
         self.assertIn("check_thickness", completed.stdout)
         self.assertIn("--nozzle 0.4", completed.stdout)
+        self.assertIn("check_overhang", completed.stdout)
+        self.assertIn("--angle 45.0", completed.stdout)
         self.assertNotIn("inspect batch", completed.stdout)
         self.assertNotIn("SIGNATURE-REVIEW", completed.stderr)
+
+    def test_print_preflight_refuses_weakened_overhang_profile(self):
+        completed = subprocess.run(
+            (sys.executable, str(self.verifier), str(self.project),
+             "--print-preflight", "--overhang-angle", "10"),
+            cwd=self.root, text=True, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, check=False,
+        )
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("fixed 45 degree overhang profile", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
 
     def test_print_preflight_refuses_weakened_nozzle(self):
         completed = subprocess.run(

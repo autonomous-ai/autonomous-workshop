@@ -46,10 +46,10 @@ pass `--powered` for any functional electrical load, which requires
 
 Print-preflight mode is the one cheap gate allowed before visual review. It
 generates every declared printable entry, runs strict bed fit, exports each
-STL, and checks every mesh and wall thickness using the same fixed 0.4 mm
-nozzle profile as the normal final gate. It writes
-`measure/print-preflight.md`; lowering the nozzle is refused rather than
-turning an ordinary-FDM failure into a local pass.
+STL, and checks every mesh, unsupported overhang at 45 degrees, and wall
+thickness at the fixed 0.4 mm nozzle profile used by the normal final gate.
+It writes `measure/print-preflight.md`; lowering either profile is refused
+rather than turning an ordinary-FDM failure into a local pass.
 """
 
 from __future__ import annotations
@@ -88,6 +88,7 @@ LIKENESS_FLOOR = 0.90
 LIKENESS_STALL_STREAK = 3
 DEFAULT_BED = (220.0, 220.0, 220.0)
 PRINT_PREFLIGHT_NOZZLE = 0.4
+PRINT_PREFLIGHT_OVERHANG_ANGLE = 45.0
 BED_DECLARATION = re.compile(
     r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)"
 )
@@ -252,10 +253,17 @@ def _required_print_preflight(project: Path, printables: list[Path]) -> str:
             and "| rc=0 |" in line
             for line in lines
         )
-        if not mesh_passed or not thickness_passed:
+        overhang_passed = any(
+            "check_overhang" in line
+            and stl_name in line
+            and re.search(r"--angle 45\.0(?=\s|`)", line)
+            and "| rc=0 |" in line
+            for line in lines
+        )
+        if not mesh_passed or not thickness_passed or not overhang_passed:
             raise ValueError(
-                "print preflight does not pass mesh and standard 0.4 mm thickness "
-                f"for {stl_name}"
+                "print preflight does not pass mesh, standard 0.4 mm thickness, "
+                f"and standard 45 degree overhang checks for {stl_name}"
             )
     return hashlib.sha256(content).hexdigest()
 
@@ -1035,6 +1043,21 @@ def _print_preflight(
         role = printable.name.removesuffix(ENTRY_SUFFIX)
         if role.startswith(PART_PREFIX):
             role = role.removeprefix(PART_PREFIX)
+        # Reject the same unsupported geometry as final verification before
+        # its repair would invalidate the already-spent visual review.
+        if not _run_or_stop(
+            runner,
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_overhang",
+                _path_arg(part_stl, runner.cwd),
+                "--angle",
+                str(PRINT_PREFLIGHT_OVERHANG_ANGLE),
+                "--report",
+                _path_arg(project / "measure" / f"overhang-{role}.md", runner.cwd),
+            ],
+        ):
+            return 1
         if not _run_or_stop(
             runner,
             [
@@ -1423,8 +1446,9 @@ def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
     for index, stem in enumerate(printable_stems, 1):
         preflight_rows.extend(
             (
-                f"| {index * 2 - 1} | `check_mesh {stem}.stl` | rc=0 | 0.01 |",
-                f"| {index * 2} | `check_thickness {stem}.stl --nozzle 0.4` | rc=0 | 0.01 |",
+                f"| {index * 3 - 2} | `check_mesh {stem}.stl` | rc=0 | 0.01 |",
+                f"| {index * 3 - 1} | `check_overhang {stem}.stl --angle 45.0` | rc=0 | 0.01 |",
+                f"| {index * 3} | `check_thickness {stem}.stl --nozzle 0.4` | rc=0 | 0.01 |",
             )
         )
     preflight = (
@@ -1975,6 +1999,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     if args.print_preflight and args.nozzle != PRINT_PREFLIGHT_NOZZLE:
         parser.error("--print-preflight requires the fixed 0.4 mm nozzle profile")
+    if args.print_preflight and args.overhang_angle != PRINT_PREFLIGHT_OVERHANG_ANGLE:
+        parser.error("--print-preflight requires the fixed 45 degree overhang profile")
     if args.print_preflight and (args.report or args.no_report):
         parser.error(
             "--print-preflight always writes measure/print-preflight.md"

@@ -147,8 +147,8 @@ gate.
     geometry exists, run
     `scripts/verify_project <project> --print-preflight`. This fixed
     cheap gate generates every declared printable, runs strict bed fit, exports
-    every STL, and checks each mesh and wall thickness at the final 0.4 mm
-    nozzle profile. Repair and regenerate before review if it fails. Never use
+    every STL, and checks each mesh, unsupported overhangs at 45 degrees,
+    and wall thickness at the final 0.4 mm nozzle profile. Repair and regenerate before review if it fails. Never use
     an assembly-only STL, omit a printable, or lower the nozzle/threshold to
     manufacture a pass; never spend a visual-review round on geometry that
     cannot pass the full print-ready gate. Then use `scripts/render_product

@@ -236,3 +236,15 @@ regressions include a separate island inside a frame, touching and overlapping
 solids, transitive contacts, tolerance boundaries, and query failures. This
 improves one diagnostic; it does not establish mechanism function, print success,
 or overall Make quality. Existing materialized skill bytes remain unchanged.
+
+## Support screening before visual review (2026-09-08)
+
+A preserved native draft passes the fresh print preflight while the existing
+final overhang checker rejects its frame and rotor in their exported print
+orientations. The early preflight now runs that same checker on every printable
+at the standard 45 degree profile, before thickness and before visual review.
+Review binding requires passing support checks for every part; a lowered angle,
+missing part, or failed checker cannot supply that evidence. The final check
+still reruns. This corrects when an existing manufacturing defect is reported;
+it does not prove physical printing or general Make quality. Frozen runs retain
+their materialized skills.
