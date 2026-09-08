@@ -31,6 +31,9 @@ class _FakeProcess:
         del timeout
         return self.returncode
 
+    def poll(self):
+        return self.returncode
+
     def kill(self):
         self.returncode = -9
 
@@ -70,6 +73,10 @@ class GrokNativeSessionTest(unittest.TestCase):
             self.assertIn("--session-id", command)
             self.assertIn("-p", command)
             self.assertIn("--always-approve", command)
+            self.assertIn("--permission-mode", command)
+            self.assertIn("bypassPermissions", command)
+            self.assertNotIn("dontAsk", command)
+            self.assertIn("Bash", command)
             self.assertIn("grok-4.6", command)
             self.assertEqual(kwargs["cwd"], str(self.run_root))
             self.assertNotIn("FACTORY_PASSWORD", kwargs["env"])
@@ -164,3 +171,38 @@ class GrokNativeSessionTest(unittest.TestCase):
                 finalization_marker=marker,
             )
         self.assertTrue((self.host_state / "grok-session.json").is_file())
+
+    def test_available_commands_events_are_not_tool_progress(self):
+        observed = []
+
+        def popen(command, **kwargs):
+            del command, kwargs
+            return _FakeProcess(
+                [
+                    json.dumps({"type": "available_commands", "tools": ["read_file"]})
+                    + "\n",
+                    json.dumps({"type": "thought", "data": "planning"}) + "\n",
+                    json.dumps({"type": "tool_started", "tool_name": "read_file"})
+                    + "\n",
+                ]
+            )
+
+        launcher = GrokNativeSessionLauncher(
+            binary="/bin/grok",
+            cli_version="1.0.5",
+            popen_factory=popen,
+            uuid_factory=lambda: "123e4567-e89b-12d3-a456-426614174000",
+        )
+        launcher.start(
+            product_id="wish-one",
+            wish_sha256=DIGEST,
+            constitution_sha256=DIGEST,
+            run_root=self.run_root,
+            host_state_root=self.host_state,
+            prompt="make",
+            activity_observer=observed.append,
+        )
+        self.assertEqual(observed[0], "starting")
+        self.assertIn("reasoning", observed)
+        self.assertIn("tool", observed)
+        self.assertEqual(observed.count("tool"), 1)

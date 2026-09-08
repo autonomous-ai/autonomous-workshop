@@ -30,6 +30,12 @@ derived, validates. Product-owned, stale, or malformed `*.step.json` files do
 not cross the effect boundary; the handoff safely narrows to the sealed root
 `assembled.stl` instead.
 
+For native Made results, the handoff also carries every sealed `.py` file under
+the exact declared CAD project path so a later Factory edit can regenerate the
+exports. Their paths, sizes, and hashes are recorded in the handoff facts.
+Python outside that project, `__cadgen__`/`__pycache__` content, renders, and
+verification output remain excluded.
+
 Public API: `workshop.integrations` exports the canonical Factory credentials,
 session, client, Release writer, and public transition. The adapter depends on
 runtime-owned `Receipt` and `EffectLedger` contracts; runtime never imports an

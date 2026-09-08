@@ -670,7 +670,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertTrue(callable(resume.call_args.kwargs["activity_observer"]))
         self.assertTrue(callable(resume.call_args.kwargs["timing_observer"]))
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "make")
-        self.assertIn("exact native Codex session", stderr.getvalue())
+        self.assertIn("exact native Manager session", stderr.getvalue())
         self.assertIn("using a tool for the current stage", stderr.getvalue())
         self.assertIn("operation=session.resume state=started", stderr.getvalue())
         self.assertIn("state=completed elapsed_ms=911", stderr.getvalue())

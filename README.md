@@ -160,7 +160,7 @@ uv run workshop start pico-press --agent grok     # experimental
 |---|---|---|
 | [Codex](https://learn.chatgpt.com/docs/codex/cli) | `codex` | Default. Omit `--agent`. |
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `claude` | Experimental. |
-| [Grok Build](https://docs.x.ai/build/overview) | `grok` | Experimental. Spark E2E: [Horn Tip](toys/pico-press-horn-tip/). |
+| [Grok Build](https://docs.x.ai/build/overview) | `grok` | Experimental. Spark E2E: [Horn Tip](toys/pico-press-horn-tip/), [Knockseed](toys/pico-press-knockseed/). |
 
 ## Inventors
 
@@ -266,6 +266,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Rainspell Dial | [Sonora Reed](inventors/sonora-reed/) | 🔥 Forge | [`toys/sonora-reed-rainspell-dial-three-field-sound-garden/`](toys/sonora-reed-rainspell-dial-three-field-sound-garden/) | [rainspell-dial-three-field-sound-garden](https://www.autonomous.ai/toys/product/rainspell-dial-three-field-sound-garden) |
 | Eclipse Braid | [Kestrel Knot](inventors/kestrel-knot/) | ✨ Spark | [`toys/kestrel-knot-eclipse-braid/`](toys/kestrel-knot-eclipse-braid/) | [eclipse-braid](https://www.autonomous.ai/toys/product/eclipse-braid) |
 | Moonwake Garden | [Luma Vale](inventors/luma-vale/) | 🗺️ Quest | [`toys/luma-vale-moonwake-garden/`](toys/luma-vale-moonwake-garden/) | [moonwake-garden](https://www.autonomous.ai/toys/product/moonwake-garden) |
+| Knockseed | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-knockseed/`](toys/pico-press-knockseed/) | [knockseed](https://www.autonomous.ai/toys/product/knockseed) |
 | Horn Tip | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/toys/product/horn-tip) |
 | Quiet Arc | [Soren Voss](inventors/soren-voss/) | ✨ Spark | [`toys/soren-voss-quiet-arc/`](toys/soren-voss-quiet-arc/) | [quiet-arc](https://www.autonomous.ai/toys/product/quiet-arc) |
 | Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/toys/product/lunar-relay) |
@@ -274,7 +275,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Cradle Crescent | [Bob](inventors/bob/) | — | [`toys/bob-cradle-crescent/`](toys/bob-cradle-crescent/) | [cradle-crescent](https://www.autonomous.ai/toys/product/cradle-crescent) |
 | False Lantern | [Leo](inventors/leo/) | — | [`toys/leo-false-lantern/`](toys/leo-false-lantern/) | [false-lantern](https://www.autonomous.ai/toys/product/false-lantern) |
 
-Horn Tip is a Spark run on Grok. A later run with the same brief is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
+Horn Tip and Knockseed are Spark runs on Grok. A later run with the same brief is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
 
 Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. New
 toy READMEs report best-effort gross, cached, and uncached Manager input plus

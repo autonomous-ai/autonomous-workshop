@@ -117,6 +117,10 @@ FACTORY_MODEL_GEOMETRY_SUFFIXES = frozenset(
     )
 )
 FACTORY_MODEL_GENERATOR_SUFFIXES = frozenset((".py",))
+FACTORY_CAD_PYTHON_SOURCES_KIND = "workshop.cad-python-sources"
+FACTORY_CAD_PYTHON_EXCLUDED_DIRECTORIES = frozenset(
+    ("__cadgen__", "__pycache__")
+)
 # Only these sealed CAD types carry the per-part surface colours Make
 # assigned; a colour is read from the exact sealed bytes, never inferred
 # from a mesh, a render, or model prose.
@@ -242,6 +246,7 @@ def _is_factory_model_path(
     *,
     primary_kind: str,
     primary_path: Optional[str] = None,
+    python_source_paths: frozenset[str] = frozenset(),
 ) -> bool:
     pure = PurePosixPath(path)
     if (
@@ -258,9 +263,11 @@ def _is_factory_model_path(
         return True
     suffix = pure.suffix.casefold()
     return suffix in FACTORY_MODEL_GEOMETRY_SUFFIXES or (
-        primary_kind == "generator"
-        and path == primary_path
-        and suffix in FACTORY_MODEL_GENERATOR_SUFFIXES
+        suffix in FACTORY_MODEL_GENERATOR_SUFFIXES
+        and (
+            path in python_source_paths
+            or primary_kind == "generator" and path == primary_path
+        )
     )
 
 
@@ -340,6 +347,104 @@ def _sealed_primary(context: Any) -> Mapping[str, str]:
 
 def _manifest_entry(manifest: ArtifactManifest, path: str):
     return next((entry for entry in manifest.entries if entry.path == path), None)
+
+
+def _cad_python_source_entries(context: Any, manifest: ArtifactManifest):
+    """Select sealed editable Python sources from the declared CAD project only."""
+
+    project_path = getattr(context.made, "cad_project_path", None)
+    if project_path is None:
+        return ()
+    if not isinstance(project_path, str):
+        raise ContractError("Factory CAD project path is malformed")
+    project = PurePosixPath(project_path)
+    if (
+        not project_path
+        or project.is_absolute()
+        or project.as_posix() != project_path
+        or "\\" in project_path
+        or any(part in ("", ".", "..") for part in project.parts)
+    ):
+        raise ContractError("Factory CAD project path is malformed")
+    prefix = project.parts
+    entries = []
+    for entry in manifest.entries:
+        path = PurePosixPath(entry.path)
+        relative_parts = path.parts[len(prefix) :]
+        if (
+            path.parts[: len(prefix)] == prefix
+            and relative_parts
+            and path.suffix.casefold() in FACTORY_MODEL_GENERATOR_SUFFIXES
+            and not FACTORY_CAD_PYTHON_EXCLUDED_DIRECTORIES
+            & {part.casefold() for part in relative_parts}
+        ):
+            entries.append(entry)
+    return tuple(sorted(entries, key=lambda entry: entry.path))
+
+
+def _declared_cad_python_sources(
+    facts: Mapping[str, Any],
+) -> Mapping[str, Mapping[str, Any]]:
+    """Validate the self-describing Python-source inventory in one handoff."""
+
+    declaration = facts.get("cad_python_sources")
+    if declaration is None:
+        return {}
+    if not isinstance(declaration, Mapping) or set(declaration) != {
+        "schema_version",
+        "kind",
+        "project_path",
+        "files",
+    }:
+        raise ContractError("Factory CAD Python source declaration is malformed")
+    if (
+        declaration.get("schema_version") != 1
+        or declaration.get("kind") != FACTORY_CAD_PYTHON_SOURCES_KIND
+    ):
+        raise ContractError("Factory CAD Python source declaration is malformed")
+    project_path = declaration.get("project_path")
+    if not isinstance(project_path, str):
+        raise ContractError("Factory CAD Python source declaration is malformed")
+    project = PurePosixPath(project_path)
+    if (
+        not project_path
+        or project.is_absolute()
+        or project.as_posix() != project_path
+        or "\\" in project_path
+        or any(part in ("", ".", "..") for part in project.parts)
+    ):
+        raise ContractError("Factory CAD Python source declaration is malformed")
+    files = declaration.get("files")
+    if not isinstance(files, list) or not files:
+        raise ContractError("Factory CAD Python source declaration is malformed")
+    result: Dict[str, Mapping[str, Any]] = {}
+    for item in files:
+        if not isinstance(item, Mapping) or set(item) != {"path", "bytes", "sha256"}:
+            raise ContractError("Factory CAD Python source declaration is malformed")
+        path = item.get("path")
+        byte_count = item.get("bytes")
+        if not isinstance(path, str) or type(byte_count) is not int or byte_count < 0:
+            raise ContractError("Factory CAD Python source declaration is malformed")
+        pure = PurePosixPath(path)
+        relative_parts = pure.parts[len(project.parts) :]
+        if (
+            pure.parts[: len(project.parts)] != project.parts
+            or not relative_parts
+            or pure.suffix.casefold() not in FACTORY_MODEL_GENERATOR_SUFFIXES
+            or FACTORY_CAD_PYTHON_EXCLUDED_DIRECTORIES
+            & {part.casefold() for part in relative_parts}
+            or path in result
+        ):
+            raise ContractError("Factory CAD Python source declaration is malformed")
+        result[path] = {
+            "bytes": byte_count,
+            "sha256": require_sha256(
+                item.get("sha256"), "Factory CAD Python source sha256"
+            ),
+        }
+    if list(result) != sorted(result):
+        raise ContractError("Factory CAD Python source declaration is not canonical")
+    return result
 
 
 def _read_bound_file(root: Path, manifest: ArtifactManifest, path: str) -> bytes:
@@ -924,6 +1029,21 @@ def _assert_factory_handoff(content: bytes) -> None:
                 raise ContractError("Factory handoff primary model is missing") from exc
             if hashlib.sha256(primary_content).hexdigest() != primary_sha256:
                 raise ContractError("Factory handoff primary model hash differs")
+            python_sources = _declared_cad_python_sources(facts)
+            for source_path, binding in python_sources.items():
+                try:
+                    source_content = archive.read(source_path)
+                except KeyError as exc:
+                    raise ContractError(
+                        "Factory handoff CAD Python source is missing: %s" % source_path
+                    ) from exc
+                if (
+                    len(source_content) != binding["bytes"]
+                    or hashlib.sha256(source_content).hexdigest() != binding["sha256"]
+                ):
+                    raise ContractError(
+                        "Factory handoff CAD Python source differs: %s" % source_path
+                    )
             try:
                 release_page_content = archive.read(FACTORY_RELEASE_PAGE_PATH)
                 release_page = validate_release_product(
@@ -964,6 +1084,7 @@ def _assert_factory_handoff(content: bytes) -> None:
                     name,
                     primary_kind=primary_kind,
                     primary_path=primary_path,
+                    python_source_paths=frozenset(python_sources),
                 ):
                     raise ContractError(
                         "Factory model handoff contains non-model output: %s" % name
@@ -1012,6 +1133,8 @@ def _build_model_handoff(
     primary_entry = _manifest_entry(manifest, primary_source)
     if primary_entry is None or primary_entry.sha256 != primary_sha256:
         raise ContractError("Factory primary model is not sealed")
+    cad_python_sources = _cad_python_source_entries(context, manifest)
+    cad_python_source_paths = frozenset(entry.path for entry in cad_python_sources)
 
     # Keep assembled.stl at the root when Make provides it. Factory's importer
     # ranks that conventional name above all part meshes for the product viewer.
@@ -1034,6 +1157,20 @@ def _build_model_handoff(
     }
     transport_facts = dict(facts)
     transport_facts["primary_model"] = primary_model
+    if cad_python_sources:
+        transport_facts["cad_python_sources"] = {
+            "schema_version": 1,
+            "kind": FACTORY_CAD_PYTHON_SOURCES_KIND,
+            "project_path": context.made.cad_project_path,
+            "files": [
+                {
+                    "path": entry.path,
+                    "bytes": entry.bytes,
+                    "sha256": entry.sha256,
+                }
+                for entry in cad_python_sources
+            ],
+        }
     if occurrence is not None:
         occurrences = occurrence["occurrences"]
         transport_facts["factory_assembly"] = {
@@ -1130,6 +1267,7 @@ def _build_model_handoff(
                     entry.path,
                     primary_kind=sealed_primary["kind"],
                     primary_path=primary_source,
+                    python_source_paths=cad_python_source_paths,
                 )
                 or entry.path in skip_paths
             ):

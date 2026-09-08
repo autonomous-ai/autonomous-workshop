@@ -160,15 +160,15 @@ _LIVE_ACTIVE_INTERVAL_SECONDS = 2.0
 _LIVE_RUNNING_INTERVAL_SECONDS = 30.0
 _LIVE_CHURN_ACTIVITY = frozenset(("reasoning", "tool", "subagent"))
 _LIVE_ACTIVITY_MESSAGES = {
-    "starting": "Native Codex: starting the current stage.",
-    "running": "Native Codex: process is still running.",
-    "reasoning": "Native Codex: reasoning about the current stage.",
-    "tool": "Native Codex: using a tool for the current stage.",
-    "subagent": "Native Codex: coordinating a subagent.",
-    "finalizing": "Native Codex: reported progress for the current stage.",
-    "completed": "Native Codex: turn complete; Workshop is verifying it.",
+    "starting": "Native %s: starting the current stage.",
+    "running": "Native %s: process is still running.",
+    "reasoning": "Native %s: reasoning about the current stage.",
+    "tool": "Native %s: using a tool for the current stage.",
+    "subagent": "Native %s: coordinating a subagent.",
+    "finalizing": "Native %s: reported progress for the current stage.",
+    "completed": "Native %s: turn complete; Workshop is verifying it.",
     "failed": (
-        "Native Codex: turn ended; Workshop is checking for a valid stage proposal."
+        "Native %s: turn ended; Workshop is checking for a valid stage proposal."
     ),
 }
 
@@ -176,17 +176,19 @@ _LIVE_ACTIVITY_MESSAGES = {
 class _LiveWishProgress:
     """Render bounded Wish timing and native activity without log churn."""
 
-    def __init__(self, stream: TextIO) -> None:
+    def __init__(self, stream: TextIO, manager_name: str = "Codex") -> None:
         self._stream = stream
+        self._manager_name = manager_name
         self._lock = threading.Lock()
         self._last_non_running: Optional[str] = None
         self._last_active_at: Optional[float] = None
         self._last_running_at: Optional[float] = None
 
     def activity(self, activity: str) -> None:
-        message = _LIVE_ACTIVITY_MESSAGES.get(activity)
-        if message is None:
+        template = _LIVE_ACTIVITY_MESSAGES.get(activity)
+        if template is None:
             return
+        message = template % self._manager_name
         now = time.monotonic()
         with self._lock:
             if activity == "running":
@@ -548,12 +550,12 @@ def _wish(args: argparse.Namespace) -> int:
         context=context,
     )
     progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
     runtime = manager_runtime_selection(
         args.agent,
         model=args.model,
         reasoning_effort=args.effort,
     )
+    live_progress = _LiveWishProgress(progress, runtime.spec.display_name)
     receipt = _start_run(
         wish,
         workflow=workflow,
@@ -691,7 +693,7 @@ def _daydream(args: argparse.Namespace) -> int:
         reasoning_effort=args.effort,
     )
     progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
+    live_progress = _LiveWishProgress(progress, runtime.spec.display_name)
     sealed = _dream_or_load(
         args,
         root=root,
@@ -718,7 +720,7 @@ def _start(args: argparse.Namespace) -> int:
     )
     workflow = workshop_effort(args.workflow)
     progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
+    live_progress = _LiveWishProgress(progress, runtime.spec.display_name)
     once = args.once or args.idea is not None
     if args.max_ideas is not None and args.max_ideas < 1:
         raise WorkshopError("--max-ideas must be at least 1")
@@ -907,9 +909,9 @@ def _status(args: argparse.Namespace) -> int:
 
 def _resume(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
+    live_progress = _LiveWishProgress(progress, "Manager")
     print(
-        "Resuming the exact native Codex session for %s..." % args.product_id,
+        "Resuming the exact native Manager session for %s..." % args.product_id,
         file=progress,
         flush=True,
     )
