@@ -352,3 +352,25 @@ uses pixel centres and may differ from the previous polygon fill. Truly
 coplanar overlapping materials have no unique geometric depth ordering. Frozen
 runs retain their existing renderer and review artifacts; private diagnostic
 models and rendered comparisons stay outside Git.
+
+
+## Explicit STEP validity authority (2026-09-08)
+
+`inspect validate model.step` could execute the neighboring `model.step.py`
+instead of checking the requested file. An open-face STEP passed when a sibling
+generator built a closed box, while the exact same STEP bytes failed without
+that generator. A broken sibling generator could also prevent inspection of a
+valid STEP.
+
+Validity inspection now loads an existing STEP target directly. An explicitly
+named Python generator remains source-driven, and logical entry aliases retain
+their existing generator resolution. Regression coverage includes the
+open-face false pass, a broken sibling source, changed STEP bytes, standalone
+imports and source-only entries. This matches the existing distinction used by
+topology loading and mesh export.
+
+This fixes target selection for validity inspection. It does not repair STEP
+exchange geometry, prove source/export equivalence, or change the verifier's
+choice of source targets. Frozen runs keep their materialized implementation.
+Private product artifacts and experimental construction methods remain outside
+the repository.

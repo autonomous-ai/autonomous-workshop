@@ -177,12 +177,21 @@ def step_path_from_target(target: str) -> Path:
     raise CadRefError(f"STEP file not found for target '{target}'.")
 
 
-def resolve_step_target(target: str) -> ResolvedStepTarget:
+def resolve_step_target(target: str, *, prefer_explicit_step: bool = False) -> ResolvedStepTarget:
     entry_target = entry_target_from_target(target)
     cad_path = entry_target.cad_path
     explicit_python = str(target or "").strip().lower().endswith(".py")
     raw_step_path = _raw_step_path(str(target or "").strip())
     if raw_step_path is not None:
+        if prefer_explicit_step:
+            # File validation must not parse or execute a neighboring generator,
+            # including one that is broken or describes a different shape.
+            return ResolvedStepTarget(
+                cad_path=cad_path,
+                kind="part",
+                source_path=raw_step_path,
+                step_path=raw_step_path,
+            )
         lookup_cad_path = _lookup_cad_path(cad_path)
         source = find_source_by_cad_ref(lookup_cad_path)
         resolved_step_path = source.step_path if source is not None else None

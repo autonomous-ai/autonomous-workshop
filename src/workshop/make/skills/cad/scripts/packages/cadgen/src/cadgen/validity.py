@@ -180,7 +180,7 @@ def inspect_validity(
     from cadgen.step_export_target import _resolve_spec_and_scene
     from cadgen.step_targets import resolve_step_target
 
-    target = resolve_step_target(entry)
+    target = resolve_step_target(entry, prefer_explicit_step=True)
     logger = CliLogger("cad")
     repo_root = Path.cwd()
     source_path = target.source_path if str(target.source_path).endswith(".py") else None
