@@ -211,3 +211,15 @@ duplicated review instructions to Make without changing verifier checks, review
 schemas, frozen early-proof routing, or motion-review requirements. Concept
 image reconstruction and the source branch's verifier simplification are not
 part of this adaptation.
+
+## Local audit dependency transport (2026-09-08)
+
+A preserved Make rejection and a current-code subprocess reproduction show that
+`measure/check_fit.py` can lose the bundled `cadfits` import when final
+verification launches it directly. `verify_project` now supplies its own
+materialized scripts directory before the project and inherited Python paths,
+matching generator access to the immutable helpers. This does not install a
+package, change clearance values, skip an audit, or rewrite older frozen skills.
+Subprocess regressions cover relocated skills, paths with spaces, project and
+inherited dependencies, helper precedence, and invalid-fit failure propagation.
+This is an import-transport correction, not evidence of general Make quality.

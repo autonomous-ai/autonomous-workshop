@@ -883,8 +883,10 @@ def _run_or_stop(runner: Runner, argv: Sequence[str | Path], **kwargs) -> bool:
 
 
 def _audit_env(project: Path) -> dict[str, str]:
+    # Local audits need the same immutable helper modules as generator CLIs.
+    # Resolve from this materialized verifier, never from a developer checkout.
     current_pythonpath = os.environ.get("PYTHONPATH", "")
-    value = str(project)
+    value = os.pathsep.join((str(SCRIPTS_DIR), str(project)))
     if current_pythonpath:
         value += os.pathsep + current_pythonpath
     return {"PYTHONPATH": value}
