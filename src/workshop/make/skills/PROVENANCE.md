@@ -176,3 +176,11 @@ review. The final verifier validates this evidence for coupled mechanisms;
 existing geometry, motion, retention, mesh and thickness gates are unchanged.
 CAD skill instructions now distinguish presentation from physical validation
 and judge exposed mechanisms against the actual Wish. See ADR 0047.
+
+## `make-round`
+
+- Host-owned, not vendored: authored in this repository (ADR 0057) and
+  recorded in `LOCK.json` under this repository's URL so the reviewed-skill
+  lock still covers every tree under `make/skills/`. It sequences the reviewed
+  `cad` and `image-to-cad` tools without changing them; a resync of the
+  upstream skills does not touch it.

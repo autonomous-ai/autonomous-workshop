@@ -148,6 +148,19 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
 
 - Use native file inspection, editing, shell, search, image/render inspection,
   applicable skills, and bounded custom tools for the product work.
+- A Make session's cost is the number of model requests times the context
+  each carries. Run each repair round through the materialized `make-round`
+  skill (`scripts/make_round`) and read its summary, instead of calling
+  export, thickness, render, likeness, and motion tools one by one. Its
+  `SKILL.md` is the tool card: the exact invocations of every cad and
+  image-to-cad gate. Do not `cat`, `rg`, or `sed` through skill scripts to
+  learn their flags, and open a full report only when a summary names a
+  failure you cannot place.
+- View an image at most once per Make round, and only when a decision
+  depends on something a number cannot tell you. Every viewed image stays in
+  the session context for every later request. Likeness scores, motion gate
+  verdicts, and thickness regions are numbers; use them first, and never view
+  the same render twice.
 - Every Wish is open-ended. The one universal toy blueprint supplies baseline
   contract expectations; it does not classify or constrain what can be
   invented. Product-specific methods and extra evidence come from the Wish,

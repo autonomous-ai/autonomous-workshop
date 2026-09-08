@@ -1,0 +1,408 @@
+#!/usr/bin/env python3
+"""One Make iteration as one command: export, wall-check, likeness, motion.
+
+    make_round <project>/cad [--ref LABEL=PATH ...] [--min 0.90] [--nozzle 0.4]
+               [--all-parts] [--no-motion] [--full] [--out DIR] [--json]
+               [--self-check]
+
+Every verdict comes from the original cad and image-to-cad tools, run
+unchanged; this script only sequences them, remembers what changed between
+rounds, and prints a summary short enough to read instead of the logs. It
+never lowers a threshold, never edits source, and writes only under
+``<project>/measure/rounds/``.
+
+Exit 0: every check it ran passed. Exit 1: at least one failed. Exit 2: the
+round could not run.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+STATE_NAME = "make-round-state.json"
+ROUNDS_DIR = "rounds"
+TOOL_TIMEOUT_SECONDS = 900
+FULL_TIMEOUT_SECONDS = 1800
+MAX_TAIL_CHARS = 600
+
+
+# ---------------------------------------------------------------------------
+# locating the sibling skills
+
+
+def skills_root() -> Path | None:
+    """``.agents/skills`` in a run; the installed component roots in a checkout."""
+    here = Path(__file__).resolve()
+    candidate = here.parents[2]
+    if (candidate / "cad" / "scripts").is_dir() and (candidate / "image-to-cad" / "scripts").is_dir():
+        return candidate
+    try:
+        from workshop.runtime.package_data import product_run_domain_skill_roots
+    except Exception:  # noqa: BLE001 - outside a Workshop install there is no fallback
+        return None
+    roots = product_run_domain_skill_roots()
+    if "cad" in roots and "image-to-cad" in roots:
+        return _RootsView(roots)
+    return None
+
+
+class _RootsView:
+    """A mapping of skill name -> root that answers ``root / name`` like a Path."""
+
+    def __init__(self, roots):
+        self._roots = dict(roots)
+
+    def __truediv__(self, name: str) -> Path:
+        return Path(self._roots[name])
+
+
+# ---------------------------------------------------------------------------
+# pure helpers (self-checked without CAD)
+
+
+def parse_thickness(stdout: str) -> dict:
+    """The verdict and the thinnest region from a check_thickness run."""
+    verdict = "PASS"
+    fails = []
+    thinnest = None
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("FAIL"):
+            verdict = "FAIL"
+            fails.append(" ".join(stripped.split()[1:])[:80])
+        match = re.match(r"\d+\.\s+\[[a-z ]+\]\s+([0-9.]+) mm", stripped)
+        if match:
+            value = float(match.group(1))
+            thinnest = value if thinnest is None else min(thinnest, value)
+    if "RESULT: WALL BELOW MINIMUM" in stdout:
+        verdict = "FAIL"
+    return {"verdict": verdict, "thinnest_mm": thinnest, "failures": fails[:4]}
+
+
+def diff_parts(previous: dict, current: dict) -> list[str]:
+    """Roles whose STL bytes changed, or every role when nothing was recorded."""
+    if not previous:
+        return sorted(current)
+    return sorted(role for role, digest in current.items() if previous.get(role) != digest)
+
+
+def parse_refs(values, spec_paths) -> list[tuple[str, str]]:
+    """``LABEL=PATH`` pairs from the command line, else from the spec's ledger."""
+    refs = []
+    for value in values or ():
+        label, _, path = str(value).partition("=")
+        if not label or not path:
+            raise ValueError("--ref must be LABEL=PATH: %r" % (value,))
+        refs.append((label.strip(), path.strip()))
+    if refs:
+        return refs
+    for spec in spec_paths:
+        for line in Path(spec).read_text(encoding="utf-8", errors="replace").splitlines():
+            match = re.match(r"^\s*[-*]?\s*`?([A-Za-z][A-Za-z0-9_-]*)=(ref/[^`\s]+)`?\s*$", line)
+            if match:
+                refs.append((match.group(1), str(Path(spec).parent / match.group(2))))
+    return refs
+
+
+def render_summary(summary: dict) -> str:
+    lines = [
+        "make_round r%04d  %s  changed %d/%d part(s)"
+        % (summary["round"], summary["project"], len(summary["changed"]), len(summary["parts"]))
+    ]
+    for role in summary["checked"]:
+        item = summary["thickness"][role]
+        thin = "" if item["thinnest_mm"] is None else "  thinnest %.2f mm" % item["thinnest_mm"]
+        extra = ("  " + "; ".join(item["failures"])) if item["verdict"] == "FAIL" and item["failures"] else ""
+        lines.append("  wall  %-4s %-28s%s%s" % (item["verdict"], role, thin, extra))
+    unchecked = [r for r in summary["parts"] if r not in summary["checked"]]
+    if unchecked:
+        lines.append("  wall  skip %d unchanged part(s): %s" % (len(unchecked), ", ".join(unchecked[:6]) + (" ..." if len(unchecked) > 6 else "")))
+    for item in summary["likeness"]:
+        if "error" in item:
+            lines.append("  like  FAIL %-10s %s" % (item["label"], item["error"][:70]))
+            continue
+        delta = "" if item.get("delta") is None else "  %+.3f" % item["delta"]
+        lines.append(
+            "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s"
+            % ("ok" if item["ok"] else "FAIL", item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"])
+        )
+    if summary.get("motion") is not None:
+        motion = summary["motion"]
+        lines.append("  move  %-4s %s" % (motion["verdict"].upper()[:4], motion["detail"][:90]))
+    if summary.get("full") is not None:
+        lines.append("  full  %-4s verify_project exit %s  %s" % ("ok" if summary["full"]["ok"] else "FAIL", summary["full"]["returncode"], summary["full"]["tail"][:90]))
+    lines.append("  %s  reports under %s" % ("PASS" if summary["ok"] else "FAIL", summary["out"]))
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# running the tools
+
+
+def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS) -> subprocess.CompletedProcess:
+    started = time.monotonic()
+    try:
+        done = subprocess.run(command, cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        log.write_text("TIMEOUT after %ds\n%s\n%s" % (timeout, exc.stdout or "", exc.stderr or ""), encoding="utf-8")
+        return subprocess.CompletedProcess(command, 124, exc.stdout or "", exc.stderr or "")
+    log.write_text(
+        "$ %s\n(%.1fs, exit %d)\n--- stdout\n%s\n--- stderr\n%s"
+        % (" ".join(str(c) for c in command), time.monotonic() - started, done.returncode, done.stdout, done.stderr),
+        encoding="utf-8",
+    )
+    return done
+
+
+def tail(text: str) -> str:
+    return " ".join((text or "").split())[-MAX_TAIL_CHARS:]
+
+
+def make_round(args) -> int:
+    project = Path(args.project).resolve()
+    if not project.is_dir():
+        print("make_round: not a directory: %s" % project, file=sys.stderr)
+        return 2
+    roots = skills_root()
+    if roots is None:
+        print("make_round: cannot locate the cad and image-to-cad skills", file=sys.stderr)
+        return 2
+    cad = roots / "cad" / "scripts"
+    i2c = roots / "image-to-cad" / "scripts"
+    python = sys.executable
+    generators = sorted(project.glob("*.step.py"))
+    parts = [g for g in generators if g.name.startswith("part_")]
+    entries = [g for g in generators if not g.name.startswith("part_")]
+    if args.entry:
+        entry = project / args.entry
+    elif len(entries) == 1:
+        entry = entries[0]
+    else:
+        print("make_round: expected exactly one entry *.step.py (found %d); pass --entry" % len(entries), file=sys.stderr)
+        return 2
+    measure = project / "measure"
+    measure.mkdir(exist_ok=True)
+    state_path = measure / STATE_NAME
+    state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
+    round_index = int(state.get("round", 0)) + 1
+    out = Path(args.out) if args.out else measure / ROUNDS_DIR / ("r%04d" % round_index)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "parts").mkdir(exist_ok=True)
+
+    # 1. export every part once; hash the bytes so the next round knows what moved.
+    digests: dict[str, str] = {}
+    export_failures: dict[str, str] = {}
+    for part in parts:
+        role = part.name[len("part_"):-len(".step.py")]
+        stl = out / "parts" / (role + ".stl")
+        done = run([python, str(cad / "export"), str(part), "--stl", str(stl), "--json"], cwd=project, log=out / ("export-%s.log" % role))
+        if done.returncode != 0 or not stl.is_file():
+            export_failures[role] = tail(done.stderr or done.stdout)
+            continue
+        digests[role] = hashlib.sha256(stl.read_bytes()).hexdigest()
+    changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
+
+    # 2. wall check what changed.
+    thickness: dict[str, dict] = {}
+    for role in changed:
+        stl = out / "parts" / (role + ".stl")
+        done = run(
+            [python, str(cad / "check_thickness"), str(stl), "--nozzle", str(args.nozzle), "--report", str(out / ("thickness-%s.md" % role))],
+            cwd=project,
+            log=out / ("thickness-%s.log" % role),
+        )
+        parsed = parse_thickness(done.stdout)
+        if done.returncode not in (0, 1):
+            parsed = {"verdict": "FAIL", "thinnest_mm": None, "failures": ["check_thickness exit %d: %s" % (done.returncode, tail(done.stderr)[:60])]}
+        thickness[role] = parsed
+    for role, why in export_failures.items():
+        thickness[role] = {"verdict": "FAIL", "thinnest_mm": None, "failures": ["export failed: " + why[:70]]}
+        if role not in changed:
+            changed.append(role)
+
+    # 3. likeness per reference, replaying the previous pose when one exists.
+    refs = parse_refs(args.refs, sorted(project.glob("*_spec.md")))
+    likeness = []
+    previous_poses = state.get("poses_path")
+    for label, ref in refs:
+        ref_path = Path(ref) if Path(ref).is_absolute() else (project / ref)
+        if not ref_path.is_file():
+            likeness.append({"label": label, "error": "reference missing: %s" % ref})
+            continue
+        view_dir = out / "likeness"
+        command = [python, str(i2c / "render_views.py"), str(entry), "--match", str(ref_path), "--label", label, "--min", str(args.min), "-o", str(view_dir), "--shaded", "--json"]
+        if previous_poses and Path(previous_poses).is_file():
+            command += ["--poses-from", str(previous_poses)]
+        done = run(command, cwd=project, log=out / ("likeness-%s.log" % label))
+        result = None
+        for line in reversed(done.stdout.splitlines()):
+            if line.startswith("{"):
+                try:
+                    payload = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                for item in payload.get("results", []):
+                    if item.get("label") == label:
+                        result = item
+                break
+        if result is None:
+            likeness.append({"label": label, "error": "render_views exit %d: %s" % (done.returncode, tail(done.stderr or done.stdout)[:80])})
+            continue
+        prior = (state.get("likeness") or {}).get(label)
+        likeness.append(
+            {
+                "label": label,
+                "iou": float(result["iou"]),
+                "ok": bool(result.get("ok", float(result["iou"]) >= args.min)),
+                "delta": None if prior is None else round(float(result["iou"]) - float(prior), 4),
+                "az": float(result.get("az", 0.0)),
+                "el": float(result.get("el", 0.0)),
+                "fov": result.get("fov", 0),
+            }
+        )
+    poses_path = out / "likeness" / "poses.json"
+
+    # 4. motion gate when the project declares a manifest.
+    motion = None
+    manifest = measure / "motion.json"
+    if manifest.is_file() and not args.no_motion:
+        done = run([python, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"], cwd=project, log=out / "motion.log")
+        verdict, detail = "fail", tail(done.stderr or done.stdout)[:120]
+        for line in reversed(done.stdout.splitlines()):
+            if line.startswith("{") or line.startswith("["):
+                try:
+                    payload = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                records = payload if isinstance(payload, list) else payload.get("results") or payload.get("conditions") or [payload]
+                statuses = [str(r.get("status", "")) for r in records if isinstance(r, dict)]
+                if statuses:
+                    verdict = "fail" if "fail" in statuses else ("inconclusive" if "inconclusive" in statuses else "pass")
+                    detail = "%d condition(s): %s" % (len(statuses), ", ".join("%s=%s" % (r.get("id", "?"), r.get("status")) for r in records[:6] if isinstance(r, dict)))
+                break
+        else:
+            verdict = "pass" if done.returncode == 0 else "fail"
+        motion = {"verdict": verdict, "detail": detail, "returncode": done.returncode}
+
+    # 5. optional integrated verifier, once.
+    full = None
+    if args.full:
+        command = [python, str(cad / "verify_project"), str(project), "--fresh", "--exports", "--strict-fit", "--report", str(out / "verify.md")]
+        if refs:
+            command.append("--image-derived")
+            for label, ref in refs:
+                command += ["--likeness-ref", "%s=%s" % (label, ref)]
+        done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
+        full = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)[-200:]}
+
+    ok = (
+        all(item["verdict"] == "PASS" for item in thickness.values())
+        and all(item.get("ok") for item in likeness)
+        and (motion is None or motion["verdict"] == "pass")
+        and (full is None or full["ok"])
+    )
+    summary = {
+        "round": round_index,
+        "project": str(project),
+        "entry": entry.name,
+        "parts": sorted(digests),
+        "changed": changed,
+        "checked": sorted(thickness),
+        "thickness": thickness,
+        "likeness": likeness,
+        "min": args.min,
+        "motion": motion,
+        "full": full,
+        "ok": ok,
+        "out": str(out),
+    }
+    (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    state = {
+        "round": round_index,
+        "parts": digests,
+        "likeness": {item["label"]: item["iou"] for item in likeness if "iou" in item},
+        "poses_path": str(poses_path) if poses_path.is_file() else previous_poses,
+        "last_out": str(out),
+    }
+    state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
+    return 0 if ok else 1
+
+
+# ---------------------------------------------------------------------------
+# self-check: the pure parts, without CAD
+
+
+def self_check() -> int:
+    ok = True
+
+    def check(hit, text):
+        nonlocal ok
+        print(("ok   " if hit else "FAIL ") + text)
+        ok &= hit
+
+    parsed = parse_thickness(
+        "check_thickness part.stl\n  PASS  bed fit\n  FAIL  wall >= 0.80 mm (grid +/-0.10)  841 thin samples\n"
+        "        every thin region, worst first -- repair them in one round\n        1. [wall ] 0.67 mm at (1, 2, 3)\n        2. [wall ] 0.72 mm at (4, 5, 6)\nRESULT: WALL BELOW MINIMUM\n"
+    )
+    check(parsed["verdict"] == "FAIL" and parsed["thinnest_mm"] == 0.67 and len(parsed["failures"]) == 1, "a failing wall report yields FAIL and the thinnest region")
+    parsed = parse_thickness("  PASS  wall >= 0.80 mm\nRESULT: printable at this wall\n")
+    check(parsed["verdict"] == "PASS" and parsed["thinnest_mm"] is None, "a passing wall report yields PASS")
+    check(diff_parts({}, {"a": "1", "b": "2"}) == ["a", "b"], "the first round checks every part")
+    check(diff_parts({"a": "1", "b": "2"}, {"a": "1", "b": "3", "c": "4"}) == ["b", "c"], "later rounds check only changed or new parts")
+    check(parse_refs(["hero=ref/hero.png", "side=/abs/side.png"], []) == [("hero", "ref/hero.png"), ("side", "/abs/side.png")], "--ref pairs parse")
+    with tempfile.TemporaryDirectory() as tmp:
+        spec = Path(tmp) / "duck_spec.md"
+        spec.write_text("# spec\n- `hero=ref/hero.png`\nfront=ref/front.png\nnot a ref line\n", encoding="utf-8")
+        refs = parse_refs([], [spec])
+        check([r[0] for r in refs] == ["hero", "front"] and refs[0][1].endswith("ref/hero.png"), "the spec ledger supplies references when --ref is absent")
+    try:
+        parse_refs(["nolabel"], [])
+        check(False, "a malformed --ref is refused")
+    except ValueError:
+        check(True, "a malformed --ref is refused")
+    summary = {
+        "round": 3, "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
+        "thickness": {"frame": {"verdict": "FAIL", "thinnest_mm": 0.67, "failures": ["wall >= 0.80 mm"]}},
+        "likeness": [{"label": "hero", "iou": 0.901, "ok": True, "delta": 0.023, "az": -90.0, "el": -16.9, "fov": 0}],
+        "min": 0.9, "motion": {"verdict": "pass", "detail": "47 conditions"}, "full": None, "ok": False, "out": "/p/cad/measure/rounds/r0003",
+    }
+    text = render_summary(summary)
+    check("wall  FAIL frame" in text and "IoU 0.901 vs 0.90  +0.023" in text and "skip 2 unchanged" in text and text.splitlines()[-1].startswith("  FAIL"), "the summary names the changed part, the score delta, and the verdict")
+    check(len(text.splitlines()) <= 8, "the summary stays short")
+    print("\nall fixtures pass" if ok else "\nself-check FAILED")
+    return 0 if ok else 1
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("project", nargs="?", help="the cad directory holding *.step.py sources")
+    parser.add_argument("--entry", help="entry generator name when more than one non-part *.step.py exists")
+    parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH", help="reference view; repeatable; default from the spec ledger")
+    parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
+    parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle for check_thickness (default 0.4)")
+    parser.add_argument("--all-parts", action="store_true", help="wall-check every part, not only the changed ones")
+    parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
+    parser.add_argument("--full", action="store_true", help="also run verify_project --fresh --exports --strict-fit once")
+    parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
+    parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
+    parser.add_argument("--self-check", action="store_true")
+    args = parser.parse_args(argv)
+    if args.self_check:
+        return self_check()
+    if not args.project:
+        parser.error("project is required")
+    return make_round(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
