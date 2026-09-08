@@ -127,38 +127,38 @@ def build_assembly(entry: Path):
 
 
 def index_parts(shape) -> dict[str, object]:
-    """Map every labelled leaf to its shape, in assembly pose.
+    """Index placed nodes and leaves using their exact assembly ancestry.
 
-    These are placed instances, not canonical parts: a part_*.step.py returns
-    print pose, which is the wrong frame for asking whether two things collide
-    on the way together. Nested labels are also reachable by their dotted path,
-    so a repeated label stays addressable.
+    The private leaf/key metadata lets motion presentation reuse the same
+    placed occurrences and resolve a moving group without moving a leaf twice.
     """
     from build123d import Location
 
-    found: dict[str, list[object]] = {}
+    found: dict[str, list[tuple[tuple[int, ...], object]]] = {}
+    leaves = []
 
-    def walk(node, trail: list[str], parent_pose) -> None:
+    def walk(node, trail, parent_pose, key=(), inherited_colour=None):
         label = getattr(node, "label", "") or ""
         path = trail + ([label] if label else [])
-        # Tree locations are relative to their parent, including the root.
         pose = parent_pose * node.location
         placed = node.located(pose)
-        if label and trail:
-            # Sub-assemblies are addressable too. A Compound's solids() reaches
-            # its descendants, so a whole fuselage section moves as one body --
-            # which is the granularity a motion check usually wants, well above
-            # the individual windows and doors underneath it.
-            found.setdefault(label, []).append(placed)
-            found.setdefault(".".join(path), []).append(placed)
-        for child in list(getattr(node, "children", []) or []):
-            walk(child, path, pose)
+        colour = getattr(node, "color", None)
+        if colour is None:
+            colour = inherited_colour
+        if label and key:
+            for alias in dict.fromkeys((label, ".".join(path))):
+                found.setdefault(alias, []).append((key, placed))
+        children = list(getattr(node, "children", []) or [])
+        if not children:
+            leaves.append((key, placed, colour))
+        for index, child in enumerate(children):
+            walk(child, path, pose, (*key, index), colour)
 
     walk(shape, [], Location())
-    parts = {name: shapes[0] for name, shapes in found.items() if len(shapes) == 1}
-    parts["__ambiguous__"] = sorted(name for name, shapes in found.items() if len(shapes) > 1)
-    # The assembly's own children, kept apart from the nested labels underneath
-    # them: a cycle sweep has to account for these, and only these.
+    parts = {name: nodes[0][1] for name, nodes in found.items() if len(nodes) == 1}
+    parts["__node_keys__"] = {name: nodes[0][0] for name, nodes in found.items() if len(nodes) == 1}
+    parts["__leaf_nodes__"] = leaves
+    parts["__ambiguous__"] = sorted(name for name, nodes in found.items() if len(nodes) > 1)
     parts["__toplevel__"] = [label for label in
                              (getattr(child, "label", "") for child in
                               list(getattr(shape, "children", []) or []))

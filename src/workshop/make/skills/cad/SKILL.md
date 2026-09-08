@@ -249,6 +249,7 @@ Load these files only when their trigger applies:
 - `references/project-structure.md` — how many printed parts a design should have, and how to split the model across files once it outgrows one: project layout, entry/library filename rules, import resolution, companion files, and the editing rules for parameters, features, parts, and assemblies.
 - `references/inspection-and-validation.md` — validation sequence, selector refs, facts, planes, measurements, alignment, diff, frame, and validation reporting.
 - `references/image-derived-verification.md` — spec/source reconciliation, landmark audits, source-vs-STEP renders, reference-pose matching, and the integrated final gate. **Load for every project built from photographs or illustrations.**
+- `references/motion-presentation.md` — construct and reconcile operating animations from the same declared poses used by `check_motion`; load for coupled mechanisms.
 - `references/motion-manifests.md` — motion-manifest schema, the `expect: blocked` capture form, assembly sequences, and what a rigid-body sweep cannot answer.
 - `references/positioning.md` — part-local datums and origins, assembly transforms, build123d joints, CLI alignment validation, and positioning reports.
 - `references/parameters.md` — parameterizing a STEP model: source parameters, naming, defaults and bounds, deriving the second half of a mate with `scripts/cadfits.py`, and how a parameter change is confirmed.

@@ -920,9 +920,13 @@ or invalid state fails closed. Status exposes `budget` with scope
 charged to this native allowance. Token telemetry remains separate and may be
 partial. See [ADR 0047](adr/0047-motion-review-and-persistent-native-budget.md).
 
-New Make instructions also use exact-state animation for coupled mechanisms,
-with independent `MOTION-REVIEW.json` and source/state/animation hash binding.
-Still images judge appearance; mechanical gates retain their separate role.
+New Make instructions construct coupled-motion animation with the same
+source assembly, occurrence index and pose table used by `check_motion`.
+Schema-v2 evidence records the selected samples and camera; validation rebuilds
+the state meshes and GIF after the independent `MOTION-REVIEW.json` is checked.
+Rehashed files must still match the declared poses. Still images judge
+appearance; mechanical gates retain their separate role. See
+[ADR 0051](adr/0051-reconcile-declared-motion-states.md).
 Spark may revise unsealed styling decisions with recorded provenance, without
 discarding the Wish's required function or constraints. Frozen older runs do
 not gain either review behavior on resume.

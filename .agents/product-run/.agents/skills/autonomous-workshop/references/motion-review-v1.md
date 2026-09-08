@@ -12,19 +12,24 @@ For an operating mechanism declare its complete cycle as
 and driven outputs. Assembly-only paths keep their existing checks and need
 no operating animation. Do not omit the coupled cycle to avoid this contract.
 
-Export 8–48 ordered state STLs from the same final CAD source and kinematics
-used by the motion conditions. Keep one common world frame. Render once:
+Use the bundled constructor to export 8–48 ordered state STLs directly from
+the assembly and the same pose table used by the motion checker:
 
 ```bash
-"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/motion_presentation.py <cad-project> \
-  --state-stl measure/states/00.stl --state-stl measure/states/01.stl ...
+"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/motion_presentation.py <cad-project> --view iso
 ```
 
-Paths are relative to the CAD project; repeat the option for every state.
-The tool writes `snap/motion.gif` at a fixed camera and common scale, plus
-`snap/MOTION-EVIDENCE.json` binding the exact sources, states, motion manifest
-and animation. Write all source helpers before rendering; source changes
-invalidate it. Do not manually animate disconnected decorative parts.
+Read the CAD skill's `references/motion-presentation.md` for selecting exact
+indices with `--samples` and choosing a useful viewing direction. Every coupled
+condition is included. Do not author a second set of angle or translation
+functions for the animation.
+
+The tool writes `snap/motion.gif` with common framing and occurrence colors,
+plus schema-v2 `snap/MOTION-EVIDENCE.json`. It binds source, manifest, camera,
+condition/sample identities and states. Final validation reconstructs the
+states and movie, so hashing unrelated or incorrectly posed files cannot make
+them conform. Write all source helpers before rendering; source changes
+invalidate the evidence.
 
 The same independent critic inspects the actual GIF (or its ordered decoded
 frames if its image tool cannot play GIFs), alongside the hero and signature

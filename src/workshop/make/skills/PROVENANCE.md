@@ -374,3 +374,9 @@ exchange geometry, prove source/export equivalence, or change the verifier's
 choice of source targets. Frozen runs keep their materialized implementation.
 Private product artifacts and experimental construction methods remain outside
 the repository.
+
+- Workshop's 2026-09-09 motion-evidence correction adds `motion_states.py`,
+  shares `check_motion` occurrence identities and poses with presentation,
+  preserves occurrence colors at fixed framing, and replaces hash-only
+  animation provenance with schema-v2 reconstruction. The older frozen tools
+  are unchanged. ADR 0051 records the implementation and validation limits.

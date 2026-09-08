@@ -195,11 +195,14 @@ def _shade(colour, normal, light, toward_viewer):
     return tuple(min(255, max(0, round(channel * brightness))) for channel in colour)
 
 
-def render(occurrences, azimuth: float, elevation: float, size: int, pad: float):
+def render(occurrences, azimuth: float, elevation: float, size: int, pad: float, *, framing=None):
     toward_viewer, right, up = camera_basis(azimuth, elevation)
     light = np.array([0.35, -0.45, 0.82], dtype=float)
     light /= np.linalg.norm(light)
-    all_points = np.concatenate([points for points, _faces, _colour in occurrences])
+    all_points = (np.concatenate([points for points, _faces, _colour in occurrences])
+                  if framing is None else np.asarray(framing, dtype=float))
+    if all_points.ndim != 2 or all_points.shape[1] != 3 or not len(all_points) or not np.isfinite(all_points).all():
+        raise ValueError("framing must contain finite 3D points")
     sx = all_points @ right
     sy = all_points @ up
     width = float(sx.max() - sx.min())
