@@ -168,6 +168,18 @@ rejects visually indistinguishable frames, while the older motion sheet remains
 truthfully documented as viewpoint presentation of one unchanged mesh. This
 closes the production gap where repeated camera angles were mistaken for
 evidence of a toy's promised transformation.
+# Local image-to-cad adaptations after the 2026-09-03 resync
+
+- 2026-09-07 (ADR 0056): `measure_image.py` and `check_likeness.py` read a
+  cut-out reference's silhouette from its alpha channel instead of the colour
+  the encoder left under transparent pixels.
+- 2026-09-08 (ADR 0059): `measure_image.py`'s mask, and through it the gate,
+  admit a pale tinted subject on a white ground by CIELAB a*b* distance, so
+  a cream print on a white sweep keeps its lit head and torso while neutral
+  shadows and background-coloured apertures stay out; `likeness-gate.md`
+  documents both. The lock records the adapted tree's digest under the
+  upstream commit it was adapted from.
+
 # Local motion-presentation extension (2026-09-07)
 
 Workshop adds `cad/scripts/motion_presentation.py` and common-frame rendering

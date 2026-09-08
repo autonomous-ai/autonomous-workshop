@@ -132,8 +132,8 @@ def render_summary(summary: dict) -> str:
             continue
         delta = "" if item.get("delta") is None else "  %+.3f" % item["delta"]
         lines.append(
-            "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s"
-            % ("ok" if item["ok"] else "FAIL", item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"])
+            "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s%s"
+            % ("ok" if item["ok"] else "FAIL", item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"], "  (re-searched)" if item.get("searched") else "")
         )
     if summary.get("motion") is not None:
         motion = summary["motion"]
@@ -186,6 +186,28 @@ def parse_render_views(stdout: str, label: str):
                 return item
         return None
     return None
+
+
+SEARCH_HALF_WINDOW_DEG = 30.0
+SEARCH_STEP_DEG = 10.0
+SEARCH_REFINE_ROUNDS = 2
+
+
+def search_window(az: float, el: float) -> list[str]:
+    """render_views arguments for a bounded pose search around one camera.
+
+    A +/-30 degree window at 10 degree steps is 49 coarse poses plus two
+    halving rounds, a fifth of the full grid; elevation is clamped to the
+    renderer's range so a low camera never asks for -95.
+    """
+
+    lo_el = max(-90.0, el - SEARCH_HALF_WINDOW_DEG)
+    hi_el = min(90.0, el + SEARCH_HALF_WINDOW_DEG)
+    return [
+        "--search-az=%g,%g,%g" % (az - SEARCH_HALF_WINDOW_DEG, az + SEARCH_HALF_WINDOW_DEG, SEARCH_STEP_DEG),
+        "--search-el=%g,%g,%g" % (lo_el, hi_el, SEARCH_STEP_DEG),
+        "--refine", str(SEARCH_REFINE_ROUNDS),
+    ]
 
 
 def tail(text: str) -> str:
@@ -269,6 +291,18 @@ def make_round(args) -> int:
             command += ["--poses-from", str(previous_poses)]
         done = run(command, cwd=project, log=out / ("likeness-%s.log" % label))
         result = parse_render_views(done.stdout, label)
+        searched = False
+        if result is not None and "--poses-from" in command and float(result["iou"]) < args.min:
+            # Replay scores the OLD camera. A part that moved (a neck that now
+            # leans, a head that turned) can only lose under it, and the loop
+            # then sees a wall that is the camera's, not the shape's (goose,
+            # 2026-09-08: replay 0.49, fresh search 0.75). When the replay is
+            # under the floor, search a window around it and keep the better.
+            window = search_window(float(result.get("az", 0.0)), float(result.get("el", 0.0)))
+            again = run(command[: command.index("--poses-from")] + window, cwd=project, log=out / ("likeness-%s-search.log" % label))
+            better = parse_render_views(again.stdout, label)
+            if better is not None and float(better["iou"]) > float(result["iou"]):
+                result, searched = better, True
         if result is None:
             likeness.append({"label": label, "error": "render_views exit %d: %s" % (done.returncode, tail(done.stderr or done.stdout)[:80])})
             continue
@@ -282,6 +316,7 @@ def make_round(args) -> int:
                 "az": float(result.get("az", 0.0)),
                 "el": float(result.get("el", 0.0)),
                 "fov": result.get("fov", 0),
+                "searched": searched,
             }
         )
     poses_path = out / "likeness" / "poses.json"
@@ -385,6 +420,8 @@ def self_check() -> int:
     check(parse_render_views(pretty, "side") is None, "a label the render did not score yields nothing")
     check(parse_render_views('{"results": [{"label": "hero", "iou": 0.5}]}\n', "hero")["iou"] == 0.5, "the one-line results shape still parses")
     check(parse_render_views("Traceback (most recent call last):\n  boom\n", "hero") is None, "a crash yields nothing")
+    window = search_window(-118.125, -75.0)
+    check(window[0] == "--search-az=-148.125,-88.125,10" and window[1] == "--search-el=-90,-45,10" and window[-2:] == ["--refine", "2"], "the search window brackets the replayed camera and clamps elevation")
     with tempfile.TemporaryDirectory() as tmp:
         spec = Path(tmp) / "duck_spec.md"
         spec.write_text("# spec\n- `hero=ref/hero.png`\nfront=ref/front.png\nnot a ref line\n", encoding="utf-8")
