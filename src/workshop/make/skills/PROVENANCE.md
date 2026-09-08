@@ -380,3 +380,33 @@ the repository.
   preserves occurrence colors at fixed framing, and replaces hash-only
   animation provenance with schema-v2 reconstruction. The older frozen tools
   are unchanged. ADR 0051 records the implementation and validation limits.
+
+
+## Motion measurement consistency (2026-09-09)
+
+`check_motion` could turn a Boolean exception or a nonfinite volume into a clear
+path. A successful but empty intersection could also contradict the operands'
+union. Separately, two coincident solid children counted twice and could change
+a threshold-sensitive retention result.
+
+The checker now requires finite nonnegative solid volumes, completed non-null
+Boolean operations and valid result geometry. Each grouped operand is measured
+as a material union. Intersection volume must agree with operand volumes minus
+union volume within a fixed 0.000001 cubic millimetre consistency tolerance;
+manifest collision thresholds are unchanged. Failed or inconsistent
+measurements become inconclusive under the existing default nonzero exit rule.
+
+A bounded cache avoids repeating ordinary validity checks for identical
+complete topology and orientation during one immutable condition. Positive
+unit-scale placements may change. Hash matches require exact topology identity;
+new topology and evicted entries are validated. Nested sequences share the
+condition scope, which is discarded on return or exception. The cache holds at
+most 256 entries and Boolean operations preserve their input geometry.
+
+Regression tests cover real overlap, contact and separation, duplicated or
+overlapping groups, invalid and unavailable operations, nonfinite values,
+clearance and retention expectations, default CLI failure, nested geometry,
+rigid placement, orientation, hash collisions, scope cleanup and eviction.
+Common and Fuse use the same kernel; their agreement is a consistency check,
+not independent geometric certification or physical validation. Frozen runs
+retain their materialized tools. Private replay artifacts remain outside Git.

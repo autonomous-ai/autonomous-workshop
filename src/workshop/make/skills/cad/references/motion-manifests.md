@@ -23,6 +23,15 @@ on any condition that could not run — a manifest naming a part that does not
 exist is a broken check, not a clear path. `--allow-inconclusive` relaxes that
 for the genuinely unmeasurable, and still prints what it skipped.
 
+A Boolean failure, missing solid, invalid result or nonfinite measurement is
+**inconclusive**, not a clear path or a retention proof. The checker measures
+material unions for grouped parts, so overlapping children are counted once,
+and compares intersection volume with the volume implied by the union. A
+mismatch also makes the condition inconclusive. These operations share the
+same CAD kernel; agreement does not certify arbitrary geometry or the motion
+between samples. The default exit status remains nonzero for inconclusive
+conditions.
+
 Run `python "$CAD_SKILL_ROOT/scripts/check_motion" --self-check` after changing
 this gate. Its regression fixture includes a shaft apparently held by a gate
 which can itself leave; that manifest must fail until the gate and its key both
