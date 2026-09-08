@@ -15,6 +15,7 @@ import stat
 import uuid
 
 from workshop.errors import ContractError
+from workshop.runtime._compacted_usage import InvalidRecord, consume_compacted_record
 
 MAX_LINE_BYTES = 4 * 1024 * 1024
 MAX_ROLLOUT_BYTES = 128 * 1024 * 1024
@@ -55,7 +56,19 @@ def _records(path):
                     raise UsageUnavailable("native usage file shrank during read")
                 remaining -= len(line)
                 if len(line) > MAX_LINE_BYTES:
-                    raise UsageUnavailable("native usage record exceeds safe bounds")
+                    # Native compaction can copy a large history into one line.
+                    # Validate its framing without retaining that history or
+                    # counting embedded old notifications as new consumption.
+                    try:
+                        value, remaining = consume_compacted_record(
+                            line, stream, remaining
+                        )
+                    except InvalidRecord as exc:
+                        raise UsageUnavailable(str(exc)) from exc
+                    if value is None:
+                        break
+                    yield value
+                    continue
                 if not line.endswith(b"\n"):
                     if remaining == 0:
                         break

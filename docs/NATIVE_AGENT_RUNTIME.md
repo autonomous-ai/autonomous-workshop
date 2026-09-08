@@ -898,7 +898,10 @@ New Codex runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
 resumes. Cached input is included once; reasoning is already part of output.
 The host persists completed-request usage from a version-pinned Codex 0.153.4
 rollout adapter. Missing/regressing accounting fails closed after a bounded
-initial reporting grace. In-flight requests may overshoot the observed cap.
+initial reporting grace. Oversized native compaction records are validated
+in bounded chunks without retaining their history or recounting embedded usage.
+Other record and file bounds remain; malformed or ambiguous accounting still
+stops the run. In-flight requests may overshoot the observed cap.
 `resume --max-tokens N` changes the total cap without resetting consumption.
 Normal twenty-minute splits and aggregate time/turn allowances are superseded;
 a one-hour emergency launch watchdog remains. Daydream is outside each product

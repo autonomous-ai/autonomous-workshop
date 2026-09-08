@@ -203,3 +203,59 @@ def test_new_default_does_not_change_persisted_run_limits(tmp_path, saved_limit)
     restored = _load_lifetime_budget(paths, checkpoint)
     assert restored.limit == saved_limit
     assert restored.to_dict()["used_tokens"] == 220
+
+
+def test_large_compaction_preserves_ledger_and_token_cap(tmp_path):
+    from workshop.runtime.codex_usage import MAX_LINE_BYTES
+
+    paths, checkpoint = context(tmp_path / "state")
+    paths.host_state.mkdir()
+    sessions = tmp_path / "sessions"
+    events = records() + [usage(500)]
+    write(sessions, events)
+    budget = ProductTokenBudget(1000)
+
+    def read_usage(*_):
+        return read_product_usage(sessions, thread_id=ROOT, workspace=Path("/toy"))
+
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", side_effect=read_usage):
+        callback = _product_token_observer(paths, checkpoint, budget)
+        callback()
+        assert budget.to_dict()["used_tokens"] == 550
+        events += [{"type": "compacted", "message": "x" * (MAX_LINE_BYTES + 1),
+                    "replacement_history": [usage(999900)]}, usage(800)]
+        write(sessions, events)
+        callback()
+        loaded = _load_lifetime_budget(paths, checkpoint)
+        assert loaded.to_dict()["used_tokens"] == 880
+        assert not (paths.host_state / "token-budget-stop.json").exists()
+
+        callback = _product_token_observer(paths, checkpoint, loaded)
+        write(sessions, events + [usage(1000)])
+        with pytest.raises(ContractError, match="limit reached"):
+            callback()
+        assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 1100
+
+
+def test_malformed_large_compaction_still_stops_host(tmp_path):
+    from workshop.runtime.codex_usage import MAX_LINE_BYTES
+
+    paths, checkpoint = context(tmp_path / "state")
+    paths.host_state.mkdir()
+    sessions = tmp_path / "sessions"
+    path = write(sessions, records() + [usage(500)])
+    budget = ProductTokenBudget(1000)
+
+    def read_usage(*_):
+        return read_product_usage(sessions, thread_id=ROOT, workspace=Path("/toy"))
+
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", side_effect=read_usage):
+        callback = _product_token_observer(paths, checkpoint, budget)
+        callback()
+        with path.open("ab") as stream:
+            stream.write(b'{"type":"compacted","message":"' + b'x' * (MAX_LINE_BYTES + 1)
+                         + b'","type":"compacted"}\n')
+        with pytest.raises(UsageUnavailable):
+            callback()
+        assert (paths.host_state / "token-budget-stop.json").is_file()
+        assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 550

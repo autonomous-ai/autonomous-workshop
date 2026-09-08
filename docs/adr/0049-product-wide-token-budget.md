@@ -99,3 +99,25 @@ and completed verified public readback on 2026-09-07. No additional native
 turn was needed for publication. The sanitized archive is
 `toys/leo-crosscurrent/`; credentials and raw run state remain private. Its
 rules simulations do not constitute physical testing or proof of family fun.
+
+## Large native compaction records (2026-09-08)
+
+The normal 4 MiB record bound also rejected a valid native `compacted` record
+that copied a large history. The host then stopped on lost accounting while
+still below the token allowance. The adapter now validates oversized compaction
+records in bounded chunks and retains only their type marker. Embedded historic
+token notifications are not new consumption. Subsequent top-level usage records
+remain subject to the existing counter, ancestry and task-boundary checks.
+
+The 128 MiB file bound and 4 MiB bound for other record types remain. The streaming
+validator rejects malformed JSON, duplicate keys and unsupported record kinds,
+and bounds nesting to 64, keys per object to 4096, encoded key size to 4096 bytes,
+and numeric/retained type atoms to 128 bytes. A trailing partial append whose type
+is already known to be `compacted` preserves only earlier completed usage. These bounds keep unexpected formats
+fail-closed; they are not a claim of arbitrary-length session support.
+
+Synthetic tests cover large root and descendant compactions, duplicated historic
+usage, partial appends, corrupt records, persistent budget reload and unchanged
+cap enforcement. Private retained telemetry was recovered through the new reader
+without changing its aggregate counters. The failed native attempt is preserved;
+this recovery does not establish product completion or repair quality.
