@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0012/parts/body.stl --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0012/thickness-body.md
+(6.1s, exit 0)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0012/parts/body.stl: 116.63 cm3 solid, grid 0.410 mm (129x195x444), 355076 surface samples, grid resolved to 0.205 mm, exact where under the minimum
+  PASS  wall >= 0.80 mm (grid +/-0.20, exact where under) 0.0% of surface below (68 of 355076 samples); thinnest 0.44 mm at (35.7, 35.3, 179.4) in 10 region(s); no region is a wall, 10 taper(s) at feature edges (0.02% of surface, budget 2%); 93 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 3.28 mm, p95 30.51 mm, max 125.52 mm
+  WARN  hollowable at 1.20 mm wall     43.34 of 116.63 cm3 (37%) in 2 pocket(s)
+  PASS  filament that would save       6.50 cm3, 8.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.53 mm at (21.7, -9.2, 0.4)     18 samples, 3.5 mm2, runs 13.3 mm, band 0.26 mm
+        2. [taper] 0.53 mm at (21.7, -22.9, 0.4)     16 samples, 3.1 mm2, runs 9.2 mm, band 0.34 mm
+        3. [taper] 0.59 mm at (21.8, 21.3, 0.4)      7 samples, 1.4 mm2, runs 4.9 mm, band 0.28 mm
+        4. [taper] 0.58 mm at (21.8, -3.9, 0.4)      6 samples, 1.2 mm2, runs 1.8 mm, band 0.64 mm
+        5. [taper] 0.55 mm at (21.7, 4.5, 0.4)      6 samples, 1.2 mm2, runs 2.7 mm, band 0.43 mm
+        6. [taper] 0.53 mm at (21.7, -36.0, 0.4)      5 samples, 1.0 mm2, runs 1.4 mm, band 0.69 mm
+        ... and 4 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0012/thickness-body.md
+
+--- stderr

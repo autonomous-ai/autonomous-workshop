@@ -1,0 +1,6 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/part_rear_wheelset.step.py --stl <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0010/parts/rear_wheelset.stl --json
+(6.3s, exit 0)
+--- stdout
+{"ok":true,"files":[{"format":"stl","path":"<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0010/parts/rear_wheelset.stl"}]}
+
+--- stderr

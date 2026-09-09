@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0001/parts/body.stl --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0001/thickness-body.md
+(7.3s, exit 1)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0001/parts/body.stl: 80.03 cm3 solid, grid 0.390 mm (466x205x123), 338188 surface samples, grid resolved to 0.195 mm, exact where under the minimum
+  FAIL  wall >= 0.80 mm (grid +/-0.20, exact where under) 1.5% of surface below (4789 of 338188 samples); thinnest 0.22 mm at (155.1, 19.7, 21.2) in 12 region(s); 12 wall(s) (widest band 4.99 mm); 1066 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 3.12 mm, p95 19.70 mm, max 96.73 mm
+  WARN  hollowable at 1.20 mm wall     19.51 of 80.03 cm3 (24%) in 7 pocket(s)
+  PASS  filament that would save       2.93 cm3, 3.6 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.22 mm at (155.1, 19.7, 21.2)   1667 samples, 257.1 mm2, runs 77.2 mm, band 3.33 mm
+        2. [wall ] 0.31 mm at (150.1, 3.1, 22.7)    978 samples, 150.6 mm2, runs 48.9 mm, band 3.08 mm
+        3. [wall ] 0.50 mm at (67.9, 23.3, 8.0)    216 samples, 48.8 mm2, runs 9.8 mm, band 4.98 mm
+        4. [wall ] 0.50 mm at (104.6, 18.1, 8.5)    230 samples, 48.8 mm2, runs 9.8 mm, band 4.99 mm
+        5. [wall ] 0.50 mm at (69.6, -23.1, 8.5)    231 samples, 48.2 mm2, runs 9.7 mm, band 4.94 mm
+        6. [wall ] 0.50 mm at (71.2, 18.1, 8.5)    234 samples, 47.3 mm2, runs 9.7 mm, band 4.85 mm
+        ... and 6 smaller region(s)
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0001/thickness-body.md
+
+--- stderr

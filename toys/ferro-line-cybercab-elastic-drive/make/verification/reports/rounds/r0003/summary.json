@@ -1,0 +1,62 @@
+{
+ "changed": [
+  "body",
+  "chassis",
+  "window"
+ ],
+ "checked": [
+  "body",
+  "chassis",
+  "window"
+ ],
+ "entry": "cybercab.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": 80.625,
+   "delta": 0.0013,
+   "el": 1.875,
+   "fov": 0.0,
+   "iou": 0.8771,
+   "label": "side",
+   "ok": false,
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": {
+  "detail": "\"expect\": \"clear\", \"status\": \"pass\", \"detail\": \"clear across 20 steps (step 0.500 mm)\" }, { \"id\": \"right_window-placemen",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0003",
+ "parts": [
+  "body",
+  "chassis",
+  "front_wheelset",
+  "rear_wheelset",
+  "window"
+ ],
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab",
+ "round": 3,
+ "thickness": {
+  "body": {
+   "failures": [
+    "wall >= 0.80 mm (grid +/-0.20, exact where under) 0.2% of surface below (577 of "
+   ],
+   "thinnest_mm": 0.19,
+   "verdict": "FAIL"
+  },
+  "chassis": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "window": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  }
+ }
+}

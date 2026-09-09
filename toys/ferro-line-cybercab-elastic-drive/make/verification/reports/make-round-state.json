@@ -1,0 +1,16 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0014",
+ "likeness": {
+  "reference": 0.9055
+ },
+ "parts": {
+  "body": "a14fe8c89762dd4b5bcad1e2bcfb3b6c1a569f46f9b3bb937e09398eaa85e43e",
+  "chassis": "1f51efaa1e3b8035003fd87cce24ae1a462a16b56ca63d453585e4009ebc5556",
+  "end_wheel": "afec5ef54836776faea8ae8797c7d39e980319f8f10d7146e44ef36a8c4e844f",
+  "front_wheelset": "91a72b493f9021399b347f06e4dba33d69daeac467f12ba42bc2a1a910e54d6d",
+  "rear_wheelset": "8ead229e8b964221f8860d62655bd863ada5a754829fea2159e441a09400d799",
+  "window": "62fa12d7e64955fe0a4acf203dac4904c875dd724d331fe674919db8e6c2c827"
+ },
+ "poses_path": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0014/likeness/poses.json",
+ "round": 14
+}

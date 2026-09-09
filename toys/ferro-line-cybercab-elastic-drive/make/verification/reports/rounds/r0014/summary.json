@@ -1,0 +1,37 @@
+{
+ "changed": [],
+ "checked": [],
+ "entry": "cybercab.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": -95.625,
+   "delta": null,
+   "el": 3.75,
+   "fov": 0.0,
+   "iou": 0.9055,
+   "label": "reference",
+   "ok": true,
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": {
+  "detail": ", { \"id\": \"front-wheel-key-insertion\", \"check\": \"linear_motion_collision\", \"description\": \"Axial wheel installation befo",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0014",
+ "parts": [
+  "body",
+  "chassis",
+  "end_wheel",
+  "front_wheelset",
+  "rear_wheelset",
+  "window"
+ ],
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab",
+ "round": 14,
+ "thickness": {}
+}

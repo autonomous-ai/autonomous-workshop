@@ -1,0 +1,76 @@
+{
+ "changed": [
+  "body",
+  "elastic",
+  "end_wheel",
+  "front_wheelset",
+  "rear_wheelset"
+ ],
+ "checked": [
+  "body",
+  "elastic",
+  "end_wheel",
+  "front_wheelset",
+  "rear_wheelset"
+ ],
+ "entry": "cybercab.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": -95.625,
+   "delta": 0.0,
+   "el": 1.875,
+   "fov": 0.0,
+   "iou": 0.912,
+   "label": "reference",
+   "ok": true,
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": {
+  "detail": ", { \"id\": \"front-wheel-key-insertion\", \"check\": \"linear_motion_collision\", \"description\": \"Axial wheel installation befo",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0011",
+ "parts": [
+  "body",
+  "chassis",
+  "elastic",
+  "end_wheel",
+  "front_wheelset",
+  "rear_wheelset",
+  "window"
+ ],
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab",
+ "round": 11,
+ "thickness": {
+  "body": {
+   "failures": [],
+   "thinnest_mm": 0.52,
+   "verdict": "PASS"
+  },
+  "elastic": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "end_wheel": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "front_wheelset": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "rear_wheelset": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  }
+ }
+}

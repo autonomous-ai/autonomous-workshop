@@ -1,0 +1,278 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/motion.json --json
+(198.4s, exit 0)
+--- stdout
+{
+  "ok": true,
+  "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab",
+  "assembly": "cybercab.step.py",
+  "results": [
+    {
+      "id": "complete-wheel-cycle",
+      "check": "coupled_motion_collision",
+      "description": "Full rotation of keyed wheel and axle assemblies; key contact proves torque transfer. Adhesive axial retention and elastic force require physical commissioning.",
+      "clear": true,
+      "steps": 180,
+      "stepMm": 0.8145,
+      "movers": [
+        "rear_wheelset",
+        "front_wheelset",
+        "rear_rightwheel",
+        "front_rightwheel"
+      ],
+      "skippedSeatedStep": false,
+      "drivenParts": [
+        "rear_rightwheel",
+        "front_rightwheel"
+      ],
+      "transmits": true,
+      "transmitDetail": "drive reaches every driven part -- rear_wheelset x rear_rightwheel at 5/180, front_wheelset x front_rightwheel at 5/180",
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 180 samples (step 0.815 mm); drive reaches every driven part -- rear_wheelset x rear_rightwheel at 5/180, front_wheelset x front_rightwheel at 5/180"
+    },
+    {
+      "id": "shell-latched-rearward",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 7,
+      "steps": 20,
+      "obstacle": "chassis",
+      "overlapMm3": 0.436,
+      "translation": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "stepMm": 0.05,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by chassis at step 7/20 (0.436 mm3) - retained, as expected"
+    },
+    {
+      "id": "shell-captured-up",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 2,
+      "steps": 20,
+      "obstacle": "chassis",
+      "overlapMm3": 7.68,
+      "translation": [
+        0.0,
+        0.0,
+        5.0
+      ],
+      "stepMm": 0.25,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by chassis at step 2/20 (7.68 mm3) - retained, as expected"
+    },
+    {
+      "id": "rear_wheelset-captured-up",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 6,
+      "steps": 20,
+      "obstacle": "body",
+      "overlapMm3": 10.304895,
+      "translation": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "stepMm": 0.4,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by body at step 6/20 (10.304895 mm3) - retained, as expected"
+    },
+    {
+      "id": "rear_wheelset-captured-axial",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 4,
+      "steps": 20,
+      "obstacle": "chassis",
+      "overlapMm3": 41.458239,
+      "translation": [
+        0.0,
+        12.0,
+        0.0
+      ],
+      "stepMm": 0.6,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by chassis at step 4/20 (41.458239 mm3) - retained, as expected"
+    },
+    {
+      "id": "rear_wheelset-assembly-before-shell",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        40.0
+      ],
+      "stepMm": 2.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 2.000 mm)"
+    },
+    {
+      "id": "front_wheelset-captured-up",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 4,
+      "steps": 20,
+      "obstacle": "body",
+      "overlapMm3": 2.258969,
+      "translation": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "stepMm": 0.4,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by body at step 4/20 (2.258969 mm3) - retained, as expected"
+    },
+    {
+      "id": "front_wheelset-captured-axial",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 4,
+      "steps": 20,
+      "obstacle": "chassis",
+      "overlapMm3": 41.458239,
+      "translation": [
+        0.0,
+        12.0,
+        0.0
+      ],
+      "stepMm": 0.6,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by chassis at step 4/20 (41.458239 mm3) - retained, as expected"
+    },
+    {
+      "id": "front_wheelset-assembly-before-shell",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        40.0
+      ],
+      "stepMm": 2.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 2.000 mm)"
+    },
+    {
+      "id": "left_window-placement",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        -10.0,
+        0.0
+      ],
+      "stepMm": 0.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 0.500 mm)"
+    },
+    {
+      "id": "right_window-placement",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        10.0,
+        0.0
+      ],
+      "stepMm": 0.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 0.500 mm)"
+    },
+    {
+      "id": "shell-stopped-forward",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 7,
+      "steps": 20,
+      "obstacle": "chassis",
+      "overlapMm3": 3.504,
+      "translation": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "stepMm": 0.05,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by chassis at step 7/20 (3.504 mm3) - retained, as expected"
+    },
+    {
+      "id": "rear-wheel-key-insertion",
+      "check": "linear_motion_collision",
+      "description": "Axial wheel installation before adhesive; adhesive strength is physically unverified.",
+      "clear": true,
+      "steps": 24,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        12.0,
+        0.0
+      ],
+      "stepMm": 0.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 24 steps (step 0.500 mm)"
+    },
+    {
+      "id": "front-wheel-key-insertion",
+      "check": "linear_motion_collision",
+      "description": "Axial wheel installation before adhesive; adhesive strength is physically unverified.",
+      "clear": true,
+      "steps": 24,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        12.0,
+        0.0
+      ],
+      "stepMm": 0.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 24 steps (step 0.500 mm)"
+    },
+    {
+      "id": "retention-closure",
+      "check": "retention_closure",
+      "description": "Every removable retainer reaches an explicitly fixed assembly root.",
+      "status": "pass",
+      "detail": "3 retention proof(s) close at 1 fixed root(s)"
+    }
+  ]
+}
+
+--- stderr

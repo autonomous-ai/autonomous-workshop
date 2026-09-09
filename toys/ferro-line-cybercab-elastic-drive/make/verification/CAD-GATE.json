@@ -1,0 +1,47 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-09T02:15:09+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 417.85 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=ea9c9ee6990717cc9a37fb9bf752d95e47fa094c71cf09ffad464ef3e83cd6f1` | note | 0.00 |
+| 2 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout artifacts/make/r0001/product/cybercab` | rc=0 | 0.09 |
+| 3 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen artifacts/make/r0001/product/cybercab/cybercab.step.py artifacts/make/r0001/product/cybercab/part_body.step.py artifacts/make/r0001/product/cybercab/part_chassis.step.py artifacts/make/r0001/product/cybercab/part_end_wheel.step.py artifacts/make/r0001/product/cybercab/part_front_wheelset.step.py artifacts/make/r0001/product/cybercab/part_rear_wheelset.step.py artifacts/make/r0001/product/cybercab/part_window.step.py --write --json` | rc=0 | 17.60 |
+| 4 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit artifacts/make/r0001/product/cybercab --bed 220.0 220.0 --entry artifacts/make/r0001/product/cybercab/part_body.step.py --entry artifacts/make/r0001/product/cybercab/part_chassis.step.py --entry artifacts/make/r0001/product/cybercab/part_end_wheel.step.py --entry artifacts/make/r0001/product/cybercab/part_front_wheelset.step.py --entry artifacts/make/r0001/product/cybercab/part_rear_wheelset.step.py --entry artifacts/make/r0001/product/cybercab/part_window.step.py --strict` | rc=0 | 9.25 |
+| 5 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 artifacts/make/r0001/product/cybercab/measure/check_fit.py` | rc=0 | 46.54 |
+| 6 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 artifacts/make/r0001/product/cybercab/measure/check_spec.py` | rc=0 | 15.85 |
+| 7 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 artifacts/make/r0001/product/cybercab/measure/check_landmarks.py` | rc=0 | 14.75 |
+| 8 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_numbers artifacts/make/r0001/product/cybercab` | rc=0 | 4.67 |
+| 9 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 10 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 11 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion artifacts/make/r0001/product/cybercab --manifest artifacts/make/r0001/product/cybercab/measure/motion.json` | rc=0 | 210.23 |
+| 12 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect batch (15 JSONL requests)` | rc=0 | 44.19 |
+| 13 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export artifacts/make/r0001/product/cybercab/cybercab.step --glb --json` | rc=0 | 2.99 |
+| 14 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export artifacts/make/r0001/product/cybercab/part_body.step --stl --json` | rc=0 | 2.04 |
+| 15 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cybercab/part_body.stl --bed 220x220x220` | rc=0 | 0.47 |
+| 16 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cybercab/part_body.stl --angle 45.0 --report artifacts/make/r0001/product/cybercab/measure/overhang-body.md` | rc=0 | 0.82 |
+| 17 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cybercab/part_body.stl --nozzle 0.4 --report artifacts/make/r0001/product/cybercab/measure/thickness-body.md` | rc=0 | 6.40 |
+| 18 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export artifacts/make/r0001/product/cybercab/part_chassis.step --stl --json` | rc=0 | 2.11 |
+| 19 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cybercab/part_chassis.stl --bed 220x220x220` | rc=0 | 0.45 |
+| 20 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cybercab/part_chassis.stl --angle 45.0 --report artifacts/make/r0001/product/cybercab/measure/overhang-chassis.md` | rc=0 | 0.84 |
+| 21 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cybercab/part_chassis.stl --nozzle 0.4 --report artifacts/make/r0001/product/cybercab/measure/thickness-chassis.md` | rc=0 | 7.19 |
+| 22 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export artifacts/make/r0001/product/cybercab/part_end_wheel.step --stl --json` | rc=0 | 2.01 |
+| 23 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cybercab/part_end_wheel.stl --bed 220x220x220` | rc=0 | 0.40 |
+| 24 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cybercab/part_end_wheel.stl --angle 45.0 --report artifacts/make/r0001/product/cybercab/measure/overhang-end_wheel.md` | rc=0 | 0.61 |
+| 25 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cybercab/part_end_wheel.stl --nozzle 0.4 --report artifacts/make/r0001/product/cybercab/measure/thickness-end_wheel.md` | rc=0 | 4.37 |
+| 26 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export artifacts/make/r0001/product/cybercab/part_front_wheelset.step --stl --json` | rc=0 | 1.84 |
+| 27 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cybercab/part_front_wheelset.stl --bed 220x220x220` | rc=0 | 0.44 |
+| 28 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cybercab/part_front_wheelset.stl --angle 45.0 --report artifacts/make/r0001/product/cybercab/measure/overhang-front_wheelset.md` | rc=0 | 0.79 |
+| 29 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cybercab/part_front_wheelset.stl --nozzle 0.4 --report artifacts/make/r0001/product/cybercab/measure/thickness-front_wheelset.md` | rc=0 | 5.58 |
+| 30 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export artifacts/make/r0001/product/cybercab/part_rear_wheelset.step --stl --json` | rc=0 | 1.95 |
+| 31 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cybercab/part_rear_wheelset.stl --bed 220x220x220` | rc=0 | 0.47 |
+| 32 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cybercab/part_rear_wheelset.stl --angle 45.0 --report artifacts/make/r0001/product/cybercab/measure/overhang-rear_wheelset.md` | rc=0 | 0.73 |
+| 33 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cybercab/part_rear_wheelset.stl --nozzle 0.4 --report artifacts/make/r0001/product/cybercab/measure/thickness-rear_wheelset.md` | rc=0 | 6.22 |
+| 34 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export artifacts/make/r0001/product/cybercab/part_window.step --stl --json` | rc=0 | 2.48 |
+| 35 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cybercab/part_window.stl --bed 220x220x220` | rc=0 | 0.65 |
+| 36 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cybercab/part_window.stl --angle 45.0 --report artifacts/make/r0001/product/cybercab/measure/overhang-window.md` | rc=0 | 0.82 |
+| 37 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cybercab/part_window.stl --nozzle 0.4 --report artifacts/make/r0001/product/cybercab/measure/thickness-window.md` | rc=0 | 1.98 |

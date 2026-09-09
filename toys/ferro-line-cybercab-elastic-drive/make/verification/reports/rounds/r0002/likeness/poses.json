@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/cybercab.step.py",
+  "size": 480,
+  "tolerance": 0.1,
+  "poses": {
+    "side": {
+      "az": 80.625,
+      "el": 1.875,
+      "roll": 0.0,
+      "fov": 0.0
+    }
+  }
+}
