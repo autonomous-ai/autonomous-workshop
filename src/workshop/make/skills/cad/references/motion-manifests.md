@@ -150,6 +150,25 @@ condition; omit it only when every `obstacle_parts` entry is load-bearing. Each
 support must either have its own proof or be named in `fixed_parts`. The audit
 fails on a missing proof or a dependency cycle.
 
+The audit repeats the named linear or rotation escape sweep for **each
+connected material solid**, using only the declared supports. A collision of
+one member cannot retain another disconnected member. Members may meet their
+supports at different samples. Overlapping primitives are normalized as
+material; an enclosed cavity with several shells is still one solid.
+
+`memberEvidence` records each member's bounds, volume, sampled result and
+blocking obstacle. The original translation or rotation, thresholds, sample
+count and seated-contact policy remain in force. Unavailable geometry or an
+inconsistent Boolean is inconclusive. A proxy path cannot stand in for a
+material member's escape sweep.
+
+A plain blocked condition still answers whether the prescribed rigid group
+hits an obstacle. Add a `retention` declaration when claiming that every
+member of a disconnected group is held, including when its supports are fixed.
+Passing this audit establishes only the declared sampled escape constraints;
+it does not establish arbitrary-direction restraint, fastening, load capacity,
+friction or physical operation. Existing runs retain their frozen tool bytes.
+
 `fixed_parts` means a genuine assembly root, such as the frame or housing. Do
 not put a loose cap, gate, key, screw, magnet, or other conveniently stationary
 test obstacle there merely to make the graph pass. If rigid-body motion cannot

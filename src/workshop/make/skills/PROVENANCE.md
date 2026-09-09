@@ -171,6 +171,15 @@
   both bounded turns on preparatory agent cycles without source. Deep-v8 keeps
   broad-skill deferral while batching stable reads and reserving independent
   blind critique for the mandatory final review; final CAD behavior is unchanged.
+- Adapted locally on 2026-09-10 so a declared retention proof repeats its
+  linear or rotational escape sweep for each normalized connected material
+  solid against the declared supports. Aggregate group collision no longer
+  certifies retention of a disconnected escaping member. Bounds, volumes and
+  per-member outcomes remain in the JSON evidence; the original sweep limits
+  and numerical consistency checks remain unchanged. Regression controls cover
+  connected unions, cavity shells, independently retained members, placed
+  assemblies, seated-contact policy and measurement failures. This is sampled
+  directional evidence, not a physical joint or load-bearing certification.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do

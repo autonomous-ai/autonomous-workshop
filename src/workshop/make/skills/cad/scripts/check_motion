@@ -1037,14 +1037,65 @@ def flatten_results(results: list[dict]) -> list[dict]:
     return flat
 
 
+def retention_member_evidence(condition: dict, parts: dict, supports: list[str]) -> dict:
+    """Repeat the declared escape sweep for each connected material member.
+
+    A blocked group only proves that at least one member met an obstacle. Use
+    the same path, thresholds and sampling for each normalized solid, against
+    the supports whose dependencies the retention graph actually closes.
+    This is sampled directional evidence, not a joint or dynamics simulation.
+    """
+    part = condition["inputs"]["moving_part"]
+    record = {"part": part, "condition": condition["id"], "members": []}
+    if condition.get("check") not in (
+        "linear_motion_collision", "rotation_motion_collision"
+    ):
+        record.update(status="inconclusive", detail="retention requires a linear or rotation escape sweep")
+        return record
+    try:
+        with validation_scope():
+            shape = resolve_parts(part, parts, "retention.part")[0][1]
+            material, _ = _material(shape)
+            if not _is_valid(material):
+                raise ValueError("retention operand contains invalid material")
+            solids = list(material.solids())
+            record["solidCount"] = len(solids)
+            replay = {**condition, "inputs": {
+                **condition["inputs"], "obstacle_parts": list(supports),
+            }}
+            for index, solid in enumerate(solids):
+                bounds = solid.bounding_box()
+                measured = run_condition(replay, {**parts, part: solid}, index)
+                record["members"].append({
+                    "memberIndex": index,
+                    "volumeMm3": float(solid.volume),
+                    "boundsMm": [list(bounds.min), list(bounds.max)],
+                    **measured,
+                })
+    except Exception as error:
+        record.update(status="inconclusive", detail=f"{type(error).__name__}: {error}")
+        return record
+    failed = [row for row in record["members"] if row["status"] == "fail"]
+    unclear = [row for row in record["members"] if row["status"] == "inconclusive"]
+    if failed or unclear:
+        record.update(
+            status="fail" if failed else "inconclusive",
+            detail="; ".join(f'member {row["memberIndex"]}: {row["detail"]}'
+                             for row in [*failed, *unclear]),
+        )
+    else:
+        record.update(status="pass", detail=f"{len(solids)} material member(s) blocked by declared supports")
+    return record
+
+
 def check_retention_closure(manifest: dict, parts: dict, results: list[dict]) -> dict | None:
     """Prove that each declared retainer reaches an explicitly fixed root.
 
     Collision sweeps hold obstacle parts stationary. That is legitimate only
     when a retention claim also explains why every removable obstacle in its
     load path stays put. The manifest's retention graph supplies that missing
-    dependency information and this audit verifies the graph against passing
-    blocked-motion conditions.
+    dependency information. Verify the graph and independently sweep each
+    connected material member against the declared supports.
     """
     declaration = manifest.get("retention")
     if declaration is None:
@@ -1183,31 +1234,42 @@ def check_retention_closure(manifest: dict, parts: dict, results: list[dict]) ->
 
     if errors:
         record.update(status="fail", detail="; ".join(dict.fromkeys(errors)))
+        return record
+
+    evidence = [retention_member_evidence(conditions[ident], parts, supports_by_part[part])
+                for part, ident in proof_by_part.items()]
+    record["memberEvidence"] = evidence
+    failed = [row for row in evidence if row["status"] == "fail"]
+    unclear = [row for row in evidence if row["status"] == "inconclusive"]
+    if failed or unclear:
+        record.update(
+            status="fail" if failed else "inconclusive",
+            detail="; ".join(f'{row["part"]}: {row["detail"]}' for row in [*failed, *unclear]),
+        )
     else:
         record.update(
             status="pass",
             detail=(f"{len(proof_by_part)} retention proof(s) close at "
-                    f"{len(fixed)} fixed root(s)"),
+                    f"{len(fixed)} fixed root(s); every material member has a blocked escape sweep"),
         )
     return record
 
 
 def run_self_check() -> int:
     """Regression for the frozen-but-unretained obstacle failure mode."""
-    parts = {
-        "shaft": object(),
-        "gate": object(),
-        "key": object(),
-        "frame": object(),
-        "__ambiguous__": [],
-    }
+    from build123d import Box
+
+    heights = {"shaft": 0, "gate": 4, "key": 8, "frame": 12}
+    parts = {name: Box(2, 2, 2).translate((0, 0, z)) for name, z in heights.items()}
 
     def blocked(ident: str, moving: str, obstacles: list[str]) -> dict:
         return {
             "id": ident,
             "check": "linear_motion_collision",
             "expect": "blocked",
-            "inputs": {"moving_part": moving, "obstacle_parts": obstacles},
+            "inputs": {"moving_part": moving, "obstacle_parts": obstacles,
+                       "translation": [0, 0, heights[obstacles[0]] - heights[moving]],
+                       "steps": 4},
         }
 
     conditions = [
@@ -1215,7 +1277,7 @@ def run_self_check() -> int:
         blocked("gate-held", "gate", ["key"]),
         blocked("key-seated", "key", ["frame"]),
     ]
-    results = [{"id": row["id"], "status": "pass"} for row in conditions]
+    results = [run_condition(row, parts, i) for i, row in enumerate(conditions)]
 
     broken = {
         "conditions": conditions,
@@ -1255,10 +1317,7 @@ def run_self_check() -> int:
             ],
         },
     }
-    cyclic_results = [
-        {"id": "shaft-held", "status": "pass"},
-        {"id": "gate-held", "status": "pass"},
-    ]
+    cyclic_results = [run_condition(row, parts, i) for i, row in enumerate(cyclic["conditions"])]
     cyclic_result = check_retention_closure(cyclic, parts, cyclic_results)
     assert cyclic_result and cyclic_result["status"] == "fail"
     assert "dependency cycle" in cyclic_result["detail"]
