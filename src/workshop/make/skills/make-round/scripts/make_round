@@ -210,6 +210,69 @@ def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS) -> subprocess.
     return done
 
 
+def parse_motion(stdout: str | bytes, returncode: int, stderr: str | bytes = "") -> dict:
+    """Read the complete motion result without promoting partial output to PASS."""
+    if isinstance(stdout, bytes):
+        stdout = stdout.decode("utf-8", errors="replace")
+    if isinstance(stderr, bytes):
+        stderr = stderr.decode("utf-8", errors="replace")
+    result = {
+        "verdict": "fail" if returncode else "inconclusive",
+        "detail": "missing or invalid motion condition evidence",
+        "returncode": returncode,
+        "conditions": [],
+    }
+    if returncode:
+        result["detail"] = "check_motion exit %d: %s" % (returncode, result["detail"])
+        if stderr:
+            result["detail"] += "; " + tail(stderr)[:120]
+    lines = stdout.splitlines()
+    start = next((i for i, line in enumerate(lines) if line.lstrip().startswith(("{", "["))), None)
+    if start is None:
+        return result
+    try:
+        # Never fall through to a nested object when the outer document is truncated.
+        payload = json.loads("\n".join(lines[start:]))
+    except json.JSONDecodeError:
+        return result
+    if isinstance(payload, dict):
+        records = payload.get("results") if "results" in payload else payload.get("conditions")
+        if "ok" in payload and not isinstance(payload["ok"], bool):
+            return result
+    else:
+        records = payload
+    if not isinstance(records, list) or not records:
+        return result
+    if any(
+        not isinstance(record, dict)
+        or not isinstance(record.get("id"), str) or not record["id"].strip()
+        or record.get("status") not in ("pass", "fail", "inconclusive")
+        or not isinstance(record.get("detail", ""), str)
+        for record in records
+    ):
+        return result
+    conditions = [
+        {"id": record["id"], "status": record["status"], "detail": record.get("detail", "")}
+        for record in records
+    ]
+    result["conditions"] = conditions
+    statuses = [record["status"] for record in conditions]
+    verdict = "fail" if "fail" in statuses else ("inconclusive" if "inconclusive" in statuses else "pass")
+    if verdict == "pass":
+        detail = "%d condition(s): all pass" % len(conditions)
+    else:
+        first = next(record for record in conditions if record["status"] == verdict)
+        detail = "%s=%s: %s" % (first["id"], verdict, " ".join(first["detail"].split()))
+    if isinstance(payload, dict) and payload.get("ok") is False and verdict == "pass":
+        verdict, detail = "fail", "check_motion reports ok=false despite passing conditions"
+    # Exit 1 is check_motion's documented result for failed or inconclusive checks.
+    # Other nonzero exits, or exit 1 with all-pass evidence, are process failures.
+    if returncode and (returncode != 1 or all(status == "pass" for status in statuses)):
+        verdict, detail = "fail", "check_motion exit %d; %s" % (returncode, detail)
+    result.update(verdict=verdict, detail=detail)
+    return result
+
+
 def parse_render_views(stdout: str, label: str):
     """The matching view from render_views --json output, or None.
 
@@ -437,22 +500,7 @@ def make_round(args) -> int:
     manifest = measure / "motion.json"
     if manifest.is_file() and not args.no_motion:
         done = run([python, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"], cwd=project, log=out / "motion.log")
-        verdict, detail = "fail", tail(done.stderr or done.stdout)[:120]
-        for line in reversed(done.stdout.splitlines()):
-            if line.startswith("{") or line.startswith("["):
-                try:
-                    payload = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                records = payload if isinstance(payload, list) else payload.get("results") or payload.get("conditions") or [payload]
-                statuses = [str(r.get("status", "")) for r in records if isinstance(r, dict)]
-                if statuses:
-                    verdict = "fail" if "fail" in statuses else ("inconclusive" if "inconclusive" in statuses else "pass")
-                    detail = "%d condition(s): %s" % (len(statuses), ", ".join("%s=%s" % (r.get("id", "?"), r.get("status")) for r in records[:6] if isinstance(r, dict)))
-                break
-        else:
-            verdict = "pass" if done.returncode == 0 else "fail"
-        motion = {"verdict": verdict, "detail": detail, "returncode": done.returncode}
+        motion = parse_motion(done.stdout, done.returncode, done.stderr)
 
     # 5. optional integrated verifier, once.
     full = None
