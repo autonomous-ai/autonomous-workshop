@@ -1,0 +1,85 @@
+{
+  "kind": "kinematic-envelope-not-physical-test",
+  "states": [
+    {
+      "body_shift": -4,
+      "body_lift": 55,
+      "latch_deflection": 1.9,
+      "angle": 0
+    },
+    {
+      "body_shift": -4,
+      "body_lift": 55,
+      "latch_deflection": 1.9,
+      "angle": -30
+    },
+    {
+      "body_shift": -4,
+      "body_lift": 55,
+      "latch_deflection": 1.9,
+      "angle": -60
+    },
+    {
+      "body_shift": -4,
+      "body_lift": 55,
+      "latch_deflection": 1.9,
+      "angle": -90
+    },
+    {
+      "body_shift": -4,
+      "body_lift": 55,
+      "latch_deflection": 1.9,
+      "angle": -60
+    },
+    {
+      "body_shift": -4,
+      "body_lift": 55,
+      "latch_deflection": 1.9,
+      "angle": -30
+    },
+    {
+      "body_shift": -4,
+      "body_lift": 55,
+      "latch_deflection": 1.9,
+      "angle": 0
+    },
+    {
+      "body_shift": -4,
+      "body_lift": 25,
+      "latch_deflection": 1.9
+    },
+    {
+      "body_shift": -4,
+      "body_lift": 0,
+      "latch_deflection": 1.9
+    },
+    {
+      "latch_deflection": 1.9
+    },
+    {},
+    {
+      "angle": -30,
+      "travel": -8.63937979737193
+    },
+    {
+      "angle": -60,
+      "travel": -17.27875959474386
+    },
+    {
+      "angle": -90,
+      "travel": -25.918139392115794
+    },
+    {
+      "angle": -60,
+      "travel": -17.27875959474386
+    },
+    {
+      "angle": -30,
+      "travel": -8.63937979737193
+    },
+    {
+      "angle": 0,
+      "travel": 0.0
+    }
+  ]
+}

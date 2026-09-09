@@ -1,0 +1,253 @@
+{
+  "ok": true,
+  "service": [
+    {
+      "shift": 0,
+      "lift": 0,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -0.5,
+      "lift": 0,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -1,
+      "lift": 0,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -2,
+      "lift": 0,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -3,
+      "lift": 0,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -4,
+      "lift": 0,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -4,
+      "lift": 1,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -4,
+      "lift": 3,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -4,
+      "lift": 10,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -4,
+      "lift": 30,
+      "overlap_mm3": 0
+    },
+    {
+      "shift": -4,
+      "lift": 55,
+      "overlap_mm3": 0
+    }
+  ],
+  "elastic": [
+    {
+      "angle_deg": 0,
+      "rigid_frame_overlap_mm3": 0.0,
+      "drive_overlap_mm3": 0.0,
+      "cord_radius_mm": 0.7,
+      "centreline_chord_perimeter_mm": 219.18407093805797,
+      "rear_plus_y": [
+        39.0,
+        5.1,
+        16.5
+      ],
+      "rear_minus_y": [
+        39.0,
+        -5.1,
+        16.5
+      ],
+      "front_minus_y": [
+        134.0,
+        -4.2,
+        14.5
+      ],
+      "front_plus_y": [
+        134.0,
+        4.2,
+        14.5
+      ]
+    },
+    {
+      "angle_deg": -15,
+      "rigid_frame_overlap_mm3": 0.0,
+      "drive_overlap_mm3": 0.0,
+      "cord_radius_mm": 0.7,
+      "centreline_chord_perimeter_mm": 219.5966767241577,
+      "rear_plus_y": [
+        38.829629131445344,
+        5.1,
+        17.794095225512603
+      ],
+      "rear_minus_y": [
+        38.829629131445344,
+        -5.1,
+        17.794095225512603
+      ],
+      "front_minus_y": [
+        134.0,
+        -4.2,
+        14.5
+      ],
+      "front_plus_y": [
+        134.0,
+        4.2,
+        14.5
+      ]
+    },
+    {
+      "angle_deg": -30,
+      "rigid_frame_overlap_mm3": 0.0,
+      "drive_overlap_mm3": 0.0,
+      "cord_radius_mm": 0.7,
+      "centreline_chord_perimeter_mm": 220.6931975777285,
+      "rear_plus_y": [
+        38.33012701892219,
+        5.1,
+        19.0
+      ],
+      "rear_minus_y": [
+        38.33012701892219,
+        -5.1,
+        19.0
+      ],
+      "front_minus_y": [
+        134.0,
+        -4.2,
+        14.5
+      ],
+      "front_plus_y": [
+        134.0,
+        4.2,
+        14.5
+      ]
+    },
+    {
+      "angle_deg": -45,
+      "rigid_frame_overlap_mm3": 0.0,
+      "drive_overlap_mm3": 0.0,
+      "cord_radius_mm": 0.7,
+      "centreline_chord_perimeter_mm": 222.38815217234256,
+      "rear_plus_y": [
+        37.53553390593274,
+        5.1,
+        20.035533905932738
+      ],
+      "rear_minus_y": [
+        37.53553390593274,
+        -5.1,
+        20.035533905932738
+      ],
+      "front_minus_y": [
+        134.0,
+        -4.2,
+        14.5
+      ],
+      "front_plus_y": [
+        134.0,
+        4.2,
+        14.5
+      ]
+    },
+    {
+      "angle_deg": -60,
+      "rigid_frame_overlap_mm3": 0.0,
+      "drive_overlap_mm3": 0.0,
+      "cord_radius_mm": 0.7,
+      "centreline_chord_perimeter_mm": 224.55228355861541,
+      "rear_plus_y": [
+        36.5,
+        5.1,
+        20.83012701892219
+      ],
+      "rear_minus_y": [
+        36.5,
+        -5.1,
+        20.83012701892219
+      ],
+      "front_minus_y": [
+        134.0,
+        -4.2,
+        14.5
+      ],
+      "front_plus_y": [
+        134.0,
+        4.2,
+        14.5
+      ]
+    },
+    {
+      "angle_deg": -75,
+      "rigid_frame_overlap_mm3": 5.843155669909876e-06,
+      "drive_overlap_mm3": 0.0,
+      "cord_radius_mm": 0.7,
+      "centreline_chord_perimeter_mm": 227.02543150386728,
+      "rear_plus_y": [
+        35.294095225512606,
+        5.1,
+        21.32962913144534
+      ],
+      "rear_minus_y": [
+        35.294095225512606,
+        -5.1,
+        21.32962913144534
+      ],
+      "front_minus_y": [
+        134.0,
+        -4.2,
+        14.5
+      ],
+      "front_plus_y": [
+        134.0,
+        4.2,
+        14.5
+      ]
+    },
+    {
+      "angle_deg": -90,
+      "rigid_frame_overlap_mm3": 1.6393138696943393e-05,
+      "drive_overlap_mm3": 0.0,
+      "cord_radius_mm": 0.7,
+      "centreline_chord_perimeter_mm": 229.63092738445332,
+      "rear_plus_y": [
+        34.0,
+        5.1,
+        21.5
+      ],
+      "rear_minus_y": [
+        34.0,
+        -5.1,
+        21.5
+      ],
+      "front_minus_y": [
+        134.0,
+        -4.2,
+        14.5
+      ],
+      "front_plus_y": [
+        134.0,
+        4.2,
+        14.5
+      ]
+    }
+  ],
+  "rolling_relation": "travel_mm=16.5*radians(angle); negative angle rolls backward, release to zero rolls forward",
+  "limitation": "Sampled installed envelope, no material force, grip, fatigue or physical run prediction"
+}

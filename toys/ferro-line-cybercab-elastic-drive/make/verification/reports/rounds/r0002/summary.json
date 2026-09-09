@@ -1,0 +1,60 @@
+{
+ "changed": [
+  "body",
+  "chassis",
+  "window"
+ ],
+ "checked": [
+  "body",
+  "chassis",
+  "window"
+ ],
+ "entry": "cybercab.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": 80.625,
+   "delta": -0.0011,
+   "el": 1.875,
+   "fov": 0.0,
+   "iou": 0.8758,
+   "label": "side",
+   "ok": false,
+   "searched": true
+  }
+ ],
+ "min": 0.9,
+ "motion": null,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0002",
+ "parts": [
+  "body",
+  "chassis",
+  "front_wheelset",
+  "rear_wheelset",
+  "window"
+ ],
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab",
+ "round": 2,
+ "thickness": {
+  "body": {
+   "failures": [
+    "wall >= 0.80 mm (grid +/-0.20, exact where under) 0.5% of surface below (1213 of"
+   ],
+   "thinnest_mm": 0.19,
+   "verdict": "FAIL"
+  },
+  "chassis": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "window": {
+   "failures": [
+    "wall >= 0.80 mm (grid +/-0.07, exact where under) 0.5% of surface below (387 of "
+   ],
+   "thinnest_mm": 0.09,
+   "verdict": "FAIL"
+  }
+ }
+}

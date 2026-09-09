@@ -1,0 +1,37 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/image-to-cad/scripts/render_views.py <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/cybercab.step.py --match <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/ref/side.png --label side --min 0.9 -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0007/likeness --shaded --json --search-az=48.125,108.125,10 --search-el=-25.625,34.375,10 --refine 2
+(16.2s, exit 1)
+--- stdout
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/cybercab.step.py",
+  "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0007/likeness",
+  "poses": {
+    "side": {
+      "az": 70.625,
+      "el": 4.375,
+      "roll": 2.0,
+      "fov": 0.0
+    }
+  },
+  "views": [
+    {
+      "label": "side",
+      "kind": "match",
+      "reference": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/ref/side.png",
+      "iou": 0.8368,
+      "aspect_delta": 0.9737,
+      "poses_tried": 103,
+      "ok": false,
+      "az": 70.625,
+      "el": 4.375,
+      "roll": 2.0,
+      "fov": 0.0
+    }
+  ],
+  "step_drift": [],
+  "mask_contradictions": [],
+  "ok": false,
+  "tolerance": 0.1,
+  "size": 480
+}
+
+--- stderr

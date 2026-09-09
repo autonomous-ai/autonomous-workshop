@@ -1,0 +1,403 @@
+{
+  "assembly": "cybercab.step.py",
+  "conditions": [
+    {
+      "id": "complete-wheel-cycle",
+      "check": "coupled_motion_collision",
+      "expect": "clear",
+      "description": "Full rotation of keyed wheel and axle assemblies; key contact proves torque transfer. Adhesive axial retention and elastic force require physical commissioning.",
+      "inputs": {
+        "steps": 180,
+        "movers": [
+          {
+            "part": "rear_wheelset",
+            "rotation": {
+              "axis_point": [
+                34,
+                0,
+                16.5
+              ],
+              "axis_direction": [
+                0,
+                1,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 360
+            }
+          },
+          {
+            "part": "front_wheelset",
+            "rotation": {
+              "axis_point": [
+                148,
+                0,
+                16.5
+              ],
+              "axis_direction": [
+                0,
+                1,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 360
+            }
+          },
+          {
+            "part": "rear_rightwheel",
+            "rotation": {
+              "axis_point": [
+                34,
+                0,
+                16.5
+              ],
+              "axis_direction": [
+                0,
+                1,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 360
+            },
+            "driven": true
+          },
+          {
+            "part": "front_rightwheel",
+            "rotation": {
+              "axis_point": [
+                148,
+                0,
+                16.5
+              ],
+              "axis_direction": [
+                0,
+                1,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 360
+            },
+            "driven": true
+          }
+        ],
+        "obstacle_parts": [
+          "body",
+          "chassis",
+          "left_window",
+          "right_window"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.0
+      }
+    },
+    {
+      "id": "shell-latched-rearward",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "body",
+        "obstacle_parts": [
+          "chassis",
+          "rear_wheelset",
+          "front_wheelset"
+        ],
+        "translation": [
+          -1,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "shell-captured-up",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "body",
+        "obstacle_parts": [
+          "chassis"
+        ],
+        "translation": [
+          0,
+          0,
+          5
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "rear_wheelset-captured-up",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "rear_wheelset",
+        "obstacle_parts": [
+          "body"
+        ],
+        "translation": [
+          0,
+          0,
+          8
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "rear_wheelset-captured-axial",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "rear_wheelset",
+        "obstacle_parts": [
+          "chassis"
+        ],
+        "translation": [
+          0,
+          12,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "rear_wheelset-assembly-before-shell",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "rear_wheelset",
+        "obstacle_parts": [
+          "chassis"
+        ],
+        "translation": [
+          0,
+          0,
+          40
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "front_wheelset-captured-up",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "front_wheelset",
+        "obstacle_parts": [
+          "body"
+        ],
+        "translation": [
+          0,
+          0,
+          8
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "front_wheelset-captured-axial",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "front_wheelset",
+        "obstacle_parts": [
+          "chassis"
+        ],
+        "translation": [
+          0,
+          12,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "front_wheelset-assembly-before-shell",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "front_wheelset",
+        "obstacle_parts": [
+          "chassis"
+        ],
+        "translation": [
+          0,
+          0,
+          40
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "left_window-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "left_window",
+        "obstacle_parts": [
+          "body"
+        ],
+        "translation": [
+          0,
+          -10,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "right_window-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "right_window",
+        "obstacle_parts": [
+          "body"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "shell-stopped-forward",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "body",
+        "obstacle_parts": [
+          "chassis",
+          "rear_wheelset",
+          "front_wheelset"
+        ],
+        "translation": [
+          1,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "rear-wheel-key-insertion",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Axial wheel installation before adhesive; adhesive strength is physically unverified.",
+      "inputs": {
+        "moving_part": "rear_rightwheel",
+        "obstacle_parts": [
+          "rear_wheelset"
+        ],
+        "translation": [
+          0,
+          12,
+          0
+        ],
+        "steps": 24,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "front-wheel-key-insertion",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Axial wheel installation before adhesive; adhesive strength is physically unverified.",
+      "inputs": {
+        "moving_part": "front_rightwheel",
+        "obstacle_parts": [
+          "front_wheelset"
+        ],
+        "translation": [
+          0,
+          12,
+          0
+        ],
+        "steps": 24,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    }
+  ],
+  "retention": {
+    "fixed_parts": [
+      "chassis"
+    ],
+    "proofs": [
+      {
+        "part": "body",
+        "condition": "shell-captured-up",
+        "supports": [
+          "chassis"
+        ]
+      },
+      {
+        "part": "rear_wheelset",
+        "condition": "rear_wheelset-captured-up",
+        "supports": [
+          "body"
+        ]
+      },
+      {
+        "part": "front_wheelset",
+        "condition": "front_wheelset-captured-up",
+        "supports": [
+          "body"
+        ]
+      }
+    ]
+  }
+}

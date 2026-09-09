@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0002/parts/window.stl --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0002/thickness-window.md
+(2.0s, exit 1)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0002/parts/window.stl: 1.08 cm3 solid, grid 0.133 mm (650x125x15), 99601 surface samples, grid resolved to 0.067 mm, exact where under the minimum
+  FAIL  wall >= 0.80 mm (grid +/-0.07, exact where under) 0.5% of surface below (387 of 99601 samples); thinnest 0.09 mm at (136.8, -39.9, 0.4) in 2 region(s); 2 wall(s) (widest band 2.23 mm); 85 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 1.33 mm, p95 11.87 mm, max 16.13 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 1.08 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.11 mm at (51.2, -41.9, 0.9)    203 samples, 4.5 mm2, runs 2.0 mm, band 2.23 mm
+        2. [wall ] 0.09 mm at (136.8, -39.9, 0.4)    184 samples, 4.0 mm2, runs 2.0 mm, band 2.01 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0002/thickness-window.md
+
+--- stderr

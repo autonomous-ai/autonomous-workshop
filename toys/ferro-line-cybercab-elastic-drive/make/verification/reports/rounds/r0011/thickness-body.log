@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0011/parts/body.stl --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0011/thickness-body.md
+(8.1s, exit 0)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0011/parts/body.stl: 116.77 cm3 solid, grid 0.410 mm (129x195x444), 355927 surface samples, grid resolved to 0.205 mm, exact where under the minimum
+  PASS  wall >= 0.80 mm (grid +/-0.20, exact where under) 0.0% of surface below (61 of 355927 samples); thinnest 0.52 mm at (21.7, -32.5, 0.4) in 9 region(s); no region is a wall, 9 taper(s) at feature edges (0.02% of surface, budget 2%); 89 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 3.28 mm, p95 30.72 mm, max 125.52 mm
+  WARN  hollowable at 1.20 mm wall     43.34 of 116.77 cm3 (37%) in 2 pocket(s)
+  PASS  filament that would save       6.50 cm3, 8.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.53 mm at (21.7, 2.6, 0.4)     16 samples, 3.1 mm2, runs 13.0 mm, band 0.24 mm
+        2. [taper] 0.54 mm at (21.7, -13.6, 0.4)     13 samples, 2.5 mm2, runs 10.8 mm, band 0.23 mm
+        3. [taper] 0.54 mm at (21.7, 34.1, 0.4)      8 samples, 1.5 mm2, runs 7.6 mm, band 0.19 mm
+        4. [taper] 0.52 mm at (21.7, -32.5, 0.4)      6 samples, 1.2 mm2, runs 4.2 mm, band 0.28 mm
+        5. [taper] 0.53 mm at (21.7, 22.9, 0.4)      6 samples, 1.2 mm2, runs 3.9 mm, band 0.30 mm
+        6. [taper] 0.55 mm at (21.7, -8.3, 0.4)      5 samples, 1.0 mm2, runs 2.6 mm, band 0.37 mm
+        ... and 3 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0011/thickness-body.md
+
+--- stderr

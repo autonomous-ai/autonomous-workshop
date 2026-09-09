@@ -1,0 +1,54 @@
+{
+ "changed": [
+  "body",
+  "elastic"
+ ],
+ "checked": [
+  "body",
+  "elastic"
+ ],
+ "entry": "cybercab.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": 70.625,
+   "delta": 0.0,
+   "el": 4.375,
+   "fov": 0.0,
+   "iou": 0.8368,
+   "label": "side",
+   "ok": false,
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": {
+  "detail": " 20 steps (step 0.500 mm)\" }, { \"id\": \"shell-stopped-forward\", \"check\": \"linear_motion_collision\", \"description\": \"\", \"c",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab/measure/rounds/r0006",
+ "parts": [
+  "body",
+  "chassis",
+  "elastic",
+  "front_wheelset",
+  "rear_wheelset",
+  "window"
+ ],
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cybercab",
+ "round": 6,
+ "thickness": {
+  "body": {
+   "failures": [],
+   "thinnest_mm": 0.19,
+   "verdict": "PASS"
+  },
+  "elastic": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  }
+ }
+}
