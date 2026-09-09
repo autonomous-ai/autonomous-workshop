@@ -2048,11 +2048,12 @@ def _phase_design_vault(
     in STAGE.json.  Stages without design knowledge (Match, Release) fetch
     nothing.
 
-    An unreachable vault, or a host without a token, is bypassed for that
-    checkpoint: the phase runs exactly like a run without a vault (no
-    snapshot, no leads, no vault rules) and a marker under host state keeps
-    the agent's and the gate's view identical if the checkpoint is resumed
-    after the vault returns.  The next checkpoint tries again.
+    An unreachable vault, a host without a token, or a vault whose export
+    the host cannot use is bypassed for that checkpoint: the phase runs
+    exactly like a run without a vault (no snapshot, no leads, no vault
+    rules) and a marker under host state keeps the agent's and the gate's
+    view identical if the checkpoint is resumed after the vault returns.
+    The next checkpoint tries again.  No vault failure ever stops a run.
     """
 
     if checkpoint.stage not in _VAULT_STAGES:
@@ -2087,7 +2088,9 @@ def _phase_design_vault(
             client = _gamevault_client()
             _flush_pending_vault_writes(run, client)
             vault = client.export()
-        except GameVaultUnavailable:
+        except (GameVaultUnavailable, GameVaultError):
+            # Away, refusing the token, or answering with an export the host
+            # cannot seal: either way this phase builds without the vault.
             _atomic_private_write(marker, b"unavailable\n", mode=0o600)
             _remove_run_vault_snapshot(snapshot)
             return None, None
@@ -2143,7 +2146,9 @@ def _queue_or_send_vault_payload(
     Returns whether it was sent. A vault that cannot be reached must never
     undo the durable gate receipt or checkpoint the payload describes, so the
     payload waits as ``vault/pending/<name>`` and rides the next snapshot
-    fetch (:func:`_flush_pending_vault_writes`).
+    fetch (:func:`_flush_pending_vault_writes`).  A payload the vault refuses
+    outright is set aside as ``<name>.rejected`` for a person, the same way
+    the flush sets one aside, and the run goes on.
     """
 
     try:
@@ -2151,6 +2156,12 @@ def _queue_or_send_vault_payload(
     except GameVaultUnavailable:
         pending = _pending_vault_writes_directory(run, create=True) / name
         _atomic_private_write(pending, _canonical_json_bytes(payload) + b"\n", mode=0o600)
+        return False
+    except GameVaultError:
+        rejected = _pending_vault_writes_directory(run, create=True) / (
+            name + _VAULT_REJECTED_SUFFIX
+        )
+        _atomic_private_write(rejected, _canonical_json_bytes(payload) + b"\n", mode=0o600)
         return False
     return True
 

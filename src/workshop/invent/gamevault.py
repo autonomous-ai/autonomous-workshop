@@ -201,7 +201,12 @@ class GameVaultClient:
         if response.status != 200:
             raise GameVaultUnavailable("game vault answered %d for %s" % (response.status, path))
         if not isinstance(document, Mapping):
-            raise GameVaultError("game vault answered with something other than a JSON object")
+            # A 200 that carries no JSON object is not the vault API talking
+            # (a proxy's maintenance page, a truncated body): the vault is
+            # away for now, not refusing this request.
+            raise GameVaultUnavailable(
+                "game vault answered %s without a JSON object" % path
+            )
         return document
 
     # ---- reads --------------------------------------------------------

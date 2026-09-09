@@ -2630,6 +2630,121 @@ class NativeFullRunTest(unittest.TestCase):
                     self.assertEqual(payload["dismissals"], [])
                 self.assertEqual(self.gamevault.calls, [])
 
+    def test_full_run_completes_when_the_vault_answers_garbage_or_refuses(self):
+        """A vault that is up but useless never blocks a run either.
+
+        Two shapes of a sick vault, each through the real client rules: a
+        proxy that answers every request with a 200 HTML maintenance page
+        (nothing is the vault talking, so phases are bypassed and write-backs
+        wait in the queue), and a vault whose export the host cannot seal and
+        which refuses every write-back with a 400 (phases are bypassed and
+        the refused payloads are set aside as ``.rejected`` for a person).
+        """
+        from workshop.invent.gamevault import HttpResponse
+
+        finding = {
+            "code": "idle-seat",
+            "area": "play",
+            "severity": "block",
+            "finding": "One seat idles while the other resolves captures.",
+            "change": "Resolve captures simultaneously.",
+            "evidence_refs": ["results/agent-playtest.json"],
+            "invalidates": ["playtest", "release"],
+        }
+
+        def maintenance_page(method, url, headers, body, timeout):
+            return HttpResponse(
+                200, {"Content-Type": "text/html"}, b"<html><body>We'll be back soon.</body></html>"
+            )
+
+        def broken_and_refusing(method, url, headers, body, timeout):
+            if method == "POST":
+                return HttpResponse(
+                    400, {"Content-Type": "application/json"},
+                    json.dumps({"error": "rows[0].severity must be high, medium, or low"}).encode("utf-8"),
+                )
+            return HttpResponse(
+                200, {"Content-Type": "application/json"},
+                json.dumps({"count": 1, "nodes": {"mechanisms/x": 42}}).encode("utf-8"),
+            )
+
+        scenarios = (
+            ("maintenance-page", maintenance_page, ".json", ".rejected"),
+            ("broken-export-refused-writes", broken_and_refusing, ".rejected", ".json"),
+        )
+        for label, transport, kept, absent in scenarios:
+            with self.subTest(label):
+                sick_vault = GameVaultClient(
+                    GameVaultConfig("http://vault.test:8090", "fixture-token"), transport
+                )
+                effects = _FactoryEffects()
+                launcher = _OneSessionProductAgent(playtest_plan=[("block", [finding])])
+
+                def verify_cad(made, **arguments):
+                    return SimpleNamespace(
+                        passed=True,
+                        receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                        verifier_sha256=arguments["expected_verifier_sha256"],
+                        verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                        verification_tier=NATIVE_CAD_FULL_TIER,
+                        thickness_gate_required=True,
+                        print_ready_eligible=True,
+                    )
+
+                with tempfile.TemporaryDirectory() as temporary:
+                    home = Path(temporary).resolve() / "workshop-home"
+                    home.mkdir()
+                    with mock.patch.dict(
+                        os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+                    ), mock.patch(
+                        "workshop.workflow.native_run._source_checkout_root", return_value=None
+                    ), mock.patch(
+                        "workshop.workflow.native_run._gamevault_client", return_value=sick_vault
+                    ), mock.patch(
+                        "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                        return_value=launcher,
+                    ), mock.patch(
+                        "workshop.workflow.native_run.verify_native_made_cad", side_effect=verify_cad
+                    ), mock.patch(
+                        "workshop.workflow.native_run._factory_credentials", side_effect=effects.credentials
+                    ), mock.patch(
+                        "workshop.workflow.native_run.FactoryReleaseWriter", side_effect=effects.writer
+                    ), mock.patch(
+                        "workshop.workflow.native_run.FactoryAgentSession", side_effect=effects.session
+                    ), mock.patch(
+                        "workshop.workflow.native_run.FactoryPublicTransition", side_effect=effects.transition
+                    ):
+                        wish = Wish.create(
+                            "orbit-dog-sick-vault",
+                            "Build a pocket draughts set inspired by my orbit-loving dog.",
+                            constraints={"audience": "14+"},
+                            context={"source": "native-vault-%s-test" % label},
+                        )
+                        receipt = start_native_run(wish, effort="quest")
+                        paths = native_run_paths(wish.product_id)
+
+                        self.assertEqual((receipt["stage"], receipt["status"]), ("release", "complete"))
+                        self.assertEqual(receipt["publication"]["status"], "public")
+                        self.assertEqual(len(receipt["rounds"]), 2)
+                        self.assertFalse((paths.workspace / RUN_VAULT_PATH).exists())
+                        for packet in launcher.stage_packets:
+                            self.assertNotIn("design_vault", packet["inputs"], packet["stage"])
+                            self.assertFalse(packet["inputs"].get("vault_leads"), packet["stage"])
+                        self.assertEqual(
+                            [packet["stage"] for packet in launcher.stage_packets],
+                            ["invent", "make", "playtest", "make", "playtest", "release"],
+                        )
+                        vault_state = paths.host_state / "vault"
+                        self.assertGreaterEqual(len(list(vault_state.glob("*.unavailable"))), 1)
+                        self.assertEqual(list(vault_state.glob("*.json")), [])
+                        pending = vault_state / "pending"
+                        self.assertGreaterEqual(len(list(pending.glob("*" + kept))), 1)
+                        self.assertEqual(list(pending.glob("*" + absent)), [])
+                        for path in pending.iterdir():
+                            payload = json.loads(path.read_text(encoding="utf-8"))
+                            self.assertEqual(set(payload), {"label", "rows", "dismissals", "design"})
+                        self.assertEqual(self.gamevault.calls, [])
+
     def test_a_worse_round_redirects_the_next_make_to_the_best_sealed_round(self):
         one = {
             "code": "waypoint-misalignment",

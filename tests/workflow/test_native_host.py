@@ -2393,6 +2393,84 @@ class NativeHostTest(unittest.TestCase):
             markers = list((home / "state" / receipt["product_id"] / "vault").glob("*.unavailable"))
             self.assertEqual(len(markers), 1)
 
+    def test_wish_runs_without_the_vault_when_its_export_cannot_be_used(self):
+        # The vault is up and takes the token, but hands back an export the
+        # host cannot seal (a half-written node): the phase is bypassed with
+        # the same marker as an outage, and the run goes on.
+        class BrokenExport(FakeGameVaultTransport):
+            def __call__(self, method, url, headers, body, timeout):
+                if url.endswith("/api/gamevault/export"):
+                    return self._json(200, {"count": 1, "nodes": {"mechanisms/x": 42}})
+                return super().__call__(method, url, headers, body, timeout)
+
+        launcher = _FakeLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            stdout = StringIO()
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run._gamevault_client",
+                return_value=fake_client(BrokenExport()),
+            ), redirect_stdout(stdout), redirect_stderr(StringIO()):
+                result = main(("wish", "a", "quiet", "orrery", "--json"))
+            self.assertEqual(result, 0)
+            receipt = json.loads(stdout.getvalue())
+            self.assertEqual(len(launcher.starts), 1)
+            workspace = home / "runs" / receipt["product_id"] / "workspace"
+            self.assertFalse((workspace / RUN_VAULT_PATH).exists())
+            stage = json.loads((workspace / "STAGE.json").read_text(encoding="utf-8"))
+            self.assertNotIn("design_vault", stage["inputs"])
+            vault_state = home / "state" / receipt["product_id"] / "vault"
+            self.assertEqual(len(list(vault_state.glob("*.unavailable"))), 1)
+            self.assertEqual(list(vault_state.glob("*.json")), [])
+
+    def test_make_evidence_sets_aside_a_refused_write_back_and_goes_on(self):
+        from workshop.workflow.native_run import _flush_pending_vault_writes
+
+        class Refusing(FakeGameVaultTransport):
+            def __call__(self, method, url, headers, body, timeout):
+                if method == "POST":
+                    return self._json(400, {"error": "rows[0].severity must be high, medium, or low"})
+                return super().__call__(method, url, headers, body, timeout)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            run = SimpleNamespace(run_root=base / "run", host_state_root=base / "state")
+            run.run_root.mkdir()
+            run.host_state_root.mkdir(mode=0o700)
+            checkpoint = SimpleNamespace(
+                product_id="wish-a", round_index=1, revision=3, checkpoint_sha256="f" * 64, stage="make"
+            )
+            concept = {"title": "Duck", "summary": "A wind-up duck.", "mechanisms": ["rubber-band-motor"]}
+            context = {"invented": SimpleNamespace(concept=concept)}
+            with mock.patch(
+                "workshop.workflow.native_run._gamevault_client",
+                return_value=fake_client(Refusing()),
+            ):
+                report = _record_make_evidence(
+                    run, checkpoint, context,
+                    failures=[{"code": "cad-gate", "finding": "wall thickness under minimum", "evidence_class": "deterministic-cad-gate"}],
+                    verdict="make-cad-gate-failed", name="cad-gate-0003",
+                )
+            self.assertEqual(report, {"rows": 1, "design": True, "sent": False})
+            pending = run.host_state_root / "vault" / "pending"
+            rejected = pending / ("f" * 64 + "-make-cad-gate-0003.json.rejected")
+            self.assertEqual(sorted(p.name for p in pending.iterdir()), [rejected.name])
+            self.assertEqual(stat.S_IMODE(rejected.stat().st_mode), 0o600)
+            self.assertEqual(json.loads(rejected.read_text())["label"], "workshop wish-a r1 make")
+            # A later flush against a healthy vault leaves the set-aside payload alone.
+            healthy = FakeGameVaultTransport()
+            self.assertEqual(_flush_pending_vault_writes(run, fake_client(healthy)), 0)
+            self.assertEqual(healthy.evidence, [])
+            self.assertTrue(rejected.exists())
+
     def test_wish_runs_vault_bypassed_with_real_config_and_transport(self):
         # Real config resolution and real HTTP transport (overriding the
         # class fake): the run must survive a host with no vault credentials

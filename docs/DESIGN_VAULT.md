@@ -53,6 +53,14 @@ that checkpoint**: the phase runs exactly like a run without a vault (no
 snapshot, no leads, queued write-backs) and the next checkpoint tries again.
 Nothing fails; you just build without recorded design knowledge.
 
+The same holds for a vault that is up but not answering as the vault API — a
+proxy's maintenance page, a 5xx, a refused token, or an export the host cannot
+seal: the checkpoint is bypassed with the same `unavailable` marker under
+host state, and every write-back waits in `vault/pending/`. A write-back the
+vault refuses outright (an HTTP 400 in the API's own words) is set aside as
+`vault/pending/<name>.rejected` for a person to look at; it is never retried
+and never stops the run. No vault failure of any kind ends a Workshop run.
+
 For offline work:
 
 - `workshop vault lint` and `workshop vault check <paths>` accept
