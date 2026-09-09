@@ -17,10 +17,10 @@ When a CAD assembly includes named off-the-shelf actuators, servos, motors, elec
 
 ## Quick Workflow
 
-1. Interpret the requested part into search terms and optional facets:
+1. Interpret the requested part into search terms and optional filters:
    - `q` for fuzzy tokens, standards, aliases, dimensions, source/product URLs, and attribute names/values.
-   - `category`, `family`, `standard`, or `tag` when the user gives an exact facet.
-2. Search `/v1/parts` and inspect `items`, `total`, and `facets`. For actuator model numbers, retry likely aliases, dropped letters, vendor names, and relevant family facets before treating an empty result as a miss.
+   - `category`, `family`, `standard`, or `tag` when the user gives an exact filter value.
+2. Search `/v1/parts` through the bundled script and rank the compact `items` against `total`. The script omits the API `facets` object because its counts describe the whole catalog, not your result set — a query matching one bearing still reports thousands of connectors — so facets can never narrow a search. For actuator model numbers, retry likely aliases, dropped letters, vendor names, and `--family`/`--category` filters before treating an empty result as a miss; run `--facets` once when you need to see which filter values the catalog actually uses.
 3. If results are ambiguous, present the best few options with `id`, `name`, `standard`, and key attributes before choosing. If one result clearly matches, return the selected record details without downloading unless the user asked for a local STEP file.
 4. When an exact or near-exact off-the-shelf actuator model is found, prefer downloading and using its STEP file unless there is a clear assembly-time reason to use a simplified envelope. Record that choice explicitly.
 5. When the user asks to download or save a STEP file, download its `stepUrl`, then verify the file with the record's `sha256` when present.
@@ -40,12 +40,16 @@ python "$STEP_PARTS_SKILL_ROOT/scripts/download_step_part.py" "bearing 608zz" --
 Useful options:
 
 - `--origin`: override `https://api.step.parts` only when the user provides another hosted API origin.
-- `--tag`, `--category`, `--family`, `--standard`: repeatable facet filters.
+- `--tag`, `--category`, `--family`, `--standard`: repeatable filters, ORed within one field and ANDed across fields.
 - `--out-dir`: override the download directory when the user asks for a specific destination.
 - `--all`: with `--download`, download every result on the returned page as individual STEP downloads.
 - `--overwrite`: replace an existing output file.
+- `--facets`: print the catalog's top-N values per facet key, to pick a `--family`/`--category` value for a retry. The counts are catalog-wide, not query-scoped. Default search omits them; the flag applies to searches only.
+- `--facet-top`: with `--facets`, how many values to keep per key. Default 8.
+- `--pretty`: indent JSON. Default stdout is compact one-line JSON.
+- `--self-check`: run the compact-output fixtures offline and exit.
 
-The script prints JSON to stdout. For searches, it prints matched records. For downloads, it prints saved file paths, checksums, and source URLs.
+The script prints compact JSON to stdout. For searches, it prints `items` plus page totals and `facetKeys` — the facet key names only, not `description`, preview URLs, catalog metadata, or the facet values and counts. For downloads, it prints saved file paths, checksums, and source URLs. Rank candidates from `id`, `name`, `standard`, and `attributes` on those compact records.
 
 ## API Reference
 
@@ -61,7 +65,7 @@ Read `references/step-parts-api.md` when you need endpoint details, field meanin
 ## Search Guidance
 
 - Query tokens are ANDed by the API, so start specific but not overconstrained. For example, use `M3 SHCS 12` before adding exact family and standard filters.
-- Values within one facet are ORed together, and selected `tag`, `category`, `family`, and `standard` fields are ANDed together. Use exact facets to narrow within known categories, then rank manually by name and attributes.
+- Values within one filter are ORed together, and selected `tag`, `category`, `family`, and `standard` filters are ANDed together. Use exact filters to narrow within known categories, then rank manually by name and attributes.
 - Standards can be queried as `ISO 4762`, `ISO4762`, or the exact `standard.designation`.
 - The `attributes` object contains family-specific facts such as `thread`, `lengthMm`, `bore1Mm`, `material`, `profileSeries`, `slotSizeMm`, and dimensions in millimeters.
 - Part, GLB, and PNG URL patterns are predictable on `https://www.step.parts`; STEP URLs are environment-aware and may resolve to GitHub LFS media in production. Use catalog/API `stepUrl` for downloads.

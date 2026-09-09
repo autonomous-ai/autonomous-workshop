@@ -7,7 +7,7 @@ Read this file when generation, export, inspection, positioning, or documentatio
 1. Read the failing command output.
 2. Classify the failure.
 3. Make the smallest responsible source or command change.
-4. Rerun the failed command.
+4. Rerun the failed command in the same model round as the source change.
 5. Rerun any dependent validation checks.
 6. Report remaining risk or deliberate deviations.
 

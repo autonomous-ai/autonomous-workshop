@@ -234,8 +234,12 @@ def main(argv=None):
     records = run(a.images, a.out, a.suffix, a.sat_max, band, a.threshold)
 
     if a.json:
-        print(json.dumps({"ok": all(r["outline_agreement"]["ok"] for r in records),
-                          "images": records}, indent=2))
+        print(json.dumps(
+            {"ok": all(r["outline_agreement"]["ok"] for r in records),
+             "images": records},
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ))
     else:
         for r in records:
             v = r["outline_agreement"]
