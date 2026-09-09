@@ -533,13 +533,15 @@ def _read_regular(
 
 
 def _workshop_python() -> Path:
+    # A framework Python reports its Homebrew opt alias in sys.executable when
+    # the host launched it through the Cellar path. Both spellings name the same
+    # file, so require the same resolved executable, not the same spelling.
     raw = os.environ.get("WORKSHOP_PYTHON")
     try:
         requested = Path(raw) if isinstance(raw, str) else Path(".")
         resolved = requested.resolve(strict=True)
         identity = resolved.stat()
         requested_absolute = requested.absolute()
-        invoked = Path(sys.executable).absolute()
         actual = Path(sys.executable).resolve(strict=True)
     except OSError as exc:
         raise ProposalError("WORKSHOP_PYTHON is unavailable") from exc
@@ -549,7 +551,6 @@ def _workshop_python() -> Path:
         or not requested.is_absolute()
         or not stat.S_ISREG(identity.st_mode)
         or raw != requested_absolute.as_posix()
-        or requested_absolute != invoked
         or resolved != actual
     ):
         raise ProposalError(
