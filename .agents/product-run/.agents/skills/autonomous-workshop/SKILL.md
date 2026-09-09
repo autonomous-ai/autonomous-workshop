@@ -129,8 +129,20 @@ in workspace evidence, and continue. This loop is native-runtime behavior inside
 Goal, not another program or runtime. Native subagents may supply specialist
 work or independent judgment, but the root Manager synthesizes the result.
 Keep the root Manager on the critical path: establish a conforming artifact
-and its deterministic checks early, delegate only bounded concrete work, and
-never make successful finalization depend on a child agent.
+and its deterministic checks early after reviewing required design inputs,
+delegate only bounded concrete work, and retain finalization in the root.
+When the selected Inventor owns a delegated design, its completed handoff is a
+required dependency: wait for completion, read the exact design artifacts, and
+resolve construction-affecting decisions and open issues before authoring or
+generating dependent CAD. Progress messages and partial files do not satisfy
+this dependency. Do only independent preparation while waiting; do not build
+a competing baseline or silently take over the design. Preserve the task
+identity, expected artifact paths, and pending dependency in concise workspace
+notes. After compaction or resume, reconcile those notes with native agent
+status and completed artifacts before continuing construction. A failed or
+unavailable child requires explicit reconciliation and reassignment of the
+unfinished design, not an assumed completed handoff. Forge/Quest Make reuses
+its already reviewed, sealed Invent contract without repeating Invent.
 
 Complete the Goal only after the ready-stage finalizer succeeds, then return
 control to the host immediately. Do not begin the next stage. If work is
