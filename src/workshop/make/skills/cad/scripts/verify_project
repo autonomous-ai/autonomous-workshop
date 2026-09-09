@@ -341,8 +341,8 @@ def _required_signature_review(project: Path, printables: list[Path]) -> str:
         raise ValueError("signature review concept_sha256 is invalid")
     if type(review.get("review_rounds")) is not int or review.get(
         "review_rounds"
-    ) not in (1, 2):
-        raise ValueError("signature review must record one or two review rounds")
+    ) not in (1, 2, 3, 4):
+        raise ValueError("signature review must record one to four review rounds")
     requirements = review.get("critical_form_requirements")
     if not isinstance(requirements, list) or not 1 <= len(requirements) <= 16:
         raise ValueError("signature review must enumerate critical form requirements")

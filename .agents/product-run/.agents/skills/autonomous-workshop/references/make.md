@@ -70,12 +70,24 @@ a direct Make route.
 
 Use one product funnel:
 
+For final Make, this reference owns the visual repair allowance and supersedes
+the older one-repair wording in economics references: allow three focused
+repair-and-rereview cycles after the initial independent review (four reviews
+total), within the run's remaining budget. Early-proof and manual-review limits
+are separate. Frozen older runs retain their materialized rules and tools.
+
 1. Write the smallest viable parametric baseline with exactly one non-part
    combined `*.step.py` entry and one `part_<role>.step.py` per printable part.
 2. Generate explicit source targets with
    `.agents/skills/cad/scripts/gen <entry.step.py> --write`. Export STL from the
    fresh STEP with `.agents/skills/cad/scripts/export <entry.step> --stl`.
-3. Run only narrow checks affected by an edit. Once the baseline is plausible,
+3. Run `make_round` after each source repair and inspect its exact visual packet.
+   The Manager records misplaced, missing or extra parts, size/proportion
+   mismatches, visible intersections, and form defects with image evidence and
+   a concrete repair using `--record-visual`. Inspect the actual views even when
+   likeness passes or no reference image exists. Pending or inconclusive visual
+   feedback is not a pass. These self-checks do not replace independent review.
+   Run only additional narrow checks affected by an edit. Once the baseline is plausible,
    run `.agents/skills/cad/scripts/verify_project <cad-project>
    --print-preflight` without `--fresh`. It must cover every printable at the
    fixed 0.4 mm nozzle standard.
@@ -91,18 +103,23 @@ Use one product funnel:
    Give one independent native critic only the images and that animation. Record its blind held
    object, volumetric form, subjects, action, and relationship. Then reveal the
    Wish and concept and check every positive and negative held-form constraint.
-   Make one focused repair at most and one blind rereview at most.
+   Allow up to three focused repairs, each followed by regenerated preflight,
+   images and an independent rereview. Stop as soon as the review passes.
 6. Run the integrated final verifier once. Do not use it as an iteration loop.
 7. Write product metadata and invoke the Make finalizer immediately.
 
-Complete the blind signature review and, if needed, one coherent repair before
+Complete the blind signature review and, if needed, up to three focused repairs before
 running the integrated final verifier once. The review must separately match the exact subjects,
 action, and spatial/causal relationship; matching only nouns is a failure.
 Enumerate every explicit positive and negative held-form requirement from
 the Wish in the review's `critical_form_requirements`; each entry needs
 exact blind visual evidence. Any visible departure from one of those
 requirements belongs in `blocking_visual_defects`, not in a nonblocking
-caveat. Use one critic and no more than two review rounds. Do not use the
+caveat. Use one critic and no more than four review rounds (initial plus three
+rereviews). On rereview, record fresh image observations before comparison and
+disclose that the critic already knows the Wish; do not claim naive recognition.
+After the fourth failed review, preserve the failures and finalize a truthful
+failed need rather than exceeding the allowance. Do not use the
 full verifier as the visual iteration loop. Any geometry change after the
 review invalidates it and requires a fresh blind read of the regenerated
 images; copying old prose and replacing hashes is not a review.
@@ -160,7 +177,7 @@ The canonical schema-v6 review contains exactly: `schema_version`, `kind`,
 `finished_product_desirable`, `review_rounds`, `critical_form_requirements`,
 `blocking_visual_defects`, `print_preflight_sha256`, `largest_risk`, and
 `resolution`. Use kind `autonomous-workshop.signature-experience-review`.
-Every boolean is true; `review_rounds` is one or two; blockers are empty; each
+Every boolean is true; `review_rounds` is an integer from one through four; blockers are empty; each
 critical requirement has exactly `requirement`, `blind_evidence`, and
 `matches: true`. Evaluate form against the actual Wish: an exposed mechanism
 or a flat component is not inherently a defect. Wrong required relationships,

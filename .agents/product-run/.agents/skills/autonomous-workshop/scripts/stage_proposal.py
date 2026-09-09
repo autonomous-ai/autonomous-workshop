@@ -2041,8 +2041,10 @@ def _validate_signature_review(
     if type(review["review_rounds"]) is not int or review["review_rounds"] not in (
         1,
         2,
+        3,
+        4,
     ):
-        raise ProposalError("Make signature review must record one or two review rounds")
+        raise ProposalError("Make signature review must record one to four review rounds")
     for filename, field in (
         ("iso.png", "iso_sha256"),
         ("signature.png", "signature_sha256"),

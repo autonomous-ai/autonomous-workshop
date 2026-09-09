@@ -379,7 +379,7 @@ Preserve the final review as canonical JSON at
 The finalizer requires every confirmation, all unprompted reads, at least one
 explicit critical-form check, no blocking visual defect, the exact passing
 all-printable 0.4 mm preflight hash, the exact Invented
-concept binding, one or two review rounds, and exact final-image hashes. It also
+concept binding, one to four review rounds, and exact final-image hashes. It also
 requires the current CAD report to be a passing final full-tier run containing
 a successful thickness row; omitting a failed check cannot reach the host's
 isolated gate. This is review evidence, not a numeric beauty score; never claim

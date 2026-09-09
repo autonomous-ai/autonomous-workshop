@@ -243,6 +243,12 @@ part of this adaptation.
 
 ## `make-round`
 
+Local extension (2026-09-09, ADR 0060): each round renders native inspection
+views and accepts source/image/reference-bound Manager feedback with concrete
+visual defects and repairs. Pending inspection cannot pass. The CAD final
+verifier and run-local finalizer now allow the initial blind review plus three
+repair-and-rereview cycles. Python performs no visual judgment or model calls.
+
 - Host-owned, not vendored: authored in this repository (ADR 0057) and
   recorded in `LOCK.json` under this repository's URL so the reviewed-skill
   lock still covers every tree under `make/skills/`. It sequences the reviewed
