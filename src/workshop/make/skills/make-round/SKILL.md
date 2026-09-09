@@ -1,6 +1,6 @@
 ---
 name: make-round
-description: Run one Make iteration as a single command — export the parts, wall-check what changed, score likeness against the Wish references, run the motion gate, and read one short summary — instead of a dozen separate tool calls and a dozen source reads. Use for every Make repair round of a CAD product; not a replacement for the final integrated verify_project, which it can also invoke once with --full.
+description: Run one Make iteration as a single command — export the parts, wall-check parts lacking reusable passing evidence, score likeness against the Wish references, run the motion gate, and read one short summary — instead of a dozen separate tool calls and a dozen source reads. Use for every Make repair round of a CAD product; not a replacement for the final integrated verify_project, which it can also invoke once with --full.
 ---
 
 # Make round
@@ -27,7 +27,8 @@ calls were reassembling by hand.
   gate, and the thickness regions are numbers; use them first.
 - `make_round` never lowers a threshold, never edits source, and never
   replaces the final `verify_project` run the Make gate requires. It writes
-  under `<project>/measure/rounds/` and touches nothing else.
+  round reports under `<project>/measure/rounds/` and the reusable state at
+  `<project>/measure/make-round-state.json`.
 
 ## Usage
 
@@ -41,16 +42,24 @@ calls were reassembling by hand.
   entry `<name>.step.py` and any number of `part_<role>.step.py`.
 - `--ref LABEL=PATH` repeats once per reference view. Omitted, the labels are
   read from the `LABEL=ref/<file>` lines of the project's `*_spec.md`.
-- Only parts whose exported STL bytes changed since the previous round are
-  wall-checked; `--all-parts` checks every part. The first round checks all.
+- Every part needs a passing wall measurement. Reuse requires identical STL
+  bytes, nozzle, checker/helper/wrapper sources, Python identity, numerical
+  package versions, and a retained tool log matching its recorded hash.
+  Failed, missing, or older hash-only evidence is checked again.
+  `--all-parts` forces a new check even when a PASS could be reused.
+- Without `part_<role>.step.py` files, the single entry is exported and
+  wall-checked as the one-piece product.
+- `summary.json` retains each wall result and its original measurement round
+  and log. `changed` lists changed STL bytes; `checked` lists fresh checks
+  (including export failures); `reused` lists retained passing evidence.
 - `--full` also runs `verify_project --fresh --exports --strict-fit`, with
   `--image-derived --likeness-ref` for each reference, after the round; use it
   once, when the round is clean and you are about to propose.
-- Exit status 0 means every check it ran passed; 1 means at least one
-  failed; 2 means the round could not run (no entry, a tool missing).
+- Exit status 0 means every required check has passing evidence; 1 means at
+  least one failed; 2 means the round could not run (no entry, a tool missing).
 
-The summary names, in order: the parts that changed and their wall verdicts
-with the thinnest region, the likeness score per view with the change since
+The summary names, in order: the changed parts, fresh wall verdicts with the
+thinnest region, reused passing measurements, the likeness score per view with the change since
 the previous round and the pose it was scored at, the motion gate verdict,
 and the `--full` verdict when requested. Everything the tools printed is kept
 under `measure/rounds/rNNNN/` beside `summary.json`.
@@ -63,7 +72,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | Step | Invocation | Reads |
 |---|---|---|
 | export a part | `"$WORKSHOP_PYTHON" $C/export part_<role>.step.py --stl <out>.stl --json` | `files[].path` |
-| wall check | `"$WORKSHOP_PYTHON" $C/check_thickness <stl> --nozzle 0.4 --report <md>` | `PASS`/`FAIL` lines, `RESULT:` line, exit 1 on a thin wall |
+| wall check | `"$WORKSHOP_PYTHON" $C/check_thickness <stl> --nozzle 0.4 --report <md>` | `PASS`/`FAIL` lines, `RESULT:` line, any nonzero exit fails, even without a parsed failure line |
 | likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
 | final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --fresh --exports --strict-fit [--image-derived --likeness-ref L=PATH ...] --report <md>` | exit 0 = sealed-ready; the report is the record |

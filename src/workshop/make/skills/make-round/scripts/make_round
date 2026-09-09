@@ -9,16 +9,17 @@ Every verdict comes from the original cad and image-to-cad tools, run
 unchanged; this script only sequences them, remembers what changed between
 rounds, and prints a summary short enough to read instead of the logs. It
 never lowers a threshold, never edits source, and writes only under
-``<project>/measure/rounds/``.
+``<project>/measure/``.
 
-Exit 0: every check it ran passed. Exit 1: at least one failed. Exit 2: the
-round could not run.
+Exit 0: every required check has passing evidence. Exit 1: at least one
+failed. Exit 2: the round could not run.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+from importlib.metadata import PackageNotFoundError, version as package_version
 import json
 import os
 import re
@@ -71,11 +72,14 @@ class _RootsView:
 
 def parse_thickness(stdout: str) -> dict:
     """The verdict and the thinnest region from a check_thickness run."""
-    verdict = "PASS"
+    verdict = "PASS" if "RESULT: printable at this wall" in stdout else "FAIL"
     fails = []
+    wall_pass = False
     thinnest = None
     for line in stdout.splitlines():
         stripped = line.strip()
+        if re.match(r"PASS\s+wall\s+>=", stripped):
+            wall_pass = True
         if stripped.startswith("FAIL"):
             verdict = "FAIL"
             fails.append(" ".join(stripped.split()[1:])[:80])
@@ -85,7 +89,48 @@ def parse_thickness(stdout: str) -> dict:
             thinnest = value if thinnest is None else min(thinnest, value)
     if "RESULT: WALL BELOW MINIMUM" in stdout:
         verdict = "FAIL"
+    if not fails and "RESULT: WALL BELOW MINIMUM" not in stdout and wall_pass:
+        verdict = "PASS"
+    if verdict == "FAIL" and not fails:
+        fails.append("no passing wall result" if "RESULT: WALL BELOW MINIMUM" not in stdout else "wall below minimum")
     return {"verdict": verdict, "thinnest_mm": thinnest, "failures": fails[:4]}
+
+
+def thickness_context(cad: Path, nozzle: float) -> dict | None:
+    """Inputs to this wall measurement, without importing numerical libraries.
+
+    An unavailable identity disables reuse; it never supplies passing evidence.
+    The wrapper hash also invalidates results after a parsing/cache-rule change.
+    """
+    try:
+        sources = {
+            name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for name, path in (
+                ("check_thickness", cad / "check_thickness"),
+                ("meshlib.py", cad / "meshlib.py"),
+                ("make_round", Path(__file__)),
+            )
+        }
+        packages = {name: package_version(name) for name in ("numpy", "scipy")}
+    except (OSError, PackageNotFoundError):
+        return None
+    return {
+        "nozzle": nozzle, "sources": sources, "packages": packages,
+        "python": str(Path(sys.executable).resolve()), "python_version": sys.version,
+        "platform": sys.platform,
+    }
+
+
+def reusable_thickness(item: dict | None) -> bool:
+    """Only a recorded PASS with its original tool log can be reused."""
+    if not isinstance(item, dict) or item.get("verdict") != "PASS":
+        return False
+    if not {"thinnest_mm", "failures", "measured_round", "log", "log_sha256"} <= item.keys():
+        return False
+    try:
+        return hashlib.sha256(Path(item["log"]).read_bytes()).hexdigest() == item["log_sha256"]
+    except (OSError, TypeError, ValueError):
+        return False
 
 
 def diff_parts(previous: dict, current: dict) -> list[str]:
@@ -126,6 +171,8 @@ def render_summary(summary: dict) -> str:
     unchecked = [r for r in summary["parts"] if r not in summary["checked"]]
     if unchecked:
         lines.append("  wall  skip %d unchanged part(s): %s" % (len(unchecked), ", ".join(unchecked[:6]) + (" ..." if len(unchecked) > 6 else "")))
+        if summary.get("reused"):
+            lines[-1] += "  (retained PASS evidence)"
     for item in summary["likeness"]:
         if "error" in item:
             lines.append("  like  FAIL %-10s %s" % (item["label"], item["error"][:70]))
@@ -267,22 +314,41 @@ def make_round(args) -> int:
     out.mkdir(parents=True, exist_ok=True)
     (out / "parts").mkdir(exist_ok=True)
 
+    # A one-piece project exposes its printable geometry through the entry.
+    if not parts:
+        parts = [entry]
+
     # 1. export every part once; hash the bytes so the next round knows what moved.
     digests: dict[str, str] = {}
     export_failures: dict[str, str] = {}
     for part in parts:
-        role = part.name[len("part_"):-len(".step.py")]
+        role = part.name.removeprefix("part_").removesuffix(".step.py")
         stl = out / "parts" / (role + ".stl")
         done = run([python, str(cad / "export"), str(part), "--stl", str(stl), "--json"], cwd=project, log=out / ("export-%s.log" % role))
         if done.returncode != 0 or not stl.is_file():
             export_failures[role] = tail(done.stderr or done.stdout)
             continue
         digests[role] = hashlib.sha256(stl.read_bytes()).hexdigest()
-    changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
+    changed = diff_parts(state.get("parts", {}), digests)
 
-    # 2. wall check what changed.
+    # 2. Reuse only successful measurements of the same bytes and conditions.
+    # Failed and legacy entries need a check even when the mesh did not change.
+    context = thickness_context(cad, args.nozzle)
+    previous_thickness = state.get("thickness") or {}
+    same_context = context is not None and context == state.get("thickness_context")
     thickness: dict[str, dict] = {}
-    for role in changed:
+    checked = []
+    reused = []
+    for role in sorted(digests):
+        prior = previous_thickness.get(role)
+        if (
+            not args.all_parts and role not in changed and same_context
+            and reusable_thickness(prior)
+        ):
+            thickness[role] = prior
+            reused.append(role)
+            continue
+        checked.append(role)
         stl = out / "parts" / (role + ".stl")
         done = run(
             [python, str(cad / "check_thickness"), str(stl), "--nozzle", str(args.nozzle), "--report", str(out / ("thickness-%s.md" % role))],
@@ -290,13 +356,22 @@ def make_round(args) -> int:
             log=out / ("thickness-%s.log" % role),
         )
         parsed = parse_thickness(done.stdout)
-        if done.returncode not in (0, 1):
-            parsed = {"verdict": "FAIL", "thinnest_mm": None, "failures": ["check_thickness exit %d: %s" % (done.returncode, tail(done.stderr)[:60])]}
+        if done.returncode != 0:
+            parsed["verdict"] = "FAIL"
+            parsed["failures"] = (
+                ["check_thickness exit %d: %s" % (done.returncode, tail(done.stderr)[:60])]
+                + parsed["failures"]
+            )[:4]
+        log = out / ("thickness-%s.log" % role)
+        parsed.update({
+            "measured_round": round_index,
+            "log": str(log.resolve()),
+            "log_sha256": hashlib.sha256(log.read_bytes()).hexdigest() if log.is_file() else None,
+        })
         thickness[role] = parsed
     for role, why in export_failures.items():
         thickness[role] = {"verdict": "FAIL", "thinnest_mm": None, "failures": ["export failed: " + why[:70]]}
-        if role not in changed:
-            changed.append(role)
+        checked.append(role)
 
     # 3. likeness per reference, replaying the previous pose when one exists.
     refs = parse_refs(args.refs, sorted(project.glob("*_spec.md")))
@@ -377,7 +452,8 @@ def make_round(args) -> int:
         full = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)[-200:]}
 
     ok = (
-        all(item["verdict"] == "PASS" for item in thickness.values())
+        len(thickness) == len(parts) and bool(thickness)
+        and all(item["verdict"] == "PASS" for item in thickness.values())
         and all(item.get("ok") for item in likeness)
         and (motion is None or motion["verdict"] == "pass")
         and (full is None or full["ok"])
@@ -386,9 +462,10 @@ def make_round(args) -> int:
         "round": round_index,
         "project": str(project),
         "entry": entry.name,
-        "parts": sorted(digests),
+        "parts": sorted(set(digests) | set(export_failures)),
         "changed": changed,
-        "checked": sorted(thickness),
+        "checked": sorted(checked),
+        "reused": reused,
         "thickness": thickness,
         "likeness": likeness,
         "min": args.min,
@@ -401,6 +478,8 @@ def make_round(args) -> int:
     state = {
         "round": round_index,
         "parts": digests,
+        "thickness": thickness,
+        "thickness_context": context,
         "likeness": {item["label"]: item["iou"] for item in likeness if "iou" in item},
         "poses_path": str(poses_path) if poses_path.is_file() else previous_poses,
         "last_out": str(out),
@@ -481,7 +560,7 @@ def main(argv=None) -> int:
     parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH", help="reference view; repeatable; default from the spec ledger")
     parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
     parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle for check_thickness (default 0.4)")
-    parser.add_argument("--all-parts", action="store_true", help="wall-check every part, not only the changed ones")
+    parser.add_argument("--all-parts", action="store_true", help="wall-check every part, including unchanged parts with passing evidence")
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
     parser.add_argument("--full", action="store_true", help="also run verify_project --fresh --exports --strict-fit once")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
