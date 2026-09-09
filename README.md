@@ -112,7 +112,7 @@ uv run workshop start ferro-line --workflow forge --max-rounds 6 \
   --wish "a wind-up robot duck that walks when you turn its key"
 ```
 
-`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at high effort; Claude Code defaults to Opus 5 at high effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
+`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at medium effort; Claude Code defaults to Opus 5 at medium effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
@@ -129,7 +129,7 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
-`start` and `wish` accept `--max-tokens N`, default **10,000,000** per Codex
+`start` and `wish` accept `--max-tokens N`, default **30,000,000** per Codex
 product. Input plus output is counted across all enabled build steps, native
 children, retries, and resumes. Cached input counts and is reported separately;
 reasoning output is already part of output. `start` gives each product its own
@@ -158,14 +158,17 @@ Long turns remain attached to the same session if the locally installed Codex
 CLI receives a supported in-place update. Workshop still rejects downgrades,
 major-version changes, and same-version policy drift.
 Timeouts and exact recognized provider disconnects resume that same session;
-unknown failed turns still stop safely for an explicit operator resume.
+unknown failed turns still stop safely for an explicit operator resume. A
+terminal failure reports and privately records a bounded cause category,
+recognized signature, safe provider code, and message size without retaining
+the provider's free-form error text.
 
 ## Workshop Managers
 
 One run is one native coding-agent session — the shop lead. Resume cannot switch Managers.
 
 ```bash
-uv run workshop start pico-press --agent codex    # Sol + high; default
+uv run workshop start pico-press --agent codex    # Sol + medium; default
 uv run workshop start pico-press --agent claude   # Opus 5 + high; experimental
 uv run workshop start pico-press --agent grok     # experimental
 ```
@@ -174,7 +177,7 @@ uv run workshop start pico-press --agent grok     # experimental
 |---|---|---|
 | [Codex](https://learn.chatgpt.com/docs/codex/cli) | `codex` | Default. Omit `--agent`. |
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `claude` | Experimental. |
-| [Grok Build](https://docs.x.ai/build/overview) | `grok` | Experimental. Spark E2E: [Horn Tip](toys/pico-press-horn-tip/). |
+| [Grok Build](https://docs.x.ai/build/overview) | `grok` | Experimental. Spark E2E: [Horn Tip](toys/pico-press-horn-tip/), [Knockseed](toys/pico-press-knockseed/). |
 
 ## Inventors
 
@@ -280,6 +283,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Rainspell Dial | [Sonora Reed](inventors/sonora-reed/) | 🔥 Forge | [`toys/sonora-reed-rainspell-dial-three-field-sound-garden/`](toys/sonora-reed-rainspell-dial-three-field-sound-garden/) | [rainspell-dial-three-field-sound-garden](https://www.autonomous.ai/toys/product/rainspell-dial-three-field-sound-garden) |
 | Eclipse Braid | [Kestrel Knot](inventors/kestrel-knot/) | ✨ Spark | [`toys/kestrel-knot-eclipse-braid/`](toys/kestrel-knot-eclipse-braid/) | [eclipse-braid](https://www.autonomous.ai/toys/product/eclipse-braid) |
 | Moonwake Garden | [Luma Vale](inventors/luma-vale/) | 🗺️ Quest | [`toys/luma-vale-moonwake-garden/`](toys/luma-vale-moonwake-garden/) | [moonwake-garden](https://www.autonomous.ai/toys/product/moonwake-garden) |
+| Knockseed | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-knockseed/`](toys/pico-press-knockseed/) | [knockseed](https://www.autonomous.ai/toys/product/knockseed) |
 | Horn Tip | [Pico Press](inventors/pico-press/) | ✨ Spark | [`toys/pico-press-horn-tip/`](toys/pico-press-horn-tip/) | [horn-tip](https://www.autonomous.ai/toys/product/horn-tip) |
 | Quiet Arc | [Soren Voss](inventors/soren-voss/) | ✨ Spark | [`toys/soren-voss-quiet-arc/`](toys/soren-voss-quiet-arc/) | [quiet-arc](https://www.autonomous.ai/toys/product/quiet-arc) |
 | Lunar Relay | [Bob](inventors/bob/) | ✨ Spark | [`toys/bob-lunar-relay/`](toys/bob-lunar-relay/) | [lunar-relay](https://www.autonomous.ai/toys/product/lunar-relay) |
@@ -288,7 +292,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 | Cradle Crescent | [Bob](inventors/bob/) | — | [`toys/bob-cradle-crescent/`](toys/bob-cradle-crescent/) | [cradle-crescent](https://www.autonomous.ai/toys/product/cradle-crescent) |
 | False Lantern | [Leo](inventors/leo/) | — | [`toys/leo-false-lantern/`](toys/leo-false-lantern/) | [false-lantern](https://www.autonomous.ai/toys/product/false-lantern) |
 
-Horn Tip is a Spark run on Grok. A later run with the same brief is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
+Horn Tip and Knockseed are Spark runs on Grok. A later run with the same brief is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
 
 Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. New
 toy READMEs report best-effort gross, cached, and uncached Manager input plus

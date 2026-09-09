@@ -1,0 +1,56 @@
+{
+  "reviewer": "Independent native visual critic; blind observations preserved before reading WISH.json, spark-source.json and RULES.md",
+  "blind_held_read": "A shallow round tabletop puzzle/game board with coinlike counters; liftable tray appearance, actual scale unknown.",
+  "blind_form_read": "A broad thin circular base supports a raised annular platform and separate central disc; recessed circular seats contain low counters and two taller stacks. Recognizably volumetric but strongly planar.",
+  "blind_subjects_read": "Abstract discs, sockets, concentric rings and tally/dot markings; no figurative subjects.",
+  "blind_action_read": "Turn concentric surfaces and rearrange or stack counters. Images do not teach permitted moves or the objective.",
+  "blind_relationship_read": "Two concentric counter groups share one stationary rim with repeated station markings; stacks and inscribed faces distinguish counters.",
+  "anti_generic_signature_read": "Nested moving circular playing surfaces, recessed seats, stackable counters and fixed peripheral tallies form a moderately specific rotational board. The complete unusual gameplay combination is not apparent visually.",
+  "wish_revealed_after_blind_read": true,
+  "held_object_unmistakable": true,
+  "form_matches_wish": true,
+  "subjects_match_wish": true,
+  "action_matches_wish": true,
+  "relationship_matches_wish": true,
+  "anti_generic_signature_visible": true,
+  "signature_experience_unmistakable": false,
+  "finished_product_desirable": true,
+  "review_rounds": 1,
+  "critical_form_requirements": [
+    {
+      "requirement": "A coherent ordinary tabletop physical game with a fixed shore and two concentric carriers",
+      "blind_evidence": "Thin round base, central disc and annular platform read clearly; peripheral marks remain fixed during motion.",
+      "matches": true
+    },
+    {
+      "requirement": "Each carrier visibly transports its seated passengers as a group",
+      "blind_evidence": "Counters and recess patterns circulate together on two surfaces while the base remains still.",
+      "matches": true
+    },
+    {
+      "requirement": "Abstract boats can share locations through stacking",
+      "blind_evidence": "Low cylindrical counters and two visibly taller stacks occupy circular seats. Abstract subjects are appropriate to this Wish.",
+      "matches": true
+    },
+    {
+      "requirement": "Fixed harbor rewards are separate from moving passenger carriers",
+      "blind_evidence": "Repeated rim tallies remain fixed while counters move; exact reward values are difficult to read at supplied scale.",
+      "matches": true
+    },
+    {
+      "requirement": "The defining movement signature includes selected boats crossing to the other carrier one harbor clockwise after transport",
+      "blind_evidence": "Neither the inspected signature pair nor the ordered motion sequence shows an identifiable carrier-to-carrier transfer. Counters remain on their original surfaces throughout the observed sequence.",
+      "matches": false
+    }
+  ],
+  "blocking_visual_defects": [
+    "Signature evidence demonstrates shared rotation but omits the defining selected-boat crossing and clockwise drift; the complete stated signature experience is therefore not unmistakable. This is an evidence/presentation defect, not an observed CAD form defect."
+  ],
+  "largest_risk": "A viewer can reasonably mistake this for a generic rotating-counter board because the exhibits omit the transition that makes future lane decisions change. Subtle marks also limit visual identification, but pale shading alone is not a blocking form defect.",
+  "resolution": "One coherent repair: use one legal worked game position for a numbered before-turn, after-turn/scoring and after-crossing signature sequence, with selected counters visibly identified. Extend the actual assembly motion to show those selected counters lift and move to the other carrier one harbor clockwise, while unselected counters remain where their carrier left them. Keep camera and fixed harbor alignment consistent. Brief captions may explain selection and score; they must correspond to the displayed geometry. No CAD shape redesign is requested. Review only the repaired signature and motion once. Desirability is this critic's visual judgment, not measured family response; the booleans for action and relationship concern the visible shared transport, not proof of the complete rules.",
+  "blind_motion_read": "The base and outside marks remain fixed while counters and seats circulate on two concentric surfaces in opposing directions. Passengers remain seated; no clear pickup, cross-carrier transfer or stack-height change is shown. Frame 15 approaches the starting arrangement.",
+  "motion_matches_wish": true,
+  "simulation_not_physical_test": true,
+  "motion_scope": "The rendered sequence correctly depicts the shared-carrier transport sub-action. It is not a complete choose-turn-score-cross round, does not establish summed secret contributions, and cannot establish physical fit, friction, stability, print success or enjoyment.",
+  "contrast_assessment": "Legibility limitation rather than a blocking visual form defect: carrier boundaries, recessed seats, stationary shore and transported stacks remain discernible. Exact tallies and future hand-written A/B and harbor labels require better presentation or the physical setup instructions."
+}

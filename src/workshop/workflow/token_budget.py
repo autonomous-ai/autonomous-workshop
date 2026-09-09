@@ -7,7 +7,7 @@ from workshop.runtime.codex_usage import COUNTERS
 from workshop.workflow.budgets import LifetimeBudget, LifetimeTurnBudget
 
 TOKEN_BUDGET_CAPABILITY_PATH = ".agents/skills/autonomous-workshop/references/token-budget-v1.md"
-DEFAULT_PRODUCT_TOKENS = 10_000_000
+DEFAULT_PRODUCT_TOKENS = 30_000_000
 
 
 def validate_limit(value):

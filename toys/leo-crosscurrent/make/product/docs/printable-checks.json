@@ -1,0 +1,24 @@
+{
+  "kind": "offline printable file verification, not physical or human testing",
+  "generator": "build_printables.py",
+  "pdf_sha256": {
+    "RULES.pdf": "56fda6d056204115b346eb203db74de8a0b575e4ea5739c53f56836b11c485fb",
+    "CARDS.pdf": "dc868247df9f987b5689af8dcdaf1496155c9b96738e6072d5adffcc290b0200"
+  },
+  "deterministic_regeneration": true,
+  "rules_pages": 5,
+  "cards_pages": 2,
+  "rules_markdown_non_table_paragraphs_preserved": 55,
+  "rules_paragraph_failures": [],
+  "cards_count": 25,
+  "boat_selector_cards": 10,
+  "each_direction_card_count": 5,
+  "score_sheet_page_size": "A5",
+  "score_sheet_rounds": 12,
+  "text_outside_page": [],
+  "visual_inspection": "All five rules pages and both cards pages rendered and inspected. Setup and worked-round diagrams use harbor 1 at right, increasing clockwise. Table headers, cards, score grid and page footers are readable; no text clipping observed.",
+  "limitations": [
+    "Visual and file checks only; printed opacity, cutting accuracy, physical handling and human comprehension are untested.",
+    "Rules preserve 2\u20135 players and disclose five-player bot coordination concern."
+  ]
+}

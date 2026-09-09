@@ -1,0 +1,53 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-07T08:46:28+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 574.56 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=957c5eea3d674bfddd23f40bbd29259d415114d3df1c7e4f5902a6692f5cd3cd` | note | 0.00 |
+| 2 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' artifacts/make/r0001/product/cad` | rc=0 | 0.16 |
+| 3 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' artifacts/make/r0001/product/cad/crosscurrent.step.py artifacts/make/r0001/product/cad/part_boat_1.step.py artifacts/make/r0001/product/cad/part_boat_2.step.py artifacts/make/r0001/product/cad/part_boat_3.step.py artifacts/make/r0001/product/cad/part_boat_4.step.py artifacts/make/r0001/product/cad/part_boat_5.step.py artifacts/make/r0001/product/cad/part_inner.step.py artifacts/make/r0001/product/cad/part_outer.step.py artifacts/make/r0001/product/cad/part_shore.step.py --write --json` | rc=0 | 74.15 |
+| 4 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' artifacts/make/r0001/product/cad --bed 220.0 220.0 --entry artifacts/make/r0001/product/cad/part_boat_1.step.py --entry artifacts/make/r0001/product/cad/part_boat_2.step.py --entry artifacts/make/r0001/product/cad/part_boat_3.step.py --entry artifacts/make/r0001/product/cad/part_boat_4.step.py --entry artifacts/make/r0001/product/cad/part_boat_5.step.py --entry artifacts/make/r0001/product/cad/part_inner.step.py --entry artifacts/make/r0001/product/cad/part_outer.step.py --entry artifacts/make/r0001/product/cad/part_shore.step.py` | rc=0 | 12.51 |
+| 5 | `<HOME>/miniconda/bin/python3.12 artifacts/make/r0001/product/cad/measure/check_fit.py` | rc=0 | 11.33 |
+| 6 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_numbers' artifacts/make/r0001/product/cad` | rc=0 | 10.88 |
+| 7 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 8 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 9 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion' artifacts/make/r0001/product/cad --manifest artifacts/make/r0001/product/cad/measure/motion.json` | rc=0 | 256.24 |
+| 10 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (19 JSONL requests)` | rc=0 | 93.10 |
+| 11 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/crosscurrent.step --glb --json` | rc=0 | 4.38 |
+| 12 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_boat_1.step --stl --json` | rc=0 | 3.30 |
+| 13 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_boat_1.stl --bed 220x220x220` | rc=0 | 1.02 |
+| 14 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_boat_1.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-boat_1.md` | rc=0 | 1.32 |
+| 15 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_boat_1.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-boat_1.md` | rc=0 | 2.52 |
+| 16 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_boat_2.step --stl --json` | rc=0 | 3.42 |
+| 17 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_boat_2.stl --bed 220x220x220` | rc=0 | 0.90 |
+| 18 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_boat_2.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-boat_2.md` | rc=0 | 1.35 |
+| 19 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_boat_2.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-boat_2.md` | rc=0 | 2.50 |
+| 20 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_boat_3.step --stl --json` | rc=0 | 3.67 |
+| 21 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_boat_3.stl --bed 220x220x220` | rc=0 | 0.85 |
+| 22 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_boat_3.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-boat_3.md` | rc=0 | 1.19 |
+| 23 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_boat_3.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-boat_3.md` | rc=0 | 2.39 |
+| 24 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_boat_4.step --stl --json` | rc=0 | 3.60 |
+| 25 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_boat_4.stl --bed 220x220x220` | rc=0 | 0.85 |
+| 26 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_boat_4.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-boat_4.md` | rc=0 | 1.22 |
+| 27 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_boat_4.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-boat_4.md` | rc=0 | 2.33 |
+| 28 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_boat_5.step --stl --json` | rc=0 | 3.81 |
+| 29 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_boat_5.stl --bed 220x220x220` | rc=0 | 1.04 |
+| 30 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_boat_5.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-boat_5.md` | rc=0 | 1.23 |
+| 31 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_boat_5.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-boat_5.md` | rc=0 | 2.63 |
+| 32 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_inner.step --stl --json` | rc=0 | 3.36 |
+| 33 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_inner.stl --bed 220x220x220` | rc=0 | 1.19 |
+| 34 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_inner.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-inner.md` | rc=0 | 1.47 |
+| 35 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_inner.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-inner.md` | rc=0 | 20.35 |
+| 36 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_outer.step --stl --json` | rc=0 | 3.35 |
+| 37 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_outer.stl --bed 220x220x220` | rc=0 | 0.96 |
+| 38 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_outer.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-outer.md` | rc=0 | 1.87 |
+| 39 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_outer.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-outer.md` | rc=0 | 15.85 |
+| 40 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_shore.step --stl --json` | rc=0 | 3.43 |
+| 41 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_shore.stl --bed 220x220x220` | rc=0 | 1.22 |
+| 42 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_shore.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-shore.md` | rc=0 | 2.79 |
+| 43 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_shore.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-shore.md` | rc=0 | 14.74 |

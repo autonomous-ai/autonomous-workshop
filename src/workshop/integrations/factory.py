@@ -1,9 +1,10 @@
 """Credential-isolated Factory transport and explicit publication effects.
 
-This module is the only authenticated Factory boundary. It builds a narrowed,
-model-and-page handoff from exact sealed Make and Release bytes, records an
-effect intent before network I/O, and accepts success only from authenticated
-readback. Customer-page authorship is complete before this adapter runs.
+This module is the only authenticated Factory boundary. It builds a complete
+Make-artifact and Release handoff from exact sealed bytes, excluding only
+derived cache directories, records an effect intent before network I/O, and
+accepts success only from authenticated readback. Customer-page authorship is
+complete before this adapter runs.
 """
 
 from __future__ import annotations
@@ -95,10 +96,9 @@ FACTORY_CONTENT_MAPPING = "workshop-release-v3-to-factory-content-v1"
 # removes or deactivates it, import rejects before a draft is accepted instead
 # of silently classifying a toy under a different first category.
 FACTORY_TOY_CATEGORY_SLUG = "toys"
-# Only these exact metadata files and CAD/project source types may cross the
-# Factory boundary.  This is deliberately an allowlist: a creator-facing file
-# must not become uploadable merely because its directory or suffix was not in
-# a blacklist.
+# These host-authored metadata files and legacy CAD/project source types may
+# cross without a current Make-artifact declaration. Current handoffs admit
+# every Made file only through their exact path/size/hash inventory below.
 FACTORY_MODEL_METADATA_PATHS = frozenset(
     (
         "_inventor-artifact.json",
@@ -128,6 +128,20 @@ FACTORY_MODEL_GEOMETRY_SUFFIXES = frozenset(
     )
 )
 FACTORY_MODEL_GENERATOR_SUFFIXES = frozenset((".py",))
+FACTORY_MAKE_ARTIFACTS_KIND = "workshop.make-artifacts"
+FACTORY_MAKE_EXCLUDED_DIRECTORIES = frozenset(
+    ("__cadgen__", "__pycache__")
+)
+FACTORY_MAKE_CONFLICT_PREFIX = "_workshop/make/"
+FACTORY_HANDOFF_RESERVED_PATHS = frozenset(
+    (
+        "workshop-product-facts.json",
+        FACTORY_RELEASE_PAGE_PATH,
+        FACTORY_RELEASE_LEGACY_MANUAL_PATH,
+        FACTORY_RELEASE_PDF_MANUAL_PATH,
+        "project.json",
+    )
+)
 # Only these sealed CAD types carry the per-part surface colours Make
 # assigned; a colour is read from the exact sealed bytes, never inferred
 # from a mesh, a render, or model prose.
@@ -287,11 +301,12 @@ def _factory_project_file_url(project_url: Any, path: str) -> str:
     )
 
 
-def _is_factory_model_path(
+def _is_factory_handoff_path(
     path: str,
     *,
     primary_kind: str,
     primary_path: Optional[str] = None,
+    made_artifact_paths: frozenset[str] = frozenset(),
 ) -> bool:
     pure = PurePosixPath(path)
     if (
@@ -301,16 +316,16 @@ def _is_factory_model_path(
         or any(part in ("", ".", "..") for part in pure.parts)
     ):
         return False
-    if path in FACTORY_MODEL_METADATA_PATHS or path in FACTORY_HOST_HANDOFF_PATHS:
+    if path in made_artifact_paths or path in FACTORY_MODEL_METADATA_PATHS or path in FACTORY_HOST_HANDOFF_PATHS:
         return True
     lowered = path.casefold()
     if lowered.endswith(".step.json"):
         return True
     suffix = pure.suffix.casefold()
     return suffix in FACTORY_MODEL_GEOMETRY_SUFFIXES or (
-        primary_kind == "generator"
+        suffix in FACTORY_MODEL_GENERATOR_SUFFIXES
+        and primary_kind == "generator"
         and path == primary_path
-        and suffix in FACTORY_MODEL_GENERATOR_SUFFIXES
     )
 
 
@@ -390,6 +405,132 @@ def _sealed_primary(context: Any) -> Mapping[str, str]:
 
 def _manifest_entry(manifest: ArtifactManifest, path: str):
     return next((entry for entry in manifest.entries if entry.path == path), None)
+
+
+def _safe_factory_archive_path(path: Any, label: str) -> PurePosixPath:
+    if not isinstance(path, str):
+        raise ContractError("%s is malformed" % label)
+    pure = PurePosixPath(path)
+    if (
+        not path
+        or pure.is_absolute()
+        or pure.as_posix() != path
+        or "\\" in path
+        or any(part in ("", ".", "..") for part in pure.parts)
+    ):
+        raise ContractError("%s is malformed" % label)
+    return pure
+
+
+def _is_excluded_make_path(path: str) -> bool:
+    pure = _safe_factory_archive_path(path, "Factory Make artifact path")
+    return bool(
+        FACTORY_MAKE_EXCLUDED_DIRECTORIES
+        & {part.casefold() for part in pure.parts[:-1]}
+    )
+
+
+def _make_archive_path(
+    path: str,
+    *,
+    conflict_paths: frozenset[str] = FACTORY_HANDOFF_RESERVED_PATHS,
+) -> str:
+    _safe_factory_archive_path(path, "Factory Make artifact path")
+    if path in conflict_paths:
+        return FACTORY_MAKE_CONFLICT_PREFIX + path
+    return path
+
+
+def _make_artifact_entries(
+    manifest: ArtifactManifest,
+    *,
+    conflict_paths: frozenset[str] = FACTORY_HANDOFF_RESERVED_PATHS,
+):
+    """Select every sealed Make file except derived Python/CAD cache content."""
+
+    result = []
+    archive_paths = set()
+    for entry in manifest.entries:
+        if _is_excluded_make_path(entry.path):
+            continue
+        archive_path = _make_archive_path(
+            entry.path,
+            conflict_paths=conflict_paths,
+        )
+        if archive_path in archive_paths:
+            raise ContractError("Made artifact paths collide in the Factory handoff")
+        archive_paths.add(archive_path)
+        result.append((entry, archive_path))
+    return tuple(sorted(result, key=lambda item: item[0].path))
+
+
+def _declared_make_artifacts(
+    facts: Mapping[str, Any],
+) -> Mapping[str, Mapping[str, Any]]:
+    """Validate the exact Made-file inventory carried by one handoff."""
+
+    declaration = facts.get("make_artifacts")
+    if declaration is None:
+        return {}
+    if not isinstance(declaration, Mapping) or set(declaration) != {
+        "schema_version",
+        "kind",
+        "excluded_directories",
+        "files",
+    }:
+        raise ContractError("Factory Make artifact declaration is malformed")
+    if (
+        declaration.get("schema_version") != 1
+        or declaration.get("kind") != FACTORY_MAKE_ARTIFACTS_KIND
+        or declaration.get("excluded_directories")
+        != sorted(FACTORY_MAKE_EXCLUDED_DIRECTORIES)
+    ):
+        raise ContractError("Factory Make artifact declaration is malformed")
+    files = declaration.get("files")
+    if not isinstance(files, list) or not files:
+        raise ContractError("Factory Make artifact declaration is malformed")
+    result: Dict[str, Mapping[str, Any]] = {}
+    source_paths = []
+    for item in files:
+        if not isinstance(item, Mapping) or set(item) != {
+            "source_path",
+            "archive_path",
+            "bytes",
+            "sha256",
+        }:
+            raise ContractError("Factory Make artifact declaration is malformed")
+        source_path = item.get("source_path")
+        archive_path = item.get("archive_path")
+        byte_count = item.get("bytes")
+        if (
+            not isinstance(source_path, str)
+            or not isinstance(archive_path, str)
+            or type(byte_count) is not int
+            or byte_count < 0
+            or _is_excluded_make_path(source_path)
+            or archive_path
+            not in (
+                source_path,
+                FACTORY_MAKE_CONFLICT_PREFIX + source_path,
+            )
+            or (
+                source_path in FACTORY_HANDOFF_RESERVED_PATHS
+                and archive_path != FACTORY_MAKE_CONFLICT_PREFIX + source_path
+            )
+            or archive_path in result
+        ):
+            raise ContractError("Factory Make artifact declaration is malformed")
+        result[archive_path] = {
+            "source_path": source_path,
+            "bytes": byte_count,
+            "sha256": require_sha256(
+                item.get("sha256"), "Factory Make artifact sha256"
+            ),
+        }
+        source_paths.append(source_path)
+    if source_paths != sorted(source_paths) or len(source_paths) != len(set(source_paths)):
+        raise ContractError("Factory Make artifact declaration is not canonical")
+    return result
 
 
 def _read_bound_file(root: Path, manifest: ArtifactManifest, path: str) -> bytes:
@@ -1029,96 +1170,6 @@ def _validated_occurrence_transport(
         return None, _bounded_reason(str(exc))
 
 
-def _assert_archive_inventory(content: bytes, project_id: str) -> None:
-    """Mirror Factory's root visual and occurrence-family discovery contract."""
-
-    try:
-        with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            names = archive.namelist()
-            if len(names) != len(set(names)):
-                raise ContractError("Factory handoff contains duplicate archive paths")
-            files = {name for name in names if not name.endswith("/")}
-            geometry = {
-                name
-                for name in files
-                if PurePosixPath(name).suffix.casefold()
-                in FACTORY_MODEL_GEOMETRY_SUFFIXES
-            }
-            stls = {
-                name
-                for name in geometry
-                if PurePosixPath(name).suffix.casefold() == ".stl"
-            }
-            root_visuals = {"assembled.stl", project_id + ".stl"} & stls
-            if len(root_visuals) != 1:
-                raise ContractError("Factory handoff requires one root primary STL")
-            try:
-                project = json.loads(archive.read("project.json").decode("utf-8"))
-            except (KeyError, UnicodeError, ValueError) as exc:
-                raise ContractError("Factory handoff project.json is malformed") from exc
-            if (
-                not isinstance(project, Mapping)
-                or project.get("id") != project_id
-                or not isinstance(project.get("name"), str)
-                or not project["name"].strip()
-            ):
-                raise ContractError("Factory handoff project.json is malformed")
-            primary_stem = PurePosixPath(next(iter(root_visuals))).stem
-            parts_directory = primary_stem + "_parts"
-            production = {name for name in stls if name.startswith(parts_directory + "/")}
-            if len(stls) == 1:
-                if production or geometry != root_visuals:
-                    raise ContractError(
-                        "single-part Factory handoff geometry is not exact"
-                    )
-                return
-            step_name = primary_stem + ".step"
-            sidecar_name = step_name + ".json"
-            if not production or step_name not in files or sidecar_name not in files:
-                raise ContractError("multipart Factory handoff lacks its occurrence family")
-            try:
-                sidecar = json.loads(archive.read(sidecar_name).decode("utf-8"))
-            except (KeyError, UnicodeError, ValueError) as exc:
-                raise ContractError("Factory handoff sidecar is malformed") from exc
-            if (
-                not isinstance(sidecar, Mapping)
-                or sidecar.get("schemaVersion") != 1
-                or sidecar.get("entryKind") != "assembly"
-                or sidecar.get("primaryPose") != "assembled"
-                or not isinstance(sidecar.get("parts"), list)
-                or not sidecar["parts"]
-            ):
-                raise ContractError("Factory handoff sidecar is malformed")
-            expected = set()
-            occurrence_names = set()
-            for item in sidecar["parts"]:
-                if not isinstance(item, Mapping):
-                    raise ContractError("Factory handoff occurrence is malformed")
-                name = item.get("name")
-                path = item.get("stlPath")
-                canonical = "%s/%s.stl" % (parts_directory, name)
-                if (
-                    not isinstance(name, str)
-                    or not _OCCURRENCE_NAME.fullmatch(name)
-                    or name in occurrence_names
-                    or path != canonical
-                ):
-                    raise ContractError("Factory handoff occurrence is malformed")
-                occurrence_names.add(name)
-                expected.add(canonical)
-            expected_geometry = root_visuals | expected | {step_name}
-            if (
-                production != expected
-                or stls != root_visuals | expected
-                or geometry != expected_geometry
-            ):
-                raise ContractError("Factory handoff geometry inventory is not exact")
-    except ContractError:
-        raise
-    except (OSError, ValueError, zipfile.BadZipFile) as exc:
-        raise ContractError("Factory model handoff is not a readable ZIP") from exc
-
-
 def _assert_factory_handoff(content: bytes) -> None:
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
@@ -1143,7 +1194,7 @@ def _assert_factory_handoff(content: bytes) -> None:
             if (
                 primary_kind not in ("mesh", "generator")
                 or not isinstance(primary_path, str)
-                or not _is_factory_model_path(
+                or not _is_factory_handoff_path(
                     primary_path,
                     primary_kind=primary_kind,
                     primary_path=primary_path,
@@ -1168,6 +1219,21 @@ def _assert_factory_handoff(content: bytes) -> None:
                 raise ContractError("Factory handoff primary model is missing") from exc
             if hashlib.sha256(primary_content).hexdigest() != primary_sha256:
                 raise ContractError("Factory handoff primary model hash differs")
+            make_artifacts = _declared_make_artifacts(facts)
+            for archive_path, binding in make_artifacts.items():
+                try:
+                    source_content = archive.read(archive_path)
+                except KeyError as exc:
+                    raise ContractError(
+                        "Factory handoff Make artifact is missing: %s" % archive_path
+                    ) from exc
+                if (
+                    len(source_content) != binding["bytes"]
+                    or hashlib.sha256(source_content).hexdigest() != binding["sha256"]
+                ):
+                    raise ContractError(
+                        "Factory handoff Make artifact differs: %s" % archive_path
+                    )
             try:
                 release_page_content = archive.read(FACTORY_RELEASE_PAGE_PATH)
                 release_page = validate_release_product(
@@ -1204,10 +1270,11 @@ def _assert_factory_handoff(content: bytes) -> None:
             ):
                 raise ContractError("Factory handoff %s hash differs" % manual_path)
             for name in names:
-                if not _is_factory_model_path(
+                if not _is_factory_handoff_path(
                     name,
                     primary_kind=primary_kind,
                     primary_path=primary_path,
+                    made_artifact_paths=frozenset(make_artifacts),
                 ):
                     raise ContractError(
                         "Factory model handoff contains non-model output: %s" % name
@@ -1269,6 +1336,33 @@ def _build_model_handoff(
             primary_source,
             PurePosixPath(transport_primary).stem,
         )
+    if occurrence is not None:
+        occurrence_sources = [
+            occurrence["source_step"],
+            occurrence["source_sidecar"],
+            *(item["source_path"] for item in occurrence["occurrences"]),
+        ]
+        if any(
+            path is not None and _is_excluded_make_path(path)
+            for path in occurrence_sources
+        ):
+            occurrence = None
+    conflict_paths = set(FACTORY_HANDOFF_RESERVED_PATHS)
+    conflict_paths.update(
+        entry.path
+        for entry in manifest.entries
+        if entry.path.casefold().endswith(".step.json")
+    )
+    if occurrence is not None:
+        conflict_paths.update(
+            (occurrence["step_path"], occurrence["sidecar_path"])
+        )
+        conflict_paths.update(item["path"] for item in occurrence["occurrences"])
+        conflict_paths.discard(primary_source)
+    make_artifacts = _make_artifact_entries(
+        manifest,
+        conflict_paths=frozenset(conflict_paths),
+    )
 
     primary_model = {
         "kind": sealed_primary["kind"],
@@ -1277,6 +1371,21 @@ def _build_model_handoff(
     }
     transport_facts = dict(facts)
     transport_facts["primary_model"] = primary_model
+    if make_artifacts:
+        transport_facts["make_artifacts"] = {
+            "schema_version": 1,
+            "kind": FACTORY_MAKE_ARTIFACTS_KIND,
+            "excluded_directories": sorted(FACTORY_MAKE_EXCLUDED_DIRECTORIES),
+            "files": [
+                {
+                    "source_path": entry.path,
+                    "archive_path": archive_path,
+                    "bytes": entry.bytes,
+                    "sha256": entry.sha256,
+                }
+                for entry, archive_path in make_artifacts
+            ],
+        }
     if occurrence is not None:
         occurrences = occurrence["occurrences"]
         transport_facts["factory_assembly"] = {
@@ -1333,68 +1442,15 @@ def _build_model_handoff(
             raise ContractError("Factory handoff MANUAL.md must be UTF-8") from exc
     assert_packable_content(manual_path, manual_content)
 
-    # STEP JSON is executable transport metadata from Factory's perspective.
-    # Never copy an unvalidated document merely because Make emitted it beside
-    # CAD. A validated occurrence family is rewritten below from safe paths.
-    skip_paths = {
-        entry.path
-        for entry in manifest.entries
-        if entry.path.casefold().endswith(".step.json")
-    }
-    if occurrence is not None:
-        skip_paths.update(
-            path for path in (
-                occurrence["source_step"],
-                occurrence["source_sidecar"],
-                occurrence["step_path"],
-                occurrence["sidecar_path"],
-            )
-            if path is not None
-        )
-    if sealed_primary["kind"] == "mesh":
-        # Valid occurrence parts are rewritten below under their validated
-        # names. Keep no alternate CAD, mesh, or slicer-project representation:
-        # Factory's fallback estimator counts every such basename as another
-        # printable part. Without an occurrence family this deliberately leaves
-        # only the root primary STL; with one, the required assembly STEP and
-        # declared production STLs are written explicitly below.
-        skip_paths.update(
-            entry.path
-            for entry in manifest.entries
-            if PurePosixPath(entry.path).suffix.casefold()
-            in FACTORY_MODEL_GEOMETRY_SUFFIXES
-            and entry.path != primary_source
-        )
     with tempfile.TemporaryDirectory(prefix="workshop-factory-handoff-") as temporary:
         staging = Path(temporary)
-        for entry in manifest.entries:
-            # Native Make may carry an engineering manual, but Factory must
-            # receive the exact customer-facing manual sealed by Release.
-            # Factory also requires root project.json for discovery, so the
-            # boundary writes one deterministically from sealed Wish+Release.
-            if entry.path in FACTORY_RELEASE_MANUAL_PATHS or entry.path == "project.json":
-                continue
-            if (
-                not _is_factory_model_path(
-                    entry.path,
-                    primary_kind=sealed_primary["kind"],
-                    primary_path=primary_source,
-                )
-                or entry.path in skip_paths
-            ):
-                continue
+        for entry, archive_path in make_artifacts:
             content = _read_bound_file(root, manifest, entry.path)
-            relative = PurePosixPath(entry.path)
-            if transport_primary != primary_source and entry.path == primary_source:
-                continue
+            relative = PurePosixPath(archive_path)
             target = staging.joinpath(*relative.parts)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
             target.chmod(0o755 if entry.executable else 0o644)
-        if transport_primary != primary_source and not (staging / transport_primary).exists():
-            target = staging / transport_primary
-            target.write_bytes(_read_bound_file(root, manifest, primary_source))
-            target.chmod(0o644)
         if occurrence is not None:
             (staging / occurrence["step_path"]).write_bytes(
                 _read_bound_file(root, manifest, occurrence["source_step"])
@@ -1419,14 +1475,7 @@ def _build_model_handoff(
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(cover_render)
             target.chmod(0o644)
-        reserved = (
-            "workshop-product-facts.json",
-            FACTORY_RELEASE_PAGE_PATH,
-            FACTORY_RELEASE_LEGACY_MANUAL_PATH,
-            FACTORY_RELEASE_PDF_MANUAL_PATH,
-            "project.json",
-        )
-        if any((staging / path).exists() for path in reserved):
+        if any((staging / path).exists() for path in FACTORY_HANDOFF_RESERVED_PATHS):
             raise ContractError("Made contains a reserved Factory handoff path")
         (staging / "workshop-product-facts.json").write_bytes(facts_payload)
         (staging / FACTORY_RELEASE_PAGE_PATH).write_bytes(release_page_content)
@@ -1440,8 +1489,6 @@ def _build_model_handoff(
     ):
         raise ContractError("Factory handoff Pack changed after construction")
     _assert_factory_handoff(content)
-    if sealed_primary["kind"] == "mesh":
-        _assert_archive_inventory(content, context.wish.product_id)
     result.update(
         {
             "content": content,

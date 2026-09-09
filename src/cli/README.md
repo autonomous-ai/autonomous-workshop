@@ -10,8 +10,8 @@ the installed `workshop` command.
 
 `workshop wish --workflow spark|forge|quest "..."` freezes the selected route;
 Spark is the default. `--agent`, `--model`, and `--effort` freeze the native
-runtime, model, and reasoning level. Codex defaults to `gpt-5.6-sol` at high;
-Claude Code defaults to `claude-opus-5` at high. Status and resume read those
+runtime, model, and reasoning level. Codex defaults to `gpt-5.6-sol` at medium;
+Claude Code defaults to `claude-opus-5` at medium. Status and resume read those
 durable choices rather than accepting replacements.
 
 `workshop wish --inventor <id> "..."` pins the exact Inventor in the immutable
@@ -50,7 +50,7 @@ sources and cardinality: `workshop wish` makes one product from a human-provided
 idea, while `workshop start` continuously makes products from an Inventor's own
 ideas. `workshop start --once` is the bounded autonomous-idea variant.
 
-`start` and `wish` accept `--max-tokens N` (default `10000000`) for the whole
+`start` and `wish` accept `--max-tokens N` (default `30000000`) for the whole
 Codex product, including all build stages, native children and resumes. The
 separate Daydream session is excluded. Input plus output is counted, including
 cached input but without counting reasoning output twice. `resume` without the

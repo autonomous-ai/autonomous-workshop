@@ -93,6 +93,9 @@ from workshop.workflow import (
     resume_native_run,
     start_native_run,
 )
+from workshop.wish import Wish, generate_wish_id
+from workshop.workflow import native_run_status, resume_native_run, start_native_run
+from workshop.workflow.token_budget import DEFAULT_PRODUCT_TOKENS
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
     WORKSHOP_EFFORTS,
@@ -173,15 +176,15 @@ _LIVE_ACTIVE_INTERVAL_SECONDS = 2.0
 _LIVE_RUNNING_INTERVAL_SECONDS = 30.0
 _LIVE_CHURN_ACTIVITY = frozenset(("reasoning", "tool", "subagent"))
 _LIVE_ACTIVITY_MESSAGES = {
-    "starting": "Native Codex: starting the current stage.",
-    "running": "Native Codex: process is still running.",
-    "reasoning": "Native Codex: reasoning about the current stage.",
-    "tool": "Native Codex: using a tool for the current stage.",
-    "subagent": "Native Codex: coordinating a subagent.",
-    "finalizing": "Native Codex: reported progress for the current stage.",
-    "completed": "Native Codex: turn complete; Workshop is verifying it.",
+    "starting": "Native %s: starting the current stage.",
+    "running": "Native %s: process is still running.",
+    "reasoning": "Native %s: reasoning about the current stage.",
+    "tool": "Native %s: using a tool for the current stage.",
+    "subagent": "Native %s: coordinating a subagent.",
+    "finalizing": "Native %s: reported progress for the current stage.",
+    "completed": "Native %s: turn complete; Workshop is verifying it.",
     "failed": (
-        "Native Codex: turn ended; Workshop is checking for a valid stage proposal."
+        "Native %s: turn ended; Workshop is checking for a valid stage proposal."
     ),
 }
 
@@ -189,17 +192,19 @@ _LIVE_ACTIVITY_MESSAGES = {
 class _LiveWishProgress:
     """Render bounded Wish timing and native activity without log churn."""
 
-    def __init__(self, stream: TextIO) -> None:
+    def __init__(self, stream: TextIO, manager_name: str = "Codex") -> None:
         self._stream = stream
+        self._manager_name = manager_name
         self._lock = threading.Lock()
         self._last_non_running: Optional[str] = None
         self._last_active_at: Optional[float] = None
         self._last_running_at: Optional[float] = None
 
     def activity(self, activity: str) -> None:
-        message = _LIVE_ACTIVITY_MESSAGES.get(activity)
-        if message is None:
+        template = _LIVE_ACTIVITY_MESSAGES.get(activity)
+        if template is None:
             return
+        message = template % self._manager_name
         now = time.monotonic()
         with self._lock:
             if activity == "running":
@@ -508,7 +513,7 @@ def _start_run(
     runtime,
     github: bool,
     max_rounds: int = DEFAULT_MAX_ROUNDS,
-    max_tokens: int = 10_000_000,
+    max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
@@ -573,7 +578,7 @@ def _start_run(
         manager_model=runtime.model,
         manager_reasoning_effort=runtime.reasoning_effort,
         max_rounds=max_rounds,
-        **({"max_tokens": max_tokens} if max_tokens != 10_000_000 else {}),
+        **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
         wish_reference_files=wish_reference_files,
         github_publish_requested=github,
         activity_observer=live_progress.activity,
@@ -597,12 +602,12 @@ def _wish(args: argparse.Namespace) -> int:
         references=[item.reference for item in loaded_references],
     )
     progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
     runtime = manager_runtime_selection(
         args.agent,
         model=args.model,
         reasoning_effort=args.effort,
     )
+    live_progress = _LiveWishProgress(progress, runtime.spec.display_name)
     receipt = _start_run(
         wish,
         workflow=workflow,
@@ -741,7 +746,7 @@ def _daydream(args: argparse.Namespace) -> int:
         reasoning_effort=args.effort,
     )
     progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
+    live_progress = _LiveWishProgress(progress, runtime.spec.display_name)
     sealed = _dream_or_load(
         args,
         root=root,
@@ -790,7 +795,7 @@ def _start(args: argparse.Namespace) -> int:
     )
     workflow = workshop_effort(args.workflow)
     progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
+    live_progress = _LiveWishProgress(progress, runtime.spec.display_name)
     typed = args.wish is not None
     if typed and args.idea is not None:
         raise WorkshopError("--wish and --idea are exclusive: type a brief or build a saved idea")
@@ -1003,9 +1008,9 @@ def _status(args: argparse.Namespace) -> int:
 
 def _resume(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
-    live_progress = _LiveWishProgress(progress)
+    live_progress = _LiveWishProgress(progress, "Manager")
     print(
-        "Resuming the exact native Codex session for %s..." % args.product_id,
+        "Resuming the exact native Manager session for %s..." % args.product_id,
         file=progress,
         flush=True,
     )
@@ -1677,7 +1682,7 @@ def parser() -> argparse.ArgumentParser:
         choices=SUPPORTED_REASONING_EFFORTS,
         default=None,
         metavar="LEVEL",
-        help="model reasoning effort (default: high for Codex and Claude Code)",
+        help="model reasoning effort (default: medium for Codex and Claude Code)",
     )
     start.add_argument(
         "--root", type=Path, help="Workshop checkout or inventor catalog"
@@ -1719,8 +1724,8 @@ def parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="with --once: exit 1 when the run waits"
     )
     start.set_defaults(handler=_start)
-    start.add_argument("--max-tokens", type=_token_budget, default=10_000_000, metavar="N",
-                       help="Codex token cap per product across all build steps and resumes (default: 10000000); excludes the separate daydream")
+    start.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
+                       help="Codex token cap per product across all build steps and resumes (default: %(default)s); excludes the separate daydream")
 
     login = subcommands.add_parser(
         "login",
@@ -1775,7 +1780,7 @@ def parser() -> argparse.ArgumentParser:
         choices=SUPPORTED_REASONING_EFFORTS,
         default=None,
         metavar="LEVEL",
-        help="model reasoning effort (default: high for Codex and Claude Code)",
+        help="model reasoning effort (default: medium for Codex and Claude Code)",
     )
     daydream.add_argument(
         "--root", type=Path, help="Workshop checkout or inventor catalog"
@@ -1839,7 +1844,7 @@ def parser() -> argparse.ArgumentParser:
         choices=SUPPORTED_REASONING_EFFORTS,
         default=None,
         metavar="LEVEL",
-        help="model reasoning effort (default: high for Codex and Claude Code)",
+        help="model reasoning effort (default: medium for Codex and Claude Code)",
     )
     wish.add_argument(
         "--max-rounds",
@@ -1863,8 +1868,8 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
-    wish.add_argument("--max-tokens", type=_token_budget, default=10_000_000, metavar="N",
-                      help="Codex input-plus-output token cap for the whole product (default: 10000000)")
+    wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
+                      help="Codex input-plus-output token cap for the whole product (default: %(default)s)")
 
     status = subcommands.add_parser(
         "status", help="inspect one native Wish checkpoint without running a model"

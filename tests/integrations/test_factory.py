@@ -556,7 +556,34 @@ class FactoryReleaseTest(unittest.TestCase):
             self.release, created_at="content-addressed"
         )
 
-    def test_private_import_is_model_only_hash_bound_and_idempotent(self):
+    def _add_make_artifact_tree(self):
+        product = self.made.artifact_root
+        project = product / "cad/project"
+        (project / "parts").mkdir(parents=True)
+        (project / "__cadgen__").mkdir()
+        sources = {
+            "cad/project/assembled.step.py": b"from build import gen_step\n",
+            "cad/project/build.py": b"def gen_step():\n    return None\n",
+            "cad/project/parts/token.py": b"def token():\n    return None\n",
+        }
+        for relative, content in sources.items():
+            (product / relative).write_bytes(content)
+        (project / "__cadgen__/cached.py").write_bytes(b"generated cache\n")
+        (project / "__pycache__").mkdir()
+        (project / "__pycache__/cached.py").write_bytes(b"bytecode cache\n")
+        self.made = Made.from_root(product, self.made.product)
+        self.context = ReleaseContext(self.made)
+        release_page_path = self.release / "product.json"
+        release_page = json.loads(release_page_path.read_text(encoding="utf-8"))
+        release_page["product_artifact_sha256"] = self.made.artifact_sha256
+        release_page_path.write_bytes(canonical_json(release_page))
+        self.page = release_page
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+        return sources
+
+    def test_private_import_is_complete_make_handoff_hash_bound_and_idempotent(self):
         transport = FactoryTransport()
         receipt = self.writer(transport)(self.context, self.release, self.manifest)
         self.assertTrue(receipt.is_verified_draft)
@@ -605,11 +632,18 @@ class FactoryReleaseTest(unittest.TestCase):
                     "limitations": ["digital Playtest only"],
                 },
             )
-            self.assertNotIn("main.py", names)
-            self.assertNotIn("page.json", names)
-            self.assertNotIn("review.json", names)
-            self.assertNotIn("marketing-copy.md", names)
-            self.assertFalse(any(name.endswith(".png") for name in names))
+            self.assertIn("main.py", names)
+            self.assertIn("page.json", names)
+            self.assertIn("review.json", names)
+            self.assertIn("marketing-copy.md", names)
+            self.assertIn("renders/local.png", names)
+            self.assertIn("review/local.png", names)
+            self.assertIn("product-media/local.png", names)
+            self.assertIn("_workshop/make/project.json", names)
+            self.assertEqual(
+                archive.read("_workshop/make/project.json"),
+                (self.made.artifact_root / "project.json").read_bytes(),
+            )
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(facts["primary_model"]["path"], "assembled.stl")
             self.assertEqual(
@@ -685,7 +719,7 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertIn("MANUAL.pdf", archive.namelist())
             self.assertNotIn("MANUAL.md", archive.namelist())
             self.assertEqual(archive.read("MANUAL.pdf"), manual)
-            self.assertNotIn("assembled.step", archive.namelist())
+            self.assertIn("assembled.step", archive.namelist())
             self.assertEqual(
                 archive.read("assembled.stl"),
                 (self.made.artifact_root / "assembled.stl").read_bytes(),
@@ -809,7 +843,15 @@ class FactoryReleaseTest(unittest.TestCase):
                 if PurePosixPath(name).suffix.casefold()
                 in {".stl", ".step", ".stp", ".3mf", ".obj", ".glb", ".gltf"}
             )
-            self.assertEqual(counted_geometry, ["assembled.stl"])
+            self.assertEqual(
+                counted_geometry,
+                [
+                    "assembled.3mf",
+                    "assembled.gcode.3mf",
+                    "assembled.step",
+                    "assembled.stl",
+                ],
+            )
             self.assertFalse((product / "project.json").exists())
             self.assertEqual(
                 json.loads(archive.read("project.json")),
@@ -827,6 +869,78 @@ class FactoryReleaseTest(unittest.TestCase):
             )
             self.assertEqual(facts["wish"], self.context.wish.to_dict())
             self.assertEqual(facts["product"], dict(self.made.product))
+
+    def test_handoff_includes_all_sealed_make_files_except_cache_trees(self):
+        self._add_make_artifact_tree()
+        transport = FactoryTransport()
+
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            declaration = json.loads(
+                archive.read("workshop-product-facts.json")
+            )["make_artifacts"]
+            declared = {
+                item["source_path"]: item for item in declaration["files"]
+            }
+            expected_sources = {
+                entry.path
+                for entry in self.made.artifact_manifest.entries
+                if not {"__cadgen__", "__pycache__"}
+                & {part.casefold() for part in PurePosixPath(entry.path).parts[:-1]}
+            }
+            self.assertEqual(set(declared), expected_sources)
+            self.assertNotIn("cad/project/__cadgen__/cached.py", names)
+            self.assertNotIn("cad/project/__pycache__/cached.py", names)
+            for source_path, item in declared.items():
+                content = archive.read(item["archive_path"])
+                self.assertEqual(
+                    content,
+                    (self.made.artifact_root / source_path).read_bytes(),
+                )
+                self.assertEqual(item["bytes"], len(content))
+                self.assertEqual(item["sha256"], hashlib.sha256(content).hexdigest())
+
+    def test_client_rejects_changed_declared_make_artifact(self):
+        self._add_make_artifact_tree()
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        tampered = io.BytesIO()
+        with (
+            zipfile.ZipFile(io.BytesIO(parts["file"][0])) as source,
+            zipfile.ZipFile(tampered, "w", zipfile.ZIP_DEFLATED) as target,
+        ):
+            for item in source.infolist():
+                content = source.read(item.filename)
+                if item.filename == "cad/project/build.py":
+                    content += b"# changed\n"
+                target.writestr(item, content)
+
+        client = FactoryClient(
+            lambda *_args, **_kwargs: self.fail("tampered handoff reached transport")
+        )
+        with self.assertRaisesRegex(ContractError, "Make artifact differs"):
+            client.import_model(
+                filename="model-handoff.zip",
+                content=tampered.getvalue(),
+                metadata={
+                    "status": "draft",
+                    "title": "Verified Toy",
+                    "description": "An exact toy page authored before Factory import.",
+                    "category": FACTORY_TOY_CATEGORY_SLUG,
+                    "tags": ["toy"],
+                },
+                idempotency_key="test-tampered-cad-python-source",
+            )
 
     def test_release_manual_supersedes_made_manual_at_factory_boundary(self):
         product = self.made.artifact_root
@@ -856,7 +970,7 @@ class FactoryReleaseTest(unittest.TestCase):
             )
             self.assertNotIn(b"Creator-only build notes", archive.read("MANUAL.md"))
 
-    def test_generator_primary_is_included_but_creator_outputs_are_not(self):
+    def test_generator_primary_and_complete_make_tree_are_included(self):
         product = self.made.artifact_root
         (product / "assembled.stl").unlink()
         self.made = Made.from_root(product, self.made.product)
@@ -881,10 +995,10 @@ class FactoryReleaseTest(unittest.TestCase):
             names = set(archive.namelist())
             self.assertIn("main.py", names)
             self.assertIn("assembled.step", names)
-            self.assertNotIn("unrelated.py", names)
-            self.assertNotIn("page.json", names)
-            self.assertNotIn("review.json", names)
-            self.assertNotIn("marketing-copy.md", names)
+            self.assertIn("unrelated.py", names)
+            self.assertIn("page.json", names)
+            self.assertIn("review.json", names)
+            self.assertIn("marketing-copy.md", names)
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(
                 facts["primary_model"],
@@ -895,7 +1009,7 @@ class FactoryReleaseTest(unittest.TestCase):
                 },
             )
 
-    def test_client_rejects_unrecognized_creator_output_in_model_archive(self):
+    def test_client_rejects_undeclared_file_in_legacy_model_archive(self):
         primary = b"solid exact\nendsolid exact\n"
         buffer = io.BytesIO()
         manual = b"# Exact Manual\n"
@@ -1178,7 +1292,7 @@ class FactoryReleaseTest(unittest.TestCase):
         intent = self.ledger.latest("verified-toy", "factory-part-colors")
         self.assertEqual(intent.state, "unknown")
 
-    def test_product_specific_assembly_json_falls_back_to_sealed_primary_stl(self):
+    def test_product_specific_sidecar_is_archived_but_not_used_for_transport(self):
         product = self.made.artifact_root
         (product / "cad").mkdir()
         (product / "cad" / "star-arm.stl").write_bytes(TETRA_STL)
@@ -1214,12 +1328,13 @@ class FactoryReleaseTest(unittest.TestCase):
             stls = sorted(
                 name for name in names if PurePosixPath(name).suffix == ".stl"
             )
-            self.assertEqual(stls, ["assembled.stl"])
+            self.assertEqual(stls, ["assembled.stl", "cad/star-arm.stl"])
             self.assertNotIn("assembled.step.json", names)
+            self.assertIn("_workshop/make/assembled.step.json", names)
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertNotIn("factory_assembly", facts)
 
-    def test_malformed_occurrence_paths_cannot_enter_primary_stl_fallback(self):
+    def test_malformed_occurrence_metadata_is_archived_without_becoming_transport(self):
         product = self.made.artifact_root
         (product / "component.stl").write_bytes(TETRA_STL)
         (product / "assembled.step.json").write_bytes(
@@ -1251,14 +1366,15 @@ class FactoryReleaseTest(unittest.TestCase):
                 all(".." not in PurePosixPath(name).parts for name in names)
             )
             self.assertNotIn("assembled.step.json", names)
-            self.assertNotIn("component.stl", names)
+            self.assertIn("_workshop/make/assembled.step.json", names)
+            self.assertIn("component.stl", names)
             self.assertEqual(
                 sorted(
                     name
                     for name in names
                     if PurePosixPath(name).suffix == ".stl"
                 ),
-                ["assembled.stl"],
+                ["assembled.stl", "component.stl"],
             )
 
     def test_multipart_import_derives_sidecar_from_sealed_product_inventory(self):
@@ -1346,7 +1462,7 @@ class FactoryReleaseTest(unittest.TestCase):
             names = set(archive.namelist())
             occurrence_path = "assembled_parts/lantern.stl"
             self.assertIn(occurrence_path, names)
-            self.assertNotIn("cad/part_lantern.stl", names)
+            self.assertIn("cad/part_lantern.stl", names)
             counted_geometry = sorted(
                 name
                 for name in names
@@ -1355,7 +1471,18 @@ class FactoryReleaseTest(unittest.TestCase):
             )
             self.assertEqual(
                 counted_geometry,
-                ["assembled.step", "assembled.stl", occurrence_path],
+                [
+                    "_workshop/make/assembled.step",
+                    "assembled.3mf",
+                    "assembled.step",
+                    "assembled.stl",
+                    occurrence_path,
+                    "cad/part_lantern.3mf",
+                    "cad/part_lantern.gcode.3mf",
+                    "cad/part_lantern.step",
+                    "cad/part_lantern.stl",
+                    "play_scene.step",
+                ],
             )
             sidecar = json.loads(archive.read("assembled.step.json"))
             self.assertEqual(

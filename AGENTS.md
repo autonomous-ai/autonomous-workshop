@@ -106,7 +106,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0020-signature-experience-evidence.md`, and
 `docs/adr/0021-compacted-spark-and-signature-review.md`, and
 `docs/adr/0022-blind-review-before-final-verification.md`, and
-`docs/adr/0023-bounded-spark-turn-and-semantic-review.md` before changing the CLI, runtime,
+`docs/adr/0023-bounded-spark-turn-and-semantic-review.md`, and
+`docs/adr/0050-structured-terminal-failure-diagnostics.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -131,6 +132,8 @@ than a literal lifecycle threshold. ADR 0025 extends the blind review to exact
 form and the concept's anti-generic signature, binds it to the canonical concept
 hash, and requires the final verification report inside the declared
 self-contained CAD project.
+ADR 0050 retains a bounded structured diagnosis for terminal provider failures
+while continuing to discard unsafe free-form provider text.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

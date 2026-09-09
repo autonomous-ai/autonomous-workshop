@@ -4,11 +4,17 @@
 - Date: 2026-09-07
 
 New Codex products freeze `token-budget-v1.md`. `workshop wish` and each product
-created by `workshop start` default to `--max-tokens 10000000`. The allowance
+created by `workshop start` default to `--max-tokens 30000000`. The allowance
 includes every enabled stage, revision, native child and explicit resume. It
 does not include the separate daydream selection loop. Input plus output is
 counted, including cached input once and reasoning as part of output. No
 pricing table or dollar estimate participates in enforcement.
+
+The default was raised from 10M to 30M on 2026-09-07 after Crosscurrent's
+verified digital package used 17,724,704 tokens before publication. This gives
+complex products repair headroom; it is a ceiling, not a target. Existing runs
+retain their persisted limits, including explicit 10M and 100M runs, unless
+the operator explicitly changes the total cap on resume.
 
 `workshop resume ID --max-tokens N` sets the total allowance, not an increment
 or reset. Supported older persistent-budget products may adopt it explicitly
@@ -19,6 +25,14 @@ The trusted host reads bounded native rollout records using a compatibility
 adapter validated specifically for Codex 0.153.4. It binds root identity and
 workspace to private host state, follows native parent ancestry, deduplicates
 cumulative notifications and sums explicit task resets across process resumes.
+Continued tasks in the same process, including native child follow-ups, retain
+cumulative counters. At each task boundary, the adapter accepts only a reset
+whose cumulative counters equal the latest request, or continuation whose
+counters exactly equal the previous observation plus the latest request for
+every counter. It preserves prior consumption in either case.
+This case was missed by the first acceptance: Crosscurrent stopped when Leo
+received a follow-up task. Regression tests cover child follow-ups, subsequent
+process resets, duplicate notifications, and unexplained boundary counters.
 Unrelated conversation payloads are not read. Unsupported formats, counter
 regression, disappearing usage and ambiguous history fail closed. Native
 rollouts are not a stable public API; a future supported app-server usage
@@ -74,3 +88,14 @@ the product-wide budget total. The sanitized public archive is under
 This is one successful live digital-product acceptance, not a live matrix of
 every CLI combination. Spark truthfully records Playtest not run. The object
 has not been physically printed, tested, manufactured or delivered.
+
+Crosscurrent subsequently completed Spark/Codex/Astra/high with an explicit
+100M cap and 17,724,704 observed tokens across the root and four native
+descendants. The follow-up accounting fix preserved the same root session and
+all prior usage. Make and Release passed independent host CAD verification;
+the six-page manual passed PDF checks. After the operator configured Dee as
+the shared host publisher, an effect-only resume reused the existing package
+and completed verified public readback on 2026-09-07. No additional native
+turn was needed for publication. The sanitized archive is
+`toys/leo-crosscurrent/`; credentials and raw run state remain private. Its
+rules simulations do not constitute physical testing or proof of family fun.

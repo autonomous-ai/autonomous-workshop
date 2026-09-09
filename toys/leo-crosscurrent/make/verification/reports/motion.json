@@ -1,0 +1,333 @@
+{
+  "assembly": "crosscurrent.step.py",
+  "conditions": [
+    {
+      "id": "inner-complete-cycle",
+      "check": "coupled_motion_collision",
+      "expect": "clear",
+      "description": "Complete revolution carries every passenger; opposite ring stationary; constant circular guide clearance plus bulk passenger sweep.",
+      "inputs": {
+        "steps": 120,
+        "movers": [
+          {
+            "part": "inner",
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_1_a",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_2_b",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_2_a",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_4_a",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_5_a",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          }
+        ],
+        "obstacle_parts": [
+          "shore",
+          "outer",
+          "boat_3_a",
+          "boat_1_b",
+          "boat_3_b",
+          "boat_4_b",
+          "boat_5_b"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 5.0
+      }
+    },
+    {
+      "id": "inner-vertical-assembly",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "inner",
+        "obstacle_parts": [
+          "shore",
+          "outer"
+        ],
+        "translation": [
+          0,
+          0,
+          12
+        ],
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "outer-complete-cycle",
+      "check": "coupled_motion_collision",
+      "expect": "clear",
+      "description": "Complete revolution carries every passenger; opposite ring stationary; constant circular guide clearance plus bulk passenger sweep.",
+      "inputs": {
+        "steps": 180,
+        "movers": [
+          {
+            "part": "outer",
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_3_a",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_1_b",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_3_b",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_4_b",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          },
+          {
+            "part": "boat_5_b",
+            "driven": true,
+            "rotation": {
+              "axis_point": [
+                0,
+                0,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "start_deg": 0,
+              "end_deg": -360
+            }
+          }
+        ],
+        "obstacle_parts": [
+          "shore",
+          "inner",
+          "boat_1_a",
+          "boat_2_b",
+          "boat_2_a",
+          "boat_4_a",
+          "boat_5_a"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 5.0
+      }
+    },
+    {
+      "id": "outer-vertical-assembly",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "outer",
+        "obstacle_parts": [
+          "shore",
+          "inner"
+        ],
+        "translation": [
+          0,
+          0,
+          12
+        ],
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "nesting-boat-withdrawal",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "boat_2_b",
+        "obstacle_parts": [
+          "boat_1_a",
+          "inner"
+        ],
+        "translation": [
+          0,
+          0,
+          10
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    }
+  ]
+}

@@ -100,7 +100,7 @@ def read_thread_usage(path, *, thread_id, workspace):
         raise UsageUnavailable("native rollout usage version is not validated")
     totals = {key: 0 for key in COUNTERS}
     task_totals = None
-    previous_totals = None
+    task_start = False
     tasks = set()
     model = None
     models = set()
@@ -117,9 +117,7 @@ def read_thread_usage(path, *, thread_id, workspace):
             if not isinstance(turn_id, str) or not turn_id or turn_id in tasks:
                 raise UsageUnavailable("ambiguous native usage task boundary")
             tasks.add(turn_id)
-            if task_totals is not None:
-                previous_totals = task_totals
-            task_totals = None
+            task_start = True
         if record.get("type") != "event_msg" or payload.get("type") != "token_count":
             continue
         info = payload.get("info")
@@ -130,23 +128,19 @@ def read_thread_usage(path, *, thread_id, workspace):
         current = _counters(info.get("total_token_usage"))
         if not tasks:
             raise UsageUnavailable("native usage lacks a task boundary")
-        if task_totals is None:
-            # exec 0.153.4 resets cumulative counters on process resume, but a
-            # follow-up task inside the same process (a subagent given a new
-            # task, or the root Manager's next turn) keeps counting from the
-            # previous task's total. Bind either baseline to an explicit
-            # native task: a reset shows as total == last, a continuation as
-            # total == previous total + last. Never infer a baseline from a
-            # merely decreasing counter, which could conceal lost history.
+        if task_start:
+            # exec 0.153.4 resets counters on process resume, but a continued
+            # task in the same process (including a child follow-up) retains
+            # them. Require an exact first-request baseline for either case;
+            # never infer a reset merely from a decreasing counter.
             last = _counters(info.get("last_token_usage"))
             if current == last:
                 task_totals = {key: 0 for key in COUNTERS}
-            elif previous_totals is not None and all(
-                current[key] == previous_totals[key] + last[key] for key in COUNTERS
+            elif task_totals is None or any(
+                current[key] != task_totals[key] + last[key] for key in COUNTERS
             ):
-                task_totals = previous_totals
-            else:
                 raise UsageUnavailable("native usage task baseline is ambiguous")
+            task_start = False
         delta = {key: current[key] - task_totals[key] for key in COUNTERS}
         if any(v < 0 for v in delta.values()):
             raise UsageUnavailable("native token counters regressed")
@@ -195,7 +189,7 @@ def read_product_usage(sessions_root, *, thread_id, workspace):
             raise UsageUnavailable("linked native session paths are forbidden")
         meta = _identity(path)
         candidate_id = meta.get("id")
-        if not isinstance(candidate_id, str) or candidate_id in candidates:
+        if not isinstance(candidate_id, str):
             raise UsageUnavailable("ambiguous native session identity")
         source = meta.get("source")
         parent = None
@@ -205,18 +199,34 @@ def read_product_usage(sessions_root, *, thread_id, workspace):
                 spawn = subagent.get("thread_spawn", {})
                 if isinstance(spawn, dict):
                     parent = spawn.get("parent_thread_id")
-        candidates[candidate_id] = (path, parent)
+        # Codex Desktop can retain multiple rollout generations for an
+        # unrelated logical thread. Keep them grouped until ancestry is known;
+        # a duplicate inside the selected product tree still fails closed.
+        candidates.setdefault(candidate_id, []).append((path, parent))
     if thread_id not in candidates:
         raise UsageUnavailable("native root usage is not available yet")
     selected = {thread_id}
     while True:
-        expanded = selected | {i for i, (_, parent) in candidates.items() if parent in selected}
+        expanded = selected | {
+            candidate_id
+            for candidate_id, records in candidates.items()
+            if any(parent in selected for _, parent in records)
+        }
         if len(expanded) > MAX_THREADS:
             raise UsageUnavailable("native product ancestry exceeds safe bounds")
         if expanded == selected:
             break
         selected = expanded
-    threads = [read_thread_usage(candidates[i][0], thread_id=i, workspace=workspace) for i in sorted(selected)]
+    if any(len(candidates[candidate_id]) != 1 for candidate_id in selected):
+        raise UsageUnavailable("ambiguous native session identity")
+    threads = [
+        read_thread_usage(
+            candidates[candidate_id][0][0],
+            thread_id=candidate_id,
+            workspace=workspace,
+        )
+        for candidate_id in sorted(selected)
+    ]
     return {
         "schema_version": 1, "source": "codex-native-rollout-v1",
         "status": "observed", "root_thread_id": thread_id,

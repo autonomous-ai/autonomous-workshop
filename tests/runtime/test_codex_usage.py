@@ -52,6 +52,86 @@ def test_counts_resumes_and_deduplicates_notifications(tmp_path):
     assert result["status"] == "observed"
 
 
+def test_followup_task_keeps_cumulative_usage_then_process_resume_resets(tmp_path):
+    events = records() + [usage(200)] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(300, last_token_usage=counters(100)),
+        usage(300, last_token_usage=counters(100)),
+        usage(400, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "resume"}},
+        usage(100),
+    ]
+    result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == counters(500)
+
+
+def test_product_counts_child_followup_without_reset_or_double_charge(tmp_path):
+    write(tmp_path, records() + [usage(100)])
+    write(tmp_path, records(CHILD, ROOT) + [usage(200),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(300, last_token_usage=counters(100)),
+    ], CHILD)
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    assert result["total_tokens"] == 440
+
+
+@pytest.mark.parametrize("current,last", [(300, 50), (100, 50), (300, 200)])
+def test_followup_with_unexplained_baseline_fails_closed(tmp_path, current, last):
+    events = records() + [usage(200),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(current, last_token_usage=counters(last)),
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize(("thread", "parent"), [(ROOT, None), (CHILD, ROOT)])
+def test_continued_tasks_then_process_reset_count_each_request_once(tmp_path, thread, parent):
+    events = records(thread, parent) + [usage(100), usage(200)] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "second"}},
+        usage(300, last_token_usage=counters(100)),
+        usage(300, last_token_usage=counters(100)),
+        usage(400, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "third"}},
+        usage(100), usage(200),
+    ]
+
+    result = read_thread_usage(
+        write(tmp_path, events, thread), thread_id=thread, workspace=Path("/toy"),
+    )
+
+    assert result["tokens"] == counters(600)
+    assert result["status"] == "observed"
+
+
+@pytest.mark.parametrize("last", [
+    counters(50),  # Unaccounted gap before the first request in the new task.
+    counters(200),  # Overlapping usage is equally ambiguous.
+    {**counters(100), "cached_input_tokens": 49},
+    {**counters(100), "cache_write_input_tokens": 1},
+    {**counters(100), "output_tokens": 11},
+    {**counters(100), "reasoning_output_tokens": 4},
+])
+def test_continued_task_requires_exact_baseline_for_every_counter(tmp_path, last):
+    events = records() + [usage(200),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "second"}},
+        usage(300, last_token_usage=last),
+    ]
+
+    with pytest.raises(UsageUnavailable, match="task baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_regressing_task_without_reset_baseline_fails_closed(tmp_path):
+    events = records() + [usage(200),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "second"}},
+        usage(100, last_token_usage=counters(50)),
+    ]
+
+    with pytest.raises(UsageUnavailable, match="task baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
 def test_descendants_pending_and_unrelated_payloads(tmp_path):
     write(tmp_path, records() + [usage()])
     child = write(tmp_path, records(CHILD, ROOT), CHILD)
@@ -66,6 +146,37 @@ def test_descendants_pending_and_unrelated_payloads(tmp_path):
         stream.write('{"partial":')
     result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
     assert result["total_tokens"] == 330
+
+
+def test_duplicate_unrelated_session_identity_is_ignored(tmp_path):
+    write(tmp_path, records() + [usage()])
+    write(tmp_path, records("unrelated", cwd="/elsewhere"), "unrelated-first")
+    write(tmp_path, records("unrelated", cwd="/elsewhere"), "unrelated-second")
+
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+
+    assert result["total_tokens"] == 110
+    assert [thread["thread_id"] for thread in result["threads"]] == [ROOT]
+
+
+@pytest.mark.parametrize(("duplicate_id", "parent"), [
+    (ROOT, None),
+    (CHILD, ROOT),
+])
+def test_duplicate_selected_session_identity_fails_closed(
+    tmp_path, duplicate_id, parent,
+):
+    write(tmp_path, records() + [usage()])
+    if duplicate_id == CHILD:
+        write(tmp_path, records(CHILD, ROOT) + [usage()], "child-first")
+    write(
+        tmp_path,
+        records(duplicate_id, parent) + [usage()],
+        "duplicate-selected",
+    )
+
+    with pytest.raises(UsageUnavailable, match="ambiguous native session identity"):
+        read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
 
 
 @pytest.mark.parametrize("events", [

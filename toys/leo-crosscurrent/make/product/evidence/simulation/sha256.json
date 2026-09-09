@@ -1,0 +1,12 @@
+{
+  "README.md": "dfb99091626cd3426a929dfe633dfdbb6690746318ddeba61f1089153bfab06f",
+  "adversarial-traces.ndjson": "94d8c9be49a0362430a7d29e7543ac1030d3862f0d246b7389b7d146f872e150",
+  "audit.json": "985676672341a555eb0d3d21947be125e65fd7b5a973fc0fb0187c93528be3eb",
+  "crosscurrent_audit.py": "e22f51a839bfdaffe6bb72e2dea754b99e771210a5b511057fd05ff477515009",
+  "crosscurrent_response.py": "ffde7ef2cbf99a948dd2214bd37ddf642355c81ce1aec250f33e51377ee219c6",
+  "crosscurrent_sim.py": "e1d7fd19d32c91c84f802f04d814040d4dc0c1a4489c43c855dd278356389edd",
+  "informed-response-traces.ndjson": "dc740255133c9e22200d38fa48a899cd8e9589cd8062629bf02c6c2312217cd5",
+  "informed-response.json": "5ea2076f0abdd38dcff39c4b301bde180cfce288351ee40c794a49c242fec2e2",
+  "report.json": "795f61923fccfc9bce102acd68ad735cbf756ec728c166afa276c9b8a64610ed",
+  "traces.ndjson": "9a07088f57f5ffb01322c0c90200fe9cea3eb6ceaeb0f5146730278dc7c35929"
+}
