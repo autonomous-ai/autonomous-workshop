@@ -97,9 +97,8 @@ def _check_review(project, signature, evidence_raw):
         raise ValueError("motion review needs an independent motion observation")
 
 
-def validate(project, signature_review):
-    if not requires_motion_presentation(project) and not (project / REVIEW).exists():
-        return
+def _bound_state_evidence(project):
+    """Check source, manifest and state-byte bindings without CAD reconstruction."""
     raw = read_file(project, EVIDENCE, 64 * 1024)
     evidence = json.loads(raw)
     fields = {"schema_version", "kind", "sources", "assembly_entry", "states", "render", "animation_sha256", "motion_sha256"}
@@ -122,6 +121,35 @@ def validate(project, signature_review):
             raise ValueError("motion animation has invalid or stale state geometry")
     if len({s["path"] for s in states}) != len(states) or len({s["sha256"] for s in states}) < 3:
         raise ValueError("motion animation needs distinct paths and geometry states")
+    return raw, evidence
+
+
+def describe_states(project):
+    """Return caption data from declared samples, without approving geometry."""
+    raw, evidence = _bound_state_evidence(project)
+    manifest_raw = read_file(project, "measure/motion.json")
+    if hashlib.sha256(manifest_raw).hexdigest() != evidence["motion_sha256"]:
+        raise ValueError("motion conditions changed while describing states")
+    identities = [{key: row[key] for key in ("condition_id", "sample_index")} for row in evidence["states"]]
+    annotations = state_tool()["sample_annotations"](json.loads(manifest_raw), identities)
+    rows = [{**state, "steps": annotation["steps"], "movers": annotation["movers"]}
+            for state, annotation in zip(evidence["states"], annotations, strict=True)]
+    final_raw, _ = _bound_state_evidence(project)
+    if final_raw != raw:
+        raise ValueError("motion evidence changed while describing states")
+    return {"schema_version": 1, "kind": "declared-motion-sample-annotations",
+            "evidence_sha256": hashlib.sha256(raw).hexdigest(),
+            "motion_sha256": evidence["motion_sha256"], "assembly_entry": evidence["assembly_entry"],
+            "geometry_reconciled_by_this_command": False,
+            "scope": "Caption values from bound declarations; full motion presentation, mechanical checks and independent review remain required.",
+            "states": rows}
+
+
+def validate(project, signature_review):
+    if not requires_motion_presentation(project) and not (project / REVIEW).exists():
+        return
+    raw, evidence = _bound_state_evidence(project)
+    states = evidence["states"]
     animation = read_file(project, "snap/motion.gif")
     if evidence["animation_sha256"] != hashlib.sha256(animation).hexdigest():
         raise ValueError("motion animation hash mismatch")
@@ -199,12 +227,18 @@ def generate(project, *, selections=None, frames=8, view="iso", size=600):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("project", type=Path)
+    parser.add_argument("--describe-states", action="store_true", help="print bound state identities and per-mover caption values without generating or verifying geometry")
     parser.add_argument("--frames", type=int, default=8, help="default sampled states per coupled condition (8 to 48)")
     parser.add_argument("--samples", action="append", default=[], metavar="CONDITION=0,1,...", help="explicit increasing indices from a condition's motion table")
     parser.add_argument("--view", default="iso", help="named view or AZ,EL")
     parser.add_argument("--size", type=int, default=600)
     args = parser.parse_args()
     try:
+        if args.describe_states:
+            if args.samples or args.frames != 8 or args.view != "iso" or args.size != 600:
+                raise ValueError("--describe-states reads existing states; generation options do not apply")
+            print(json.dumps(describe_states(args.project.resolve()), sort_keys=True, allow_nan=False))
+            return
         if not 8 <= args.frames <= 48:
             raise ValueError("--frames must be 8 to 48")
         selected = {}

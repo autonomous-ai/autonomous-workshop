@@ -47,6 +47,23 @@ rejects a mismatch even if the supplied files have been rehashed. Reconstruction
 uses the run's CAD and renderer environment; keep those dependencies fixed.
 Existing frozen runs keep their copied older tool and protocol.
 
+For captions, read the actual identities and per-mover poses from the bound
+state evidence:
+
+```bash
+python "$CAD_SKILL_ROOT/scripts/motion_presentation.py" <project> --describe-states
+```
+
+This read-only command prints JSON linking each state path and hash to its
+condition, sample index, step count, rotation angle/axis and translation where
+present. It uses the same pose-table arithmetic as the motion checker, including
+explicit nonuniform tables and different motions for different parts. Use those
+values directly when labeling a state. A file such as `state-004.stl` is the
+fifth exported frame; its ordinal is neither a motion sample index nor an angle.
+The command refuses stale source, motion-manifest or state-file bindings. It
+does not construct CAD, reconcile state geometry, validate the animation, or
+provide an independent review; the final validation below remains required.
+
 After generation, obtain the existing independent motion review described by
 the workflow's `references/motion-review-v1.md`. Its schema remains 1 and its
 evidence hash must name the new evidence bytes. Generating a replacement movie

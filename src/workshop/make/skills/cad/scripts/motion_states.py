@@ -58,6 +58,76 @@ def _finite(value):
     return not isinstance(value, (float, int)) or math.isfinite(value)
 
 
+def sample_annotations(manifest, identities):
+    """Describe actual declared sample poses without constructing any geometry.
+
+    A state file's ordinal is not a motion sample or an angle. Callers pass the
+    condition/sample identities returned by construct(), or taken from bound
+    presentation evidence. This describes declarations; source/state and review
+    reconciliation still belong to motion_presentation.validate().
+    """
+    if not isinstance(identities, list) or not 1 <= len(identities) <= MAX_STATES:
+        raise ValueError("sample annotations need 1 to 48 state identities")
+    conditions = {condition["id"]: condition for condition in coupled_conditions(manifest)}
+    check, _ = helpers()
+    tables = {}
+    seen = set()
+    result = []
+    for identity in identities:
+        if (not isinstance(identity, dict) or set(identity) != {"condition_id", "sample_index"}
+                or not isinstance(identity["condition_id"], str)
+                or type(identity["sample_index"]) is not int):
+            raise ValueError("annotation identity needs a condition id and integer sample index")
+        condition_id, sample = identity["condition_id"], identity["sample_index"]
+        if condition_id not in conditions:
+            raise ValueError("annotation names an unknown coupled motion condition")
+        if (condition_id, sample) in seen:
+            raise ValueError("annotation identities must be distinct")
+        seen.add((condition_id, sample))
+        if condition_id not in tables:
+            inputs = conditions[condition_id].get("inputs", {})
+            if not isinstance(inputs, dict):
+                raise ValueError("coupled motion inputs must be an object")
+            steps = inputs.get("steps", check["DEFAULT_STEPS"])
+            if type(steps) is not int or not 1 <= steps <= 10000:
+                raise ValueError("motion steps must be an integer between 1 and 10000")
+            movers = inputs.get("movers")
+            if not isinstance(movers, list) or not movers or not _finite(movers):
+                raise ValueError("sample annotations need finite mover specifications")
+            poses = []
+            for index, spec in enumerate(movers):
+                if (not isinstance(spec, dict) or not isinstance(spec.get("part"), str)
+                        or not spec["part"].strip()):
+                    raise ValueError("every annotated mover needs a part name")
+                for key in ("rotation", "translation"):
+                    if spec.get(key) and not isinstance(spec[key], dict):
+                        raise ValueError(f"mover {key} must be an object")
+                try:
+                    if spec.get("rotation"):
+                        for field in ("axis_point", "axis_direction"):
+                            axis_value = check["vector3"](spec["rotation"].get(field), f"movers[{index}].rotation.{field}")
+                            if not all(math.isfinite(component) for component in axis_value):
+                                raise ValueError("sample rotation axes must be finite")
+                    place = check["_pose_table"](spec, steps, f"movers[{index}]")
+                except (check["ManifestError"], TypeError, ValueError, OverflowError) as exc:
+                    raise ValueError(str(exc)) from exc
+                if not _finite(place.angles) or not all(_finite(list(offset)) for offset in place.offsets):
+                    raise ValueError("sample pose arithmetic produced non-finite values")
+                poses.append((spec, place))
+            tables[condition_id] = steps, poses
+        steps, poses = tables[condition_id]
+        if not 0 <= sample <= steps:
+            raise ValueError("annotation sample is outside the declared motion table")
+        result.append({"condition_id": condition_id, "sample_index": sample, "steps": steps,
+                       "movers": [{"part": spec["part"],
+                                   "rotation_deg": place.angles[sample] if spec.get("rotation") else None,
+                                   "axis_point": list(place.axis_point) if spec.get("rotation") else None,
+                                   "axis_direction": list(place.axis_direction) if spec.get("rotation") else None,
+                                   "translation_mm": list(place.offsets[sample]) if spec.get("translation") else None}
+                                  for spec, place in poses]})
+    return result
+
+
 def posed_occurrences(shape, condition, indices):
     """Move each leaf once, including leaves of a named moving group."""
     check, renderer = helpers()
