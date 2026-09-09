@@ -12,6 +12,7 @@ Examples:
     render_product assembled.stl -o snap/iso.png --view iso \
         --base '#53C5C8' --accent '#FFB84A' --background '#FFF6E5'
     render_product assembled.stl -o snap/front.png --view front
+    render_product assembled.stl -o snap/rear.png --view rear
     render_product assembled.stl -o snap/iso.png \
         --motion-sheet snap/signature.png --motion-angles=-14,0,14
     render_product state-0.stl -o snap/iso.png \
@@ -68,6 +69,9 @@ def _camera(view: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     toward_camera = {
         "iso": np.array([1.35, -1.65, 1.15], dtype=np.float64),
         "front": np.array([0.0, -1.0, 0.18], dtype=np.float64),
+        # Move the camera around the exact mesh; a coordinate reflection
+        # would reverse triangle winding and break visible-face selection.
+        "rear": np.array([0.0, 1.0, 0.18], dtype=np.float64),
         "right": np.array([1.0, 0.0, 0.18], dtype=np.float64),
         "top": np.array([0.35, -0.45, 1.0], dtype=np.float64),
     }[view]
@@ -426,7 +430,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stl", nargs="?", type=Path)
     parser.add_argument("-o", "--output", type=Path)
-    parser.add_argument("--view", choices=("iso", "front", "right", "top"), default="iso")
+    parser.add_argument("--view", choices=("iso", "front", "rear", "right", "top"), default="iso")
     parser.add_argument("--size", type=int, default=900)
     parser.add_argument("--base", type=_hex_color, default=_hex_color("#35AEB8"))
     parser.add_argument("--accent", type=_hex_color, default=_hex_color("#FFB445"))
@@ -435,7 +439,7 @@ def main() -> None:
     parser.add_argument("--motion-sheet", type=Path)
     parser.add_argument(
         "--motion-view",
-        choices=("iso", "front", "right", "top"),
+        choices=("iso", "front", "rear", "right", "top"),
         default="front",
     )
     parser.add_argument(
@@ -447,7 +451,7 @@ def main() -> None:
     parser.add_argument("--state-stl", action="append", type=Path, default=[])
     parser.add_argument(
         "--state-view",
-        choices=("iso", "front", "right", "top"),
+        choices=("iso", "front", "rear", "right", "top"),
         default="front",
     )
     parser.add_argument("--min-state-difference", type=float, default=2.0)

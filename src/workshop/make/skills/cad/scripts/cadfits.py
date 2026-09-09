@@ -27,8 +27,9 @@ Importing it
 Every CLI launcher in `skills/cad/scripts/` puts its own directory on
 `sys.path` before loading a generator, so a generator, a `*_lib.py`, or a
 `measure/*.py` run through `scripts/gen` / `export` / `inspect` / `check_*`
-can `import cadfits` with no path setup. A script run directly by the
-interpreter (`.venv/bin/python <project-dir>/measure/check_fit.py`) needs the
+can `import cadfits` with no path setup. `verify_project` also supplies its
+materialized scripts directory when launching local audits. A script run directly
+by the interpreter (`.venv/bin/python <project-dir>/measure/check_fit.py`) needs the
 one insert those scripts already do for their project directory.
 
 Deliberately NOT inside the vendored `cadgen` package: `cadgen` is installed

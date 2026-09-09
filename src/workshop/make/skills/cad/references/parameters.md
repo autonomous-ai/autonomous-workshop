@@ -71,8 +71,11 @@ bore = cadfits.slot_for(PIN_D, 0.15)          # female from male
 `scripts/cadfits.py` holds the FDM clearance table (`press -0.05`, `snug 0.10`,
 `slip 0.20`, `free 0.40`, per side) and the two derivations. Every CLI launcher
 in `scripts/` puts that directory on `sys.path` before it loads a generator, so
-a `*_lib.py` can `import cadfits` with no setup; a `measure/*.py` run directly
-by the interpreter adds the scripts directory to `sys.path` itself. Run
+a `*_lib.py` can `import cadfits` with no setup. `verify_project` supplies the
+same materialized scripts directory when it launches local `measure/*.py`
+audits, followed by the project directory and existing `PYTHONPATH` entries.
+An audit launched directly by the interpreter still adds the scripts directory
+to `sys.path` itself. Run
 `python "$CAD_SKILL_ROOT/scripts/cadfits.py"` for its self-check.
 
 **Write the mate as a derivation, not as an assertion.** A mating pair sized by

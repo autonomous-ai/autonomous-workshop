@@ -45,6 +45,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -190,14 +191,12 @@ def purge_project_modules(project: Path) -> None:
 
 
 def body_count(solids) -> int:
-    """Disconnected bodies, via bounding-box adjacency over the part's solids.
+    """Count solid groups connected within the existing contact tolerance.
 
-    A part may be modelled as many touching solids, so `len(shape.solids())` is
-    not a body count. Union-find over overlapping
-    bounding boxes is: two solids that share material must have overlapping
-    boxes. It is deliberately conservative in the safe direction. Boxes that
-    overlap without the solids touching merge anyway, so this under-reports
-    rather than raising false alarms on a correctly-built part.
+    Touching solids can form one printable body, but overlapping bounding boxes
+    do not establish contact. Use boxes only to exclude distant pairs, then
+    measure exact shape separation before joining their groups. A failed or
+    invalid distance query propagates as a build error, never a connection.
     """
     boxes = [solid.bounding_box() for solid in solids]
     parent = list(range(len(boxes)))
@@ -220,7 +219,12 @@ def body_count(solids) -> int:
             if not overlap(boxes[i], boxes[j]):
                 continue
             root_i, root_j = find(i), find(j)
-            if root_i != root_j:
+            if root_i == root_j:
+                continue
+            distance = solids[i].distance_to(solids[j])
+            if not math.isfinite(distance) or distance < 0:
+                raise ValueError("shape distance returned invalid separation")
+            if distance <= TOUCH_TOL:
                 parent[root_i] = root_j
     return len({find(i) for i in range(len(boxes))})
 

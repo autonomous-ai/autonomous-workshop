@@ -65,6 +65,17 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Fixed
 
+- Make CAD review resolves visibility at each pixel, preventing rear surfaces
+  from painting over nearer parts when whole-triangle depth ordering is wrong.
+- Make motion checks intersect the actual solids of nested assemblies and
+  include every ancestor placement when resolving a named part. Grouped
+  mechanisms no longer appear collision-free merely because the assembly
+  container has no own topology or a child was checked in its local frame.
+- Make CAD support checks use the preceding layer's material and actual bridge
+  spans. This catches cantilevers and thin ledges, preserves short rotated
+  bridges and supported collars, and keeps decisions stable when equivalent STL
+  triangle records or cyclic vertex orders change.
+
 - Allow generated inventor commands to parse run options and positional Wish
   text in either order.
 - Preserve an Inventor's ordered two-shore token rules, token order, and

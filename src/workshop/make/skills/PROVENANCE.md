@@ -231,3 +231,203 @@ part of this adaptation.
   lock still covers every tree under `make/skills/`. It sequences the reviewed
   `cad` and `image-to-cad` tools without changing them; a resync of the
   upstream skills does not touch it.
+
+
+## Local audit dependency transport (2026-09-08)
+
+A preserved Make rejection and a current-code subprocess reproduction show that
+`measure/check_fit.py` can lose the bundled `cadfits` import when final
+verification launches it directly. `verify_project` now supplies its own
+materialized scripts directory before the project and inherited Python paths,
+matching generator access to the immutable helpers. This does not install a
+package, change clearance values, skip an audit, or rewrite older frozen skills.
+Subprocess regressions cover relocated skills, paths with spaces, project and
+inherited dependencies, helper precedence, and invalid-fit failure propagation.
+This is an import-transport correction, not evidence of general Make quality.
+
+## Exact printable-body connectivity (2026-09-08)
+
+A native Make draft exposed a false connection in `check_fit`: two frame solids
+were separated by more than 2 mm, but overlapping bounding boxes caused the
+checker to count one body. Bounding boxes now exclude distant pairs only;
+remaining pairs require exact shape separation within the unchanged contact
+tolerance before their groups merge. Touching compounds remain supported, and
+failed or invalid distance queries become build errors. Deterministic geometry
+regressions include a separate island inside a frame, touching and overlapping
+solids, transitive contacts, tolerance boundaries, and query failures. This
+improves one diagnostic; it does not establish mechanism function, print success,
+or overall Make quality. Existing materialized skill bytes remain unchanged.
+
+## Support screening before visual review (2026-09-08)
+
+A preserved native draft passes the fresh print preflight while the existing
+final overhang checker rejects its frame and rotor in their exported print
+orientations. The early preflight now runs that same checker on every printable
+at the standard 45 degree profile, before thickness and before visual review.
+Review binding requires passing support checks for every part; a lowered angle,
+missing part, or failed checker cannot supply that evidence. The final check
+still reruns. This corrects when an existing manufacturing defect is reported;
+it does not prove physical printing or general Make quality. Frozen runs retain
+their materialized skills.
+
+## Nested assembly review colors and placements (2026-09-08)
+
+A transformed subassembly containing separately colored parts was tessellated
+as one object by `render_review`, replacing leaf colors with a group or fallback
+color. Review now traverses all leaf occurrences and composes their ancestor
+placements before tessellation. Explicit leaf colors take precedence; uncolored
+leaves retain an available group color. The original hierarchy stays untouched.
+Regression coverage compares nested and flat assemblies, rendered pixels, STEP
+round trips, repeated instances, inherited colors, and tessellation failures.
+This corrects the CAD review renderer's existing color-preservation promise;
+STL presentation and physical-product acceptance remain separate questions.
+Existing materialized skill bytes remain frozen.
+
+## Assembly screening before visual review (2026-09-08)
+
+Printable-only preflight could pass a model whose combined assembly still had
+part clashes, leaving the existing final interference check to reject it after
+review. Preflight now generates the selected combined entry with the printables
+and batches the existing assembly validity and interference checks first. The
+1.0 mm3 contact threshold matches final verification; no gate is relaxed.
+The review-bound report records the selected assembly and fixed checks only
+after both succeed. Final verification rejects missing or mismatched early
+assembly evidence and still reruns its own checks. Frozen runs keep their
+materialized skills. This is earlier deterministic feedback, not proof of
+native repair reliability, physical assembly or product acceptance.
+
+
+## Support geometry and mesh-order invariance (2026-09-08)
+
+The support checker could turn the same STL geometry from failing to passing
+when only its triangle records were reordered. Its single sampled-region
+centroid could sit between supports while an outer cantilever remained
+unsupported. A fused flat cap on one narrow stem reproduced that false bridge
+classification independently of any product artifact.
+
+The checker now uses equal-area subtriangle centroids with a corner-symmetric
+sample set, canonicalizes oriented triangles before welding, and groups samples
+by shared edges of the actual down-facing surfaces. Every non-bed down-facing
+sample is checked against the preceding layer's mesh section. The angle and
+layer height define a lateral allowance of `layer / tan(angle)`, so a thin step
+can rest on the preceding layer without being mislabeled as a bridge. The same
+geometric principle is used in [OrcaSlicer 2.4.2's angle-based support detection](https://github.com/OrcaSlicer/OrcaSlicer/blob/v2.4.2/src/libslic3r/Support/SupportMaterial.cpp#L1434);
+this is an independent implementation, not a slicer port.
+
+The deterministic `mesh_support.py` helper measures exact section boundaries,
+deduplicates coincident oriented crossings, and finds real support separation.
+It tests X/Y and the direction toward the nearest boundary point, allowing
+rotated slots without an arbitrary angular grid. Bounded batches limit temporary
+intersection matrices. Voxels only describe air gaps in reports; they no longer
+select which surfaces can fail. Existing angle, layer, bridge-length, sample
+budget and minimum-region-area limits remain. Frozen materialized runs retain
+their prior bytes.
+
+Area remains sampled, the bridge directions are a bounded search, and grouping
+by a connected down-facing surface can combine unsupported subsets separated
+by accepted samples. These checks do not establish slicer equivalence or physical
+printability. Regression coverage includes thin ledges, rotated bridges and
+cantilevers, disconnected small surfaces, sample symmetry, shared-edge crossings,
+actual support separation and CLI/report agreement. Private native artifacts and
+slicer comparisons stay outside this repository.
+
+
+## Nested assembly motion geometry (2026-09-08)
+
+A build123d assembly created with `Compound(children=...)` exposes the placed
+solids through `solids()` but can have an empty wrapped topology for Boolean
+intersection. Two coincident boxes reproduced a false clear result when one
+was addressed as a group; the equivalent wrapped compound correctly reported
+8 cubic millimetres of overlap. Named descendants also retained local poses
+when an ancestor was translated or rotated.
+
+`check_motion` now intersects compounds made from the actual placed solids on
+both sides of a collision query. Its part index composes every ancestor
+location, including the root, without mutating the source assembly. Linear,
+rotational, coupled and proxy checks retain their existing thresholds and
+manifest contracts. Regression coverage exercises grouped movers and
+obstacles, equivalent wrapped geometry, nested placement aliases, clear paths,
+and real translation/rotation collisions.
+
+This correction makes declared motion evidence measure the intended geometry;
+it cannot infer an omitted retention requirement, prove a continuous path from
+samples, or establish physical snap performance. Frozen runs retain their
+materialized tool version. Private diagnostic products remain outside Git.
+
+
+## Per-pixel depth for CAD review (2026-09-08)
+
+Sorting triangles by their mean depth painted parts of a rear surface over a
+nearer one. A sloped quad behind a small square reproduced the occlusion error;
+changing only the quad diagonal also changed the resulting image.
+
+`render_review` now selects the nearest surface at each pixel using barycentric
+depth interpolation for its orthographic projection. Small row batches bound
+temporary arrays for large projected faces. Occurrence placements, materials,
+lighting, camera and tessellation remain unchanged. Regression coverage includes
+near and far surfaces, crossing planes, alternative triangulations, occurrence
+order, triangle order and cyclic corner order.
+
+This corrects image visibility, not geometry or physical behavior. Edge coverage
+uses pixel centres and may differ from the previous polygon fill. Truly
+coplanar overlapping materials have no unique geometric depth ordering. Frozen
+runs retain their existing renderer and review artifacts; private diagnostic
+models and rendered comparisons stay outside Git.
+
+
+## Explicit STEP validity authority (2026-09-08)
+
+`inspect validate model.step` could execute the neighboring `model.step.py`
+instead of checking the requested file. An open-face STEP passed when a sibling
+generator built a closed box, while the exact same STEP bytes failed without
+that generator. A broken sibling generator could also prevent inspection of a
+valid STEP.
+
+Validity inspection now loads an existing STEP target directly. An explicitly
+named Python generator remains source-driven, and logical entry aliases retain
+their existing generator resolution. Regression coverage includes the
+open-face false pass, a broken sibling source, changed STEP bytes, standalone
+imports and source-only entries. This matches the existing distinction used by
+topology loading and mesh export.
+
+This fixes target selection for validity inspection. It does not repair STEP
+exchange geometry, prove source/export equivalence, or change the verifier's
+choice of source targets. Frozen runs keep their materialized implementation.
+Private product artifacts and experimental construction methods remain outside
+the repository.
+
+- Workshop's 2026-09-09 motion-evidence correction adds `motion_states.py`,
+  shares `check_motion` occurrence identities and poses with presentation,
+  preserves occurrence colors at fixed framing, and replaces hash-only
+  animation provenance with schema-v2 reconstruction. The older frozen tools
+  are unchanged. ADR 0060 records the implementation and validation limits.
+
+
+## Motion measurement consistency (2026-09-09)
+
+`check_motion` could turn a Boolean exception or a nonfinite volume into a clear
+path. A successful but empty intersection could also contradict the operands'
+union. Separately, two coincident solid children counted twice and could change
+a threshold-sensitive retention result.
+
+The checker now requires finite nonnegative solid volumes, completed non-null
+Boolean operations and valid result geometry. Each grouped operand is measured
+as a material union. Intersection volume must agree with operand volumes minus
+union volume within a fixed 0.000001 cubic millimetre consistency tolerance;
+manifest collision thresholds are unchanged. Failed or inconsistent
+measurements become inconclusive under the existing default nonzero exit rule.
+
+A bounded cache avoids repeating ordinary validity checks for identical
+complete topology and orientation during one immutable condition. Positive
+unit-scale placements may change. Hash matches require exact topology identity;
+new topology and evicted entries are validated. Nested sequences share the
+condition scope, which is discarded on return or exception. The cache holds at
+most 256 entries and Boolean operations preserve their input geometry.
+
+Regression tests cover real overlap, contact and separation, duplicated or
+overlapping groups, invalid and unavailable operations, nonfinite values,
+clearance and retention expectations, default CLI failure, nested geometry,
+rigid placement, orientation, hash collisions, scope cleanup and eviction.
+Common and Fuse use the same kernel; their agreement is a consistency check,
+not independent geometric certification or physical validation. Frozen runs
+retain their materialized tools. Private replay artifacts remain outside Git.

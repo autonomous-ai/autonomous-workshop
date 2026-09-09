@@ -6,7 +6,7 @@ assembled pose. Neither says the parts can be *brought* to that pose; a rigid
 feature can still be impossible to insert into a closed slot.
 
 This runs a declared motion manifest against the assembly, sampling the path and
-testing each step with an exact boolean. Five checks:
+testing each step with B-rep Boolean operations. Five checks:
 
     linear_motion_collision     slide/insert/withdraw along a vector
     rotation_motion_collision   hinge/fold/latch about an axis
@@ -32,8 +32,9 @@ form the gate can only ask whether parts come apart, never whether they stay
 together, and a connector modelled as a plain boss in a plain pocket reads as a
 clean pass.
 
-This repo is STEP-first, so a step tests `(moved & obstacle).volume` on the
-B-rep.
+At each sampled pose, measure the material intersection and check it against
+the union volume. Unavailable or inconsistent measurements are inconclusive.
+These operations use the same CAD kernel; agreement is a consistency check.
 
 A manifest may also declare a retention graph. This closes the loophole where
 one moving part appears retained only because its nominal retainer was frozen
@@ -54,7 +55,10 @@ import contextlib
 import importlib.util
 import io
 import json
+import math
 import sys
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -71,6 +75,8 @@ GEN_FUNC = "gen_" + "step"
 
 DEFAULT_STEPS = 12
 DEFAULT_OVERLAP_TOL = 1e-3  # mm3; contact is not collision
+# Agreement between Common and A + B - Fuse, independent of a manifest's threshold.
+VOLUME_CONSISTENCY_MM3 = 1e-6
 
 
 class ManifestError(Exception):
@@ -127,33 +133,38 @@ def build_assembly(entry: Path):
 
 
 def index_parts(shape) -> dict[str, object]:
-    """Map every labelled leaf to its shape, in assembly pose.
+    """Index placed nodes and leaves using their exact assembly ancestry.
 
-    These are placed instances, not canonical parts: a part_*.step.py returns
-    print pose, which is the wrong frame for asking whether two things collide
-    on the way together. Nested labels are also reachable by their dotted path,
-    so a repeated label stays addressable.
+    The private leaf/key metadata lets motion presentation reuse the same
+    placed occurrences and resolve a moving group without moving a leaf twice.
     """
-    found: dict[str, list[object]] = {}
+    from build123d import Location
 
-    def walk(node, trail: list[str]) -> None:
+    found: dict[str, list[tuple[tuple[int, ...], object]]] = {}
+    leaves = []
+
+    def walk(node, trail, parent_pose, key=(), inherited_colour=None):
         label = getattr(node, "label", "") or ""
         path = trail + ([label] if label else [])
-        if label and trail:
-            # Sub-assemblies are addressable too. A Compound's solids() reaches
-            # its descendants, so a whole fuselage section moves as one body --
-            # which is the granularity a motion check usually wants, well above
-            # the individual windows and doors underneath it.
-            found.setdefault(label, []).append(node)
-            found.setdefault(".".join(path), []).append(node)
-        for child in list(getattr(node, "children", []) or []):
-            walk(child, path)
+        pose = parent_pose * node.location
+        placed = node.located(pose)
+        colour = getattr(node, "color", None)
+        if colour is None:
+            colour = inherited_colour
+        if label and key:
+            for alias in dict.fromkeys((label, ".".join(path))):
+                found.setdefault(alias, []).append((key, placed))
+        children = list(getattr(node, "children", []) or [])
+        if not children:
+            leaves.append((key, placed, colour))
+        for index, child in enumerate(children):
+            walk(child, path, pose, (*key, index), colour)
 
-    walk(shape, [])
-    parts = {name: shapes[0] for name, shapes in found.items() if len(shapes) == 1}
-    parts["__ambiguous__"] = sorted(name for name, shapes in found.items() if len(shapes) > 1)
-    # The assembly's own children, kept apart from the nested labels underneath
-    # them: a cycle sweep has to account for these, and only these.
+    walk(shape, [], Location())
+    parts = {name: nodes[0][1] for name, nodes in found.items() if len(nodes) == 1}
+    parts["__node_keys__"] = {name: nodes[0][0] for name, nodes in found.items() if len(nodes) == 1}
+    parts["__leaf_nodes__"] = leaves
+    parts["__ambiguous__"] = sorted(name for name, nodes in found.items() if len(nodes) > 1)
     parts["__toplevel__"] = [label for label in
                              (getattr(child, "label", "") for child in
                               list(getattr(shape, "children", []) or []))
@@ -163,14 +174,167 @@ def index_parts(shape) -> dict[str, object]:
 
 # --- geometry -------------------------------------------------------------
 
-def solid_volume(shape) -> float:
-    """Compound.volume is 0 when the geometry hangs off children."""
-    if shape is None:
-        return 0.0
-    solids = shape.solids()
+
+_MAX_VALIDITY_CACHE_ENTRIES = 256
+
+
+class ValidityCache:
+    """Scope to an immutable assembly measurement with non-destructive Booleans.
+
+    Cache complete non-compound topology, including its orientation. A positive
+    unit-scale placement may change while internal validity is invariant. Other
+    transforms keep their placement in the key. Hash matches require IsEqual.
+    OCCT compound validity recurses into children and adds no compound check.
+    """
+    def __init__(self):
+        self.buckets = {}
+        self.hits = 0
+        self.checks = 0
+        self.entries = 0
+        self.clears = 0
+
+    def is_valid(self, wrapped):
+        from build123d import Compound
+        from OCP.TopAbs import TopAbs_COMPOUND
+        from OCP.TopLoc import TopLoc_Location
+        from OCP.TopoDS import TopoDS_Iterator
+
+        if wrapped.IsNull():
+            return False
+        if wrapped.ShapeType() == TopAbs_COMPOUND:
+            children = TopoDS_Iterator(wrapped)
+            while children.More():
+                if not self.is_valid(children.Value()):
+                    return False
+                children.Next()
+            return True
+        transform = wrapped.Location().Transformation()
+        canonical = wrapped
+        if transform.ScaleFactor() == 1.0 and not transform.IsNegative():
+            canonical = wrapped.Located(TopLoc_Location())
+        bucket = self.buckets.setdefault(hash(canonical), [])
+        for previous, valid in bucket:
+            if previous.IsEqual(canonical):
+                self.hits += 1
+                return valid
+        # Validate the complete topology on a miss. Reuse is limited to
+        # immutable geometry within this measurement scope.
+        valid = Compound(wrapped).is_valid
+        self.checks += 1
+        if self.entries >= _MAX_VALIDITY_CACHE_ENTRIES:
+            # Retaining every transient Boolean result would make memory grow
+            # with the pose count. Eviction only causes fresh validation.
+            self.buckets.clear()
+            self.entries = 0
+            self.clears += 1
+            bucket = self.buckets.setdefault(hash(canonical), [])
+        bucket.append((canonical, valid))
+        self.entries += 1
+        return valid
+
+
+_VALIDATION = ContextVar('motion_validation', default=None)
+
+
+@contextmanager
+def validation_scope():
+    """Share bounded validity work inside one immutable outer condition."""
+    existing = _VALIDATION.get()
+    if existing is not None:
+        yield existing
+        return
+    cache = ValidityCache()
+    token = _VALIDATION.set(cache)
+    try:
+        yield cache
+    finally:
+        _VALIDATION.reset(token)
+
+
+def _is_valid(shape):
+    cache = _VALIDATION.get()
+    return shape.is_valid if cache is None else cache.is_valid(shape.wrapped)
+
+
+def solid_volume(shape, *, require_solid=False):
+    """Require finite nonnegative volumes; valid empty Boolean results have zero."""
+    solids = list(shape.solids())
+    if require_solid and not solids:
+        raise ValueError('motion operand contains no solid')
+    values = [float(s.volume) for s in solids]
+    if any(not math.isfinite(v) or v < 0 for v in values):
+        raise ValueError('motion geometry has nonfinite or negative volume')
+    result = math.fsum(values)
+    if not math.isfinite(result) or (require_solid and result <= 0):
+        raise ValueError('motion geometry has no finite positive volume')
+    return result
+
+
+def _boolean_shape(kind, arguments, tool_shapes):
+    """Run one non-destructive operation and reject unusable geometry."""
+    from build123d import Compound
+    from OCP.TopTools import TopTools_ListOfShape
+
+    operation = kind()
+    operation.SetNonDestructive(True)
+    args, tools = TopTools_ListOfShape(), TopTools_ListOfShape()
+    for shape in arguments:
+        args.Append(shape.wrapped)
+    for shape in tool_shapes:
+        tools.Append(shape.wrapped)
+    operation.SetArguments(args)
+    operation.SetTools(tools)
+    operation.Build()
+    if not operation.IsDone():
+        raise ValueError('motion Boolean operation did not complete')
+    wrapped = operation.Shape()
+    if wrapped.IsNull():
+        raise ValueError('motion Boolean operation returned null geometry')
+    shape = Compound(wrapped)
+    if not _is_valid(shape):
+        raise ValueError('motion Boolean operation returned invalid geometry')
+    return shape
+
+
+def _material(shape):
+    """Fuse placed solids so overlapping children count as material once."""
+    from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse
+
+    solids = list(shape.solids())
     if not solids:
+        raise ValueError('motion operand contains no solid')
+    values = [solid_volume(s, require_solid=True) for s in solids]
+    if len(solids) == 1:
+        return solids[0], values[0]
+    normalized = _boolean_shape(BRepAlgoAPI_Fuse, solids[:1], solids[1:])
+    measured = solid_volume(normalized, require_solid=True)
+    if (measured < max(values) - VOLUME_CONSISTENCY_MM3 or
+            measured > math.fsum(values) + VOLUME_CONSISTENCY_MM3):
+        raise ValueError('motion group union has inconsistent volume')
+    return normalized, measured
+
+
+def overlap_volume(a, b):
+    """Measure intersection only when both Boolean measurements are consistent."""
+    from OCP.BRepAlgoAPI import BRepAlgoAPI_Common, BRepAlgoAPI_Fuse
+
+    # Resolve actual placed solids for both plain and assembly compounds.
+    a, va = _material(a)
+    b, vb = _material(b)
+    ba, bb = a.bounding_box(), b.bounding_box()
+    if (ba.min.X > bb.max.X or ba.max.X < bb.min.X or
+            ba.min.Y > bb.max.Y or ba.max.Y < bb.min.Y or
+            ba.min.Z > bb.max.Z or ba.max.Z < bb.min.Z):
         return 0.0
-    return float(sum(solid.volume for solid in solids))
+    common = solid_volume(_boolean_shape(BRepAlgoAPI_Common, list(a.solids()), list(b.solids())))
+    union = solid_volume(_boolean_shape(BRepAlgoAPI_Fuse, list(a.solids()), list(b.solids())))
+    inferred = math.fsum([va, vb, -union])
+    tolerance = VOLUME_CONSISTENCY_MM3
+    if (common > min(va, vb) + tolerance or union < max(va, vb) - tolerance or
+            abs(common - inferred) > tolerance):
+        raise ValueError('motion Boolean measurements are inconsistent: '
+                         f'common={common:.9g}, operands-minus-union={inferred:.9g} mm3')
+    return common
 
 
 def boxes_apart(a, b) -> bool:
@@ -180,20 +344,6 @@ def boxes_apart(a, b) -> bool:
         or box_a.min.Y > box_b.max.Y or box_a.max.Y < box_b.min.Y
         or box_a.min.Z > box_b.max.Z or box_a.max.Z < box_b.min.Z
     )
-
-
-def overlap_volume(a, b) -> float:
-    """Exact intersection volume, with a bounding-box prefilter.
-
-    The prefilter is what makes a 12-step sweep against several obstacles cheap:
-    most steps of a real motion are nowhere near the obstacle, and a boolean is
-    far more expensive than six float comparisons.
-    """
-    if boxes_apart(a, b):
-        return 0.0
-    with contextlib.suppress(Exception):
-        return solid_volume(a & b)
-    return 0.0
 
 
 def vector3(value, field: str):
@@ -589,6 +739,14 @@ CHECKS = {
 
 
 def run_condition(condition: dict, parts: dict, index: int) -> dict:
+    # One condition samples an immutable assembly with non-destructive Boolean
+    # operations. Nested assembly-sequence conditions share this cache; it is
+    # discarded when the outer condition returns or raises.
+    with validation_scope():
+        return _run_condition(condition, parts, index)
+
+
+def _run_condition(condition: dict, parts: dict, index: int) -> dict:
     name = condition.get("check")
     ident = condition.get("id", f"condition_{index}")
     record = {

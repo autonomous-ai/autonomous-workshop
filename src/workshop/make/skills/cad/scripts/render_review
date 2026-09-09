@@ -24,7 +24,7 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image
 
 
 ENTRY_SUFFIX = ".step.py"
@@ -129,9 +129,28 @@ def _shape_colour(shape, index: int) -> tuple[int, int, int]:
     return tuple(_linear_to_srgb(float(value)) for value in channels[:3])
 
 
-def _leaves(shape):
+def _leaves(shape, parent_location=None, inherited_colour=None):
+    """Yield placed leaves without changing the source assembly hierarchy.
+
+    A group's tessellation merges its children and loses their materials.
+    Children retain local placements, so descend with the accumulated parent
+    transform rather than tessellating unplaced leaves directly.
+    """
+    colour = getattr(shape, "color", None)
+    if colour is None:
+        colour = inherited_colour
     children = list(getattr(shape, "children", ()) or ())
-    return children if children else [shape]
+    if children:
+        location = shape.location
+        if parent_location is not None:
+            location = parent_location * location
+        for child in children:
+            yield from _leaves(child, location, colour)
+    else:
+        placed = shape if parent_location is None else shape.moved(parent_location)
+        if getattr(placed, "color", None) is None and colour is not None:
+            placed.color = colour
+        yield placed
 
 
 def tessellate_occurrences(shape, tolerance: float):
@@ -176,11 +195,14 @@ def _shade(colour, normal, light, toward_viewer):
     return tuple(min(255, max(0, round(channel * brightness))) for channel in colour)
 
 
-def render(occurrences, azimuth: float, elevation: float, size: int, pad: float):
+def render(occurrences, azimuth: float, elevation: float, size: int, pad: float, *, framing=None):
     toward_viewer, right, up = camera_basis(azimuth, elevation)
     light = np.array([0.35, -0.45, 0.82], dtype=float)
     light /= np.linalg.norm(light)
-    all_points = np.concatenate([points for points, _faces, _colour in occurrences])
+    all_points = (np.concatenate([points for points, _faces, _colour in occurrences])
+                  if framing is None else np.asarray(framing, dtype=float))
+    if all_points.ndim != 2 or all_points.shape[1] != 3 or not len(all_points) or not np.isfinite(all_points).all():
+        raise ValueError("framing must contain finite 3D points")
     sx = all_points @ right
     sy = all_points @ up
     width = float(sx.max() - sx.min())
@@ -192,7 +214,11 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float)
     x_offset = (size - width * scale) / 2.0 - float(sx.min()) * scale
     y_offset = (size - height * scale) / 2.0 + float(sy.max()) * scale
 
-    triangles = []
+    # Mean triangle depth cannot resolve crossing or partially occluded faces.
+    # Keep the nearest surface separately at each pixel of this orthographic view.
+    pixels = np.empty((size, size, 3), dtype=np.uint8)
+    pixels[:] = BACKGROUND
+    depths = np.full((size, size), -np.inf)
     for points, faces, colour in occurrences:
         px = points @ right * scale + x_offset
         py = y_offset - points @ up * scale
@@ -200,19 +226,34 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float)
         for a, b, c in faces:
             vertices = points[[a, b, c]]
             normal = np.cross(vertices[1] - vertices[0], vertices[2] - vertices[0])
-            triangles.append(
-                (
-                    float(depth[[a, b, c]].mean()),
-                    [(float(px[a]), float(py[a])), (float(px[b]), float(py[b])), (float(px[c]), float(py[c]))],
-                    _shade(colour, normal, light, toward_viewer),
-                )
-            )
-    triangles.sort(key=lambda row: row[0])
-    image = Image.new("RGB", (size, size), BACKGROUND)
-    draw = ImageDraw.Draw(image)
-    for _depth, polygon, fill in triangles:
-        draw.polygon(polygon, fill=fill)
-    return image
+            xs, ys = px[[a, b, c]], py[[a, b, c]]
+            denominator = ((ys[1] - ys[2]) * (xs[0] - xs[2])
+                           + (xs[2] - xs[1]) * (ys[0] - ys[2]))
+            if abs(denominator) < 1e-12:
+                continue
+            left = max(0, int(np.floor(xs.min())))
+            rightmost = min(size - 1, int(np.ceil(xs.max())))
+            top = max(0, int(np.floor(ys.min())))
+            bottom = min(size - 1, int(np.ceil(ys.max())))
+            fill = _shade(colour, normal, light, toward_viewer)
+            # Bound temporary arrays for large projected faces. Pixel-centre
+            # barycentric coordinates interpolate this orthographic depth.
+            for first_row in range(top, bottom + 1, 32):
+                last_row = min(bottom + 1, first_row + 32)
+                y, x = np.ogrid[first_row:last_row, left:rightmost + 1]
+                x, y = x + 0.5, y + 0.5
+                w0 = ((ys[1] - ys[2]) * (x - xs[2])
+                      + (xs[2] - xs[1]) * (y - ys[2])) / denominator
+                w1 = ((ys[2] - ys[0]) * (x - xs[2])
+                      + (xs[0] - xs[2]) * (y - ys[2])) / denominator
+                w2 = 1.0 - w0 - w1
+                inside = (w0 >= -1e-9) & (w1 >= -1e-9) & (w2 >= -1e-9)
+                z = w0 * depth[a] + w1 * depth[b] + w2 * depth[c]
+                existing = depths[first_row:last_row, left:rightmost + 1]
+                visible = inside & (z > existing + 1e-9)
+                existing[visible] = z[visible]
+                pixels[first_row:last_row, left:rightmost + 1][visible] = fill
+    return Image.fromarray(pixels)
 
 
 def parse_view(text: str):

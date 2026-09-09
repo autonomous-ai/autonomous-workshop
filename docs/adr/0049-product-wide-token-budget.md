@@ -99,3 +99,46 @@ and completed verified public readback on 2026-09-07. No additional native
 turn was needed for publication. The sanitized archive is
 `toys/leo-crosscurrent/`; credentials and raw run state remain private. Its
 rules simulations do not constitute physical testing or proof of family fun.
+
+## Large native compaction records (2026-09-08)
+
+The normal 4 MiB record bound also rejected a valid native `compacted` record
+that copied a large history. The host then stopped on lost accounting while
+still below the token allowance. The adapter now validates oversized compaction
+records in bounded chunks and retains only their type marker. Embedded historic
+token notifications are not new consumption. Subsequent top-level usage records
+remain subject to the existing counter, ancestry and task-boundary checks.
+
+The 128 MiB file bound and 4 MiB bound for other record types remain. The streaming
+validator rejects malformed JSON, duplicate keys and unsupported record kinds,
+and bounds nesting to 64, keys per object to 4096, encoded key size to 4096 bytes,
+and numeric/retained type atoms to 128 bytes. A trailing partial append whose type
+is already known to be `compacted` preserves only earlier completed usage. These bounds keep unexpected formats
+fail-closed; they are not a claim of arbitrary-length session support.
+
+Synthetic tests cover large root and descendant compactions, duplicated historic
+usage, partial appends, corrupt records, persistent budget reload and unchanged
+cap enforcement. Private retained telemetry was recovered through the new reader
+without changing its aggregate counters. The failed native attempt is preserved;
+this recovery does not establish product completion or repair quality.
+
+
+## Bound discovery by metadata (2026-09-09)
+
+Product ancestry discovery reads one complete metadata record, bounded to
+4 MiB, from each candidate. It does not apply the selected rollout's 128 MiB
+body limit before membership is known. Previously an unrelated session above
+that limit could stop accounting for a smaller product even though none of
+the unrelated body was needed. A bounded identity read removes that coupling.
+
+The root and every discovered descendant retain the full 128 MiB file bound,
+counter checks, workspace binding and ancestry requirements. Malformed,
+partial, oversized or duplicate-key identities remain unavailable; ambiguous
+identities and linked paths are not skipped. Discovery still has its candidate
+count bound. This does not support arbitrarily large selected product sessions.
+
+Regression controls cover an oversized unrelated body, unchanged root and child
+file rejection, metadata framing and the exact metadata byte boundary. An
+offline replay against retained product usage recovered the same aggregate
+counters after excluding an unrelated large body from discovery's size check.
+The failed attempt remains failed; accounting recovery is not Make completion.

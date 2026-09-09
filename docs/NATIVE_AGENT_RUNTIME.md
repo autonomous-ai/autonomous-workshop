@@ -917,7 +917,13 @@ New Codex runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
 resumes. Cached input is included once; reasoning is already part of output.
 The host persists completed-request usage from a version-pinned Codex 0.153.4
 rollout adapter. Missing/regressing accounting fails closed after a bounded
-initial reporting grace. In-flight requests may overshoot the observed cap.
+initial reporting grace. Oversized native compaction records are validated
+in bounded chunks without retaining their history or recounting embedded usage.
+Ancestry discovery reads only a bounded first metadata record from each
+candidate; an unrelated large body cannot exhaust the selected-file size bound.
+The root and discovered descendants still retain that full file limit.
+Other record and file bounds remain; malformed or ambiguous accounting still
+stops the run. In-flight requests may overshoot the observed cap.
 `resume --max-tokens N` changes the total cap without resetting consumption.
 Normal twenty-minute splits and aggregate time/turn allowances are superseded;
 a one-hour emergency launch watchdog remains. Daydream is outside each product
@@ -936,9 +942,13 @@ or invalid state fails closed. Status exposes `budget` with scope
 charged to this native allowance. Token telemetry remains separate and may be
 partial. See [ADR 0047](adr/0047-motion-review-and-persistent-native-budget.md).
 
-New Make instructions also use exact-state animation for coupled mechanisms,
-with independent `MOTION-REVIEW.json` and source/state/animation hash binding.
-Still images judge appearance; mechanical gates retain their separate role.
+New Make instructions construct coupled-motion animation with the same
+source assembly, occurrence index and pose table used by `check_motion`.
+Schema-v2 evidence records the selected samples and camera; validation rebuilds
+the state meshes and GIF after the independent `MOTION-REVIEW.json` is checked.
+Rehashed files must still match the declared poses. Still images judge
+appearance; mechanical gates retain their separate role. See
+[ADR 0060](adr/0060-reconcile-declared-motion-states.md).
 Spark may revise unsealed styling decisions with recorded provenance, without
 discarding the Wish's required function or constraints. Frozen older runs do
 not gain either review behavior on resume.

@@ -146,9 +146,11 @@ gate.
 12. **Render before the expensive final gate.** After plausible exact draft
     geometry exists, run
     `scripts/verify_project <project> --print-preflight`. This fixed
-    cheap gate generates every declared printable, runs strict bed fit, exports
-    every STL, and checks each mesh and wall thickness at the final 0.4 mm
-    nozzle profile. Repair and regenerate before review if it fails. Never use
+    preflight generates the combined assembly and every declared printable,
+    checks assembly validity and interference at the final 1.0 mm3 contact
+    threshold, then runs strict printable bed fit, exports every STL, and checks
+    each mesh, unsupported overhangs at 45 degrees,
+    and wall thickness at the final 0.4 mm nozzle profile. Repair and regenerate before review if it fails. Never use
     an assembly-only STL, omit a printable, or lower the nozzle/threshold to
     manufacture a pass; never spend a visual-review round on geometry that
     cannot pass the full print-ready gate. Then use `scripts/render_product
@@ -247,6 +249,7 @@ Load these files only when their trigger applies:
 - `references/project-structure.md` — how many printed parts a design should have, and how to split the model across files once it outgrows one: project layout, entry/library filename rules, import resolution, companion files, and the editing rules for parameters, features, parts, and assemblies.
 - `references/inspection-and-validation.md` — validation sequence, selector refs, facts, planes, measurements, alignment, diff, frame, and validation reporting.
 - `references/image-derived-verification.md` — spec/source reconciliation, landmark audits, source-vs-STEP renders, reference-pose matching, and the integrated final gate. **Load for every project built from photographs or illustrations.**
+- `references/motion-presentation.md` — construct and reconcile operating animations from the same declared poses used by `check_motion`; load for coupled mechanisms.
 - `references/motion-manifests.md` — motion-manifest schema, the `expect: blocked` capture form, assembly sequences, and what a rigid-body sweep cannot answer.
 - `references/positioning.md` — part-local datums and origins, assembly transforms, build123d joints, CLI alignment validation, and positioning reports.
 - `references/parameters.md` — parameterizing a STEP model: source parameters, naming, defaults and bounds, deriving the second half of a mate with `scripts/cadfits.py`, and how a parameter change is confirmed.
