@@ -448,3 +448,15 @@ rigid placement, orientation, hash collisions, scope cleanup and eviction.
 Common and Fuse use the same kernel; their agreement is a consistency check,
 not independent geometric certification or physical validation. Frozen runs
 retain their materialized tools. Private replay artifacts remain outside Git.
+
+## Current print-preflight result (2026-09-09)
+
+The pre-review print gate validates only the newest pipeline record. Previously
+it could borrow PASS, the required mode, assembly screening, or printable check
+rows from preserved history even when the newest record failed or was incomplete.
+Regression tests use the real report writer to retain older records and exercise
+failure, omitted checks, and weaker print profiles. A complete newest PASS still
+accepts older failed records; the signature review continues to bind the entire
+report's hash. Final geometry checks and frozen materialized tools are unchanged.
+This corrects report-history validation; it does not establish that a passing
+preflight belongs to the current construction source bytes.

@@ -247,7 +247,8 @@ def _required_print_preflight(
     if len(content) != identity.st_size:
         raise ValueError("print preflight must be one bounded regular file")
     try:
-        text = content.decode("utf-8")
+        # Preserved history remains hashed, but cannot supply current gate results.
+        text = content.decode("utf-8").split("\n---\n", 1)[0]
     except UnicodeError as exc:
         raise ValueError("print preflight must be UTF-8 text") from exc
     if (
