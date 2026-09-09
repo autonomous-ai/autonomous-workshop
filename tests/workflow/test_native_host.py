@@ -2907,59 +2907,6 @@ class NativeHostTest(unittest.TestCase):
                 started["constitution_sha256"],
             )
 
-    def test_resume_decide_records_the_answer_and_lists_it_in_the_next_packet(self):
-        launcher = _FakeLauncher()
-        with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary).resolve() / "workshop-home"
-            environment = {"WORKSHOP_HOME": str(home)}
-            output = StringIO()
-            with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
-                "workshop.workflow.native_run._source_checkout_root",
-                return_value=None,
-            ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
-                return_value=launcher,
-            ), redirect_stdout(output), redirect_stderr(StringIO()):
-                self.assertEqual(main(("wish", "a goose with a slinky neck", "--json")), 0)
-            product_id = json.loads(output.getvalue())["product_id"]
-            workspace = home / "runs" / product_id / "workspace"
-            host_state = home / "state" / product_id
-            first = json.loads((workspace / "STAGE.json").read_text(encoding="utf-8"))
-            self.assertEqual(first["inputs"]["host_decisions"], [])
-
-            decision = "Accept revision 34 below the 0.90 likeness floor (IoU 0.774); continue to motion, fit and final review."
-            output = StringIO()
-            progress = StringIO()
-            with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
-                "workshop.workflow.native_run._source_checkout_root",
-                return_value=None,
-            ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
-                return_value=launcher,
-            ), redirect_stdout(output), redirect_stderr(progress):
-                self.assertEqual(
-                    main(("resume", product_id, "--decide", decision, "--json")), 0
-                )
-            self.assertIn("Decision recorded for %s at make round 1" % product_id, progress.getvalue())
-            ledger = host_state / "host-decisions.jsonl"
-            self.assertTrue(ledger.is_file())
-            self.assertEqual(stat.S_IMODE(ledger.stat().st_mode), 0o600)
-            record = json.loads(ledger.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(record["kind"], "autonomous-workshop.host-decision")
-            self.assertEqual(record["text"], decision)
-            self.assertEqual(record["source"], "workshop resume --decide")
-            self.assertRegex(record["checkpoint_sha256"], r"^[0-9a-f]{64}$")
-            self.assertEqual(record["stage"], "make")
-            self.assertEqual(len(launcher.resumes), 1)
-            second = json.loads((workspace / "STAGE.json").read_text(encoding="utf-8"))
-            listed = second["inputs"]["host_decisions"]
-            self.assertEqual([item["text"] for item in listed], [decision])
-            self.assertEqual(listed[0]["stage"], "make")
-            self.assertIn("human decision path", listed[0]["meaning"])
-            # An answer to a Goal never moves the Goal.
-            self.assertEqual(second["subject_sha256"], first["subject_sha256"])
-            self.assertFalse((workspace / "host-decisions.jsonl").exists())
-
     def test_resume_safely_restarts_only_when_no_session_checkpoint_exists(self):
         interrupted = _FakeLauncher(fail_first_start=True)
         with tempfile.TemporaryDirectory() as temporary:

@@ -88,7 +88,6 @@ from workshop.wish import (
 from workshop.wish.contracts import MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY
 from workshop.workflow import (
     native_run_status,
-    record_native_run_decision,
     refresh_native_run_tools,
     resume_native_run,
     start_native_run,
@@ -1014,28 +1013,6 @@ def _resume(args: argparse.Namespace) -> int:
         file=progress,
         flush=True,
     )
-    if getattr(args, "decide", None):
-        decided = record_native_run_decision(
-            args.product_id, args.decide, source="workshop resume --decide"
-        )
-        answered = decided["answers_needs"]
-        print(
-            "Decision recorded for %s at %s round %s (%d decision(s) on file); it %s"
-            % (
-                args.product_id,
-                decided["stage"],
-                decided["round"],
-                decided["decisions_recorded"],
-                (
-                    "answers %d open need(s) and rides the next STAGE.json as inputs.host_decisions."
-                    % len(answered)
-                    if answered
-                    else "rides the next STAGE.json as inputs.host_decisions (no need was open)."
-                ),
-            ),
-            file=progress,
-            flush=True,
-        )
     if getattr(args, "refresh_tools", False):
         refreshed = refresh_native_run_tools(
             args.product_id, reason="workshop resume --refresh-tools"
@@ -1897,18 +1874,6 @@ def parser() -> argparse.ArgumentParser:
             "before resuming, rewrite the run's host-owned deterministic tools "
             "(domain skills such as the CAD verifier) from this Workshop install and "
             "rebind them in the run manifest; recorded in the run's private host state"
-        ),
-    )
-    resume.add_argument(
-        "--decide",
-        metavar="TEXT",
-        default=None,
-        help=(
-            "before resuming, record your decision on the run's open need (for "
-            "example an explicit likeness acceptance below the 0.90 floor, or an "
-            "authorization the Manager asked for); it is kept in the run's private "
-            "host state and listed in the next STAGE.json as inputs.host_decisions "
-            "for the Manager to act on"
         ),
     )
     resume.set_defaults(handler=_resume)

@@ -802,37 +802,6 @@ class NativeCommandTest(unittest.TestCase):
         self.assertIn("operation=session.resume state=started", stderr.getvalue())
         self.assertIn("state=completed elapsed_ms=911", stderr.getvalue())
 
-    def test_resume_decide_records_the_decision_before_resuming(self):
-        order = []
-
-        def decide(product_id, text, *, source):
-            order.append("decide")
-            return {
-                "product_id": product_id, "action": "decision-recorded", "checkpoint_sha256": "c" * 64,
-                "stage": "make", "round": 1, "answers_needs": ["Explicit human likeness acceptance is required"],
-                "decisions_recorded": 1,
-            }
-
-        def resume_run(product_id, **kwargs):
-            order.append("resume")
-            return native_receipt(stage="make")
-
-        stderr = StringIO()
-        with mock.patch("cli.main.record_native_run_decision", side_effect=decide) as record, mock.patch(
-            "cli.main.resume_native_run", side_effect=resume_run
-        ), redirect_stdout(StringIO()), redirect_stderr(stderr):
-            result = main(("resume", "wish-one", "--decide", "Accept revision 34 below the floor.", "--json"))
-        self.assertEqual(result, 0)
-        self.assertEqual(order, ["decide", "resume"])
-        self.assertEqual(record.call_args.args, ("wish-one", "Accept revision 34 below the floor."))
-        self.assertEqual(record.call_args.kwargs, {"source": "workshop resume --decide"})
-        self.assertIn("Decision recorded for wish-one at make round 1 (1 decision(s) on file); it answers 1 open need(s)", stderr.getvalue())
-        with mock.patch("cli.main.resume_native_run", return_value=native_receipt(stage="make")), mock.patch(
-            "cli.main.record_native_run_decision"
-        ) as untouched, redirect_stdout(StringIO()):
-            main(("resume", "wish-one"))
-        untouched.assert_not_called()
-
     def test_resume_explicitly_requests_turn_budget_adoption(self):
         with mock.patch("cli.main.resume_native_run", return_value=native_receipt(stage="make")) as resume, redirect_stdout(StringIO()):
             main(("resume", "wish-one", "--turn-budget"))
