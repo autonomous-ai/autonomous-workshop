@@ -292,6 +292,14 @@ _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
 _SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _MAX_STAGE_INPUT_BYTES = 512 * 1024
 _MAX_CAD_GATE_REJECTION_BYTES = 64 * 1024
+# The isolated fresh rebuild is the most expensive gate in the run, and it was
+# the only one with no rejection budget at all: its record was overwritten in
+# place, so a Make that could not satisfy it retried until a token cap ended
+# the invocation. Complex geometry fails here most often, so this is exactly
+# the loop that needs a bound. The Make contract allows one focused repair and
+# one blind rereview, so eight rejected isolated verifications is well past any
+# legitimate repair sequence and far short of a token cap.
+_MAX_CAD_GATE_REJECTIONS = 8
 _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES = 8 * 1024
 _MAX_MAKE_PROPOSAL_REJECTION_BYTES = 256 * 1024
 _MAX_MAKE_PROPOSAL_REJECTION_FEEDBACK_CHARS = 2_000
@@ -842,12 +850,33 @@ def _persist_cad_gate_rejection(
     if evidence.passed or evidence.failure_code != rejection.failure_code:
         raise StateConflict("CAD gate rejection evidence disagrees with its failure")
     _assert_persisted_cad_gate_evidence(run, rejection)
+    previous = _read_cad_gate_rejection(run, checkpoint)
+    if (
+        previous is not None
+        and previous["cad_gate_receipt_sha256"] == evidence.receipt_sha256
+        and previous["subject_sha256"] == proposal.subject_sha256
+    ):
+        # One isolated verification produces one receipt, and the receipt
+        # identity includes the run's own duration. Seeing the same receipt
+        # again is this rejection being processed twice after a crash between
+        # the durable record and the proposal's removal, not a second attempt.
+        return previous
+    if previous is None or previous["subject_sha256"] != proposal.subject_sha256:
+        # A different subject is a different attempt lineage, not a repeat.
+        rejection_number = 1
+    else:
+        rejection_number = _cad_gate_rejection_number(previous) + 1
+    if rejection_number > _MAX_CAD_GATE_REJECTIONS:
+        raise WorkshopError(
+            "CAD gate exhausted its bounded host rejection budget"
+        )
     identity: dict[str, Any] = {
         "schema_version": 1,
         "kind": _CAD_GATE_REJECTION_KIND,
         "product_id": checkpoint.product_id,
         "stage": checkpoint.stage,
         "round": checkpoint.round_index,
+        "rejection_number": rejection_number,
         "checkpoint_sha256": checkpoint.checkpoint_sha256,
         "subject_sha256": proposal.subject_sha256,
         "rejected_outcome_sha256": proposal.outcome.sha256,
@@ -946,8 +975,21 @@ def _read_cad_gate_rejection(
         "rejection_sha256",
     )
     command = record.get("command")
+    # Runs stopped before the rejection budget existed carry no counter. Read
+    # them rather than failing an in-flight resume closed; they count as the
+    # first rejection, which is what an uncounted record always meant.
+    counted = "rejection_number" in record
     if (
-        set(record) != expected
+        set(record) != (expected | {"rejection_number"} if counted else expected)
+        or (
+            counted
+            and (
+                type(record["rejection_number"]) is not int
+                or not 1
+                <= record["rejection_number"]
+                <= _MAX_CAD_GATE_REJECTIONS
+            )
+        )
         or record.get("schema_version") != 1
         or record.get("kind") != _CAD_GATE_REJECTION_KIND
         or record.get("product_id") != checkpoint.product_id
@@ -977,10 +1019,54 @@ def _read_cad_gate_rejection(
         raise StateConflict("CAD gate rejection is invalid")
     _validate_cad_gate_stream_summary(record["stdout"], "CAD gate stdout summary")
     _validate_cad_gate_stream_summary(record["stderr"], "CAD gate stderr summary")
-    identity = {key: record[key] for key in expected - {"rejection_sha256"}}
+    identity = {
+        key: record[key] for key in set(record) - {"rejection_sha256"}
+    }
     if record["rejection_sha256"] != _sha256(_canonical_json_bytes(identity)):
         raise StateConflict("CAD gate rejection hash is invalid")
     return record
+
+
+def _cad_gate_rejection_number(record: Mapping[str, Any]) -> int:
+    """Read a rejection's position, treating an uncounted record as the first."""
+
+    return record.get("rejection_number", 1)
+
+
+def _cad_gate_budget_outcome(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    proposal: AgentOutcomeProposal,
+    persisted: Mapping[str, Any],
+) -> AgentRunCheckpoint:
+    """End the stage truthfully once the isolated gate budget is spent.
+
+    Below the budget the checkpoint is returned unchanged so the same Goal
+    repairs and resubmits. At the budget, another attempt is the loop this
+    budget exists to stop, so the stage records why it failed instead of
+    leaving the host to discover it by running out of tokens. Release already
+    fails closed on a deterministic rejection and keeps its own handling.
+    """
+
+    if _cad_gate_rejection_number(persisted) < _MAX_CAD_GATE_REJECTIONS:
+        return checkpoint
+    return run.apply_outcome(
+        AgentOutcome(
+            stage=checkpoint.stage,
+            status="failed",
+            artifacts=proposal.outcome.artifacts,
+            needs=(
+                "The isolated CAD gate rejected %d consecutive %s proposals "
+                "for this subject, most recently with %s; repair the geometry "
+                "in a new revision rather than resubmitting it again."
+                % (
+                    _MAX_CAD_GATE_REJECTIONS,
+                    checkpoint.stage,
+                    persisted["failure_code"],
+                ),
+            ),
+        )
+    )
 
 
 def _make_proposal_rejection_directory(
@@ -5805,13 +5891,26 @@ def _v13_operator_resume_recovery(
     )
 
 
+def _unfinished_return_stop_armed(budget: Optional[Any]) -> bool:
+    """Whether an empty native return actually ends the current invocation.
+
+    The continuation prompt tells the agent what its next empty return will
+    cost, so it has to read the same condition the loop enforces. Legacy clock
+    and turn-budget runs keep their historical unbounded continuation, and the
+    prompt must not promise them a stop that never arrives.
+    """
+
+    return budget is None or isinstance(budget, ProductTokenBudget)
+
+
 def _launcher_call(
     launcher: NativeSessionLauncher,
     method: str,
     *,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
-    unfinished_continuation: bool = False,
+    unfinished_returns: int = 0,
+    unfinished_stop_armed: bool = False,
     recoverable_continuation: bool = False,
     make_proof_boundary: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
@@ -5844,14 +5943,14 @@ def _launcher_call(
         and _phased_deep_capability_path(checkpoint) is not None
     )
     if (
-        not unfinished_continuation
+        not unfinished_returns
         and not recoverable_continuation
     ) or phased_make:
         prompt += _deep_make_critical_path_prompt(
             checkpoint,
             proof_boundary=make_proof_boundary,
         )
-    if unfinished_continuation:
+    if unfinished_returns:
         prompt += (
             "\n\nYour previous native turn returned without "
             "agent-outcome.json. The active Goal is not complete. Continue "
@@ -5859,6 +5958,35 @@ def _launcher_call(
             "the required stage finalizer, and return only after it writes "
             "agent-outcome.json."
         )
+        if unfinished_stop_armed:
+            # An empty return says nothing about why. Tell the agent how many
+            # it has spent and what the next one costs, so a genuinely blocked
+            # Goal seals a truthful need instead of retrying the same repair
+            # until a token cap ends the invocation.
+            prompt += (
+                "\n\nThis is empty return %d of the %d this invocation allows "
+                "on one stage subject."
+                % (unfinished_returns, _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS)
+            )
+            if (
+                unfinished_returns
+                >= _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS - 1
+            ):
+                prompt += (
+                    " Your next return without agent-outcome.json ends this "
+                    "invocation with the session checkpointed. If the "
+                    "finalizer's success contract is genuinely out of reach, "
+                    "do not repeat the attempt that already failed: seal a "
+                    "truthful need instead with "
+                    '`"$WORKSHOP_PYTHON" '
+                    ".agents/skills/autonomous-workshop/scripts/"
+                    "stage_proposal.py --run-root . need --stage %s --status "
+                    "waiting|failed --reason \"<one concrete line>\"`. Use "
+                    "`waiting` when a named external condition blocks the "
+                    "Goal and `failed` when the work itself cannot pass its "
+                    "gate. A recorded need is a real outcome the host can act "
+                    "on; another empty return is not." % checkpoint.stage
+                )
     if recoverable_continuation:
         prompt += (
             "\n\nThe immediately previous native turn ended at the host's "
@@ -8021,7 +8149,9 @@ def _process_agent_outcome_inner(
                     context=context,
                 )
         except NativeCadGateError as rejection:
-            _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
+            persisted = _persist_cad_gate_rejection(
+                run, checkpoint, proposal, rejection
+            )
             _remove_agent_outcome(run.run_root)
             # The gate receipt is durable; bank what it proves before the
             # next turn repairs it, so the lesson survives a run that never
@@ -8034,7 +8164,9 @@ def _process_agent_outcome_inner(
                 verdict="make-cad-gate-failed",
                 name="cad-gate-%04d" % checkpoint.revision,
             )
-            return checkpoint
+            return _cad_gate_budget_outcome(
+                run, checkpoint, proposal, persisted
+            )
         except _MakeProposalRejected as rejection:
             persisted = _persist_make_proposal_rejection(
                 run, checkpoint, proposal, rejection
@@ -8072,9 +8204,13 @@ def _process_agent_outcome_inner(
                     context=context,
                 )
         except NativeCadGateError as rejection:
-            _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
+            persisted = _persist_cad_gate_rejection(
+                run, checkpoint, proposal, rejection
+            )
             _remove_agent_outcome(run.run_root)
-            return checkpoint
+            return _cad_gate_budget_outcome(
+                run, checkpoint, proposal, persisted
+            )
         except (ArtifactError, ContractError) as error:
             if isinstance(error, StateConflict):
                 raise
@@ -8257,7 +8393,7 @@ def _run_native_session(
         else "start"
     )
     action = "resumed" if first_method == "resume" else "started"
-    unfinished_continuation = False
+    unfinished_returns = 0
     consecutive_unfinished_turns = 0
     consecutive_recoverable_turns = 0
     initial_checkpoint = run.snapshot()
@@ -8274,6 +8410,7 @@ def _run_native_session(
     native_turn_limit = (
         MAX_BUDGETED_TURNS if budget is not None else _native_turn_limit(run.snapshot())
     )
+    unfinished_stop_armed = _unfinished_return_stop_armed(budget)
     initial_make_boundaries: set[str] = set()
     while turns < native_turn_limit:
         checkpoint = run.snapshot()
@@ -8314,7 +8451,7 @@ def _run_native_session(
                 recovered_progress.observe("failed")
                 raise
             else:
-                unfinished_continuation = False
+                unfinished_returns = 0
                 consecutive_unfinished_turns = 0
                 consecutive_recoverable_turns = 0
                 recoverable_continuation = False
@@ -8413,7 +8550,8 @@ def _run_native_session(
                     method,
                     checkpoint=checkpoint,
                     paths=paths,
-                    unfinished_continuation=unfinished_continuation,
+                    unfinished_returns=unfinished_returns,
+                    unfinished_stop_armed=unfinished_stop_armed,
                     recoverable_continuation=recoverable_continuation,
                     make_proof_boundary=make_proof_boundary,
                     activity_observer=turn_activity_observer,
@@ -8486,7 +8624,7 @@ def _run_native_session(
                 consecutive_recoverable_turns = 0
                 recoverable_continuation = False
                 consecutive_unfinished_turns += 1
-                if budget is None and (
+                if unfinished_stop_armed and (
                     consecutive_unfinished_turns
                     >= _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS
                 ):
@@ -8501,7 +8639,7 @@ def _run_native_session(
                             checkpoint.product_id,
                         )
                     )
-                unfinished_continuation = True
+                unfinished_returns = consecutive_unfinished_turns
                 continue
             consecutive_unfinished_turns = 0
             progress.observe("failed")
@@ -8557,7 +8695,7 @@ def _run_native_session(
         except WorkshopError:
             progress.observe("failed")
             raise
-        unfinished_continuation = False
+        unfinished_returns = 0
         consecutive_unfinished_turns = 0
         consecutive_recoverable_turns = 0
         recoverable_continuation = False
