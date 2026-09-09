@@ -117,7 +117,7 @@ _CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS = (
     "media.githubusercontent.com",
     "*.public.blob.vercel-storage.com",
 )
-_CODEX_COMPONENT_NETWORK_DOMAINS = (
+_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_REFERENCE_IMAGES = (
     *_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS,
     "datasheets.raspberrypi.com",
     "dfimg.dfrobot.com",
@@ -132,6 +132,16 @@ _CODEX_COMPONENT_NETWORK_DOMAINS = (
     "www.waveshare.com",
     "www.waveshare.net",
 )
+# `--ref` is the preferred path and its bytes are sealed before a run starts,
+# but a Wish that only names an existing object leaves the run with nothing to
+# look at, and a text-derived shape does not resemble the named thing. The
+# reference images that would fix that live on whichever CDN a search happens
+# to return, so an enumerated host list cannot serve them. The containment that
+# matters is kept by `limited` mode, not by this map: it restricts methods to
+# GET, HEAD and OPTIONS, so a wider map grants reads and no way to send
+# anything out. The filesystem profile is unchanged and still denies `:root`
+# and every `.env*`, so a read stays bounded to the run's own workspace.
+_CODEX_COMPONENT_NETWORK_DOMAINS = ("*",)
 _CODEX_REASONING_ITEM_TYPES = frozenset(("reasoning",))
 _CODEX_TOOL_ITEM_TYPES = frozenset(
     (
@@ -748,36 +758,78 @@ def _run_policy_before_component_network(
     )
 
 
-def _run_policy_before_supplier_drawings(
+def _network_domains_argument(domains: tuple[str, ...]) -> str:
+    """Render the exact domain-map argument one policy generation carries."""
+
+    return "permissions.%s.network.domains={%s}" % (
+        CODEX_PERMISSION_PROFILE,
+        ",".join('%s="allow"' % _toml_string(domain) for domain in domains),
+    )
+
+
+def _rolled_back_network_domains(
     run_root: Path,
     run_policy: _CodexRunPolicy,
+    *,
+    expected: tuple[str, ...],
+    predecessor: tuple[str, ...],
+    label: str,
 ) -> _CodexRunPolicy:
-    """Reconstruct the first scoped proxy before supplier drawing hosts."""
+    """Rebuild one policy generation with its predecessor's domain map.
 
-    current_domains = "permissions.%s.network.domains={%s}" % (
-        CODEX_PERMISSION_PROFILE,
-        ",".join(
-            '%s="allow"' % _toml_string(domain)
-            for domain in _CODEX_COMPONENT_NETWORK_DOMAINS
-        ),
-    )
-    if current_domains not in run_policy.permission_config_arguments:
+    Each rollback validates the generation it is rolling back *from*, so a
+    resumed session can only step back through generations that actually
+    existed, never sideways into an arbitrary domain map.
+    """
+
+    if (
+        _network_domains_argument(expected)
+        not in run_policy.permission_config_arguments
+    ):
         raise CodexInvocationError(
-            "Codex runtime policy has no supplier drawing network binding"
+            "Codex runtime policy has no %s network binding" % label
         )
     return _CodexRunPolicy(
         permission_config_arguments=_permission_config_arguments(
             run_root,
             run_policy.trusted_python_runtime_paths,
             run_policy.trusted_codex_runtime_paths,
-            component_network_domains=(
-                _CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS
-            ),
+            component_network_domains=predecessor,
         ),
         trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
         trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
         environment_allowlist=run_policy.environment_allowlist,
         environment_overrides=run_policy.environment_overrides,
+    )
+
+
+def _run_policy_before_reference_images(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Reconstruct the supplier-only domain map before reference images."""
+
+    return _rolled_back_network_domains(
+        run_root,
+        run_policy,
+        expected=_CODEX_COMPONENT_NETWORK_DOMAINS,
+        predecessor=_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_REFERENCE_IMAGES,
+        label="reference image",
+    )
+
+
+def _run_policy_before_supplier_drawings(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Reconstruct the first scoped proxy before supplier drawing hosts."""
+
+    return _rolled_back_network_domains(
+        run_root,
+        run_policy,
+        expected=_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_REFERENCE_IMAGES,
+        predecessor=_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS,
+        label="supplier drawing",
     )
 
 
@@ -2466,9 +2518,13 @@ class CodexNativeSessionLauncher:
                 else None
             ),
         )
-        policy_before_supplier_drawings = _run_policy_before_supplier_drawings(
+        policy_before_reference_images = _run_policy_before_reference_images(
             root,
             run_policy,
+        )
+        policy_before_supplier_drawings = _run_policy_before_supplier_drawings(
+            root,
+            policy_before_reference_images,
         )
         policy_before_component_network = _run_policy_before_component_network(
             root,
@@ -2509,6 +2565,7 @@ class CodexNativeSessionLauncher:
         )
         predecessor_policies: list[tuple[_CodexRunPolicy, bool]] = [
             (pre_framework_policy, True),
+            (policy_before_reference_images, True),
             (policy_before_supplier_drawings, True),
             (policy_before_component_network, True),
             (legacy_python_policy, True),

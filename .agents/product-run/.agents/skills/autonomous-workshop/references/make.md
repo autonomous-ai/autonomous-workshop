@@ -51,6 +51,12 @@ deterministic commands:
   --motion-angles=-12,0,12
 ```
 
+When the Wish supplies images or names an existing object, follow
+[visual-reference-inspection.md](visual-reference-inspection.md) before
+committing the form: prefer the sealed `wish-references/`, search for one when
+the Wish names an object and attaches none, and label a text-derived
+interpretation as such when neither is reachable rather than stopping the run.
+
 ## Ownership and pipeline
 
 Make owns the stage inputs and output paths, independent blind review, bounded

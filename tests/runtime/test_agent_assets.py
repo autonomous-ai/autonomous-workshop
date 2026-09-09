@@ -143,6 +143,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "deep-economics-v9.md",
             "make.md",
             "spark-economics-v4.md",
+            "visual-reference-inspection.md",
             "playtest.md",
         ):
             with self.subTest(reference=reference):
