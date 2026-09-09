@@ -156,6 +156,7 @@ class NativeCommandTest(unittest.TestCase):
             github_publish_requested,
             activity_observer,
             timing_observer,
+            wish_reference_files=None,
         ):
             observed["wish"] = wish
             observed["effort"] = effort
@@ -250,6 +251,7 @@ class NativeCommandTest(unittest.TestCase):
             github_publish_requested,
             activity_observer,
             timing_observer,
+            wish_reference_files=None,
         ):
             self.assertEqual(effort, "spark")
             self.assertEqual(manager_id, "codex")
@@ -513,6 +515,131 @@ class NativeCommandTest(unittest.TestCase):
                 main(("wish", "a moon", "--max-rounds", value, "--json"))
             self.assertEqual(caught.exception.code, 2)
             start.assert_not_called()
+
+    def test_wish_attaches_reference_images_in_order(self):
+        from PIL import Image
+
+        observed = {}
+
+        def start(wish, **kwargs):
+            observed["wish"] = wish
+            observed.update(kwargs)
+            return native_receipt()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            Image.new("RGB", (64, 48), "red").save(root / "HAER side.jpg", "JPEG")
+            Image.new("RGB", (32, 32), "blue").save(root / "front.png")
+            side_bytes = (root / "HAER side.jpg").read_bytes()
+            front_bytes = (root / "front.png").read_bytes()
+            stderr = StringIO()
+            with mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-pictures"
+            ), mock.patch(
+                "cli.main.start_native_run", side_effect=start
+            ), redirect_stdout(StringIO()), redirect_stderr(stderr):
+                result = main(
+                    (
+                        "wish",
+                        "--ref",
+                        str(root / "HAER side.jpg"),
+                        "--ref",
+                        str(root / "front.png"),
+                        "a locomotive from its drawings",
+                        "--json",
+                    )
+                )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(
+            [item.name for item in observed["wish"].references],
+            ["ref-01-haer-side.jpg", "ref-02-front.png"],
+        )
+        self.assertEqual(
+            observed["wish_reference_files"],
+            {"ref-01-haer-side.jpg": side_bytes, "ref-02-front.png": front_bytes},
+        )
+        self.assertEqual(observed["wish"].objective, "a locomotive from its drawings")
+        self.assertIn(
+            "References: 2 image(s) attached read-only under wish-references/",
+            stderr.getvalue(),
+        )
+
+    def test_wish_downloads_a_reference_link_and_seals_where_it_came_from(self):
+        from PIL import Image
+
+        observed = {}
+
+        def start(wish, **kwargs):
+            observed["wish"] = wish
+            observed["wish_reference_files"] = kwargs.get("wish_reference_files")
+            return native_receipt()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            Image.new("RGB", (32, 32), "blue").save(root / "front.png")
+            front_bytes = (root / "front.png").read_bytes()
+            link = "https://pictures.test/ducks/Grey%20Duck.png?raw=1"
+            fetched = []
+
+            def fetch(url):
+                fetched.append(url)
+                return front_bytes
+
+            stderr = StringIO()
+            with mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-linked"
+            ), mock.patch(
+                "workshop.wish.references._FETCH", side_effect=fetch
+            ), mock.patch(
+                "cli.main.start_native_run", side_effect=start
+            ), redirect_stdout(StringIO()), redirect_stderr(stderr):
+                result = main(("wish", "--ref", link, "a duck from a photo", "--json"))
+
+        self.assertEqual(result, 0)
+        self.assertEqual(fetched, [link])
+        wish = observed["wish"]
+        self.assertEqual([item.name for item in wish.references], ["ref-01-grey-duck.png"])
+        self.assertEqual(observed["wish_reference_files"], {"ref-01-grey-duck.png": front_bytes})
+        self.assertEqual(
+            dict(wish.context),
+            {"source": "workshop-cli", "reference_sources": {"ref-01-grey-duck.png": link}},
+        )
+        self.assertIn("ref-01-grey-duck.png downloaded from %s" % link, stderr.getvalue())
+
+    def test_wish_rejects_a_dead_reference_link_before_starting(self):
+        from workshop.errors import ContractError
+
+        stderr = StringIO()
+        with mock.patch(
+            "workshop.wish.references._FETCH",
+            side_effect=ContractError(
+                "reference image link returned HTTP 404: https://pictures.test/gone.png"
+            ),
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(stderr):
+            result = main(("wish", "--ref", "https://pictures.test/gone.png", "a moon", "--json"))
+
+        self.assertEqual(result, 2)
+        self.assertIn("returned HTTP 404: https://pictures.test/gone.png", stderr.getvalue())
+        start.assert_not_called()
+
+    def test_wish_rejects_an_unreadable_reference_before_starting(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            notes = Path(temporary) / "notes.txt"
+            notes.write_text("not an image\n", encoding="utf-8")
+            stderr = StringIO()
+            with mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(stderr):
+                result = main(("wish", "--ref", str(notes), "a moon", "--json"))
+
+        self.assertEqual(result, 2)
+        self.assertIn(
+            "notes.txt is not a readable PNG, JPEG, or WebP", stderr.getvalue()
+        )
+        start.assert_not_called()
 
     def test_live_native_activity_repeats_only_throttled_running_updates(self):
         output = StringIO()
@@ -838,6 +965,7 @@ class DaydreamCommandTest(unittest.TestCase):
             max_rounds,
             activity_observer,
             timing_observer,
+            wish_reference_files=None,
         ):
             observed["wish"] = wish
             observed["effort"] = effort
@@ -1037,6 +1165,95 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertIn("(saved idea)", stdout.getvalue())
         self.assertNotIn("Build it:", stdout.getvalue())
         self.assertIn("Wish: wish-", stdout.getvalue())
+
+    def test_start_with_a_typed_brief_pins_the_inventor_and_never_dreams(self):
+        from PIL import Image
+
+        observed = {}
+
+        def start(wish, **kwargs):
+            observed["wish"] = wish
+            observed.update(kwargs)
+            return native_receipt()
+
+        stdout = StringIO()
+        stderr = StringIO()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            Image.new("RGB", (32, 32), "blue").save(root / "front.png")
+            front_bytes = (root / "front.png").read_bytes()
+            with mock.patch("cli.main.run_daydream") as run, mock.patch(
+                "cli.main.load_sealed_daydream"
+            ) as load, mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-typed"
+            ), mock.patch(
+                "cli.main.start_native_run", side_effect=start
+            ) as native_start, redirect_stdout(stdout), redirect_stderr(stderr):
+                result = main(
+                    (
+                        "start",
+                        "sample",
+                        "--wish",
+                        "a wind-up duck that walks",
+                        "--ref",
+                        str(root / "front.png"),
+                        "--workflow",
+                        "forge",
+                        "--max-rounds",
+                        "6",
+                        "--json",
+                    )
+                )
+
+        self.assertEqual(result, 0)
+        run.assert_not_called()
+        load.assert_not_called()
+        native_start.assert_called_once()
+        wish = observed["wish"]
+        self.assertEqual(wish.product_id, "wish-typed")
+        self.assertEqual(wish.objective, "a wind-up duck that walks")
+        self.assertEqual(
+            dict(wish.context), {"source": "workshop-start", "inventor_id": "sample"}
+        )
+        self.assertEqual([item.name for item in wish.references], ["ref-01-front.png"])
+        self.assertEqual(
+            observed["wish_reference_files"], {"ref-01-front.png": front_bytes}
+        )
+        self.assertEqual(observed["effort"], "forge")
+        self.assertEqual(observed["max_rounds"], 6)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(set(payload), {"run"})
+        progress = stderr.getvalue()
+        self.assertIn("Inventor: sample", progress)
+        self.assertIn(
+            "Sealing your brief as this run's Wish; sample builds and publishes it.",
+            progress,
+        )
+        self.assertIn("References: 1 image(s) attached read-only", progress)
+        self.assertNotIn("Daydreaming", progress)
+        self.assertNotIn("Loop:", progress)
+
+    def test_start_typed_brief_options_are_bounded(self):
+        args = parser().parse_args(("start", "pico-press"))
+        self.assertIsNone(args.wish)
+        self.assertIsNone(args.references)
+        self.assertEqual(args.max_rounds, 4)
+        for arguments, message in (
+            (("start", "sample", "--wish", "a duck", "--idea", "dd-1"), "exclusive"),
+            (("start", "sample", "--ref", "front.png"), "attaches reference images"),
+        ):
+            stderr = StringIO()
+            with self.subTest(arguments=arguments), mock.patch(
+                "cli.main.run_daydream"
+            ) as run, mock.patch("cli.main.start_native_run") as start, mock.patch(
+                "cli.main.acquire_loop"
+            ) as lease, redirect_stdout(StringIO()), redirect_stderr(stderr):
+                result = main(arguments)
+            self.assertEqual(result, 2)
+            self.assertIn(message, stderr.getvalue())
+            run.assert_not_called()
+            start.assert_not_called()
+            lease.assert_not_called()
 
     def test_daydream_with_a_saved_idea_only_prints_it(self):
         sealed = sample_sealed()

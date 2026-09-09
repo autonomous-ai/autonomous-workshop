@@ -90,6 +90,17 @@ TWO_SIDED_MIN_SHARE = 0.004  # an off-hue attached region this big is a part
 TWO_SIDED_CHROMA_FACTOR = 2.0  # bright regions must be twice as off-hue to count
 TWO_SIDED_TOUCH_PX = 7         # how close a bright region must sit to the silhouette
 
+# A pale tinted subject on a near-white ground — a cream print photographed
+# on a white sweep — sits inside the luminance band AND only ~0.02 off the
+# background in normalised rgb, so the luminance mask misses it, the shadow
+# test discards its shaded parts as shadow, and the off-hue admission never
+# reaches it (2026-09-08: a cream goose measured at fill 0.30 with its head
+# and torso missing). CIELAB tells the two apart: cream differs from white by
+# about 10 in b*, while a neutral cast shadow stays near 0 in a*b* however
+# dark it gets. The a*b* distance is a hue test, never a luminance one.
+PALE_LAB_CHROMA_MIN = 4.0      # a*b* distance from the background colour
+PALE_MIN_SHARE = 0.004         # same floor as the off-hue admission
+
 # Which two of (L, W, H) each canonical view name measures, as
 # (bbox width -> dim, bbox height -> dim).
 VIEW_AXES = {
@@ -162,16 +173,40 @@ def _chromaticity(rgb: np.ndarray) -> np.ndarray:
     return np.stack([rgb[..., 0] / total, rgb[..., 1] / total], axis=-1)
 
 
+def _lab(rgb: np.ndarray) -> np.ndarray:
+    """sRGB (0..255) to CIELAB, D65. Only a*b* are read; L is never a criterion."""
+    c = np.asarray(rgb, dtype=np.float64) / 255.0
+    lin = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    m = np.array([[0.4124564, 0.3575761, 0.1804375],
+                  [0.2126729, 0.7151522, 0.0721750],
+                  [0.0193339, 0.1191920, 0.9503041]])
+    xyz = lin @ m.T / np.array([0.95047, 1.0, 1.08883])
+    f = np.where(xyz > 0.008856, np.cbrt(xyz), 7.787 * xyz + 16.0 / 116.0)
+    return np.stack([116.0 * f[..., 1] - 16.0,
+                     500.0 * (f[..., 0] - f[..., 1]),
+                     200.0 * (f[..., 1] - f[..., 2])], axis=-1)
+
+
+def _lab_chroma_distance(rgb: np.ndarray, bg_rgb: np.ndarray) -> np.ndarray:
+    """a*b* distance of every pixel from the background colour."""
+    ab = _lab(rgb)[..., 1:]
+    bg_ab = _lab(np.asarray(bg_rgb, dtype=np.float64).reshape(1, 1, 3))[0, 0, 1:]
+    return np.linalg.norm(ab - bg_ab, axis=-1)
+
+
 def _not_shadow(rgb: np.ndarray, gray: np.ndarray, bg_rgb: np.ndarray,
                 bg_lum: float) -> np.ndarray:
     """True where a pixel is too chromatic, too dark, or too bright to be a
-    shadow cast by the object onto the background."""
+    shadow cast by the object onto the background. A faint tint the
+    normalised-rgb test cannot see (cream on white) still counts as chromatic
+    when its CIELAB a*b* sits PALE_LAB_CHROMA_MIN away from the ground."""
     chroma = _chromaticity(rgb)
     bg_chroma = _chromaticity(bg_rgb.reshape(1, 1, 3))[0, 0]
     chroma_dist = np.linalg.norm(chroma - bg_chroma, axis=-1)
     lum_ratio = gray / max(bg_lum, 1.0)
     return (
         (chroma_dist > CHROMA_TOLERANCE)
+        | (_lab_chroma_distance(rgb, bg_rgb) > PALE_LAB_CHROMA_MIN)
         | (lum_ratio < SHADOW_DARK_FLOOR)
         | (lum_ratio > SHADOW_BRIGHT_CEIL)
     )
@@ -213,6 +248,26 @@ def _touching(candidate: np.ndarray, anchor: np.ndarray, reach: int) -> np.ndarr
     hit = labels[grown & candidate]
     keep[np.unique(hit[hit > 0])] = True
     return keep[labels]
+
+
+def alpha_mask(image: Image.Image) -> np.ndarray | None:
+    """The subject as its alpha channel says, or None when alpha carries nothing.
+
+    A reference exported with a transparent background (a cut-out PNG or a
+    WebP with alpha) states its own silhouette: alpha > 127 is the subject.
+    Converting such an image to RGB first throws that away and reads whatever
+    colour the encoder left under the transparent pixels, which is how a
+    reference once admitted 4,083 fully transparent pixels as object and
+    rejected 17,747 visible dark ones, so its own outline scored 0.66 against
+    itself. An image whose alpha is opaque everywhere says nothing about the
+    subject and falls through to the luminance mask.
+    """
+    if "A" not in image.getbands():
+        return None
+    alpha = np.asarray(image.getchannel("A"), dtype=np.uint8)
+    if not (alpha < 128).any():
+        return None
+    return alpha > 127
 
 
 def object_mask(
@@ -276,6 +331,26 @@ def object_mask(
                 "from the background and attached to the silhouette, but sits "
                 "within the luminance threshold band, so a luminance-only mask "
                 "would have dropped it. Admitted as object."
+            )
+        # Pale tinted regions: inside the luminance band and too faintly
+        # off-hue for the normalised-rgb test, yet clearly tinted in CIELAB.
+        # Same attachment rule, so a warm backdrop gradient that never touches
+        # the silhouette stays out, and so does every background-coloured
+        # aperture inside the subject (its a*b* matches the ground).
+        pale = _open_mask(
+            (_lab_chroma_distance(rgb, _background_rgb(rgb)) > PALE_LAB_CHROMA_MIN)
+            & ~mask)
+        pale_extra = _touching(pale, mask, TWO_SIDED_TOUCH_PX)
+        pale_share = float(pale_extra.mean())
+        if pale_share > PALE_MIN_SHARE:
+            mask = mask | pale_extra
+            notes["pale_region_share"] = round(pale_share, 4)
+            notes["pale_note"] = (
+                f"{pale_share * 100:.1f} % of the frame is a pale tint of the "
+                "background (CIELAB a*b* distance above "
+                f"{PALE_LAB_CHROMA_MIN:g}) attached to the silhouette; a "
+                "luminance or normalised-rgb mask reads it as ground. "
+                "Admitted as object."
             )
     return _open_mask(mask), bg, notes
 
@@ -745,13 +820,26 @@ def measure(path: Path, label: str, threshold: float, invert: bool,
     except Exception as exc:  # noqa: BLE001 - report, don't crash the batch
         return {"view": label, "file": str(path), "error": f"cannot open: {exc}"}
 
+    alpha = alpha_mask(image)
     image = image.convert("RGB")
     rgb = np.asarray(image, dtype=float)
     gray = np.asarray(image.convert("L"), dtype=float)
     # The mask is always derived from the WHOLE frame, even under --region.
     # Background estimation reads the frame's border ring, and a region cropped
     # to sit inside the object has no background in its own border to read.
-    mask, bg, mask_notes = object_mask(rgb, gray, threshold, invert, reject_shadow)
+    if alpha is not None:
+        # A transparent background states the silhouette outright; the
+        # luminance rules exist for photographs that cannot.
+        mask = alpha
+        bg = float(gray[~alpha].mean()) if (~alpha).any() else 0.0
+        mask_notes = {
+            "source": "alpha",
+            "transparent_px": int((~alpha).sum()),
+            "note": "silhouette taken from the alpha channel; the luminance "
+                    "threshold and shadow test were not applied",
+        }
+    else:
+        mask, bg, mask_notes = object_mask(rgb, gray, threshold, invert, reject_shadow)
 
     region_box: dict[str, int] | None = None
     if region is not None:
@@ -864,7 +952,8 @@ def summarise(record: dict[str, Any]) -> str:
 
 
 def _sc_rect(w: int, h: int, *, shadow: bool = False,
-             offhue: bool = False) -> np.ndarray:
+             offhue: bool = False, pale: bool = False,
+             neutral_light: bool = False) -> np.ndarray:
     """A synthetic view: dark object on a light ground, 400x400."""
     canvas = np.full((400, 400, 3), 210, dtype=np.uint8)
     x0, y0 = 200 - w // 2, 200 - h // 2
@@ -873,6 +962,14 @@ def _sc_rect(w: int, h: int, *, shadow: bool = False,
         # a saturated region attached to the object whose LUMINANCE sits on
         # top of the background: invisible to a one-sided luma threshold.
         canvas[y0:y0 + 40, x0 + w:x0 + w + 50] = (232, 196, 40)
+    if pale:
+        # a cream region attached to the object: luminance inside the band,
+        # normalised-rgb chroma ~0.02 off the ground, a*b* ~11 off it.
+        canvas[y0:y0 + 40, x0 + w:x0 + w + 50] = (226, 218, 198)
+    if neutral_light:
+        # a lighter NEUTRAL patch attached to the object: a lit ground, not a
+        # part. Same luminance step as the pale one, zero a*b* difference.
+        canvas[y0:y0 + 40, x0 + w:x0 + w + 50] = (226, 226, 226)
     if shadow:
         # a soft contact shadow: neutral, darker than the ground, attached.
         canvas[y0 + h:y0 + h + 26, x0 - 20:x0 + w + 20] = (170, 170, 170)
@@ -959,6 +1056,19 @@ def self_check() -> int:
         print(f"{'ok  ' if dropped else 'FAIL'} and a one-sided test loses it "
               f"without saying so  - w {one_w}")
         ok &= dropped
+
+        # ---- the mask: a pale tint of the ground is a part, a lighter neutral
+        # patch is not (cream print on a white sweep, 2026-09-08) ----
+        pale = _sc_measure(_sc_rect(120, 240, pale=True), "pale", tmp)
+        pale_kept = pale["bbox_px"]["w"] == 170 and "pale_region_share" in pale.get("mask", {})
+        print(f"{'ok  ' if pale_kept else 'FAIL'} a pale tinted region at background "
+              f"luminance survives via CIELAB a*b*  - w {pale['bbox_px']['w']} (want 170)")
+        ok &= pale_kept
+        lit = _sc_measure(_sc_rect(120, 240, neutral_light=True), "neutral", tmp)
+        lit_out = lit["bbox_px"]["w"] == 120
+        print(f"{'ok  ' if lit_out else 'FAIL'} a lighter neutral patch stays ground "
+              f"- w {lit['bbox_px']['w']} (want 120)")
+        ok &= lit_out
 
         # ---- interrogating the mask: a row that breaks into two parts ----
         split = _sc_rect(120, 240)

@@ -49,6 +49,7 @@ class PackageDataTest(unittest.TestCase):
                 "design-vault",
                 "electromechanical-integration",
                 "image-to-cad",
+                "make-round",
                 "manual-design",
                 "step-parts",
             },
@@ -59,6 +60,7 @@ class PackageDataTest(unittest.TestCase):
             "design-vault": "invent",
             "electromechanical-integration": "make",
             "image-to-cad": "make",
+            "make-round": "make",
             "manual-design": "release",
             "step-parts": "make",
         }

@@ -14,27 +14,17 @@ import re
 from typing import Any, Mapping, Optional, Sequence
 
 from workshop.errors import ContractError
-
-
-PROVENANCE_WEIGHTS = (
-    ("physical", 4),
-    ("deterministic", 3),
-    ("codex", 2),
-    ("agent", 2),
+from workshop.invent.vault_writes import (
+    DEFAULT_WEIGHT,
+    MAX_DESIGN_LESSONS,
+    PROVENANCE_WEIGHTS,
+    SEVERITY_TO_VAULT,
+    gamevault_design,
+    provenance_weight,
 )
-DEFAULT_WEIGHT = 1
+
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
-
-
-def provenance_weight(evidence_class: Optional[str]) -> int:
-    """How much a row is worth: measurements outrank model assessments."""
-
-    lowered = (evidence_class or "").casefold()
-    for prefix, weight in PROVENANCE_WEIGHTS:
-        if lowered.startswith(prefix):
-            return weight
-    return DEFAULT_WEIGHT
 
 
 def build_rows(
@@ -100,9 +90,6 @@ def build_rows(
     return rows
 
 
-SEVERITY_TO_VAULT = {"block": "high", "improve": "medium"}
-
-
 def gamevault_rows(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """The rows a confirmed vault lead named, in the vault API's evidence shape.
 
@@ -131,47 +118,6 @@ def gamevault_rows(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     return result
 
 
-MAX_DESIGN_LESSONS = 3
-
-
-def gamevault_design(
-    product_id: str,
-    round_index: int,
-    *,
-    concept: Mapping[str, Any],
-    mechanisms: Sequence[str],
-    verdict: str,
-    scores: Optional[Mapping[str, Any]],
-    rows: Sequence[Mapping[str, Any]],
-) -> dict[str, Any]:
-    """The product's own ``games/<product_id>`` page, in the vault API's shape.
-
-    Every wish leaves a game node behind: ``uses`` the mechanisms the vault
-    resolved from the sealed concept, ``exhibits`` the anti-patterns this
-    Playtest confirmed, and carries the round's verdict, median scores, and
-    up to three confirmed findings as lessons.  ``rows`` are the rows
-    :func:`gamevault_rows` produced for the same round.
-    """
-
-    title = concept.get("title")
-    summary = concept.get("summary")
-    return {
-        "slug": product_id,
-        "name": " ".join(str(title).split())[:120] if isinstance(title, str) and title.strip() else product_id,
-        "summary": " ".join(str(summary).split())[:900] if isinstance(summary, str) else "",
-        "mechanisms": sorted({str(item) for item in mechanisms}),
-        "exhibits": sorted({str(row["symptom"]) for row in rows}),
-        "round": round_index,
-        "verdict": str(verdict),
-        "scores": {
-            str(key): value
-            for key, value in (scores or {}).items()
-            if isinstance(value, (int, float)) and not isinstance(value, bool)
-        },
-        "lessons": [str(row["claim"])[:220] for row in rows[:MAX_DESIGN_LESSONS]],
-    }
-
-
 def gamevault_dismissals(
     dismissals: Sequence[Mapping[str, Any]], *, product_id: str, round_index: int
 ) -> list[dict[str, Any]]:
@@ -194,7 +140,12 @@ def gamevault_dismissals(
 
 
 __all__ = [
+    "DEFAULT_WEIGHT",
+    "MAX_DESIGN_LESSONS",
+    "PROVENANCE_WEIGHTS",
+    "SEVERITY_TO_VAULT",
     "build_rows",
+    "gamevault_design",
     "gamevault_dismissals",
     "gamevault_rows",
     "provenance_weight",

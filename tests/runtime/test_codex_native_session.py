@@ -17,6 +17,7 @@ from unittest import mock
 import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
 from workshop.runtime.codex import (
+    DEFAULT_WORKSHOP_MODEL,
     CODEX_FAILURE_DIAGNOSTIC_FILENAME,
     CODEX_PERMISSION_PROFILE,
     DEFAULT_CODEX_TIMEOUT_SECONDS,
@@ -30,6 +31,7 @@ from workshop.runtime.codex import (
     CodexRecoverableInvocationError,
     CodexNativeSessionLauncher,
     codex_supports_native_workshop,
+    inventor_agent_config_arguments,
 )
 
 
@@ -50,6 +52,7 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
         "STAGE.json",
         "VAULT.json",
         "WISH.json",
+        "wish-references",
     )
     workspace_entries = [
         '"."="write"',
@@ -304,11 +307,60 @@ class ImmediateTimer:
 
 
 class CodexNativeSessionTest(unittest.TestCase):
+    def test_materialized_inventor_agents_register_as_codex_roles(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            self.assertEqual(inventor_agent_config_arguments(root), ())
+            agents = root / ".codex" / "agents"
+            agents.mkdir(parents=True)
+            (agents / "alice.toml").write_text('name = "alice"\n', encoding="utf-8")
+            (agents / "ferro-line.toml").write_text(
+                'name = "ferro-line"\n', encoding="utf-8"
+            )
+            (agents / "README.md").write_text("not an agent\n", encoding="utf-8")
+            (agents / "Bad_Name.toml").write_text("nope\n", encoding="utf-8")
+            (agents / "link.toml").symlink_to(agents / "alice.toml")
+            (agents / "nested.toml").mkdir()
+
+            self.assertEqual(
+                inventor_agent_config_arguments(root),
+                (
+                    "--config",
+                    'agents."alice".config_file=%s' % json.dumps(str(agents / "alice.toml")),
+                    "--config",
+                    'agents."ferro-line".config_file=%s'
+                    % json.dumps(str(agents / "ferro-line.toml")),
+                ),
+            )
+
+    def test_start_and_resume_commands_carry_the_inventor_agent_roles(self):
+        launcher = CodexNativeSessionLauncher(
+            model="gpt-6-astra",
+            reasoning_effort="high",
+            binary=TEST_CODEX_BINARY,
+            cli_version="0.150.0",
+        )
+        roles = ("--config", 'agents."alice".config_file="/run/.codex/agents/alice.toml"')
+        with mock.patch(
+            "workshop.runtime.codex.inventor_agent_config_arguments", return_value=roles
+        ), mock.patch.object(
+            CodexNativeSessionLauncher, "_auto_compact_config_arguments", return_value=()
+        ):
+            policy = mock.Mock(permission_config_arguments=("--config", "x=1"))
+            start = launcher._start_command(Path("/run"), policy)
+            resume = launcher._resume_command(THREAD_ID, Path("/run"), policy)
+        for command in (start, resume):
+            index = command.index(roles[1])
+            self.assertEqual(command[index - 1], "--config")
+            self.assertEqual(command[index - 3 : index - 1], ["--config", "x=1"])
+        self.assertEqual(start[start.index(roles[1]) + 1], "-C")
+        self.assertEqual(resume[resume.index(roles[1]) + 1], "--model")
+
     def launcher(
         self,
         scripts,
         *,
-        model="gpt-5.6-sol",
+        model="gpt-6-astra",
         effort="high",
         binary=TEST_CODEX_BINARY,
         timeout_seconds=DEFAULT_CODEX_TIMEOUT_SECONDS,
@@ -396,6 +448,94 @@ class CodexNativeSessionTest(unittest.TestCase):
         values.update(overrides)
         return launcher.resume(**values)
 
+    def test_rebind_session_constitution_moves_only_the_instruction_hash(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, _factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            before = json.loads(checkpoint.read_text(encoding="utf-8"))
+            corrected = "c" * 64
+
+            result = launcher.rebind_session_constitution(
+                product_id="wish-001",
+                wish_sha256=WISH_SHA256,
+                run_root=root,
+                host_state_root=self.host_state(root),
+                constitution_sha256=corrected,
+            )
+
+            self.assertTrue(result["changed"])
+            self.assertEqual(result["previous_constitution_sha256"], CONSTITUTION_SHA256)
+            self.assertEqual(result["thread_id"], before["thread_id"])
+            after = json.loads(checkpoint.read_text(encoding="utf-8"))
+            self.assertEqual(after["constitution_sha256"], corrected)
+            unchanged = {"constitution_sha256", "checkpoint_sha256"}
+            self.assertEqual(
+                {key: value for key, value in after.items() if key not in unchanged},
+                {key: value for key, value in before.items() if key not in unchanged},
+            )
+            self.assertEqual(
+                after["checkpoint_sha256"],
+                codex_runtime._sha256_json(
+                    {key: value for key, value in after.items() if key != "checkpoint_sha256"}
+                ),
+            )
+            self.assertEqual(stat.S_IMODE(checkpoint.stat().st_mode), 0o600)
+            self.assertEqual(
+                [entry.name for entry in checkpoint.parent.iterdir() if entry.name.startswith(".")],
+                [],
+            )
+
+            # Idempotent, and the old binding no longer resumes while the new one does.
+            self.assertFalse(
+                launcher.rebind_session_constitution(
+                    product_id="wish-001",
+                    wish_sha256=WISH_SHA256,
+                    run_root=root,
+                    host_state_root=self.host_state(root),
+                    constitution_sha256=corrected,
+                )["changed"]
+            )
+            with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+                self.resume(launcher, root)
+            resumed = self.resume(launcher, root, constitution_sha256=corrected)
+            self.assertEqual(resumed.binding.constitution_sha256, corrected)
+            self.assertEqual(
+                json.loads(checkpoint.read_text(encoding="utf-8"))["thread_id"],
+                before["thread_id"],
+            )
+
+            # A record bound to another Wish or a tampered record is refused.
+            with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+                launcher.rebind_session_constitution(
+                    product_id="wish-001",
+                    wish_sha256="d" * 64,
+                    run_root=root,
+                    host_state_root=self.host_state(root),
+                    constitution_sha256="e" * 64,
+                )
+            tampered = dict(after)
+            tampered["thread_id"] = "01a00000-0000-7000-8000-000000000000"
+            checkpoint.write_text(
+                json.dumps(tampered, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+                launcher.rebind_session_constitution(
+                    product_id="wish-001",
+                    wish_sha256=WISH_SHA256,
+                    run_root=root,
+                    host_state_root=self.host_state(root),
+                    constitution_sha256="e" * 64,
+                )
+
     def test_start_streams_exact_native_command_and_checkpoints_before_completion(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -461,7 +601,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                     "-C",
                     str(root),
                     "--model",
-                    "gpt-5.6-sol",
+                    "gpt-6-astra",
                     "-",
                 ),
             )
@@ -1160,7 +1300,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                     'model_reasoning_effort="high"',
                     *permission_arguments(root),
                     "--model",
-                    "gpt-5.6-sol",
+                    "gpt-6-astra",
                     THREAD_ID,
                     "-",
                 ),
@@ -3641,7 +3781,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             diagnostic = json.loads(raw)
             details = diagnostic["diagnostic"]
             self.assertEqual(diagnostic["cli_version"], "0.145.0")
-            self.assertEqual(diagnostic["model"], "gpt-5.6-sol")
+            self.assertEqual(diagnostic["model"], DEFAULT_WORKSHOP_MODEL)
             self.assertEqual(diagnostic["reasoning_effort"], "high")
             self.assertIsNone(diagnostic["auto_compact_token_limit"])
             self.assertEqual(

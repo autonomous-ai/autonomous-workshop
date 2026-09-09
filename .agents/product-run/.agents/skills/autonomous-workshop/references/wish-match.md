@@ -12,6 +12,17 @@ missing choice would materially change the product; otherwise record
 reversible assumptions without adding authority or weakening a constraint.
 Never place Wish text in a filesystem identifier.
 
+## Reference images ride the Wish
+
+When the person attached images, `WISH.json` carries a `references` list and
+each `STAGE.json` repeats it as `wish_references` (path, sha256, media type,
+pixel size). The bytes sit read-only at `wish-references/ref-NN-<name>` in the
+order the person gave them. Treat them as the primary visual evidence: open
+every one before choosing a concept, use the `image-to-cad` skill to turn them
+into a tagged build spec, and copy them into `<project-dir>/ref/` when a
+script expects them there. Never edit, rename, or re-encode the originals,
+and never write a reference's content into a filesystem identifier.
+
 ## Match uses the native Inventor roster
 
 Read the Match `STAGE.json`. It binds the sealed Wish, universal blueprint

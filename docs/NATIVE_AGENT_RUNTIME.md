@@ -93,7 +93,7 @@ source handoff. Existing source is finalized
 before reading or refinement; missing source is the first edit and finalization
 is the next action. A compact exact-Taste-header index
 covers the complete roster before Codex reads only the strongest three full
-agents. Make starts with one 16-minute medium real-state proof phase at 256k,
+agents. Make starts with one 16-minute medium real-state proof phase at 192k,
 then the same Goal resumes for a 15-minute source handoff
 before normal 60-minute recovery after the host accepts its checkpoint-bound
 proof marker into a private receipt. An explicit operator resume with that
@@ -101,7 +101,7 @@ valid receipt starts directly in normal recovery rather than replaying the
 source handoff. A current wall-thickness
 failure may route to its saved region table and the CAD print-optimisation
 reference once before one all-regions source repair.
-Every stage compacts at 256k. Schema-v1 Manager projects retain the historical
+Every stage compacts at 192k (256k before ADR 0051). Schema-v1 Manager projects retain the historical
 high/medium stage reasoning described by their frozen profile. One CLI
 invocation launches at most eight native turns across all stages. Make's first
 persisted deliverable is the smallest exact causal/kinematic proof plus neutral
@@ -128,7 +128,7 @@ distinctive signature experience rather than gratuitous part or mechanism
 count. V12 proof recovery seals complete current evidence before design work,
 and marker validation rejects generated states or renders older than their
 sources. Frozen deep-v11 retains its original proof recovery. Frozen deep-v10 runs retain their less prescriptive Invent recovery and
-the same exact-state Make behavior. Frozen deep-v9 runs retain their 256k compaction, viewpoint-only early
+the same exact-state Make behavior. Frozen deep-v9 runs share the 192k compaction ceiling, viewpoint-only early
 sheet, and normal 30-minute final turn. Frozen deep-v8 runs retain their
 16-minute proof runway and 24k compaction. Frozen deep-v7 runs retain their
 eight-minute phases, separate reads,
@@ -196,6 +196,7 @@ $WORKSHOP_HOME/runs/<wish-id>/workspace/
     +-- .codex/agents/*.toml          project-scoped Inventor custom agents
     +-- .agents/skills/**             workflow and domain skills
     +-- WISH.json                     exact Wish
+    +-- wish-references/ref-NN-*      reference images attached with --ref, files or links (read-only)
     +-- STAGE.json                    current host-written stage packet
     |
     v
@@ -411,10 +412,14 @@ one immutable Wish-bound Inventor; without it, the Manager receives the full
 roster and chooses the best match. Wishes created by `workshop start <id>`
 carry the originating Inventor as the same exact override. Each file
 binds the exact host-materialized identity, Taste, and declared skill paths.
-That directory is the sole Inventor roster in the toy project. Codex owns
-spawning, routing, waiting, and synthesis. Workshop does not spawn another
-OS-level `codex` process: the host starts and resumes only the root product-run
-session.
+That directory is the sole Inventor roster in the toy project. Codex CLI
+0.153.4 does not discover project-scoped agent files by itself, so the host
+registers each one on the start and resume command line as
+`--config agents."<id>".config_file="<run root>/.codex/agents/<id>.toml"`;
+`spawn_agent` then exposes every roster Inventor through `agent_type`
+(ADR 0054). Codex owns spawning, routing, waiting, and synthesis. Workshop
+does not spawn another OS-level `codex` process: the host starts and resumes
+only the root product-run session.
 
 See the official Codex [Subagents and custom agents
 documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents)
@@ -454,8 +459,10 @@ subject_sha256, next_transition, round, max_rounds, inputs
 ```
 
 `inputs` contains the exact upstream contracts, artifact bindings, universal
-blueprint, Inventor roster bindings, required checks, and canonical output
-paths needed by the current stage. Codex must read it and must not edit it. A
+blueprint, Inventor roster bindings, required checks, canonical output paths
+needed by the current stage, and, when the Wish carries reference images,
+`wish_references` (path, sha256, media type, and pixel size of each read-only
+file under `wish-references/`). Codex must read it and must not edit it. A
 stale proposal cannot be replayed because the host verifies both
 `checkpoint_sha256` and `subject_sha256`.
 
@@ -704,6 +711,18 @@ Codex prepares `artifacts/release/package` with at least:
 - canonical `PLAYTEST-NOT-RUN.json`, with no Playtest claims; and
 - optional editable source or accessible text companions.
 
+Two host-owned inputs sit beside the sealed Made tree for Release. After the
+Make CAD gate passes, the host renders the sealed assembly, each declared
+`presentation.states` mesh, and a signature strip with its pinned three.js
+renderer into `artifacts/make/rNNNN/renders/`, bound to the Made product hash
+in `renders.json` (private copy under the host state); `STAGE.json.host_renders`
+lists them and `MANUAL-DESIGN.json` may cite them as `renders/<name>.png`. At
+publication the host derives one production mesh per sealed occurrence from
+the assembly-package for the Factory and ships the rendered hero as the
+cover. Neither can change a gate decision: an unavailable renderer leaves
+Release exactly as before. The run's Codex session stays private host state;
+no transcript ships with the listing.
+
 Spark/Forge use NativeRelease schema v3 with `MANUAL.pdf` and product schema
 v5/`manual-ready`. Quest uses NativeRelease schema v2/product schema v4 bound
 to passing Playtest evidence. Legacy NativeRelease schema v1
@@ -862,7 +881,7 @@ private Wish demonstrate that:
 12. a schema-v1 deep-v13 Codex Forge or Quest run uses index-first bounded high Invent
     with a medium source-first finalization handoff, one 16-minute medium Make proof runway
     followed by a 15-minute high source handoff and normal 30-minute recovery,
-    medium later stages, 256k compaction, an eight-turn CLI invocation cap, and
+    medium later stages, 192k compaction (256k before ADR 0051), an eight-turn CLI invocation cap, and
     one-time proof-turn marker accepted into a private checkpoint-bound receipt
     with no gate authority, a private run cache, deferred broad CAD guidance,
     one batched mandatory read, immediate source work, root early inspection,
@@ -977,11 +996,11 @@ Schema-v1 Forge and Quest runs begin Invent with a 20-minute high-reasoning turn
 use a 10-minute medium source handoff only when needed: finalize an existing
 source first, or write then finalize before any refinement. A compact index
 covers every exact Taste header before Codex reads only the best three full
-Inventors. Make starts with one 16-minute medium real-state proof runway at 256k
+Inventors. Make starts with one 16-minute medium real-state proof runway at 192k
 context; after exact proof bytes are durable, a checkpoint-bound marker returns
 control to the host and the same Make Goal resumes at high reasoning with a
 15-minute source handoff before normal 60-minute recovery (30 minutes before
-2026-09-03). Playtest and Release use medium, every stage compacts at 256k,
+2026-09-03). Playtest and Release use medium, every stage compacts at 192k,
 and one CLI invocation stops after eight native turns. The host binds a private
 writable cache; the proof turn defers the broad CAD skill, batches its required
 reads, makes source the next durable action, and batches generate/export/render
@@ -1000,8 +1019,8 @@ region table and the one print-optimisation reference before one all-regions
 repair; unrelated reference browsing remains out of scope. Frozen deep-v12
 retains its original operator-resume behavior, and deep-v11 retains its proof
 recovery. Frozen deep-v10 runs retain
-their original less prescriptive Invent recovery. Frozen deep-v9 runs retain
-their 256k compaction, viewpoint-only proof, and normal 30-minute final Make;
+their original less prescriptive Invent recovery. Frozen deep-v9 runs share
+the 192k compaction ceiling, viewpoint-only proof, and normal 30-minute final Make;
 frozen deep-v8 runs retain their 24k compaction. Older runs keep the exact profile
 they started with. These are
 economics policies, not quality waivers: every effort still passes its full

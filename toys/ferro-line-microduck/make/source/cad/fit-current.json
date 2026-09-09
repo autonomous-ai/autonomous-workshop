@@ -1,0 +1,1045 @@
+{
+  "ok": true,
+  "source_sha256": {
+    "duck_lib.py": "b82645bf7b5f637fc4fa62b8ecbbf39849051b00c74edd34560f0ebc349398fe",
+    "drive_lib.py": "c672fe0b77dc93841e167314d76008476ccc80376185b0406e427cbcd87ef309"
+  },
+  "frame_solids": 1,
+  "uniform_density_com_mm": [
+    1.2597978535205936,
+    3.814732536957387,
+    96.35375600905596
+  ],
+  "total_solid_volume_mm3": 206206.10762934713,
+  "checks": [
+    {
+      "check": "frame / rotor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / wheel",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / anchor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / bill",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / head_rim",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / dark_lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / sensor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / neck_skin",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "frame / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / wheel",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / anchor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / bill",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / head_rim",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / dark_lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / sensor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / neck_skin",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / anchor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / bill",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / head_rim",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / dark_lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / sensor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / neck_skin",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "wheel / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / bill",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / head_rim",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / dark_lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / sensor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / neck_skin",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / head_rim",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / dark_lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / sensor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / neck_skin",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "bill / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / head_rim",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / dark_lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / sensor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / neck_skin",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "lens / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / dark_lens",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / sensor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / neck_skin",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "head_rim / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / sensor",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / neck_skin",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "dark_lens / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / neck_skin",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sensor / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / boot-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "neck_skin / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot-1 / sole-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot-1 / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot-1 / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot-1 / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot-1 / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot-1 / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot-1 / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot-1 / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot-1 / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole-1 / shin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole-1 / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole-1 / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole-1 / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole-1 / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole-1 / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole-1 / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole-1 / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "shin-1 / roller-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "shin-1 / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "shin-1 / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "shin-1 / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "shin-1 / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "shin-1 / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "shin-1 / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "roller-1 / pin-1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "roller-1 / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "roller-1 / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "roller-1 / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "roller-1 / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "roller-1 / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "pin-1 / boot1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "pin-1 / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "pin-1 / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "pin-1 / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "pin-1 / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot1 / sole1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot1 / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot1 / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "boot1 / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole1 / shin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole1 / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "sole1 / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "shin1 / roller1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "shin1 / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "roller1 / pin1",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor insertion +100",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor insertion +80",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor insertion +60",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor insertion +40",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor insertion +20",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor insertion +10",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor insertion +5",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor insertion +2",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rotor insertion +0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "left wheel insertion -20",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "left wheel insertion -15",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "left wheel insertion -10",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "left wheel insertion -5",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "left wheel insertion -2",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "left wheel insertion -0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller -1 insertion 20",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin -1 insertion 20",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller -1 insertion 15",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin -1 insertion 15",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller -1 insertion 10",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin -1 insertion 10",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller -1 insertion 5",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin -1 insertion 5",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller -1 insertion 2",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin -1 insertion 2",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller -1 insertion 0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin -1 insertion 0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller 1 insertion 20",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin 1 insertion 20",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller 1 insertion 15",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin 1 insertion 15",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller 1 insertion 10",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin 1 insertion 10",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller 1 insertion 5",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin 1 insertion 5",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller 1 insertion 2",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin 1 insertion 2",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear roller 1 insertion 0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear pin 1 insertion 0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor below-up -20",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor below-up -10",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor below-up -5",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor below-up -2",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "anchor below-up 0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 30",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 60",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 90",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 120",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 150",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 180",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 210",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 240",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 270",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 300",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 330",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "drive rotation 360",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "continuous rotor revolved envelope",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear rotation -1 0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear rotation -1 90",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear rotation -1 180",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear rotation -1 270",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear rotation 1 0",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear rotation 1 90",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear rotation 1 180",
+      "intersection_mm3": 0
+    },
+    {
+      "check": "rear rotation 1 270",
+      "intersection_mm3": 0
+    }
+  ],
+  "limitations": [
+    "Axial assembly sampled at listed offsets; cylindrical swept envelope independently checked for full installed rotation.",
+    "Permanent keyed-wheel/pin bonds require physical bond and wear validation.",
+    "Elastic torque, lacing, traction, fatigue and print performance not certified by this geometric audit."
+  ]
+}

@@ -1,0 +1,82 @@
+## Context
+
+See `proposal.md` for motivation. Facts established on 2026-09-05 against the Quarterhoot run and `panda-social-backend` main:
+
+- Make's product root must contain `product.json`, `assembled.step`, `assembled.step.json`, `assembled.stl` (`native_gate.NATIVE_MADE_REQUIRED_ROOT_FILES`). The cadgen `artifact` tool writes `assembled.step.json` as an assembly-package: `kind: "assembly-package"`, `schemaVersion: 2`, `packageSchemaVersion: 3`, `occurrences[]` with `id`, `name`, `component`, 4×4 `transform`, `color`, and `stats.occurrenceCount`. Quarterhoot lists `reversible_nest` and `owl_follower`.
+- The build-group contract (`native.validate_build_groups`) already places one printable STL per component at `parts/<key>.stl`, hashed in `groups/<group>.json`. Quarterhoot's `parts/owl_follower.stl` and `parts/reversible_nest.stl` are byte-identical to `cad/part_*.stl`, each is one shell, and `assembled.stl` is exactly two shells, so the adapter's existing `_inspect_shells` rules would pass.
+- `factory._occurrence_transport` accepts, at the same path, only a Factory sidecar (`schemaVersion 1`, `entryKind assembly`, `primaryPose assembled`, `parts[]`) or a `native-cad.assembly-descriptor` bound to a `product.json` `cad`/`inventory` block. Anything else returns `None` and the handoff is single mesh. The Factory then reports one mesh named `assembled`, so `_part_color_plan` has nothing to address and no `factory-part-colors` intent is written. Quarterhoot's ledger holds only `factory-import` and `factory-publish`.
+- The Factory worker names meshes after the STL stems it finds under `<primary>_parts/` (`internal/slicer/tree.go`, `models.AssemblyPart`), and the adapter's own tests assert `assembled_parts/<name>.stl`. `_OCCURRENCE_NAME` is `^[a-z0-9][a-z0-9_-]{0,127}$`.
+- `read_step_part_colors` applied the sRGB transfer to build123d channels (cadgen's docstring calls `Color` linear), while the cadgen GLB exporter converts the same channels from sRGB to linear for glTF and the shop viewer shows them as sRGB. Quarterhoot's owl read as `#eabd76` from STEP and displays as `#d1822e` in the viewer.
+- Manual visuals are validated by `manual_design.validate_manual_design_evidence` against `made.product_manifest.entries`; the Made tree is agent-authored and any host change to it fails `NativeMadeTreeGateError`.
+- Existing policy: the public git example "contains no agent session, prompt, transcript, chain of thought" and the adapter deliberately omits Factory's `prompt` field. Run authorization (`authorization.json` schema 2) carries `publish_requested` and `github_publish_requested` only.
+
+## Goals / Non-Goals
+
+**Goals**
+
+- Every multi-part toy reaches the Factory as one mesh per sealed occurrence, in the sealed colours, with no new effect kind.
+- Product renders that look like the shop viewer, produced by the trusted host from sealed inputs only, usable by the manual and as the Factory cover, never blocking Release.
+- Build history on the listing when, and only when, the run authorizes it.
+- Everything verifiable on readback and visible in `workshop status`.
+
+**Non-Goals**
+
+- Any renderer inside the native session; any second agent framework; any change to the ledger schema or to how Made bytes are sealed.
+- Blender backend, `render_product` redesign, backend changes, re-import of published toys.
+
+## Decisions
+
+### 1. The adapter reads the assembly-package; Make guarantees a production STL per occurrence
+
+Add `workshop.make.assembly_package.read_assembly_package(bytes)` returning a typed, validated view (`occurrences`: ordered `(name, transform, color)`, `occurrence_count`). Validation: `kind == "assembly-package"`, `schemaVersion == 2`, `packageSchemaVersion >= 3`, `entryKind == "assembly"`, unique names matching `_OCCURRENCE_NAME`, `stats.occurrenceCount == len(occurrences)`, finite transforms.
+
+`_occurrence_transport` gains a third branch after the two existing ones: when the sidecar is a valid assembly-package with two or more occurrences, each occurrence resolves to the sealed Made entry `parts/<name>.stl`; the transport is built exactly as today (`assembled_parts/<name>.stl`, synthesized Factory sidecar written to `assembled.step.json` in the zip, `assembled.step` copied, shell inspection of the assembly and each part). A single-occurrence package is transported as the root mesh (unchanged). A package that fails validation still degrades to single mesh, but the receipt now records `handoff_transport: "single-mesh"` with a bounded `handoff_transport_reason`.
+
+The Make gate (`native_gate`) adds a deterministic rule: a package with ≥ 2 occurrences requires `parts/<name>.stl` for each, one shell each, and `assembled.stl` with exactly `occurrence_count` shells. Rejection text names the missing part so the native session repairs it. The product-run `autonomous-workshop` skill and finalizer input list this requirement next to `required_root_files`.
+
+Alternatives rejected: (a) asking Make to also write the `native-cad.assembly-descriptor` and a `product.json` inventory duplicates data the package already holds and pushes an adapter contract into agent-authored files; (b) uploading `cad/part_*.stl` directly would bypass the build-group hashes and the `_parts` naming the Factory worker relies on.
+
+### 2. One colour convention: the sealed channels are what the viewer shows
+
+Measured on Quarterhoot: build123d writes the channels a designer passes to `Color(r, g, b)` into the STEP unchanged, the cadgen GLB exporter converts those same channels from sRGB to linear for glTF, and the shop's three.js viewer therefore displays them as sRGB (`#4d859e`, `#d1822e`). Only Workshop's STEP reader disagreed, applying a second transfer (`#95bfce`, `#eabd76`). The cadgen skill tree is byte-locked, so the exporter stays untouched and the reader moves: `read_step_part_colors` reports `#rrggbb` from the raw channels, the assembly-package reader reports the same, and the host renderer paints with them. Authoring guidance lives in the repository-authored Make reference: pick channels directly from the sRGB hex, never pre-convert with cadgen's `srgb()` helper, which double-darkens in this pipeline. `_part_color_plan` needs no change: with Decision 1 the Factory's `mesh_name` equals the STEP occurrence name.
+
+### 3. Host-owned renders beside the Made tree, bound by `renders.json`
+
+After the Make CAD gate passes for round `rNNNN`, the host writes `artifacts/make/rNNNN/renders/`:
+
+- `hero.png` 2000×2000, `turnaround_<view>.png` 1200×1200 for `front|back|side_l|side_r|top` (optional, on by default), `signature.png` fixed-camera strip when states are declared;
+- `renders.json`: `kind`, `schema_version`, `made_product_sha256`, `renderer` (`three-swiftshader`, three.js and chromium version, hash of the vendored bundle), `inputs[]` (Made paths + sha256), `outputs[]` (path, sha256, bytes, width, height), `status` (`rendered` | `unavailable` with a bounded reason).
+
+Inputs are sealed Made bytes only: `parts/<name>.stl` placed by the package transforms with STEP colours (single-mesh products use `assembled.stl` with the single sealed colour or a neutral default), and state STLs declared by Make in `product.json` as `presentation.states: ["<path>", …]` (2–5 entries; Quarterhoot's were under `cad/snap/states/`). The strip reuses the existing state-difference rule: indistinguishable frames make `signature.png` `unavailable` rather than misleading.
+
+Renderer: `tools/render/` holds a vendored three.js 0.160 bundle and a launcher script that starts a loopback HTTP server, loads the scene in playwright chromium with swiftshader (`--use-gl=angle --use-angle=swiftshader`), renders with `MeshPhysicalMaterial`, `RoomEnvironment` PMREM, key/fill/rim lights, `PCFSoftShadowMap` on a `ShadowMaterial` ground, ACES tone mapping, and a 62 % bounding-box framing. It runs under `minimal_tool_environment` with a 5-minute bound and no network. Outputs are re-validated with Pillow (dimensions, PNG, size cap) before binding. `workshop doctor` reports node, playwright, and a smoke render.
+
+Release: the stage input lists `renders/` paths; `validate_manual_design_evidence` accepts `product_visuals[].source_path` under `renders/` when `renders.json` is bound to the current Made product sha and the file hash matches; the manual-design skill prefers host renders for the cover and the signature spread and falls back to Make snaps. The handoff zip adds `assembled_review/_assembled.png` (the hero) so the Factory's own cover ranking picks it.
+
+Fallback: renderer missing or failing writes `status: unavailable`; Release, the manual, and the handoff behave exactly as today and `workshop status` shows a warning. A missing renderer never blocks publication.
+
+Alternatives rejected: rendering in the native session (sandbox has no node/chromium and would need network), adding files into the Made tree (breaks the sealed-tree gate), Blender now (cost and docker dependency; contract leaves the slot open).
+
+### 4. Session history — withdrawn
+
+A trusted-host projection of the Codex rollout into `conversation.jsonl` was built and then withdrawn on 2026-09-06: the owner decided no build history ships with a listing. The run's session stays private host state, the adapter keeps omitting Factory's `prompt` field, and `authorization.json` stays at schema 2 (files briefly written as schema 3 still read; the withdrawn flag is ignored).
+
+### 5. Readback and status
+
+`_complete_release_draft` records `handoff_transport`, `occurrence_count`, `viewer_groups`, and `renders_sha256` (when rendered). `assembly_parts` readback already asserts colours. `workshop status` prints transport, colours, and renders.
+
+## Risks / Trade-offs
+
+- Host tool dependency (node, playwright, chromium). Mitigated by doctor, pinned versions, and the unavailable-fallback.
+- Mesh naming relies on the Factory worker's `<primary>_parts/` convention, already asserted by adapter tests and observed on `five-job-checkers`.
+- Colour convention change alters GLB colours for future runs only; frozen runs are unaffected.
+
+## Migration Plan
+
+- Frozen runs keep their materialized protocol. New runs materialize the updated skill text and finalizer inputs.
+- Already published toys are not re-imported. Quarterhoot can be republished as a new design once the change lands, then the old listing unpublished; this is an operator decision.
+
+## Open Questions
+
+- Turnaround set on by default, or hero + strip only, given ~5 s per frame on swiftshader.
+- Whether `presentation.states` should become required for products whose Wish promises a signature motion.

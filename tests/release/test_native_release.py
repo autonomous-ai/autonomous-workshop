@@ -251,12 +251,23 @@ class NativeReleaseTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.run_root = Path(self.temporary.name).resolve()
         self.blueprint = ToyBlueprint()
+        self.reference_bytes = b"\x89PNG" + b"moon" * 8
         self.wish = {
             "schema_version": 1,
             "product_id": "wish-moon-nook",
             "objective": "Create a tiny lunar observatory toy.",
             "constraints": {},
             "context": {"source": "test"},
+            "references": [
+                {
+                    "name": "ref-01-moon.png",
+                    "sha256": _sha(self.reference_bytes),
+                    "media_type": "image/png",
+                    "size": len(self.reference_bytes),
+                    "width": 64,
+                    "height": 48,
+                }
+            ],
         }
         self.wish_bytes = _canonical(self.wish)
         roster = InventorRoster(
@@ -319,6 +330,9 @@ class NativeReleaseTest(unittest.TestCase):
             path = self.run_root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
+        reference_path = self.run_root / "wish-references" / "ref-01-moon.png"
+        reference_path.parent.mkdir(parents=True, exist_ok=True)
+        reference_path.write_bytes(self.reference_bytes)
 
     def test_public_archive_redacts_host_local_path_prefixes(self):
         source = (
@@ -1432,6 +1446,11 @@ class NativeReleaseTest(unittest.TestCase):
         wish = json.loads((target / "wish/wish.json").read_text(encoding="utf-8"))
         self.assertEqual(wish["objective_disclosure"], "withheld")
         self.assertNotIn("objective", wish)
+        self.assertEqual(wish["reference_disclosure"], "withheld")
+        self.assertEqual(wish["references"][0]["name"], "ref-01-moon.png")
+        self.assertEqual(wish["references"][0]["sha256"], _sha(self.reference_bytes))
+        self.assertFalse((target / "wish/references").exists())
+        self.assertIn("ref-01-moon.png", (target / "wish/WISH.md").read_text(encoding="utf-8"))
         self.assertFalse((target / "AGENTS.md").exists())
         self.assertTrue((target / "match/assignment.json").is_file())
         self.assertTrue((target / "invent/invented.json").is_file())
@@ -1642,6 +1661,11 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(public_wish["objective"], self.wish["objective"])
         self.assertEqual(public_wish["constraints"], self.wish["constraints"])
         self.assertEqual(public_wish["context"], self.wish["context"])
+        self.assertEqual(public_wish["reference_disclosure"], "exact")
+        self.assertEqual(
+            (target / "wish/references/ref-01-moon.png").read_bytes(),
+            self.reference_bytes,
+        )
         disclosed_readme = (target / "README.md").read_text(encoding="utf-8")
         self.assertIn(self.wish["objective"], disclosed_readme)
         self.assertIn("The exact wording was explicitly disclosed", disclosed_readme)

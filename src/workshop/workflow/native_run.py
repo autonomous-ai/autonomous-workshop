@@ -64,6 +64,20 @@ from workshop.invent.vault import (
     Vault,
     VaultError,
 )
+from workshop.make.assembly_package import (
+    ASSEMBLY_PACKAGE_PATH,
+    is_assembly_package,
+    missing_production_parts,
+    read_assembly_package,
+)
+from workshop.make.cad.step_color import read_step_part_colors
+from workshop.release.renders import (
+    host_renders_stage_input,
+    load_host_renders,
+    render_made_product,
+    verified_render_bytes,
+    verified_render_sources,
+)
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.revision import (
     MAKE_INVENT_REVISION_CAPABILITY_PATH,
@@ -89,6 +103,12 @@ from workshop.playtest.vault_evidence import (
     gamevault_design,
     gamevault_dismissals,
     gamevault_rows,
+)
+from workshop.make.vault_lessons import (
+    build_make_rows,
+    gamevault_make_design,
+    gamevault_make_rows,
+    make_lessons,
 )
 from workshop.product import ToyBlueprint
 from workshop.product.blueprints import SCORE_AMBIGUOUS_SPREAD
@@ -332,6 +352,19 @@ _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
         "The host rejected the agent-authored Make contract. Repair the Make "
         "product and rerun the Make finalizer so made.json and agent-outcome.json "
         "are regenerated from one internally consistent artifact tree."
+    ),
+    "make-production-parts-missing": (
+        "The sealed assembled.step.json lists two or more occurrences, so the "
+        "shop needs one printable mesh per occurrence. Export each occurrence "
+        "as parts/<occurrence-name>.stl (one shell each, named exactly as in "
+        "the package) inside the product root, then rerun the Make finalizer."
+    ),
+    "make-part-colours-missing": (
+        "The sealed assembled.step.json lists two or more occurrences, so every "
+        "printed part must carry a sealed surface colour: set part.color = "
+        "Color(r, g, b) on each leaf part with channels 0..1 taken directly "
+        "from the sRGB hex you want the shop to show, regenerate the STEP and "
+        "the assembly-package, then rerun the Make finalizer."
     ),
 }
 _PLAYTEST_PROPOSAL_REJECTION_FEEDBACK = {
@@ -1852,6 +1885,21 @@ def _load_wish(run_root: Path) -> Wish:
     return wish
 
 
+def _wish_reference_bindings(wish: Wish) -> list[dict[str, Any]]:
+    """List the read-only reference images a stage packet points the agent at."""
+
+    return [
+        {
+            "path": reference.path,
+            "sha256": reference.sha256,
+            "media_type": reference.media_type,
+            "width": reference.width,
+            "height": reference.height,
+        }
+        for reference in wish.references
+    ]
+
+
 def materialized_agent_instructions_sha256(
     checkpoint: AgentRunCheckpoint,
 ) -> str:
@@ -1998,14 +2046,23 @@ def _phase_design_vault(
     in STAGE.json.  Stages without design knowledge (Match, Release) fetch
     nothing.
 
-    An unreachable vault, or a host without a token, is bypassed for that
-    checkpoint: the phase runs exactly like a run without a vault (no
-    snapshot, no leads, no vault rules) and a marker under host state keeps
-    the agent's and the gate's view identical if the checkpoint is resumed
-    after the vault returns.  The next checkpoint tries again.
+    An unreachable vault, a host without a token, or a vault whose export
+    the host cannot use is bypassed for that checkpoint: the phase runs
+    exactly like a run without a vault (no snapshot, no leads, no vault
+    rules) and a marker under host state keeps the agent's and the gate's
+    view identical if the checkpoint is resumed after the vault returns.
+    The next checkpoint tries again.  No vault failure ever stops a run.
     """
 
     if checkpoint.stage not in _VAULT_STAGES:
+        if checkpoint.stage == "release":
+            # Make's last lessons (a budget stop, a final rejection) queue
+            # after the last vault phase; Release is the only phase left to
+            # send them, and it needs no snapshot of its own.
+            try:
+                _flush_pending_vault_writes(run, _gamevault_client())
+            except GameVaultUnavailable:
+                pass
         return None, None
     directory = _vault_state_directory(run, create=True)
     cache = directory / (checkpoint.checkpoint_sha256 + ".json")
@@ -2029,7 +2086,9 @@ def _phase_design_vault(
             client = _gamevault_client()
             _flush_pending_vault_writes(run, client)
             vault = client.export()
-        except GameVaultUnavailable:
+        except (GameVaultUnavailable, GameVaultError):
+            # Away, refusing the token, or answering with an export the host
+            # cannot seal: either way this phase builds without the vault.
             _atomic_private_write(marker, b"unavailable\n", mode=0o600)
             _remove_run_vault_snapshot(snapshot)
             return None, None
@@ -2075,6 +2134,164 @@ def _send_vault_writes(client: GameVaultClient, payload: Mapping[str, Any]) -> N
         client.post_evidence(payload["rows"], label=label, design=design)
     if payload["dismissals"]:
         client.post_review(payload["dismissals"], label=label)
+
+
+def _queue_or_send_vault_payload(
+    run: AgentRun, payload: Mapping[str, Any], *, name: str
+) -> bool:
+    """Send one vault write now, or queue it under host state for the next phase.
+
+    Returns whether it was sent. A vault that cannot be reached must never
+    undo the durable gate receipt or checkpoint the payload describes, so the
+    payload waits as ``vault/pending/<name>`` and rides the next snapshot
+    fetch (:func:`_flush_pending_vault_writes`).  A payload the vault refuses
+    outright is set aside as ``<name>.rejected`` for a person, the same way
+    the flush sets one aside, and the run goes on.
+    """
+
+    try:
+        _send_vault_writes(_gamevault_client(), payload)
+    except GameVaultUnavailable:
+        pending = _pending_vault_writes_directory(run, create=True) / name
+        _atomic_private_write(pending, _canonical_json_bytes(payload) + b"\n", mode=0o600)
+        return False
+    except GameVaultError:
+        rejected = _pending_vault_writes_directory(run, create=True) / (
+            name + _VAULT_REJECTED_SUFFIX
+        )
+        _atomic_private_write(rejected, _canonical_json_bytes(payload) + b"\n", mode=0o600)
+        return False
+    return True
+
+
+def _make_concept_and_mechanisms(
+    run: AgentRun, context: Mapping[str, Any]
+) -> tuple[Optional[Mapping[str, Any]], list[str]]:
+    """The sealed concept a Make worked from and its vault mechanism nodes.
+
+    Forge and Quest carry the Invented contract in the phase context; a Spark
+    round has none until its own creative source is sealed. Mechanism names
+    resolve against the run's frozen ``VAULT.json`` when one is bound; a phase
+    without a vault reports the concept alone.
+    """
+
+    invented = context.get("invented")
+    concept = getattr(invented, "concept", None)
+    if not isinstance(concept, Mapping):
+        return None, []
+    snapshot = run.run_root / RUN_VAULT_PATH
+    try:
+        if snapshot.is_symlink() or not snapshot.is_file():
+            return concept, []
+        vault = Vault.from_packed_bytes(snapshot.read_bytes())
+        resolved = vault.resolve_concept_mechanisms(concept)
+    except (OSError, VaultError):
+        return concept, []
+    return concept, sorted({path for path in resolved.values() if path})
+
+
+def _record_make_evidence(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    context: Mapping[str, Any],
+    *,
+    failures: Sequence[Mapping[str, Any]],
+    verdict: str,
+    name: str,
+) -> dict[str, Any]:
+    """Bank what one Make outcome taught, the way Playtest banks its round.
+
+    ``failures`` are host-verified (a failed CAD gate, a proposal the host
+    refused) or the Manager's own sealed words (a revision request, a need);
+    :func:`build_make_rows` keeps only the ones that name a design failure.
+    A passed Make posts the product page alone so every Spark and Forge wish
+    leaves a ``games/<product_id>`` node behind.
+    """
+
+    concept, mechanisms = _make_concept_and_mechanisms(run, context)
+    rows = gamevault_make_rows(
+        build_make_rows(checkpoint.product_id, checkpoint.round_index, failures, mechanisms)
+    )
+    payload: dict[str, Any] = {
+        "label": "workshop %s r%d make" % (checkpoint.product_id, checkpoint.round_index),
+        "rows": rows,
+        "dismissals": [],
+    }
+    if concept is not None:
+        payload["design"] = gamevault_make_design(
+            checkpoint.product_id,
+            checkpoint.round_index,
+            concept=concept,
+            mechanisms=mechanisms,
+            verdict=verdict,
+            rows=rows,
+        )
+    report = {"rows": len(rows), "design": "design" in payload}
+    if not rows and "design" not in payload:
+        return {**report, "sent": True}
+    sent = _queue_or_send_vault_payload(
+        run, payload, name="%s-make-%s.json" % (checkpoint.checkpoint_sha256, name)
+    )
+    return {**report, "sent": sent}
+
+
+def _cad_gate_failure(rejection: NativeCadGateError, checkpoint: AgentRunCheckpoint) -> dict[str, Any]:
+    evidence = rejection.evidence
+    tail = ""
+    for stream in (evidence.stderr, evidence.stdout):
+        text = " ".join(str(getattr(stream, "text", "") or "").split())
+        if text:
+            tail = text[-400:]
+            break
+    return {
+        "code": rejection.failure_code,
+        "finding": "Make round %d failed the host CAD gate %s (%s tier). %s"
+        % (checkpoint.round_index, rejection.failure_code, evidence.verification_tier, tail),
+        "evidence_class": "deterministic-cad-gate",
+        "severity": "block",
+    }
+
+
+def _queue_make_budget_lesson(
+    paths: NativeRunPaths, checkpoint: AgentRunCheckpoint, budget: Any
+) -> None:
+    """Queue the budget stop as a Make lesson; the observer thread has no vault."""
+
+    if checkpoint.stage != "make":
+        return
+    used = getattr(budget, "used_tokens", None)
+    limit = getattr(budget, "limit", None)
+    rows = gamevault_make_rows(
+        build_make_rows(
+            checkpoint.product_id,
+            checkpoint.round_index,
+            [
+                {
+                    "code": "make-token-budget-stop",
+                    "finding": "Make round %d stopped at the product token cap (%s of %s tokens observed) "
+                    "before sealing a product; the repair loop did not converge inside its budget."
+                    % (checkpoint.round_index, used, limit),
+                    "evidence_class": "deterministic-host-budget",
+                    "severity": "improve",
+                }
+            ],
+            [],
+        )
+    )
+    if not rows:  # pragma: no cover - the code always classifies
+        return
+    payload = {
+        "label": "workshop %s r%d make" % (checkpoint.product_id, checkpoint.round_index),
+        "rows": rows,
+        "dismissals": [],
+    }
+    directory = paths.host_state / _VAULT_STATE_DIRECTORY / _VAULT_PENDING_DIRECTORY
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    _atomic_private_write(
+        directory / ("%s-make-budget.json" % checkpoint.checkpoint_sha256),
+        _canonical_json_bytes(payload) + b"\n",
+        mode=0o600,
+    )
 
 
 def _flush_pending_vault_writes(run: AgentRun, client: GameVaultClient) -> int:
@@ -2344,15 +2561,10 @@ def _record_playtest_evidence(
     }
     if not payload["rows"] and not payload["dismissals"] and "design" not in payload:
         return {**report, "sent": True}
-    try:
-        _send_vault_writes(_gamevault_client(), payload)
-    except GameVaultUnavailable:
-        pending = _pending_vault_writes_directory(run, create=True) / (
-            checkpoint.checkpoint_sha256 + ".json"
-        )
-        _atomic_private_write(pending, _canonical_json_bytes(payload) + b"\n", mode=0o600)
-        return {**report, "sent": False}
-    return {**report, "sent": True}
+    sent = _queue_or_send_vault_payload(
+        run, payload, name=checkpoint.checkpoint_sha256 + ".json"
+    )
+    return {**report, "sent": sent}
 
 
 def _checkpoint_effort(checkpoint: AgentRunCheckpoint):
@@ -3224,6 +3436,9 @@ def _prepare_effort_stage_input(
         "blueprint": blueprint.to_dict(),
         "blueprint_sha256": blueprint.sha256,
     }
+    wish_references = _wish_reference_bindings(_load_wish(run.run_root))
+    if wish_references:
+        base["wish_references"] = wish_references
     vault, vault_binding = _phase_design_vault(run, checkpoint)
     context["design_vault"] = vault
     if vault_binding is not None:
@@ -3397,6 +3612,7 @@ def _prepare_effort_stage_input(
                     )
                 }
             inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
+            inputs["make_lessons"] = make_lessons(vault, lead_concept)
         subject = _stage_subject("invent", subject_inputs)
         context.update(
             {
@@ -3430,6 +3646,14 @@ def _prepare_effort_stage_input(
                     "assignment_contract_path": assignment_path,
                     "invented_contract_path": invented_path,
                 }
+            )
+            # Spark seals its concept inside Make, so the lessons come from
+            # the mechanisms the Wish itself names.
+            common["make_lessons"] = make_lessons(
+                vault,
+                {"mechanisms": list(vault.mechanisms_named_in(_load_wish(run.run_root).objective))}
+                if vault is not None
+                else None,
             )
         else:
             (
@@ -3470,6 +3694,7 @@ def _prepare_effort_stage_input(
             common["vault_leads"] = (
                 vault.leads_for_concept(invented.concept) if vault is not None else []
             )
+            common["make_lessons"] = make_lessons(vault, invented.concept)
         feedback_artifact: Optional[AgentArtifact] = None
         prior = checkpoint.stage_artifacts.get("playtest")
         if prior and "playtest" in checkpoint.invalidated_stages:
@@ -3530,6 +3755,7 @@ def _prepare_effort_stage_input(
                 "assembled.step.json",
                 "assembled.stl",
             ],
+            "production_parts_rule": _MAKE_PRODUCTION_PARTS_RULE,
         }
         if make_invent_revision_allowed:
             inputs.update(
@@ -3681,6 +3907,9 @@ def _prepare_effort_stage_input(
                     release_contract["manual_path"],
                     "product.json",
                 ],
+                "host_renders": host_renders_stage_input(
+                    run.run_root, made, load_host_renders(run.host_state_root, made)
+                ),
             }
             if release_contract.get("manual_design_evidence_path") is not None:
                 inputs["required_package_files"].append(
@@ -3972,6 +4201,7 @@ def _prepare_stage_input(
                         )
                     }
                 inputs["vault_leads"] = vault.leads_for_concept(lead_concept)
+                inputs["make_lessons"] = make_lessons(vault, lead_concept)
         else:
             invented_artifact = _stage_primary(checkpoint, "invent")
             invented = _read_contract(
@@ -3986,6 +4216,8 @@ def _prepare_stage_input(
             common["vault_leads"] = (
                 vault.leads_for_concept(invented.concept) if vault is not None else []
             )
+            if stage == "make":
+                common["make_lessons"] = make_lessons(vault, invented.concept)
             common["invented_artifact"] = {
                 **_artifact_binding(invented_artifact),
                 "invented_sha256": invented.invented_sha256,
@@ -4043,6 +4275,7 @@ def _prepare_stage_input(
                             "assembled.step.json",
                             "assembled.stl",
                         ],
+                        "production_parts_rule": _MAKE_PRODUCTION_PARTS_RULE,
                     }
                     if make_proposal_rejection is not None:
                         inputs["host_make_proposal_rejection"] = (
@@ -4404,6 +4637,10 @@ def _product_token_observer(paths, checkpoint, budget):
             _write_private_json(paths.host_state / "token-budget-stop.json", {
                 "reason": "product token limit reached", "product_id": checkpoint.product_id,
             })
+            try:
+                _queue_make_budget_lesson(paths, checkpoint, budget)
+            except (WorkshopError, OSError):
+                pass  # the stop record above is the authority; the lesson is enrichment
             raise ContractError("product token limit reached")
     return observe
 
@@ -5800,27 +6037,23 @@ def _record_authorization(
             "product_id",
             "publish_requested",
         }
-        current_expected = legacy_expected | {"github_publish_requested"}
+        github_expected = legacy_expected | {"github_publish_requested"}
+        # Schema 3 briefly carried a history-disclosure flag (never merged);
+        # files written then still read, the flag is ignored and not rewritten.
+        withdrawn_expected = github_expected | {"history_disclosure_requested"}
+        expected_by_schema = {1: legacy_expected, 2: github_expected, 3: withdrawn_expected}
+        schema = value.get("schema_version")
         if (
-            set(value) not in (legacy_expected, current_expected)
-            or value["schema_version"] not in (1, 2)
-            or (value["schema_version"] == 1 and set(value) != legacy_expected)
-            or (value["schema_version"] == 2 and set(value) != current_expected)
+            schema not in expected_by_schema
+            or set(value) != expected_by_schema[schema]
             or value["kind"] != _AUTHORIZATION_KIND
             or value["product_id"] != product_id
             or type(value["publish_requested"]) is not bool
-            or (
-                value["schema_version"] == 2
-                and type(value["github_publish_requested"]) is not bool
-            )
+            or (schema >= 2 and type(value["github_publish_requested"]) is not bool)
         ):
             raise StateConflict("run authorization is invalid")
         current = value["publish_requested"]
-        current_github = (
-            value["github_publish_requested"]
-            if value["schema_version"] == 2
-            else False
-        )
+        current_github = value["github_publish_requested"] if schema >= 2 else False
     elif not create:
         raise StateConflict("run authorization is missing")
     value = {
@@ -5929,6 +6162,9 @@ def _evaluate_make_invent_revision_stage(
         context["invented"],
         expected_round=checkpoint.round_index,
     )
+    # Stash the sealed request so the gate hook can bank its feedback as Make
+    # lessons once the decision is persisted.
+    context["make_revision_request"] = request  # type: ignore[index]
     canonical = request.validate_evidence_tree(run.run_root)
     additional = _manifest_agent_artifacts(
         request.evidence_root, request.evidence_manifest
@@ -5954,6 +6190,81 @@ def _evaluate_make_invent_revision_stage(
         },
     )
     return StageGateDecision(evidence=evidence, transition="invent"), additional
+
+
+_MAKE_PRODUCTION_PARTS_RULE = (
+    "When assembled.step.json (the cadgen assembly-package) lists two or more "
+    "occurrences, export one printable mesh per occurrence as "
+    "parts/<occurrence-name>.stl inside the product root, one shell each, and "
+    "seal a surface colour on every leaf part (part.color = Color(r, g, b) with "
+    "channels 0..1 taken directly from the sRGB hex the shop should show). The "
+    "host rejects a multi-part Make without both; the shop renders and colours "
+    "each part from these files and colours."
+)
+
+
+def _validate_made_production_parts(made: NativeMade, run_root: Path) -> int:
+    """Require one sealed production STL per occurrence of a multi-part package.
+
+    The cadgen assembly-package is agent-authored metadata; a document that is
+    not one, or is malformed, is left to the Factory adapter's visible
+    single-mesh fallback.  Only a valid multi-part package binds the rule.
+    """
+
+    entries = {entry.path for entry in made.product_manifest.entries}
+    if ASSEMBLY_PACKAGE_PATH not in entries:
+        return 0
+    path = run_root.joinpath(*made.product_root.split("/"), ASSEMBLY_PACKAGE_PATH)
+    try:
+        content = path.read_bytes()
+        document = json.loads(content.decode("utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return 0
+    if not is_assembly_package(document):
+        return 0
+    try:
+        package = read_assembly_package(content)
+    except ContractError:
+        return 0
+    missing = missing_production_parts(package, entries)
+    if missing:
+        raise _MakeProposalRejected(
+            failure_code="make-production-parts-missing",
+            feedback="%s Missing: %s."
+            % (
+                _MAKE_PROPOSAL_REJECTION_FEEDBACK["make-production-parts-missing"],
+                ", ".join(missing),
+            ),
+        )
+    if package.is_multipart:
+        uncoloured = _uncoloured_occurrences(made, run_root, package)
+        if uncoloured:
+            raise _MakeProposalRejected(
+                failure_code="make-part-colours-missing",
+                feedback="%s Uncoloured: %s."
+                % (
+                    _MAKE_PROPOSAL_REJECTION_FEEDBACK["make-part-colours-missing"],
+                    ", ".join(uncoloured),
+                ),
+            )
+    return package.occurrence_count if package.is_multipart else 0
+
+
+def _uncoloured_occurrences(made: NativeMade, run_root: Path, package: Any) -> tuple[str, ...]:
+    """Occurrences with no sealed colour in the STEP or the assembly-package."""
+
+    colours: dict[str, str] = dict(package.part_colors())
+    step_path = run_root.joinpath(*made.product_root.split("/"), "assembled.step")
+    try:
+        for name, value in read_step_part_colors(step_path.read_bytes()).items():
+            colours.setdefault(name, value.hex)
+    except (OSError, ValueError):
+        pass
+    return tuple(
+        occurrence.name
+        for occurrence in package.occurrences
+        if occurrence.name not in colours
+    )
 
 
 def _evaluate_make_stage(
@@ -6010,6 +6321,11 @@ def _evaluate_make_stage(
                 label="Spark native Invented contract",
             )
             invented.assert_context(assignment)
+            # Spark seals its concept inside Make; expose it the way Forge
+            # and Quest do so the Make lessons hooks can name the product's
+            # mechanisms and post its page.
+            context["assignment"] = assignment  # type: ignore[index]
+            context["invented"] = invented  # type: ignore[index]
         else:
             artifact = _ready_contract_artifact(
                 proposal,
@@ -6029,6 +6345,7 @@ def _evaluate_make_stage(
         build_groups = validate_build_groups(
             invented.concept, run.run_root / Path(*made.product_root.split("/"))
         )
+        production_parts = _validate_made_production_parts(made, run.run_root)
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -6054,6 +6371,11 @@ def _evaluate_make_stage(
         # the exactness gate fail-closed, quarantine the stale proposal, and
         # return bounded repair feedback to this same Make checkpoint.
         raise _make_rejection_for_error(error) from error
+    # Host renders are enrichment of a Make that already passed: the sealed
+    # bytes are rendered by the trusted host so Release and the shop can show
+    # the exact product. A missing or failing renderer records "unavailable"
+    # and changes nothing about the gate decision.
+    host_renders = render_made_product(run.run_root, run.host_state_root, made)
     evidence = StageGateEvidence(
         stage="make",
         gate_id="make.sealed-revision-v1",
@@ -6071,6 +6393,7 @@ def _evaluate_make_stage(
             "product_tree_rehashed": True,
             "build_groups": build_groups["groups"],
             "build_parts": build_groups["parts"],
+            "production_parts": production_parts,
             "upstream_bindings_valid": True,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verifier_sha256": cad_evidence.verifier_sha256,
@@ -6079,6 +6402,7 @@ def _evaluate_make_stage(
             "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
             "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
             "cad_verification_passed": cad_evidence.passed,
+            "host_renders_status": host_renders.status,
         },
     )
     return StageGateDecision(evidence=evidence, transition=transition), additional
@@ -7164,6 +7488,9 @@ def _verified_release(
             package_manifest=release.package_manifest,
             manual_path=release.manual_path,
             made=made,
+            render_sources=verified_render_sources(
+                run.run_root, made, load_host_renders(run.host_state_root, made)
+            ),
         )
     product_release = ProductRelease.from_root(
         package.root,
@@ -7198,13 +7525,20 @@ def _publication_release_context(
             / "TASTE.md"
         ),
     )
+    wish = _load_wish(run.run_root)
     return ReleaseContext(
-        wish=_load_wish(run.run_root),
+        wish=wish,
         taste=taste,
         blueprint=verified.blueprint,
         made=verified.package.made,
         playtested=verified.package.playtested,
         workspace=run.run_root,
+        cover_render=verified_render_bytes(
+            run.run_root,
+            verified.made,
+            load_host_renders(run.host_state_root, verified.made),
+            "hero",
+        ),
     )
 
 
@@ -7689,12 +8023,38 @@ def _process_agent_outcome_inner(
         except NativeCadGateError as rejection:
             _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
             _remove_agent_outcome(run.run_root)
+            # The gate receipt is durable; bank what it proves before the
+            # next turn repairs it, so the lesson survives a run that never
+            # converges.
+            _record_make_evidence(
+                run,
+                checkpoint,
+                context,
+                failures=[_cad_gate_failure(rejection, checkpoint)],
+                verdict="make-cad-gate-failed",
+                name="cad-gate-%04d" % checkpoint.revision,
+            )
             return checkpoint
         except _MakeProposalRejected as rejection:
             persisted = _persist_make_proposal_rejection(
                 run, checkpoint, proposal, rejection
             )
             _remove_rejected_agent_outcome(run, persisted)
+            _record_make_evidence(
+                run,
+                checkpoint,
+                context,
+                failures=[
+                    {
+                        "code": rejection.failure_code,
+                        "finding": rejection.feedback,
+                        "evidence_class": "deterministic-host-gate",
+                        "severity": "block",
+                    }
+                ],
+                verdict="make-rejected",
+                name="rejected-%04d" % checkpoint.revision,
+            )
             return checkpoint
     elif checkpoint.stage == "playtest":
         try:
@@ -7815,6 +8175,37 @@ def _process_agent_outcome_inner(
         raise TransitionError("native stage cannot consume an agent proposal")
 
     _persist_gate_decision(run, checkpoint, decision)
+    if checkpoint.stage == "make":
+        # Bank the Make outcome BEFORE the transition is applied, as Playtest
+        # does: a refused transition still leaves the sealed evidence behind.
+        request = context.get("make_revision_request")
+        if decision.transition == "invent" and request is not None:
+            _record_make_evidence(
+                run,
+                checkpoint,
+                context,
+                failures=[
+                    {
+                        "code": item.code,
+                        "finding": item.finding,
+                        "change": item.change,
+                        "evidence_class": "codex-authored-revision-request",
+                        "severity": "block",
+                    }
+                    for item in request.feedback
+                ],
+                verdict="make-revision-to-invent",
+                name="revision-%04d" % checkpoint.revision,
+            )
+        elif decision.receipt.passed:
+            _record_make_evidence(
+                run,
+                checkpoint,
+                context,
+                failures=[],
+                verdict="make-passed",
+                name="passed-%04d" % checkpoint.revision,
+            )
     if checkpoint.stage == "playtest":
         # Bank what Playtest found BEFORE the transition is applied: a refused
         # transition (2026-08-29: "round budget is exhausted" on the last
@@ -8359,6 +8750,10 @@ def _native_receipt(
                     "page_url": receipt.details.get("page_url"),
                     "manual_url": receipt.details.get("manual_url"),
                     "cover_url": receipt.details.get("cover_url"),
+                    "handoff_transport": receipt.details.get("handoff_transport"),
+                    "occurrence_count": receipt.details.get("occurrence_count"),
+                    "part_colors": receipt.details.get("part_colors"),
+                    "cover_render_sha256": receipt.details.get("cover_render_sha256"),
                     "verified": True,
                 }
                 if receipt.is_verified_public:
@@ -8598,6 +8993,7 @@ def start_native_run(
     github_publish_requested: bool = False,
     max_rounds: int = 4,
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
+    wish_reference_files: Optional[Mapping[str, bytes]] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -8627,6 +9023,12 @@ def start_native_run(
     Make revision request and every Playtest ``improve`` verdict spends one
     round, so a mechanism-heavy Wish may need more than the default four.
 
+    ``wish_reference_files`` maps every reference image the Wish declares to
+    its exact bytes; the run materializes them read-only under
+    ``wish-references/`` and re-verifies them at every checkpoint. A Wish that
+    declares references without their bytes, or bytes without a declaration,
+    is rejected before any workspace exists.
+
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
     """
@@ -8649,6 +9051,8 @@ def start_native_run(
         raise ContractError("GitHub publication option must be boolean")
     if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
         raise ContractError("round budget must be an integer between 1 and 100")
+    if wish_reference_files is not None and not isinstance(wish_reference_files, Mapping):
+        raise ContractError("Wish reference files must map reference names to bytes")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -8670,6 +9074,7 @@ def start_native_run(
                 paths.host_state,
                 product_id=wish.product_id,
                 wish_bytes=wish_bytes,
+                wish_reference_files=wish_reference_files,
                 product_run_constitution_source=assets.constitution,
                 skill_root=assets.skill_root,
                 domain_skill_roots=domain_skill_roots,
@@ -8831,6 +9236,29 @@ def _resume_native_run_locked(
             _rebind_existing_progress(
                 paths, checkpoint, updated, activity="completed"
             )
+            if (
+                updated.status == "waiting"
+                and updated.stage == "make"
+                and updated.needs
+            ):
+                # A Make that parks on a need (2026-09-07: "host authorization
+                # for a further repair", "likeness floor") is a lesson too.
+                _record_make_evidence(
+                    run,
+                    updated,
+                    context,
+                    failures=[
+                        {
+                            "code": "make-need",
+                            "finding": need,
+                            "evidence_class": "codex-authored-need",
+                            "severity": "block",
+                        }
+                        for need in updated.needs
+                    ],
+                    verdict="make-waiting",
+                    name="need-%04d" % updated.revision,
+                )
             if updated.status == "waiting":
                 renewed_wait = _read_release_effect_wait(run, updated)
                 action = (
@@ -8959,6 +9387,74 @@ def resume_native_run(
         )
 
 
+def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, Any]:
+    """Refresh one run's host-owned deterministic tools from this install.
+
+    Domain skills (the CAD verifier among them) are immutable to the native
+    agent and hash-bound in the run's input manifest.  A corrected tool reaches
+    an existing run only through this host operation: the exact run is opened
+    under the mutation lock, every domain skill it carries is rewritten
+    byte-for-byte from the installed skill source, the manifest is rebound in a
+    new checkpoint revision, and an owner-only ledger line records the change.
+    The native session, round budget, and every sealed artifact are untouched.
+    """
+
+    paths = native_run_paths(product_id)
+    with _native_run_mutation_lock(paths):
+        run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
+        before = run.snapshot()
+        changes = run.refresh_domain_skill_tools(
+            product_run_domain_skill_roots(), reason=reason
+        )
+        after = run.snapshot()
+        # The stored Manager session binds the instruction-tree hash the run
+        # started with. A refreshed tool moves that hash by design, so the
+        # same host operation rebinds the session record it owns -- and does
+        # so even when this call found the tools current, because an earlier
+        # refresh may have been interrupted before this step.
+        session_rebound = False
+        launcher = _native_launcher(after)
+        session_path = paths.host_state / launcher.session_checkpoint_name
+        if session_path.exists():
+            rebind = getattr(launcher, "rebind_session_constitution", None)
+            if rebind is None:
+                raise ContractError(
+                    "host tool refresh is not supported for the %s Manager"
+                    % after.manager_id
+                )
+            rebound = rebind(
+                product_id=product_id,
+                wish_sha256=after.wish_sha256,
+                run_root=paths.workspace,
+                host_state_root=paths.host_state,
+                constitution_sha256=materialized_agent_instructions_sha256(after),
+            )
+            session_rebound = bool(rebound["changed"])
+            if session_rebound:
+                run.record_host_correction(
+                    {
+                        "kind": "autonomous-workshop.host-correction",
+                        "schema_version": 1,
+                        "correction": "manager-session-rebind",
+                        "reason": reason.strip(),
+                        "manager_id": after.manager_id,
+                        "checkpoint_sha256": after.checkpoint_sha256,
+                        "previous_constitution_sha256": rebound[
+                            "previous_constitution_sha256"
+                        ],
+                        "constitution_sha256": rebound["constitution_sha256"],
+                    }
+                )
+    return {
+        "product_id": product_id,
+        "action": "tools-refreshed" if changes else "tools-current",
+        "previous_checkpoint_sha256": before.checkpoint_sha256,
+        "checkpoint_sha256": after.checkpoint_sha256,
+        "changed_paths": [item["path"] for item in changes],
+        "session_rebound": session_rebound,
+    }
+
+
 def native_run_status(product_id: str) -> Mapping[str, Any]:
     """Return a redacted, validated native checkpoint without running a model."""
 
@@ -8989,6 +9485,7 @@ __all__ = [
     "native_run_paths",
     "native_run_status",
     "native_stage_prompt",
+    "refresh_native_run_tools",
     "resume_native_run",
     "start_native_run",
 ]

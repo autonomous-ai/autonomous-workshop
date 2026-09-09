@@ -52,6 +52,11 @@ from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER_BYTES,
 )
 from workshop.wish import Wish
+from workshop.wish.contracts import (
+    MAX_WISH_REFERENCE_BYTES,
+    MAX_WISH_REFERENCE_TOTAL_BYTES,
+    WISH_REFERENCES_DIRECTORY,
+)
 from workshop.workflow.effort import (
     EFFORT_ROUTE_CAPABILITY_PATH,
     workshop_effort,
@@ -114,6 +119,7 @@ _DIRECT_RELEASE_MARKER = (
     ".agents/skills/autonomous-workshop/references/direct-release-v1.md"
 )
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
+HOST_CORRECTIONS_FILE = "host-corrections.jsonl"
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
     rb"(?i)(?:password|passwd|api[_-]?key|access[_-]?token|refresh[_-]?token|"
@@ -238,7 +244,7 @@ def _canonical_wish_bytes(value: bytes, product_id: str) -> bytes:
         document = json.loads(value.decode("utf-8"), object_pairs_hook=_strict_object)
     except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
         raise ContractError("canonical Wish bytes must contain strict JSON") from exc
-    if not isinstance(document, dict) or set(document) != {
+    if not isinstance(document, dict) or set(document) - {"references"} != {
         "schema_version",
         "product_id",
         "objective",
@@ -257,6 +263,65 @@ def _canonical_wish_bytes(value: bytes, product_id: str) -> bytes:
         raise ContractError("Wish JSON bytes must use the canonical encoding")
     _reject_private_agent_bytes("WISH.json", value)
     return value
+
+
+def _is_wish_reference_path(path: str) -> bool:
+    return path.startswith(WISH_REFERENCES_DIRECTORY + "/")
+
+
+def _wish_reference_inputs(
+    wish_bytes: bytes, files: Optional[Mapping[str, bytes]]
+) -> list[tuple[PurePosixPath, bytes, int]]:
+    """Pair every reference the Wish declares with its exact bytes, or fail."""
+
+    wish = Wish(**json.loads(wish_bytes.decode("utf-8"), object_pairs_hook=_strict_object))
+    provided = {} if files is None else files
+    if not isinstance(provided, Mapping):
+        raise ContractError("Wish reference files must map reference names to bytes")
+    declared = {reference.name: reference for reference in wish.references}
+    if set(provided) != set(declared):
+        raise ContractError(
+            "Wish reference files must match the references the Wish declares"
+        )
+    inputs: list[tuple[PurePosixPath, bytes, int]] = []
+    for reference in wish.references:
+        content = provided[reference.name]
+        if (
+            not isinstance(content, bytes)
+            or len(content) != reference.size
+            or _sha256(content) != reference.sha256
+        ):
+            raise ContractError(
+                "Wish reference bytes differ from the Wish: %s" % reference.name
+            )
+        relative = PurePosixPath(reference.path)
+        _reject_private_agent_bytes(relative.as_posix(), content)
+        inputs.append((relative, content, 0o400))
+    return inputs
+
+
+def _verify_wish_reference_inputs(
+    input_content: Mapping[str, bytes], observed_paths: Sequence[str]
+) -> None:
+    """Every declared reference is present and nothing undeclared rides along."""
+
+    try:
+        wish = Wish(
+            **json.loads(
+                input_content["WISH.json"].decode("utf-8"),
+                object_pairs_hook=_strict_object,
+            )
+        )
+    except (KeyError, UnicodeError, ValueError, TypeError, ContractError) as exc:
+        raise StateConflict("agent run Wish input is invalid") from exc
+    declared = {reference.path: reference for reference in wish.references}
+    observed = {path for path in observed_paths if _is_wish_reference_path(path)}
+    if observed != set(declared):
+        raise StateConflict("agent run Wish references differ from the Wish")
+    for path, reference in declared.items():
+        content = input_content[path]
+        if len(content) != reference.size or _sha256(content) != reference.sha256:
+            raise StateConflict("agent run Wish reference bytes changed: %s" % reference.name)
 
 
 def _reject_private_agent_bytes(path: str, content: bytes) -> None:
@@ -686,6 +751,7 @@ class AgentRun:
         manager_id: str = DEFAULT_MANAGER_ID,
         manager_model: Optional[str] = None,
         manager_reasoning_effort: Optional[str] = None,
+        wish_reference_files: Optional[Mapping[str, bytes]] = None,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
@@ -708,6 +774,7 @@ class AgentRun:
                 "required Inventor id needs an Inventor source root"
             )
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
+        wish_reference_inputs = _wish_reference_inputs(wish_bytes, wish_reference_files)
         try:
             requested = Path(run_root)
         except TypeError as exc:
@@ -954,15 +1021,26 @@ class AgentRun:
         all_input_files.extend(domain_files)
         all_input_files.extend(inventor_skill_files)
         all_input_files.extend(inventor_agent_files)
+        all_input_files.extend(wish_reference_inputs)
         all_input_files.sort(key=lambda item: item[0].as_posix())
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
         if len(input_paths) != len(set(input_paths)):
             raise ArtifactError("agent run input paths collide")
         if len(all_input_files) > MAX_AGENT_INPUT_FILES:
             raise ArtifactError("agent run has too many input files")
-        total_input_bytes = sum(len(content) for _, content, _ in all_input_files)
+        # Reference images carry their own byte budget so a few photographs
+        # cannot crowd out the constitution and skills, and vice versa.
+        reference_input_bytes = sum(
+            len(content) for _, content, _ in wish_reference_inputs
+        )
+        total_input_bytes = (
+            sum(len(content) for _, content, _ in all_input_files)
+            - reference_input_bytes
+        )
         if total_input_bytes > MAX_AGENT_INPUT_BYTES:
             raise ArtifactError("agent run inputs exceed their total byte limit")
+        if reference_input_bytes > MAX_WISH_REFERENCE_TOTAL_BYTES:
+            raise ArtifactError("agent run Wish references exceed their byte limit")
 
         if selected.exists() or selected.is_symlink():
             raise StateConflict("agent run root already exists")
@@ -1046,6 +1124,9 @@ class AgentRun:
             ):
                 os.chmod(directory, 0o500)
             os.chmod(codex_input_root, 0o500)
+        references_root = selected / WISH_REFERENCES_DIRECTORY
+        if references_root.exists():
+            os.chmod(references_root, 0o500)
         core: dict[str, Any] = {
             "schema_version": 4 if selected_effort is not None else 3,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
@@ -1290,6 +1371,7 @@ class AgentRun:
         observed_paths = []
         input_content: dict[str, bytes] = {}
         total = 0
+        reference_total = 0
         for item in inputs:
             if not isinstance(item, Mapping) or set(item) != {
                 "path",
@@ -1299,7 +1381,12 @@ class AgentRun:
             }:
                 raise StateConflict("agent run input manifest is invalid")
             relative = _safe_relative(item["path"], "agent input path")
-            if type(item["size"]) is not int or not 0 <= item["size"] <= MAX_AGENT_INPUT_BYTES:
+            size_limit = (
+                MAX_WISH_REFERENCE_BYTES
+                if _is_wish_reference_path(item["path"])
+                else MAX_AGENT_INPUT_BYTES
+            )
+            if type(item["size"]) is not int or not 0 <= item["size"] <= size_limit:
                 raise StateConflict("agent run input size is invalid")
             if type(item["mode"]) is not int or item["mode"] not in (0o400, 0o500):
                 raise StateConflict("agent run input mode is invalid")
@@ -1312,8 +1399,15 @@ class AgentRun:
                 raise StateConflict("agent run immutable input bytes changed")
             observed_paths.append(relative.as_posix())
             input_content[relative.as_posix()] = content
-            total += size
-        if len(observed_paths) != len(set(observed_paths)) or total > MAX_AGENT_INPUT_BYTES:
+            if _is_wish_reference_path(relative.as_posix()):
+                reference_total += size
+            else:
+                total += size
+        if (
+            len(observed_paths) != len(set(observed_paths))
+            or total > MAX_AGENT_INPUT_BYTES
+            or reference_total > MAX_WISH_REFERENCE_TOTAL_BYTES
+        ):
             raise StateConflict("agent run input manifest is invalid")
         required = {
             PRODUCT_RUN_ROOT_MARKER,
@@ -1323,6 +1417,7 @@ class AgentRun:
         }
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
+        _verify_wish_reference_inputs(input_content, observed_paths)
         if any(path == "catalog" or path.startswith("catalog/") for path in observed_paths):
             raise StateConflict("product projects must not contain an Inventor catalog")
         legacy_catalog = self.run_root / "catalog"
@@ -1494,6 +1589,184 @@ class AgentRun:
             )
             for stage, paths in payload["stage_artifacts"].items()
         }
+
+    def refresh_domain_skill_tools(
+        self,
+        domain_skill_roots: Mapping[str, Path],
+        *,
+        reason: str,
+    ) -> tuple[dict[str, Any], ...]:
+        """Bring the run's host-owned domain skills up to the installed source.
+
+        Domain skills are immutable to the native agent, not to the host that
+        owns them.  When a deterministic tool a gate depends on is corrected,
+        the host rewrites the run's copy byte-for-byte from the installed skill,
+        rebinds the tamper-checked input manifest, and writes a new checkpoint
+        revision, so every byte the agent can reach stays accounted for.  Only
+        skills the run already carries are touched; a skill absent from the run
+        is never introduced.  Every refresh appends one owner-only record under
+        host state and returns the manifest changes it made.
+        """
+
+        if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
+            raise ContractError("domain skill refresh reason must be a short string")
+        if not isinstance(domain_skill_roots, Mapping):
+            raise ContractError("domain skill roots must be a mapping")
+        payload = self._load()
+        by_path: dict[str, dict[str, Any]] = {
+            item["path"]: dict(item) for item in payload["inputs"]
+        }
+        changes: list[dict[str, Any]] = []
+        writes: list[tuple[PurePosixPath, bytes, int]] = []
+        removals: list[PurePosixPath] = []
+        for name, source_root in sorted(domain_skill_roots.items()):
+            if (
+                not isinstance(name, str)
+                or _AGENT_SKILL_NAME.fullmatch(name) is None
+                or name == "autonomous-workshop"
+            ):
+                raise ContractError("domain skill name is invalid")
+            prefix = ".agents/skills/%s/" % name
+            carried = {path for path in by_path if path.startswith(prefix)}
+            if not carried:
+                continue
+            files = _source_tree_files(source_root, label="source %s skill" % name)
+            if not any(relative.as_posix() == "SKILL.md" for relative, _, _ in files):
+                raise ArtifactError("source %s skill lacks SKILL.md" % name)
+            wanted: dict[str, tuple[bytes, int]] = {}
+            for relative, content, mode in files:
+                destination = (PurePosixPath(".agents/skills") / name / relative).as_posix()
+                _reject_private_agent_bytes(destination, content)
+                wanted[destination] = (content, mode)
+            for path in sorted(carried - set(wanted)):
+                previous = by_path.pop(path)
+                removals.append(_safe_relative(path, "agent input path"))
+                changes.append(
+                    {
+                        "path": path,
+                        "previous_sha256": previous["sha256"],
+                        "previous_mode": previous["mode"],
+                        "sha256": None,
+                        "mode": None,
+                    }
+                )
+            for path, (content, mode) in sorted(wanted.items()):
+                digest = _sha256(content)
+                previous = by_path.get(path)
+                if (
+                    previous is not None
+                    and previous["sha256"] == digest
+                    and previous["mode"] == mode
+                ):
+                    continue
+                writes.append((_safe_relative(path, "agent input path"), content, mode))
+                by_path[path] = {
+                    "path": path,
+                    "sha256": digest,
+                    "size": len(content),
+                    "mode": mode,
+                }
+                changes.append(
+                    {
+                        "path": path,
+                        "previous_sha256": None if previous is None else previous["sha256"],
+                        "previous_mode": None if previous is None else previous["mode"],
+                        "sha256": digest,
+                        "mode": mode,
+                    }
+                )
+        if not changes:
+            return ()
+        inputs = sorted(by_path.values(), key=lambda item: item["path"])
+        if len(inputs) > MAX_AGENT_INPUT_FILES:
+            raise ContractError("domain skill refresh exceeds the agent input file limit")
+        total = sum(
+            item["size"] for item in inputs if not _is_wish_reference_path(item["path"])
+        )
+        if total > MAX_AGENT_INPUT_BYTES:
+            raise ContractError("domain skill refresh exceeds the agent input byte budget")
+
+        opened: list[Path] = []
+
+        def writable(directory: Path) -> None:
+            for ancestor in (directory, *directory.parents):
+                if ancestor == self.run_root or self.run_root not in ancestor.parents:
+                    break
+                if stat.S_IMODE(ancestor.stat().st_mode) != 0o700:
+                    os.chmod(ancestor, 0o700)
+                    opened.append(ancestor)
+
+        try:
+            for relative in removals:
+                target = self.run_root.joinpath(*relative.parts)
+                writable(target.parent)
+                os.unlink(target)
+            for relative, content, mode in writes:
+                target = self.run_root.joinpath(*relative.parts)
+                existing = target.parent
+                while not existing.exists():
+                    existing = existing.parent
+                writable(existing)
+                target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                for created in (target.parent, *target.parent.parents):
+                    if created == existing or self.run_root not in created.parents:
+                        break
+                    opened.append(created)
+                if target.exists() or target.is_symlink():
+                    os.unlink(target)
+                descriptor = os.open(
+                    str(target), os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode
+                )
+                try:
+                    written = 0
+                    while written < len(content):
+                        written += os.write(descriptor, content[written:])
+                    os.fsync(descriptor)
+                finally:
+                    os.close(descriptor)
+                os.chmod(target, mode)
+        finally:
+            for directory in sorted(set(opened), key=lambda path: len(path.parts), reverse=True):
+                os.chmod(directory, 0o500)
+
+        updated = dict(payload)
+        updated["inputs"] = inputs
+        previous_checkpoint = payload["checkpoint_sha256"]
+        self._write_next(payload, updated)
+        record = {
+            "kind": "autonomous-workshop.host-correction",
+            "schema_version": 1,
+            "correction": "domain-skill-refresh",
+            "reason": reason.strip(),
+            "previous_checkpoint_sha256": previous_checkpoint,
+            "checkpoint_sha256": self._expected_checkpoint_sha256,
+            "changes": changes,
+        }
+        self.record_host_correction(record)
+        return tuple(changes)
+
+    def record_host_correction(self, record: Mapping[str, Any]) -> None:
+        """Append one owner-only ledger line describing a host correction."""
+
+        if (
+            not isinstance(record, Mapping)
+            or record.get("kind") != "autonomous-workshop.host-correction"
+            or not isinstance(record.get("correction"), str)
+        ):
+            raise ContractError("host correction record is invalid")
+        ledger = self.host_state_root / HOST_CORRECTIONS_FILE
+        line = json.dumps(dict(record), sort_keys=True, separators=(",", ":")) + "\n"
+        if len(line) > 64 * 1024:
+            raise ContractError("host correction record is too large")
+        descriptor = os.open(
+            str(ledger), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600
+        )
+        try:
+            os.write(descriptor, line.encode("utf-8"))
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        os.chmod(ledger, 0o600)
 
     def snapshot(self) -> AgentRunCheckpoint:
         payload = self._load()

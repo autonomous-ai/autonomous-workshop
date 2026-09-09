@@ -64,10 +64,19 @@ class ReleaseContext:
     playtested: Playtested | None
     workspace: Path
     lease_token: Optional[str] = field(default=None, repr=False, compare=False)
+    # Host-authored bytes that ride the Factory handoff beside the sealed
+    # model: the rendered hero the shop uses as its cover.  Optional, and not
+    # a Made byte.
+    cover_render: Optional[bytes] = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
             raise ContractError("ReleaseContext requires a Wish and Taste")
+        value = self.cover_render
+        if value is not None and (
+            not isinstance(value, bytes) or not value or len(value) > 16 * 1024 * 1024
+        ):
+            raise ContractError("ReleaseContext cover render must be bounded non-empty bytes")
         if not isinstance(self.blueprint, ToyBlueprint):
             raise ContractError("ReleaseContext requires a ToyBlueprint")
         if not isinstance(self.made, Made):

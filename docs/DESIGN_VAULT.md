@@ -21,6 +21,16 @@ computed from that snapshot.
 - After a sealed Playtest, the host writes back: confirmed leads bank evidence
   on the matching vault nodes, dismissals queue for review, and the product's
   own page (mechanisms used, verdict, median scores, lessons) is posted.
+- After every Make outcome the host writes back too (ADR 0055): a failed CAD
+  gate, a refused proposal, a Make-to-Invent revision request, a parked need,
+  or a token-budget stop becomes a classified evidence row on an anti-pattern
+  node (`likeness-wall`, `underbuilt-shell`,
+  `sealed-volume-overlap`, ...), and a passed Make posts the product page with
+  a `make-*` verdict, so Spark and Forge wishes leave a page behind as well.
+- Every Invent and Make packet carries `make_lessons`: the ten newest rows
+  banked on the anti-patterns the concept's mechanisms risk and on the Make
+  failure classes, each with the vault's recorded fixes. The Manager reads
+  them before designing or repairing; they never waive a gate.
 
 ## Configuration
 
@@ -42,6 +52,14 @@ A host with no URL, no token, or an unreachable vault **bypasses the vault for
 that checkpoint**: the phase runs exactly like a run without a vault (no
 snapshot, no leads, queued write-backs) and the next checkpoint tries again.
 Nothing fails; you just build without recorded design knowledge.
+
+The same holds for a vault that is up but not answering as the vault API — a
+proxy's maintenance page, a 5xx, a refused token, or an export the host cannot
+seal: the checkpoint is bypassed with the same `unavailable` marker under
+host state, and every write-back waits in `vault/pending/`. A write-back the
+vault refuses outright (an HTTP 400 in the API's own words) is set aside as
+`vault/pending/<name>.rejected` for a person to look at; it is never retried
+and never stops the run. No vault failure of any kind ends a Workshop run.
 
 For offline work:
 

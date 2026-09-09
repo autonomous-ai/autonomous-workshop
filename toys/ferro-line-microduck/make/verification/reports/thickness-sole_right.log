@@ -1,0 +1,10 @@
+artifacts/make/r0001/product/cad/part_sole_right.stl: 1.22 cm3 solid, grid 0.133 mm (260x41x101), 52921 surface samples, grid resolved to 0.067 mm, exact where under the minimum
+  FAIL  wall >= 0.80 mm (grid +/-0.07, exact where under) 6.9% of surface below (3498 of 52921 samples); thinnest 0.07 mm at (30.2, 15.2, 7.8) in 2 region(s); 1 wall(s) (widest band 2.88 mm), 1 taper(s) at feature edges (0.91% of surface, budget 2%); 336 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 4.73 mm, p95 12.20 mm, max 34.00 mm
+  WARN  hollowable at 1.20 mm wall     0.34 of 1.22 cm3 (28%) in 1 pocket(s)
+  PASS  filament that would save       0.05 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.15 mm at (28.4, 15.1, 0.0)   3082 samples, 58.6 mm2, runs 20.4 mm, band 2.88 mm
+        2. [taper] 0.07 mm at (30.2, 15.2, 7.8)    416 samples, 9.0 mm2, runs 13.2 mm, band 0.68 mm
+RESULT: WALL BELOW MINIMUM
+  wrote artifacts/make/r0001/product/cad/measure/thickness-sole_right.md

@@ -1,0 +1,9 @@
+artifacts/make/r0001/product/cad/part_shin_right.stl: 0.39 cm3 solid, grid 0.133 mm (105x109x26), 21837 surface samples, grid resolved to 0.067 mm, exact where under the minimum
+  PASS  wall >= 0.80 mm (grid +/-0.07, exact where under) 0.0% of surface below (9 of 21837 samples); thinnest 0.59 mm at (31.0, 25.6, 2.3) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.04% of surface, budget 2%); 11 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 2.80 mm, p95 13.53 mm, max 13.93 mm
+  WARN  hollowable at 1.20 mm wall     0.03 of 0.39 cm3 (9%) in 1 pocket(s)
+  PASS  filament that would save       0.01 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.59 mm at (31.0, 25.6, 2.3)      9 samples, 0.2 mm2, runs 1.8 mm, band 0.10 mm
+RESULT: printable at this wall
+  wrote artifacts/make/r0001/product/cad/measure/thickness-shin_right.md

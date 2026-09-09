@@ -28,9 +28,13 @@ from workshop.runtime.execution import (
     codex_subprocess_environment,
 )
 from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
+from workshop.wish.contracts import WISH_REFERENCES_DIRECTORY
 from workshop.runtime.progress import SAFE_NATIVE_ACTIVITY_CLASSES
 
 
+# The model every new run freezes. The gpt-5.6 names stay allowed so runs
+# recorded before 2026-09-06 (ADR 0050) still validate their frozen config.
+DEFAULT_WORKSHOP_MODEL = "gpt-6-astra"
 ALLOWED_WORKSHOP_MODELS = frozenset(
     ("gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
 )
@@ -99,6 +103,7 @@ _IMMUTABLE_PRODUCT_RUN_PATHS = (
     "STAGE.json",
     "VAULT.json",
     "WISH.json",
+    WISH_REFERENCES_DIRECTORY,
 )
 _CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES = (
     ("PYTHONHASHSEED", "0"),
@@ -396,6 +401,49 @@ def _resolve_host_state_root(value: Path, run_root: Path) -> Path:
 
 def _checkpoint_path(host_state_root: Path) -> Path:
     return host_state_root / "codex-session.json"
+
+
+def _replace_private_checkpoint(path: Path, value: Mapping[str, Any]) -> None:
+    """Atomically replace an existing owner-only session checkpoint.
+
+    Only the host rebinding a record it has already validated calls this; the
+    create path keeps its create-without-overwrite guarantee above.
+    """
+
+    source = _canonical_json(value) + b"\n"
+    if len(source) > MAX_CODEX_SESSION_CHECKPOINT_BYTES:
+        raise CodexInvocationError("Codex session checkpoint exceeded its safe size limit")
+    if path.is_symlink() or not path.is_file():
+        raise ContractError("Codex native session checkpoint is missing")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=".%s." % path.name,
+        suffix=".tmp",
+        dir=str(path.parent),
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, 0o600)
+        written = 0
+        while written < len(source):
+            written += os.write(descriptor, source[written:])
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = -1
+        os.replace(str(temporary), str(path))
+        directory_descriptor = os.open(
+            str(path.parent), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        )
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    finally:
+        if descriptor != -1:
+            os.close(descriptor)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def _failure_diagnostic_path(host_state_root: Path) -> Path:
@@ -1004,6 +1052,48 @@ def _toml_string(value: str) -> str:
     """Encode one path/key as a TOML basic string."""
 
     return json.dumps(value, ensure_ascii=False)
+
+
+_INVENTOR_AGENT_FILE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}\.toml$")
+
+
+def inventor_agent_config_arguments(run_root: Path) -> tuple[str, ...]:
+    """Register every materialized Inventor custom agent as a Codex agent role.
+
+    Codex CLI 0.153.4 loads custom agents only from ``$CODEX_HOME/agents`` or
+    from explicit ``agents."<name>".config_file`` configuration; it does not
+    discover the project-scoped ``.codex/agents/*.toml`` files the host
+    materializes into a run root, so ``spawn_agent`` exposed no ``agent_type``
+    and the Manager could not dispatch the bound Inventor (ADR 0054). Each
+    regular ``<id>.toml`` in the run's ``.codex/agents`` directory becomes one
+    ``--config`` pair pointing at that exact file; symlinks and other names are
+    ignored, and a run without the directory registers nothing. The files are
+    already hash-bound in the run manifest, so these arguments are derived
+    from sealed inputs rather than being part of the launch policy identity.
+    """
+
+    directory = Path(run_root) / ".codex" / "agents"
+    try:
+        entries = sorted(directory.iterdir(), key=lambda item: item.name)
+    except OSError:
+        return ()
+    arguments: list[str] = []
+    for entry in entries:
+        if (
+            entry.is_symlink()
+            or not entry.is_file()
+            or _INVENTOR_AGENT_FILE.fullmatch(entry.name) is None
+        ):
+            continue
+        name = entry.name[: -len(".toml")]
+        arguments.extend(
+            (
+                "--config",
+                "agents.%s.config_file=%s"
+                % (_toml_string(name), _toml_string(str(entry))),
+            )
+        )
+    return tuple(arguments)
 
 
 def _trusted_runtime_path_identity(
@@ -2038,7 +2128,7 @@ class CodexNativeSessionLauncher:
     def __init__(
         self,
         *,
-        model: str = "gpt-5.6-sol",
+        model: str = DEFAULT_WORKSHOP_MODEL,
         reasoning_effort: str = "high",
         auto_compact_token_limit: Optional[int] = None,
         runtime_profile_sha256: Optional[str] = None,
@@ -2476,6 +2566,91 @@ class CodexNativeSessionLauncher:
         state_root = _resolve_host_state_root(host_state_root, root)
         return root, state_root, _checkpoint_path(state_root)
 
+    def rebind_session_constitution(
+        self,
+        *,
+        product_id: str,
+        wish_sha256: str,
+        run_root: Path,
+        host_state_root: Path,
+        constitution_sha256: str,
+    ) -> Mapping[str, Any]:
+        """Rebind the stored session to a host-corrected instruction tree.
+
+        The stored session binds the hash of the run's AGENTS.md and skill
+        bytes so instruction drift can never reach a live thread silently.
+        When the host itself corrects a domain-skill tool inside the run, that
+        hash moves by design, and the same host operation rebinds the record.
+        The record must already be self-consistent and bound to this exact
+        product, Wish, and pair of roots; only its constitution field changes,
+        and the thread, runtime policy, and CLI version it names are kept.
+        """
+
+        root, state_root, path = self._binding_paths(
+            product_id=product_id,
+            wish_sha256=wish_sha256,
+            constitution_sha256=constitution_sha256,
+            run_root=run_root,
+            host_state_root=host_state_root,
+        )
+        payload = _read_private_checkpoint(path)
+        expected_fields = {
+            "schema_version",
+            "kind",
+            "product_id",
+            "wish_sha256",
+            "constitution_sha256",
+            "run_root_sha256",
+            "host_state_root_sha256",
+            "runtime_config_sha256",
+            "cli_version",
+            "permission_profile",
+            "native_web_search",
+            "thread_id",
+            "checkpoint_sha256",
+        }
+        if set(payload) != expected_fields:
+            raise ContractError("Codex native session checkpoint fields are invalid")
+        identity = {
+            key: payload[key] for key in expected_fields - {"checkpoint_sha256"}
+        }
+        try:
+            thread_id = _canonical_thread_id(payload["thread_id"])
+            previous = _require_sha256(
+                payload["constitution_sha256"],
+                "Codex native session constitution sha256",
+            )
+            if (
+                payload["checkpoint_sha256"] != _sha256_json(identity)
+                or payload["schema_version"] != 1
+                or payload["kind"] != CODEX_SESSION_CHECKPOINT_KIND
+                or payload["product_id"] != product_id
+                or payload["wish_sha256"] != wish_sha256
+                or payload["run_root_sha256"] != _path_sha256(root)
+                or payload["host_state_root_sha256"] != _path_sha256(state_root)
+            ):
+                raise ContractError("Codex native session checkpoint binding is invalid")
+        except ContractError as exc:
+            raise ContractError(
+                "Codex native session checkpoint binding is invalid"
+            ) from exc
+        if previous == constitution_sha256:
+            return {
+                "thread_id": thread_id,
+                "previous_constitution_sha256": previous,
+                "constitution_sha256": constitution_sha256,
+                "changed": False,
+            }
+        rebound = {**identity, "constitution_sha256": constitution_sha256}
+        digest = _sha256_json(rebound)
+        _replace_private_checkpoint(path, {**rebound, "checkpoint_sha256": digest})
+        return {
+            "thread_id": thread_id,
+            "previous_constitution_sha256": previous,
+            "constitution_sha256": constitution_sha256,
+            "changed": True,
+        }
+
     def _checkpoint_identity(
         self,
         *,
@@ -2654,6 +2829,7 @@ class CodexNativeSessionLauncher:
             'model_reasoning_effort="%s"' % self.reasoning_effort,
             *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
+            *inventor_agent_config_arguments(run_root),
             "-C",
             str(run_root),
             "--model",
@@ -2688,6 +2864,7 @@ class CodexNativeSessionLauncher:
             'model_reasoning_effort="%s"' % self.reasoning_effort,
             *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
+            *inventor_agent_config_arguments(run_root),
             "--model",
             self.model,
             thread_id,
@@ -3797,6 +3974,7 @@ __all__ = [
     "ALLOWED_WORKSHOP_MODELS",
     "CODEX_FAILURE_DIAGNOSTIC_FILENAME",
     "CODEX_FAILURE_DIAGNOSTIC_KIND",
+    "DEFAULT_WORKSHOP_MODEL",
     "CODEX_PERMISSION_PROFILE",
     "CODEX_SESSION_CHECKPOINT_KIND",
     "DEFAULT_CODEX_TIMEOUT_SECONDS",
@@ -3817,4 +3995,5 @@ __all__ = [
     "CodexNativeSessionLauncher",
     "CodexNativeSessionOutcome",
     "codex_supports_native_workshop",
+    "inventor_agent_config_arguments",
 ]

@@ -25,18 +25,33 @@ from workshop.workflow import (
 EVIDENCE_SHA256 = "e" * 64
 
 
-def canonical_wish(product_id, objective):
+def canonical_wish(product_id, objective, references=None):
+    document = {
+        "schema_version": 1,
+        "product_id": product_id,
+        "objective": objective,
+        "constraints": {},
+        "context": {"source": "agent-run-test"},
+    }
+    if references:
+        document["references"] = list(references)
     return json.dumps(
-        {
-            "schema_version": 1,
-            "product_id": product_id,
-            "objective": objective,
-            "constraints": {},
-            "context": {"source": "agent-run-test"},
-        },
+        document,
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
+
+
+def reference_fixture(index, slug, content, media_type="image/png"):
+    extension = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}[media_type]
+    return {
+        "name": "ref-%02d-%s.%s" % (index, slug, extension),
+        "sha256": hashlib.sha256(content).hexdigest(),
+        "media_type": media_type,
+        "size": len(content),
+        "width": 640,
+        "height": 480,
+    }
 
 
 class AgentRunTest(unittest.TestCase):
@@ -214,6 +229,106 @@ class AgentRunTest(unittest.TestCase):
                 checkpoint.input_sha256s[relative], hashlib.sha256(content).hexdigest()
             )
 
+    def test_create_materializes_wish_references_read_only_with_their_own_budget(self):
+        big = b"\x89PNG" + b"\0" * (5 * 1024 * 1024)
+        small = b"\xff\xd8\xff" + b"\0" * 64
+        references = (
+            reference_fixture(1, "side", big),
+            reference_fixture(2, "front", small, "image/jpeg"),
+        )
+        wish_bytes = canonical_wish(self.product_id, "A photographed toy.", references)
+        files = {"ref-01-side.png": big, "ref-02-front.jpg": small}
+
+        run = AgentRun.create(
+            self.run_root,
+            host_state_root=self.host_state_root,
+            product_id=self.product_id,
+            wish_bytes=wish_bytes,
+            wish_reference_files=files,
+            product_run_constitution_source=self.product_run_constitution,
+            skill_root=self.skill,
+        )
+        checkpoint = run.snapshot()
+
+        references_root = run.run_root / "wish-references"
+        self.assertEqual(stat.S_IMODE(references_root.stat().st_mode), 0o500)
+        for name, content in files.items():
+            path = references_root / name
+            self.assertEqual(path.read_bytes(), content)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o400)
+            self.assertEqual(
+                checkpoint.input_sha256s["wish-references/%s" % name],
+                hashlib.sha256(content).hexdigest(),
+            )
+        # 5 MiB of image rides above the 4 MiB constitution-and-skill budget.
+        self.assertGreater(len(big), agent_run_module.MAX_AGENT_INPUT_BYTES)
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_wish_reference_files_must_match_the_wish_exactly(self):
+        content = b"\x89PNG" + b"\0" * 32
+        references = (reference_fixture(1, "side", content),)
+        wish_bytes = canonical_wish(self.product_id, "A photographed toy.", references)
+        cases = (
+            (None, "must match the references"),
+            ({}, "must match the references"),
+            ({"ref-01-side.png": content, "ref-02-front.png": content}, "must match"),
+            ({"ref-01-side.png": content + b"x"}, "differ from the Wish"),
+            ({"ref-01-side.png": "text"}, "differ from the Wish"),
+            ("ref-01-side.png", "map reference names to bytes"),
+        )
+        for files, message in cases:
+            with self.subTest(files=type(files).__name__), self.assertRaisesRegex(
+                ContractError, message
+            ):
+                AgentRun.create(
+                    self.run_root,
+                    host_state_root=self.host_state_root,
+                    product_id=self.product_id,
+                    wish_bytes=wish_bytes,
+                    wish_reference_files=files,
+                    product_run_constitution_source=self.product_run_constitution,
+                    skill_root=self.skill,
+                )
+            self.assertFalse(self.run_root.exists())
+        with self.assertRaisesRegex(ContractError, "must match the references"):
+            AgentRun.create(
+                self.run_root,
+                host_state_root=self.host_state_root,
+                product_id=self.product_id,
+                wish_bytes=canonical_wish(self.product_id, "No pictures."),
+                wish_reference_files={"ref-01-side.png": content},
+                product_run_constitution_source=self.product_run_constitution,
+                skill_root=self.skill,
+            )
+
+    def test_wish_reference_tampering_and_removal_are_detected(self):
+        content = b"\x89PNG" + b"\0" * 32
+        references = (reference_fixture(1, "side", content),)
+        run = AgentRun.create(
+            self.run_root,
+            host_state_root=self.host_state_root,
+            product_id=self.product_id,
+            wish_bytes=canonical_wish(self.product_id, "A photographed toy.", references),
+            wish_reference_files={"ref-01-side.png": content},
+            product_run_constitution_source=self.product_run_constitution,
+            skill_root=self.skill,
+        )
+        path = run.run_root / "wish-references" / "ref-01-side.png"
+        os.chmod(path.parent, 0o700)
+        os.chmod(path, 0o600)
+        path.write_bytes(content[:-1] + b"\x01")
+        os.chmod(path, 0o400)
+        with self.assertRaisesRegex(StateConflict, "immutable input bytes changed"):
+            run.snapshot()
+        path.unlink()
+        with self.assertRaisesRegex(ArtifactError, "cannot be opened"):
+            run.snapshot()
+
     def test_create_freezes_the_selected_manager(self):
         run = self.create(manager_id="grok")
         checkpoint = run.snapshot()
@@ -255,6 +370,97 @@ class AgentRunTest(unittest.TestCase):
             expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
         )
         self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_refresh_domain_skill_tools_rebinds_manifest_and_records(self):
+        cad = self.root / "cad-skill"
+        (cad / "scripts").mkdir(parents=True)
+        (cad / "SKILL.md").write_bytes(b"# CAD skill\n")
+        checker = cad / "scripts" / "check_mesh"
+        checker.write_bytes(b"#!/bin/sh\nexit 1\n")
+        checker.chmod(0o755)
+        obsolete = cad / "scripts" / "obsolete.py"
+        obsolete.write_bytes(b"print('old')\n")
+        run = self.create(domain_skill_roots={"cad": cad})
+        before = run.snapshot()
+
+        # A source that already matches the run changes nothing.
+        self.assertEqual(run.refresh_domain_skill_tools({"cad": cad}, reason="same"), ())
+        self.assertEqual(run.snapshot(), before)
+        self.assertFalse((run.host_state_root / "host-corrections.jsonl").exists())
+
+        # The host corrects the tool, adds a helper, and retires a file. A
+        # skill the run never carried is not introduced.
+        checker.write_bytes(b"#!/bin/sh\nexit 0\n")
+        (cad / "scripts" / "helper.py").write_bytes(b"print('new')\n")
+        obsolete.unlink()
+        changes = run.refresh_domain_skill_tools(
+            {"cad": cad, "absent": cad}, reason="corrected checker"
+        )
+        self.assertEqual(
+            {item["path"] for item in changes},
+            {
+                ".agents/skills/cad/scripts/check_mesh",
+                ".agents/skills/cad/scripts/helper.py",
+                ".agents/skills/cad/scripts/obsolete.py",
+            },
+        )
+        by_path = {item["path"]: item for item in changes}
+        corrected = hashlib.sha256(b"#!/bin/sh\nexit 0\n").hexdigest()
+        self.assertEqual(by_path[".agents/skills/cad/scripts/check_mesh"]["sha256"], corrected)
+        self.assertEqual(by_path[".agents/skills/cad/scripts/check_mesh"]["mode"], 0o500)
+        self.assertIsNone(by_path[".agents/skills/cad/scripts/obsolete.py"]["sha256"])
+        self.assertIsNone(by_path[".agents/skills/cad/scripts/helper.py"]["previous_sha256"])
+
+        after = run.snapshot()
+        self.assertEqual(after.revision, before.revision + 1)
+        self.assertNotEqual(after.checkpoint_sha256, before.checkpoint_sha256)
+        self.assertEqual(after.stage, before.stage)
+        self.assertEqual(after.round_index, before.round_index)
+        self.assertEqual(after.input_sha256s[".agents/skills/cad/scripts/check_mesh"], corrected)
+        self.assertIn(".agents/skills/cad/scripts/helper.py", after.input_sha256s)
+        self.assertNotIn(".agents/skills/cad/scripts/obsolete.py", after.input_sha256s)
+        self.assertEqual(after.input_sha256s["WISH.json"], before.input_sha256s["WISH.json"])
+
+        target = run.run_root / ".agents/skills/cad/scripts/check_mesh"
+        self.assertEqual(target.read_bytes(), b"#!/bin/sh\nexit 0\n")
+        self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o500)
+        helper = run.run_root / ".agents/skills/cad/scripts/helper.py"
+        self.assertEqual(stat.S_IMODE(helper.stat().st_mode), 0o400)
+        self.assertFalse((run.run_root / ".agents/skills/cad/scripts/obsolete.py").exists())
+        for directory in (".agents", ".agents/skills", ".agents/skills/cad/scripts"):
+            self.assertEqual(
+                stat.S_IMODE((run.run_root / directory).stat().st_mode), 0o500, directory
+            )
+        self.assertFalse((run.run_root / ".agents/skills/absent").exists())
+
+        ledger = run.host_state_root / "host-corrections.jsonl"
+        self.assertEqual(stat.S_IMODE(ledger.stat().st_mode), 0o600)
+        lines = ledger.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), 1)
+        record = json.loads(lines[0])
+        self.assertEqual(record["correction"], "domain-skill-refresh")
+        self.assertEqual(record["reason"], "corrected checker")
+        self.assertEqual(record["previous_checkpoint_sha256"], before.checkpoint_sha256)
+        self.assertEqual(record["checkpoint_sha256"], after.checkpoint_sha256)
+        self.assertEqual(len(record["changes"]), 3)
+
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=after.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), after)
+
+        # The refreshed bytes are bound: a later edit is still tampering.
+        os.chmod(run.run_root / ".agents/skills/cad/scripts", 0o700)
+        os.chmod(target, 0o700)
+        target.write_bytes(b"#!/bin/sh\nexit 2\n")
+        os.chmod(target, 0o500)
+        with self.assertRaises(StateConflict):
+            reopened.snapshot()
+
+        with self.assertRaises(ContractError):
+            run.refresh_domain_skill_tools({"cad": cad}, reason="")
 
     def test_create_materializes_custom_agent_roster_and_executable_skills(self):
         cad = self.root / "cad-skill"

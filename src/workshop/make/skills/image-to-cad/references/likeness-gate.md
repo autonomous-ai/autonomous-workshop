@@ -270,3 +270,48 @@ it is blind to colour, and on a multi-material reference colour is much of what
 a human compares.
 
 Treat 0.90 as the target, not the pass mark for an unreviewed first attempt.
+
+## A reference with a transparent background
+
+A cut-out PNG, or a WebP exported with alpha, states its own silhouette:
+alpha above 127 is the subject, and the gate reads it exactly so. The
+luminance threshold and the shadow test exist for photographs, which carry no
+alpha; they are not applied to a cut-out, and neither is `--threshold`. An
+image whose alpha channel is opaque everywhere says nothing and is scored as a
+photograph. The reason this is spelled out: read through RGB, a cut-out is
+whatever colour the encoder left under its transparent pixels, and one such
+reference (2026-09-07, a wind-up duck) scored **0.66 against its own outline**,
+so no model could have passed. `measure_image.py` reads the same alpha for
+its measurements and says so in the mask notes (`"source": "alpha"`).
+
+## A pale subject on a white ground
+
+A cream or beige print photographed on a white sweep sits inside the
+luminance band around the background, and its hue is only about 0.02 off
+the ground in normalised rgb, below the 0.045 the shadow test needs. Read
+that way the mask keeps the dark and saturated parts (beak, feet, shaded
+coils) and drops the lit head and torso; one such reference (2026-09-08, a
+cream goose) measured at fill 0.30 with its head missing, and every round's
+IoU was a wall built from the mask, not the shape. CIELAB separates the two
+cases: cream differs from white by about 10 in b*, while a neutral cast
+shadow stays near 0 in a*b* however dark it gets. `measure_image.py` and the
+gate therefore also admit a pixel as object when its a*b* distance from the
+background is above 4, both inside the shadow test and, for regions inside
+the luminance band, through the same attachment rule as the off-hue
+admission: the region must touch the silhouette already found. A lighter
+neutral patch (a lit tabletop) has no a*b* difference and stays ground; a
+background-coloured aperture inside the subject matches the ground's a*b*
+and stays open. The mask notes report it as `pale_region_share`. A subject
+that is truly the ground's colour still has no silhouette to read; give the
+gate a cut-out with alpha (previous section) instead.
+
+## Replay, then search when the replay is under the floor
+
+`--poses-from` replays the previous camera without searching, which is what
+makes a round's IoU delta the shape's and not the viewpoint's. It also means
+a part that moved (a neck that now leans, a head that turned) can only lose
+under the old camera. The `make-round` skill therefore re-searches a
++/-30 degree window around the replayed camera whenever the replay scores
+under the floor, and keeps the better of the two (goose, 2026-09-08: replay
+0.49, window search 0.75 on the same model). The summary marks such a score
+`(re-searched)`, and the new pose is what the next round replays.

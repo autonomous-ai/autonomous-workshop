@@ -448,13 +448,14 @@ def _is_verifier_authored_volatile_report(path: str) -> bool:
     in one report per printable part.  Those records are useful during an
     interactive Make pass, but they are not reproducible CAD deliverables.  Do
     not broaden this allowlist: source, geometry, JSON evidence, and every
-    other report remain byte-sealed.
+    other report remain byte-sealed.  Overhang reports are not volatile; the
+    gate compares them exactly apart from their directory-location metadata.
     """
 
     if path == "measure/verification-pipeline.md":
         return True
-    prefix = "measure/thickness-"
     suffix = ".md"
+    prefix = "measure/thickness-"
     if not path.startswith(prefix) or not path.endswith(suffix):
         return False
     role = path[len(prefix) : -len(suffix)]

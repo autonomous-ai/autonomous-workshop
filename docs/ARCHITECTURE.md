@@ -35,7 +35,7 @@ supplies a private writable cache; proof defers the broad CAD
 skill, batches mandatory reads and deterministic CAD commands, and makes source
 the next durable action. Root inspection owns this cheap early direction check;
 independent blind critique remains mandatory at final Make.
-Every deep stage compacts at 256k. Frozen
+Every deep stage compacts at 192k (256k before ADR 0051). Frozen
 deep-v9 retains that ceiling with its original proof and final-Make behavior;
 schema-v1 Manager projects retain the stage-shaped reasoning profile they
 started with. Model effort changes
@@ -112,6 +112,12 @@ for the first enabled creative stage. The same session
 handles discovery, research, concept
 work, CAD, inspection, repair, manual design, and bounded
 product facts. `workshop resume` continues the exact recorded session id.
+Reference images passed with `--ref`, local files or `http(s)` links the CLI
+downloads once at Wish time, are materialized in that project as read-only
+inputs under `wish-references/`, bound by size and SHA-256 inside `WISH.json`
+(a downloaded reference also records its link under
+`context.reference_sources`), listed in every `STAGE.json`, and re-verified at
+every checkpoint. The run never fetches anything itself.
 
 Make uses a cost-aware proof funnel inside its one Goal: narrow build checks,
 an independent blind read of exact candidate renders, at most one focused
@@ -136,7 +142,7 @@ contains a compact index derived from every exact Taste header; Codex ranks the
 complete roster there, then reads only the best three full custom agents. Make
 first uses one 16-minute proof runway, then resumes the same Goal with a
 15-minute source-handoff boundary before normal 30-minute recovery.
-every stage compacts at 256k. One profile identity binds the persistent thread
+every stage compacts at 192k. One profile identity binds the persistent thread
 while the host selects those stage-specific time and compaction settings. New
 schema-v2 Manager projects keep their selected reasoning effort throughout;
 older Manager projects retain the original stage-shaped high/medium settings.
@@ -173,7 +179,7 @@ evidence used to avoid an expensive bad direction; the later hash-bound final si
 CAD gate remain authoritative. The independent native critic remains mandatory
 for final Make's hash-bound review. Frozen deep-v11 retains its original proof
 recovery. Frozen deep-v10 retains its original Invent
-recovery plus the same exact-state Make behavior. Frozen deep-v9 retains its 256k compaction,
+recovery plus the same exact-state Make behavior. Frozen deep-v9 shares the 192k compaction ceiling,
 one-mesh viewpoint proof, and normal 30-minute final turn. Frozen deep-v8
 retains its 16-minute proof runway and 24k compaction. Frozen deep-v7 retains
 its eight-minute

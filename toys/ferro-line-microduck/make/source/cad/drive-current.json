@@ -1,0 +1,129 @@
+{
+  "ok": true,
+  "scope": "geometry and conditional calculation only; no running qualification",
+  "source_sha256": {
+    "drive_lib.py": "c672fe0b77dc93841e167314d76008476ccc80376185b0406e427cbcd87ef309",
+    "duck_lib.py": "b82645bf7b5f637fc4fa62b8ecbbf39849051b00c74edd34560f0ebc349398fe"
+  },
+  "cord": {
+    "supplier": "MVQ Silicones 60 Shore A silicone solid cord, 4.0 mm",
+    "cut_length_mm": 240,
+    "working_span_mm": 81.2,
+    "maximum_fitting_extension_fraction": 0.005,
+    "maximum_turns": 2.0,
+    "bore_radial_clearance_mm": 0.7,
+    "surface_shear_strain": 0.3095165175950535,
+    "polar_moment_mm4": 25.132741228718345
+  },
+  "shaft": {
+    "outside_diameter_mm": 8.4,
+    "bore_diameter_mm": 5.4,
+    "minimum_flat_wall_mm": 1.1999999999999997,
+    "annular_polar_moment_mm4": 405.30550761941663,
+    "nominal_annular_shear_MPa": 0.05971993769628395,
+    "assumed_20_percent_section_reduction_shear_MPa": 0.07464992212035493,
+    "note": "Annular nominal stress and assumed reduction are screening estimates, not exact D-section warping or printed strength."
+  },
+  "clearance_intersection_mm3": {
+    "frame": 0,
+    "rotor": 0,
+    "anchor": 0,
+    "anchor wrap/frame": 0,
+    "anchor wrap/rotor": 0,
+    "anchor wrap/left wheel": 0,
+    "right wrap/frame": 0,
+    "right wrap/rotor outside cleat": 0
+  },
+  "estimated_moduli": [
+    {
+      "shore_A": 55,
+      "estimated_E_MPa": 2.9791729835450513,
+      "estimated_G_MPa": 0.9930576611816838,
+      "estimated_initial_torque_Nmm": 3.862497049589852
+    },
+    {
+      "shore_A": 60,
+      "estimated_E_MPa": 3.6205097194747684,
+      "estimated_G_MPa": 1.2068365731582562,
+      "estimated_initial_torque_Nmm": 4.69398997195599
+    },
+    {
+      "shore_A": 65,
+      "estimated_E_MPa": 4.445085522812977,
+      "estimated_G_MPa": 1.4816951742709923,
+      "estimated_initial_torque_Nmm": 5.763052300712452
+    }
+  ],
+  "derated_low_torque_Nmm": 2.7037479347128963,
+  "maximum_estimated_tension_N": 0.27929296046095187,
+  "uniform_density_com_mm": [
+    1.2597978535205936,
+    3.814732536957387,
+    96.35375600905596
+  ],
+  "full_density_mass_kg": 0.25569557346039046,
+  "normal_loads_N": {
+    "drive": 1.1402609597828142,
+    "rear": 1.3672560356925239
+  },
+  "friction_sensitivity": [
+    {
+      "assumed_journal_and_thrust_mu": 0.03,
+      "assumed_rolling_coefficient": 0.01,
+      "loss_torque_Nmm": 0.5708353738461988,
+      "initial_margin_Nmm": 2.1329125608666977,
+      "quasistatic_distance_mm": 99.1326498441467
+    },
+    {
+      "assumed_journal_and_thrust_mu": 0.05,
+      "assumed_rolling_coefficient": 0.01,
+      "loss_torque_Nmm": 0.7842244900453087,
+      "initial_margin_Nmm": 1.9195234446675875,
+      "quasistatic_distance_mm": 89.214836556891
+    },
+    {
+      "assumed_journal_and_thrust_mu": 0.1,
+      "assumed_rolling_coefficient": 0.01,
+      "loss_torque_Nmm": 1.3176972805430835,
+      "initial_margin_Nmm": 1.3860506541698128,
+      "quasistatic_distance_mm": 64.42030333875178
+    },
+    {
+      "assumed_journal_and_thrust_mu": 0.15,
+      "assumed_rolling_coefficient": 0.01,
+      "loss_torque_Nmm": 1.8511700710408585,
+      "initial_margin_Nmm": 0.8525778636720378,
+      "quasistatic_distance_mm": 39.62577012061254
+    },
+    {
+      "assumed_journal_and_thrust_mu": 0.2,
+      "assumed_rolling_coefficient": 0.01,
+      "loss_torque_Nmm": 2.3846428615386333,
+      "initial_margin_Nmm": 0.31910507317426307,
+      "quasistatic_distance_mm": 14.831236902473314
+    },
+    {
+      "assumed_journal_and_thrust_mu": 0.25,
+      "assumed_rolling_coefficient": 0.01,
+      "loss_torque_Nmm": 2.918115652036408,
+      "initial_margin_Nmm": -0.2143677173235119,
+      "quasistatic_distance_mm": 0.0
+    }
+  ],
+  "required_ground_friction_for_high_torque": 0.5054152079196101,
+  "minimum_static_pitch_moment_Nmm": 20.524697276090656,
+  "high_torque_to_pitch_moment_ratio": 0.28078622662200564,
+  "ideal_two_turn_distance_mm": 125.66370614359172,
+  "print_transition": {
+    "outer_radial_growth_per_vertical_mm": 0.6666666666666666,
+    "inner_radial_shrink_per_vertical_mm": 1,
+    "knob_face_and_crossbar_on_bed_X": 42
+  },
+  "limitations": [
+    "Gent-derived moduli and 30% reduction are modeling assumptions, not measured cord torsion data.",
+    "Friction coefficients, hysteresis, knot slip, wear and printed bonds require physical checks.",
+    "Computed travel assumes quasi-static rolling on level ground; inertia and lateral drift omitted.",
+    "Core and external tie clearance checked; knot shape and local bending/contact stress are not finite-element validated.",
+    "Mass includes current appearance solids at uniform PLA density; actual infill and adhesive change mass distribution."
+  ]
+}

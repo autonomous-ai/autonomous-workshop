@@ -90,7 +90,7 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from measure_image import _flood_components, object_mask  # noqa: E402
+from measure_image import _flood_components, alpha_mask, object_mask  # noqa: E402
 
 NORM_HEIGHT = 480
 BANDS = 12
@@ -137,10 +137,17 @@ def silhouette(path: Path, threshold: float, largest: bool = True) -> np.ndarray
     ratio of 1.99 for exactly that reason, and the model was not at fault.
     Render likeness views with `viewLabels: false`, and let this catch the rest.
     """
-    image = Image.open(path).convert("RGB")
-    rgb = np.asarray(image, dtype=float)
-    gray = np.asarray(image.convert("L"), dtype=float)
-    mask, _bg, _notes = object_mask(rgb, gray, threshold, invert=False)
+    opened = Image.open(path)
+    # A transparent background states the silhouette outright (alpha > 127 is
+    # the subject). Converting to RGB first reads whatever colour sits under
+    # the transparent pixels and once scored a reference at 0.66 against its
+    # own outline; the luminance mask is for images that carry no alpha.
+    mask = alpha_mask(opened)
+    if mask is None:
+        image = opened.convert("RGB")
+        rgb = np.asarray(image, dtype=float)
+        gray = np.asarray(image.convert("L"), dtype=float)
+        mask, _bg, _notes = object_mask(rgb, gray, threshold, invert=False)
     if not mask.any():
         raise ValueError(f"no object found in {path}")
     if largest:
@@ -454,6 +461,26 @@ def _box(path: Path, w: int, h: int, top: int | None = None,
     return path
 
 
+def _cutout(path: Path, w: int, h: int, opaque: bool = False) -> Path:
+    """The same rectangle as a transparent-background cut-out.
+
+    Every pixel is dark in RGB, so a luminance mask sees the whole frame as
+    object; only the alpha channel says where the subject is. With `opaque`
+    the alpha is 255 everywhere and carries nothing, so the gate must fall
+    back to the luminance rules and still find the rectangle.
+    """
+    canvas = np.full((400, 400, 4), 30, dtype=np.uint8)
+    canvas[:, :, 3] = 255 if opaque else 0
+    x0, y0 = 200 - w // 2, 200 - h // 2
+    if opaque:
+        canvas[:, :, :3] = 250
+        canvas[y0:y0 + h, x0:x0 + w, :3] = 30
+    else:
+        canvas[y0:y0 + h, x0:x0 + w, 3] = 255
+    Image.fromarray(canvas, "RGBA").save(path)
+    return path
+
+
 def self_check() -> int:
     import tempfile
 
@@ -475,6 +502,21 @@ def self_check() -> int:
         hit = r["iou"] == 1.0
         print(f"{'ok  ' if hit else 'FAIL'} an identical silhouette scores "
               f"exactly 1  - IoU {r['iou']:.4f}")
+        ok &= hit
+
+        # a cut-out reference states its outline in its alpha channel; read
+        # through RGB it is a dark frame, and its own outline scored 0.66.
+        cutout = _cutout(d / "cutout.png", 160, 240)
+        r = score(cutout, ref)
+        hit = r["iou"] == 1.0
+        print(f"{'ok  ' if hit else 'FAIL'} a transparent-background cut-out "
+              f"is read from its alpha channel  - IoU {r['iou']:.4f}")
+        ok &= hit
+        opaque = _cutout(d / "opaque.png", 160, 240, opaque=True)
+        r = score(opaque, ref)
+        hit = r["iou"] == 1.0
+        print(f"{'ok  ' if hit else 'FAIL'} an opaque alpha channel carries "
+              f"nothing and the luminance mask still applies  - IoU {r['iou']:.4f}")
         ok &= hit
 
         r = score(narrow, ref)

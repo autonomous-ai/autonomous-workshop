@@ -527,5 +527,39 @@ class ConceptBindingTest(unittest.TestCase):
         )
 
 
+class GameVaultClientAnswersTest(unittest.TestCase):
+    """What the host client makes of a vault that is not really answering."""
+
+    def _client(self, status, content, content_type="application/json"):
+        from workshop.invent.gamevault import GameVaultClient, GameVaultConfig, HttpResponse
+
+        def transport(method, url, headers, body, timeout):
+            return HttpResponse(status, {"Content-Type": content_type}, content)
+
+        return GameVaultClient(GameVaultConfig("http://vault.test:8090", "token"), transport)
+
+    def test_a_page_that_is_not_json_means_the_vault_is_away(self):
+        from workshop.invent.gamevault import GameVaultError, GameVaultUnavailable
+
+        # A proxy's maintenance page comes back as 200 text/html.
+        with self.assertRaises(GameVaultUnavailable):
+            self._client(200, b"<html><body>502 Bad Gateway</body></html>", "text/html").export()
+        # A JSON body that is not an object is not the vault API either.
+        with self.assertRaises(GameVaultUnavailable):
+            self._client(200, b"[]").export()
+        with self.assertRaises(GameVaultUnavailable):
+            self._client(503, b"").export()
+        with self.assertRaises(GameVaultUnavailable):
+            self._client(401, b'{"error": "nope"}').export()
+        # A refusal in the API's own words is a refusal, never "away".
+        with self.assertRaises(GameVaultError) as refused:
+            self._client(400, b'{"error": "rows[0].severity must be high, medium, or low"}').post_evidence(
+                [{"id": "r1"}], label="workshop wish-a r1"
+            )
+        self.assertIn("severity", str(refused.exception))
+        with self.assertRaises(GameVaultError):
+            self._client(200, b'{"count": 1, "nodes": {"mechanisms/x": 42}}').export()
+
+
 if __name__ == "__main__":
     unittest.main()

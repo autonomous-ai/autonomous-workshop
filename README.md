@@ -95,6 +95,20 @@ product and stops. Omit `--inventor` on a Wish to let the Manager choose the
 best match. `start <inventor> --once` dreams and builds one Inventor-generated
 idea. `resume <wish-id>` continues the same unfinished product and session.
 
+`start <inventor> --wish "..."` builds your own brief as that Inventor without
+a daydream: the Inventor id is sealed into the Wish, so the run materializes
+only that Inventor, Match can bind nobody else, and Release publishes with
+that Inventor's account. `--ref` attaches up to eight reference images (PNG,
+JPEG, or WebP) to a `wish` or a `start --wish`, each a local file or an
+`http(s)` link that is downloaded once at Wish time and sealed by its bytes;
+`--max-rounds` raises the Invent-Make round budget:
+
+```bash
+uv run workshop start ferro-line --workflow forge --max-rounds 6 \
+  --ref duck.webp --ref https://example.com/duck-side.png \
+  --wish "a wind-up robot duck that walks when you turn its key"
+```
+
 `--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at medium effort; Claude Code defaults to Opus 5 at medium effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
@@ -335,6 +349,8 @@ Every run is keyed by a Wish id. Passed-through stages create no turn, artifact,
 - full-tier, thickness-checked, ready-to-print CAD
 - a self-contained printable `MANUAL.pdf` for the box
 - authenticated public Factory readback of those CAD and manual hashes
+
+A multi-part toy crosses to the shop as one mesh per sealed occurrence in the colours Make sealed. The host renders the sealed assembly with a pinned three.js renderer (`tools/render/`, optional; see `workshop doctor`) so the manual and the listing cover show the exact product. The build session stays private; no transcript ships with the listing.
 
 Workshop code ends there. Printing, delivery, and Review belong to Operations. Publication does not claim a physical print, pack, or delivery.
 

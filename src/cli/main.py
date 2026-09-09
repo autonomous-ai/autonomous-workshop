@@ -50,6 +50,7 @@ from workshop.make.skill_registry import (
     fingerprint_skill_tree,
     resolve_skills_root,
 )
+from workshop.release.renders import renderer_self_check
 from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.browser_login import FactoryBrowserLogin
 from workshop.runtime.execution import codex_subprocess_environment
@@ -77,6 +78,20 @@ from workshop.runtime.package_data import (
     product_run_domain_skill_roots,
 )
 from workshop.runtime.progress import WishRunTimingEvent
+from workshop.wish import (
+    Wish,
+    generate_wish_id,
+    load_wish_references,
+    wish_reference_files,
+    wish_reference_sources,
+)
+from workshop.wish.contracts import MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY
+from workshop.workflow import (
+    native_run_status,
+    refresh_native_run_tools,
+    resume_native_run,
+    start_native_run,
+)
 from workshop.wish import Wish, generate_wish_id
 from workshop.workflow import native_run_status, resume_native_run, start_native_run
 from workshop.workflow.token_budget import DEFAULT_PRODUCT_TOKENS
@@ -425,6 +440,20 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
         manual_url = publication.get("manual_url")
         if isinstance(manual_url, str) and manual_url:
             print("Manual PDF: %s (hash-verified)" % manual_url)
+        transport = publication.get("handoff_transport")
+        if isinstance(transport, str) and transport:
+            count = publication.get("occurrence_count")
+            print(
+                "Shop meshes: %s%s"
+                % (
+                    transport,
+                    " (%d parts)" % count
+                    if transport == "multipart" and isinstance(count, int)
+                    else "",
+                )
+            )
+        if publication.get("cover_render_sha256"):
+            print("Shop cover: host render (hash-bound)")
         candidate_reason = publication.get("reason")
         if (
             isinstance(candidate_reason, str)
@@ -484,6 +513,7 @@ def _start_run(
     github: bool,
     max_rounds: int = DEFAULT_MAX_ROUNDS,
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
+    wish_reference_files: Optional[Mapping[str, bytes]] = None,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
 ) -> Mapping[str, Any]:
@@ -517,6 +547,21 @@ def _start_run(
         file=progress,
         flush=True,
     )
+    if wish.references:
+        print(
+            "References: %d image(s) attached read-only under %s/"
+            % (len(wish.references), WISH_REFERENCES_DIRECTORY),
+            file=progress,
+            flush=True,
+        )
+        sources = wish.context.get("reference_sources") or {}
+        for reference in wish.references:
+            if reference.name in sources:
+                print(
+                    "  %s downloaded from %s" % (reference.name, sources[reference.name]),
+                    file=progress,
+                    flush=True,
+                )
     print(
         "Starting one native %s session for %s..."
         % (runtime.spec.display_name, workflow.enabled_stages[0].title()),
@@ -533,6 +578,7 @@ def _start_run(
         manager_reasoning_effort=runtime.reasoning_effort,
         max_rounds=max_rounds,
         **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
+        wish_reference_files=wish_reference_files,
         github_publish_requested=github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -541,13 +587,18 @@ def _start_run(
 
 def _wish(args: argparse.Namespace) -> int:
     workflow = workshop_effort(args.workflow)
-    context = {"source": "workshop-cli"}
+    loaded_references = load_wish_references(list(args.references or ()))
+    context: dict = {"source": "workshop-cli"}
     if args.inventor is not None:
         context["inventor_id"] = args.inventor
+    reference_sources = wish_reference_sources(loaded_references)
+    if reference_sources:
+        context["reference_sources"] = reference_sources
     wish = Wish.create(
         generate_wish_id(),
         " ".join(args.objective),
         context=context,
+        references=[item.reference for item in loaded_references],
     )
     progress = sys.stderr if args.json else sys.stdout
     runtime = manager_runtime_selection(
@@ -563,6 +614,7 @@ def _wish(args: argparse.Namespace) -> int:
         github=args.github,
         max_rounds=args.max_rounds,
         max_tokens=args.max_tokens,
+        wish_reference_files=wish_reference_files(loaded_references),
         progress=progress,
         live_progress=live_progress,
     )
@@ -709,8 +761,30 @@ def _daydream(args: argparse.Namespace) -> int:
     return 0
 
 
+def _typed_wish(args: argparse.Namespace) -> tuple[Wish, Mapping[str, bytes]]:
+    """Seal a typed brief as one Wish pinned to the named Inventor."""
+
+    loaded_references = load_wish_references(list(args.references or ()))
+    context: dict = {"source": "workshop-start", "inventor_id": args.inventor}
+    reference_sources = wish_reference_sources(loaded_references)
+    if reference_sources:
+        context["reference_sources"] = reference_sources
+    wish = Wish.create(
+        generate_wish_id(),
+        args.wish,
+        context=context,
+        references=[item.reference for item in loaded_references],
+    )
+    return wish, wish_reference_files(loaded_references)
+
+
 def _start(args: argparse.Namespace) -> int:
-    """Dream and build until stopped; ``--once`` or ``--idea`` does one idea."""
+    """Dream and build until stopped; ``--once``, ``--idea``, or ``--wish`` does one.
+
+    ``--wish`` skips the daydream: the typed brief becomes the Wish, and the
+    named Inventor is sealed into it, so the host materializes only that
+    Inventor for the run and Release publishes with its credential.
+    """
 
     root = _inventor_source_root(args.root)
     runtime = manager_runtime_selection(
@@ -721,7 +795,12 @@ def _start(args: argparse.Namespace) -> int:
     workflow = workshop_effort(args.workflow)
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress, runtime.spec.display_name)
-    once = args.once or args.idea is not None
+    typed = args.wish is not None
+    if typed and args.idea is not None:
+        raise WorkshopError("--wish and --idea are exclusive: type a brief or build a saved idea")
+    if args.references and not typed:
+        raise WorkshopError("--ref attaches reference images to a typed --wish brief")
+    once = args.once or args.idea is not None or typed
     if args.max_ideas is not None and args.max_ideas < 1:
         raise WorkshopError("--max-ideas must be at least 1")
     if args.max_failures < 1:
@@ -748,48 +827,64 @@ def _start(args: argparse.Namespace) -> int:
                 break
             if not once and ideas:
                 print("", file=progress, flush=True)
-            try:
-                sealed = _dream_or_load(
-                    args,
-                    root=root,
-                    runtime=runtime,
-                    progress=progress,
-                    live_progress=live_progress,
-                    workflow=workflow.name,
+            sealed = None
+            reference_files: Optional[Mapping[str, bytes]] = None
+            if typed:
+                wish, reference_files = _typed_wish(args)
+                ideas += 1
+                lease.update(ideas=ideas)
+                print("Inventor: %s" % args.inventor, file=progress, flush=True)
+                print(
+                    "Sealing your brief as this run's Wish; %s builds and publishes it."
+                    % args.inventor,
+                    file=progress,
+                    flush=True,
                 )
-            except DaydreamError as exc:
-                if once:
-                    raise
-                failures += 1
-                lease.update(consecutive_failures=failures)
-                print("Daydream failed: %s" % exc, file=progress, flush=True)
-                if failures >= args.max_failures:
-                    reason = "%d consecutive failures" % failures
-                    exit_code = 1
+            else:
+                try:
+                    sealed = _dream_or_load(
+                        args,
+                        root=root,
+                        runtime=runtime,
+                        progress=progress,
+                        live_progress=live_progress,
+                        workflow=workflow.name,
+                    )
+                except DaydreamError as exc:
+                    if once:
+                        raise
+                    failures += 1
+                    lease.update(consecutive_failures=failures)
+                    print("Daydream failed: %s" % exc, file=progress, flush=True)
+                    if failures >= args.max_failures:
+                        reason = "%d consecutive failures" % failures
+                        exit_code = 1
+                        break
+                    continue
+                ideas += 1
+                lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
+                if not once and lease.stop_requested():
+                    # A stop that arrived during the daydream lands here, before
+                    # a 20-minute build starts; the sealed idea stays buildable.
+                    if not args.json:
+                        _print_daydream_card(sealed, stream=progress, offer_build=True)
+                    else:
+                        _print_json({"daydream": sealed.to_dict()})
+                    reason = "stopped by workshop stop"
                     break
-                continue
-            ideas += 1
-            lease.update(ideas=ideas, last_daydream_id=sealed.daydream_id)
-            if not once and lease.stop_requested():
-                # A stop that arrived during the daydream lands here, before a
-                # 20-minute build starts; the sealed idea stays buildable.
                 if not args.json:
-                    _print_daydream_card(sealed, stream=progress, offer_build=True)
-                else:
-                    _print_json({"daydream": sealed.to_dict()})
-                reason = "stopped by workshop stop"
-                break
-            if not args.json:
-                _print_daydream_card(sealed, stream=progress, offer_build=False)
-            wish = wish_from_daydream(sealed)
-            print("Sealing the idea as this run's brief.", file=progress, flush=True)
+                    _print_daydream_card(sealed, stream=progress, offer_build=False)
+                wish = wish_from_daydream(sealed)
+                print("Sealing the idea as this run's brief.", file=progress, flush=True)
             try:
                 receipt = _start_run(
                     wish,
                     workflow=workflow,
                     runtime=runtime,
                     github=args.github,
+                    max_rounds=args.max_rounds,
                     max_tokens=args.max_tokens,
+                    wish_reference_files=reference_files,
                     progress=progress,
                     live_progress=live_progress,
                 )
@@ -831,9 +926,12 @@ def _start(args: argparse.Namespace) -> int:
                 last_wish_id=wish.product_id,
             )
             if args.json:
+                payload = {"run": receipt}
+                if sealed is not None:
+                    payload["daydream"] = sealed.to_dict()
                 print(
                     json.dumps(
-                        {"daydream": sealed.to_dict(), "run": receipt},
+                        payload,
                         sort_keys=True,
                         separators=(",", ":"),
                         ensure_ascii=False,
@@ -915,6 +1013,21 @@ def _resume(args: argparse.Namespace) -> int:
         file=progress,
         flush=True,
     )
+    if getattr(args, "refresh_tools", False):
+        refreshed = refresh_native_run_tools(
+            args.product_id, reason="workshop resume --refresh-tools"
+        )
+        changed = refreshed["changed_paths"]
+        print(
+            (
+                "Host tools refreshed from this install: %d file(s) rebound (%s)."
+                % (len(changed), ", ".join(changed[:6]) + (", ..." if len(changed) > 6 else ""))
+                if changed
+                else "Host tools already match this install; nothing rebound."
+            ),
+            file=progress,
+            flush=True,
+        )
     receipt = resume_native_run(
         args.product_id,
         **({"adopt_turn_budget": True} if args.turn_budget else {}),
@@ -1168,6 +1281,26 @@ def _doctor_optional_cli(
     )
 
 
+def _doctor_render() -> dict[str, str]:
+    """Report the host product renderer; Releases fall back without it."""
+
+    status = renderer_self_check()
+    if status.get("available"):
+        return _check_record(
+            "render", "ready", "Host product renderer: %s." % status.get("detail")
+        )
+    return _check_record(
+        "render",
+        "skipped",
+        "Host product renderer unavailable: %s. Releases fall back to Make's "
+        "own snaps and ship no host cover." % status.get("detail"),
+        next_step=(
+            "Install Node 22, run `npm ci` in tools/render, then "
+            "`npx playwright install chromium` there."
+        ),
+    )
+
+
 def _doctor(args: argparse.Namespace) -> int:
     root = _inventor_source_root(args.root)
     required = [
@@ -1192,6 +1325,7 @@ def _doctor(args: argparse.Namespace) -> int:
             supports=grok_supports_native_workshop,
             label="Grok Build",
         ),
+        _doctor_render(),
     ]
     status = (
         "ready"
@@ -1449,7 +1583,8 @@ def parser() -> argparse.ArgumentParser:
     start = subcommands.add_parser(
         "start",
         help=(
-            "let one Inventor daydream, judge, and build brand-new toys until stopped"
+            "let one Inventor daydream, judge, and build brand-new toys until "
+            "stopped, or build one typed brief as that Inventor"
         ),
     )
     start.add_argument(
@@ -1461,6 +1596,38 @@ def parser() -> argparse.ArgumentParser:
         "--idea",
         metavar="DAYDREAM_ID",
         help="build a saved idea instead of dreaming a new one",
+    )
+    start.add_argument(
+        "--wish",
+        metavar="BRIEF",
+        help=(
+            "build this typed brief instead of dreaming; the Inventor is sealed "
+            "into the Wish, so it alone designs the toy and publishes it "
+            "(implies --once)"
+        ),
+    )
+    start.add_argument(
+        "--ref",
+        action="append",
+        dest="references",
+        type=str,
+        metavar="IMAGE_OR_URL",
+        help=(
+            "with --wish: attach one reference image, a local file or an http(s) "
+            "link (PNG, JPEG, or WebP; repeat for up to %d); a link is downloaded "
+            "once now, and the run receives the bytes read-only as %s/ref-NN-<name>"
+            % (MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY)
+        ),
+    )
+    start.add_argument(
+        "--max-rounds",
+        type=_round_budget,
+        default=DEFAULT_MAX_ROUNDS,
+        metavar="N",
+        help=(
+            "Invent-Make-Playtest round budget per run, 1-100 (default: %d)"
+            % DEFAULT_MAX_ROUNDS
+        ),
     )
     start.add_argument(
         "--workflow",
@@ -1603,6 +1770,19 @@ def parser() -> argparse.ArgumentParser:
     )
     wish.add_argument("objective", nargs="+", metavar="WISH")
     wish.add_argument(
+        "--ref",
+        action="append",
+        dest="references",
+        type=str,
+        metavar="IMAGE_OR_URL",
+        help=(
+            "attach one reference image, a local file or an http(s) link (PNG, "
+            "JPEG, or WebP; repeat for up to %d); a link is downloaded once now, "
+            "and the run receives the bytes read-only as %s/ref-NN-<name>"
+            % (MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY)
+        ),
+    )
+    wish.add_argument(
         "--inventor",
         metavar="INVENTOR",
         help=(
@@ -1687,6 +1867,15 @@ def parser() -> argparse.ArgumentParser:
     )
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
     resume.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
+    resume.add_argument(
+        "--refresh-tools",
+        action="store_true",
+        help=(
+            "before resuming, rewrite the run's host-owned deterministic tools "
+            "(domain skills such as the CAD verifier) from this Workshop install and "
+            "rebind them in the run manifest; recorded in the run's private host state"
+        ),
+    )
     resume.set_defaults(handler=_resume)
 
     doctor = subcommands.add_parser(

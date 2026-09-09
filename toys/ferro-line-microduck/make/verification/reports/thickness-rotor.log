@@ -1,0 +1,7 @@
+artifacts/make/r0001/product/cad/part_rotor.stl: 6.57 cm3 solid, grid 0.147 mm (141x141x559), 226191 surface samples, grid resolved to 0.074 mm, exact where under the minimum
+  PASS  wall >= 0.80 mm (grid +/-0.07, exact where under) 0.0% of surface below (0 of 226191 samples)
+  PASS  thickness distribution         median 2.28 mm, p95 9.11 mm, max 74.68 mm
+  WARN  hollowable at 1.20 mm wall     1.12 of 6.57 cm3 (17%) in 1 pocket(s)
+  PASS  filament that would save       0.17 cm3, 0.2 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote artifacts/make/r0001/product/cad/measure/thickness-rotor.md

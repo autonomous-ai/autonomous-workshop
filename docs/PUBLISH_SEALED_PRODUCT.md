@@ -33,6 +33,38 @@ dependencies, unsafe page bounds, changed bytes, or missing meaningful text.
 Parser success proves structure, not beauty, comprehension, physical safety,
 or a successful print.
 
+After the Make gate passes, the host renders the sealed assembly and any
+declared exact states with its pinned three.js renderer (`tools/render/`).
+The outputs are bound to the Made product hash in a private record; the
+Release Goal may cite them in `MANUAL-DESIGN.json` as `renders/<name>.png`,
+and the Factory import ships the hero as `assembled_review/_assembled.png`
+so the shop's cover ranking selects it. A missing or failing renderer records
+`unavailable` and every step behaves as it did without host renders.
+
+The Factory handoff derives one production mesh per occurrence from the sealed
+cadgen assembly-package (`assembled.step.json`) and the build-group STLs under
+`parts/`, and transports them as `assembled_parts/<name>.stl` with an indexed
+sidecar. The shop's viewer colours the assembled mesh by groups it computes
+itself (manifold-edge shells, loose facets owned by the shell they face,
+numbered in triangle order) and keys group `i` by the `i`-th slide file, so
+the host reproduces that grouping on the sealed `assembled.stl`, owns every
+group with the production mesh's shape signature and the posed occurrence
+geometry of the sealed STEP, and writes one `assembly_parts` entry per viewer
+group (order, slide or `#slot` key, owner, sealed colour) through the
+part-colours effect, verified on readback. A Make whose package lists two or
+more occurrences without those STLs, or without a sealed colour on every
+part, is rejected with feedback naming them. The release receipt records
+`handoff_transport`, `occurrence_count`, `viewer_groups`, and the reason a
+toy crossed as a single mesh.
+
+The handoff's `project.json` carries, beside the product id and title, the
+sealed Release page's own `summary`, `what_arrives`, and `limitations`, and
+the validated production `parts` names. Factory's product-page drafter and
+its claims auditor read that file in full as design notes; with only an id
+and a name an imported toy had no source text behind any use claim, so every
+draft failed the shop's copy gate. The adapter authors none of those words
+and leaves Factory's optional prompt field empty.
+
 Before any Factory effect, the host also reruns the full-tier CAD gate on the
 exact sealed Made revision. That gate must prove the production model and its
 declared printable parts satisfy the current deterministic CAD, thickness, and
@@ -45,8 +77,30 @@ Start or continue a run with the core CLI:
 
 ```bash
 uv run workshop wish "I wish for ..."
+uv run workshop wish --ref side.jpg --ref https://example.com/front.png "I wish for ..."
+uv run workshop start <inventor-id> --wish "I wish for ..." --ref side.jpg
 uv run workshop resume <wish-id>
 ```
+
+`workshop wish` without `--inventor` lets Match choose the Inventor from the
+whole roster, and Release then publishes with that Inventor's credential,
+falling back to the host-wide Factory login when the chosen Inventor has
+none. `workshop wish --inventor <id>` and `workshop start <inventor-id>
+--wish` seal the named Inventor into the Wish instead: the run materializes
+only that Inventor's custom agent, Match can bind nobody else, and Release
+publishes with that Inventor's own account (ADR 0053). A daydream built by
+`workshop start` is pinned the same way.
+
+`workshop resume --refresh-tools` first rewrites the run's host-owned
+deterministic tools (the domain skills, CAD verifier included) from the
+installed Workshop and rebinds them in the run manifest, recording the change
+in the run's private host state; use it when a run stopped waiting on a tool
+defect the host has since corrected (ADR 0052).
+
+Up to eight PNG, JPEG, or WebP reference images may ride a Wish. They reach
+the run read-only under `wish-references/`; the public toy archive always
+lists their names, hashes, and pixel sizes but ships their bytes only when the
+exact Wish wording is disclosed.
 
 There is no `--publish` mode. Starting the Wish authorizes publication of that
 run's exact Release bytes, while the host keeps credentials and effect state

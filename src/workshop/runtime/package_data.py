@@ -27,6 +27,7 @@ BUNDLED_INVENTOR_IDS = (
     "alice",
     "bob",
     "eve",
+    "ferro-line",
     "ivy",
     "kestrel-knot",
     "leo",
@@ -49,6 +50,7 @@ _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (
         Path("make/skills/electromechanical-integration"),
     ),
     ("image-to-cad", Path("make/skills/image-to-cad")),
+    ("make-round", Path("make/skills/make-round")),
     ("manual-design", Path("release/skills/manual-design")),
     ("step-parts", Path("make/skills/step-parts")),
 )
