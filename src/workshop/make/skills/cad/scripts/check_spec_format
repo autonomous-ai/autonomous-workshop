@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+"""A build spec's own rules, enforced instead of restated.
+
+`check_spec_numbers` holds a spec's numbers to the source constants they name.
+This gate holds the spec to the rules the `image-to-cad` skill states about the
+document itself -- the ones every other gate is blind to, because they are
+claims about the *analysis*, not about geometry:
+
+    A number with no confidence tag.       Every number carries [observed],
+                                           [inferred] or [assumed]; an untagged
+                                           one is indistinguishable from a guess.
+    A template placeholder left behind.    `<object name>`, an HTML comment, or
+                                           a `[tag]` stub means the section was
+                                           skipped, not filled.
+    A scaffold project directory.          `output/<object_name>/` is a name
+                                           nothing downstream can resolve.
+    A driven part with no section 8.       Every deterministic gate passes a
+                                           linkage that cannot complete a cycle.
+    Section 8 with no feasibility assert.  Same failure, one step later.
+    A joint declared in one direction.     A dovetail only checked for coming
+                                           apart passes as a plain pocket.
+    A likeness floor written below 0.90.   The spec phase sets a threshold; it
+                                           does not get to pre-discount one for
+                                           a model nobody has built yet.
+
+Scope is deliberate. Section 4b is prose whose sizes are ranges by instruction,
+angle-bracket text is template guidance, and a range ("5-8 mm") is not a hard
+dimension -- none of the three is a tag defect, and a gate that says otherwise
+fails every spec written the way the skill asks for.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+TAG = re.compile(r"\[(?:observed|inferred|assumed)\]", re.I)
+# A hard millimetre dimension. Not preceded by a range dash, not part of a word.
+DIM = re.compile(r"(?<![\w.–—-])\d+(?:\.\d+)?\s*mm\b")
+ANGLE = re.compile(r"<[^<>\n]{1,80}>")
+SCAFFOLD = re.compile(r"\b(?:project_name|object_name|my_project)\b")
+DRIVEN = re.compile(
+    r"\b(?:motor|servo|solenoid|actuator|gearmotor|stepper|"
+    r"led|lamp|beacon|light strip|illuminated|backlight|"
+    r"rubber band|wind-?up|flywheel|crank|linkage|four-?bar|slider-?crank|cam)\b",
+    re.I,
+)
+FUNCTIONAL = re.compile(
+    r"\b(?:functional|driven|powered|rotates?|spins?|emits?|"
+    r"drives?|turns?|moves?|lighting|light)\b",
+    re.I,
+)
+IOU = re.compile(r"(?:minimum iou|min(?:imum)? likeness|threshold)\D{0,24}?(0\.\d+)", re.I)
+
+
+def sections(text: str) -> list[tuple[str, int, int]]:
+    """(heading, start_line, end_line) for every `## ` section, 1-indexed."""
+    lines = text.splitlines()
+    marks = [(i, l[3:].strip()) for i, l in enumerate(lines) if l.startswith("## ")]
+    out = []
+    for n, (i, title) in enumerate(marks):
+        end = marks[n + 1][0] if n + 1 < len(marks) else len(lines)
+        out.append((title, i + 1, end))
+    return out
+
+
+def readable_lines(text: str):
+    """(lineno, line, section_title) outside code fences and HTML comments."""
+    secs = sections(text)
+    fenced = commented = False
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        if "<!--" in line:
+            commented = True
+        was = commented
+        if "-->" in line:
+            commented = False
+        if was:
+            continue
+        title = next((t for t, a, b in secs if a <= n <= b), "")
+        yield n, line, title
+
+
+def find(text: str, name: str) -> list[tuple[int, str]]:
+    """Every finding for one check, as (line, message)."""
+    out: list[tuple[int, str]] = []
+    body = "\n".join(l for _, l, _ in readable_lines(text))
+
+    if name == "untagged-dimension":
+        for n, line, title in readable_lines(text):
+            if title.lower().startswith("4b"):
+                continue                       # prose sizes are ranges by instruction
+            bare = ANGLE.sub("", line)         # angle-bracket text is guidance
+            for m in DIM.finditer(bare):
+                if not TAG.search(line):
+                    out.append((n, f"{m.group(0)!r} carries no confidence tag"))
+
+    elif name == "template-placeholder":
+        for n, line, _ in text_with_comments(text):
+            if "<!--" in line:
+                out.append((n, "an HTML comment from the template was not deleted"))
+        for n, line, _ in readable_lines(text):
+            for m in ANGLE.finditer(line):
+                out.append((n, f"unfilled placeholder {m.group(0)!r}"))
+            if "`[tag]`" in line:
+                out.append((n, "a `[tag]` stub was never replaced with a real tag"))
+
+    elif name == "scaffold-name":
+        for n, line, _ in readable_lines(text):
+            bare = ANGLE.sub("", line)   # an unfilled <name> is the placeholder
+            if "project director" in bare.lower() or "output/" in bare:   # check's job
+                if SCAFFOLD.search(bare):
+                    out.append((n, "the project directory is a scaffold name"))
+
+    elif name == "missing-section-8":
+        has8 = any(t.startswith("8.") or t.startswith("8 ") for t, _, _ in sections(text))
+        if not has8 and DRIVEN.search(body) and FUNCTIONAL.search(body):
+            m = DRIVEN.search(body)
+            out.append((0, f"names {m.group(0)!r} as functional but has no section 8"))
+
+    elif name == "no-feasibility-assert":
+        for title, a, b in sections(text):
+            if not (title.startswith("8.") or title.startswith("8 ")):
+                continue
+            chunk = "\n".join(text.splitlines()[a:b])
+            if DRIVEN.search(chunk) and "assert" not in chunk.lower():
+                out.append((a, "section 8 describes a driven part but carries no "
+                               "feasibility `assert`"))
+
+    elif name == "motion-one-direction":
+        for title, a, b in sections(text):
+            if not (title.startswith("8.") or title.startswith("8 ")):
+                continue
+            rows: list[tuple[str, str]] = []
+            for line in text.splitlines()[a:b]:
+                if not line.lstrip().startswith("|"):
+                    continue
+                cells = [cell.strip().lower() for cell in line.strip().strip("|").split("|")]
+                if len(cells) < 2 or cells[0] in {"id", "interface id", "---"}:
+                    continue
+                statuses = [
+                    cell for cell in cells[1:]
+                    if cell.strip("*`_ ") in {"clear", "blocked"}
+                ]
+                if statuses:
+                    rows.append((cells[0], statuses[-1].strip("*`_ ")))
+            blocked_groups = {
+                row_id.split("-", 1)[0]
+                for row_id, status in rows
+                if status == "blocked"
+            }
+            missing = [
+                row_id for row_id, status in rows
+                if status == "clear"
+                and row_id != "assemble"
+                and row_id.split("-", 1)[0] not in blocked_groups
+            ]
+            if missing:
+                out.append((a, "motion group(s) " + ", ".join(repr(item) for item in missing)
+                            + " have clear travel but no blocked retention direction"))
+
+    elif name == "discounted-likeness-floor":
+        for n, line, _ in readable_lines(text):
+            for m in IOU.finditer(line):
+                if float(m.group(1)) < 0.90:
+                    out.append((n, f"likeness floor {m.group(1)} is below the "
+                                   f"0.90 delivery gate"))
+    return out
+
+
+def text_with_comments(text: str):
+    for n, line in enumerate(text.splitlines(), 1):
+        yield n, line, ""
+
+
+CHECKS = [
+    "untagged-dimension",
+    "template-placeholder",
+    "scaffold-name",
+    "missing-section-8",
+    "no-feasibility-assert",
+    "motion-one-direction",
+    "discounted-likeness-floor",
+]
+
+
+def check(documents: list[Path], only: list[str] | None = None) -> int:
+    names = only or CHECKS
+    total = 0
+    for document in documents:
+        if not document.exists():
+            total += 1
+            print(f"  FAIL  {document.name:<28} 1 finding(s)")
+            print("        unreadable-document: document does not exist")
+            continue
+        try:
+            text = document.read_text(encoding="utf-8")
+        except OSError as error:
+            total += 1
+            print(f"  FAIL  {document.name:<28} 1 finding(s)")
+            print(f"        unreadable-document: {error}")
+            continue
+        findings = [(c, n, m) for c in names for n, m in find(text, c)]
+        total += len(findings)
+        state = "FAIL" if findings else "PASS"
+        print(f"  {state}  {document.name:<28} {len(findings)} finding(s)")
+        for c, n, m in findings[:40]:
+            where = f"line {n}" if n else "document"
+            print(f"        {c}: {where}: {m}")
+        if len(findings) > 40:
+            print(f"        ... and {len(findings) - 40} more")
+    if total:
+        print(f"RESULT: {total} spec-format finding(s)")
+        return 1
+    print("RESULT: the spec states its own rules and keeps them")
+    return 0
+
+
+def self_check() -> int:
+    import tempfile
+
+    ok = True
+    cases = [
+        ("a tagged dimension passes",
+         "## 5. Size\n\n| Length | 120 mm | `[observed]` |\n", "untagged-dimension", 0),
+        ("an untagged dimension fails",
+         "## 5. Size\n\n| Length | 120 mm | from the photo |\n", "untagged-dimension", 1),
+        ("4b prose ranges are not tag defects",
+         "## 4b. Component descriptions\n\na strip 5-8 mm wide, slots 15-20 mm deep\n",
+         "untagged-dimension", 0),
+        ("angle-bracket guidance is not a dimension claim",
+         "## 5. Size\n\n| Wall | <FDM default: 2 x 0.4 mm nozzle> |\n",
+         "untagged-dimension", 0),
+        ("a fenced command is not a dimension claim",
+         "## 5. Size\n\n```bash\ncheck_fit p --bed 220 220 mm\n```\n",
+         "untagged-dimension", 0),
+        ("an unfilled placeholder fails",
+         "# Build spec - <object name>\n", "template-placeholder", 1),
+        ("a filled heading passes",
+         "# Build spec - brass lamp\n", "template-placeholder", 0),
+        ("an undeleted template comment fails",
+         "<!--\n  fill every bracket\n-->\n# Build spec - lamp\n",
+         "template-placeholder", 1),
+        ("a real project directory passes",
+         "**Project directory:** `output/brass_lamp/`\n", "scaffold-name", 0),
+        ("an unfilled <name> belongs to the placeholder check, not this one",
+         "**Project directory:** `output/<object_name>/`\n", "scaffold-name", 0),
+        ("a literal scaffold name that was never renamed fails",
+         "**Project directory:** `output/object_name/`\n", "scaffold-name", 1),
+        ("a functional motor with no section 8 fails",
+         "## 1. Overall read\n\nthe functional motor drives the drum\n",
+         "missing-section-8", 1),
+        ("a functional motor with a section 8 passes",
+         "## 1. Overall read\n\nthe functional motor drives it\n\n"
+         "## 8. Powered system\n\nassert GRASHOF\n", "missing-section-8", 0),
+        ("an inert lens does not demand section 8",
+         "## 1. Overall read\n\na moulded lens, decorative only\n",
+         "missing-section-8", 0),
+        ("section 8 with no assert fails",
+         "## 8. Powered system\n\na crank drives the four-bar\n",
+         "no-feasibility-assert", 1),
+        ("section 8 with an assert passes",
+         "## 8. Powered system\n\na crank drives the four-bar\n\nassert L1 + L4 < L2\n",
+         "no-feasibility-assert", 0),
+        ("a joint declared in one direction fails",
+         "## 8. Powered system\n\n| insert | clear |\n", "motion-one-direction", 1),
+        ("both directions pass",
+         "## 8. Powered system\n\n| joint-insert | **clear** |\n| joint-pull | **blocked** |\n",
+         "motion-one-direction", 0),
+        ("an unrelated blocked joint does not satisfy another clear joint",
+         "## 8. Powered system\n\n| axle-insert | clear |\n| lamp-insert | clear |\n| lamp-pull | blocked |\n",
+         "motion-one-direction", 1),
+        ("a pre-discounted likeness floor fails",
+         "| side | ref/s.png | Minimum IoU 0.80 |\n", "discounted-likeness-floor", 1),
+        ("the 0.90 floor passes",
+         "| side | ref/s.png | Minimum IoU 0.90 |\n", "discounted-likeness-floor", 0),
+    ]
+    with tempfile.TemporaryDirectory() as raw:
+        doc = Path(raw) / "demo_spec.md"
+        for label, body, name, want in cases:
+            doc.write_text(body, encoding="utf-8")
+            got = check([doc], only=[name])
+            hit = got == want
+            ok &= hit
+            print(f"{'ok  ' if hit else 'FAIL'} {label}: exit {got}, wanted {want}")
+
+        missing = Path(raw) / "missing_spec.md"
+        got = check([missing], only=["template-placeholder"])
+        hit = got == 1
+        print(f"{'ok  ' if hit else 'FAIL'} a missing --doc is a finding: exit {got}")
+        ok &= hit
+
+    # The shipped templates are the canonical shape: every check except the
+    # placeholder one (they are templates, so their brackets are unfilled by
+    # design) must pass both, or the gate would fail every spec built from
+    # them — including a powered spec, which is the core file with the
+    # addendum's sections pasted in.
+    templates = Path(__file__).resolve().parents[2] / "image-to-cad" / "templates"
+    shipped = [templates / "build_spec.md", templates / "build_spec_powered.md"]
+    quiet = [c for c in CHECKS if c != "template-placeholder"]
+    for template in shipped:
+        if not template.is_file():
+            print(f"note  {template.name} not found beside the skill; skipped")
+            continue
+        got = check([template], only=quiet)
+        hit = got == 0
+        ok &= hit
+        print(f"{'ok  ' if hit else 'FAIL'} shipped {template.name} passes every "
+              f"non-placeholder check: exit {got}")
+
+    print("check_spec_format fixtures:", "ok" if ok else "FAILED")
+    return 0 if ok else 1
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("project", nargs="?", type=Path)
+    parser.add_argument("--doc", action="append", type=Path, default=None,
+                        help="a document to scan; defaults to the project's *_spec.md")
+    parser.add_argument("--only", action="append", choices=CHECKS, default=None,
+                        help="run just these checks (repeatable)")
+    parser.add_argument("--self-check", action="store_true")
+    args = parser.parse_args()
+
+    if args.self_check:
+        return self_check()
+
+    # Unlike check_spec_numbers this gate imports nothing, so a bare --doc is
+    # enough: a spec can be linted before its project has any source at all.
+    if args.doc:
+        print(f"{len(args.doc)} document(s)")
+        return check([Path(d) for d in args.doc], args.only)
+    if args.project is None:
+        parser.error("a project directory or --doc is required")
+
+    project = args.project.resolve()
+    documents = sorted(project.glob("*_spec.md"))
+    if not documents:
+        print(f"check_spec_format: {project} has no *_spec.md")
+        return 0
+    print(f"{project}: {len(documents)} document(s)")
+    return check([Path(d) for d in documents], args.only)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

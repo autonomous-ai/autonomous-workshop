@@ -14,10 +14,12 @@ including dimensions taken from a technical drawing — must be verified with
 `measure`, `align`, or `frame`. The facts/planes/positioning baseline runs for
 every generated artifact regardless of spec.
 
-During quick iteration, rerun the checks affected by the current edit. The full
-sequence below is the final verification gate and runs after the source has
-stabilized; it need not be repeated after an unrelated colour or documentation
-change.
+During quick iteration, rerun the checks affected by the current edit, in the
+same model round as the edit and `gen`. The full sequence below is the final
+verification gate and runs after the source has stabilized; it need not be
+repeated after an unrelated colour or documentation change. When to spend
+`validate` and `interfere` is in `run-cost.md`: after source stabilizes, not
+every edit round.
 
 ## Tool
 

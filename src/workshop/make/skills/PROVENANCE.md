@@ -3,13 +3,30 @@
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
-  `9e75609bb53bf880429353e57201995a4c0482e6` (2026-09-07), resynced from
-  `1e56c145586fa9be230443612c1d9d47c957e4f8` (2026-09-03).
+  `ec25343ea240c520074b66eee7b28e76bd91ee49` (2026-09-09), resynced from
+  `9e75609bb53bf880429353e57201995a4c0482e6` (2026-09-07).
 - The reviewed snapshot includes the complete upstream trees for all five
   skills. `cad` includes the vendored `cadgen` 0.4.19 source, bought-part mount
   tooling, run-cost guidance, and the strengthened image-derived verification
   runner. The image workflow includes clipped-reference rejection, reference
   silhouette preparation, and stored-camera replay for lower-cost iteration.
+- The 2026-09-09 resync takes upstream's compact-agent-loop and structured
+  diagnostic work. The `cad` and `image-to-cad` instructions shed repeated
+  context while retaining their gates; powered-only build-spec sections move
+  into `build_spec_powered.md`; image measurement and likeness tools emit
+  compact JSON; and `step-parts` returns a smaller ranked catalog payload.
+  `cad/scripts/check_spec_format` is new and rejects untagged dimensions,
+  unfilled template markers, scaffold project names, missing powered sections,
+  one-direction motion claims, and a discounted likeness floor before geometry
+  work begins. `verify_project` now aggregates independent cheap-preflight and
+  per-printable export failures, records dependent skips explicitly, and
+  hardens its report diagnostics. The three-way resync preserves Workshop's
+  materialized-skill command paths, v8/v9 proof deferral, print-preflight and
+  signature presentation path, restricted-run cache ownership, exact-state
+  motion evidence, deterministic STEP headers, and alpha/tinted-subject image
+  masks. `design-reference`, `electromechanical-integration`, the vendored
+  `cadgen` 0.4.19 source, and both requirements files are unchanged from the
+  previous snapshot.
 - The 2026-09-07 resync takes upstream's single-commit fix that makes every
   verified run leave a `.step` behind. `cad`'s `verify_project` now passes
   `--write` unconditionally in quick mode, which previously built the combined

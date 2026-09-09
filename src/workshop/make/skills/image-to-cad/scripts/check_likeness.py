@@ -1042,7 +1042,7 @@ def main(argv: list[str] | None = None) -> int:
                                   for r in results if r["failed_because"]},
                "views": results}
     if args.json:
-        print(json.dumps(payload, indent=2))
+        print(json.dumps(payload, separators=(",", ":"), ensure_ascii=False))
     else:
         print(f"{'view':<14}{'IoU':>8}{'delta':>9}{'trend':>11}{'aspect':>9}"
               "  worst bands (render/reference width)")

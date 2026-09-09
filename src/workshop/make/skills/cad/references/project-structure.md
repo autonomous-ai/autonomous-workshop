@@ -77,7 +77,7 @@ It fails a project four ways:
 |---|---|
 | `placeholder-project-name` | a scaffold directory or combined entry such as `project_name` or `object_name` reached the build instead of being renamed for the object; parent scans also find abandoned artifact-only directories |
 | `unsplit-entry` | an entry generator over the thresholds with no `part_*.step.py` beside it |
-| `missing-assembly-entry` | part entries with no combined assembly entry — both halves are required, see SKILL.md step 6 |
+| `missing-assembly-entry` | part entries with no combined assembly entry — both halves are required, see SKILL.md step 7 (Edit source) |
 | `oversized-library` | a project **that has part entries** whose importable modules have passed the Tier 3 threshold below |
 
 The third only fires once part entries exist, which is the point at which the

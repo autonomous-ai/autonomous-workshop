@@ -845,7 +845,7 @@ def main(argv: list[str] | None = None) -> int:
              "tolerance": args.tolerance, "poses": poses}, indent=2))
 
     if args.json:
-        print(json.dumps(payload, indent=2))
+        print(json.dumps(payload, separators=(",", ":"), ensure_ascii=False))
         return 1 if failed else 0
 
     print(f"{len(faces)} triangles from {source.name}")

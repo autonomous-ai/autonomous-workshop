@@ -20,9 +20,13 @@ Final mode (the default) runs layout, design-reference provenance, multi-target
 generation with STEP writes, print fit, local audits, bought-part mounts,
 powered-system integration and motion when declared (or required by a
 documented assembly procedure), then refs + validate for every entry and assembly
-interference.  --exports additionally writes the assembly GLB and one STL per
-declared printable entry from the fresh STEP files, then checks each mesh and
-its printable wall thickness.
+interference.  Image-derived renders, likeness, and --exports (GLB/STL, mesh,
+overhang, thickness) run only after that inspect batch is clean, so a clash or
+invalid solid cannot spend the likeness/export budget.  --exports writes the
+assembly GLB and one STL per declared printable entry from the fresh STEP files.
+Independent cheap preflight gates are collected before the expensive motion and
+inspect tail, and independent printable-export gates are collected across every
+part.  One failed part therefore cannot hide the next part's actionable error.
 
 Image-derived mode adds the gates geometry-only CAD cannot answer: spec/source
 reconciliation, landmark coverage, orthogonal and reference-pose renders,
@@ -33,7 +37,8 @@ whenever the project carries a component STEP under ref/ -- a fetched part with 
 matching declared mount is a seat no gate has ever measured. This mount preflight
 applies to every final workflow, not only image-derived work.
 
-Every mode also runs check_spec_numbers whenever the project has a *_spec.md:
+Every mode also runs check_spec_numbers and check_spec_format whenever the
+project has a *_spec.md:
 a number the document attributes to a named parameter has to be that parameter's
 value.  A local check_spec.py proves the relations it was written for; it does
 not notice the table beside them still quoting a diameter from two repairs ago.
@@ -761,6 +766,7 @@ class Runner:
         *,
         warm: bool = False,
         env_extra: dict[str, str] | None = None,
+        replay_success_stdout: bool = False,
     ) -> int:
         args = [str(item) for item in argv]
         print(f"[verify_project] {shlex.join(args)}", flush=True)
@@ -773,11 +779,26 @@ class Runner:
         if env_extra:
             env.update(env_extra)
         started = time.perf_counter()
-        return_code = subprocess.run(args, cwd=self.cwd, env=env, check=False).returncode
+        completed = subprocess.run(
+            args,
+            cwd=self.cwd,
+            env=env,
+            check=False,
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        return_code = completed.returncode
         elapsed = time.perf_counter() - started
         self.records.append(
             {"command": shlex.join(args), "status": f"rc={return_code}", "seconds": elapsed}
         )
+        # Progress stays on the child's stderr (unpiped). Successful stdout is
+        # normally compacted, but advisory-producing gates can explicitly
+        # request replay so a passing command cannot hide a caveat.
+        if completed.stdout and (self.verbose or return_code != 0 or replay_success_stdout):
+            sys.stdout.write(completed.stdout)
+            if not completed.stdout.endswith("\n"):
+                sys.stdout.write("\n")
         print(
             f"[verify_project] {_command_label(args)}: rc={return_code} "
             f"in {elapsed:.2f}s",
@@ -882,12 +903,221 @@ def _run_or_stop(runner: Runner, argv: Sequence[str | Path], **kwargs) -> bool:
     return runner.command(argv, **kwargs) == 0
 
 
+def _inspect_geometry(runner: Runner, entry_args: list[str]) -> int:
+    """Refs, validate, and assembly interfere. A clash stops likeness and exports."""
+    requests: list[dict[str, object]] = []
+    for index, entry in enumerate(entry_args):
+        label = "assembly" if index == 0 else Path(entry).name.removesuffix(ENTRY_SUFFIX)
+        requests.extend(
+            [
+                {
+                    "id": f"refs:{label}",
+                    "argv": ["refs", entry, "--facts", "--planes", "--positioning"],
+                },
+                {"id": f"validate:{label}", "argv": ["validate", entry]},
+            ]
+        )
+    requests.append(
+        {
+            "id": "interfere:assembly",
+            "argv": ["interfere", entry_args[0]],
+        }
+    )
+    return runner.inspect_batch(requests)
+
+
 def _audit_env(project: Path) -> dict[str, str]:
     current_pythonpath = os.environ.get("PYTHONPATH", "")
     value = str(project)
     if current_pythonpath:
         value += os.pathsep + current_pythonpath
     return {"PYTHONPATH": value}
+
+
+def _run_preflight_audits(
+    runner: Runner,
+    project: Path,
+    printables: list[Path],
+    *,
+    strict_fit: bool,
+    bed: tuple[float, float, float],
+) -> int:
+    """Run every independent cheap gate and report all failures together.
+
+    Generation has already succeeded, so fit, local claim audits, and spec
+    consistency can be evaluated independently.  Collecting them avoids the
+    repair-run-repair pattern where an early fit failure hides a stale spec.
+    Expensive motion, topology, interference, rendering, and exports remain
+    blocked until this group is clean.
+    """
+    failures = 0
+
+    if printables:
+        fit_args: list[str | Path] = [
+            sys.executable,
+            SCRIPTS_DIR / "check_fit",
+            _path_arg(project, runner.cwd),
+            "--bed",
+            str(bed[0]),
+            str(bed[1]),
+        ]
+        for printable in printables:
+            fit_args.extend(["--entry", _path_arg(printable, runner.cwd)])
+        if strict_fit:
+            fit_args.append("--strict")
+        failures += runner.command(fit_args, replay_success_stdout=True) != 0
+    else:
+        runner.skipped(
+            "check_fit",
+            "no printable entry is declared; geometry-only final workflow",
+        )
+
+    for audit_name in ("check_fit.py", "check_spec.py", "check_landmarks.py"):
+        local_audit = project / "measure" / audit_name
+        if local_audit.is_file():
+            failures += runner.command(
+                [sys.executable, _path_arg(local_audit, runner.cwd)],
+                env_extra=_audit_env(project),
+                replay_success_stdout=True,
+            ) != 0
+
+    # A local check_spec.py proves only the relations it was written to prove.
+    # These generic gates also catch stale numeric tables and malformed spec
+    # structure, and neither depends on the other succeeding.
+    if list(project.glob("*_spec.md")):
+        failures += runner.command(
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_spec_numbers",
+                _path_arg(project, runner.cwd),
+            ]
+        ) != 0
+        failures += runner.command(
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_spec_format",
+                _path_arg(project, runner.cwd),
+            ]
+        ) != 0
+    else:
+        runner.skipped(
+            "check_spec_numbers",
+            "no *_spec.md; no written parameter claims to hold the source to",
+        )
+        runner.skipped(
+            "check_spec_format",
+            "no *_spec.md; no analysis claims to hold the document to",
+        )
+
+    if failures:
+        print(
+            f"[verify_project] preflight audit group: {failures} failure(s); "
+            "expensive gates not started",
+            flush=True,
+        )
+    return 1 if failures else 0
+
+
+def _run_print_exports(
+    runner: Runner,
+    project: Path,
+    assembly: Path,
+    printables: list[Path],
+    *,
+    bed: tuple[float, float, float],
+    nozzle: float,
+    skip_thickness: bool,
+    overhang_angle: float,
+) -> int:
+    """Export and audit every independent print target in one failure sweep."""
+    failures = 0
+    assembly_step = _step_for_entry(assembly)
+    failures += runner.command(
+        [
+            sys.executable,
+            SCRIPTS_DIR / "export",
+            _path_arg(assembly_step, runner.cwd),
+            "--glb",
+            "--json",
+        ],
+        warm=True,
+    ) != 0
+
+    for printable in printables:
+        part_step = _step_for_entry(printable)
+        stl = _stl_for_entry(printable)
+        role = printable.name.removesuffix(ENTRY_SUFFIX)
+        if role.startswith(PART_PREFIX):
+            role = role.removeprefix(PART_PREFIX)
+
+        export_ok = runner.command(
+            [
+                sys.executable,
+                SCRIPTS_DIR / "export",
+                _path_arg(part_step, runner.cwd),
+                "--stl",
+                "--json",
+            ],
+            warm=True,
+        ) == 0
+        if not export_ok:
+            failures += 1
+            runner.skipped(f"check_mesh:{role}", "fresh STL export failed")
+            runner.skipped(f"check_overhang:{role}", "fresh STL export failed")
+            if not skip_thickness:
+                runner.skipped(f"check_thickness:{role}", "fresh STL export failed")
+            continue
+
+        mesh_ok = runner.command(
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_mesh",
+                _path_arg(stl, runner.cwd),
+                "--bed",
+                f"{bed[0]:g}x{bed[1]:g}x{bed[2]:g}",
+            ],
+        ) == 0
+        if not mesh_ok:
+            failures += 1
+            runner.skipped(f"check_overhang:{role}", "mesh gate failed")
+            if not skip_thickness:
+                runner.skipped(f"check_thickness:{role}", "mesh gate failed")
+            continue
+
+        # Overhang and thickness are independent once a fresh valid STL exists.
+        # Run both even when the first one fails so one repair round sees every
+        # printable defect in this part and in all remaining parts.
+        failures += runner.command(
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_overhang",
+                _path_arg(stl, runner.cwd),
+                "--angle",
+                str(overhang_angle),
+                "--report",
+                _path_arg(project / "measure" / f"overhang-{role}.md", runner.cwd),
+            ],
+        ) != 0
+        if not skip_thickness:
+            failures += runner.command(
+                [
+                    sys.executable,
+                    SCRIPTS_DIR / "check_thickness",
+                    _path_arg(stl, runner.cwd),
+                    "--nozzle",
+                    str(nozzle),
+                    "--report",
+                    _path_arg(project / "measure" / f"thickness-{role}.md", runner.cwd),
+                ],
+            ) != 0
+
+    if failures:
+        print(
+            f"[verify_project] printable export group: {failures} failure(s) "
+            "collected across all targets",
+            flush=True,
+        )
+    return 1 if failures else 0
 
 
 def _write_report(
@@ -1084,52 +1314,14 @@ def _final(
     ):
         return 1
 
-    if printables:
-        fit_args: list[str | Path] = [
-            sys.executable,
-            SCRIPTS_DIR / "check_fit",
-            _path_arg(project, runner.cwd),
-            "--bed",
-            str(bed[0]),
-            str(bed[1]),
-        ]
-        for printable in printables:
-            fit_args.extend(["--entry", _path_arg(printable, runner.cwd)])
-        if strict_fit:
-            fit_args.append("--strict")
-        if not _run_or_stop(runner, fit_args):
-            return 1
-    else:
-        runner.skipped(
-            "check_fit",
-            "no printable entry is declared; geometry-only final workflow",
-        )
-
-    for audit_name in ("check_fit.py", "check_spec.py", "check_landmarks.py"):
-        local_audit = project / "measure" / audit_name
-        if local_audit.is_file():
-            if not _run_or_stop(
-                runner,
-                [sys.executable, _path_arg(local_audit, runner.cwd)],
-                env_extra=_audit_env(project),
-            ):
-                return 1
-
-    # A local check_spec.py proves the relations it was written to prove. It
-    # does not notice that the table beside them still quotes a diameter from
-    # two repairs ago, which is exactly the drift a geometry fix produces.
-    if list(project.glob("*_spec.md")):
-        if not _run_or_stop(
-            runner,
-            [sys.executable, SCRIPTS_DIR / "check_spec_numbers",
-             _path_arg(project, runner.cwd)],
-        ):
-            return 1
-    else:
-        runner.skipped(
-            "check_spec_numbers",
-            "no *_spec.md; no written parameter claims to hold the source to",
-        )
+    if _run_preflight_audits(
+        runner,
+        project,
+        printables,
+        strict_fit=strict_fit,
+        bed=bed,
+    ) != 0:
+        return 1
 
     mount_manifest = project / "measure" / "mounts.json"
     if mount_manifest.is_file():
@@ -1143,6 +1335,7 @@ def _final(
         if not _run_or_stop(
             runner,
             mount_args,
+            replay_success_stdout=True,
         ):
             return 1
     else:
@@ -1199,6 +1392,9 @@ def _final(
             "check_motion",
             "no documented mating/assembly action and no moving joint is declared",
         )
+
+    if _inspect_geometry(runner, entry_args) != 0:
+        return 1
 
     if image_derived:
         snap_dir = project / "snap"
@@ -1288,85 +1484,17 @@ def _final(
                 file=sys.stderr,
             )
 
-    requests: list[dict[str, object]] = []
-    for index, entry in enumerate(entry_args):
-        label = "assembly" if index == 0 else Path(entry).name.removesuffix(ENTRY_SUFFIX)
-        requests.extend(
-            [
-                {
-                    "id": f"refs:{label}",
-                    "argv": ["refs", entry, "--facts", "--planes", "--positioning"],
-                },
-                {"id": f"validate:{label}", "argv": ["validate", entry]},
-            ]
-        )
-    requests.append(
-        {
-            "id": "interfere:assembly",
-            "argv": ["interfere", entry_args[0]],
-        }
-    )
-    if runner.inspect_batch(requests) != 0:
+    if exports and _run_print_exports(
+        runner,
+        project,
+        assembly,
+        printables,
+        bed=bed,
+        nozzle=nozzle,
+        skip_thickness=skip_thickness,
+        overhang_angle=overhang_angle,
+    ) != 0:
         return 1
-
-    if exports:
-        assembly_step = _step_for_entry(assembly)
-        if not _run_or_stop(
-            runner,
-            [sys.executable, SCRIPTS_DIR / "export", _path_arg(assembly_step, runner.cwd), "--glb", "--json"],
-            warm=True,
-        ):
-            return 1
-        for printable in printables:
-            part_step = _step_for_entry(printable)
-            if not _run_or_stop(
-                runner,
-                [sys.executable, SCRIPTS_DIR / "export", _path_arg(part_step, runner.cwd), "--stl", "--json"],
-                warm=True,
-            ):
-                return 1
-            if not _run_or_stop(
-                runner,
-                [
-                    sys.executable,
-                    SCRIPTS_DIR / "check_mesh",
-                    _path_arg(_stl_for_entry(printable), runner.cwd),
-                    "--bed",
-                    f"{bed[0]:g}x{bed[1]:g}x{bed[2]:g}",
-                ],
-            ):
-                return 1
-            role = printable.name.removesuffix(ENTRY_SUFFIX)
-            if role.startswith(PART_PREFIX):
-                role = role.removeprefix(PART_PREFIX)
-            # Every other gate here is blind to the build direction: a part
-            # whose features hang in mid-air sits on the bed, closes, and
-            # extrudes. This is the one that knows which way is up.
-            if not _run_or_stop(
-                runner,
-                [
-                    sys.executable,
-                    SCRIPTS_DIR / "check_overhang",
-                    _path_arg(_stl_for_entry(printable), runner.cwd),
-                    "--angle", str(overhang_angle),
-                    "--report",
-                    _path_arg(project / "measure" / f"overhang-{role}.md", runner.cwd),
-                ],
-            ):
-                return 1
-            if not skip_thickness:
-                if not _run_or_stop(
-                    runner,
-                    [
-                        sys.executable,
-                        SCRIPTS_DIR / "check_thickness",
-                        _path_arg(_stl_for_entry(printable), runner.cwd),
-                        "--nozzle", str(nozzle),
-                        "--report",
-                        _path_arg(project / "measure" / f"thickness-{role}.md", runner.cwd),
-                    ],
-                ):
-                    return 1
 
     return 0
 
@@ -1798,6 +1926,107 @@ def self_check() -> int:
             if not hit:
                 for line in planned:
                     print(f"       {line.strip()}")
+            ok &= hit
+
+            advisory_runner = Runner(cwd=root, dry_run=False, verbose=False)
+            advisory_out = _io.StringIO()
+            with _ctx.redirect_stdout(advisory_out), _ctx.redirect_stderr(_io.StringIO()):
+                advisory_runner.command(
+                    [sys.executable, "-c", "print('note: physical fit remains unverified')"],
+                    replay_success_stdout=True,
+                )
+            hit = "physical fit remains unverified" in advisory_out.getvalue()
+            print(f"{'ok  ' if hit else 'FAIL'} successful advisory output remains visible")
+            ok &= hit
+
+            # likeness and mesh export are the expensive tail; a clash must
+            # stop them. Dry-run prints the planned argv in order.
+            _sc_project(root)
+            order_out = _io.StringIO()
+            with _ctx.redirect_stdout(order_out), _ctx.redirect_stderr(_io.StringIO()):
+                try:
+                    main(["proj", "--dry-run", "--exports", "--image-derived",
+                          "--unpowered", "--likeness-ref", "hero=ref/hero.png"])
+                except SystemExit:
+                    pass
+            order_text = order_out.getvalue()
+            interfere_at = order_text.find("interfere:assembly")
+            render_at = order_text.find("render_views.py")
+            export_at = order_text.find("--glb")
+            hit = (
+                interfere_at >= 0
+                and render_at > interfere_at
+                and export_at > interfere_at
+            )
+            print(f"{'ok  ' if hit else 'FAIL'} validate/interfere run before "
+                  "likeness and exports")
+            if not hit:
+                print(f"       interfere={interfere_at} render={render_at} "
+                      f"export={export_at}")
+            ok &= hit
+
+            class _CollectRunner:
+                """Command recorder for failure-collection fixtures."""
+
+                def __init__(self, fail_labels: set[str]) -> None:
+                    self.cwd = root
+                    self.fail_labels = fail_labels
+                    self.labels: list[str] = []
+                    self.skips: list[str] = []
+
+                def command(self, argv, **_kwargs) -> int:
+                    label = _command_label([str(item) for item in argv])
+                    self.labels.append(label)
+                    return 1 if label in self.fail_labels else 0
+
+                def skipped(self, label: str, _reason: str) -> None:
+                    self.skips.append(label)
+
+            project = _sc_project(root, {
+                "measure/check_fit.py": "raise SystemExit(0)\n",
+            })
+            preflight_runner = _CollectRunner({"check_fit", "check_spec_numbers"})
+            preflight_rc = _run_preflight_audits(
+                preflight_runner,
+                project,
+                [project / "widget.step.py"],
+                strict_fit=False,
+                bed=DEFAULT_BED,
+            )
+            hit = (
+                preflight_rc == 1
+                and "check_spec_numbers" in preflight_runner.labels
+                and "check_spec_format" in preflight_runner.labels
+                and "check_landmarks.py" in preflight_runner.labels
+            )
+            print(f"{'ok  ' if hit else 'FAIL'} cheap preflight collects independent "
+                  "failures before stopping")
+            if not hit:
+                print(f"       commands={preflight_runner.labels}")
+            ok &= hit
+
+            export_runner = _CollectRunner({"check_overhang"})
+            export_rc = _run_print_exports(
+                export_runner,
+                project,
+                project / "widget.step.py",
+                [project / "part_a.step.py", project / "part_b.step.py"],
+                bed=DEFAULT_BED,
+                nozzle=0.4,
+                skip_thickness=False,
+                overhang_angle=45.0,
+            )
+            hit = (
+                export_rc == 1
+                and export_runner.labels.count("check_overhang") == 2
+                and export_runner.labels.count("check_thickness") == 2
+                and export_runner.labels.count("check_mesh") == 2
+                and not export_runner.skips
+            )
+            print(f"{'ok  ' if hit else 'FAIL'} printable sweep reports every "
+                  "part and keeps thickness independent of overhang")
+            if not hit:
+                print(f"       commands={export_runner.labels} skips={export_runner.skips}")
             ok &= hit
 
             project = _sc_project(root)

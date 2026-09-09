@@ -1226,7 +1226,7 @@ def main(argv: list[str] | None = None) -> int:
         payload["cross_check"] = check
     elif region is not None:
         payload["cross_check_skipped"] = "--region measures a window, not the object"
-    print(json.dumps(payload, indent=2))
+    print(json.dumps(payload, separators=(",", ":"), ensure_ascii=False))
 
     if not args.json_only:
         sys.stderr.write("measure_image:\n")
