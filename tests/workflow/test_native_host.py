@@ -118,6 +118,8 @@ from workshop.workflow.effort import (
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
     SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V3_CAPABILITY_PATH,
+    SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
 )
 
@@ -491,9 +493,20 @@ class NativeHostTest(unittest.TestCase):
             "deep-v13": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
-            "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
+            "v3": SPARK_ECONOMICS_V3_CAPABILITY_PATH,
+            "v4": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        if economics_capability == "deep-v13":
+        if economics_capability == "v4":
+            # A real v4 Spark run materializes the preserved v1-v3 references
+            # too. The host must select the newest frozen profile, not branch
+            # merely on an older file's presence.
+            inputs = {
+                SPARK_ECONOMICS_V1_CAPABILITY_PATH: "c" * 64,
+                SPARK_ECONOMICS_V2_CAPABILITY_PATH: "b" * 64,
+                SPARK_ECONOMICS_V3_CAPABILITY_PATH: "9" * 64,
+                SPARK_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+            }
+        elif economics_capability == "deep-v13":
             # A real v13 run materializes the preserved v5-v12 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
@@ -619,6 +632,39 @@ class NativeHostTest(unittest.TestCase):
             auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
             timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
         )
+
+    def test_v4_spark_raises_the_ceiling_no_further_than_deep(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v4"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            launcher = _native_launcher(checkpoint)
+
+        self.assertIs(launcher, launcher_type.return_value)
+        launcher_type.assert_called_once_with(
+            reasoning_effort="low",
+            auto_compact_token_limit=SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
+            timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+        )
+
+    def test_v4_spark_keeps_the_twenty_minute_budgeted_turn_boundary(self):
+        for capability in ("v3", "v4"):
+            with self.subTest(capability=capability):
+                checkpoint = self._launcher_checkpoint(
+                    effort="spark", economics_capability=capability
+                )
+                checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+                bounded = _budgeted_turn_launcher(
+                    checkpoint,
+                    CodexNativeSessionLauncher(
+                        reasoning_effort="low",
+                        timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+                    ),
+                    3600,
+                )
+                self.assertEqual(bounded.timeout_seconds, 1200)
 
     def test_new_runtime_choice_overrides_legacy_stage_reasoning_profile(self):
         checkpoint = self._launcher_checkpoint(

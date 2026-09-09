@@ -225,7 +225,9 @@ from workshop.workflow.effort import (
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
     SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V3_CAPABILITY_PATH,
     SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+    SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
     workshop_effort,
 )
 from workshop.workflow.proposals import (
@@ -4798,9 +4800,9 @@ def _budgeted_turn_launcher(
         if type(frozen_turn_ceiling) is int
         else seconds
     )
-    if (
-        checkpoint.effort == "spark"
-        and SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+    if checkpoint.effort == "spark" and (
+        SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        or SPARK_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
     ):
         effective_seconds = min(effective_seconds, SPARK_BUDGETED_TURN_SECONDS)
     if (
@@ -5002,6 +5004,18 @@ def _native_launcher(
         if (
             checkpoint.effort == "spark"
             and SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            # A v4 run materializes the preserved v1-v3 references too, so this
+            # newest marker is checked before them.
+            return _codex_launcher_for(
+                checkpoint,
+                reasoning_effort="low",
+                auto_compact_token_limit=SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
+                timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+            )
+        if (
+            checkpoint.effort == "spark"
+            and SPARK_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
         ):
             return _codex_launcher_for(
                 checkpoint,
