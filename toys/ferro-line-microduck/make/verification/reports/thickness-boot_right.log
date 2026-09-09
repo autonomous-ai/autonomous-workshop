@@ -1,0 +1,7 @@
+artifacts/make/r0001/product/cad/part_boot_right.stl: 3.92 cm3 solid, grid 0.133 mm (260x80x101), 92754 surface samples, grid resolved to 0.067 mm, exact where under the minimum
+  PASS  wall >= 0.80 mm (grid +/-0.07, exact where under) 0.0% of surface below (0 of 92754 samples)
+  PASS  thickness distribution         median 10.00 mm, p95 33.93 mm, max 34.40 mm
+  WARN  hollowable at 1.20 mm wall     2.17 of 3.92 cm3 (55%) in 1 pocket(s)
+  PASS  filament that would save       0.32 cm3, 0.4 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote artifacts/make/r0001/product/cad/measure/thickness-boot_right.md

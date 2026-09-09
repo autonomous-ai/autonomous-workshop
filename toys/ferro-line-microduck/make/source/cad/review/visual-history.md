@@ -1,0 +1,11 @@
+# Independent visual review
+
+Reviewer: native agent `<HOME>/final_blind` (James).
+
+Round 1 blind input: exact canonical iso, signature and twelve decoded animation frames, before Wish/concept. Read: a single long-necked mechanical bird/dinosaur-like robot, large rounded cuboid head with eye and horizontal mouth, ribbed neck, squat hips, two legs and broad wheeled feet. No held object or second subject. Whole body translated while foot knob rotated; no articulated stride. Distinctive tall neck, calm face and chunky mechanical feet. Thick extruded form was visible. Sombre lighting and left-foot stripe noise were presentation concerns.
+
+After reveal, the reviewer compared WISH.json, the actual reference, current concept, part-colored source render and drivetrain evidence. Recognizable reference form accepted at printable simplification level; no walking, electronics or held-object requirement was invented. Conditional engineering support was distinguished from physical running. Desirability was accepted. Signature experience was rejected because winding, placement and release were absent from the canonical rolling-only sequence.
+
+The single focused repair exports exact winding, lowering and release states from unchanged CAD. Winding turns the coupled front axle while the body is user-held above ground; release applies the same conditional no-slip ratios as the operating check. The signature sheet labels these phases and states the physical-test limitation. Round 2 reviews the new signature and all twenty decoded GIF frames, retaining the original iso and the original unprompted blind form observations.
+
+Round 2 completed by the same resumed critic <HOME>/final_blind (James): inspected canonical iso, revised signature and all 20 decoded frames. Read stationary-body knob rotation, slight lowering, then rotation accompanied by forward translation. Combined signature and animation clearly communicate winding, placement and release. Signature experience, finished-product desirability and motion match accepted; blockers empty. Dark lighting and left-foot render noise remain nonblocking polish. Acceptance is visual/simulated only: physical propulsion, traction, cord behavior and bonded retention remain untested.

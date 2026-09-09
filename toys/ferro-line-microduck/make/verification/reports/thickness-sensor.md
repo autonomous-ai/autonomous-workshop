@@ -1,0 +1,16 @@
+# Thickness and hollow
+
+`artifacts/make/r0001/product/cad/part_sensor.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-sensor.md`
+
+artifacts/make/r0001/product/cad/part_sensor.stl: 0.04 cm3 solid, grid 0.133 mm (48x27x27), 3686 surface samples, grid resolved to 0.067 mm, exact where under the minimum
+
+| check | status | detail |
+|---|---|---|
+| wall >= 0.80 mm (grid +/-0.07, exact where under) | PASS | 0.0% of surface below (0 of 3686 samples) |
+| thickness distribution | PASS | median 2.93 mm, p95 4.60 mm, max 5.73 mm |
+| hollowable at 1.20 mm wall | PASS | 0.00 of 0.04 cm3 (0%) in 0 pocket(s), 1 too small to shell |
+| filament that would save | PASS | 0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty |
+
+
+Measured on the exported STL. The fix belongs in the generator --
+see `references/print-optimisation.md` and `scripts/cadprint.py`.

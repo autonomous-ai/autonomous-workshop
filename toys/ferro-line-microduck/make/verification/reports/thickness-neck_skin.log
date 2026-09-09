@@ -1,0 +1,7 @@
+artifacts/make/r0001/product/cad/part_neck_skin.stl: 1.33 cm3 solid, grid 0.133 mm (181x239x26), 74953 surface samples, grid resolved to 0.067 mm, exact where under the minimum
+  PASS  wall >= 0.80 mm (grid +/-0.07, exact where under) 0.0% of surface below (0 of 74953 samples)
+  PASS  thickness distribution         median 2.80 mm, p95 17.93 mm, max 31.20 mm
+  WARN  hollowable at 1.20 mm wall     0.11 of 1.33 cm3 (8%) in 1 pocket(s)
+  PASS  filament that would save       0.02 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote artifacts/make/r0001/product/cad/measure/thickness-neck_skin.md

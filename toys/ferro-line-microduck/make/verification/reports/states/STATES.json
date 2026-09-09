@@ -1,0 +1,268 @@
+{
+  "source_sha256": {
+    "duck_lib.py": "b82645bf7b5f637fc4fa62b8ecbbf39849051b00c74edd34560f0ebc349398fe",
+    "drive_lib.py": "c672fe0b77dc93841e167314d76008476ccc80376185b0406e427cbcd87ef309",
+    "measure/motion.json": "c16ad1b9252b938efe5df4a482b428151554af474272548dda9a1e1fc0ce263f",
+    "measure/export_motion_states.py": "1e06d842b2f4a26eeae5382635e6c27cd3928dd800a912eb699597c500c7b601",
+    "cadfits.py": "f69cb9f34a6c78714827a7276e005dae0bf2f7a01dd30cbbce49541fb524f3fb"
+  },
+  "state_count": 21,
+  "coordinate_frame": "stationary ground Z=0; winding lifted Z=3 mm at fixed XY; release translates all parts forward -Y by 10 mm times unwound angle in radians",
+  "kinematics": "Eight user-held winding states turn the shaft and bonded D-wheel from 0 to -360 degrees about X while rear rollers remain stationary. The user lowers the toy while restraining the knob. Twelve release states unwind from -360 to 0 degrees; rear rollers rotate 10/6 of unwound angle under no-slip ground contact. One turn is within the two-turn limit. The 62.832 mm ideal release is illustrative kinematics, not physical dynamics or measured performance; user support and restraint are required during winding and lowering.",
+  "states": [
+    {
+      "file": "measure/states/00.stl",
+      "phase": "winding",
+      "drive_angle_deg": 0.0,
+      "rear_angle_deg": 0,
+      "translation_mm": [
+        0,
+        0,
+        3
+      ],
+      "sha256": "c0a25c2a1eb5733dd6f085e6109aac26c459a254b6c98eec5236ec7b51c70c8f"
+    },
+    {
+      "file": "measure/states/01.stl",
+      "phase": "winding",
+      "drive_angle_deg": -51.42857142857143,
+      "rear_angle_deg": 0,
+      "translation_mm": [
+        0,
+        0,
+        3
+      ],
+      "sha256": "1b00e8fe1c2092adabbefef6137f8390be12347c12ed190638f4c6f7f2e406a8"
+    },
+    {
+      "file": "measure/states/02.stl",
+      "phase": "winding",
+      "drive_angle_deg": -102.85714285714286,
+      "rear_angle_deg": 0,
+      "translation_mm": [
+        0,
+        0,
+        3
+      ],
+      "sha256": "f7f9a4f6a54ddbf433f43992ba9a095b2563a6cb481a617af7f3a6dc0f74e9c4"
+    },
+    {
+      "file": "measure/states/03.stl",
+      "phase": "winding",
+      "drive_angle_deg": -154.28571428571428,
+      "rear_angle_deg": 0,
+      "translation_mm": [
+        0,
+        0,
+        3
+      ],
+      "sha256": "694684c8b91376110716d898830ebfd2e43921ad57768227a1fb05abd260f8f2"
+    },
+    {
+      "file": "measure/states/04.stl",
+      "phase": "winding",
+      "drive_angle_deg": -205.71428571428572,
+      "rear_angle_deg": 0,
+      "translation_mm": [
+        0,
+        0,
+        3
+      ],
+      "sha256": "af800690fb8b0bbda05270c66656fd0bb7a2e3b5df3be77eb7b6a9825ce1a973"
+    },
+    {
+      "file": "measure/states/05.stl",
+      "phase": "winding",
+      "drive_angle_deg": -257.14285714285717,
+      "rear_angle_deg": 0,
+      "translation_mm": [
+        0,
+        0,
+        3
+      ],
+      "sha256": "71f9c0a40530aeeef2be313ed1480d22c44e71a9ac54570949f883ff97074f93"
+    },
+    {
+      "file": "measure/states/06.stl",
+      "phase": "winding",
+      "drive_angle_deg": -308.57142857142856,
+      "rear_angle_deg": 0,
+      "translation_mm": [
+        0,
+        0,
+        3
+      ],
+      "sha256": "d222646212049828fdf68bc1a9d9c7b823440c953a8849bc3a27c6dc3bbb8064"
+    },
+    {
+      "file": "measure/states/07.stl",
+      "phase": "winding",
+      "drive_angle_deg": -360.0,
+      "rear_angle_deg": 0,
+      "translation_mm": [
+        0,
+        0,
+        3
+      ],
+      "sha256": "706821d67a84c142821337b290dd840d90f00d3e89b4f7ddb22ebd09d9900544"
+    },
+    {
+      "file": "measure/states/08.stl",
+      "phase": "lowering",
+      "drive_angle_deg": -360,
+      "rear_angle_deg": 0,
+      "translation_mm": [
+        0,
+        0,
+        0
+      ],
+      "sha256": "92ec62eed76edc0724fa7b1b5c6fff43dcf4a95c760ec83aa74e0c2d92d63bbd"
+    },
+    {
+      "file": "measure/states/09.stl",
+      "phase": "release",
+      "drive_angle_deg": -360.0,
+      "rear_angle_deg": 0.0,
+      "translation_mm": [
+        0,
+        -0.0,
+        0
+      ],
+      "sha256": "92ec62eed76edc0724fa7b1b5c6fff43dcf4a95c760ec83aa74e0c2d92d63bbd"
+    },
+    {
+      "file": "measure/states/10.stl",
+      "phase": "release",
+      "drive_angle_deg": -327.27272727272725,
+      "rear_angle_deg": 54.54545454545454,
+      "translation_mm": [
+        0,
+        -5.711986642890533,
+        0
+      ],
+      "sha256": "ea84a1864f823ac906f667ceff83f6d830ae23f0b0c6dc9d51fffd4785a28b88"
+    },
+    {
+      "file": "measure/states/11.stl",
+      "phase": "release",
+      "drive_angle_deg": -294.54545454545456,
+      "rear_angle_deg": 109.09090909090908,
+      "translation_mm": [
+        0,
+        -11.423973285781067,
+        0
+      ],
+      "sha256": "2a7fe674f9dc1bd7914ea043c2c059cb62881a101e910740184b921925249a49"
+    },
+    {
+      "file": "measure/states/12.stl",
+      "phase": "release",
+      "drive_angle_deg": -261.8181818181818,
+      "rear_angle_deg": 163.63636363636365,
+      "translation_mm": [
+        0,
+        -17.1359599286716,
+        0
+      ],
+      "sha256": "802123d9c5f585d08569ea432cf564729f8363ff6be14be03acfe32f21a00772"
+    },
+    {
+      "file": "measure/states/13.stl",
+      "phase": "release",
+      "drive_angle_deg": -229.0909090909091,
+      "rear_angle_deg": 218.18181818181816,
+      "translation_mm": [
+        0,
+        -22.847946571562133,
+        0
+      ],
+      "sha256": "cd52aecfd8a4ec9b57e0940b7cab786239e49e764b3836ec4c009e2d607ca482"
+    },
+    {
+      "file": "measure/states/14.stl",
+      "phase": "release",
+      "drive_angle_deg": -196.36363636363637,
+      "rear_angle_deg": 272.7272727272727,
+      "translation_mm": [
+        0,
+        -28.559933214452663,
+        0
+      ],
+      "sha256": "9db80a0c39d459f0409b4020f8640a04432094d5b1a347e2e55be07afe4b0d33"
+    },
+    {
+      "file": "measure/states/15.stl",
+      "phase": "release",
+      "drive_angle_deg": -163.63636363636363,
+      "rear_angle_deg": 327.2727272727273,
+      "translation_mm": [
+        0,
+        -34.2719198573432,
+        0
+      ],
+      "sha256": "cf822fe5565f0d8fcd6339485e249f2ff57c47c6ba93c44cc3ad18eaa9f117e8"
+    },
+    {
+      "file": "measure/states/16.stl",
+      "phase": "release",
+      "drive_angle_deg": -130.9090909090909,
+      "rear_angle_deg": 381.8181818181818,
+      "translation_mm": [
+        0,
+        -39.98390650023373,
+        0
+      ],
+      "sha256": "dd29cea4709f45c738bc73d1a0f24d933557f06db5f90cd52ec1ca7c2f03b847"
+    },
+    {
+      "file": "measure/states/17.stl",
+      "phase": "release",
+      "drive_angle_deg": -98.18181818181819,
+      "rear_angle_deg": 436.3636363636363,
+      "translation_mm": [
+        0,
+        -45.695893143124266,
+        0
+      ],
+      "sha256": "84fe69c650f0a97e7988a8f7e92022e5302eebb4c77cb3a5d4f88a0ce67db07b"
+    },
+    {
+      "file": "measure/states/18.stl",
+      "phase": "release",
+      "drive_angle_deg": -65.45454545454544,
+      "rear_angle_deg": 490.90909090909093,
+      "translation_mm": [
+        0,
+        -51.4078797860148,
+        0
+      ],
+      "sha256": "325e89b7a62e0856db311f4de7a2ceb6a4e57615a5cba0abc57a4412abd3bbac"
+    },
+    {
+      "file": "measure/states/19.stl",
+      "phase": "release",
+      "drive_angle_deg": -32.72727272727275,
+      "rear_angle_deg": 545.4545454545454,
+      "translation_mm": [
+        0,
+        -57.119866428905326,
+        0
+      ],
+      "sha256": "f0796eb444dbc6c6a3161915bc24cbeadc5bd7ae4fb7b31f8fb0d8a965a1910a"
+    },
+    {
+      "file": "measure/states/20.stl",
+      "phase": "release",
+      "drive_angle_deg": 0.0,
+      "rear_angle_deg": 600.0,
+      "translation_mm": [
+        0,
+        -62.83185307179586,
+        0
+      ],
+      "sha256": "9ffdfb4a5f3018baff262bb3af0916a3c7b378d3754db856c2c51e1c9ce7b356"
+    }
+  ],
+  "assembly_path_amendment": "Only the left shin assembly condition changed from lateral -X to front -Y; coupled winding/release kinematics, CAD sources and all 21 existing exact-state meshes are unchanged. The corrected path passed the deterministic 20-step collision probe.",
+  "portability_amendment": "Only import setup changed: no ancestor STAGE.json lookup. Exact trusted cadfits helper vendored unchanged so direct audits run in an isolated project. Geometry and state-generation expressions unchanged; existing state meshes preserved."
+}

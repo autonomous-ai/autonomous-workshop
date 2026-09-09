@@ -1,0 +1,7 @@
+# Host portability rejection repair
+
+Host subject 9a48797ab7f067e42a2727e115d8bd9d3ad5e857d767ec174156abcbd75df44e rejected direct check_fit.py because its ancestor STAGE.json search raised StopIteration in the isolated project. Removed that search and tool-directory path assumptions from check_fit.py, check_spec.py, check_drive.py and export_motion_states.py. Each now imports the project directory directly. cadgen remains a runtime dependency.
+
+The exact materialized cadfits.py is included locally, unchanged, so direct Python audits can resolve the same fit table as CAD generation. Source: .agents/skills/cad/scripts/cadfits.py; SHA256 f69cb9f34a6c78714827a7276e005dae0bf2f7a01dd30cbbce49541fb524f3fb. No geometry formula, dimension, audit assertion, kinematic state, or visual design changed. Existing independent visual reviews remain evidence for identical image bytes; this amendment is a Manager portability repair, not another blind review.
+
+Validation: strict final verify_project --exports --strict-fit returned 0 in 355.82 seconds; direct check_fit.py, check_spec.py, check_landmarks.py, all 22 motion conditions and all 20 parts’ mesh/overhang/thickness gates passed. The separate direct check_drive.py returned 0. All 20 sealed group mesh hashes and the reviewed animation/assembled mesh hashes remain identical. Report: measure/verification-pipeline.md. Generated assembly metadata now resolves cadfits.py within this CAD project.

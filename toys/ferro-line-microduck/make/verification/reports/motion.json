@@ -1,0 +1,773 @@
+{
+  "assembly": "microduck.step.py",
+  "conditions": [
+    {
+      "id": "rotor-insertion-removal-before-wheel-and-anchor",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "rotor",
+        "obstacle_parts": [
+          "frame"
+        ],
+        "translation": [
+          100,
+          0,
+          0
+        ],
+        "steps": 50,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "left-wheel-insertion-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "left_wheel",
+        "obstacle_parts": [
+          "frame",
+          "rotor",
+          "shin_left"
+        ],
+        "translation": [
+          -20,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "anchor-service-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "anchor",
+        "obstacle_parts": [
+          "frame",
+          "rotor",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          0,
+          -20
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "roller-left-insertion",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "roller_left",
+        "obstacle_parts": [
+          "frame"
+        ],
+        "translation": [
+          -20,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "pin-left-insertion-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "pin_left",
+        "obstacle_parts": [
+          "frame",
+          "roller_left"
+        ],
+        "translation": [
+          -20,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "roller-right-insertion",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "roller_right",
+        "obstacle_parts": [
+          "frame"
+        ],
+        "translation": [
+          20,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "pin-right-insertion-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "pin_right",
+        "obstacle_parts": [
+          "frame",
+          "roller_right"
+        ],
+        "translation": [
+          20,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "bill-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "bill",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "lens-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "lens",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "head_rim-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "head_rim",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "dark_lens-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "dark_lens",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "head_rim",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "sensor-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "sensor",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "neck_skin-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "neck_skin",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "boot_left-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "boot_left",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "boot_right-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "boot_right",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "sole_left-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "sole_left",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "sole_right-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "sole_right",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "shin_left-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "shin_left",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_right",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "shin_right-front-assembly-before-bond",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "shin_right",
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "pin_left",
+          "pin_right",
+          "rotor",
+          "roller_left",
+          "roller_right",
+          "left_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "integral-right-wheel-stops-leftward-rotor",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "rotor",
+        "obstacle_parts": [
+          "frame"
+        ],
+        "translation": [
+          -5,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "left-wheel-stops-rightward-wheel",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "left_wheel",
+        "obstacle_parts": [
+          "frame"
+        ],
+        "translation": [
+          5,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "drive-full-cycle-ground-rolling-assumed",
+      "check": "coupled_motion_collision",
+      "expect": "clear",
+      "description": "D-flat directly transmits rotor torque to left wheel; idler angles assume no-slip ground contact, not a shaft linkage. Whole-body translation omitted in body coordinates.",
+      "inputs": {
+        "steps": 72,
+        "movers": [
+          {
+            "part": "rotor",
+            "rotation": {
+              "axis_point": [
+                0,
+                -6,
+                10
+              ],
+              "axis_direction": [
+                1,
+                0,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 360
+            }
+          },
+          {
+            "part": "left_wheel",
+            "rotation": {
+              "axis_point": [
+                0,
+                -6,
+                10
+              ],
+              "axis_direction": [
+                1,
+                0,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 360
+            },
+            "driven": true
+          },
+          {
+            "part": "roller_left",
+            "rotation": {
+              "axis_point": [
+                0,
+                12,
+                6
+              ],
+              "axis_direction": [
+                1,
+                0,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 600
+            }
+          },
+          {
+            "part": "roller_right",
+            "rotation": {
+              "axis_point": [
+                0,
+                12,
+                6
+              ],
+              "axis_direction": [
+                1,
+                0,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 600
+            }
+          }
+        ],
+        "obstacle_parts": [
+          "frame",
+          "anchor",
+          "bill",
+          "lens",
+          "head_rim",
+          "dark_lens",
+          "sensor",
+          "neck_skin",
+          "boot_left",
+          "boot_right",
+          "sole_left",
+          "sole_right",
+          "shin_left",
+          "shin_right",
+          "pin_left",
+          "pin_right"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.8
+      }
+    }
+  ],
+  "limitations": [
+    "Anchor, axle pins, cosmetic panels and left wheel require permanent adhesive joints. No rigid-body sweep proves their bond strength; they are obstacles in installed operation only, not declared fixed retention roots.",
+    "Only the stated integral-frame shoulder directions have blocked proofs. Opposite rotor retention requires the physically unqualified wheel bond.",
+    "Rear idlers are ground driven under no-slip rolling assumption. Elastic cord is checked separately by check_drive.py; deformable knot and material stress are outside this rigid-motion manifest."
+  ]
+}

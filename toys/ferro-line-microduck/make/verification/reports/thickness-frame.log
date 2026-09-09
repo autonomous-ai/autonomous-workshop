@@ -1,0 +1,15 @@
+artifacts/make/r0001/product/cad/part_frame.stl: 180.19 cm3 solid, grid 0.354 mm (256x507x92), 264832 surface samples, grid resolved to 0.177 mm, exact where under the minimum
+  FAIL  wall >= 0.80 mm (grid +/-0.18, exact where under) 0.1% of surface below (143 of 264832 samples); thinnest 0.13 mm at (-3.3, 4.8, 23.3) in 11 region(s); 2 wall(s) (widest band 1.28 mm), 7 taper(s) at feature edges and 2 spot(s) too small to be a wall (0.03% of surface, budget 2%); 174 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 25.83 mm, p95 64.21 mm, max 178.66 mm
+  WARN  hollowable at 1.20 mm wall     143.50 of 180.19 cm3 (80%) in 3 pocket(s)
+  PASS  filament that would save       21.53 cm3, 26.7 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.30 mm at (-29.7, 8.9, 0.0)     50 samples, 7.5 mm2, runs 6.0 mm, band 1.25 mm
+        2. [wall ] 0.25 mm at (-32.8, 3.2, 0.0)     30 samples, 5.2 mm2, runs 4.0 mm, band 1.28 mm
+        3. [taper] 0.40 mm at (-33.0, 2.8, 16.5)     21 samples, 3.3 mm2, runs 5.1 mm, band 0.65 mm
+        4. [taper] 0.15 mm at (-33.2, 17.1, 16.4)     19 samples, 3.1 mm2, runs 5.0 mm, band 0.61 mm
+        5. [spot ] 0.39 mm at (-45.7, 19.2, 28.8)      9 samples, 1.2 mm2, runs 1.4 mm, band 0.86 mm
+        6. [spot ] 0.13 mm at (-3.3, 4.8, 23.3)      5 samples, 0.6 mm2, runs 0.7 mm, band 0.87 mm
+        ... and 5 smaller region(s)
+RESULT: WALL BELOW MINIMUM
+  wrote artifacts/make/r0001/product/cad/measure/thickness-frame.md
