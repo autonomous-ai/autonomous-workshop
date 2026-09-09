@@ -80,7 +80,10 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 
 `render_views.py --match` searches the camera pose and scores with the
 likeness gate's own comparison; `--poses-from` replays the previous round's
-pose so consecutive rounds measure the model, not the camera. A reference
+pose so consecutive rounds measure the model, not the camera. Each reference
+keeps its own pose file; the summary records the selected file as
+`poses_path`. A bounded search writes separate evidence, and its pose is
+retained only when its score is better than the replay. A reference
 with a transparent background is read from its alpha channel. When the replay scores under the floor, `make_round` re-searches a +/-30 degree window around that camera and keeps the better score, marked `(re-searched)` in the summary; a moved part is otherwise scored under a stale camera.
 
 ## What this is not

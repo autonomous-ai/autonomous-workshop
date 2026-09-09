@@ -376,18 +376,24 @@ def make_round(args) -> int:
     # 3. likeness per reference, replaying the previous pose when one exists.
     refs = parse_refs(args.refs, sorted(project.glob("*_spec.md")))
     likeness = []
-    previous_poses = state.get("poses_path")
-    for label, ref in refs:
+    previous_pose_paths = state.get("pose_paths")
+    legacy_poses = state.get("poses_path") if previous_pose_paths is None else None
+    pose_paths = {}
+    for ref_index, (label, ref) in enumerate(refs):
+        previous_poses = (previous_pose_paths or {}).get(label, legacy_poses)
         ref_path = resolve_reference(ref, project)
         if ref_path is None:
             likeness.append({"label": label, "error": "reference missing: %s" % ref})
             continue
-        view_dir = out / "likeness"
+        # Each render invocation writes poses.json. Separate reference outputs
+        # so a later reference cannot erase an earlier reference's camera.
+        view_dir = out / "likeness" / ("ref-%03d" % ref_index)
         command = [python, str(i2c / "render_views.py"), str(entry), "--match", str(ref_path), "--label", label, "--min", str(args.min), "-o", str(view_dir), "--shaded", "--json"]
         if previous_poses and Path(previous_poses).is_file():
             command += ["--poses-from", str(previous_poses)]
         done = run(command, cwd=project, log=out / ("likeness-%s.log" % label))
         result = parse_render_views(done.stdout, label)
+        selected_poses = view_dir / "poses.json"
         searched = False
         if result is not None and "--poses-from" in command and float(result["iou"]) < args.min:
             # Replay scores the OLD camera. A part that moved (a neck that now
@@ -396,13 +402,20 @@ def make_round(args) -> int:
             # 2026-09-08: replay 0.49, fresh search 0.75). When the replay is
             # under the floor, search a window around it and keep the better.
             window = search_window(float(result.get("az", 0.0)), float(result.get("el", 0.0)))
-            again = run(command[: command.index("--poses-from")] + window, cwd=project, log=out / ("likeness-%s-search.log" % label))
+            # Keep replay evidence intact if the bounded search does worse.
+            search_dir = view_dir / "search"
+            search_command = command[:command.index("--poses-from")] + window
+            search_command[search_command.index("-o") + 1] = str(search_dir)
+            again = run(search_command, cwd=project, log=out / ("likeness-%s-search.log" % label))
             better = parse_render_views(again.stdout, label)
             if better is not None and float(better["iou"]) > float(result["iou"]):
                 result, searched = better, True
+                selected_poses = search_dir / "poses.json"
         if result is None:
             likeness.append({"label": label, "error": "render_views exit %d: %s" % (done.returncode, tail(done.stderr or done.stdout)[:80])})
             continue
+        if selected_poses.is_file():
+            pose_paths[label] = str(selected_poses.resolve())
         prior = (state.get("likeness") or {}).get(label)
         likeness.append(
             {
@@ -414,9 +427,10 @@ def make_round(args) -> int:
                 "el": float(result.get("el", 0.0)),
                 "fov": result.get("fov", 0),
                 "searched": searched,
+                "poses_path": pose_paths.get(label),
             }
         )
-    poses_path = out / "likeness" / "poses.json"
+    poses_path = next(reversed(pose_paths.values()), state.get("poses_path"))
 
     # 4. motion gate when the project declares a manifest.
     motion = None
@@ -481,7 +495,8 @@ def make_round(args) -> int:
         "thickness": thickness,
         "thickness_context": context,
         "likeness": {item["label"]: item["iou"] for item in likeness if "iou" in item},
-        "poses_path": str(poses_path) if poses_path.is_file() else previous_poses,
+        "poses_path": poses_path,
+        "pose_paths": pose_paths,
         "last_out": str(out),
     }
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
