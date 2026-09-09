@@ -12,6 +12,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from tests.make.test_make_round import fake_visual_render, record_fixture_visual_pass
+
 from workshop.runtime.package_data import product_run_domain_skill_roots
 
 SCRIPT = product_run_domain_skill_roots()["make-round"] / "scripts" / "make_round"
@@ -58,6 +60,8 @@ class MakeRoundWallEvidenceTest(unittest.TestCase):
                     target = Path(command[command.index("--stl") + 1])
                     target.write_bytes(control["bytes"])
                     return subprocess.CompletedProcess(command, 0, "exported", "")
+                if tool == "render_review":
+                    return fake_visual_render(command)
                 if tool == "check_thickness":
                     log.write_text(control["stdout"])
                     return subprocess.CompletedProcess(command, control["returncode"], control["stdout"], "")
@@ -65,7 +69,7 @@ class MakeRoundWallEvidenceTest(unittest.TestCase):
 
             args = SimpleNamespace(
                 project=str(project), entry=None, out=None, all_parts=False,
-                nozzle=0.4, refs=[], min=0.90, no_motion=False, full=False, json=True,
+                nozzle=0.4, refs=[], min=0.90, no_motion=False, full=False, json=True, record_visual=None,
             )
             with (
                 patch.object(module, "skills_root", return_value=skills),
@@ -78,7 +82,12 @@ class MakeRoundWallEvidenceTest(unittest.TestCase):
         output = io.StringIO()
         with redirect_stdout(output):
             code = module.make_round(args)
-        return code, json.loads(output.getvalue())
+        self.assertEqual(code, 1)
+        pending = json.loads(output.getvalue())
+        self.assertFalse(pending["ok"])
+        self.assertEqual(pending["visual"]["status"], "pending")
+        summary = record_fixture_visual_pass(module, args.project, pending)
+        return (0 if summary["ok"] else 1), summary
 
     def fail_wall(self, control):
         control.update(returncode=1, stdout="  FAIL  wall >= 0.80 mm\nRESULT: WALL BELOW MINIMUM\n")
@@ -153,7 +162,7 @@ class MakeRoundWallEvidenceTest(unittest.TestCase):
             code, summary = self.run_round(module, args)
             self.assertEqual(code, 1)
             self.assertEqual(summary["parts"], ["toy"])
-            self.assertEqual(calls, ["export", "check_thickness"])
+            self.assertEqual(calls, ["export", "check_thickness", "render_review"])
 
     def test_failed_export_cannot_reuse_an_earlier_pass(self):
         with self.fixture() as (module, args, control, calls, cad):

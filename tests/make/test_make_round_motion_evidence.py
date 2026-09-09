@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from tests.make.test_make_round import load_module
+from tests.make.test_make_round import fake_visual_render, load_module, record_fixture_visual_pass
 
 
 class MakeRoundMotionEvidenceTest(unittest.TestCase):
@@ -38,6 +38,8 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
                 if tool == "export":
                     Path(command[command.index("--stl") + 1]).write_bytes(b"stable fake part")
                     return subprocess.CompletedProcess(command, 0, "exported", "")
+                if tool == "render_review":
+                    return fake_visual_render(command)
                 if tool == "check_thickness":
                     text = "  PASS  wall >= 0.80 mm\nRESULT: printable at this wall\n"
                     log.write_text(text)
@@ -49,7 +51,7 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
 
             args = SimpleNamespace(
                 project=str(project), entry=None, out=None, all_parts=False,
-                nozzle=0.4, refs=[], min=0.90, no_motion=False, full=False, json=True,
+                nozzle=0.4, refs=[], min=0.90, no_motion=False, full=False, json=True, record_visual=None,
             )
             output = io.StringIO()
             with (
@@ -59,8 +61,13 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
                 redirect_stdout(output),
             ):
                 code = module.make_round(args)
-            self.assertEqual(calls, ["export", "check_thickness", "check_motion"])
-            summary = json.loads(output.getvalue())
+            self.assertEqual(code, 1)
+            self.assertEqual(calls, ["export", "check_thickness", "check_motion", "render_review"])
+            pending = json.loads(output.getvalue())
+            self.assertFalse(pending["ok"])
+            self.assertEqual(pending["visual"]["status"], "pending")
+            summary = record_fixture_visual_pass(module, project, pending)
+            code = 0 if summary["ok"] else 1
             self.assertEqual(summary, json.loads((measure / "rounds/r0001/summary.json").read_text()))
             return code, summary, module.render_summary(summary)
 

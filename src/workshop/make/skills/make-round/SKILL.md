@@ -1,11 +1,12 @@
 ---
 name: make-round
-description: Run one Make iteration as a single command — export the parts, wall-check parts lacking reusable passing evidence, score likeness against the Wish references, run the motion gate, and read one short summary — instead of a dozen separate tool calls and a dozen source reads. Use for every Make repair round of a CAD product; not a replacement for the final integrated verify_project, which it can also invoke once with --full.
+description: Run each Make repair round with deterministic CAD checks and native visual inspection. Render the model, inspect placement and proportions, and record visual errors alongside likeness, wall and motion results. Does not replace independent blind review or final verification.
 ---
 
 # Make round
 
-One Make iteration, one command, one summary. This skill exists because a
+One Make iteration, one combined summary. A command batches the deterministic
+checks and rendering; a second records the native visual inspection. This skill exists because a
 Make session's cost is the number of model requests times the context each
 carries: the first published wind-up microduck (2026-09-07) spent 673 shell
 calls and 925 model requests, and 430 of those shell calls were `cat`, `rg`,
@@ -16,26 +17,31 @@ calls were reassembling by hand.
 ## Rules
 
 - Run `make_round` once per repair round, after editing source and before
-  deciding what to repair next. Read its summary; open a full report only
+  deciding what to repair next. Then inspect the visual packet and record the
+  Manager's findings using `--record-visual` without rebuilding. Read its summary; open a full report only
   when the summary names a failure you cannot place.
 - Do not read the cad or image-to-cad scripts to learn their flags. The
   exact invocations are below; they are the same programs the host gates
   run, unchanged.
-- View an image at most once per round, and only when a decision depends on
-  something a number cannot tell you. Every image you view stays in the
-  session context for every later request. The likeness score, the motion
-  gate, and the thickness regions are numbers; use them first.
+- View each image at most once per round. Always inspect the front, top and iso
+  views in `visual-packet.json`, together with the Wish, concept, dimensions and
+  reference images when present. Look for misplaced, missing or extra parts,
+  size/proportion mismatch, visible intersections, wrong orientation, floating
+  geometry and incorrect form. A high likeness score cannot establish visual
+  correctness. Use a targeted additional view if a part is hidden; record
+  unresolved visibility as inconclusive rather than claiming a pass.
 - `make_round` never lowers a threshold, never edits source, and never
   replaces the final `verify_project` run the Make gate requires. It writes
   round reports under `<project>/measure/rounds/` and the reusable state at
   `<project>/measure/make-round-state.json`.
+  CAD tools may update generated caches and exports.
 
 ## Usage
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
     --ref hero=<project>/cad/ref/hero.png [--ref side=...] \
-    [--min 0.90] [--nozzle 0.4] [--all-parts] [--no-motion] [--full] [--json]
+    [--min 0.90] [--nozzle 0.4] [--all-parts] [--no-motion] [--json]
 ```
 
 - `<project>/cad` is the directory holding the generator sources: exactly one
@@ -52,16 +58,60 @@ calls were reassembling by hand.
 - `summary.json` retains each wall result and its original measurement round
   and log. `changed` lists changed STL bytes; `checked` lists fresh checks
   (including export failures); `reused` lists retained passing evidence.
-- `--full` also runs `verify_project --fresh --exports --strict-fit`, with
-  `--image-derived --likeness-ref` for each reference, after the round; use it
-  once, when the round is clean and you are about to propose.
-- Exit status 0 means every required check has passing evidence; 1 means at
-  least one failed; 2 means the round could not run (no entry, a tool missing).
+- The initial command returns exit 1 with visual status `pending` until native
+  feedback is recorded, even if all numeric checks pass. A renderer failure
+  produces visual status `error`; never fabricate feedback for missing images.
+- Exit 0 means numeric checks and recorded visual feedback pass; 1 means failed,
+  inconclusive or pending; 2 means invalid input or the round could not run.
+
+## Record visual feedback
+
+The native Manager performs the visual judgment. Python renders and hashes
+evidence; it never calls a vision model, diagnoses an image or chooses repairs.
+After inspecting the packet, write this JSON with the exact packet hash from
+the summary. Each defect names the affected part, visible error, view/location
+evidence, and proposed source correction. Keep observations short and concrete.
+
+```json
+{
+  "packet_sha256": "<visual packet hash from summary>",
+  "status": "fail",
+  "observation": "The body is coherent, but the left wheel is visibly offset.",
+  "findings": [{
+    "part": "left wheel",
+    "defect": "Axle is above the wheel centre",
+    "evidence": "Front view: axle meets the upper third of the wheel",
+    "repair": "Align the wheel centre with the axle datum in the source"
+  }]
+}
+```
+
+Use `pass` with an empty findings list only after inspection finds no errors;
+use `inconclusive` and describe the missing evidence when a verdict is impossible.
+Then run:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --record-visual <feedback.json>
+```
+
+This updates the same round's summary with detected visual errors. It rejects
+changed source/constraint bytes, changed renders/references, wrong packet hashes,
+contradictory findings and repeat submissions. Source edits start a new round;
+never rebind prior prose to new hashes. Manager self-review does not consume or
+replace the independent blind critic allowance.
+
+Final Make allows an initial independent blind review plus up to three focused
+repair-and-rereview cycles (four reviews total). After print preflight and a
+passing hash-bound blind review, the final `--record-visual` may also use
+`--full` to invoke `verify_project --exports --strict-fit` once. Normally run
+the integrated verifier directly after blind review; never start a new round
+just to run it. The host alone performs the authoritative `--fresh` rebuild.
 
 The summary names, in order: the changed parts, fresh wall verdicts with the
 thinnest region, reused passing measurements, the likeness score per view with the change since
 the previous round and the pose it was scored at, the motion gate verdict,
-and the `--full` verdict when requested. Everything the tools printed is kept
+the native visual findings, and the `--full` verdict when requested. Everything the tools printed is kept
 under `measure/rounds/rNNNN/` beside `summary.json`.
 
 ## Tool card
@@ -75,7 +125,8 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | wall check | `"$WORKSHOP_PYTHON" $C/check_thickness <stl> --nozzle 0.4 --report <md>` | `PASS`/`FAIL` lines, `RESULT:` line, any nonzero exit fails, even without a parsed failure line |
 | likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
-| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --fresh --exports --strict-fit [--image-derived --likeness-ref L=PATH ...] --report <md>` | exit 0 = sealed-ready; the report is the record |
+| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection |
+| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --exports --strict-fit [--image-derived --likeness-ref L=PATH ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
 
 `render_views.py --match` searches the camera pose and scores with the
@@ -88,7 +139,9 @@ with a transparent background is read from its alpha channel. When the replay sc
 
 ## What this is not
 
-It is orchestration, not judgment. Every verdict comes from the original
-tool, the thresholds are the tools' defaults unless you pass them, and the
+It batches deterministic tools and records native judgment. Numeric verdicts
+come from the original tools; visual findings come from the Manager's actual
+image inspection. It cannot independently verify the truth of those findings.
+The thresholds are the tools' defaults unless you pass them, and the
 final Make proposal still requires the integrated `verify_project` run the
 cad skill describes.

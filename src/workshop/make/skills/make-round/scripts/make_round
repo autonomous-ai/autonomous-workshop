@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""One Make iteration as one command: export, wall-check, likeness, motion.
+"""One Make iteration: export, wall-check, likeness, motion, visual feedback.
 
     make_round <project>/cad [--ref LABEL=PATH ...] [--min 0.90] [--nozzle 0.4]
                [--all-parts] [--no-motion] [--full] [--out DIR] [--json]
-               [--self-check]
+               [--record-visual FEEDBACK.json] [--self-check]
 
 Every verdict comes from the original cad and image-to-cad tools, run
 unchanged; this script only sequences them, remembers what changed between
 rounds, and prints a summary short enough to read instead of the logs. It
-never lowers a threshold, never edits source, and writes only under
-``<project>/measure/``.
+never lowers a threshold or edits source. Native Manager visual observations
+are recorded against exact evidence; this tool makes no model calls.
 
-Exit 0: every required check has passing evidence. Exit 1: at least one
-failed. Exit 2: the round could not run.
+Exit 0: all checks and native visual feedback passed. Exit 1: failed or pending. Exit 2: the
+round could not run.
 """
 
 from __future__ import annotations
@@ -34,6 +34,106 @@ ROUNDS_DIR = "rounds"
 TOOL_TIMEOUT_SECONDS = 900
 FULL_TIMEOUT_SECONDS = 1800
 MAX_TAIL_CHARS = 600
+
+
+def file_hash(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def source_hashes(project):
+    """Bind helpers and design constraints as well as entry generators."""
+    return {
+        p.relative_to(project).as_posix(): file_hash(p)
+        for p in sorted(project.rglob("*"))
+        if p.is_file() and p.suffix in (".py", ".md", ".json", ".step", ".stp")
+        and not any(v in ("rounds", "__cadgen__", "__pycache__", ".git", ".venv")
+                    for v in p.relative_to(project).parts)
+        and (p.suffix in (".py", ".step", ".stp") or not any(
+            v in ("measure", "snap", "review") for v in p.relative_to(project).parts))
+    }
+
+
+def prepare_visual(project, entry, out, cad, refs):
+    """Render evidence for native inspection; never infer a visual verdict."""
+    before = source_hashes(project)
+    views = out / "visual"
+    done = run([sys.executable, str(cad / "render_review"), str(entry),
+                "--view", "front", "--view", "top", "--view", "iso", "-o", str(views)],
+               cwd=project, log=out / "visual-render.log")
+    paths = [views / (v + ".png") for v in ("front", "top", "iso")]
+    if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project):
+        return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
+    references = {}
+    for label, ref in refs:
+        path = resolve_reference(ref, project)
+        if path is not None:
+            references[str(path.resolve())] = file_hash(path)
+    packet = {"schema_version": 1, "sources": before,
+              "images": {str(p.resolve()): file_hash(p) for p in paths},
+              "references": references}
+    packet_path = out / "visual-packet.json"
+    packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    return {"status": "pending", "findings": [], "packet": str(packet_path),
+            "packet_sha256": file_hash(packet_path),
+            "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"}
+
+
+def record_visual(project, feedback_path, full=False):
+    """Attach native observations to the last round without rebuilding it."""
+    state = json.loads((project / "measure" / STATE_NAME).read_text())
+    out = Path(state["last_out"])
+    summary_path = out / "summary.json"
+    summary = json.loads(summary_path.read_text())
+    visual = summary["visual"]
+    if visual["status"] != "pending":
+        raise ValueError("visual feedback is only accepted once for a pending round")
+    packet_path = Path(visual["packet"])
+    if file_hash(packet_path) != visual["packet_sha256"]:
+        raise ValueError("visual packet changed")
+    packet = json.loads(packet_path.read_text())
+    if packet["sources"] != source_hashes(project):
+        raise ValueError("visual feedback has stale CAD sources or design constraints")
+    for path, digest in {**packet["images"], **packet["references"]}.items():
+        if file_hash(path) != digest:
+            raise ValueError("visual feedback has stale images or references")
+    feedback = json.loads(Path(feedback_path).read_text())
+    if set(feedback) != {"packet_sha256", "status", "findings", "observation"}:
+        raise ValueError("invalid visual feedback fields")
+    if feedback["packet_sha256"] != visual["packet_sha256"]:
+        raise ValueError("visual feedback belongs to a different round")
+    if feedback["status"] not in ("pass", "fail", "inconclusive"):
+        raise ValueError("invalid visual feedback status")
+    findings = feedback["findings"]
+    if not isinstance(findings, list) or len(findings) > 12:
+        raise ValueError("visual feedback needs at most 12 findings")
+    for item in findings:
+        if not isinstance(item, dict) or set(item) != {"part", "defect", "evidence", "repair"}:
+            raise ValueError("visual findings need part, defect, evidence and repair")
+        if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= 1000 for v in item.values()):
+            raise ValueError("visual finding text must be nonempty and bounded")
+    if (feedback["status"] == "pass" and findings) or (feedback["status"] == "fail" and not findings):
+        raise ValueError("visual status contradicts findings")
+    if not isinstance(feedback["observation"], str) or not 1 <= len(feedback["observation"].strip()) <= 2000:
+        raise ValueError("visual feedback needs a bounded observation, including uncertainty")
+    visual.update(feedback)
+    summary["ok"] = summary["checks_ok"] and feedback["status"] == "pass"
+    if full:
+        if not summary["ok"]:
+            raise ValueError("final verification requires a clean round and visual pass")
+        cad = skills_root() / "cad" / "scripts"
+        # The final verifier independently requires the separate blind review.
+        command = [sys.executable, str(cad / "verify_project"), str(project),
+                   "--exports", "--strict-fit", "--report", str(project / "measure/verification-pipeline.md")]
+        if summary["refs"]:
+            command.append("--image-derived")
+            for label, ref in summary["refs"]:
+                command += ["--likeness-ref", "%s=%s" % (label, ref)]
+        done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
+        summary["full"] = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)}
+        summary["ok"] = done.returncode == 0
+    (out / "visual-feedback.json").write_text(json.dumps(feedback, sort_keys=True, indent=2) + "\n")
+    summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
+    return summary
 
 
 # ---------------------------------------------------------------------------
@@ -187,7 +287,17 @@ def render_summary(summary: dict) -> str:
         lines.append("  move  %-4s %s" % (motion["verdict"].upper()[:4], motion["detail"][:90]))
     if summary.get("full") is not None:
         lines.append("  full  %-4s verify_project exit %s  %s" % ("ok" if summary["full"]["ok"] else "FAIL", summary["full"]["returncode"], summary["full"]["tail"][:90]))
-    lines.append("  %s  reports under %s" % ("PASS" if summary["ok"] else "FAIL", summary["out"]))
+    if summary.get("visual") is not None:
+        visual = summary["visual"]
+        lines.append("  visual %s  %s" % (visual["status"].upper(), visual.get("observation", visual.get("detail", ""))))
+        for item in visual["findings"]:
+            lines.append("    %s: %s | evidence: %s | repair: %s" % (item["part"], item["defect"], item["evidence"], item["repair"]))
+        if visual["status"] == "pending":
+            lines.append("    inspect %s then use --record-visual <feedback.json>" % visual["packet"])
+    verdict = "PASS" if summary["ok"] else "FAIL"
+    if summary.get("visual", {}).get("status") == "pending" and summary.get("checks_ok"):
+        verdict = "PENDING"
+    lines.append("  %s  reports under %s" % (verdict, summary["out"]))
     return "\n".join(lines)
 
 
@@ -351,6 +461,17 @@ def make_round(args) -> int:
     if not project.is_dir():
         print("make_round: not a directory: %s" % project, file=sys.stderr)
         return 2
+    if args.record_visual:
+        try:
+            summary = record_visual(project, args.record_visual, args.full)
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            print("make_round: %s" % exc, file=sys.stderr)
+            return 2
+        print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
+        return 0 if summary["ok"] else 1
+    if args.full:
+        print("make_round: --full requires --record-visual after inspection and independent blind review", file=sys.stderr)
+        return 2
     roots = skills_root()
     if roots is None:
         print("make_round: cannot locate the cad and image-to-cad skills", file=sys.stderr)
@@ -502,16 +623,9 @@ def make_round(args) -> int:
         done = run([python, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"], cwd=project, log=out / "motion.log")
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
 
-    # 5. optional integrated verifier, once.
+    # 5. Native visual inspection is a separate evidence submission, not a model call.
+    visual = prepare_visual(project, entry, out, cad, refs)
     full = None
-    if args.full:
-        command = [python, str(cad / "verify_project"), str(project), "--fresh", "--exports", "--strict-fit", "--report", str(out / "verify.md")]
-        if refs:
-            command.append("--image-derived")
-            for label, ref in refs:
-                command += ["--likeness-ref", "%s=%s" % (label, ref)]
-        done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
-        full = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)[-200:]}
 
     ok = (
         len(thickness) == len(parts) and bool(thickness)
@@ -533,7 +647,10 @@ def make_round(args) -> int:
         "min": args.min,
         "motion": motion,
         "full": full,
-        "ok": ok,
+        "checks_ok": ok,
+        "visual": visual,
+        "refs": refs,
+        "ok": False,
         "out": str(out),
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
@@ -549,7 +666,7 @@ def make_round(args) -> int:
     }
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
-    return 0 if ok else 1
+    return 1  # pending or failed visual evidence cannot report a complete round
 
 
 # ---------------------------------------------------------------------------
@@ -625,7 +742,8 @@ def main(argv=None) -> int:
     parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle for check_thickness (default 0.4)")
     parser.add_argument("--all-parts", action="store_true", help="wall-check every part, including unchanged parts with passing evidence")
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
-    parser.add_argument("--full", action="store_true", help="also run verify_project --fresh --exports --strict-fit once")
+    parser.add_argument("--record-visual", help="record native Manager feedback for the last round without rebuilding")
+    parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
     parser.add_argument("--self-check", action="store_true")

@@ -37,7 +37,8 @@ images, before learning the Wish. It records an unprompted motion observation,
 then compares it with the Wish and current concept. It may also inspect the
 bound motion conditions after reveal, but must not infer physical performance.
 Repair evidence presentation when that is defective; repair geometry when
-geometry is defective. Both stay within the existing two review rounds.
+geometry is defective. Both share the final Make allowance: the initial review
+and up to three repair-and-rereview cycles, four review rounds total.
 
 Preserve its verdict as canonical JSON in `snap/MOTION-REVIEW.json`:
 

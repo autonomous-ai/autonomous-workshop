@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from tests.make.test_make_round import load_module
+from tests.make.test_make_round import fake_visual_render, load_module, record_fixture_visual_pass
 
 
 class MakeRoundPoseEvidenceTest(unittest.TestCase):
@@ -34,7 +34,7 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
                 refs.append(label + "=" + str(ref))
             args = SimpleNamespace(
                 project=str(project), entry=None, out=None, all_parts=False,
-                nozzle=0.4, refs=refs, min=0.9, no_motion=True, full=False, json=True,
+                nozzle=0.4, refs=refs, min=0.9, no_motion=True, full=False, json=True, record_visual=None,
             )
             cameras = {"hero": {"az": 10.0, "el": 5.0}, "side": {"az": 100.0, "el": 15.0}}
             control = {"replay_iou": 0.95, "search_iou": 0.95}
@@ -48,6 +48,8 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
                     stdout = "exported"
                 elif tool == "check_thickness":
                     stdout = "RESULT: printable at this wall\n"
+                elif tool == "render_review":
+                    return fake_visual_render(command)
                 elif tool == "render_views.py":
                     label = command[command.index("--label") + 1]
                     stored = {}
@@ -87,7 +89,12 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
         output = io.StringIO()
         with redirect_stdout(output):
             code = module.make_round(args)
-        return code, json.loads(output.getvalue())
+        self.assertEqual(code, 1)
+        pending = json.loads(output.getvalue())
+        self.assertFalse(pending["ok"])
+        self.assertEqual(pending["visual"]["status"], "pending")
+        summary = record_fixture_visual_pass(module, args.project, pending)
+        return (0 if summary["ok"] else 1), summary
 
     def pose_path(self, result, args):
         # The old global path lets the same test expose the pre-fix wrong

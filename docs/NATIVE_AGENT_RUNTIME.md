@@ -585,8 +585,13 @@ canonical concept and compare each dimension plus the concept's anti-generic
 signature with the promise. The hash-bound evidence confirms an
 unmistakable, desirable final product; schema v6 also enumerates every explicit
 positive and negative held-form requirement with blind visual evidence and
-requires no blocking visual defect. One critic performs no more than two
-rounds. Before this review, Make runs the fixed print-preflight mode: every
+requires no blocking visual defect. New runs allow one initial review and up to
+three repair-and-rereview cycles (four reviews total); frozen older tools retain
+their two-review bound. Make rounds also render inspection views and record
+native Manager feedback on placement, proportions and other visible defects
+through `make_round --record-visual`. Pending visual feedback cannot pass a
+round, and self-review never replaces the independent critic (ADR 0060).
+Before independent review, Make runs the fixed print-preflight mode: every
 declared printable is generated, strict-fit checked, exported, mesh checked,
 and thickness checked at the final 0.4 mm nozzle profile. The review binds the
 passing preflight hash. Native iteration relies on source-closure freshness and
@@ -1069,7 +1074,8 @@ with the exact Wish and canonical concept. It must enumerate every explicit
 positive and negative held-form constraint, cite blind visual evidence for each,
 and report no blocking visual defect. A prototype/device read, dominant exposed
 mechanism, zoom-dependent signature, raw faceting, unclear state change, or any
-visible caveat is blocking. Make permits at most two review rounds and then
+visible caveat is blocking. This historical protocol permitted two review rounds;
+new runs use four under ADR 0060 and then
 performs one integrated final verifier. The finalizer accepts only the current
 passing full-tier report with a successful thickness row, so omitting a failed
 check cannot spend a host isolated rebuild.
