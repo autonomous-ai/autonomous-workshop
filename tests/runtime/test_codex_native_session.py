@@ -17,6 +17,7 @@ from unittest import mock
 import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
 from workshop.runtime.codex import (
+    DEFAULT_WORKSHOP_MODEL,
     CODEX_FAILURE_DIAGNOSTIC_FILENAME,
     CODEX_PERMISSION_PROFILE,
     DEFAULT_CODEX_TIMEOUT_SECONDS,
@@ -3780,7 +3781,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             diagnostic = json.loads(raw)
             details = diagnostic["diagnostic"]
             self.assertEqual(diagnostic["cli_version"], "0.145.0")
-            self.assertEqual(diagnostic["model"], "gpt-5.6-sol")
+            self.assertEqual(diagnostic["model"], DEFAULT_WORKSHOP_MODEL)
             self.assertEqual(diagnostic["reasoning_effort"], "high")
             self.assertIsNone(diagnostic["auto_compact_token_limit"])
             self.assertEqual(

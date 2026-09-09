@@ -2153,7 +2153,8 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
             self.assertIn("assembled_parts/owl.stl", names)
             self.assertIn("assembled_parts/chick.stl", names)
             self.assertIn("assembled.step", names)
-            self.assertNotIn("parts/owl.stl", names)
+            # The complete Make tree ships beside the validated family.
+            self.assertIn("parts/owl.stl", names)
             sidecar = json.loads(archive.read("assembled.step.json"))
             self.assertEqual(sidecar["schemaVersion"], 1)
             self.assertEqual(sidecar["primaryPose"], "assembled")
