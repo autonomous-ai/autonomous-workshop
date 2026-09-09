@@ -136,6 +136,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             ).is_file()
         )
         for reference in (
+            "cad-tool-contracts-v1.md",
             "deep-economics-v5.md",
             "deep-economics-v6.md",
             "deep-economics-v7.md",
@@ -143,6 +144,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "deep-economics-v9.md",
             "make.md",
             "playtest.md",
+            "spark-economics-v4.md",
         ):
             with self.subTest(reference=reference):
                 self.assertTrue(
@@ -176,6 +178,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             ".make-proof-ready",
             "The trusted host owns the isolated fresh rebuild",
             "Spark and Forge truthfully record Playtest as not run",
+            "cad-tool-contracts-v1.md",
         ):
             with self.subTest(reference="make", required=required):
                 self.assertIn(required, make)

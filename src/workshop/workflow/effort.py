@@ -24,8 +24,11 @@ SPARK_ECONOMICS_V1_CAPABILITY_PATH = (
 SPARK_ECONOMICS_V2_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/spark-economics-v2.md"
 )
-SPARK_ECONOMICS_CAPABILITY_PATH = (
+SPARK_ECONOMICS_V3_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/spark-economics-v3.md"
+)
+SPARK_ECONOMICS_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/spark-economics-v4.md"
 )
 DEEP_ECONOMICS_V1_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/deep-economics-v1.md"
@@ -67,6 +70,13 @@ DEEP_ECONOMICS_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/deep-economics-v13.md"
 )
 SPARK_AUTO_COMPACT_TOKEN_LIMIT = 64_000
+# A 64,000-token ceiling fits a simple product in one window but forces a
+# complex Make to compact every few requests.  Each compaction drops the
+# working state the agent just built, so it re-reads STAGE.json, the stage
+# reference, and the CAD tool sources it had already read, then repeats the
+# repair it had already tried.  Spark v4 keeps every other frozen setting and
+# raises only this ceiling to the value deep runs already use.
+SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT = 256_000
 SPARK_NATIVE_TURN_TIMEOUT_SECONDS = 60 * 60
 DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT = 32_000
 DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT = 24_000
@@ -222,7 +232,9 @@ __all__ = [
     "SPARK_ECONOMICS_CAPABILITY_PATH",
     "SPARK_ECONOMICS_V1_CAPABILITY_PATH",
     "SPARK_ECONOMICS_V2_CAPABILITY_PATH",
+    "SPARK_ECONOMICS_V3_CAPABILITY_PATH",
     "SPARK_NATIVE_TURN_TIMEOUT_SECONDS",
+    "SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT",
     "WORKSHOP_EFFORTS",
     "WorkshopEffort",
     "workshop_effort",

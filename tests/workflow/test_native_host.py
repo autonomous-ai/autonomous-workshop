@@ -115,6 +115,8 @@ from workshop.workflow.effort import (
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
     SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V3_CAPABILITY_PATH,
+    SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
 )
 
@@ -488,9 +490,20 @@ class NativeHostTest(unittest.TestCase):
             "deep-v13": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
-            "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
+            "v3": SPARK_ECONOMICS_V3_CAPABILITY_PATH,
+            "v4": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        if economics_capability == "deep-v13":
+        if economics_capability == "v4":
+            # A real v4 Spark run materializes the preserved v1-v3 references
+            # too. The host must select the newest frozen profile, not branch
+            # merely on an older file's presence.
+            inputs = {
+                SPARK_ECONOMICS_V1_CAPABILITY_PATH: "c" * 64,
+                SPARK_ECONOMICS_V2_CAPABILITY_PATH: "b" * 64,
+                SPARK_ECONOMICS_V3_CAPABILITY_PATH: "9" * 64,
+                SPARK_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+            }
+        elif economics_capability == "deep-v13":
             # A real v13 run materializes the preserved v5-v12 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
@@ -616,6 +629,50 @@ class NativeHostTest(unittest.TestCase):
             auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
             timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
         )
+
+    def test_v4_spark_widens_only_the_compaction_ceiling(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v4"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            launcher = _native_launcher(checkpoint)
+
+        self.assertIs(launcher, launcher_type.return_value)
+        launcher_type.assert_called_once_with(
+            reasoning_effort="low",
+            auto_compact_token_limit=SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
+            timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+        )
+
+    def test_v4_spark_keeps_the_twenty_minute_budgeted_turn_boundary(self):
+        for capability in ("v3", "v4"):
+            with self.subTest(capability=capability):
+                checkpoint = self._launcher_checkpoint(
+                    effort="spark", economics_capability=capability
+                )
+                checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+                bounded = _budgeted_turn_launcher(
+                    checkpoint,
+                    CodexNativeSessionLauncher(
+                        reasoning_effort="low",
+                        auto_compact_token_limit=(
+                            SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT
+                            if capability == "v4"
+                            else SPARK_AUTO_COMPACT_TOKEN_LIMIT
+                        ),
+                        timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+                    ),
+                    3600,
+                )
+                self.assertEqual(bounded.timeout_seconds, 1200)
+                self.assertEqual(
+                    bounded.auto_compact_token_limit,
+                    SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT
+                    if capability == "v4"
+                    else SPARK_AUTO_COMPACT_TOKEN_LIMIT,
+                )
 
     def test_new_runtime_choice_overrides_legacy_stage_reasoning_profile(self):
         checkpoint = self._launcher_checkpoint(
@@ -2955,6 +3012,39 @@ class NativeHostTest(unittest.TestCase):
                 self.assertEqual(receipt["budget"]["used_tokens"], 1100)
                 self.assertEqual(receipt["budget"]["limit_tokens"], 1000)
                 self.assertEqual(receipt["budget"]["scope"], "product-tokens")
+
+    def test_token_budget_stops_unfinished_retry_storm_before_cap(self):
+        from workshop.workflow.token_budget import ProductTokenBudget
+        from tests.workflow.test_token_budget import observation
+
+        class MeteredFakeBudget(ProductTokenBudget):
+            def settle(self, stage, reserved, elapsed):
+                self.observe(observation(1000))
+
+        launcher = _AlwaysUnfinishedLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root", return_value=None
+            ), mock.patch(
+                "workshop.workflow.native_run.ProductTokenBudget", MeteredFakeBudget
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher", return_value=launcher
+            ):
+                with self.assertRaisesRegex(WorkshopError, "for 3 consecutive turns"):
+                    start_native_run(Wish.create("token-retry-storm", "a small toy"), max_tokens=30000000)
+                self.assertEqual(len(launcher.starts) + len(launcher.resumes), 3)
+                before = native_run_status("token-retry-storm")
+                self.assertEqual(before["progress"]["activity"], "failed")
+                self.assertLess(before["budget"]["used_tokens"], 30000000)
+                with self.assertRaisesRegex(WorkshopError, "for 3 consecutive turns"):
+                    resume_native_run("token-retry-storm")
+                self.assertEqual(len(launcher.starts), 1)
+                self.assertEqual(len(launcher.starts) + len(launcher.resumes), 6)
+                after = native_run_status("token-retry-storm")
+                self.assertEqual(after["budget"]["used_tokens"], before["budget"]["used_tokens"])
+                self.assertEqual(after["stage"], before["stage"])
+                self.assertEqual(after["session_status"], "checkpointed")
 
     def test_lifetime_budget_exhaustion_survives_explicit_resume(self):
         self.enterContext(mock.patch(

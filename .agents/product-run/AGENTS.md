@@ -127,7 +127,8 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   perform an external effect.
 - Keep the root Manager on the stage's critical path. Delegate only bounded
   work with a concrete deliverable; do not delegate the whole stage or make
-  finalization depend on a child. Build and verify a conforming baseline early,
+  finalization depend on optional creative child work. Required independent
+  blind and manual reviews remain mandatory. Build and verify a conforming baseline early,
   then use remaining capacity for focused quality improvements.
 
 ## Product work

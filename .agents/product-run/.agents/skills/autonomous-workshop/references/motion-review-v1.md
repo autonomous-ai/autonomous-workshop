@@ -26,11 +26,23 @@ The tool writes `snap/motion.gif` at a fixed camera and common scale, plus
 and animation. Write all source helpers before rendering; source changes
 invalidate it. Do not manually animate disconnected decorative parts.
 
+Before spending the independent review, inspect the animation for legibility of
+each promised driven output. Repetitive surfaces can hide real material travel:
+use a trackable source-bound feature or an explicitly labeled visualization-only
+tracer that follows the actual CAD state. A visualization tracer is not a
+physical part or proof of coupling. Check mesh/render limits and inspect the
+signature region closely before generating the final review packet. A fixed
+spatial deformation zone does not itself mean the material is stationary.
+
 The same independent critic inspects the actual GIF (or its ordered decoded
 frames if its image tool cannot play GIFs), alongside the hero and signature
 images, before learning the Wish. It records an unprompted motion observation,
 then compares it with the Wish and current concept. It may also inspect the
 bound motion conditions after reveal, but must not infer physical performance.
+Separate observed motion from topology, contact and material-strength facts.
+Record unavailable engineering proof as such and refer to its deterministic
+check; do not ask pixels alone to establish it. Unclear required visible motion
+still fails the visual review even when a numerical check passes.
 Repair evidence presentation when that is defective; repair geometry when
 geometry is defective. Both stay within the existing two review rounds.
 

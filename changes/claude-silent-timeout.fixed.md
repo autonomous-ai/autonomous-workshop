@@ -1,0 +1,1 @@
+Claude native turns now enforce their wall-clock deadline even when the CLI emits no stdout. A bounded reader queue keeps the host timer responsive; timeout kills and reaps the CLI and returns the existing recoverable error. This does not add a model retry loop or alter product gates.

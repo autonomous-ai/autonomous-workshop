@@ -19,6 +19,10 @@ exact Taste and method.
 Its stopping condition is a successful `invent` finalizer for the current
 checkpoint.
 
+For a supplied visual reference or a named existing-object likeness, use
+[visual-reference-inspection.md](visual-reference-inspection.md) before sealing
+the visual brief. Preserve observed features and uncertainty for Make.
+
 Before exploring broadly, name the concept's **signature interaction**: the
 single physical moment that makes the Wish feel surprising, playful, or
 magical, and the **anti-generic signature** that prevents it from collapsing

@@ -23,7 +23,9 @@ Workshop. It is authoritative together with
 [ADR 0043](adr/0043-freeze-agent-model-and-effort.md),
 [ADR 0044](adr/0044-scope-component-cad-network.md),
 [ADR 0045](adr/0045-own-agent-selected-dependencies.md),
-[ADR 0046](adr/0046-budgeted-spark-twenty-minute-turns.md), and the repository
+[ADR 0046](adr/0046-budgeted-spark-twenty-minute-turns.md),
+[ADR 0050](adr/0050-spark-compaction-ceiling.md),
+[ADR 0051](adr/0051-reference-image-network-access.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -79,9 +81,11 @@ stage-shaped reasoning levels described below while leaving each workflow's
 compaction, turn boundaries, proof handoffs, and gates intact. Schema-v1
 Manager projects retain those historical stage-shaped reasoning levels.
 
-Codex Spark projects freeze `spark-economics-v3.md` and run that one
-session with a 64k automatic context-compaction ceiling
-across Make and Release. Budgeted v3 runs now cap each native turn at 20
+Codex Spark projects freeze `spark-economics-v4.md` and run that one
+session with a 256k automatic context-compaction ceiling
+across Make and Release (ADR 0050). Frozen v3 runs retain their 64k ceiling on
+resume; every other v3 setting is unchanged in v4. Budgeted v3 and v4 runs cap
+each native turn at 20
 minutes (ADR 0046); unbudgeted sessions retain their historical boundary. A timeout
 uses the existing bounded recovery path to resume the exact session, Goal,
 stage packet, and workspace; the boundary is not a stage deadline or a gate
@@ -730,12 +734,16 @@ file tools such as `apply_patch` and `view_image`; it does not expose
 `$CODEX_HOME` or the Codex package directory. The immutable project-root
 marker also prevents builder `AGENTS.md` inheritance, and dotenv files remain
 denied. Direct command networking uses Codex's managed proxy in limited mode
-for the Step.parts API and site, GitHub media, and catalog Vercel-blob asset
-hosts, together with an exact reviewed list of official
-supplier drawing hosts needed by powered-product Make. This lets the locked
-Make skills retrieve and verify purchasable component CAD and mechanical
-drawings without granting arbitrary outbound access. Native web search remains
-a separate model tool. Codex authentication may enter the root runtime process,
+with an open domain map (ADR 0051). This lets the locked Make skills retrieve
+and verify purchasable component CAD and mechanical drawings, and lets a Wish
+that names an existing object fetch the reference images a likeness needs, from
+whichever host serves them. Limited mode, not the domain map, is what bounds
+this: it allows GET, HEAD and OPTIONS only and refuses a POST, so command
+networking reads and cannot send anything out, and the filesystem profile still
+confines what a read can reach. Runs checkpointed under the earlier
+sixteen-domain supplier map, the first four-domain Step.parts map, or the
+original network-disabled policy resume through their exact rollback steps.
+Native web search remains a separate model tool. Codex authentication may enter the root runtime process,
 but secret-named values are excluded from model-generated command environments.
 Factory credentials never enter the Codex subprocess, prompt, run artifacts,
 or status output.
@@ -933,7 +941,14 @@ The Inventor's daydream loop (`workshop start`) is **not** bounded by these
 clocks. They are created once per toy, so the loop dreams and builds until
 `workshop stop` or Ctrl-C, and every toy begins with fresh clocks.
 
-Retired for budgeted runs: the three-unfinished-turn window, the
+Token-budget retry repair (2026-09-08): three consecutive normal returns
+without an outcome now stop the invocation even below the token cap. Explicit
+resume keeps charged usage and the same session, with a fresh return window.
+This bounds finalizer retry storms without interpreting agent prose. New
+finalizers accept Python aliases only for the same resolved executable;
+frozen finalizer bytes remain unchanged.
+
+Retired for legacy clock/turn-budget runs: the three-unfinished-turn window, the
 two-recoverable-turn window, and the per-command native turn caps. Still in
 force: the Invent-Make-Playtest round budget, the proposal rejection budgets,
 and every deterministic gate, because those are quality rules rather than

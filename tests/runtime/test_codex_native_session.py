@@ -136,7 +136,7 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
         "--config",
         'permissions.workshop-product-run.network.mode="limited"',
         "--config",
-        'permissions.workshop-product-run.network.domains={"api.step.parts"="allow","www.step.parts"="allow","media.githubusercontent.com"="allow","*.public.blob.vercel-storage.com"="allow","datasheets.raspberrypi.com"="allow","dfimg.dfrobot.com"="allow","files.seeedstudio.com"="allow","files.waveshare.com"="allow","iflight-public.oss-cn-hongkong.aliyuncs.com"="allow","wiki.dfrobot.com"="allow","www.dfrobot.com"="allow","www.iflight.cn"="allow","www.iflight.com"="allow","www.visaton.de"="allow","www.waveshare.com"="allow","www.waveshare.net"="allow"}',
+        'permissions.workshop-product-run.network.domains={"*"="allow"}',
         "--config",
         "shell_environment_policy.ignore_default_excludes=false",
         "--config",
@@ -556,27 +556,11 @@ class CodexNativeSessionTest(unittest.TestCase):
             network = tomllib.loads(network_override)["permissions"][
                 "workshop-product-run"
             ]["network"]
-            self.assertEqual(
-                network["domains"],
-                {
-                    "api.step.parts": "allow",
-                    "www.step.parts": "allow",
-                    "media.githubusercontent.com": "allow",
-                    "*.public.blob.vercel-storage.com": "allow",
-                    "datasheets.raspberrypi.com": "allow",
-                    "dfimg.dfrobot.com": "allow",
-                    "files.seeedstudio.com": "allow",
-                    "files.waveshare.com": "allow",
-                    "iflight-public.oss-cn-hongkong.aliyuncs.com": "allow",
-                    "wiki.dfrobot.com": "allow",
-                    "www.dfrobot.com": "allow",
-                    "www.iflight.cn": "allow",
-                    "www.iflight.com": "allow",
-                    "www.visaton.de": "allow",
-                    "www.waveshare.com": "allow",
-                    "www.waveshare.net": "allow",
-                },
-            )
+            # Reference images live on whichever CDN a search returns, so the
+            # map is open.  `limited` mode below is what bounds this: it allows
+            # GET, HEAD and OPTIONS only, so a wider map buys reads and no way
+            # to send anything out.
+            self.assertEqual(network["domains"], {"*": "allow"})
             self.assertIn(
                 "permissions.workshop-product-run.network.enabled=true",
                 command,
@@ -1214,7 +1198,90 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(resumed.status, "completed")
             self.assertEqual(resumed.binding.checkpoint_sha256, started.binding.checkpoint_sha256)
 
-    def test_resume_accepts_exact_step_parts_only_policy_predecessor(self):
+    def test_reference_image_domain_map_keeps_limited_read_only_mode(self):
+        """A wider domain map must not widen what may be sent out.
+
+        `limited` mode, not the domain map, is what stops an exfiltration:
+        Codex refuses every method except GET, HEAD and OPTIONS under it. If a
+        future change ever swaps the mode for `full`, the open map below would
+        become arbitrary outbound authority, so bind both together here.
+        """
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            policy = codex_runtime._codex_run_policy(root, "/bin/echo")
+            arguments = policy.permission_config_arguments
+            self.assertIn(
+                'permissions.workshop-product-run.network.mode="limited"',
+                arguments,
+            )
+            self.assertIn(
+                'permissions.workshop-product-run.network.domains={"*"="allow"}',
+                arguments,
+            )
+            self.assertEqual(
+                codex_runtime._CODEX_COMPONENT_NETWORK_DOMAINS, ("*",)
+            )
+            # The filesystem profile is what bounds a read, and it is unchanged.
+            filesystem = next(
+                value
+                for value in arguments
+                if value.startswith(
+                    "permissions.workshop-product-run.filesystem="
+                )
+            )
+            self.assertIn('":root"="deny"', filesystem)
+            self.assertIn('"**/.env*"="deny"', filesystem)
+
+    def test_network_domain_rollback_walks_exact_generations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            current = codex_runtime._codex_run_policy(root, "/bin/echo")
+            before_images = codex_runtime._run_policy_before_reference_images(
+                root, current
+            )
+            before_drawings = (
+                codex_runtime._run_policy_before_supplier_drawings(
+                    root, before_images
+                )
+            )
+
+            def domains(policy):
+                argument = next(
+                    value
+                    for value in policy.permission_config_arguments
+                    if value.startswith(
+                        "permissions.workshop-product-run.network.domains="
+                    )
+                )
+                return tomllib.loads(argument)["permissions"][
+                    "workshop-product-run"
+                ]["network"]["domains"]
+
+            self.assertEqual(domains(current), {"*": "allow"})
+            self.assertEqual(
+                tuple(domains(before_images)),
+                codex_runtime._CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_REFERENCE_IMAGES,
+            )
+            self.assertEqual(
+                tuple(domains(before_drawings)),
+                codex_runtime._CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS,
+            )
+            # Each rollback validates the generation it rolls back *from*, so a
+            # policy cannot step sideways into an arbitrary domain map.
+            for policy in (before_images, before_drawings):
+                with self.assertRaises(codex_runtime.CodexInvocationError):
+                    codex_runtime._run_policy_before_reference_images(
+                        root, policy
+                    )
+            with self.assertRaises(codex_runtime.CodexInvocationError):
+                codex_runtime._run_policy_before_supplier_drawings(
+                    root, current
+                )
+
+    def test_resume_accepts_exact_supplier_drawing_policy_predecessor(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
             root.mkdir()
@@ -1227,14 +1294,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             started = self.start(launcher, root)
             checkpoint = self.host_state(root) / "codex-session.json"
             payload = json.loads(checkpoint.read_text(encoding="utf-8"))
-            current_policy = codex_runtime._codex_run_policy(
-                root,
-                launcher.binary,
-            )
             predecessor_policy = (
-                codex_runtime._run_policy_before_supplier_drawings(
+                codex_runtime._run_policy_before_reference_images(
                     root,
-                    current_policy,
+                    codex_runtime._codex_run_policy(root, launcher.binary),
                 )
             )
             payload["runtime_config_sha256"] = (
@@ -1262,7 +1325,73 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             self.assertEqual(len(factory.calls), 2)
             serialized = "\n".join(factory.calls[1][0])
-            self.assertIn("iflight-public.oss-cn-hongkong", serialized)
+            self.assertIn(
+                'permissions.workshop-product-run.network.domains={"*"="allow"}',
+                serialized,
+            )
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+
+    def test_resume_accepts_exact_step_parts_only_policy_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            started = self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(
+                root,
+                launcher.binary,
+            )
+            predecessor_policy = (
+                codex_runtime._run_policy_before_supplier_drawings(
+                    root,
+                    codex_runtime._run_policy_before_reference_images(
+                        root,
+                        current_policy,
+                    ),
+                )
+            )
+            payload["runtime_config_sha256"] = (
+                codex_runtime._runtime_config_sha256(
+                    launcher.cli_version,
+                    launcher.model,
+                    launcher.reasoning_effort,
+                    predecessor_policy,
+                )
+            )
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":"))
+                + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            resumed = self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 2)
+            serialized = "\n".join(factory.calls[1][0])
+            # The resumed turn runs under the newly computed current policy,
+            # not the accepted predecessor.
+            self.assertIn(
+                'permissions.workshop-product-run.network.domains={"*"="allow"}',
+                serialized,
+            )
+            self.assertNotIn("iflight-public.oss-cn-hongkong", serialized)
             self.assertEqual(
                 resumed.binding.runtime_config_sha256,
                 started.binding.runtime_config_sha256,

@@ -1,0 +1,1 @@
+New Claude runs now materialize canonical native Markdown Inventor agents at the paths declared by MANAGER.json. Exact source/hash verification extends through the roster, stage finalizer and host; Codex and frozen older runs retain their bytes.

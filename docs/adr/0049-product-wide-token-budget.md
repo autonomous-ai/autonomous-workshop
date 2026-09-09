@@ -37,6 +37,16 @@ remains. Revision/review limits and all deterministic engineering, artifact,
 assembly and publication gates remain unchanged. Python observes, budgets and
 supervises; it does not select designs, judge quality or implement repairs.
 
+Repair note (2026-09-08): token-budget runs stop the current invocation after
+three consecutive normally returned native turns without `agent-outcome.json`,
+even below the cap. This bounds finalizer retry storms; it does not infer
+progress from prose or file timestamps. Explicit resume preserves the session
+and charged usage and starts a fresh three-return window. Legacy clock and
+turn-budget runs retain their existing behavior. New finalizers accept alternate
+absolute Python aliases only when they resolve to the same host executable;
+non-normalized requests and different executables remain rejected. Frozen
+run-local finalizer bytes are not rewritten on resume.
+
 Peekabud's recovered root-plus-child completed requests total 4,721,922 tokens
 across two native tasks. It did not finish Make and remains stopped. Software
 tests and recovered usage are not evidence of live product completion.
