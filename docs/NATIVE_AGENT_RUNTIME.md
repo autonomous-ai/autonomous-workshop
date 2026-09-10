@@ -730,7 +730,9 @@ CAD-verification JSON contains the literal boolean
 `digitally-verified-not-print-ready` and the boolean is `false`. A half-declared
 claim is refused rather than downgraded, and the host reruns the verifier in the
 tier the pair names — the full tier's command carries `--print-gates --nozzle
-0.4` and never `--skip-thickness`, which would forfeit the claim. The host
+0.4 --overhang-angle 45` and never `--skip-thickness`, which would forfeit the
+claim. Both thresholds are named rather than defaulted, so the receipt records
+what the claim was measured against. The host
 receipt and stage-gate evidence record the tier and its print-ready
 eligibility. Release requires passing full-tier evidence; a lower-tier product
 publishes a digitally verified exchange solid whose printability is unverified.

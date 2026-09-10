@@ -53,11 +53,15 @@ that the host reruns itself.
   refusal, not a downgrade. The host reruns `verify_project` in the tier the
   pair names, so a claim the sealed project cannot reproduce fails the gate.
 - **The full tier pays for all three gates.** Its command is
-  `--fresh --strict-fit --print-gates --nozzle 0.4`, and it never carries
-  `--skip-thickness`: skipping the wall gate forfeits the claim upstream, so the
-  tier that carries the claim cannot use it. The nozzle is in the command, and
-  therefore in the receipt, because a wall that passes at 0.4 mm can fail at
-  0.6 mm — a claim that does not name its nozzle is not a claim.
+  `--fresh --strict-fit --print-gates --nozzle 0.4 --overhang-angle 45`, and it
+  never carries `--skip-thickness`: skipping the wall gate forfeits the claim
+  upstream, so the tier that carries the claim cannot use it. Both thresholds
+  are in the command, and therefore in the receipt, because a wall that passes
+  at 0.4 mm can fail at 0.6 mm and a face that passes at 45 deg can fail at 60 —
+  a claim that does not name what it was measured against is not a claim.
+  Naming the angle also keeps the receipt off a `verify_project` default that
+  upstream owns and can move without Workshop noticing; passing it changes no
+  report byte, since the flag parses to the same `45.0` the default produced.
 - **Make, Playtest and Release require print-ready evidence exactly where they
   did before ADR 0062.** Make requires it when it hands straight to Release,
   Playtest when its verdict passes, Release always. Spark is unaffected: ADR

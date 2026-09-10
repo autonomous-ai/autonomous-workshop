@@ -2,8 +2,8 @@
 
 The Factory viewer numbers part groups from the assembled mesh alone, so the
 host needs each occurrence's geometry *in its assembled pose* to say which
-group belongs to which sealed part.  The production STLs under ``parts/`` are
-exported in print orientation and cannot place themselves; the sealed
+group belongs to which sealed part.  The production STEPs under ``parts/`` are
+sealed in print orientation and cannot place themselves; the sealed
 ``assembled.step`` can.  This module runs the CAD kernel in a bounded,
 credential-free subprocess (the same interpreter the CAD verifier uses),
 tessellates every top-level occurrence coarsely, and returns names, extents,

@@ -18,6 +18,7 @@ from workshop.make.native_gate import (
     DEFAULT_NATIVE_CAD_OUTPUT_BYTES,
     NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_GATE_NOZZLE_MM,
+    NATIVE_CAD_GATE_OVERHANG_ANGLE_DEG,
     NATIVE_CAD_NON_PRINT_READY_TIER,
     NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_MODE,
@@ -366,11 +367,21 @@ class NativeCadGateTest(unittest.TestCase):
 
         evidence = self._verify(runner)
 
-        # A wall that passes at 0.4 mm can fail at 0.6, so the nozzle the claim
-        # was made at is in the command and therefore in the receipt.
+        # A wall that passes at 0.4 mm can fail at 0.6, and a face that passes
+        # at 45 deg can fail at 60, so both thresholds the claim was made at are
+        # in the command and therefore in the receipt.  Naming the angle also
+        # stops the receipt resting on a verifier default upstream can move.
         self.assertEqual(
             observed["command"][3:],
-            ("--fresh", "--strict-fit", "--print-gates", "--nozzle", NATIVE_CAD_GATE_NOZZLE_MM),
+            (
+                "--fresh",
+                "--strict-fit",
+                "--print-gates",
+                "--nozzle",
+                NATIVE_CAD_GATE_NOZZLE_MM,
+                "--overhang-angle",
+                NATIVE_CAD_GATE_OVERHANG_ANGLE_DEG,
+            ),
         )
         # Skipping the wall gate forfeits the claim upstream, so the tier that
         # carries the claim can never ask for it.
