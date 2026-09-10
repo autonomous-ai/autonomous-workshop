@@ -63,7 +63,9 @@ INVENTORS = (
     "tess-loop",
     "vela-bloom",
 )
-CODEX_THREAD_ID = "12345678-1234-5678-9234-567812345678"
+# Fixed UUIDv7 identity for the isolated deterministic runtime, never a live session.
+CODEX_THREAD_ID = "01a0795e-0efd-76e2-91a9-aa019980ede0"
+CODEX_MODEL = "gpt-6-astra"
 
 
 def _run(command, *, cwd: Path, environment=None) -> subprocess.CompletedProcess:
@@ -355,10 +357,12 @@ import os
 import re
 import sys
 import tomllib
+from datetime import datetime, timezone
 from pathlib import Path
+from uuid import UUID
 
 if sys.argv[1:] == ["--version"]:
-    print("codex-cli 0.150.0")
+    print("codex-cli 0.153.4")
     raise SystemExit(0)
 
 run_root = Path.cwd()
@@ -411,7 +415,7 @@ for inventor_id in inventor_ids:
         or len(description) > 1024
         or not isinstance(instructions, str)
         or not instructions.strip()
-        or len(instructions) > 8192
+        or len(instructions.encode("utf-8")) > 256 * 1024
     ):
         raise RuntimeError("custom Inventor agent instructions are not bounded text")
     manifest = json.loads(exact_block(instructions, "MANIFEST"))
@@ -472,6 +476,64 @@ for inventor_id in inventor_ids:
         )
     ):
         raise RuntimeError("custom Inventor agent is not a bounded child role")
+
+# Exercise the production token adapter with native-shaped fixture records in
+# this smoke test's private CODEX_HOME. Each resumed process resets its counters.
+thread_id = %r
+model = %r
+day = datetime.fromtimestamp((UUID(thread_id).int >> 80) / 1000, timezone.utc)
+sessions = Path(os.environ["CODEX_HOME"]) / "sessions" / day.strftime("%%Y/%%m/%%d")
+sessions.mkdir(parents=True, exist_ok=True)
+rollout_path = sessions / ("rollout-" + thread_id + ".jsonl")
+prior = rollout_path.read_text(encoding="utf-8").splitlines() if rollout_path.is_file() else []
+turn = sum("task_started" in line for line in prior) + 1
+if turn > 2:
+    raise RuntimeError("packaging fixture exceeded setup plus one Make turn")
+if turn == 2 and ("resume" not in sys.argv or thread_id not in sys.argv):
+    raise RuntimeError("Make must resume the exact setup session")
+counters = {
+    "input_tokens": 1200 * turn,
+    "cached_input_tokens": 400 * turn,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 340 * turn,
+    "reasoning_output_tokens": 100 * turn,
+}
+records = []
+if not prior:
+    records.append({"type": "session_meta", "payload": {
+        "id": thread_id, "cwd": str(run_root), "cli_version": "0.153.4", "source": "exec"}})
+records.extend((
+    {"type": "turn_context", "payload": {"model": model}},
+    {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "turn-" + str(turn)}},
+    {"type": "event_msg", "payload": {"type": "token_count", "info": {
+        "total_token_usage": counters, "last_token_usage": counters}}},
+))
+with rollout_path.open("a", encoding="utf-8") as stream:
+    for record in records:
+        stream.write(json.dumps(record, sort_keys=True) + chr(10))
+
+prompt = sys.stdin.read()
+selection = stage["inputs"]["workshop_selection"]
+if selection["status"] == "pending":
+    if turn != 1:
+        raise RuntimeError("Inventor selection setup ran more than once")
+    roster = stage["inputs"]["inventor_roster"]["inventors"]
+    (run_root / selection["marker_path"]).write_text(json.dumps({
+        "schema_version": 1,
+        "kind": "autonomous-workshop.inventor-selection-ready",
+        "product_id": selection["product_id"],
+        "checkpoint_sha256": selection["checkpoint_sha256"],
+        "wish_sha256": selection["wish_sha256"],
+        "inventor_roster_sha256": selection["inventor_roster_sha256"],
+        "selected_inventor_id": roster[0]["inventor_id"],
+        "ranking": [{"inventor_id": item["inventor_id"], "rationale": "deterministic packaging fixture"}
+                    for item in roster],
+    }, sort_keys=True) + chr(10), encoding="utf-8")
+    print(json.dumps({"type": "thread.started", "thread_id": thread_id}))
+    print(json.dumps({"type": "turn.completed", "usage": {}}))
+    raise SystemExit(0)
+if selection["status"] != "selected" or turn != 2:
+    raise RuntimeError("Make did not follow accepted Inventor setup")
 (run_root / "agent-outcome.json").write_text(
     json.dumps(
         {
@@ -523,22 +585,23 @@ for inventor_id in inventor_ids:
                 "root_marker": (run_root / ".workshop-product-run-root").is_file(),
                 "image_to_cad": (run_root / ".agents" / "skills" / "image-to-cad" / "SKILL.md").is_file(),
                 "manual_design": (run_root / ".agents" / "skills" / "manual-design" / "SKILL.md").is_file(),
+                "mixed_materials": (run_root / ".agents" / "skills" / "mixed-materials" / "scripts" / "manufacturing_manifest.py").is_file(),
                 "stage": (run_root / "STAGE.json").is_file(),
                 "step_parts": (run_root / ".agents" / "skills" / "step-parts" / "SKILL.md").is_file(),
                 "workflow": (run_root / ".agents" / "skills" / "autonomous-workshop" / "SKILL.md").is_file(),
                 "wish": (run_root / "WISH.json").is_file(),
             },
             "product_id": wish["product_id"],
-            "prompt": sys.stdin.read(),
+            "prompt": prompt,
         },
         sort_keys=True,
     ) + "\\n",
     encoding="utf-8",
 )
-print(json.dumps({"type": "thread.started", "thread_id": %r}))
+print(json.dumps({"type": "thread.started", "thread_id": thread_id}))
 print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": "agent_message", "text": "fixture waiting"}}))
 print(json.dumps({"type": "turn.completed", "usage": {}}))
-""" % (str(python), INVENTORS, CODEX_THREAD_ID)
+""" % (str(python), INVENTORS, CODEX_THREAD_ID, CODEX_MODEL)
     path.write_text(source, encoding="utf-8")
     path.chmod(0o700)
 
@@ -600,6 +663,7 @@ def _native_wish_smoke(
     environment.update(
         {
             "WORKSHOP_CODEX_BIN": str(fake_codex),
+            "CODEX_HOME": str(root / "codex-home"),
             "FACTORY_PASSWORD": "must-not-reach-native-codex",
         }
     )
@@ -608,6 +672,9 @@ def _native_wish_smoke(
             workshop,
             "wish",
             "an installed native Workshop packaging probe",
+            "--model", CODEX_MODEL,
+            "--effort", "ultra",
+            "--max-tokens", "100000",
             "--json",
         ),
         cwd=away,
@@ -618,7 +685,7 @@ def _native_wish_smoke(
         or receipt.get("status") != "waiting"
         or receipt.get("stage") != "make"
         or receipt.get("workflow") != "spark"
-        or receipt.get("native_turns") != 1
+        or receipt.get("native_turns") != 2
         or receipt.get("action") != "started"
     ):
         raise AssertionError("installed Wish did not return a truthful wait: %r" % receipt)
@@ -645,6 +712,30 @@ def _native_wish_smoke(
     )
     if status.get("status") != "waiting" or status.get("session_status") != "checkpointed":
         raise AssertionError("installed Wish status lost its native checkpoint")
+    expected_counters = {
+        "input_tokens": 3600,
+        "cached_input_tokens": 1200,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1020,
+        "reasoning_output_tokens": 300,
+    }
+    for record in (receipt, status):
+        budget = record.get("budget", {})
+        observation = budget.get("observation", {})
+        threads = observation.get("threads", [])
+        if (
+            record.get("model") != CODEX_MODEL
+            or record.get("effort") != "ultra"
+            or budget.get("limit_tokens") != 100000
+            or budget.get("used_tokens") != 4620
+            or budget.get("usage_status") != "observed"
+            or observation.get("root_thread_id") != CODEX_THREAD_ID
+            or observation.get("tokens") != expected_counters
+            or len(threads) != 1
+            or threads[0].get("models") != [CODEX_MODEL]
+            or record.get("publication", {}).get("status") != "not-created"
+        ):
+            raise AssertionError("installed Wish lost frozen profile or exact fixture usage")
 
     codex_checkpoints = tuple(workshop_home.rglob("codex-session.json"))
     if codex_checkpoints != (expected_state / "codex-session.json",):
@@ -693,7 +784,8 @@ def _native_wish_smoke(
         or "--ask-for-approval" not in codex_arguments
         or "never" not in codex_arguments
         or "--strict-config" not in codex_arguments
-        or ("--model", "gpt-6-astra") not in argument_pairs
+        or ("--model", CODEX_MODEL) not in argument_pairs
+        or 'model_reasoning_effort="ultra"' not in codex_arguments
         or "--sandbox" in codex_arguments
         or 'default_permissions="workshop-product-run"' not in codex_arguments
         or 'project_root_markers=[".workshop-product-run-root"]'
