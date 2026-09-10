@@ -29,8 +29,10 @@ material unions for grouped parts, so overlapping children are counted once,
 and compares intersection volume with the volume implied by the union within
 a band of at least 0.000001 mm3 that scales with the operand volumes (0.00001
 of their sum), because the kernel integrates volume to a relative precision.
-When the union itself is unavailable, both differences must confirm the
-intersection instead. A mismatch still makes the condition inconclusive. These
+When the union disagrees or is unavailable, both differences must confirm the
+intersection instead; failing that, every formulation must still give the same
+verdict against the condition's collision threshold. A mismatch still makes
+the condition inconclusive. These
 operations share the same CAD kernel; agreement does not certify arbitrary
 geometry or the motion between samples. The default exit status remains
 nonzero for inconclusive conditions.

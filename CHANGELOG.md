@@ -79,10 +79,11 @@ Keep a Changelog and uses semantic versioning for released distributions.
   spec names a `<name>.step.py` entry that does not exist, so a delivered file
   map or rebuild command cannot cite a removed entry and fail on first use.
 - Make motion checks judge Boolean volume agreement within a band that scales
-  with the operand volumes instead of a fixed 0.000001 mm3, and fall back to
-  both differences when the union is unavailable, so accepted parts of
-  thousands of mm3 are no longer reported inconclusive; gross disagreement
-  still fails closed.
+  with the operand volumes instead of a fixed 0.000001 mm3, arbitrate a
+  disagreeing or unavailable union with both differences, and otherwise accept
+  a pose only when every formulation agrees on the collision verdict, so
+  accepted parts of thousands of mm3 and interpenetrating thin shells are no
+  longer reported inconclusive; split verdicts still fail closed.
 
 - Allow generated inventor commands to parse run options and positional Wish
   text in either order.

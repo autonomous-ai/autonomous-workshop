@@ -7,7 +7,8 @@ seated-contact poses of curved parts, and the union itself came back invalid
 in seated poses where the intersection was valid. The band now scales with the
 operand volumes, keeps its absolute floor for tiny parts, still rejects a
 missing or wrong intersection, and falls back to both Cut-based differences
-when the union is unavailable.
+when the union is unavailable. When every formulation disagrees as a volume,
+the pose is still judged when all of them give the same threshold verdict.
 """
 from pathlib import Path
 import runpy
@@ -79,15 +80,22 @@ class ConsistencyToleranceTests(unittest.TestCase):
         self.assertFalse(result["clear"])
 
     def test_missing_intersection_on_large_operands_is_still_inconsistent(self):
-        # Ten cubic millimetres unaccounted for is not integration noise.
-        result = self.run_pair([30000.0, 30000.0, 0.0, 59990.0])
+        # Ten cubic millimetres unaccounted for is not integration noise: the
+        # union and both differences imply 10 mm3 while the intersection is empty,
+        # a split verdict against the 0.001 mm3 threshold.
+        result = self.run_pair([30000.0, 30000.0, 0.0, 59990.0, 29990.0, 29990.0])
         self.assertEqual(result["status"], "inconclusive", result)
         self.assertIn("inconsistent", result["detail"])
 
     def test_tiny_operands_keep_the_absolute_floor(self):
-        result = self.run_pair([0.001, 0.001, 0.0, 0.002 - 0.000005])
+        # 0.002 mm3 unaccounted for on 0.005 mm3 operands exceeds the floor and
+        # splits the verdict: the intersection says clear, everything else blocked.
+        result = self.run_pair([0.005, 0.005, 0.0, 0.008, 0.003, 0.003])
         self.assertEqual(result["status"], "inconclusive", result)
         self.assertIn("inconsistent", result["detail"])
+        # Below the threshold every formulation agrees the pose is clear.
+        result = self.run_pair([0.001, 0.001, 0.0, 0.002 - 0.000005, 0.000995, 0.000995])
+        self.assertEqual(result["status"], "pass", result)
 
     def test_duplicated_material_is_still_rejected(self):
         # Two 8 mm3 solids whose union is 8 mm3 cannot have an empty intersection.
@@ -122,12 +130,14 @@ class ConsistencyToleranceTests(unittest.TestCase):
         self.assertAlmostEqual(actual, 4.0)
 
     def test_invalid_union_with_disagreeing_differences_is_inconclusive(self):
+        # Differences that return the whole operand imply an empty intersection
+        # while the intersection measures 4 mm3: no band and no verdict agreement.
         broken = type("BrokenUnion", (FakeOperation,), {"done": False})
-        empty_cut = type("EmptyCut", (FakeOperation,), {"result": Compound([]).wrapped})
+        whole_cut = type("WholeCut", (FakeOperation,), {"result": Box(2, 2, 2).wrapped})
         for expect in ("clear", "blocked"):
             with self.subTest(expect=expect):
                 with patch.object(operations, "BRepAlgoAPI_Fuse", broken), \
-                        patch.object(operations, "BRepAlgoAPI_Cut", empty_cut):
+                        patch.object(operations, "BRepAlgoAPI_Cut", whole_cut):
                     result = self.tool["run_condition"](
                         self.condition(expect),
                         {"moving": Box(2, 2, 2), "fixed": Box(2, 2, 2).translate((1, 0, 0))}, 0)
@@ -142,6 +152,54 @@ class ConsistencyToleranceTests(unittest.TestCase):
                 self.condition(), {"moving": Box(2, 2, 2), "fixed": Box(2, 2, 2).translate((1, 0, 0))}, 0)
         self.assertEqual(result["status"], "inconclusive", result)
         self.assertNotIn("clear", result)
+
+    # --- verdict agreement -------------------------------------------------
+    # Volume call order per evaluated step: va, vb, common, union, then, when
+    # the union disagrees beyond band, residue_a (a - b) and residue_b (b - a).
+
+    def test_disagreeing_volumes_with_unanimous_blocked_verdict_are_blocked(self):
+        # Intersection 5 mm3; union implies 60; differences imply 10 and 7: all above 0.001.
+        volumes = [30000.0, 30000.0, 5.0, 59940.0, 29990.0, 29993.0]
+        result = self.run_pair(volumes, expect="blocked")
+        self.assertEqual(result["status"], "pass", result)
+        self.assertFalse(result["clear"])
+        result = self.run_pair(volumes, expect="clear")
+        self.assertEqual(result["status"], "fail", result)
+
+    def test_disagreeing_volumes_with_split_verdict_are_inconclusive(self):
+        # One difference implies an empty intersection while the others say 5 mm3.
+        volumes = [30000.0, 30000.0, 5.0, 59940.0, 29990.0, 30000.0]
+        for expect in ("clear", "blocked"):
+            with self.subTest(expect=expect):
+                result = self.run_pair(volumes, expect)
+                self.assertEqual(result["status"], "inconclusive", result)
+                self.assertIn("disagrees", result["detail"])
+
+    def test_verdict_agreement_needs_a_condition_threshold(self):
+        # Outside a condition there is no threshold to agree on: still inconsistent.
+        with patch.object(Solid, "volume", new_callable=PropertyMock,
+                          side_effect=[30000.0, 30000.0, 5.0, 59940.0, 29990.0, 29993.0]):
+            with self.assertRaisesRegex(ValueError, "inconsistent"):
+                self.tool["overlap_volume"](Box(2, 2, 2), Box(2, 2, 2).translate((1, 0, 0)))
+
+    def test_union_that_loses_material_is_arbitrated_by_the_differences(self):
+        # Two 2 mm boxes offset by 1 mm intersect in 4 mm3 (true union 12 mm3).
+        # A union of 8 mm3 implies 8; both real differences (4 mm3) confirm 4.
+        lossy = type("LossyUnion", (FakeOperation,), {"result": Box(2, 2, 2).wrapped})
+        with patch.object(operations, "BRepAlgoAPI_Fuse", lossy):
+            actual = self.tool["overlap_volume"](Box(2, 2, 2), Box(2, 2, 2).translate((1, 0, 0)))
+        self.assertAlmostEqual(actual, 4.0)
+
+    def test_empty_intersection_is_not_rescued_by_arbitration(self):
+        empty = type("EmptyCommon", (FakeOperation,), {"result": Compound([]).wrapped})
+        for expect in ("clear", "blocked"):
+            with self.subTest(expect=expect):
+                with patch.object(operations, "BRepAlgoAPI_Common", empty):
+                    result = self.tool["run_condition"](
+                        self.condition(expect),
+                        {"moving": Box(2, 2, 2), "fixed": Box(2, 2, 2).translate((1, 0, 0))}, 0)
+                self.assertEqual(result["status"], "inconclusive", result)
+                self.assertIn("disagrees", result["detail"])
 
 
 if __name__ == "__main__":

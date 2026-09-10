@@ -545,11 +545,23 @@ differences within the same band instead of failing closed; disagreement or a
 failed difference remains inconclusive. Manifest collision thresholds,
 validity requirements and the inconclusive-fails-closed rule are unchanged.
 
+A second probe over interpenetrating thin shells of another accepted product
+found every formulation disagreeing by tens of cubic millimetres, one
+difference negative, while all of them exceeded the 0.001 mm3 collision
+threshold at the deciding sample. A union that disagrees beyond band is
+therefore arbitrated the same way as an unavailable one, and when the
+differences disagree too the intersection is accepted only if every
+available formulation gives the same threshold verdict for the condition
+being judged; outside a condition, or with a split verdict, the pose stays
+inconclusive.
+
 Contract tests cover kernel-scale noise on large operands for clear and
 blocked expectations, a ten-cubic-millimetre discrepancy, the absolute floor
 on tiny operands, duplicated material, an intersection larger than an operand,
 group-union noise versus excess, the difference fallback with agreeing and
-disagreeing differences, and a failed fallback. The sealed replay is repeated
+disagreeing differences, a failed fallback, a lossy union arbitrated by real
+differences, an empty intersection that arbitration does not rescue, a
+unanimous blocked verdict, a split verdict, and the absence of a threshold. The sealed replay is repeated
 at the corrected tree and recorded privately. Frozen runs keep their exact
 materialized tools; this is measurement calibration, not a product-quality
 claim, and it does not change the necessary-contact rule for driven parts.

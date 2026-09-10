@@ -35,8 +35,9 @@ clean pass.
 
 At each sampled pose, measure the material intersection and check it against
 the union volume within a band that scales with the operand volumes; when the
-union is unavailable, both differences must confirm the intersection instead.
-Unavailable or inconsistent measurements are inconclusive. These operations use
+union disagrees or is unavailable, both differences must confirm the
+intersection, or every formulation must at least agree on the threshold
+verdict. Unavailable or inconsistent measurements are inconclusive. These operations use
 the same CAD kernel; agreement is a consistency check.
 
 A manifest may also declare a retention graph. This closes the loophole where
@@ -251,6 +252,20 @@ class ValidityCache:
 
 
 _VALIDATION = ContextVar('motion_validation', default=None)
+# The collision threshold of the condition being measured, so a pose whose
+# Boolean volumes disagree can still be judged when every formulation gives the
+# same threshold verdict. Absent outside a condition.
+_DECISION = ContextVar('motion_decision_threshold', default=None)
+
+
+@contextmanager
+def decision_scope(threshold):
+    token = _DECISION.set(float(threshold))
+    try:
+        yield
+    finally:
+        _DECISION.reset(token)
+
 
 
 @contextmanager
@@ -350,24 +365,36 @@ def overlap_volume(a, b):
     if common > min(va, vb) + tolerance:
         raise ValueError('motion Boolean measurements are inconsistent: '
                          f'common={common:.9g} exceeds an operand volume mm3')
+    def arbitrate(reason: str, union_estimate: float | None) -> float:
+        # The union of touching or interpenetrating solids can fail, come back
+        # invalid, or lose material along coincident faces where the
+        # intersection succeeded. Both differences must then confirm the
+        # intersection; failing that, every available formulation must still
+        # give the same verdict against the condition's collision threshold.
+        # Interpenetrating thin shells on accepted products measured 13 mm3 by
+        # intersection, 12-21 mm3 by the differences and 50-78 mm3 by union:
+        # unusable as volumes, unanimous as a blocked pose.
+        residue_a = solid_volume(_boolean_shape(BRepAlgoAPI_Cut, a_solids, b_solids))
+        residue_b = solid_volume(_boolean_shape(BRepAlgoAPI_Cut, b_solids, a_solids))
+        estimates = [va - residue_a, vb - residue_b]
+        if all(abs(common - estimate) <= tolerance for estimate in estimates):
+            return common
+        threshold = _DECISION.get()
+        judged = estimates + ([union_estimate] if union_estimate is not None else [])
+        if threshold is not None and all((estimate > threshold) == (common > threshold)
+                                         for estimate in judged):
+            return common
+        raise ValueError('motion Boolean measurements are inconsistent: '
+                         f'common={common:.9g}, operand-minus-difference='
+                         f'{estimates[0]:.9g}/{estimates[1]:.9g} mm3 ({reason})')
+
     try:
         union = solid_volume(_boolean_shape(BRepAlgoAPI_Fuse, a_solids, b_solids))
     except ValueError as union_error:
-        # The union of touching solids can fail or come back invalid where the
-        # intersection succeeded. Cross-check the intersection against both
-        # differences instead; disagreement is still inconclusive.
-        residue_a = solid_volume(_boolean_shape(BRepAlgoAPI_Cut, a_solids, b_solids))
-        residue_b = solid_volume(_boolean_shape(BRepAlgoAPI_Cut, b_solids, a_solids))
-        for inferred in (va - residue_a, vb - residue_b):
-            if abs(common - inferred) > tolerance:
-                raise ValueError('motion Boolean measurements are inconsistent: '
-                                 f'common={common:.9g}, operand-minus-difference={inferred:.9g} mm3 '
-                                 f'(union unavailable: {union_error})') from union_error
-        return common
+        return arbitrate(f'union unavailable: {union_error}', None)
     inferred = math.fsum([va, vb, -union])
     if union < max(va, vb) - tolerance or abs(common - inferred) > tolerance:
-        raise ValueError('motion Boolean measurements are inconsistent: '
-                         f'common={common:.9g}, operands-minus-union={inferred:.9g} mm3')
+        return arbitrate(f'operands-minus-union={inferred:.9g} mm3 disagrees', inferred)
     return common
 
 
@@ -850,7 +877,8 @@ def run_condition(condition: dict, parts: dict, index: int) -> dict:
     # One condition samples an immutable assembly with non-destructive Boolean
     # operations. Nested assembly-sequence conditions share this cache; it is
     # discarded when the outer condition returns or raises.
-    with validation_scope():
+    threshold = (condition.get("thresholds") or {}).get("maxOverlapMm3", DEFAULT_OVERLAP_TOL)
+    with validation_scope(), decision_scope(threshold):
         return _run_condition(condition, parts, index)
 
 
