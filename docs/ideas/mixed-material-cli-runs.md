@@ -328,3 +328,34 @@ requires full inclusion. Their combined power integration was still pending
 when inspected. No further interruption or tool refresh was needed for this
 clarification. All 16 registry checks, both skill validators and the actual
 agent byte scan across 157 registered Make files passed.
+
+### Live digital checks at 16:30–16:32 UTC
+
+All six ordinary `status <product-id> --json` calls still reported active Make,
+running native work, the original Astra/ultra profile and 100M allowance. No
+pilot had completed Make or created a publication. Observed usage includes
+completed requests in the root and descendant sessions; it is not a completion
+percentage.
+
+| Pilot | Observed tokens at 16:30 UTC |
+|---|---:|
+| Harbor Relay Pinball | 32,007,130 |
+| Cloudline Coaster | 38,476,672 |
+| Switchyard Relay | 33,461,742 |
+| Rainmark Studio | 37,099,474 |
+| Liltwing Flight Garden | 34,878,539 |
+| Atlas Vault | 44,566,368 |
+
+Liltwing's first product round built all 16 declared source entries and applied
+print gates only to its five printed parts. Four passed; the shuttle failed
+thickness and overhang checks. Incorrect translation inputs and inconclusive
+Boolean geometry checks also needed repair. The Manager's visual verdict was
+inconclusive: the complete playset was visible, but the message carrier,
+launcher settings and sewn pocket entrances needed focused views. These are
+recorded failures, not accepted product evidence.
+
+Atlas's separate internal tooling project passed its first local round,
+including native visual feedback. The actual toy's assembly and final review
+remained pending. Pinball, Switchyard and Rainmark were still integrating
+mechanisms and repairing their product sources. No physical test measurements
+or manufacturing results were claimed from these digital checks.
