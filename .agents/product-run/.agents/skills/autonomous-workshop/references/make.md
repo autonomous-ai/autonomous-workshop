@@ -57,8 +57,12 @@ the Wish names an object and attaches none, and label a text-derived
 interpretation as such when neither is reachable rather than stopping the run.
 
 STEP is the only geometry format the toolchain writes. `render_product`
-tessellates the exact STEP in memory; there is no mesh export, and no gate
-measures a wall, a mesh or an overhang, so never call a product print-ready.
+tessellates the exact STEP in memory and there is no mesh export. The print
+gates do the same: `check_mesh`, `check_overhang` and `check_thickness` build
+each printable entry from source and measure its tessellation in the gate, so
+printability is checkable again without a mesh deliverable. Call a product
+print-ready only behind a passing `--print-gates` run at the nozzle the print
+will use.
 
 ## Ownership and pipeline
 
@@ -96,8 +100,10 @@ are separate. Frozen older runs retain their materialized rules and tools.
    a concrete repair using `--record-visual`. Inspect the actual views even when
    likeness passes or no reference image exists. Pending or inconclusive visual
    feedback is not a pass. These self-checks do not replace independent review.
-   Run only additional narrow checks affected by an edit. There is no cheap
-   print preflight: nothing in the toolchain measures a wall.
+   Run only additional narrow checks affected by an edit. `make_round` gates
+   every part that builds with `check_thickness` and `check_overhang` at the
+   fixed 0.4 mm nozzle standard, so a wall or overhang defect surfaces in the
+   round that caused it rather than at final verification.
 4. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
    and `<cad-project>/snap/signature.png` (at least 1200×800 RGB). When the
    promise changes product geometry or state, generate distinct exact-state
@@ -161,18 +167,20 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   of one to four words with no dimensions, part counts, or sentences, and
   neither may use Workshop vocabulary (Wish, Taste, Goal, Make, Release,
   Playtest, Spark, Forge, Quest, artifact, gate);
-- the self-contained CAD project, source, generated STEP, measurements, and
-  final `measure/verification-pipeline.md`;
+- the self-contained CAD project, source, generated STEP, measurements, the
+  passing `measure/thickness-<role>.md` and `measure/overhang-<role>.md`
+  reports for every printable part, and final
+  `measure/verification-pipeline.md`;
 - one canonical final render family under `<cad-project>/snap/`;
-- `<cad-project>/snap/SIGNATURE-REVIEW.json` bound to the exact concept and
-  images.
+- `<cad-project>/snap/SIGNATURE-REVIEW.json` bound to the exact concept,
+  images, and print-gate reports.
 
 The root `assembled.*` files are sealed delivery copies of the final combined
 CAD output. They do not replace the self-contained CAD project or its isolated
 verification. Before finalizing, confirm every packet-named root file exists as
 a nonempty regular file; a nested combined export alone is not publishable.
 
-The canonical schema-v7 review contains exactly: `schema_version`, `kind`,
+The canonical schema-v8 review contains exactly: `schema_version`, `kind`,
 `concept_sha256`, `iso_sha256`, `signature_sha256`, `reviewer`,
 `blind_held_read`, `blind_form_read`, `blind_subjects_read`,
 `blind_action_read`, `blind_relationship_read`,
@@ -181,8 +189,16 @@ The canonical schema-v7 review contains exactly: `schema_version`, `kind`,
 `action_matches_wish`, `relationship_matches_wish`,
 `anti_generic_signature_visible`, `signature_experience_unmistakable`,
 `finished_product_desirable`, `review_rounds`, `critical_form_requirements`,
-`blocking_visual_defects`, `largest_risk`, and
+`blocking_visual_defects`, `print_gate_sha256s`, `largest_risk`, and
 `resolution`. Use kind `autonomous-workshop.signature-experience-review`.
+`print_gate_sha256s` maps each cited `measure/<gate>-<role>.md` report, relative
+to the CAD project, to its exact sha256. Bind every printable part's passing
+thickness and overhang reports there and seal product status
+`full-with-thickness` with `print_ready_claim: true`; leave the map empty and
+seal `digitally-verified-not-print-ready` with `false` when the round did not
+open the print gates, and then never call the product print-ready. The host
+reruns the verifier in the tier those two declarations name, so a claim the
+sealed project cannot reproduce is refused rather than downgraded.
 Every boolean is true; `review_rounds` is an integer from one through four; blockers are empty; each
 critical requirement has exactly `requirement`, `blind_evidence`, and
 `matches: true`. Evaluate form against the actual Wish: an exposed mechanism

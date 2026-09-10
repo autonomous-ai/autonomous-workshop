@@ -47,13 +47,66 @@ def record_fixture_visual_pass(module, project, summary):
     return module.record_visual(Path(project), path)
 
 
+def _install_gate_identity(project):
+    """The tool bytes make_round hashes to decide whether a PASS may be reused.
+
+    Without them the identity is unavailable, which correctly disables reuse --
+    so a reuse test has to supply them rather than assume them.
+    """
+    scripts = project / "cad" / "scripts"
+    scripts.mkdir(parents=True, exist_ok=True)
+    for name in ("check_thickness", "check_overhang", "meshlib.py", "printlib.py"):
+        (scripts / name).write_text("# fixture %s\n" % name, encoding="utf-8")
+
+
+def _gate_output(tool, *, fails):
+    """Stand in for one print gate, in the exact shape make_round parses."""
+    if tool == "check_thickness":
+        if fails:
+            return (
+                "part_wheel.step.py: 4.20 cm3 solid, grid 0.100 mm\n"
+                "  FAIL  wall >= 0.80 mm (+/-0.10)        2.1% of surface below\n"
+                "        1. [wall ] 0.42 mm at (1.0, 2.0, 3.0)  12 samples\n"
+                "RESULT: WALL BELOW MINIMUM\n"
+            ), 1
+        return (
+            "part_wheel.step.py: 4.20 cm3 solid, grid 0.100 mm\n"
+            "  PASS  wall >= 0.80 mm (+/-0.10)        0.0% of surface below\n"
+            "RESULT: printable at this wall\n"
+        ), 0
+    if fails:
+        return (
+            "part_wheel.step.py: 13.8 cm2 of surface\n"
+            "  FAIL  unsupported area                  473.9 mm2\n"
+            "        1. [overhang] 473.9 mm2 at (0.0, 0.0, 6.0)  span 20.0 mm\n"
+            "RESULT: NEEDS SUPPORT\n"
+        ), 1
+    return (
+        "part_wheel.step.py: 13.8 cm2 of surface\n"
+        "RESULT: prints unsupported\n"
+    ), 0
+
+
 class MakeRoundTest(unittest.TestCase):
-    def _round(self, project, *, render_fails=False, build_fails=False):
+    def _round(
+        self,
+        project,
+        *,
+        render_fails=False,
+        build_fails=False,
+        wall_fails=False,
+        overhang_fails=False,
+        argv=None,
+        calls=None,
+    ):
         module = load_module()
         (project / "toy.step.py").write_text("def gen_step(): pass\n")
         (project / "part_wheel.step.py").write_text("def gen_step(): pass\n")
+        _install_gate_identity(project)
         def fake_run(command, **kwargs):
             tool = Path(command[1]).name
+            if calls is not None:
+                calls.append(command)
             if tool == "gen" and not build_fails:
                 Path(command[2]).with_name(Path(command[2]).name[:-3]).write_bytes(b"step")
             if tool == "render_review" and not render_fails:
@@ -61,11 +114,21 @@ class MakeRoundTest(unittest.TestCase):
                 out.mkdir()
                 for view in ("front", "top", "iso"):
                     (out / (view + ".png")).write_bytes(view.encode())
+            if tool in ("check_thickness", "check_overhang"):
+                stdout, code = _gate_output(
+                    tool,
+                    fails=wall_fails if tool == "check_thickness" else overhang_fails,
+                )
+                log = kwargs.get("log")
+                if log is not None:
+                    Path(log).parent.mkdir(parents=True, exist_ok=True)
+                    Path(log).write_text(stdout, encoding="utf-8")
+                return subprocess.CompletedProcess(command, code, stdout, "")
             failed = (render_fails and tool == "render_review") or (build_fails and tool == "gen")
             return subprocess.CompletedProcess(command, 1 if failed else 0,
                                                '{"ok":true}\n', "ValueError: wall must be positive\n" if failed else "")
         with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(module, "skills_root", return_value=project), mock.patch.object(module, "run", side_effect=fake_run):
-            self.assertEqual(module.main([str(project)]), 1)
+            self.assertEqual(module.main(argv or [str(project)]), 1)
         summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
         return module, summary
 
@@ -194,6 +257,13 @@ class MakeRoundTest(unittest.TestCase):
                     out.mkdir()
                     for view in ("front", "top", "iso"):
                         (out / (view + ".png")).write_bytes(view.encode())
+                if tool in ("check_thickness", "check_overhang"):
+                    stdout, code = _gate_output(tool, fails=False)
+                    log = kwargs.get("log")
+                    if log is not None:
+                        Path(log).parent.mkdir(parents=True, exist_ok=True)
+                        Path(log).write_text(stdout, encoding="utf-8")
+                    return subprocess.CompletedProcess(command, code, stdout, "")
                 return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
 
             with contextlib.redirect_stdout(io.StringIO()), \
@@ -203,7 +273,170 @@ class MakeRoundTest(unittest.TestCase):
             summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
             self.assertEqual(summary["parts"], ["toy"])
             self.assertEqual(summary["build"]["toy"]["verdict"], "PASS")
-            self.assertEqual(calls, ["gen", "render_review"])
+            # The one-piece entry is its own print target.
+            self.assertEqual(summary["print"]["toy"]["verdict"], "PASS")
+            self.assertEqual(
+                calls, ["gen", "check_thickness", "check_overhang", "render_review"]
+            )
+
+    def test_every_built_part_is_gated_from_source_and_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            calls = []
+            module, summary = self._round(project, calls=calls)
+            self.assertTrue(summary["checks_ok"])
+            # A split project prints its parts; the combined entry is the
+            # review subject, not a print target.
+            self.assertEqual(sorted(summary["print"]), ["wheel"])
+            for role in ("wheel",):
+                gates = summary["print"][role]
+                self.assertEqual(gates["verdict"], "PASS")
+                self.assertEqual(gates["thickness"]["verdict"], "PASS")
+                self.assertEqual(gates["overhang"]["verdict"], "PASS")
+            # The gates read the generator entry, never an exported mesh.
+            gated = [c for c in calls if Path(c[1]).name in ("check_thickness", "check_overhang")]
+            self.assertEqual(len(gated), 2)
+            for command in gated:
+                self.assertTrue(command[2].endswith(".step.py"), command[2])
+                self.assertNotIn("--skip-thickness", command)
+            self.assertIn("--nozzle", [item for c in gated for item in c])
+            self.assertIn("--angle", [item for c in gated for item in c])
+
+    def test_a_failing_print_gate_fails_the_round(self):
+        for label, kwargs in (
+            ("wall", {"wall_fails": True}),
+            ("overhang", {"overhang_fails": True}),
+        ):
+            with self.subTest(gate=label), tempfile.TemporaryDirectory() as tmp:
+                project = Path(tmp)
+                module, summary = self._round(project, **kwargs)
+                self.assertFalse(summary["checks_ok"])
+                self.assertEqual(summary["build"]["wheel"]["verdict"], "PASS")
+                self.assertEqual(summary["print"]["wheel"]["verdict"], "FAIL")
+                gate = "thickness" if label == "wall" else "overhang"
+                self.assertEqual(summary["print"]["wheel"][gate]["verdict"], "FAIL")
+                # A geometry defect the gate measured is never a build defect.
+                feedback = self._feedback(project, summary)
+                with mock.patch.object(module, "run") as runner:
+                    with self.assertRaisesRegex(ValueError, "clean round and visual pass"):
+                        module.record_visual(project, feedback, full=True)
+                    runner.assert_not_called()
+
+    def test_a_part_that_did_not_build_is_a_gate_failure_not_a_skip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            calls = []
+            module, summary = self._round(project, build_fails=True, calls=calls)
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual(summary["build"]["wheel"]["verdict"], "FAIL")
+            self.assertEqual(summary["print"]["wheel"]["verdict"], "FAIL")
+            self.assertEqual(
+                summary["print"]["wheel"]["thickness"]["failures"], ["build failed"]
+            )
+            # There is no solid to measure, so no gate is spent on one.
+            self.assertEqual(
+                [c for c in calls if Path(c[1]).name.startswith("check_")], []
+            )
+
+    def test_unchanged_part_reuses_a_passing_pair_but_not_a_failed_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, first = self._round(project)
+            self.assertEqual(first["reused"], [])
+            state = json.loads((project / "measure" / module.STATE_NAME).read_text())
+            self.assertEqual(sorted(state["print"]), ["wheel"])
+            self.assertIsNotNone(state["print_context"])
+
+            # A second round over identical bytes reuses both parts' evidence.
+            calls = []
+            def fake_run(command, **kwargs):
+                tool = Path(command[1]).name
+                calls.append(tool)
+                if tool == "gen":
+                    source = Path(command[2])
+                    source.with_name(source.name[:-len(".py")]).write_bytes(b"step")
+                if tool == "render_review":
+                    out = Path(command[command.index("-o") + 1])
+                    out.mkdir()
+                    for view in ("front", "top", "iso"):
+                        (out / (view + ".png")).write_bytes(view.encode())
+                return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
+
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    mock.patch.object(module, "skills_root", return_value=project), \
+                    mock.patch.object(module, "run", side_effect=fake_run):
+                self.assertEqual(module.main([str(project)]), 1)
+            second = json.loads((project / "measure/rounds/r0002/summary.json").read_text())
+            self.assertEqual(sorted(second["reused"]), ["wheel"])
+            self.assertEqual(
+                [tool for tool in calls if tool.startswith("check_")], []
+            )
+            self.assertEqual(second["print"]["wheel"]["verdict"], "PASS")
+
+            # Editing a recorded tool log invalidates the record it stands for.
+            state_path = project / "measure" / module.STATE_NAME
+            state = json.loads(state_path.read_text())
+            log = next(iter(state["print"]["wheel"]["logs"]))
+            Path(log).write_text("tampered\n", encoding="utf-8")
+            state_path.write_text(json.dumps(state))
+            calls.clear()
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    mock.patch.object(module, "skills_root", return_value=project), \
+                    mock.patch.object(module, "run", side_effect=fake_run):
+                module.main([str(project)])
+            self.assertIn("check_thickness", calls)
+
+    def test_a_different_nozzle_is_a_different_measurement(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, _ = self._round(project)
+            calls = []
+            self._round_again(module, project, calls, ["--nozzle", "0.6"])
+            # The recorded context names the nozzle, so a wider one re-measures.
+            self.assertIn("check_thickness", [Path(c[1]).name for c in calls])
+            gated = [c for c in calls if Path(c[1]).name == "check_thickness"]
+            self.assertIn("0.6", gated[0])
+
+    def _round_again(self, module, project, calls, extra):
+        def fake_run(command, **kwargs):
+            calls.append(command)
+            tool = Path(command[1]).name
+            if tool == "gen":
+                source = Path(command[2])
+                source.with_name(source.name[:-len(".py")]).write_bytes(b"step")
+            if tool == "render_review":
+                out = Path(command[command.index("-o") + 1])
+                out.mkdir()
+                for view in ("front", "top", "iso"):
+                    (out / (view + ".png")).write_bytes(view.encode())
+            if tool in ("check_thickness", "check_overhang"):
+                stdout, code = _gate_output(tool, fails=False)
+                log = kwargs.get("log")
+                if log is not None:
+                    Path(log).parent.mkdir(parents=True, exist_ok=True)
+                    Path(log).write_text(stdout, encoding="utf-8")
+                return subprocess.CompletedProcess(command, code, stdout, "")
+            return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
+
+        with contextlib.redirect_stdout(io.StringIO()), \
+                mock.patch.object(module, "skills_root", return_value=project), \
+                mock.patch.object(module, "run", side_effect=fake_run):
+            module.main([str(project), *extra])
+
+    def test_the_final_verifier_runs_the_print_gates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(project)
+            with mock.patch.object(module, "skills_root", return_value=project), \
+                    mock.patch.object(
+                        module, "run",
+                        return_value=subprocess.CompletedProcess([], 0, "", ""),
+                    ) as runner:
+                module.record_visual(project, self._feedback(project, summary), full=True)
+            command = runner.call_args.args[0]
+            self.assertIn("--print-gates", command)
+            self.assertIn("--nozzle", command)
+            self.assertNotIn("--skip-thickness", command)
 
     def test_visual_pass_cannot_unlock_full_verification_after_numeric_failure(self):
         with tempfile.TemporaryDirectory() as tmp:

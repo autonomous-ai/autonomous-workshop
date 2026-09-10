@@ -11,7 +11,7 @@ repository link is only for provenance and release review.
 
 ## Purpose
 
-Create or modify parametric CAD models from natural-language requirements, generate validated STEP/STP artifacts, inspect geometry references, and return checked outputs. STEP is the only format this skill writes. There is no mesh export of any kind — no STL, no 3MF, no GLB deliverable — and no mesh, overhang, or wall-thickness gate, so never call an output print-ready. For assemblies, prefer `cadgen.assembly.AssemblyHelper` with source-level build123d joints, named mating datums, and native labels when the parts have functional assembly relationships.
+Create or modify parametric CAD models from natural-language requirements, generate validated STEP/STP artifacts, inspect geometry references, and return checked outputs. STEP is the only format this skill writes. There is no mesh export of any kind — no STL, no 3MF, no GLB deliverable. Printability is gated separately by `verify_project --print-gates`, which tessellates each printable entry in the gate and writes nothing; call an output print-ready only when that run passed. For assemblies, prefer `cadgen.assembly.AssemblyHelper` with source-level build123d joints, named mating datums, and native labels when the parts have functional assembly relationships.
 
 There are two ways into the STEP workflow: generate from build123d Python source (the default when designing from scratch or modifying a generated model), or import an existing STEP/STP file directly (when no generator exists or the user explicitly targets the STEP file). Both produce the same inspectable artifacts.
 
@@ -19,7 +19,7 @@ There are two ways into the STEP workflow: generate from build123d Python source
 
 Use this skill when the user asks for CAD files, STEP/STP files, build123d source, selector refs such as `#o1.2.f1`, mechanical parts, assemblies, enclosures, brackets, fixtures, holes, counterbores, countersinks, slots, pockets, bosses, standoffs, ribs, fillets, chamfers, shells, source-level joints, mating, or measurements. Also use it when the user supplies reference images or 2D technical drawings of a part to reproduce or take design intent from.
 
-A request for an STL, a 3MF, a GLB, or any sliced/printable mesh has no workflow here — say that STEP is the deliverable and that printability is unverified, rather than improvising an export. The only mesh this toolchain builds is the `__cadgen__/` render package that `inspect` and the viewer rebuild on demand, and it is not a deliverable. For 2D DXF drawings, use the `$dxf` skill **when it is installed**; when a DXF projects from a 3D part, this skill owns the STEP geometry and `$dxf` owns the drawing. `$dxf` is a separate sibling skill and does not travel with this one, so check for it before promising a drawing.
+A request for an STL, a 3MF, a GLB, or any sliced/printable mesh has no workflow here — say that STEP is the deliverable, rather than improvising an export. If what the user actually wants to know is whether it prints, run `verify_project --print-gates`: that answers the question without producing a mesh. The only mesh this toolchain builds is the `__cadgen__/` render package that `inspect` and the viewer rebuild on demand, and it is not a deliverable. For 2D DXF drawings, use the `$dxf` skill **when it is installed**; when a DXF projects from a 3D part, this skill owns the STEP geometry and `$dxf` owns the drawing. `$dxf` is a separate sibling skill and does not travel with this one, so check for it before promising a drawing.
 
 Do not use this skill for render-only concept art, CAM toolpaths, engineering certification, FEA conclusions, architectural BIM, or freehand illustration unless the user also needs CAD geometry.
 
@@ -73,9 +73,10 @@ fixtures — the refusals that decide whether a gate is required at all — in a
 temporary paper project, with no geometry and no daemon. Run it after touching
 that file: a guard that stops firing does not fail, it just stops appearing.
 The final runner collects failures from every independent cheap preflight gate
-before it stops. Read the complete failing report and repair the whole batch
-before rerunning; dependent checks remain explicitly skipped when a prerequisite
-failed.
+before it stops, and `--print-gates` collects mesh/overhang/thickness failures
+across every printable target. Read the complete failing report and repair the
+whole batch before rerunning; dependent checks remain explicitly skipped when a
+prerequisite failed.
 
 **A run is expensive.** Outside the Workshop v8/v9 proof deferral, the measured
 cost of every command, and which to run per round versus once at the end, are
@@ -89,7 +90,7 @@ interpreter placeholder. Use
 command interface except during the Workshop v8/v9 proof deferral; reference
 docs show recommended workflows, not every flag.
 
-**Bootstrap before the first run, not after the first failure.** `requirements.txt` pins `cadgen`, whose own metadata declares `requires-python = ">=3.11"` — a macOS system `python3` is often older and pip will refuse to resolve it, so create a project venv on a modern interpreter rather than pip-installing into the system one, then `python -m pip install -r <skill-dir>/requirements.txt`. That one line is enough for every script here: `numpy` and `scipy` arrive with `build123d`, and `shapely` with `cadgen` itself. Check that up front; discovering it mid-workflow costs a full build round.
+**Bootstrap before the first run, not after the first failure.** `requirements.txt` pins `cadgen`, whose own metadata declares `requires-python = ">=3.11"` — a macOS system `python3` is often older and pip will refuse to resolve it, so create a project venv on a modern interpreter rather than pip-installing into the system one, then `python -m pip install -r <skill-dir>/requirements.txt`. That one line is enough for every script here: `numpy` and `scipy` arrive with `build123d`, and `shapely` — which `repair_mesh` needs — with `cadgen` itself. Check that up front; discovering it mid-workflow costs a full build round.
 
 **Streams.** stdout carries the result; stderr carries progress, timing, and failures, and the two never interleave. Every tool answers on stdout — `gen` prints `<outcome> <package path>` per target — so `2>/dev/null` leaves a parseable result and `>/dev/null` a readable log. JSON on stdout is always compact; pipe through `jq .` to read it. For machine-readable output: `gen` and `export` take `--json`; `inspect` already emits JSON and takes `--format text` for prose. `--verbose` adds stage timing (and full tracebacks) on stderr. Output volume does not grow with model size — a 600-occurrence assembly logs the same dozen lines a single part does.
 
@@ -123,9 +124,9 @@ Scale depth to the task: a simple part needs a short brief and few spec-driven c
 Use two execution phases. During **quick iteration**, build only the entry
 needed to review the current edit (normally the combined assembly), and rerun
 only checks whose relationships changed. During **final verification**, rebuild
-every affected entry together, write the STEP files, run every mandatory gate,
-and export requested meshes. Quick iteration never substitutes for the final
-gate.
+every affected entry together, write the STEP files, and run every mandatory
+gate — including `--print-gates` whenever the work will be printed or called
+printable. Quick iteration never substitutes for the final gate.
 
 1. **Classify the task.** New part, new assembly, source modification, direct STEP/STP inspection, reference selection, measurement/alignment check, or secondary output request.
 2. **Load only the needed references.** Use the triggers below instead of reading the whole reference set. Each one you load is re-sent on every later round.
@@ -141,8 +142,11 @@ gate.
 12. **Repair and rerun.** If a check fails, change the smallest responsible source section, regenerate, and rerun the failed validation **in the same model round**.
 13. **Render before the expensive final gate.** Once exact draft geometry is
     plausible, generate every declared entry with `--write` so each carries a
-    fresh `.step`. Nothing here measures a wall, a mesh or an overhang, so no
-    cheap gate stands between draft geometry and review: never call the result
+    fresh `.step`. Run `verify_project --print-gates --nozzle <mm>` here rather
+    than at the end: at roughly 7-12 s per part per gate it is cheap beside
+    `validate` and `interfere`, and a wall or overhang defect found now costs
+    one source edit instead of a repair cycle after review. Until that run has
+    passed, printability is unverified — say so rather than calling the result
     printable. Then use `scripts/render_product
     <assembled-or-primary.step> -o <project>/snap/iso.png` and inspect the PNG
     at full size; it tessellates the exact STEP in memory and writes no mesh.
@@ -173,8 +177,8 @@ gate.
 
 CAD soundness stays deterministic: `scripts/inspect` (refs, validate,
 interfere, measure, align, frame, diff) plus the project gates (`check_layout`,
-`check_fit`, `check_motion`, `check_mount`, `check_spec_numbers`,
-`check_spec_format`) and
+`check_fit`, `check_mesh`, `check_motion`, `check_mount`, `check_thickness`,
+`check_spec_numbers`, `check_spec_format`) and
 `$electromechanical-integration`'s `check_power` for powered products.
 For image-derived projects, `verify_project --image-derived` additionally uses
 the sibling `image-to-cad` renderer and likeness gate; those visual checks do
@@ -213,6 +217,8 @@ in the toolchain catches what it catches.
 - **`check_fit` — before "fits the bed".** It checks the four things nothing else covers: the part sits on the bed (`min(Z) == 0`), its footprint fits, it has positive volume, and the generator runs. A part still in assembly coordinates passes `validate` and `interfere` and cannot be printed. It reports but does not fail on disconnected bodies and a missing per-project audit; `--strict` promotes both.
 - **`check_motion` — before "assemblable".** `validate` and `interfere` answer whether parts are sound and whether they overlap once assembled, never whether they can be brought together or whether a connector holds. Final `verify_project` refuses to skip motion when the README/spec documents an insertion, seating, pressing, sliding, screwing, snapping, threading or locking action; part count alone does not trigger it. Write **both** directions of every joint — the one it assembles along, and the one it must not, via `"expect": "blocked"`; a dovetail only checked for coming apart passes as a plain pocket. **A blocked sweep freezes its obstacles, so it is not proof when a removable obstacle is itself free:** declare the complete `retention` chain, and every removable support needs its own passing blocked condition until the graph reaches a genuine fixed frame/housing root. Never mark a loose gate, cap, key, pin, screw, magnet or catch as fixed to close the audit. Give each separately installed rigid part with constrained access its actual insertion path — final-pose rotation does not prove the camshaft can enter the frame. See `references/motion-manifests.md`.
 - **`check_mount` — before "it can hold the part".** Deriving a seat with `cadmount` is not proof the model has one: the generator may never have subtracted it, cut it in the wrong place, or eaten it with a later feature — and `validate`, `interfere`, `check_fit` and `check_motion` pass all three. The gate places the component's own STEP at a declared pose and measures the built solids for clash, clearance, and whether a screw reaches each hole from either side. Keep every bought/foreign STEP under `ref/` and declare it in `measure/mounts.json` with the checksum from its catalog row; final `verify_project` rejects a supplier file hidden elsewhere, then requires every STEP under `ref/` to have a mount row whose `sha256` matches. A derived envelope cannot replace the supplier source. `"bolts": false` is the escape hatch for a strapped or glued component. See `references/bought-parts.md`.
+- **`check_mesh` — on every printable entry, beside `check_fit`.** It builds the entry from source and tessellates it, then answers what the slicer will see: watertight, manifold, winding, one shell, positive volume, bed. `check_fit` measures the same solid's B-rep, so the two are cheap and expensive halves of one question rather than a staleness pair — nothing is exported here to go stale. A non-manifold edge fails: the subject is one printed part, so an edge four faces share is a defect however normal it is between two bodies (`--assembly` demotes it for a combined entry). `scripts/repair_mesh` writes nothing; it repairs in memory to name which defect class you have, and the fix goes in the generator. See `references/repair-loop.md`.
+- **`check_thickness` — before "print-ready".** `<project>/part_<role>.step.py --nozzle 0.4` fails a wall under two extruded lines, which a slicer drops or prints as two perimeters with a gap while the STEP stays perfect. Hollow in the source with `scripts/cadprint.py`, never a bare `offset(solid, -wall)`: that shrinks the solid rather than shelling it, and every gate passes the undersized result. See `references/print-optimisation.md`.
 - **`assert len(shape.solids()) == 1` — for a multi-segment organic body.** `validate` and `interfere` both pass a body whose tail is a separate solid resting against it: a loft's end cap is a plane normal to its own tangent, so a segment starting where the previous one "ended" starts outside it. The assert is the only thing that catches it. See `references/organic-lofts.md`.
 
 **Powered products**
@@ -250,6 +256,8 @@ Load these files only when their trigger applies:
 - `references/positioning.md` — part-local datums and origins, assembly transforms, build123d joints, CLI alignment validation, and positioning reports.
 - `references/parameters.md` — parameterizing a STEP model: source parameters, naming, defaults and bounds, deriving the second half of a mate with `scripts/cadfits.py`, and how a parameter change is confirmed.
 - `references/bought-parts.md` — seating an off-the-shelf component: fetching its STEP, deriving the cavity and the screw pattern from that file with `scripts/cadmount.py`, why offsetting an imported solid silently loses features, and what a derived seat still cannot answer. **Load whenever the model has to hold a motor, servo, LED module, bearing, board or any purchased part.**
+- `references/repair-loop.md` — diagnosis and repair procedures, including the source fixes for the mesh defects `check_mesh` fails on.
+- `references/print-optimisation.md` — wall thickness, hollowing, and why `offset(solid, -wall)` shrinks rather than shells.
 - `references/run-cost.md` — the measured cost of every command, which checks to run per round versus once at the end, why agent-loop tokens scale with round count rather than `gen` seconds, the two incompatible `--bed` flag forms, and why a stale generator anywhere in the worktree breaks `validate` for every model.
 
 Final responses should include generated files, validation actually run, assumptions, and caveats. Use `references/inspection-and-validation.md` for report structure.

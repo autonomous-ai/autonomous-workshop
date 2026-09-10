@@ -123,7 +123,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0049-product-wide-token-budget.md`, and
 `docs/adr/0060-make-round-visual-feedback-and-three-repairs.md`, and
 `docs/adr/0061-spark-make-owned-verification.md`, and
-`docs/adr/0062-step-only-cad-toolchain.md` before changing the CLI, runtime,
+`docs/adr/0062-step-only-cad-toolchain.md`, and
+`docs/adr/0063-print-gates-on-source.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -159,11 +160,17 @@ ADR 0060 requires native Manager visual feedback within Make rounds and expands
 final blind review to an initial review plus three repair-and-rereview cycles
 for new runs. Frozen older runs retain their original allowance and tool bytes.
 ADR 0062 makes STEP the only geometry format Workshop writes, seals or ships:
-the mesh export, `check_mesh`, `check_thickness`, `check_overhang` and
-print-preflight paths are gone, the CAD gate has a single
-`digitally-verified-not-print-ready` tier, and **no stage may call a product
-printable or print-ready**. Do not reintroduce a mesh deliverable or a
-print-ready claim from an older ADR or a frozen-run fixture.
+the mesh export, cadgen's STL/3MF writers and the Workshop-local
+print-preflight path are gone. Do not reintroduce a mesh deliverable from an
+older ADR or a frozen-run fixture.
+ADR 0063 supersedes ADR 0062's gate half and keeps its export half. The
+`check_mesh`, `check_overhang` and `check_thickness` gates are back, reading
+the B-rep directly instead of an exported mesh, so the CAD gate has two tiers
+again. A product is print-ready only behind a passing `verify_project
+--print-gates` run at the nozzle the print will use, declared twice — root
+product status `full-with-thickness` **and** `print_ready_claim: true` — and
+reproduced by the host's own rerun. A half-declared claim is refused, not
+downgraded, and the legacy `--exports` full-tier replay path stays retired.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

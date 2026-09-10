@@ -1,0 +1,665 @@
+#!/usr/bin/env python3
+"""Wall thickness and dead interior volume, measured off a printable entry.
+
+The other gates ask whether a part is sound and whether it can be assembled.
+This one asks what it costs to print, which is the question every other check
+leaves open: a wall the nozzle cannot lay down, and a solid core no one will
+ever see, both pass `validate`, `interfere`, `check_fit` and `check_mesh`.
+
+Three findings, from one voxel sampling of the closed surface:
+
+    thin       surface area whose wall is under `--min-wall`. A region of it
+               FAILS when the sub-minimum band is itself wider than one minimum
+               wall -- that is a wall the slicer drops or prints with a gap. A
+               narrower band is a TAPER: the tip of a wedge where two faces
+               meet, which every hole through a curved surface has and no
+               design can remove. Tapers are reported, counted against a budget,
+               and do not fail. `--strict-thin` promotes them.
+    thick      the thickness distribution over the surface, so a section that
+               is solid for no reason is visible as a number rather than a
+               suspicion.
+    hollowable material further than `--wall` from any surface -- what a shell
+               at that wall thickness would remove, and what that is worth once
+               the slicer's own infill is accounted for.
+
+Thickness is measured by marching inward along each sample's own normal until
+the ray leaves the material, so it is wall thickness in the direction the wall
+is actually crossed -- not distance to the medial axis, which halves it, and not
+a bounding measure. It is quantised to half the grid pitch, which is printed.
+
+The mesh must be closed: inside and outside are meaningless otherwise, so a
+non-watertight mesh is refused rather than measured. Run `check_mesh` first.
+
+The fix belongs in the generator. `references/print-optimisation.md` carries it,
+and `scripts/cadprint.py` derives both halves so a wall is a derivation rather
+than a number typed twice.
+
+    python "$CAD_SKILL_ROOT/scripts/check_thickness" <project>/part_x.step.py --nozzle 0.4
+    python "$CAD_SKILL_ROOT/scripts/check_thickness" <project>/part_x.step.py --report measure/thickness.md
+
+Exit 0 when no surface is under the minimum wall, 1 when any is, 2 on bad usage.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from meshlib import (  # noqa: E402
+    sliver_metrics, summarize, voxel_pitch, voxelize, weld,
+)
+from printlib import entry_mesh, entry_role, resolve_single_entry  # noqa: E402
+
+PLA_DENSITY = 1.24      # g/cm3
+# A part may spend this share of its surface on taper tips before the count
+# itself is the finding: a design that is 2% feather edges is a design problem
+# even though no single edge is.
+TAPER_BUDGET = 0.02
+REPORT_REGIONS = 6
+INFILL = 0.15           # what a slicer would have put in the space anyway
+MAX_SAMPLES = 400_000
+SHARP_EDGE_COS = float(np.cos(np.deg2rad(30.0)))
+
+
+def sharp_edge_flags(faces, normals, cosine_limit=SHARP_EDGE_COS):
+    """Mark each triangle edge whose neighbouring face changes normal sharply.
+
+    Column i is the edge opposite vertex i. Thickness along either single face
+    normal is undefined at a crease; a voxel ray fired there measures the
+    rasterised rim instead of the part's wall.
+    """
+    flags = np.zeros((len(faces), 3), dtype=bool)
+    uses = {}
+    opposite_edges = ((1, 2), (2, 0), (0, 1))
+    for face_index, face in enumerate(faces):
+        for opposite, (a, b) in enumerate(opposite_edges):
+            edge = tuple(sorted((int(face[a]), int(face[b]))))
+            uses.setdefault(edge, []).append((face_index, opposite))
+    for linked in uses.values():
+        sharp = len(linked) != 2
+        if not sharp:
+            first, second = linked[0][0], linked[1][0]
+            sharp = float(np.dot(normals[first], normals[second])) < cosine_limit
+        if sharp:
+            for face_index, opposite in linked:
+                flags[face_index, opposite] = True
+    return flags
+
+
+def surface_samples(verts, faces, pitch, cap=MAX_SAMPLES):
+    """Points spread over the surface by area, with each face's inward normal.
+
+    One sample per face would weight a 0.01 mm2 sliver the same as a 400 mm2
+    wall, and every area fraction reported below would be a fraction of triangle
+    count wearing an area's name. Samples are laid down per unit area instead,
+    so "2% of the surface" means 2% of the surface.
+    """
+    tri = verts[faces]
+    area, _height, _longest = sliver_metrics(verts, faces)
+    normals = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    lengths = np.linalg.norm(normals, axis=1, keepdims=True)
+    live = (area > 0) & (lengths[:, 0] > 0)
+    tri, area = tri[live], area[live]
+    faces = faces[live]
+    normals = normals[live] / lengths[live]
+    sharp = sharp_edge_flags(faces, normals)
+
+    want = np.maximum(np.ceil(area / (pitch * pitch)), 1).astype(np.int64)
+    if want.sum() > cap:
+        want = np.maximum((want * (cap / want.sum())).astype(np.int64), 1)
+    index = np.repeat(np.arange(len(tri)), want)
+
+    rng = np.random.default_rng(0)          # deterministic: this is a gate
+    r1, r2 = rng.random(len(index)), rng.random(len(index))
+    root = np.sqrt(r1)
+    bary = np.stack([1 - root, root * (1 - r2), root * r2], axis=1)
+    points = np.einsum("nij,ni->nj", tri[index], bary)
+
+    # Ignore a one-pitch band beside genuine creases. The normal is
+    # discontinuous there, so marching along either incident face normal can
+    # read the one-voxel rim of a cross-hole as a sub-nozzle wall. Smooth mesh
+    # tessellation edges remain sampled because their adjacent normals agree.
+    opposite_length = np.stack([
+        np.linalg.norm(tri[:, 1] - tri[:, 2], axis=1),
+        np.linalg.norm(tri[:, 2] - tri[:, 0], axis=1),
+        np.linalg.norm(tri[:, 0] - tri[:, 1], axis=1),
+    ], axis=1)
+    altitude = np.divide(
+        2 * area[:, None],
+        opposite_length,
+        out=np.zeros_like(opposite_length),
+        where=opposite_length > 0,
+    )
+    near_sharp = (bary * altitude[index] < pitch) & sharp[index]
+    keep = ~near_sharp.any(axis=1)
+    index, points = index[keep], points[keep]
+    if not len(index):
+        return points, np.empty((0, 3)), np.empty(0)
+    kept_per_face = np.bincount(index, minlength=len(tri))
+    weights = area[index] / kept_per_face[index]
+    return points, -normals[index], weights
+
+
+def march(inside, origin, pitch, points, directions, limit):
+    """Distance each ray travels inside the material before it leaves.
+
+    Rays are started a step in and required to be inside before an exit counts,
+    because a sample sits exactly on the surface where the grid cannot say which
+    side it is on -- reading that first cell as air would report every wall as
+    one step thick.
+
+    Only the rays still in flight are stepped. The loop has to run until the
+    last ray is resolved, and a ray fired down a long axis never exits at all,
+    so stepping the whole array every iteration costs the full sample count
+    times the longest ray however fast the rest finish. Measured on the 177 mm
+    post of a lamp assembly at a 0.157 mm pitch: 90% of 399,798 rays were done
+    by iteration 59 of 2270, 228 were still live at the end, and the array was
+    carried 20x further than the work required -- 33x on a rocket shell.
+    Compacting each exit out of the working set took that file's march from
+    15.7 s to 1.2 s, and the five-part gate from 42.4 s to 12.2 s, with every
+    reported figure unchanged.
+    """
+    shape = np.array(inside.shape)
+    n = len(points)
+    entered = np.zeros(n, dtype=bool)
+    travel = np.full(n, np.inf)         # a ray that never leaves reads as inf
+    step = pitch * 0.5
+
+    live = np.arange(n)                 # index back into the caller's arrays
+    P, D = points.copy(), directions.copy()
+    dist = np.zeros(n)
+    entry = np.zeros(n)
+    has = np.zeros(n, dtype=bool)       # this ray has a confirmed material run
+    run = np.zeros(n, dtype=np.int16)   # consecutive solid samples before entry
+    candidate = np.zeros(n)             # distance of the first sample in that run
+
+    for _ in range(int(limit / step) + 2):
+        dist += step
+        cell = np.rint((P + D * dist[:, None] - origin) / pitch).astype(np.int64)
+        within = np.all((cell >= 0) & (cell < shape), axis=1)
+        solid = np.zeros(len(P), dtype=bool)
+        w = np.flatnonzero(within)
+        solid[w] = inside[cell[w, 0], cell[w, 1], cell[w, 2]]
+
+        # A tessellated sharp rim can leave one occupied boundary voxel in
+        # front of the actual interior. Treating that singleton as a wall
+        # reports a pitch/2-thick defect on an otherwise thick cylinder when
+        # the grid is coarsened for a long part. Confirm entry with two
+        # consecutive occupied samples. A printable minimum wall spans many
+        # half-pitch samples, so this removes a voxel artefact without hiding
+        # a resolvable thin sheet.
+        searching = ~has
+        starting = solid & searching & (run == 0)
+        candidate[starting] = dist[starting]
+        run[solid & searching] += 1
+        run[(~solid) & searching] = 0
+        confirmed = solid & searching & (run >= 2)
+        entry[confirmed] = candidate[confirmed]
+        has[confirmed] = True
+
+        leaving = has & ~solid
+        entered[live[has & solid]] = True
+        if leaving.any():
+            travel[live[leaving]] = dist[leaving] - entry[leaving]
+            keep = ~leaving
+            live, P, D = live[keep], P[keep], D[keep]
+            dist, entry, has = dist[keep], entry[keep], has[keep]
+            run, candidate = run[keep], candidate[keep]
+            solid = solid[keep]
+            if len(live) == 0:
+                break
+    return travel, entered
+
+
+def thin_regions(points, weights, thickness, thin, link, limit=6,
+                 min_wall=None, pitch=None):
+    """Group the sub-minimum samples into distinct regions, worst first.
+
+    This check used to report `thickness.min()` and nothing else: one point.
+    A part with five separate knife edges therefore took five rounds to repair
+    -- fix the worst, re-run, meet the next, and each round costs a rebuild, an
+    export and a fresh voxelisation. Measured on a six-part pump, that pattern
+    turned a single 8 s measurement into most of an hour.
+
+    Samples within `link` of each other are one region, so a wedge that runs
+    along an edge stays one finding rather than a hundred.
+    """
+    from scipy.ndimage import label
+
+    idx = np.nonzero(thin)[0]
+    if idx.size == 0:
+        return []
+    pts = points[idx]
+    cell = np.floor((pts - pts.min(axis=0)) / link).astype(int)
+    grid = np.zeros(cell.max(axis=0) + 1, dtype=bool)
+    grid[cell[:, 0], cell[:, 1], cell[:, 2]] = True
+    lab, found = label(grid, structure=np.ones((3, 3, 3), dtype=int))
+    tag = lab[cell[:, 0], cell[:, 1], cell[:, 2]]
+
+    out = []
+    for t in range(1, found + 1):
+        sel = tag == t
+        here = pts[sel]
+        thick = thickness[idx][sel]
+        at = here[int(np.argmin(thick))]
+        area = float(weights[idx][sel].sum())
+        extent = float(np.linalg.norm(here.max(axis=0) - here.min(axis=0)))
+        region = {
+            "samples": int(sel.sum()),
+            "area": area,
+            "thinnest": float(thick.min()),
+            "at": (float(at[0]), float(at[1]), float(at[2])),
+            "extent": extent,
+        }
+        region.update(classify_region(region, min_wall, pitch))
+        out.append(region)
+    out.sort(key=lambda r: -r["area"])
+    return out[:limit], found
+
+
+def classify_region(region, min_wall, pitch):
+    """Is this thin region a wall, or the tip of a wedge?
+
+    Thickness alone cannot tell them apart: a 0.5 mm panel and the rim where a
+    hole breaks out of a round post both read under the limit. What separates
+    them is how WIDE the sub-minimum band is across the surface. A wall is thin
+    over its whole face. A taper crosses the limit on its way to being thick, so
+    its band is only as wide as the wedge angle makes it -- and when that is
+    narrower than one minimum wall, the material the slicer drops at that edge
+    is less than a single wall's width of it. Cross-drilled posts, countersinks
+    and any two faces meeting at an angle all produce them, in metal as much as
+    in plastic; a gate that fails on them fails on geometry no design can avoid.
+
+    `width` is the band's mean width: its area spread along its own run. A
+    region too small to have a run is measured against the grid pitch instead,
+    which is the finest band the instrument can resolve.
+    """
+    if min_wall is None:
+        return {}
+    run = region["extent"]
+    if pitch is not None and run < pitch:
+        run = pitch
+    width = region["area"] / run if run > 0 else region["area"]
+    if width < min_wall:
+        return {"width": float(width), "kind": "taper"}
+    # A wall you cannot run a nozzle along for even two wall-widths is not a
+    # wall. Compact regions read wide on area/run whatever their shape, and the
+    # ones that turn up in practice are the surface normal misbehaving at a
+    # sharp convex corner -- a 2.4 mm rib's end reporting 0.23 mm of material
+    # over 1.6 mm2. Reported as a `spot`, counted against the same budget as a
+    # taper, and not a failure on its own.
+    # ...and "even two wall-widths" cannot mean less than the instrument can
+    # resolve. Regions are clustered at 4 x pitch, so a region no longer than
+    # that is one cluster cell: its shape is the sampling's, not the part's.
+    floor = 2.0 * min_wall if pitch is None else max(2.0 * min_wall, 4.0 * pitch)
+    if region["extent"] < floor:
+        return {"width": float(width), "kind": "spot"}
+    return {"width": float(width), "kind": "wall"}
+
+
+def _slab(x0, y0, z0, x1, y1, z1, flip=False):
+    """A closed axis-aligned box as triangle soup, outward-wound."""
+    q = [
+        [(x0,y0,z1),(x1,y0,z1),(x1,y1,z1)], [(x0,y0,z1),(x1,y1,z1),(x0,y1,z1)],
+        [(x0,y0,z0),(x1,y1,z0),(x1,y0,z0)], [(x0,y0,z0),(x0,y1,z0),(x1,y1,z0)],
+        [(x0,y0,z0),(x1,y0,z0),(x1,y0,z1)], [(x0,y0,z0),(x1,y0,z1),(x0,y0,z1)],
+        [(x0,y1,z0),(x0,y1,z1),(x1,y1,z1)], [(x0,y1,z0),(x1,y1,z1),(x1,y1,z0)],
+        [(x0,y0,z0),(x0,y0,z1),(x0,y1,z1)], [(x0,y0,z0),(x0,y1,z1),(x0,y1,z0)],
+        [(x1,y0,z0),(x1,y1,z0),(x1,y1,z1)], [(x1,y0,z0),(x1,y1,z1),(x1,y0,z1)],
+    ]
+    tris = [[list(v) for v in t] for t in q]
+    return [t[::-1] for t in tris] if flip else tris
+
+
+def _prism(x0, x1, half_width, height):
+    """A triangular prism: a knife edge of known apex angle, outward-wound.
+
+    The closed form is what makes it a check. A sample `l` along a slant face
+    sits `l * sin(2a)` from the opposite face, where `a` is the apex half-angle,
+    so the sub-minimum band runs `min_wall / sin(2a)` up each face and the band
+    is `2 * min_wall / sin(2a)` wide -- never narrower than two minimum walls,
+    whatever the prism's length. A straight knife edge is therefore always a
+    wall, and the taper class cannot be reached by tilting a plane.
+    """
+    w, h, L = half_width, height, x1 - x0
+    a0, b0, c0 = (x0, 0.0, 0.0), (x0, -w, h), (x0, w, h)
+    a1, b1, c1 = (x1, 0.0, 0.0), (x1, -w, h), (x1, w, h)
+    quads = [
+        (b0, b1, c1), (b0, c1, c0),      # base, +Z
+        (a0, b1, b0), (a0, a1, b1),      # -Y slant
+        (a0, c0, c1), (a0, c1, a1),      # +Y slant
+        (a0, b0, c0),                    # cap at x0, -X
+        (a1, c1, b1),                    # cap at x1, +X
+    ]
+    return [[list(v) for v in t] for t in quads]
+
+
+def _measure(tris, min_wall, wall, pitch):
+    from scipy.ndimage import distance_transform_edt
+    verts, faces = weld(np.array(tris, dtype=float))
+    inside, origin = voxelize(verts, faces, pitch)
+    points, directions, weights = surface_samples(verts, faces, pitch)
+    span = float(np.linalg.norm(verts.max(axis=0) - verts.min(axis=0)))
+    thickness, entered = march(inside, origin, pitch, points, directions, span)
+    good = entered & np.isfinite(thickness)
+    reach = distance_transform_edt(inside, sampling=pitch)
+    thin = thickness[good] < min_wall - pitch / 2
+    regions, found = ([], 0)
+    if thin.any():
+        regions, found = thin_regions(points[good], weights[good], thickness[good], thin,
+                                      link=4 * pitch, limit=len(points),
+                                      min_wall=min_wall, pitch=pitch)
+    return {
+        "median": float(np.median(thickness[good])),
+        "regions": regions,
+        "thin_share": float(weights[good][thickness[good] < min_wall - pitch / 2].sum()
+                            / weights[good].sum()),
+        "hollow": float((reach > wall + pitch / 2).sum()) * pitch ** 3,
+        "solid": float(inside.sum()) * pitch ** 3,
+    }
+
+
+def _self_check():
+    """Three shapes whose answers are known in closed form."""
+    # A solid cube: thickness is its side, and a 1.2 mm shell would leave an
+    # inner cube of side 20 - 2 x 1.2.
+    got = _measure(_slab(0, 0, 0, 20, 20, 20), 0.8, 1.2, 0.2)
+    assert abs(got["median"] - 20.0) < 0.2, got
+    assert got["thin_share"] == 0.0, got
+    assert abs(got["hollow"] - (20 - 2 * 1.2) ** 3) / (20 - 2 * 1.2) ** 3 < 0.02, got
+
+    # The same cube hollowed to a 2 mm wall, written as an outer shell with a
+    # reversed inner one. Nothing is left to hollow, and the wall reads exact
+    # because it is axis-aligned. Parity fill reports this one inside out.
+    shell = _slab(0, 0, 0, 20, 20, 20) + _slab(2, 2, 2, 18, 18, 18, flip=True)
+    got = _measure(shell, 0.8, 1.2, 0.2)
+    assert abs(got["median"] - 2.0) < 0.11, got
+    assert abs(got["solid"] - (20 ** 3 - 16 ** 3)) / (20 ** 3 - 16 ** 3) < 0.02, got
+    assert got["hollow"] < 1.0, got
+
+    # A 0.5 mm sheet: every large face is under a 0.8 mm minimum wall.
+    got = _measure(_slab(0, 0, 0, 20, 20, 0.5), 0.8, 1.2, 0.1)
+    assert got["thin_share"] > 0.9, got
+    assert abs(got["median"] - 0.5) < 0.06, got
+
+    # A 90 degree knife edge is a WALL, not a taper. This is the direction that
+    # matters: the classifier exists to let an unavoidable feature edge through,
+    # and it must not let a real one through with it. sin(2a) = 1 here, so the
+    # closed form above puts the band at 2 x min_wall = 1.60 mm.
+    got = _measure(_prism(0, 20, 4.0, 4.0), 0.8, 1.2, 0.1)
+    assert got["thin_share"] > 0.0, got
+    biggest = got["regions"][0]
+    assert biggest["kind"] == "wall", got["regions"]
+    assert 0.8 < biggest["width"] < 2.4, biggest        # closed form 1.60
+    # The apex LINE of the same prism does read as a taper, and should: those
+    # samples sit on the edge itself, where any solid tapers to nothing. What
+    # decides the part is the band up the faces, which is a wall -- so a knife
+    # edge still fails, which is the direction that has to hold.
+    assert any(r["kind"] == "taper" for r in got["regions"]), got["regions"]
+    assert all(r["area"] < biggest["area"] for r in got["regions"]
+               if r["kind"] == "taper"), got["regions"]
+
+    # The taper side cannot be reached with flat faces -- see `_prism` -- so it
+    # is asserted on the measured shape of one: a band narrower than a minimum
+    # wall, which is what a hole breaking out of a curved surface leaves.
+    assert classify_region({"area": 3.3, "extent": 5.5}, 0.8, 0.37)["kind"] == "taper"
+    assert classify_region({"area": 3.3, "extent": 5.5}, 0.4, 0.37)["kind"] == "wall"
+    assert classify_region({"area": 0.02, "extent": 0.0}, 0.8, 0.37)["kind"] == "taper"
+    # Wide band, but nowhere to run: the corner of a 2.4 mm rib, not a wall.
+    assert classify_region({"area": 1.6, "extent": 1.2}, 0.8, 0.46)["kind"] == "spot"
+    # The same band over a run a nozzle could follow stays a wall.
+    assert classify_region({"area": 16.0, "extent": 12.0}, 0.8, 0.46)["kind"] == "wall"
+    # The floor follows the instrument: at a coarse pitch a 1.6 mm region is one
+    # cluster cell and cannot be called a wall; at a fine one it can.
+    assert classify_region({"area": 1.6, "extent": 1.6}, 0.8, 0.46)["kind"] == "spot"
+    assert classify_region({"area": 1.6, "extent": 1.6}, 0.8, 0.10)["kind"] == "wall"
+
+    # Region clustering: the whole point is that FIVE knife edges report as
+    # five findings in one run, not as one finding five runs running.
+    pts = np.array([[0.0, 0, 0], [0.1, 0, 0], [0.2, 0, 0],      # region A
+                    [20.0, 0, 0], [20.1, 0, 0],                  # region B, far off
+                    [40.0, 0, 0]], dtype=float)                  # region C
+    w = np.array([1.0, 1, 1, 2, 2, 5])
+    th = np.array([0.5, 0.4, 0.45, 0.3, 0.35, 0.7])
+    thin = np.ones(len(pts), dtype=bool)
+    got, found = thin_regions(pts, w, th, thin, link=0.4)
+    assert found == 3, found
+    assert [r["samples"] for r in got] == [1, 2, 3], got      # sorted by area
+    assert abs(got[0]["area"] - 5.0) < 1e-9, got
+    assert abs(got[2]["thinnest"] - 0.40) < 1e-9, got          # worst in region A
+    assert got[1]["at"] == (20.0, 0.0, 0.0), got               # worst in region B
+
+    # One cluster stays one finding however many samples it holds.
+    got, found = thin_regions(pts[:3], w[:3], th[:3], thin[:3], link=0.4)
+    assert found == 1 and got[0]["samples"] == 3, (found, got)
+
+    # Nothing thin, nothing reported.
+    assert thin_regions(pts, w, th, np.zeros(len(pts), bool), link=0.4) == []
+
+    # A single occupied boundary voxel is a raster artefact, not the first
+    # wall. Entry must continue to the next run that has enough support to be
+    # resolved. Before the two-sample confirmation this returned 0.5 mm.
+    inside = np.zeros((8, 1, 1), dtype=bool)
+    inside[1, 0, 0] = True
+    inside[3:6, 0, 0] = True
+    travel, entered = march(
+        inside,
+        np.zeros(3),
+        1.0,
+        np.zeros((1, 3)),
+        np.array([[1.0, 0.0, 0.0]]),
+        8.0,
+    )
+    assert entered[0] and travel[0] >= 2.0, (travel, entered)
+
+    # A shared coplanar triangulation edge is not a feature edge; a 90-degree
+    # crease is. The opposite-vertex indexing is part of the sampling contract.
+    fixture_normals = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0]])
+    fixture_faces = np.array([[0, 1, 2], [0, 3, 1]], dtype=np.int64)
+    marked = sharp_edge_flags(fixture_faces, fixture_normals)
+    assert marked[0, 2] and marked[1, 1], marked
+    flat_normals = np.array([[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]])
+    flat_faces = np.array([[0, 1, 2], [1, 3, 2]], dtype=np.int64)
+    flat = sharp_edge_flags(flat_faces, flat_normals)
+    assert not flat[0, 0] and not flat[1, 1], flat
+
+    print("check_thickness self-check: ok")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("entry", nargs="?", help="a printable *.step.py entry, or a "
+                                            "project directory holding exactly one; "
+                                            "omit with --self-check")
+    ap.add_argument("--nozzle", type=float, default=0.4, help="mm; sets the defaults below")
+    ap.add_argument("--min-wall", type=float, default=None,
+                    help="mm; below this a wall is not printable (default 2 x nozzle)")
+    ap.add_argument("--wall", type=float, default=None,
+                    help="mm; the shell thickness to cost a hollow at (default 3 x nozzle)")
+    ap.add_argument("--voxel", type=float, default=None,
+                    help="mm; grid pitch (default min-wall / 6, coarsened to fit memory)")
+    ap.add_argument("--infill", type=float, default=INFILL,
+                    help="fraction the slicer would have put in the removed space")
+    ap.add_argument("--density", type=float, default=PLA_DENSITY, help="g/cm3")
+    ap.add_argument("--strict-thin", action="store_true",
+                    help="fail on taper regions too, not only on thin walls")
+    ap.add_argument("--report", help="write a markdown record to this path")
+    ap.add_argument("--self-check", action="store_true",
+                    help="measure three shapes whose answers are known, and stop")
+    args = ap.parse_args()
+
+    if args.self_check:
+        _self_check()
+        return 0
+    if not args.entry:
+        ap.error("a printable entry is required unless --self-check is given")
+
+    min_wall = args.min_wall if args.min_wall is not None else 2 * args.nozzle
+    wall = args.wall if args.wall is not None else 3 * args.nozzle
+
+    entry = resolve_single_entry(args.entry)
+    verts, faces = weld(entry_mesh(entry, entry_role(entry)))
+    state = summarize(verts, faces)
+    if state["boundary"]:
+        sys.exit(f"{entry.name}: {state['boundary']} open edges -- inside and outside are "
+                 "undefined on an open surface. Run check_mesh, then repair_mesh, and "
+                 "fix the solid in the generator.")
+
+    target = args.voxel if args.voxel else min_wall / 6
+    pitch = voxel_pitch(verts, target)
+    try:
+        inside, origin = voxelize(verts, faces, pitch)
+    except MemoryError as exc:
+        sys.exit(f"{entry.name}: {exc}. Pass a coarser --voxel.")
+    cells = int(inside.sum())
+    solid_volume = cells * pitch ** 3
+
+    points, directions, weights = surface_samples(verts, faces, pitch)
+    span = float(np.linalg.norm(verts.max(axis=0) - verts.min(axis=0)))
+    thickness, entered = march(inside, origin, pitch, points, directions, span)
+    good = entered & np.isfinite(thickness)
+    thickness, weights, points = thickness[good], weights[good], points[good]
+    total_area = float(weights.sum())
+
+    from scipy.ndimage import distance_transform_edt, label
+    # The transform measures to the *centre* of the nearest outside cell, which
+    # sits about half a pitch beyond the surface, so a bare `reach > wall`
+    # insets by less than the wall and over-reports the void. Measured against
+    # the closed-form answer on a 20 mm cube at a 1.2 mm wall: +14.3% at a
+    # 0.4 mm pitch, +7.0% at 0.2, +3.4% at 0.1 -- and exact at all three once
+    # the threshold carries the half pitch.
+    reach = distance_transform_edt(inside, sampling=pitch)
+    tagged, found = label(reach > wall + pitch / 2)
+    sizes = np.bincount(tagged.reshape(-1))[1:] * pitch ** 3 if found else np.zeros(0)
+    # A pocket smaller than a cube of the wall itself is not somewhere a shell
+    # can go, and cannot be drained. Counting them turns rounding into findings.
+    worth = sizes >= wall ** 3
+    hollow_volume = float(sizes[worth].sum())
+    pockets = int(worth.sum())
+    trivial = int(found - pockets)
+
+    checks = []
+    def check(status, name, detail):
+        checks.append((status, name, detail))
+
+    # A reading is quantised to one march step, and on a wall that does not line
+    # up with the grid it lands one step low -- measured on a 1.20 mm shell:
+    # 1.10 at a 0.2 mm pitch, 1.15 at 0.1, converging from below. An
+    # axis-aligned wall reads exact at every pitch, so the bias is the
+    # instrument, not the geometry. Fail on what is below the limit by more
+    # than the instrument can explain, and say so in the label.
+    step = pitch / 2
+    thin = thickness < min_wall - step
+    thin_area = float(weights[thin].sum())
+    marginal = int(((thickness >= min_wall - step) & (thickness < min_wall)).sum())
+    regions, region_count = ([], 0)
+    if thin.any():
+        regions, region_count = thin_regions(points, weights, thickness, thin,
+                                             link=4 * pitch, limit=len(points),
+                                             min_wall=min_wall, pitch=pitch)
+    walls = [r for r in regions if r.get("kind") == "wall"]
+    tapers = [r for r in regions if r.get("kind") in ("taper", "spot")]
+    taper_area = sum(r["area"] for r in tapers)
+    over_budget = taper_area > TAPER_BUDGET * total_area
+    thin_fails = bool(walls) or over_budget or (args.strict_thin and bool(tapers))
+    worst = ""
+    if thin.any():
+        at = points[np.argmin(thickness)]
+        worst = (f"; thinnest {thickness.min():.2f} mm at "
+                 f"({at[0]:.1f}, {at[1]:.1f}, {at[2]:.1f})"
+                 f" in {region_count} region(s)")
+    verdict = ""
+    if thin.any():
+        widest = max((r["width"] for r in walls), default=0.0)
+        verdict = (f"; {len(walls)} wall(s) (widest band {widest:.2f} mm)"
+                   if walls else "; no region is a wall")
+        if tapers:
+            spots = sum(1 for r in tapers if r["kind"] == "spot")
+            verdict += (f", {len(tapers) - spots} taper(s) at feature edges"
+                        + (f" and {spots} spot(s) too small to be a wall" if spots else "")
+                        + (" "
+                        f"({100 * taper_area / total_area:.2f}% of surface, "
+                        f"budget {100 * TAPER_BUDGET:.0f}%)"))
+            if over_budget:
+                verdict += " -- OVER BUDGET"
+            elif args.strict_thin:
+                verdict += " -- failed by --strict-thin"
+    check("FAIL" if thin_fails else "PASS",
+          f"wall >= {min_wall:.2f} mm (+/-{step:.2f})",
+          f"{100 * thin_area / total_area:.1f}% of surface below "
+          f"({int(thin.sum())} of {len(thickness)} samples){worst}{verdict}"
+          + (f"; {marginal} more within measurement error of the limit" if marginal else ""))
+
+    percentiles = np.percentile(thickness, [50, 95]) if len(thickness) else [0, 0]
+    check("PASS", "thickness distribution",
+          f"median {percentiles[0]:.2f} mm, p95 {percentiles[1]:.2f} mm, "
+          f"max {thickness.max():.2f} mm" if len(thickness) else "no samples")
+
+    share = 100 * hollow_volume / solid_volume if solid_volume else 0.0
+    net = hollow_volume * args.infill
+    check("PASS" if hollow_volume <= 0 else "WARN", f"hollowable at {wall:.2f} mm wall",
+          f"{hollow_volume / 1000:.2f} of {solid_volume / 1000:.2f} cm3 ({share:.0f}%) "
+          f"in {pockets} pocket(s)"
+          + (f", {trivial} too small to shell" if trivial else ""))
+    check("PASS", "filament that would save",
+          f"{net / 1000:.2f} cm3, {net / 1000 * args.density:.1f} g at {100 * args.infill:.0f}% "
+          "infill -- the slicer already leaves most of that space empty")
+
+    head = (f"{entry.name}: {solid_volume / 1000:.2f} cm3 solid, grid {pitch:.3f} mm "
+            f"({inside.shape[0]}x{inside.shape[1]}x{inside.shape[2]}), "
+            f"{len(thickness)} surface samples, thickness resolved to {pitch / 2:.3f} mm")
+    print(head)
+    failed = False
+    for status, name, detail in checks:
+        print(f"  {status}  {name:30s} {detail}")
+        failed |= status == "FAIL"
+    shown = regions[:REPORT_REGIONS]
+    if shown:
+        print(f"        every thin region, worst first -- repair them in one round, "
+              f"not one per run:")
+        for i, r in enumerate(shown, 1):
+            print(f"        {i}. [{r['kind']:5s}] {r['thinnest']:.2f} mm at "
+                  f"({r['at'][0]:.1f}, {r['at'][1]:.1f}, {r['at'][2]:.1f})"
+                  f"  {r['samples']:5d} samples, {r['area']:.1f} mm2, "
+                  f"runs {r['extent']:.1f} mm, band {r['width']:.2f} mm")
+        if region_count > len(shown):
+            print(f"        ... and {region_count - len(shown)} smaller region(s)")
+    print("RESULT:", "WALL BELOW MINIMUM" if failed else "printable at this wall")
+
+    if args.report:
+        out = Path(args.report)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        rows = "\n".join(f"| {n} | {s} | {d} |" for s, n, d in checks)
+        region_rows = "" if not shown else (
+            "\n\n## Thin regions, worst first\n\n"
+            "A `wall` is thin over its face and fails. A `taper` is the tip of a "
+            "wedge where two faces meet -- its sub-minimum band is narrower than "
+            "one minimum wall, so the slicer drops less than a wall's width of "
+            "material at that edge. A `spot` is too short to run a nozzle along "
+            "at all, and is usually the surface normal misbehaving at a sharp "
+            "convex corner.\n\n"
+            "| # | kind | thinnest | at | samples | area mm2 | runs mm | band mm |\n"
+            "|---|---|---|---|---|---|---|---|\n"
+            + "\n".join(
+                f"| {i} | {r['kind']} | {r['thinnest']:.2f} mm | "
+                f"({r['at'][0]:.1f}, {r['at'][1]:.1f}, {r['at'][2]:.1f}) | "
+                f"{r['samples']} | {r['area']:.1f} | {r['extent']:.1f} | {r['width']:.2f} |"
+                for i, r in enumerate(shown, 1)))
+        out.write_text(
+            f"# Thickness and hollow\n\n`{' '.join(sys.argv[1:])}`\n\n{head}\n\n"
+            f"| check | status | detail |\n|---|---|---|\n{rows}\n{region_rows}\n\n"
+            "Measured on the entry's tessellated solid. The fix belongs in the\n"
+            "generator --\n"
+            "see `references/print-optimisation.md` and `scripts/cadprint.py`.\n",
+            encoding="utf-8")
+        print(f"  wrote {out}")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

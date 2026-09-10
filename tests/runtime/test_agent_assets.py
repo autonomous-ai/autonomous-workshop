@@ -171,7 +171,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         for required in (
             "smallest viable parametric baseline",
             "STEP is the only geometry format the toolchain writes",
-            "never call a product print-ready",
+            "Call a product print-ready only behind a passing `--print-gates` run",
             "one canonical final render family",
             "independent native critic",
             "blind held",
@@ -191,8 +191,9 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         ):
             with self.subTest(reference="playtest", required=required):
                 self.assertIn(required, playtest)
+        # ADR 0063 restores the gates but not the Workshop-local preflight mode.
         self.assertNotIn("--print-preflight", make)
-        self.assertNotIn("check_thickness", make)
+        self.assertIn("check_thickness", make)
         self.assertNotIn("Make contract", playtest)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):

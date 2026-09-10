@@ -89,8 +89,16 @@ product has a functional electrical load. For a non-image final command, add
 `verify_project` runs `check_layout`, performs one final multi-target generation,
 `check_fit`, the local `measure/check_{fit,spec,landmarks}.py` hooks that exist,
 `check_mount`, `check_power` and `check_motion` when their manifests exist, then one batched
-refs/validate/interfere pass. It writes no mesh and runs no mesh, overhang or
-wall-thickness gate: STEP is the deliverable, and printability is unverified.
+refs/validate/interfere pass. It writes no mesh: STEP is the deliverable.
+
+`--print-gates` adds the printability tail — `check_mesh`, `check_overhang` and
+`check_thickness` on every printable entry, each building the entry from source
+and tessellating it in the gate. It runs last in the workflow, after any
+image-derived render and likeness, because on a multi-part project it is the
+dearest block in the run. Failures are collected across all parts so one repair
+round sees every defect. Add `--nozzle` when the
+print will not use 0.4 mm. `--skip-thickness` drops the thickness gate and
+forfeits any print-ready claim.
 
 `--image-derived` is an explicit completion mode rather than an inferred one.
 It requires exactly one `*_spec.md`, both `measure/check_spec.py` and
@@ -119,12 +127,18 @@ JSON is needed. `--bed` overrides the first `--bed WxDxH` declaration in the
 project README/spec, which otherwise overrides the 220 x 220 x 220 default.
 Pass `--strict-fit` when a project's advisory disconnected-body and local-audit
 notes are also meant to fail the run; legitimate print plates may leave it off.
-No run here can support a print-ready claim: there is no mesh gate to pass.
-In an Autonomous Workshop Make handoff this is the only tier, so the sealed
-root product status is always exactly `digitally-verified-not-print-ready` and
-the hash-bound CAD verification JSON always records the literal boolean
-`final_pipeline.print_ready_claim: false`. Generation, fit, spec, motion,
-kernel and interference gates still run; nothing measures a wall.
+Only a run with `--print-gates` can support a print-ready claim; without it,
+printability is unverified and has to be reported that way. Pass `--nozzle`
+the diameter the print will actually use; `--skip-thickness` forfeits the
+claim even though the run is otherwise green.
+
+In an Autonomous Workshop Make handoff that choice picks the sealed tier, and
+two declarations have to agree. A run **with** passing `--print-gates` seals
+root product status `full-with-thickness` and records the literal boolean
+`final_pipeline.print_ready_claim: true` in the hash-bound CAD verification
+JSON. A run **without** it seals `digitally-verified-not-print-ready` and
+`false`. The host reruns the verifier itself in the tier the pair names, so a
+claim the sealed project cannot reproduce is a refusal, not a downgrade.
 
 ## Generated vs imported STEP
 

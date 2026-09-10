@@ -41,21 +41,33 @@ calls were reassembling by hand.
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
     --ref hero=<project>/cad/ref/hero.png [--ref side=...] \
-    [--min 0.90] [--all-parts] [--no-motion] [--json]
+    [--min 0.90] [--nozzle 0.4] [--overhang-angle 45] \
+    [--all-parts] [--no-motion] [--json]
 ```
 
 - `<project>/cad` is the directory holding the generator sources: exactly one
   entry `<name>.step.py` and any number of `part_<role>.step.py`.
 - `--ref LABEL=PATH` repeats once per reference view. Omitted, the labels are
   read from the `LABEL=ref/<file>` lines of the project's `*_spec.md`.
+- `--nozzle` is the diameter the print will use and sets the minimum wall;
+  `--overhang-angle` is the slope from vertical the printer bridges unsupported.
 - Only parts whose written STEP bytes changed since the previous round are
   reported; `--all-parts` reports every part. The first round reports all.
-  Nothing measures a wall, a mesh or an overhang: a part that builds is built,
-  never printable.
+- Every part that builds is gated from source by `check_thickness` and
+  `check_overhang`, which tessellate the entry in the gate and write no mesh.
+  A part that did not build is reported as a gate failure, not a skip: there is
+  no solid to measure. A round passes only when both gates pass on every part,
+  so `built` and `printable at this nozzle` stay separate verdicts.
+- An unchanged part reuses its previous PASS only when both gates passed, the
+  tool logs still hash to what was recorded, and the nozzle, angle, gate bytes
+  and interpreter are identical. A failed or legacy record is always
+  re-measured.
 - Without `part_<role>.step.py` files, the single entry is built and reported
   as the one-piece product.
-- `summary.json` records `changed` (parts whose STEP bytes moved) and `checked`
-  (parts with a fresh build verdict, including build failures).
+- `summary.json` records `changed` (parts whose STEP bytes moved), `checked`
+  (parts with a fresh build verdict, including build failures), `print` (the
+  per-part wall and overhang verdicts with their measurements) and `reused`
+  (parts whose gate evidence was carried forward).
 - The initial command returns exit 1 with visual status `pending` until native
   feedback is recorded, even if all numeric checks pass. A renderer failure
   produces visual status `error`; never fabricate feedback for missing images.

@@ -3,9 +3,57 @@
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
-  `39a63f73617d70a45473c984b46926c9d29bb9bd` (2026-09-10), resynced from
+  `673a9fa595d3ddfda89ed9a34a8bceabb49bc0db` (2026-09-10), resynced from
+  `39a63f73617d70a45473c984b46926c9d29bb9bd` (2026-09-10),
   `ec25343ea240c520074b66eee7b28e76bd91ee49` (2026-09-09) and
   `9e75609bb53bf880429353e57201995a4c0482e6` (2026-09-07).
+- The second 2026-09-10 resync takes upstream's
+  `cad/restore-print-gates-on-source` branch and its ordering follow-up, which
+  **reverse the gate half of the removal below while keeping the export half
+  reverted.** The two were removed together only because `check_mesh`,
+  `check_overhang` and `check_thickness` each took an STL positional argument,
+  so deleting the exporter left them with no subject. That coupling was an
+  implementation detail: a mesh gate needs a mesh, not an artifact, and OCP
+  tessellates the B-rep on demand. Upstream restores the three gates,
+  `meshlib.py`, `cadprint.py` and `repair_mesh`, adds `printlib.py` (printable-
+  entry discovery and tessellation at 0.02 mm deviation, measured within 0.03%
+  of exact volume), and gives `verify_project` a `--print-gates` sweep with
+  `--nozzle`, `--overhang-angle` and `--skip-thickness`. Each gate now takes one
+  printable `*.step.py` entry. `repair_mesh` repairs in memory to name the
+  defect class and the source fix; it writes nothing. STEP remains the only
+  thing the toolchain writes, and no mesh file is read or written anywhere.
+  The follow-up moves the sweep back to last in `_final`, after the
+  image-derived render and likeness, where it ran before the removal.
+- What upstream does **not** restore, and Workshop does not either: the old
+  source-vs-artifact pair that caught a stale export. With no artifact there is
+  nothing to go stale.
+- Workshop adopted the restoration in full. Its consequences are recorded in
+  ADR 0063: the host CAD gate has two tiers again, chosen by two agreeing
+  hash-bound declarations — `full-with-thickness` with
+  `final_pipeline.print_ready_claim: true`, or
+  `digitally-verified-not-print-ready` with `false` — and the host reruns the
+  verifier in the tier that pair names, so a claim the sealed project cannot
+  reproduce is refused rather than downgraded. The full tier's command carries
+  `--print-gates --nozzle 0.4`, never `--skip-thickness`, because skipping the
+  wall gate forfeits the claim. Make, Playtest and Release require print-ready
+  evidence again exactly where they did before ADR 0062. `make-round` gates every
+  part that builds and reports wall and overhang verdicts beside the build
+  verdict, reusing a passing pair only when both gates passed and the tool logs
+  still hash to what was recorded. The signature review binds the reports that
+  back its claim (schema 7 -> 8, `print_gate_sha256s`), and new runs freeze
+  `deep-economics-v15`, which routes a failed print gate into a targeted repair
+  the way v13 did before v14 dropped it.
+- The **legacy full-tier replay path stays retired**. It would rerun a
+  `final-fresh-exports-strict-fit` verifier, and `--exports` is still gone; the
+  restored tier is a different command, so a pre-tier receipt cannot be replayed
+  into it. `legacy_full_tier_compatibility` remains permanently false.
+- Per-part gate reports are sealed evidence again, not volatile output. Both
+  `measure/overhang-<role>.md` and `measure/thickness-<role>.md` embed the
+  argument vector they were run with, so the host compares them exactly apart
+  from the two path arguments' directory prefix; every measurement, option,
+  check, region and line of prose stays byte-exact, and an unknown report format
+  fails closed. This is stricter than the pre-ADR-0062 arrangement, which
+  allowlisted the thickness reports as fully volatile.
 - The 2026-09-10 resync takes upstream's `cad/drop-assembly-glb-export` branch,
   which is a single coherent capability removal: **STEP becomes the only
   format the toolchain writes.** Upstream deletes `scripts/export` (the whole

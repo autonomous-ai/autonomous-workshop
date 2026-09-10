@@ -19,11 +19,15 @@ generation with STEP writes, print fit, local audits, bought-part mounts,
 powered-system integration and motion when declared (or required by a
 documented assembly procedure), then refs + validate for every entry and assembly
 interference.  Image-derived renders and likeness run only after that inspect
-batch is clean, so a clash or invalid solid cannot spend the likeness budget.
-STEP is the only deliverable geometry format: this runner writes no print mesh
-and runs no mesh, overhang, or wall-thickness gate.  Independent cheap preflight
-gates are collected before the expensive motion and inspect tail, so one failed
-gate cannot hide the next one's actionable error.
+batch is clean, and the print gates (--print-gates) run last of all, so a clash
+or an invalid solid cannot spend any of their budget.
+
+STEP remains the only deliverable: --print-gates writes no mesh, it tessellates
+each printable entry's B-rep in the gate and measures that.  Without
+--print-gates nothing here checks printability, and the output cannot be called
+print-ready.  Independent cheap preflight gates are collected before the
+expensive motion and inspect tail, and the print gates are collected across
+every part, so one failed gate cannot hide the next one's actionable error.
 
 Image-derived mode adds the gates geometry-only CAD cannot answer: spec/source
 reconciliation, landmark coverage, orthogonal and reference-pose renders,
@@ -884,6 +888,89 @@ def _inspect_geometry(runner: Runner, entry_args: list[str]) -> int:
     return runner.inspect_batch(requests)
 
 
+def _run_print_gates(
+    runner: Runner,
+    project: Path,
+    printables: list[Path],
+    *,
+    bed: tuple[float, float, float],
+    nozzle: float,
+    skip_thickness: bool,
+    overhang_angle: float,
+) -> int:
+    """Audit every independent print target in one failure sweep.
+
+    No mesh is exported first.  The gates build each printable entry from source
+    and tessellate the B-rep themselves, so there is no artifact to write, go
+    stale, or hand over -- the STEP remains the only deliverable.
+
+    Failures are collected across parts rather than stopping at the first, so
+    one repair round sees every printable defect in the project instead of
+    peeling them off one run at a time.
+    """
+    failures = 0
+
+    for printable in printables:
+        role = printable.name.removesuffix(ENTRY_SUFFIX)
+        if role.startswith(PART_PREFIX):
+            role = role.removeprefix(PART_PREFIX)
+        entry_arg = _path_arg(printable, runner.cwd)
+
+        mesh_ok = runner.command(
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_mesh",
+                entry_arg,
+                "--bed",
+                f"{bed[0]:g}x{bed[1]:g}x{bed[2]:g}",
+            ],
+        ) == 0
+        if not mesh_ok:
+            failures += 1
+            # Overhang and thickness both decide inside-vs-outside by flood fill,
+            # which is undefined on a mesh that is not closed. Running them on a
+            # failed mesh produces numbers, not answers.
+            runner.skipped(f"check_overhang:{role}", "mesh gate failed")
+            if not skip_thickness:
+                runner.skipped(f"check_thickness:{role}", "mesh gate failed")
+            continue
+
+        # Overhang and thickness are independent once the mesh is sound. Run
+        # both even when the first one fails so one repair round sees every
+        # printable defect in this part and in all remaining parts.
+        failures += runner.command(
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_overhang",
+                entry_arg,
+                "--angle",
+                str(overhang_angle),
+                "--report",
+                _path_arg(project / "measure" / f"overhang-{role}.md", runner.cwd),
+            ],
+        ) != 0
+        if not skip_thickness:
+            failures += runner.command(
+                [
+                    sys.executable,
+                    SCRIPTS_DIR / "check_thickness",
+                    entry_arg,
+                    "--nozzle",
+                    str(nozzle),
+                    "--report",
+                    _path_arg(project / "measure" / f"thickness-{role}.md", runner.cwd),
+                ],
+            ) != 0
+
+    if failures:
+        print(
+            f"[verify_project] print gate group: {failures} failure(s) "
+            "collected across all targets",
+            flush=True,
+        )
+    return 1 if failures else 0
+
+
 def _audit_env(project: Path) -> dict[str, str]:
     # Local audits need the same immutable helper modules as generator CLIs.
     # Resolve from this materialized verifier, never from a developer checkout.
@@ -1073,7 +1160,11 @@ def _final(
     motion_manifest: Path | None,
     strict_fit: bool,
     strict_mount: bool,
+    print_gates: bool,
     bed: tuple[float, float, float],
+    nozzle: float,
+    skip_thickness: bool,
+    overhang_angle: float,
     image_derived: bool,
     likeness_refs: list[tuple[str, Path]],
     likeness_min: float,
@@ -1261,6 +1352,23 @@ def _final(
                 "the fresh likeness gate passed, so no acceptance decision was recorded",
                 file=sys.stderr,
             )
+
+    # Last, where the print sweep has always run. Two independent reasons put it
+    # here rather than straight after interference: a clash or an invalid solid
+    # must not spend its voxel-grid budget, and on a multi-part project it is
+    # typically the most expensive block in the run -- `references/run-cost.md`
+    # puts it above the render/likeness tail once a project has a few parts. The
+    # runner fails cheap first everywhere else; this is not the place to stop.
+    if print_gates and _run_print_gates(
+        runner,
+        project,
+        printables,
+        bed=bed,
+        nozzle=nozzle,
+        skip_thickness=skip_thickness,
+        overhang_angle=overhang_angle,
+    ) != 0:
+        return 1
 
     return 0
 
@@ -1667,6 +1775,30 @@ def self_check() -> int:
             print(f"{'ok  ' if hit else 'FAIL'} an argument typo cannot rewrite project evidence")
             ok &= hit
 
+            # A nozzle of zero makes every wall infinitely many extrusions wide,
+            # so the thickness gate would pass anything.
+            _sc_project(root)
+            hit, why = _sc_refuses(["proj", "--print-gates", "--nozzle", "0"])
+            print(f"{'ok  ' if hit else 'FAIL'} a zero nozzle is refused, not gated  - {why}")
+            ok &= hit
+
+            # --skip-thickness alone reads as a request that was honoured, when
+            # in fact no thickness gate was ever scheduled to skip.
+            _sc_project(root)
+            hit, why = _sc_refuses(["proj", "--skip-thickness"])
+            print(f"{'ok  ' if hit else 'FAIL'} skipping a gate that was never "
+                  f"scheduled is refused  - {why}")
+            ok &= hit
+
+            # A print sweep with no print target would report as a gate that ran
+            # and found nothing, which is indistinguishable from one that passed.
+            _sc_project(root, {"widget.step.py": "PRINTABLE = False\n"
+                                                 "def gen_step():\n    return None\n"})
+            hit, why = _sc_refuses(["proj", "--print-gates"])
+            print(f"{'ok  ' if hit else 'FAIL'} a print sweep with no printable entry "
+                  f"is refused, not passed  - {why}")
+            ok &= hit
+
             # every mode has to leave a .step behind; quick mode is the one
             # that used to plan a build and write no CAD file at all
             project = _sc_project(root)
@@ -1698,13 +1830,18 @@ def self_check() -> int:
             print(f"{'ok  ' if hit else 'FAIL'} successful advisory output remains visible")
             ok &= hit
 
-            # rendering and likeness are the expensive tail; a clash must stop
-            # them. Dry-run prints the planned argv in order.
+            # rendering, likeness and the print gates are the expensive tail; a
+            # clash must stop them all, and the print gates go last because on a
+            # multi-part project they are the dearest block in the run. Assert
+            # the whole order, not just the dependency: moving a block within the
+            # tail changes which failure a repair round pays to reach, and that
+            # is exactly the kind of change that otherwise lands unnoticed.
+            # Dry-run prints the planned argv in order.
             _sc_project(root)
             order_out = _io.StringIO()
             with _ctx.redirect_stdout(order_out), _ctx.redirect_stderr(_io.StringIO()):
                 try:
-                    main(["proj", "--dry-run", "--image-derived",
+                    main(["proj", "--dry-run", "--print-gates", "--image-derived",
                           "--unpowered", "--likeness-ref", "hero=ref/hero.png"])
                 except SystemExit:
                     pass
@@ -1712,16 +1849,18 @@ def self_check() -> int:
             interfere_at = order_text.find("interfere:assembly")
             render_at = order_text.find("render_views.py")
             likeness_at = order_text.find("check_likeness.py")
+            mesh_at = order_text.find("check_mesh")
             hit = (
                 interfere_at >= 0
                 and render_at > interfere_at
-                and likeness_at > interfere_at
+                and likeness_at > render_at
+                and mesh_at > likeness_at
             )
-            print(f"{'ok  ' if hit else 'FAIL'} validate/interfere run before "
-                  "rendering and likeness")
+            print(f"{'ok  ' if hit else 'FAIL'} interfere, then rendering and "
+                  "likeness, then the print gates last")
             if not hit:
                 print(f"       interfere={interfere_at} render={render_at} "
-                      f"likeness={likeness_at}")
+                      f"likeness={likeness_at} mesh={mesh_at}")
             ok &= hit
 
             class _CollectRunner:
@@ -1764,6 +1903,57 @@ def self_check() -> int:
                 print(f"       commands={preflight_runner.labels}")
             ok &= hit
 
+            # One repair round has to see every printable defect in the project.
+            # A sweep that stopped at the first failing part would hand back one
+            # finding per run and make the repair loop as long as the part list.
+            gate_runner = _CollectRunner({"check_overhang"})
+            gate_rc = _run_print_gates(
+                gate_runner,
+                project,
+                [project / "part_a.step.py", project / "part_b.step.py"],
+                bed=DEFAULT_BED,
+                nozzle=0.4,
+                skip_thickness=False,
+                overhang_angle=45.0,
+            )
+            hit = (
+                gate_rc == 1
+                and gate_runner.labels.count("check_mesh") == 2
+                and gate_runner.labels.count("check_overhang") == 2
+                and gate_runner.labels.count("check_thickness") == 2
+                and not gate_runner.skips
+            )
+            print(f"{'ok  ' if hit else 'FAIL'} print sweep reports every part and "
+                  "keeps thickness independent of overhang")
+            if not hit:
+                print(f"       commands={gate_runner.labels} skips={gate_runner.skips}")
+            ok &= hit
+
+            # Overhang and thickness decide inside-vs-outside by flood fill, so a
+            # mesh that is not closed gives them nothing to answer. They must be
+            # recorded as skipped, not silently absent.
+            broken_runner = _CollectRunner({"check_mesh"})
+            broken_rc = _run_print_gates(
+                broken_runner,
+                project,
+                [project / "part_a.step.py"],
+                bed=DEFAULT_BED,
+                nozzle=0.4,
+                skip_thickness=False,
+                overhang_angle=45.0,
+            )
+            hit = (
+                broken_rc == 1
+                and "check_overhang" not in broken_runner.labels
+                and "check_thickness" not in broken_runner.labels
+                and broken_runner.skips == ["check_overhang:a", "check_thickness:a"]
+            )
+            print(f"{'ok  ' if hit else 'FAIL'} a failed mesh gate skips the gates that "
+                  "depend on it, and records the skip")
+            if not hit:
+                print(f"       commands={broken_runner.labels} skips={broken_runner.skips}")
+            ok &= hit
+
             project = _sc_project(root)
             _sc_refuses(img + ["--report", "../outside.md"])
             hit = not (project / "measure" / "verification-pipeline.md").exists()
@@ -1795,6 +1985,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--fresh", action="store_true", help="delete only this project's __cadgen__ cache before running")
     parser.add_argument("--strict-fit", action="store_true", help="final mode: promote check_fit advisory notes to failures")
     parser.add_argument("--strict-mount", action="store_true", help="final mode: promote check_mount advisory notes to failures")
+    parser.add_argument("--print-gates", action="store_true",
+                        help="final mode: run the mesh, overhang and wall-thickness "
+                             "gates on every printable entry. Required before any "
+                             "claim about printing; nothing else verifies it")
+    parser.add_argument("--nozzle", type=float, default=0.4,
+                        help="nozzle diameter for the print thickness gate (default: 0.4 mm)")
+    parser.add_argument("--overhang-angle", type=float, default=45.0,
+                        help="deg from vertical; below this a down-facing surface needs "
+                             "support (default 45)")
+    parser.add_argument("--skip-thickness", action="store_true",
+                        help="run the print gates without the thickness gate; output "
+                             "cannot then be called print-ready")
     parser.add_argument("--powered", action="store_true", help="final mode: require measure/power.json and run the powered-system gate")
     parser.add_argument("--unpowered", action="store_true", help="image-derived final: explicitly declare that the product has no functional electrical load")
     parser.add_argument("--motion-manifest", help="motion JSON; defaults to measure/motion.json when present")
@@ -1901,6 +2103,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("image-derived gates are final-mode options and cannot be combined with --quick")
     if args.quick and args.strict_mount:
         parser.error("--strict-mount is a final-mode option and cannot be combined with --quick")
+    if args.quick and args.print_gates:
+        parser.error("--print-gates is a final-mode option and cannot be combined with --quick")
+    if args.quick and args.skip_thickness:
+        parser.error("--skip-thickness is a final-mode option and cannot be combined with --quick")
+    if args.nozzle <= 0:
+        parser.error("--nozzle must be positive")
+    if args.skip_thickness and not args.print_gates:
+        parser.error("--skip-thickness only applies with --print-gates")
     if args.quick and args.powered:
         parser.error("--powered is a final-mode option and cannot be combined with --quick")
     if args.quick and args.unpowered:
@@ -1952,6 +2162,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     labels = [label for label, _reference in likeness_refs]
     if len(labels) != len(set(labels)):
         refuse("--likeness-ref labels must be unique within one final run")
+
+    if args.print_gates and not printables:
+        refuse(
+            "--print-gates requires at least one printable entry. Legacy part_* entries "
+            "are printable; logical entries set PRINTABLE = False and a combined "
+            "one-piece print target sets PRINTABLE = True"
+        )
 
     motion_manifest = explicit_motion
     if motion_manifest is None and (project / "measure" / "motion.json").is_file():
@@ -2121,7 +2338,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             motion_manifest=motion_manifest,
             strict_fit=bool(args.strict_fit),
             strict_mount=bool(args.strict_mount),
+            print_gates=bool(args.print_gates),
             bed=bed,
+            nozzle=float(args.nozzle),
+            skip_thickness=bool(args.skip_thickness),
+            overhang_angle=float(args.overhang_angle),
             image_derived=bool(args.image_derived),
             likeness_refs=resolved_likeness_refs,
             likeness_min=float(args.likeness_min),

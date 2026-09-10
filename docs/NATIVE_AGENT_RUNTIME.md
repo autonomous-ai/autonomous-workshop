@@ -631,15 +631,17 @@ native Manager feedback on placement, proportions and other visible defects
 through `make_round --record-visual`. Pending visual feedback cannot pass a
 round, and self-review never replaces the independent critic (ADR 0060).
 Before independent review, Make generates every declared entry with `--write`
-so each carries a fresh `.step`. There is no print preflight and no mesh,
-overhang or wall-thickness gate anywhere in the toolchain (ADR 0062), so no
-stage may call a product printable. Native iteration relies on source-closure freshness and
+so each carries a fresh `.step`, then runs `verify_project --print-gates
+--nozzle 0.4`. The mesh, overhang and wall-thickness gates build each printable
+entry from source and measure its tessellation in the gate, writing no mesh
+(ADR 0063); a product is print-ready only behind a passing run of them at the
+nozzle the print will use. Native iteration relies on source-closure freshness and
 does not delete protected `__cadgen__` directories; the trusted host owns the
 additional isolated `--fresh` rebuild for Forge/Quest; Spark omits this host replay.
 Make then performs one integrated final verifier, so a
 printability repair cannot invalidate an already-spent visual read. The
 materialized final verifier refuses to begin final-mode geometry work until the
-canonical schema-v7 review and exact image hashes exist, then records the review
+canonical schema-v8 review and exact image hashes exist, then records the review
 hash in its report. The finalizer rejects a second
 final `snap/` family outside the declared CAD project. Those explicit paths are archived under
 `make/verification/renders/`; the family is the only one eligible for automatic
@@ -649,11 +651,12 @@ The finalizer also requires the submitted verification report to be inside the
 declared CAD project. This cheaply proves the agent verified the same
 self-contained directory Forge/Quest's host will later copy into isolation and rebuild.
 It parses only the current report record and requires final mode, a passing
-headline, a successful thickness row, and no thickness-skip flag. A prior pass
-below a current failure or a locally omitted gate cannot become a Made proposal.
-The run-local finalizer independently checks the bound preflight report, its
-fixed 0.4 mm profile, and coverage for every `part_*.step.py` printable before
-accepting the same proposal.
+headline, and — for a print-ready claim — a successful thickness row with no
+thickness-skip flag. A prior pass below a current failure or a locally omitted
+gate cannot become a Made proposal. The run-local finalizer independently
+checks the per-part thickness and overhang reports the review binds, their
+fixed 0.4 mm profile, and that every cited report passed, before accepting the
+same proposal.
 
 Host-selected product artifacts share the package contract's 95 MiB per-file
 limit while the durable run retains its 128 MiB cumulative referenced-artifact
@@ -717,21 +720,25 @@ product bytes and reruns deterministic CAD checks before advancing. No image
 provider, separate drawing effect, or second model credential sits between
 Invent and Make.
 
-The host CAD gate retains two claim-bound tiers for historical protocols. Its
-single surviving tier reruns the materialized verifier with fresh generation,
-strict fit, layout, local spec audits, mount, motion, kernel validation and
-interference. `digitally-verified-not-print-ready` is the only tier there is,
-and a Made revision must declare it twice: root `product.json.status` has that
-exact value *and* the declared CAD-verification JSON contains the literal
-boolean `final_pipeline.print_ready_claim: false`. A product still claiming
-print readiness is refused rather than downgraded, because nothing measures a
-wall, a mesh or an overhang any more. The host receipt and stage-gate evidence
-record the tier and that it is not print-ready eligible. Release requires
-passing evidence at that tier and publishes a digitally verified exchange
-solid whose printability is unverified.
+The host CAD gate has two claim-bound tiers. Both rerun the materialized
+verifier with fresh generation, strict fit, layout, local spec audits, mount,
+motion, kernel validation and interference; the full tier additionally runs the
+mesh, overhang and wall-thickness gates. A Made revision declares its tier
+twice: root `product.json.status` is `full-with-thickness` *and* the declared
+CAD-verification JSON contains the literal boolean
+`final_pipeline.print_ready_claim: true`, or the status is
+`digitally-verified-not-print-ready` and the boolean is `false`. A half-declared
+claim is refused rather than downgraded, and the host reruns the verifier in the
+tier the pair names — the full tier's command carries `--print-gates --nozzle
+0.4` and never `--skip-thickness`, which would forfeit the claim. The host
+receipt and stage-gate evidence record the tier and its print-ready
+eligibility. Release requires passing full-tier evidence; a lower-tier product
+publishes a digitally verified exchange solid whose printability is unverified.
 
-The legacy full-tier replay path is retired: it would rerun a thickness-checked
-verifier that no longer exists. For frozen older runs, Make and Playtest replay
+The legacy full-tier replay path is retired: it would rerun a
+`final-fresh-exports-strict-fit` verifier, and `--exports` is gone. The restored
+full tier is a different command, so a pre-tier receipt cannot be replayed into
+it. For frozen older runs, Make and Playtest replay
 evidence remain persisted under separate host-owned stage paths, and those runs
 keep their own materialized skill bytes.
 
@@ -899,9 +906,10 @@ private Wish demonstrate that:
 6. Spark/Forge Release records Playtest as `not-run`; Quest Release binds its
    passing evidence; every exact `MANUAL.pdf` passes structural validation;
 7. no credential reaches the native subprocess or its readable filesystem;
-8. terminal Release requires exact passing not-print-ready CAD evidence,
+8. terminal Release requires exact passing full-tier, print-gated CAD evidence,
    validated `MANUAL.pdf`, and authenticated public readback bound to those
-   hashes; printability is never asserted;
+   hashes; printability is asserted only from that passing gate, at the nozzle
+   its command names;
 9. an optional Git snapshot can be retried after terminal Release and preserves
    every sealed Invent/Make/Playtest attempt, Make product render, revision
    request, and evidence tree without copying native-session or credential
@@ -1098,11 +1106,12 @@ For new runs it also requires two inspected chromatic exact-product renders:
 `<cad-project>/snap/iso.png` is the hero, while
 `<cad-project>/snap/signature.png` shows the signature interaction, reveal, or
 anti-generic detail without relying on marketing copy. When geometry changes,
-it uses fixed-camera exact-state STLs; motion-sheet poses of one mesh are only
-viewpoint evidence. Before spending that review, Make generates every declared
-entry with `--write`; no preflight measures a wall, a mesh or an overhang, so
-the review cannot be bound to one. The
-schema-v7 `SIGNATURE-REVIEW.json` records one bounded
+it uses fixed-camera exact-state STEPs; motion-sheet poses of one shape are
+only viewpoint evidence. Before spending that review, Make generates every
+declared entry with `--write` and runs the print gates, and the review binds
+the passing per-part thickness and overhang reports through
+`print_gate_sha256s`. The
+schema-v8 `SIGNATURE-REVIEW.json` records one bounded
 independent critic's unprompted held object, volumetric form, subjects, action,
 and spatial or causal relationship before the Wish is revealed. That same
 critic then compares each dimension and the concept's anti-generic signature

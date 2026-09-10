@@ -32,10 +32,18 @@ revolves, polar-patterned cuts, ~110 faces on its largest part, no lofts.
 | `render_views` (4 views) | 7 s | 42.1 s with matches + `--compare-step` |
 | **whole suite once** | **~23 m 25 s** | **1 m 53 s** |
 
-The suite totals were measured while this toolchain still exported STL and ran
-mesh, overhang and thickness gates. Those are gone, so treat both numbers as
-upper bounds rather than current figures; the per-command rows above were
+The suite totals were measured while the print gates ran off an exported STL.
+The gates are still here and `--print-gates` still runs them, but they now
+tessellate each entry's B-rep instead, so the export step in those totals is
+gone and the tessellation is inside the gate. Treat both numbers as the right
+order of magnitude rather than current figures; the per-command rows above were
 measured independently and still hold.
+
+The print gates are opt-in (`verify_project --print-gates`) and cost roughly
+7-12 s per printable part per gate, of which ~5 s is the interpreter and
+`build123d` import that a standalone gate pays on every call. Thickness is the
+dearest of the three because its voxel grid is set by the nozzle: halving
+`--nozzle` roughly octuples its grid.
 
 `validate` and `interfere` are more than half the organic run and **3 % of the
 prismatic one**. Their cost is B-rep complexity, and a lofted organic assembly

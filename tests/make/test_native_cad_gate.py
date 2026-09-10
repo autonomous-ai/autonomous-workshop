@@ -16,7 +16,10 @@ from workshop.errors import ArtifactError, ContractError
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
     DEFAULT_NATIVE_CAD_OUTPUT_BYTES,
+    NATIVE_CAD_FULL_TIER,
+    NATIVE_CAD_GATE_NOZZLE_MM,
     NATIVE_CAD_NON_PRINT_READY_TIER,
+    NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     NativeCadGateError,
@@ -321,7 +324,7 @@ class NativeCadGateTest(unittest.TestCase):
             json.loads(playtest_path.read_text()), playtest_evidence.to_dict()
         )
 
-    def test_the_only_tier_is_declared_not_print_ready(self):
+    def test_the_lower_tier_runs_without_the_print_gates(self):
         self._rewrite_claim_declarations(
             product_status=NATIVE_CAD_NON_PRINT_READY_TIER,
             print_ready_claim=False,
@@ -348,6 +351,87 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(
             evidence.to_dict()["verification_tier"],
             "digitally-verified-not-print-ready",
+        )
+
+    def test_the_full_tier_runs_the_print_gates_at_a_named_nozzle(self):
+        self._rewrite_claim_declarations(
+            product_status=NATIVE_CAD_FULL_TIER,
+            print_ready_claim=True,
+        )
+        observed = {}
+
+        def runner(command, **arguments):
+            observed["command"] = tuple(command)
+            return VerifierProcessResult.from_bytes(0)
+
+        evidence = self._verify(runner)
+
+        # A wall that passes at 0.4 mm can fail at 0.6, so the nozzle the claim
+        # was made at is in the command and therefore in the receipt.
+        self.assertEqual(
+            observed["command"][3:],
+            ("--fresh", "--strict-fit", "--print-gates", "--nozzle", NATIVE_CAD_GATE_NOZZLE_MM),
+        )
+        # Skipping the wall gate forfeits the claim upstream, so the tier that
+        # carries the claim can never ask for it.
+        self.assertNotIn("--skip-thickness", observed["command"])
+        self.assertEqual(
+            evidence.verifier_mode, NATIVE_CAD_PRINT_GATES_VERIFIER_MODE
+        )
+        self.assertEqual(evidence.verification_tier, NATIVE_CAD_FULL_TIER)
+        self.assertTrue(evidence.thickness_gate_required)
+        self.assertTrue(evidence.print_ready_eligible)
+        self.assertEqual(
+            evidence.to_dict()["verification_tier"], "full-with-thickness"
+        )
+
+    def test_print_ready_requirement_accepts_the_full_tier(self):
+        self._rewrite_claim_declarations(
+            product_status=NATIVE_CAD_FULL_TIER,
+            print_ready_claim=True,
+        )
+        evidence = self._verify(
+            lambda *args, **kwargs: VerifierProcessResult.from_bytes(0),
+            evidence_stage="release",
+            require_print_ready=True,
+        )
+        self.assertTrue(evidence.passed)
+        self.assertIsNone(evidence.failure_code)
+        self.assertTrue(evidence.print_ready_eligible)
+
+    def test_a_full_tier_status_without_its_claim_is_refused(self):
+        self._rewrite_claim_declarations(
+            product_status=NATIVE_CAD_FULL_TIER,
+            print_ready_claim=False,
+        )
+        called = False
+
+        def runner(command, **arguments):
+            nonlocal called
+            del command, arguments
+            called = True
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaisesRegex(ContractError, "must name the same tier"):
+            self._verify(runner)
+        self.assertFalse(called)
+
+    def test_a_failing_print_gate_run_cannot_carry_its_claim(self):
+        self._rewrite_claim_declarations(
+            product_status=NATIVE_CAD_FULL_TIER,
+            print_ready_claim=True,
+        )
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(
+                lambda *args, **kwargs: VerifierProcessResult.from_bytes(
+                    1, b"", b"wall below minimum", maximum_bytes=64
+                ),
+                require_print_ready=True,
+            )
+        # The claim is declared, but the host's own rerun is what carries it.
+        self.assertEqual(caught.exception.failure_code, "verifier-nonzero")
+        self.assertEqual(
+            caught.exception.evidence.verification_tier, NATIVE_CAD_FULL_TIER
         )
 
     def test_print_ready_requirement_rejects_a_passing_lower_tier(self):
@@ -390,7 +474,7 @@ class NativeCadGateTest(unittest.TestCase):
             return VerifierProcessResult.from_bytes(0)
 
         with self.assertRaisesRegex(
-            ContractError, "must both declare"
+            ContractError, "must name the same tier"
         ):
             self._verify(runner)
         self.assertFalse(called)
@@ -409,7 +493,7 @@ class NativeCadGateTest(unittest.TestCase):
             return VerifierProcessResult.from_bytes(0)
 
         with self.assertRaisesRegex(
-            ContractError, "must both declare"
+            ContractError, "must name the same tier"
         ):
             self._verify(runner)
         self.assertFalse(called)
@@ -419,12 +503,12 @@ class NativeCadGateTest(unittest.TestCase):
             product_status=NATIVE_CAD_NON_PRINT_READY_TIER,
             print_ready_claim="false",
         )
-        with self.assertRaisesRegex(ContractError, "must both declare"):
+        with self.assertRaisesRegex(ContractError, "must name the same tier"):
             self._verify(
                 lambda *args, **kwargs: VerifierProcessResult.from_bytes(0)
             )
 
-    def test_an_explicit_print_ready_claim_is_refused(self):
+    def test_a_print_ready_claim_without_its_status_is_refused(self):
         self._rewrite_claim_declarations(print_ready_claim=True)
         called = False
 
@@ -434,7 +518,7 @@ class NativeCadGateTest(unittest.TestCase):
             called = True
             return VerifierProcessResult.from_bytes(0)
 
-        with self.assertRaisesRegex(ContractError, "must both declare"):
+        with self.assertRaisesRegex(ContractError, "must name the same tier"):
             self._verify(runner)
         self.assertFalse(called)
 
@@ -607,6 +691,112 @@ class NativeCadGateTest(unittest.TestCase):
             ).read_text(),
             "old timing\n",
         )
+
+    @staticmethod
+    def _print_gate_report(gate, prefix):
+        title, option, value, head, rows = {
+            "overhang": (
+                "Overhang and support", "--angle", "45.0",
+                "65.5 cm2 of surface, grid 0.400 mm, 0 unsupported samples",
+                "| overhang | PASS | 0 regions need support |\n",
+            ),
+            "thickness": (
+                "Thickness and hollow", "--nozzle", "0.4",
+                "12.25 cm3 solid, grid 0.100 mm, 4096 surface samples",
+                "| wall >= 0.80 mm | PASS | 0.0% of surface below |\n",
+            ),
+        }[gate]
+        return (
+            f"# {title}\n\n"
+            f"`{prefix}part_moon.step.py {option} {value} "
+            f"--report {prefix}measure/{gate}-moon.md`\n\n"
+            f"part_moon.step.py: {head}\n\n"
+            "| check | status | detail |\n|---|---|---|\n" + rows
+        )
+
+    def _seal_print_gate_report(self, gate):
+        path = self.product_root / ("cad/project/measure/%s-moon.md" % gate)
+        path.write_text(
+            self._print_gate_report(gate, "artifacts/make/r0001/product/cad/project/")
+        )
+        self._rebuild_made_manifest()
+        return path
+
+    def test_print_gate_report_relocation_preserves_every_measurement(self):
+        for gate in ("overhang", "thickness"):
+            with self.subTest(gate=gate):
+                sealed = self._seal_print_gate_report(gate)
+                before = sealed.read_bytes()
+
+                def runner(command, **arguments):
+                    Path(command[2], "measure/%s-moon.md" % gate).write_text(
+                        self._print_gate_report(gate, "project/")
+                    )
+                    return VerifierProcessResult.from_bytes(0)
+
+                self.assertTrue(self._verify(runner).passed)
+                self.assertEqual(sealed.read_bytes(), before)
+
+    def test_print_gate_report_content_changes_fail_closed(self):
+        for gate, changes in (
+            ("overhang", (
+                ("65.5", "65.6"), ("PASS", "FAIL"), ("45.0", "30.0"),
+                ("0 regions", "1 regions"), ("part_moon", "part_other"),
+                ("# Overhang and support", "# Custom report"),
+            )),
+            ("thickness", (
+                ("12.25", "12.26"), ("PASS", "FAIL"), ("--nozzle 0.4", "--nozzle 0.2"),
+                ("0.0% of surface", "3.0% of surface"),
+                ("# Thickness and hollow", "# Custom report"),
+            )),
+        ):
+            self._seal_print_gate_report(gate)
+            for old, new in changes:
+                with self.subTest(gate=gate, old=old):
+                    def runner(command, **arguments):
+                        Path(command[2], "measure/%s-moon.md" % gate).write_text(
+                            self._print_gate_report(gate, "project/").replace(old, new)
+                        )
+                        return VerifierProcessResult.from_bytes(0)
+                    with self.assertRaises(NativeCadGateError) as caught:
+                        self._verify(runner)
+                    self.assertEqual(
+                        caught.exception.failure_code, "declared-cad-output-changed"
+                    )
+
+    def test_a_print_gate_report_cannot_be_repointed_at_another_part(self):
+        # The entry basename must match the role the report is named for, so a
+        # passing report cannot be made to stand for a different part.
+        self._seal_print_gate_report("thickness")
+
+        def runner(command, **arguments):
+            Path(command[2], "measure/thickness-moon.md").write_text(
+                self._print_gate_report("thickness", "project/").replace(
+                    "part_moon.step.py --nozzle", "part_hull.step.py --nozzle"
+                )
+            )
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(runner)
+        self.assertEqual(
+            caught.exception.failure_code, "declared-cad-output-changed"
+        )
+
+    def test_print_gate_report_mode_and_symlink_changes_fail_closed(self):
+        self._seal_print_gate_report("overhang")
+        for link in (False, True):
+            with self.subTest(link=link):
+                def runner(command, **arguments):
+                    path = Path(command[2], "measure/overhang-moon.md")
+                    if link:
+                        path.unlink()
+                        path.symlink_to(Path(command[2], "moon.step"))
+                    else:
+                        path.chmod(0o700)
+                    return VerifierProcessResult.from_bytes(0)
+                with self.assertRaises(NativeCadGateError):
+                    self._verify(runner)
 
     def test_arbitrary_report_change_still_fails_closed(self):
         def runner(command, **arguments):

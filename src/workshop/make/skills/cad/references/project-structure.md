@@ -154,9 +154,11 @@ the same way: `scripts/gen` on an explicit entry target.
   a Tier 1 combined entry with no part entries also defaults to `True`. In a
   split project the combined entry defaults to view-only, so set it `True` only
   when that exact combined geometry is one physical print. `verify_project`
-  passes only the resulting print targets to `check_fit`. No mesh is exported and
-  no mesh/overhang/thickness gate exists, so `PRINTABLE` drives the bed datum and
-  the fit check — it is not a printability claim.
+  passes only the resulting print targets to `check_fit` and, under
+  `--print-gates`, to `check_mesh`, `check_overhang` and `check_thickness`. No
+  mesh is exported: those gates tessellate the entry themselves. `PRINTABLE`
+  drives the bed datum and which entries those gates see; on its own it is not
+  a printability claim.
 - **A STEP output keeps its generator's basename and directory.** `--write`
   puts `<name>.step` next to `<name>.step.py`.
 
@@ -234,7 +236,8 @@ Two consequences:
 - **Parameter checks run before geometry.** Assert shared dimensions, clearance
   application, connector naming, and other algebraic invariants before building
   so bad numbers fail loudly. Do not rebuild all shapes in a local audit merely
-  to repeat solid/body/volume checks already owned by `check_fit` and `validate`.
+  to repeat solid/body/volume checks already owned by `check_fit`, `validate`,
+  and `check_mesh`.
 - **Record the provenance** of each dimension — `[observed]`, `[inferred]`,
   `[assumed]` — in a comment next to it, and cross-reference the spec section.
 

@@ -40,10 +40,7 @@ Exit 0 when every printable part conforms, 1 when any fails, 2 on bad usage.
 from __future__ import annotations
 
 import argparse
-import ast
 import contextlib
-import importlib.util
-import io
 import json
 import math
 import re
@@ -58,8 +55,12 @@ for _runtime_path in (SCRIPTS_DIR, PACKAGES_DIR, CADPY_SRC_DIR):
     if _runtime_path.is_dir() and _text not in sys.path:
         sys.path.insert(0, _text)
 
-ENTRY_SUFFIX = ".step.py"
-PART_PREFIX = "part_"
+from printlib import (  # noqa: E402
+    build_entry,
+    explicit_entries,
+    iter_printable_entries,
+    purge_project_modules,
+)
 
 DEFAULT_BED = (220.0, 220.0)
 Z_TOL = 0.01
@@ -67,127 +68,6 @@ BED_TOL = 0.01
 TOUCH_TOL = 1e-6
 
 ADVISORY_RULES = {"multi-body-part", "no-project-fit-audit"}
-
-IGNORED_DIR_NAMES = {
-    "__cadgen__",
-    "__pycache__",
-    ".cache",
-    ".git",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".ruff_cache",
-    ".venv",
-    "measure",
-    "node_modules",
-    "ref",
-    "skills",
-    "snaps",
-}
-
-# Built at runtime for the same reason as check_layout's marker: cadgen's
-# discovery scan treats any worktree file carrying these bytes as a generator
-# candidate, and would log a spurious "invalid CAD source" on every gen run.
-GEN_FUNC = "gen_" + "step"
-
-
-def declared_printable(path: Path) -> bool | None:
-    """Read an optional module-level ``PRINTABLE = bool`` without importing CAD."""
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    for node in tree.body:
-        value = None
-        if isinstance(node, ast.Assign) and any(
-            isinstance(target, ast.Name) and target.id == "PRINTABLE"
-            for target in node.targets
-        ):
-            value = node.value
-        elif (
-            isinstance(node, ast.AnnAssign)
-            and isinstance(node.target, ast.Name)
-            and node.target.id == "PRINTABLE"
-        ):
-            value = node.value
-        if value is not None:
-            if isinstance(value, ast.Constant) and isinstance(value.value, bool):
-                return value.value
-            raise ValueError(f"{path}: PRINTABLE must be the literal True or False")
-    return None
-
-
-def iter_printable_entries(root: Path):
-    """Yield actual print targets, grouped by their project directory."""
-    entries_by_dir: dict[Path, list[Path]] = {}
-    for path in sorted(root.rglob("*" + ENTRY_SUFFIX)):
-        rel_parts = path.relative_to(root).parts[:-1]
-        if any(part in IGNORED_DIR_NAMES for part in rel_parts):
-            continue
-        if GEN_FUNC not in path.read_text(encoding="utf-8", errors="replace"):
-            continue
-        entries_by_dir.setdefault(path.parent, []).append(path)
-
-    by_dir: dict[Path, list[Path]] = {}
-    for project, entries in entries_by_dir.items():
-        parts = [path for path in entries if path.name.startswith(PART_PREFIX)]
-        assemblies = [path for path in entries if not path.name.startswith(PART_PREFIX)]
-        selected = [path for path in parts if declared_printable(path) is not False]
-        if parts:
-            selected.extend(
-                path for path in assemblies if declared_printable(path) is True
-            )
-        elif len(assemblies) == 1 and declared_printable(assemblies[0]) is not False:
-            selected.append(assemblies[0])
-        if selected:
-            by_dir[project] = sorted(selected)
-    return by_dir
-
-
-def explicit_entries(root: Path, raw_entries: list[str]) -> dict[Path, list[Path]]:
-    """Resolve explicitly selected printable entries beneath ``root``."""
-    by_dir: dict[Path, list[Path]] = {}
-    cwd = Path.cwd().resolve()
-    for raw in raw_entries:
-        candidate = Path(raw)
-        if not candidate.is_absolute():
-            from_cwd = (cwd / candidate).resolve()
-            candidate = from_cwd if from_cwd.is_file() else (root / candidate).resolve()
-        else:
-            candidate = candidate.resolve()
-        try:
-            candidate.relative_to(root)
-        except ValueError as error:
-            raise ValueError(f"entry must stay inside {root}: {candidate}") from error
-        if not candidate.is_file() or not candidate.name.endswith(ENTRY_SUFFIX):
-            raise ValueError(f"not a *{ENTRY_SUFFIX} entry: {candidate}")
-        if GEN_FUNC not in candidate.read_text(encoding="utf-8", errors="replace"):
-            raise ValueError(f"{candidate} defines no {GEN_FUNC}()")
-        if declared_printable(candidate) is False:
-            raise ValueError(f"{candidate} declares PRINTABLE = False")
-        by_dir.setdefault(candidate.parent, []).append(candidate)
-    return by_dir
-
-
-def load_entry(path: Path, namespace: str):
-    """Import one entry generator with its project directory on sys.path."""
-    module_name = f"_checkfit_{namespace}_{path.name.replace('.', '_')}"
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"cannot load {path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    try:
-        spec.loader.exec_module(module)
-    except BaseException:
-        sys.modules.pop(module_name, None)
-        raise
-    return module
-
-
-def purge_project_modules(project: Path) -> None:
-    """Drop every module imported from this project so the next one is clean."""
-    project_text = str(project)
-    for name, module in list(sys.modules.items()):
-        origin = getattr(module, "__file__", None)
-        if origin and str(Path(origin).resolve()).startswith(project_text):
-            sys.modules.pop(name, None)
 
 
 def body_count(solids) -> int:
@@ -238,15 +118,7 @@ def fits_bed(size_x: float, size_y: float, bed: tuple[float, float]) -> bool:
 
 def measure_entry(path: Path, namespace: str) -> dict:
     """Build one part entry and return its print-orientation measurements."""
-    sink = io.StringIO()
-    with contextlib.redirect_stdout(sink):
-        module = load_entry(path, namespace)
-        builder = getattr(module, GEN_FUNC, None)
-        if builder is None:
-            raise AttributeError(f"{path.name} defines no {GEN_FUNC}()")
-        shape = builder()
-    if shape is None:
-        raise ValueError(f"{path.name} {GEN_FUNC}() returned None")
+    shape = build_entry(path, namespace)
     box = shape.bounding_box()
     solids = shape.solids()
     # Compound.volume is 0 when the geometry hangs off children rather than

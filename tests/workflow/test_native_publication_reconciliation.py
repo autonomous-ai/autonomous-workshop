@@ -17,8 +17,8 @@ from workshop.integrations.factory import (
     FactoryAgentSession,
 )
 from workshop.make.native_gate import (
-    NATIVE_CAD_NON_PRINT_READY_TIER,
-    NATIVE_CAD_VERIFIER_MODE,
+    NATIVE_CAD_FULL_TIER,
+    NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
 )
 from workshop.runtime import EffectLedger, Receipt
 from workshop.wish import Wish
@@ -58,10 +58,10 @@ class NativePublicationReconciliationTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         def writer(unused_ledger, inventor_id, observed_credentials):
