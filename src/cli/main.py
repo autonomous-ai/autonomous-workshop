@@ -2077,6 +2077,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         args = parser().parse_args(argv)
         return int(args.handler(args))
+    except KeyboardInterrupt:
+        print("workshop: interrupted.", file=sys.stderr)
+        return 130
     except (WorkshopError, OSError, ValueError, KeyError) as exc:
         print("workshop: %s" % exc, file=sys.stderr)
         return 2

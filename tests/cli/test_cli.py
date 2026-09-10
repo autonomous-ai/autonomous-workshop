@@ -3,6 +3,7 @@ import importlib
 import os
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -883,6 +884,44 @@ class NativeCommandTest(unittest.TestCase):
         with mock.patch("cli.main.resume_native_run", return_value=native_receipt(stage="make")) as resume, redirect_stdout(StringIO()):
             main(("resume", "wish-one", "--turn-budget"))
         self.assertIs(resume.call_args.kwargs["adopt_turn_budget"], True)
+
+    def test_resume_interrupt_returns_130_after_handler_cleanup_without_success_claims(self):
+        cleaned_up = []
+
+        def interrupted_resume(*args, **kwargs):
+            try:
+                raise KeyboardInterrupt
+            finally:
+                cleaned_up.append(True)
+
+        stdout, stderr = StringIO(), StringIO()
+        with mock.patch("cli.main.resume_native_run", side_effect=interrupted_resume) as resume, \
+                redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(("resume", "wish-one"))
+        self.assertEqual(result, 130)
+        self.assertEqual(cleaned_up, [True])
+        resume.assert_called_once()
+        self.assertEqual(stderr.getvalue(), "workshop: interrupted.\n")
+        self.assertNotIn("saved", stdout.getvalue().lower())
+        self.assertNotIn("complete", stdout.getvalue().lower())
+
+    def test_module_entrypoint_exits_130_without_interrupt_traceback(self):
+        program = (
+            "import runpy, sys\n"
+            "sys.path.insert(0, sys.argv.pop(1))\n"
+            "from unittest import mock\n"
+            "with mock.patch('cli.main.resume_native_run', side_effect=KeyboardInterrupt):\n"
+            "    runpy.run_module('cli', run_name='__main__')\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", program,
+             str(Path(cli_main.__file__).resolve().parents[1]), "resume", "wish-one"],
+            capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(result.returncode, 130)
+        self.assertEqual(result.stderr, "workshop: interrupted.\n")
+        self.assertNotIn("Traceback", result.stdout + result.stderr)
+        self.assertNotIn("KeyboardInterrupt", result.stdout + result.stderr)
 
     def test_failed_native_run_exits_one_even_without_strict(self):
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(

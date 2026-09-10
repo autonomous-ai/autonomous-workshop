@@ -248,3 +248,43 @@ surfaces. The existing geometry-only state-difference check stays unchanged.
 The final 70-test package-data, registry, Make-round and renderer suite passed,
 including the actual native-byte scanner; visual inspection confirmed the
 clear panel reveals the object behind it without a diagonal seam.
+
+### Controlled CLI tool refresh
+
+After the fixes passed, each running CLI received Ctrl+C and exited before its
+refresh command started. This was an operator-controlled update, not another
+provider failure. No live tool file was edited directly. Each command below
+copied nine changed instruction/tool files from Make revision `4ffc0790`,
+including the reviewed-hero finalizer, and resumed the original session:
+
+```sh
+# 2026-09-10 15:57:00 UTC
+"$workshop_python" -m cli resume wish-20260910-143753-a2e10997 --refresh-tools
+# 15:57:38 UTC
+"$workshop_python" -m cli resume wish-20260910-143717-dbe8ad47 --refresh-tools
+# 15:58:03 UTC
+"$workshop_python" -m cli resume wish-20260910-143655-4d851b36 --refresh-tools
+# 15:58:23 UTC
+"$workshop_python" -m cli resume wish-20260910-143721-492a87cb --refresh-tools
+# 15:58:45 UTC
+"$workshop_python" -m cli resume wish-20260910-143744-c4614e19 --refresh-tools
+# 15:59:10 UTC
+"$workshop_python" -m cli resume wish-20260910-143749-b20aacdc --refresh-tools
+```
+
+Ordinary CLI `status --json` then confirmed all six active in Make, each on its
+same root native thread, `gpt-6-astra`, ultra and its original 100,000,000-token
+limit. Previously observed usage remained charged. Existing research, CAD and
+unfinished inspection work stayed in the product workspaces.
+
+Ctrl+C exposed one CLI presentation bug: cleanup unwound but the command
+printed a Python traceback and exited 1. A top-level handler now emits only
+`workshop: interrupted.` on stderr and exits 130, with no saved/success claim
+or automatic resume. All 87 CLI tests passed; a subsequent 38-test command
+suite also verifies the subprocess test imports this checkout explicitly,
+without depending on inherited `PYTHONPATH` or another installed CLI.
+
+At this checkpoint no pilot had completed Make or published. Real native
+inspection had repaired pinball mechanism intersections/overhangs and rejected
+a supplier rod whose advertised 75 mm model actually measured 150 mm. Those
+are observed digital checks, not physical manufacture evidence.
