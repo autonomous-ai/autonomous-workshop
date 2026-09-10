@@ -359,3 +359,42 @@ including native visual feedback. The actual toy's assembly and final review
 remained pending. Pinball, Switchyard and Rainmark were still integrating
 mechanisms and repairing their product sources. No physical test measurements
 or manufacturing results were claimed from these digital checks.
+
+### Motion documentation and transparent-state comparison
+
+Liltwing exposed an ambiguous coupled-motion example: a translation requires
+`vector: [x, y, z]` with scalar `start`/`end` multipliers, or a complete
+`offsets_mm` table. Revision `907bec18` clarifies those existing semantics;
+the parser and gate are unchanged. Its separate aircraft failures reproduced
+as invalid source-group Boolean normalization. A healed STEP roundtrip did not
+justify accepting the original source, so the inconclusive gate was retained.
+
+A real two-state STEP fixture then exposed a renderer false negative: motion
+visible behind a fixed clear cover became invisible in the geometry comparison,
+which discarded all opacity. Revision `a820ee5c` retains opacity only on exact
+unchanged triangles whose opacity and unambiguous multiplicity agree across
+every state. Other comparison geometry remains opaque with neutral colors.
+Changing colors or opacity cannot supply motion evidence; actual displayed
+frames and opaque comparison behavior are unchanged. Moving transparent
+geometry remains conservatively opaque in the comparison.
+
+All 47 focused renderer/registry tests and the private-byte scan of 157 Make
+files passed. Preparing comparison colors for three 75,000-triangle states
+took 0.759 seconds, excluding rendering. The independent source CLI check was:
+
+```sh
+"$workshop_python" src/workshop/make/skills/cad/scripts/render_product /private/tmp/workshop-transparent-state-audit/state-0.step -o /private/tmp/workshop-transparent-state-audit/verified-hero.png --size 800 --state-view front --state-sheet /private/tmp/workshop-transparent-state-audit/verified-states.png --state-source /private/tmp/workshop-transparent-state-audit/state-0.step --state-source /private/tmp/workshop-transparent-state-audit/state-1.step
+```
+
+It exited 0 and produced a visually inspected 1600×800 state sheet, with a
+minimum neutral comparison difference of 5.799 against the unchanged default
+threshold of 2. These are deterministic test shapes, not a finished pilot.
+The live sessions had not been interrupted or refreshed for these changes.
+
+Revision `a272ad7d` adds the source group's label and solid count to motion
+normalization failures, preserving the original reason. For example, a failed
+union now identifies `normalizing group 'shuttle' (6 solids)`. Existing
+inconclusive status, result fields, exit code 1 and a single Boolean attempt
+are unchanged. All 122 focused motion/retention/Make-round/registry tests
+passed, including failing mover and obstacle groups and source immutability.
+This diagnostic-only change also did not interrupt or refresh live work.
