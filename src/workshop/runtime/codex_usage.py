@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
+import re
 import stat
 import uuid
 
@@ -18,7 +19,7 @@ from workshop.errors import ContractError
 from workshop.runtime._compacted_usage import InvalidRecord, consume_compacted_record
 
 MAX_LINE_BYTES = 4 * 1024 * 1024
-SUPPORTED_VERSION = "0.153.4"
+MINIMUM_SUPPORTED_VERSION = (0, 153, 4)
 COUNTERS = (
     "input_tokens", "cached_input_tokens", "cache_write_input_tokens",
     "output_tokens", "reasoning_output_tokens",
@@ -31,6 +32,21 @@ class UsageUnavailable(ContractError):
 
 class UsageNotReady(UsageUnavailable):
     """The native root identity has not been materialized yet; no usage claim."""
+
+
+def supports_rollout_usage_version(version):
+    """Return whether this CLI is new enough for the validated rollout shape.
+
+    The reader still validates every identity, boundary, and counter field, so
+    a future incompatible rollout fails closed at the schema boundary.
+    """
+    if not isinstance(version, str):
+        return False
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:[-+][A-Za-z0-9.-]+)?", version)
+    return bool(
+        match
+        and tuple(int(part) for part in match.groups()) >= MINIMUM_SUPPORTED_VERSION
+    )
 
 
 def _object(pairs):
@@ -129,7 +145,7 @@ def read_thread_usage(path, *, thread_id, workspace):
     identity = _identity(path)
     if identity.get("id") != thread_id or identity.get("cwd") != str(workspace):
         raise UsageUnavailable("native usage session binding differs")
-    if identity.get("cli_version") != SUPPORTED_VERSION:
+    if not supports_rollout_usage_version(identity.get("cli_version")):
         raise UsageUnavailable("native rollout usage version is not validated")
     totals = {key: 0 for key in COUNTERS}
     task_totals = None
@@ -162,7 +178,7 @@ def read_thread_usage(path, *, thread_id, workspace):
         if not tasks:
             raise UsageUnavailable("native usage lacks a task boundary")
         if task_start:
-            # exec 0.153.4 resets counters on process resume, but a continued
+            # exec 0.153.4+ resets counters on process resume, but a continued
             # task in the same process (including a child follow-up) retains
             # them. Require an exact first-request baseline for either case;
             # never infer a reset merely from a decreasing counter.
