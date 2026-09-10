@@ -369,6 +369,104 @@ def test_oversized_unrelated_rollout_body_does_not_stop_product_usage(tmp_path):
     assert {row["thread_id"] for row in result["threads"]} == {ROOT, CHILD}
 
 
+@pytest.mark.parametrize("target_thread,parent", [
+    (ROOT, None), (CHILD, ROOT), ("unrelated", None),
+])
+@pytest.mark.parametrize("partial", [b"", b'{"type":"session_meta","payload":'])
+@pytest.mark.parametrize("complete_on_read", [2, 3])
+def test_discovery_reopens_an_incomplete_metadata_append(
+    tmp_path, monkeypatch, target_thread, parent, partial, complete_on_read,
+):
+    import workshop.runtime.codex_usage as module
+
+    write(tmp_path, records() + [usage(100)])
+    write(tmp_path, records(CHILD, ROOT) + [usage(200)], CHILD)
+    if target_thread == "unrelated":
+        target = write(tmp_path, records("unrelated", cwd="/elsewhere"), "unrelated")
+    else:
+        target = tmp_path / "2026/09/07" / ("rollout-" + target_thread + ".jsonl")
+    completed = target.read_bytes()
+    target.write_bytes(partial)
+    real_open = module.os.open
+    target_opens = 0
+    delays = []
+
+    def finish_native_append(path, flags, *args, **kwargs):
+        nonlocal target_opens
+        if Path(path) == target:
+            target_opens += 1
+            if target_opens == complete_on_read:
+                target.write_bytes(completed)
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(module.os, "open", finish_native_append)
+    monkeypatch.setattr(module.time, "sleep", delays.append)
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+
+    assert target_opens >= complete_on_read
+    assert delays == [0.05] * (complete_on_read - 1)
+    assert result["tokens"] == counters(300)
+    assert result["total_tokens"] == 330
+    assert {row["thread_id"] for row in result["threads"]} == {ROOT, CHILD}
+    assert read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy")) == result
+
+
+@pytest.mark.parametrize("header,expected_reads", [
+    (b"", 3),
+    (b'{"type":"session_meta","payload":', 3),
+    (b'{"type":"event_msg","payload":{}}\n', 1),
+    (b'{"type":"session_meta","type":"session_meta","payload":{}}\n', 1),
+    (b'not-json\n', 1),
+])
+def test_identity_retry_is_bounded_and_only_for_incomplete_framing(
+    tmp_path, monkeypatch, header, expected_reads,
+):
+    import workshop.runtime.codex_usage as module
+
+    target = write(tmp_path, [], "unattributable")
+    target.write_bytes(header)
+    real_open = module.os.open
+    opens = 0
+    delays = []
+
+    def count_open(path, flags, *args, **kwargs):
+        nonlocal opens
+        opens += 1
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(module.os, "open", count_open)
+    monkeypatch.setattr(module.time, "sleep", delays.append)
+    with pytest.raises(UsageUnavailable):
+        module._identity(target)
+    assert opens == expected_reads
+    assert delays == [0.05] * (expected_reads - 1)
+
+
+def test_identity_retry_rejects_link_replacement(tmp_path, monkeypatch):
+    import workshop.runtime.codex_usage as module
+
+    valid = write(tmp_path, records() + [usage(100)])
+    target = write(tmp_path, [], "incomplete")
+    real_open = module.os.open
+    opens = 0
+    delays = []
+
+    def replace_with_link(path, flags, *args, **kwargs):
+        nonlocal opens
+        opens += 1
+        if opens == 2:
+            target.unlink()
+            target.symlink_to(valid)
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(module.os, "open", replace_with_link)
+    monkeypatch.setattr(module.time, "sleep", delays.append)
+    with pytest.raises(UsageUnavailable):
+        module._identity(target)
+    assert opens == 2
+    assert delays == [0.05]
+
+
 @pytest.mark.parametrize("target_thread,parent", [(ROOT, None), (CHILD, ROOT)])
 def test_identity_discovery_does_not_relax_selected_record_size_limit(
     tmp_path, monkeypatch, target_thread, parent,
