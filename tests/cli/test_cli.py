@@ -687,6 +687,19 @@ class NativeCommandTest(unittest.TestCase):
         self.assertIn("checking for a valid stage proposal", output.getvalue())
         self.assertNotIn("turn stopped", output.getvalue())
 
+    def test_reporting_and_legacy_message_activity_do_not_claim_finalization(self):
+        for activity in ("reporting", "finalizing"):
+            with self.subTest(activity=activity):
+                output = StringIO()
+                progress = cli_main._LiveWishProgress(output)
+                progress.activity(activity)
+                progress.activity(activity)
+
+                self.assertEqual(
+                    output.getvalue(),
+                    "Native Codex: reported progress for the current stage.\n",
+                )
+
     def test_status_is_read_only_native_inspection(self):
         stdout = StringIO()
         with mock.patch(

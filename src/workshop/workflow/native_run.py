@@ -557,7 +557,7 @@ class _NativeProgressTracker:
             return
         now = time.monotonic()
         if (
-            activity not in ("finalizing", "completed", "failed")
+            activity not in ("reporting", "finalizing", "completed", "failed")
             and now - self._last_write < 1.0
         ):
             return

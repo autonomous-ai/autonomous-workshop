@@ -357,7 +357,7 @@ whole-run native-turn budget remain the surrounding resource bounds.
 
 `workshop status <wish-id>` is read-only and never opens or resumes Codex. While
 a native turn runs, the host reduces Codex JSONL events to one of eight coarse
-classes: `starting`, `running`, `reasoning`, `tool`, `subagent`, `finalizing`,
+classes: `starting`, `running`, `reasoning`, `tool`, `subagent`, `reporting`,
 `completed`, or `failed`. `running` is a five-second host heartbeat that means
 only that the launched Codex process is still alive; it does not infer what the
 model is doing. The host atomically stores only the current checkpoint binding,
@@ -376,6 +376,12 @@ remain visibly alive without copying native event volume into the outer log. In
 final machine-readable JSON receipt. The renderer describes completed agent
 messages only as progress reports: their content is neither exposed nor
 interpreted as proof that the current stage is actually finishing.
+`reporting` records only completion of an agent message; further reasoning,
+tools, and subagent work may follow. Historical private records named this
+event `finalizing`. They remain readable with their original hashes, while
+public status presents that legacy event as `reporting`. Message completion
+does not select `completed` or `failed`; stage acceptance still requires the
+host's separate proposal and gate checks.
 
 All progress delivery is serialized on a bounded daemon queue; observer-owned
 code never runs on the launcher thread. Terminal delivery waits only briefly

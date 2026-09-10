@@ -2182,7 +2182,7 @@ def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
     if item_type in _CODEX_TOOL_ITEM_TYPES:
         return "tool"
     if item_type == "agent_message" and event_type == "item.completed":
-        return "finalizing"
+        return "reporting"
     return None
 
 

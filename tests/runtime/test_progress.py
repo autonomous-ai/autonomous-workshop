@@ -158,6 +158,34 @@ class NativeProgressTest(unittest.TestCase):
                 },
             )
 
+    def test_reporting_and_legacy_message_records_remain_active_and_hash_bound(self):
+        for activity in ("reporting", "finalizing"):
+            with self.subTest(activity=activity), tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary).resolve() / NATIVE_PROGRESS_FILENAME
+                progress = self.progress(path).observe(activity, observed_at_ms=3_500)
+                write_native_progress(path, progress)
+                original_bytes = path.read_bytes()
+
+                observed = read_native_progress(path)
+                self.assertEqual(observed, progress)
+                self.assertEqual(observed.to_dict()["activity"], activity)
+                self.assertEqual(observed.progress_sha256, progress.progress_sha256)
+                self.assertEqual(
+                    observed.public_view(observed_at_ms=5_100),
+                    {
+                        "status": "available",
+                        "stage_attempt": {"stage": "make", "number": 1},
+                        "activity": "reporting",
+                        "elapsed_seconds": 4,
+                        "last_activity_at": "1970-01-01T00:00:03.500Z",
+                    },
+                )
+                self.assertEqual(path.read_bytes(), original_bytes)
+                continued = observed.observe("tool", observed_at_ms=5_200)
+                self.assertEqual(continued.activity, "tool")
+                self.assertEqual(continued.native_turns, observed.native_turns)
+                self.assertEqual(continued.checkpoint_sha256, observed.checkpoint_sha256)
+
     def test_malformed_tampered_wrong_mode_and_symlink_records_are_unavailable(self):
         cases = ("malformed", "tampered", "wrong-mode", "symlink")
         for case in cases:

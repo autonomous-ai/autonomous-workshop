@@ -3859,7 +3859,7 @@ class NativeHostTest(unittest.TestCase):
 
             self.assertFalse(home.exists())
 
-    def test_progress_throttles_active_event_churn_but_forces_terminal_classes(self):
+    def test_progress_throttles_churn_but_delivers_reports_and_terminal_classes(self):
         progress = NativeRunProgress(
             product_id="progress-throttle-wish",
             wish_sha256="a" * 64,
@@ -3874,17 +3874,21 @@ class NativeHostTest(unittest.TestCase):
         )
         with mock.patch(
             "workshop.workflow.native_run.time.monotonic",
-            side_effect=(100.0, 100.1, 100.2, 100.3, 100.4),
+            side_effect=(100.0, 100.1, 100.2, 100.3, 100.4, 100.5),
         ), mock.patch(
             "workshop.workflow.native_run.write_native_progress"
         ) as write_progress:
             tracker = _NativeProgressTracker(Path("/unused"), progress)
             tracker.observe("reasoning")
             tracker.observe("tool")
+            tracker.observe("reporting")
             tracker.observe("finalizing")
             tracker.observe("completed")
 
-        self.assertEqual(write_progress.call_count, 2)
+        self.assertEqual(
+            [call.args[1].activity for call in write_progress.call_args_list],
+            ["reporting", "finalizing", "completed"],
+        )
         self.assertEqual(tracker.progress.activity, "completed")
 
     def test_untrusted_progress_is_hidden_without_blocking_valid_status(self):

@@ -180,6 +180,7 @@ _LIVE_ACTIVITY_MESSAGES = {
     "reasoning": "Native %s: reasoning about the current stage.",
     "tool": "Native %s: using a tool for the current stage.",
     "subagent": "Native %s: coordinating a subagent.",
+    "reporting": "Native %s: reported progress for the current stage.",
     "finalizing": "Native %s: reported progress for the current stage.",
     "completed": "Native %s: turn complete; Workshop is verifying it.",
     "failed": (

@@ -944,6 +944,29 @@ class CodexNativeSessionTest(unittest.TestCase):
                         cli_version="0.145.0",
                     )
 
+    def test_agent_message_completion_reports_progress_without_finalization(self):
+        for text in ("I am starting research.", "The stage is complete.", "private text"):
+            with self.subTest(text=text):
+                item = {"type": "agent_message", "text": text}
+                self.assertEqual(
+                    codex_runtime._safe_activity_for_event(
+                        {"type": "item.completed", "item": item}
+                    ),
+                    "reporting",
+                )
+                for event_type in ("item.started", "item.updated"):
+                    self.assertIsNone(codex_runtime._safe_activity_for_event(
+                        {"type": event_type, "item": item}
+                    ))
+        self.assertEqual(
+            codex_runtime._safe_activity_for_event({"type": "turn.completed"}),
+            "completed",
+        )
+        self.assertEqual(
+            codex_runtime._safe_activity_for_event({"type": "turn.failed"}),
+            "failed",
+        )
+
     def test_activity_observer_receives_only_coarse_host_classes(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1000,6 +1023,15 @@ class CodexNativeSessionTest(unittest.TestCase):
                                     },
                                 }
                             ),
+                            event(
+                                {
+                                    "type": "item.started",
+                                    "item": {
+                                        "type": "command_execution",
+                                        "command": private_sentinel,
+                                    },
+                                }
+                            ),
                             event({"type": "turn.completed", "usage": {}}),
                         ]
                     }
@@ -1018,7 +1050,8 @@ class CodexNativeSessionTest(unittest.TestCase):
                     "reasoning",
                     "tool",
                     "subagent",
-                    "finalizing",
+                    "reporting",
+                    "tool",
                     "completed",
                 ],
             )
@@ -1068,7 +1101,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(observed[-1], "completed")
             self.assertTrue(
                 set(observed).issubset(
-                    {"starting", "running", "finalizing", "completed"}
+                    {"starting", "running", "reporting", "completed"}
                 )
             )
             rendered = json.dumps(observed)
