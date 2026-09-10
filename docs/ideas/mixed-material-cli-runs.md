@@ -289,7 +289,7 @@ inspection had repaired pinball mechanism intersections/overhangs and rejected
 a supplier rod whose advertised 75 mm model actually measured 150 mm. Those
 are observed digital checks, not physical manufacture evidence.
 
-### Final installable-wheel check
+### Installed-wheel check at e39df106
 
 Built code revision `e39df106` offline using cached pinned build dependencies,
 then reran the full deterministic acceptance against a fresh wheel installation
@@ -398,3 +398,88 @@ inconclusive status, result fields, exit code 1 and a single Boolean attempt
 are unchanged. All 122 focused motion/retention/Make-round/registry tests
 passed, including failing mover and obstacle groups and source immutability.
 This diagnostic-only change also did not interrupt or refresh live work.
+
+### Complete surfaces, correct opaque depth, and the second tool refresh
+
+Cloudline's native render diagnosis exposed a separate display defect:
+`render_product` uniformly discarded triangles above 75,000, leaving holes in
+valid panels and tracks. Revision `98cc3445` removes that sampling entirely,
+retaining all supplied triangles and their corresponding colors/alpha. It
+preserves tessellation defaults and writes no mesh deliverable. All 32 renderer
+and 16 registry tests passed, including late small components formerly skipped.
+A 205,980-triangle test rendered in 2.213 seconds, with a separately measured
+254 MiB total process peak. These timings are observations on the live machine.
+
+Cloudline also exposed incorrect opaque face ordering. Revision `142d6511`
+uses per-pixel depth for opaque surfaces, then clips translucent fragments
+against that depth. It preserves camera, palette, shading and source/review
+paths. All 37 renderer and 16 registry tests passed. A real two-plate STEP
+fixture fixed 1,158 incorrectly occluded interior samples; an independent
+192,060-triangle scene rendered in 4.65 seconds at 1000 pixels. Ordering between
+translucent fragments remains approximate, including some nonintersecting
+transparent layers; this is schematic appearance, not an optical simulation.
+
+The builder copied one immutable, unfinished Cloudline STEP snapshot into a
+private scratch directory and compared the complete-triangle painter against
+the corrected renderer. Both commands exited 0 with all **1,292,795 triangles**
+and unchanged input bytes. Visual inspection confirmed that lower faces no
+longer appeared through the base and tracks. This is renderer regression
+evidence, not completion of Cloudline or a product gate.
+
+```sh
+git show 98cc3445:src/workshop/make/skills/cad/scripts/render_product > /private/tmp/workshop-render-live-regression/render_product_before.py
+"$workshop_python" /private/tmp/workshop-render-live-regression/render_product_before.py /private/tmp/workshop-render-live-regression/cloudline-f7c36a6653ef.step -o /private/tmp/workshop-render-live-regression/cloudline-before.png --size 1000
+"$workshop_python" src/workshop/make/skills/cad/scripts/render_product /private/tmp/workshop-render-live-regression/cloudline-f7c36a6653ef.step -o /private/tmp/workshop-render-live-regression/cloudline-after.png --size 1000
+```
+
+These reproduced defects justified updating the six layered product assemblies.
+Each running CLI was stopped with Ctrl+C and fully exited before its ordinary
+resume command. The first three older CLI processes exited 1 with their old
+interrupt traceback; Switchyard, Rainmark and Liltwing emitted the corrected
+`workshop: interrupted.` and exited 130. These were operator-controlled tool
+updates, not provider failures. All new processes use revision `142d6511`.
+
+```sh
+# 2026-09-10 17:20:35 UTC
+"$workshop_python" -m cli resume wish-20260910-143717-dbe8ad47 --refresh-tools
+# 17:21:05 UTC
+"$workshop_python" -m cli resume wish-20260910-143753-a2e10997 --refresh-tools
+# 17:21:09 UTC
+"$workshop_python" -m cli resume wish-20260910-143655-4d851b36 --refresh-tools
+# 17:22:00 UTC
+"$workshop_python" -m cli resume wish-20260910-143721-492a87cb --refresh-tools
+# 17:22:05 UTC
+"$workshop_python" -m cli resume wish-20260910-143744-c4614e19 --refresh-tools
+# 17:22:12 UTC
+"$workshop_python" -m cli resume wish-20260910-143749-b20aacdc --refresh-tools
+```
+
+Each command rebound seven changed Make instruction/tool files. Subsequent
+ordinary CLI status calls confirmed all six active in Make, four native turns,
+the same original root threads, `gpt-6-astra`, ultra, their original 100M token
+limits and all prior observed usage still charged. Read-only hash comparisons
+also confirmed the new renderer, motion tool and revised instructions were
+present in every run. No live product or host tool file was edited directly.
+None had completed Make or published at the 17:22 UTC verification.
+
+### Fresh installed-wheel check with the renderer fixes
+
+Built a fresh wheel from executable revision `142d6511` and reran the unchanged
+installed CLI acceptance in a new environment. The local dependency wrapper
+differs from the earlier one only in the wheel path and completion label.
+
+```sh
+UV_CACHE_DIR=/private/tmp/workshop-mixed-material-final-142d6511-uv-cache PYTHONDONTWRITEBYTECODE=1 uv build --offline --no-build-isolation --python /private/tmp/workshop-mixed-material-final-142d6511-build-env/bin/python --wheel --out-dir /private/tmp/workshop-mixed-material-final-142d6511
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -B /private/tmp/workshop-mixed-material-final-142d6511-acceptance.py
+```
+
+Acceptance passed. `workshop`, `cli` and distribution metadata loaded from the
+fresh wheel environment. The renderer, motion tool and Make lock bytes also
+matched the committed revision, source checkout and wheel. Existing declared
+dependencies were reused read-only; a clean dependency download/resolution was
+not tested. The fixture used no real model session or publication.
+
+Wheel: `/private/tmp/workshop-mixed-material-final-142d6511/autonomous_workshop-0.6.0-py3-none-any.whl`.
+SHA-256: `7a52325c3b29662f536262fc0fa7e5473ea882158b62a5a85a573084cf2213f5`.
+Acceptance log: `/private/tmp/workshop-mixed-material-final-142d6511-acceptance.log`.
+Byte identity proof: `/private/tmp/workshop-mixed-material-final-142d6511-wheel-proof.json`.

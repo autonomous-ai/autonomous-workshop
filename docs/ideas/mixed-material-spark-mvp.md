@@ -5,8 +5,8 @@ Date: 2026-09-10.
 **Implementation status: initial code implemented in `make/mixed-material-products`,
 with deterministic contract tests and a real CAD tool smoke check.** The
 manufacturing manifest, printed-subset checks and private/public handoff are
-implemented; the six-product portfolio still needs its live CLI runs and human
-prototype work. Live commands and outcomes are tracked in
+implemented. All six live CLI pilots are running; completed products and human
+prototype work remain pending. Live commands and outcomes are tracked in
 [the CLI run record](mixed-material-cli-runs.md). The material study is
 [KiwiCo materials research](kiwico-materials-research.md).
 
