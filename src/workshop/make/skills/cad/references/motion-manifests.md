@@ -26,11 +26,14 @@ for the genuinely unmeasurable, and still prints what it skipped.
 A Boolean failure, missing solid, invalid result or nonfinite measurement is
 **inconclusive**, not a clear path or a retention proof. The checker measures
 material unions for grouped parts, so overlapping children are counted once,
-and compares intersection volume with the volume implied by the union. A
-mismatch also makes the condition inconclusive. These operations share the
-same CAD kernel; agreement does not certify arbitrary geometry or the motion
-between samples. The default exit status remains nonzero for inconclusive
-conditions.
+and compares intersection volume with the volume implied by the union within
+a band of at least 0.000001 mm3 that scales with the operand volumes (0.00001
+of their sum), because the kernel integrates volume to a relative precision.
+When the union itself is unavailable, both differences must confirm the
+intersection instead. A mismatch still makes the condition inconclusive. These
+operations share the same CAD kernel; agreement does not certify arbitrary
+geometry or the motion between samples. The default exit status remains
+nonzero for inconclusive conditions.
 
 Run `python "$CAD_SKILL_ROOT/scripts/check_motion" --self-check` after changing
 this gate. Its regression fixture includes a shaft apparently held by a gate

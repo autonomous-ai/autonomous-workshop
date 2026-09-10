@@ -98,11 +98,14 @@ class MotionBooleanMeasurementTests(unittest.TestCase):
                 self.assertEqual(result['status'], 'inconclusive', result)
                 self.assertIn('inconsistent', result['detail'])
 
-    def test_failed_union_does_not_certify_a_positive_common(self):
+    def test_failed_union_and_differences_do_not_certify_a_positive_common(self):
+        # A failed union alone no longer decides: both differences may confirm the
+        # intersection instead. When they are unavailable too, nothing certifies it.
         unfinished = type('UnfinishedUnion', (FakeOperation,), {'done': False})
         for expect in ('clear', 'blocked'):
             with self.subTest(expect=expect):
-                with patch.object(operations, 'BRepAlgoAPI_Fuse', unfinished):
+                with patch.object(operations, 'BRepAlgoAPI_Fuse', unfinished), \
+                        patch.object(operations, 'BRepAlgoAPI_Cut', unfinished):
                     result = self.run_pair(expect)
                 self.assertEqual(result['status'], 'inconclusive', result)
 

@@ -521,6 +521,39 @@ preserved defect. This checks documentation consistency only; it does not
 establish that a documented command reproduces the delivered geometry.
 Frozen runs keep their exact materialized tools.
 
+## Consistency band at kernel precision (2026-09-10)
+
+The motion checker compared the direct intersection volume with
+operands-minus-union under a fixed 0.000001 mm3 band. Kernel volume
+integration is precise relative to the operand, not to an absolute cubic
+micrometre. Replaying the published manifests of twelve host-accepted toys
+under the integrated checker made five of them inconclusive (15 of 52
+evaluable conditions on both the baseline and candidate tool trees, plus one
+more on the candidate tree), and the same band left a preserved crank
+source/export comparison inconclusive at a 3.8e-6 mm3 delta on 6,389 mm3.
+A step-by-step probe over three of those toys (273 pair-steps) found the
+union-inferred value drifting by up to 3.4e-6 of the operand volumes in
+seated-contact poses of filleted and curved parts, while the direct
+intersection and both Cut-based differences agreed within 1e-5 of the operand
+volumes in every over-band pair; in three seated poses the union was invalid
+where the intersection was valid.
+
+The band is now max(0.000001 mm3, 0.00001 x the operand volumes), applied to
+the group union and to the intersection/union agreement alike. When the union
+fails or is invalid, the intersection is cross-checked against both
+differences within the same band instead of failing closed; disagreement or a
+failed difference remains inconclusive. Manifest collision thresholds,
+validity requirements and the inconclusive-fails-closed rule are unchanged.
+
+Contract tests cover kernel-scale noise on large operands for clear and
+blocked expectations, a ten-cubic-millimetre discrepancy, the absolute floor
+on tiny operands, duplicated material, an intersection larger than an operand,
+group-union noise versus excess, the difference fallback with agreeing and
+disagreeing differences, and a failed fallback. The sealed replay is repeated
+at the corrected tree and recorded privately. Frozen runs keep their exact
+materialized tools; this is measurement calibration, not a product-quality
+claim, and it does not change the necessary-contact rule for driven parts.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead

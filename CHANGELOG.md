@@ -78,6 +78,11 @@ Keep a Changelog and uses semantic versioning for released distributions.
 - Make final and print-preflight verification refuse a project whose README or
   spec names a `<name>.step.py` entry that does not exist, so a delivered file
   map or rebuild command cannot cite a removed entry and fail on first use.
+- Make motion checks judge Boolean volume agreement within a band that scales
+  with the operand volumes instead of a fixed 0.000001 mm3, and fall back to
+  both differences when the union is unavailable, so accepted parts of
+  thousands of mm3 are no longer reported inconclusive; gross disagreement
+  still fails closed.
 
 - Allow generated inventor commands to parse run options and positional Wish
   text in either order.

@@ -34,8 +34,10 @@ together, and a connector modelled as a plain boss in a plain pocket reads as a
 clean pass.
 
 At each sampled pose, measure the material intersection and check it against
-the union volume. Unavailable or inconsistent measurements are inconclusive.
-These operations use the same CAD kernel; agreement is a consistency check.
+the union volume within a band that scales with the operand volumes; when the
+union is unavailable, both differences must confirm the intersection instead.
+Unavailable or inconsistent measurements are inconclusive. These operations use
+the same CAD kernel; agreement is a consistency check.
 
 A manifest may also declare a retention graph. This closes the loophole where
 one moving part appears retained only because its nominal retainer was frozen
@@ -77,9 +79,21 @@ GEN_FUNC = "gen_" + "step"
 DEFAULT_STEPS = 12
 DEFAULT_OVERLAP_TOL = 1e-3  # mm3; contact is not collision
 # Agreement between Common and A + B - Fuse, independent of a manifest's threshold.
+# The kernel integrates volume to a relative precision, not to an absolute cubic
+# micrometre. Replaying twelve accepted products showed the union-inferred
+# intersection drifting by up to 3.4e-6 of the operand volumes in seated-contact
+# poses of curved parts while the direct intersection and both differences
+# agreed, so the band scales with the operands. A missing or wrong intersection
+# differs by whole cubic millimetres and stays far outside it.
 VOLUME_CONSISTENCY_MM3 = 1e-6
+VOLUME_CONSISTENCY_RELATIVE = 1e-5
 # Numerical contact tolerance, not a manifest-selectable operating clearance.
 CONTACT_DISTANCE_MM = 1e-6
+
+
+def consistency_tolerance(*volumes: float) -> float:
+    """Absolute agreement band for measurements over these operand volumes."""
+    return max(VOLUME_CONSISTENCY_MM3, VOLUME_CONSISTENCY_RELATIVE * math.fsum(volumes))
 
 
 class ManifestError(Exception):
@@ -311,15 +325,16 @@ def _material(shape):
         return solids[0], values[0]
     normalized = _boolean_shape(BRepAlgoAPI_Fuse, solids[:1], solids[1:])
     measured = solid_volume(normalized, require_solid=True)
-    if (measured < max(values) - VOLUME_CONSISTENCY_MM3 or
-            measured > math.fsum(values) + VOLUME_CONSISTENCY_MM3):
+    tolerance = consistency_tolerance(*values)
+    if (measured < max(values) - tolerance or
+            measured > math.fsum(values) + tolerance):
         raise ValueError('motion group union has inconsistent volume')
     return normalized, measured
 
 
 def overlap_volume(a, b):
     """Measure intersection only when both Boolean measurements are consistent."""
-    from OCP.BRepAlgoAPI import BRepAlgoAPI_Common, BRepAlgoAPI_Fuse
+    from OCP.BRepAlgoAPI import BRepAlgoAPI_Common, BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse
 
     # Resolve actual placed solids for both plain and assembly compounds.
     a, va = _material(a)
@@ -329,12 +344,28 @@ def overlap_volume(a, b):
             ba.min.Y > bb.max.Y or ba.max.Y < bb.min.Y or
             ba.min.Z > bb.max.Z or ba.max.Z < bb.min.Z):
         return 0.0
-    common = solid_volume(_boolean_shape(BRepAlgoAPI_Common, list(a.solids()), list(b.solids())))
-    union = solid_volume(_boolean_shape(BRepAlgoAPI_Fuse, list(a.solids()), list(b.solids())))
+    a_solids, b_solids = list(a.solids()), list(b.solids())
+    common = solid_volume(_boolean_shape(BRepAlgoAPI_Common, a_solids, b_solids))
+    tolerance = consistency_tolerance(va, vb)
+    if common > min(va, vb) + tolerance:
+        raise ValueError('motion Boolean measurements are inconsistent: '
+                         f'common={common:.9g} exceeds an operand volume mm3')
+    try:
+        union = solid_volume(_boolean_shape(BRepAlgoAPI_Fuse, a_solids, b_solids))
+    except ValueError as union_error:
+        # The union of touching solids can fail or come back invalid where the
+        # intersection succeeded. Cross-check the intersection against both
+        # differences instead; disagreement is still inconclusive.
+        residue_a = solid_volume(_boolean_shape(BRepAlgoAPI_Cut, a_solids, b_solids))
+        residue_b = solid_volume(_boolean_shape(BRepAlgoAPI_Cut, b_solids, a_solids))
+        for inferred in (va - residue_a, vb - residue_b):
+            if abs(common - inferred) > tolerance:
+                raise ValueError('motion Boolean measurements are inconsistent: '
+                                 f'common={common:.9g}, operand-minus-difference={inferred:.9g} mm3 '
+                                 f'(union unavailable: {union_error})') from union_error
+        return common
     inferred = math.fsum([va, vb, -union])
-    tolerance = VOLUME_CONSISTENCY_MM3
-    if (common > min(va, vb) + tolerance or union < max(va, vb) - tolerance or
-            abs(common - inferred) > tolerance):
+    if union < max(va, vb) - tolerance or abs(common - inferred) > tolerance:
         raise ValueError('motion Boolean measurements are inconsistent: '
                          f'common={common:.9g}, operands-minus-union={inferred:.9g} mm3')
     return common
