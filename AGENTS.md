@@ -47,7 +47,8 @@ All implementation and product-run work must preserve these boundaries:
   selection protocol and accepted inventor.
 - Codex runs freeze their selected model, reasoning effort, and total token
   allowance across stages, descendants, and resumes. Token-budget runs have
-  no wall-clock, native-turn, proposal-retry, or lifecycle-round spending cap.
+  no Workshop wall-clock, native-turn, proposal-retry, or lifecycle-round spending cap.
+  Make retains its own frozen engineering checks and review allowance.
   Pending usage is not subject to a first-report timer; completed usage must
   still be accounted for. Other runtime adapters retain their frozen policy.
 - Spark accepts Make's output as-is: no duplicate host CAD rebuild, geometry
@@ -120,6 +121,7 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0023-bounded-spark-turn-and-semantic-review.md`, and
 `docs/adr/0050-structured-terminal-failure-diagnostics.md`, and
 `docs/adr/0049-product-wide-token-budget.md`, and
+`docs/adr/0060-make-round-visual-feedback-and-three-repairs.md`, and
 `docs/adr/0061-spark-make-owned-verification.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
@@ -147,10 +149,14 @@ hash, and requires the final verification report inside the declared
 self-contained CAD project.
 ADR 0050 retains a bounded structured diagnosis for terminal provider failures
 while continuing to discard unsafe free-form provider text.
-ADR 0049 supersedes earlier time/turn/retry/round spending caps for token-budget
-products. ADR 0061 supersedes duplicate host verification and native manual
+ADR 0049 supersedes earlier Workshop time/turn/retry/round spending caps for
+token-budget products, not Make's internal engineering or review policy.
+ADR 0061 supersedes duplicate host verification and native manual
 authoring for Spark only; it leaves Make's own implementation intact. Do not
 reintroduce these removed boundaries from an older ADR or frozen-run fixture.
+ADR 0060 requires native Manager visual feedback within Make rounds and expands
+final blind review to an initial review plus three repair-and-rereview cycles
+for new runs. Frozen older runs retain their original allowance and tool bytes.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

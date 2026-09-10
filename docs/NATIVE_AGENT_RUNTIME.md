@@ -46,11 +46,13 @@ does not govern ordinary source-repository work.
 ### Current token-budget and Spark handoff policy
 
 For token-budget products, the **total input-plus-output token allowance** is
-the execution limit across stages, children, and resumes. Historical clocks,
+the Workshop execution limit across stages, children, and resumes. Historical host clocks,
 native-turn counts, proposal-retry counts, and lifecycle-round allowances
 described below do not stop these runs. Accounting integrity, credential
 isolation, exact file identity, and authenticated effect reconciliation remain
-required; they are not alternative spending budgets.
+required; they are not alternative spending budgets. Make retains its own
+frozen checks and review policy, including the current four-review allowance
+under [ADR 0060](adr/0060-make-round-visual-feedback-and-three-repairs.md).
 
 Spark accepts Make's output without repeating CAD verification, build-group
 validation, or production-part acceptance in the Workshop host. Make's own
@@ -65,8 +67,15 @@ session into Make after the choice is durable. Spark publication uses schema 4
 Release/schema 6 product metadata and Make's existing files. There is no native
 Release turn or required new PDF. The host publishes through the existing
 credential-isolated Factory adapter and verifies the uploaded metadata anchor.
-This path passes deterministic end-to-end tests; live acceptance is still in
-progress, so tests must not be reported as a real published product.
+Live host-only publication passed on 2026-09-10 for
+[Civic Skyline](https://www.autonomous.ai/toys/product/civic-skyline), under Dee:
+the CLI exited zero with public, verified completion and unchanged usage of
+32,678,604/200,000,000 tokens. A carrier-root repair imported a new version into
+the same private Factory draft, preserving the earlier uncertain import record.
+Make files, its native session, and its frozen older inventor selection were
+reused without a Make rerun, native Release turn, new PDF, or extra CAD check.
+New selection-before-Make behavior is separately proven by deterministic tests;
+this live result does not claim physical manufacture or testing.
 The historical architecture below documents the contracts still needed for
 Forge, Quest, and older receipts; it does not reinstate duplicate Spark gates.
 
@@ -612,13 +621,19 @@ canonical concept and compare each dimension plus the concept's anti-generic
 signature with the promise. The hash-bound evidence confirms an
 unmistakable, desirable final product; schema v6 also enumerates every explicit
 positive and negative held-form requirement with blind visual evidence and
-requires no blocking visual defect. One critic performs no more than two
-rounds. Before this review, Make runs the fixed print-preflight mode: every
+requires no blocking visual defect. New runs allow one initial review and up to
+three repair-and-rereview cycles (four reviews total); frozen older tools retain
+their two-review bound. Make rounds also render inspection views and record
+native Manager feedback on placement, proportions and other visible defects
+through `make_round --record-visual`. Pending visual feedback cannot pass a
+round, and self-review never replaces the independent critic (ADR 0060).
+Before independent review, Make runs the fixed print-preflight mode: every
 declared printable is generated, strict-fit checked, exported, mesh checked,
 and thickness checked at the final 0.4 mm nozzle profile. The review binds the
 passing preflight hash. Native iteration relies on source-closure freshness and
 does not delete protected `__cadgen__` directories; the trusted host owns the
-authoritative isolated `--fresh` rebuild. Make then performs one integrated final verifier, so a
+additional isolated `--fresh` rebuild for Forge/Quest; Spark omits this host replay.
+Make then performs one integrated final verifier, so a
 printability repair cannot invalidate an already-spent visual read. The
 materialized final verifier refuses to begin final-mode geometry work until the
 canonical schema-v6 review and exact image hashes exist, then records the review
@@ -629,7 +644,7 @@ README hero selection. Diagnostic silhouettes elsewhere remain evidence and
 cannot be promoted accidentally.
 The finalizer also requires the submitted verification report to be inside the
 declared CAD project. This cheaply proves the agent verified the same
-self-contained directory the host will later copy into isolation and rebuild.
+self-contained directory Forge/Quest's host will later copy into isolation and rebuild.
 It parses only the current report record and requires final mode, a passing
 headline, a successful thickness row, and no thickness-skip flag. A prior pass
 below a current failure or a locally omitted gate cannot become a Made proposal.
@@ -1092,7 +1107,8 @@ with the exact Wish and canonical concept. It must enumerate every explicit
 positive and negative held-form constraint, cite blind visual evidence for each,
 and report no blocking visual defect. A prototype/device read, dominant exposed
 mechanism, zoom-dependent signature, raw faceting, unclear state change, or any
-visible caveat is blocking. Make permits at most two review rounds and then
+visible caveat is blocking. This historical protocol permitted two review rounds;
+new runs use four under ADR 0060 and then
 performs one integrated final verifier. The finalizer accepts only the current
 passing full-tier report with a successful thickness row, so omitting a failed
 check cannot spend a host isolated rebuild.

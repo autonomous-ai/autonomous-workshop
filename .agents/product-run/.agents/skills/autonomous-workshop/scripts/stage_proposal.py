@@ -2039,8 +2039,13 @@ def _validate_signature_review(
                 "Make signature review must confirm the final %s"
                 % label
             )
-    if type(review["review_rounds"]) is not int or review["review_rounds"] < 1:
-        raise ProposalError("Make signature review must record a positive review-round count")
+    if type(review["review_rounds"]) is not int or review["review_rounds"] not in (
+        1,
+        2,
+        3,
+        4,
+    ):
+        raise ProposalError("Make signature review must record one to four review rounds")
     for filename, field in (
         ("iso.png", "iso_sha256"),
         ("signature.png", "signature_sha256"),

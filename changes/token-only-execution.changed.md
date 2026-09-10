@@ -1,7 +1,8 @@
-Token-budget products no longer stop at a wall-clock timeout, native-turn
+Token-budget products no longer stop at a Workshop wall-clock timeout, native-turn
 count, proposal-rejection count or lifecycle-round count. Native usage remains
-mandatory and all product gates remain required. New signature-review tools
-accept positive review counts beyond two. Explicit `resume --refresh-tools`
+mandatory and all product gates remain required. Make retains the team's own
+engineering checks and four-review policy; these are not host spending caps.
+Explicit `resume --refresh-tools`
 can update an allowlisted set of token-budget review tools and references,
 record the correction, and rebind the same session and exact token ledger.
 Temporary provider overload/service failures resume with backoff. Native token

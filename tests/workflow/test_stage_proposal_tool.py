@@ -1088,6 +1088,11 @@ class StageProposalToolTest(unittest.TestCase):
 
     def test_make_hashes_exact_product_tree_and_matches_native_made(self):
         product_root, _, _, _ = self.create_product()
+        # Initial blind review plus all three allowed repair/rereview cycles.
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text())
+        review["review_rounds"] = 4
+        review_path.write_bytes(canonical_json(review))
         self.write_stage(
             "make",
             {
@@ -1443,7 +1448,7 @@ class StageProposalToolTest(unittest.TestCase):
         )
 
         review["relationship_matches_wish"] = True
-        review["review_rounds"] = 0
+        review["review_rounds"] = 5
         review_path.write_bytes(canonical_json(review))
         unbounded_review = self.run_tool(
             "make",
@@ -1455,7 +1460,7 @@ class StageProposalToolTest(unittest.TestCase):
             "cad/project/validation/cad-build.json",
             expected=2,
         )
-        self.assertIn("positive review-round count", unbounded_review.stderr)
+        self.assertIn("one to four review rounds", unbounded_review.stderr)
 
         review["review_rounds"] = 1
         review["critical_form_requirements"][0]["matches"] = False

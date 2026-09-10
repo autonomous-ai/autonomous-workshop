@@ -1,13 +1,16 @@
 # ADR 0061: Spark leaves verification to Make
 
 - Date: 2026-09-10
-- Status: Implemented and deterministically tested; live publication acceptance pending
+- Status: Implemented and deterministically tested; live host-only publication acceptance passed
 
 The user explicitly requested that Workshop not interfere with Make or add
 duplicate checks around it. Spark therefore accepts Make's exact submitted
 product without a second host CAD rebuild, and Release does not trigger a
 third CAD verification. Make's code, its own finalizer and its own engineering
-and visual checks are unchanged by this decision.
+and visual checks are unchanged by this decision. The team's current Make
+visual-feedback implementation and four-review allowance remain as specified
+in [ADR 0060](0060-make-round-visual-feedback-and-three-repairs.md); Workshop's
+token-only execution policy does not remove Make-internal checks or limits.
 
 The host still validates the submitted contract's identity, hashes the actual
 files, preserves the accepted artifact tree, isolates credentials, accounts for
@@ -39,7 +42,23 @@ Deterministic tests prove selection precedes Make, Make's accepted output is
 published without another native turn or PDF, and a rejected Spark proposal can
 repair in the same session and reach publication. Factory tests cover exact asset
 bytes, missing README/PDF, omitted geometry work, anchor drift, and ambiguous
-import reconciliation without reupload. Live site/CDN acceptance remains pending.
+import reconciliation without reupload.
+
+Live acceptance passed on 2026-09-10 for
+[Civic Skyline](https://www.autonomous.ai/toys/product/civic-skyline), published
+under Dee. The normal CLI exited zero with `action=published-release`,
+`status=complete`, and a public, verified publication receipt; unauthenticated
+public API readback returned HTTP 200. Its existing Wish, Alice inventor, native
+root session and 32,678,604/200,000,000-token accounting were preserved.
+The original import exposed Factory selecting a nested CAD directory and
+omitting root metadata. Recovery used a root-selectable carrier preserving
+the full Make tree, then an append-only version import into the same private
+draft. The original incomplete import remains truthfully unknown; its immutable
+intent was not rewritten or blindly resent. Exact public metadata-anchor
+readback proved the new version before completion. No Make rerun, native Release
+turn, new PDF, render, or CAD verification was needed during this repair.
+This older run retained frozen inventor selection; new selection-before-Make
+remains separately proven by deterministic tests, not by this live run.
 
 Forge, Quest and legacy non-Spark routes keep their existing independent host
 verification. Existing Spark sessions use the new orchestration on their next

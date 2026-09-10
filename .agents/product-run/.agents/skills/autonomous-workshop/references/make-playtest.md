@@ -245,19 +245,20 @@ outputs, and deterministic CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions.
 
-The `--cad-project-path` value is the self-contained project the trusted host
-will copy into isolation and rebuild. Put its combined generator/import entry,
+The `--cad-project-path` value is the self-contained project Make verifies;
+Forge/Quest's host additionally copies it into isolation and rebuilds it.
+Spark does not repeat Make's verification. Put its combined generator/import entry,
 local helper source, `snap/` family, and final `measure/verification-pipeline.md`
 inside that exact directory. Root-level assembled STEP/STL files are delivery
 copies, not a substitute for a build entry inside the declared project. Run the
 final verifier against that exact directory, and pass its in-project report as
 `--cad-verification-path`; the finalizer rejects a report outside the declared
-project before the host spends another isolated verification.
+project, independently of whether the route repeats isolated host verification.
 
 Keep stable exported STEP/STL/GLB files, product PNG renders, source, and
 measurements in the product tree. Do not preserve `__cadgen__` runtime caches,
 generation locks/progress files, `__pycache__`, or temporary work trees there:
-the host's `--fresh` verifier intentionally rebuilds those bytes. The Make
+the Forge/Quest host's `--fresh` verifier intentionally rebuilds those bytes. The Make
 finalizer removes safe regular cache files before hashing and fails closed on
 linked, special, or unremovable cache content. If the sandbox protects a now
 empty cache directory from unlink, leave it in place: byte-free directories
@@ -379,7 +380,7 @@ Preserve the final review as canonical JSON at
 The finalizer requires every confirmation, all unprompted reads, at least one
 explicit critical-form check, no blocking visual defect, the exact passing
 all-printable 0.4 mm preflight hash, the exact Invented
-concept binding, a positive review-round count, and exact final-image hashes. It also
+concept binding, one to four review rounds, and exact final-image hashes. It also
 requires the current CAD report to be a passing final full-tier run containing
 a successful thickness row; omitting a failed check cannot reach the host's
 isolated gate. This is review evidence, not a numeric beauty score; never claim
@@ -423,18 +424,20 @@ already contains sealed `assignment` and `invented` inputs.
 
 The deterministic finalizer hashes the complete tree and writes the canonical
 Made contract. Complete the Make Goal only after it succeeds, then return to
-the host. The host copies the exact tree into an isolated verifier, reruns the
-trusted CAD gate, compares bytes, and seals the accepted revision. Narrative
+the host. The host seals the exact submitted bytes; Forge/Quest also copy the
+tree into an isolated verifier and rerun the trusted CAD gate. Spark does not
+repeat Make's verification. Narrative
 or model confidence never overrides a failed or absent measurement.
 
-Two facts about that isolated rerun decide whether it can even start. The host
+For Forge/Quest, two facts about that isolated rerun decide whether it can even start. The host
 invokes `verify_project` without `--assembly`, so the CAD project must contain
 exactly one combined (non-`part_*`) entry generator: a second top-level entry,
 such as a neutral-pose export, is rejected before any geometry check. And the
 isolated copy carries only the declared project tree on `PYTHONPATH`, so every
 helper that a generator or `measure/` script imports (`cadfits` included) must
 be vendored inside the project rather than imported from the skill directory.
-Each miss costs one full Make session inside the bounded rejection loop.
+Each miss requires repair in the same Make session; the host records rejection
+history and token-budget products retain their shared token allowance.
 
 Spark and Forge advance directly to Release and therefore require the full
 verifier, including wall thickness and print-ready eligibility, at Make. They

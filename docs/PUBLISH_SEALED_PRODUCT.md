@@ -25,10 +25,19 @@ manual-generation task, or manual review. Publication uses the host-held account
 and a durable effect ledger so an uncertain response cannot cause a blind
 duplicate upload. Playtest is explicitly `not-run`.
 
-This path is deterministically tested. The first live acceptance has finished
-Make and imported a draft, but exposed a Factory project-root selection mismatch:
-the CDN retained the nested CAD directory without the root publication metadata.
-Public completion is not yet proven. See [ADR 0061](adr/0061-spark-make-owned-verification.md).
+Live acceptance passed on 2026-09-10 for
+[Civic Skyline](https://www.autonomous.ai/toys/product/civic-skyline), under Dee.
+The normal CLI exited zero with public, verified completion. Its first import
+exposed Factory selecting a nested CAD directory and omitting root metadata.
+The repaired transport preserves Make's full tree in a root-selectable carrier;
+an append-only version import recovered the same private draft without changing
+the original uncertain effect intent. Exact public metadata-anchor readback
+proved the repaired version before publication completed.
+The existing Alice inventor, Wish, root session and 32,678,604/200,000,000-token
+accounting were unchanged. No Make rerun, native Release turn, new PDF, render,
+or extra CAD verification was needed. This older run retained frozen inventor
+selection; new selection-before-Make is separately covered by deterministic
+tests. See [ADR 0061](adr/0061-spark-make-owned-verification.md).
 
 ## Forge, Quest, and preserved older Release contracts
 
@@ -111,12 +120,12 @@ uv run workshop start <inventor-id> --wish "I wish for ..." --ref side.jpg
 uv run workshop resume <wish-id>
 ```
 
-`workshop wish` without `--inventor` lets Match choose the Inventor from the
-whole roster, and Release then publishes with that Inventor's credential,
+`workshop wish` without `--inventor` lets the Manager choose from the whole roster
+(in Workshop setup before Make for new Spark runs), and Release publishes with that Inventor's credential,
 falling back to the host-wide Factory login when the chosen Inventor has
 none. `workshop wish --inventor <id>` and `workshop start <inventor-id>
 --wish` seal the named Inventor into the Wish instead: the run materializes
-only that Inventor's custom agent, Match can bind nobody else, and Release
+only that Inventor's custom agent, selection can bind nobody else, and Release
 publishes with that Inventor's own account (ADR 0053). A daydream built by
 `workshop start` is pinned the same way.
 
@@ -138,17 +147,19 @@ outside the coding-agent session.
 Once local validation passes, the host:
 
 1. records a hash-bound Factory effect intent before network I/O;
-2. imports the exact production CAD, `MANUAL.pdf`, and supported product facts;
+2. imports Make's existing tree and metadata anchor for Spark, or the sealed
+   production CAD, `MANUAL.pdf`, and product facts for PDF-first contracts;
 3. promotes that same remote design publicly; and
-4. completes Release only after authenticated readback and the public manual
-   URL prove the exact sealed CAD and PDF hashes.
+4. completes Release only after authenticated public readback proves the exact
+   publication anchor for Spark, or the sealed CAD and PDF hashes for PDF-first contracts.
 
-The Factory ZIP is a narrow production transport, not a mirror of the Made
+For PDF-first contracts, the Factory ZIP is a narrow production transport, not a mirror of the Made
 engineering tree. For a mesh product it contains one validated primary model
 and only the exact production parts and occurrence metadata supported by the
 current contract. Alternate exports, play poses, slicer-project files, and
 other redundant representations stay local so file-format duplication cannot
-be mistaken for extra printable parts or fulfillment cost.
+be mistaken for extra printable parts or fulfillment cost. Spark's carrier instead
+preserves Make's complete submitted tree and its exact metadata anchor.
 
 Factory's mutable category ordering is never trusted: the handoff explicitly
 declares the canonical `toys` category, and authenticated readback must preserve

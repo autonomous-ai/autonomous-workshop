@@ -5,6 +5,15 @@ product design. It is a thin workflow harness over a pluggable coding-agent
 runtime, not a Python agent framework. Codex is implemented first; Claude Code
 and Grok Build are future adapters to the same boundary.
 
+Current policy: token-budget products use one persistent token allowance instead
+of Workshop time, turn, retry or lifecycle-round spending caps (ADR 0049).
+Make keeps its own visual feedback, engineering checks and four-review policy
+(ADR 0060). New Spark runs select the inventor in Workshop setup, then Make;
+host-only Publish transfers Make's existing bytes without a duplicate CAD
+rebuild, new PDF or native Release turn (ADR 0061). Frozen older tools retain
+their own Make rules. The economics clocks described below are historical
+profiles, not execution limits for token-budget runs.
+
 ## Product scope
 
 The first version makes open-ended playthings for grown-ups (14+). Users state
@@ -18,10 +27,10 @@ Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
 
 New projects freeze a schema-v2 `MANAGER.json` with the selected native agent,
-model, and reasoning effort. The CLI defaults are Codex `gpt-5.6-sol` at high
-effort and Claude Code `claude-opus-5` at high effort; `--model astra` resolves
+model, and reasoning effort. The CLI defaults are Codex `gpt-5.6-sol` at medium
+effort and Claude Code `claude-opus-5` at medium effort; `--model astra` resolves
 to `gpt-6-astra`. The selected reasoning effort remains fixed across the
-persistent daydream and product session. Workflow profiles still own
+persistent daydream and product session. Historical workflow profiles own
 compaction ceilings and turn boundaries: Spark uses 64k across Make and
 Release, while Forge and Quest begin Invent with a 20-minute turn and use a
 10-minute source handoff
@@ -53,13 +62,14 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
 ```
 
 - **Wish** preserves the person's exact words and explicit constraints.
-- The first active creative stage selects and binds one Inventor. Optional
+- New Spark runs select and bind one Inventor during Workshop setup before Make;
+  other frozen routes select in their first active creative stage. Optional
   stages pass through without turns, artifacts, gates, or fabricated evidence.
 - **Invent** researches, explores, selects, and seals one bounded product
   concept, including the physical facts and provenance Make needs.
 - **Make** consumes that exact sealed Invent result and creates the actual
   product tree, CAD project, assemblies, and deterministic CAD verification.
-  In Spark, selection and compact invention are sealed inside this same turn.
+  Spark Make consumes Workshop's accepted inventor and seals compact invention.
   Make seals both an exact-product hero and a signature-experience sheet that
   must make the promised interaction, reveal, or anti-generic detail visually
   inspectable before prose can claim it. A bounded independent native visual
@@ -71,22 +81,26 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
   negative held-form constraint with visible blind evidence and cannot retain a
   blocking visual defect. A fixed print preflight first generates every
   declared printable and requires strict fit, mesh validity, and 0.4 mm-nozzle
-  wall thickness; the critic binds its passing report. Make permits at most two review rounds and resolves at most one focused
-  visual defect before one integrated final verifier. The verifier
+  wall thickness; the critic binds its passing report. Current Make permits an
+  initial review and up to three focused repair-and-rereview cycles before one
+  integrated final verifier. The verifier
   refuses final-mode geometry work until the canonical review exists, then
   records its hash; the review, resolution, and one canonical render family are
   sealed before Make can pass.
   The authored verification report must be inside the declared self-contained
-  CAD project, which is the exact directory the host copies and rebuilds. The
+  CAD project, which is the exact directory Forge/Quest's host copies and rebuilds. The
   finalizer requires the hash-bound preflight plus its current record to be a
   passing final full-tier run with a successful thickness row before the host
-  repeats the isolated gate.
+  repeats the isolated gate for Forge/Quest. Spark accepts the exact Make output
+  without that additional rebuild.
   A capable Forge or Quest Make may return to Invent only with exact preserved
   evidence that the sealed concept prevents any conforming build.
 - **Playtest** independently evaluates the sealed Made revision only in Quest,
   preserving exact evidence and returning directly to Make for implementation
   defects or Invent for concept defects.
-- **Release** creates and seals a self-contained printable `MANUAL.pdf`,
+- **Spark Release** is host-only Publish of Make's existing files and metadata
+  anchor, without new manual authoring or another native turn.
+- **Forge/Quest Release** creates and seals a self-contained printable `MANUAL.pdf`,
   revalidates the exact Made revision as full-tier print-ready CAD, and
   publishes both through Factory with authenticated public hash readback.
   The manual is the canonical customer artifact.
@@ -94,7 +108,7 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
   after Release. They belong to the Operations team and are not executable
   Workshop stages.
 
-Release is the final digital product-design stage because the in-box experience
+For PDF-first contracts, Release is the final digital product-design stage because the in-box experience
 is part of the product. Codex owns manual structure, copy, visuals, rendering,
 and revision while the host validates exact PDF, product, and CAD bytes. The
 host alone performs authenticated Factory transport. Every physical effect
@@ -120,20 +134,20 @@ inputs under `wish-references/`, bound by size and SHA-256 inside `WISH.json`
 every checkpoint. The run never fetches anything itself.
 
 Make uses a cost-aware proof funnel inside its one Goal: narrow build checks,
-an independent blind read of exact candidate renders, at most one focused
-visual repair, then one integrated final CAD verification. The final sealed
-product has one canonical render family. Release similarly creates one initial
+an independent blind read of exact candidate renders, up to three focused
+repair-and-rereview cycles, then one integrated final CAD verification. The final sealed
+product has one canonical render family. PDF-first Release similarly creates one initial
 and one final complete manual-review packet instead of rerendering after every
 small evidence edit. These are native work instructions plus deterministic
 artifact boundaries, not a Python planner or aesthetic judge.
 
-For a v3 Spark, each native Make or Release turn has a frozen 20-minute process
+For a historical non-token v3 Spark, each native Make or Release turn has a frozen 20-minute process
 boundary. A timeout follows the same bounded recovery mechanism below and
 continues the exact session and Goal from durable bytes. This limits one runaway
 turn; it does not promise a 20-minute stage, create a replacement session, or
 permit incomplete evidence.
 
-For Forge and Quest runs, the frozen `deep-economics-v13.md` capability
+For historical non-token Forge and Quest runs, the frozen `deep-economics-v13.md` capability
 begins Invent with a 20-minute turn and gives a recoverable continuation 10
 minutes as a source handoff. Its first action checks
 only whether source exists; existing source goes straight to the finalizer,

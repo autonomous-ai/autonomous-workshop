@@ -56,8 +56,11 @@ this is an observed-usage stop, not provider-side hard preauthorization.
 The ordinary twenty-minute split and aggregate time/turn limits no longer
 govern marked token-budget products. On 2026-09-09 the one-hour per-launch
 watchdog was removed, together with native-turn, proposal-rejection and
-lifecycle-round spending caps. New review tools accept any positive review
-count instead of stopping at two. Existing materialized tools remain frozen
+lifecycle-round host spending caps. An earlier positive-review-count change
+was superseded when the team's Make changes were integrated: current Make keeps
+its own four-review allowance under [ADR 0060](0060-make-round-visual-feedback-and-three-repairs.md).
+Token budgeting does not remove Make-internal checks or review policy.
+Existing materialized tools remain frozen
 unless explicitly updated with `resume --refresh-tools`; this host operation
 records exact allowlisted review-tool changes and preserves the session and
 token ledger, including recovery after an interrupted rebind. Token-budget

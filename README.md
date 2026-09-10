@@ -154,16 +154,23 @@ uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra t
 Omitting `--max-tokens` on resume preserves the saved allowance. Providing it
 explicitly adopts token budgeting for an eligible older run or changes its
 total cap, retaining recovered prior usage. Token-budgeted runs no longer split
-on a wall-clock timer. Tokens are their only execution budget: no turn,
-proposal-retry, or lifecycle-round cap. Required checks and safety boundaries remain. Native
+on a wall-clock timer. Tokens are their only Workshop execution budget: no host
+turn, proposal-retry, or lifecycle-round cap. Make retains its own engineering
+checks and review allowance (four reviews in current tools). Safety boundaries remain. Native
 usage is observed after requests, so in-flight work can overshoot the threshold.
 Missing usage is not free work. This is not a dollar cap. The local usage adapter
 currently requires Codex 0.153.4; other Managers retain their existing policy.
 Live acceptance passed for [Quiet Arc](https://www.autonomous.ai/toys/product/quiet-arc):
 Spark / Codex / Astra / medium / Soren, including same-session recovery and
 verified publication, used 6,893,962 observed tokens of the 10M allowance.
-This validates one simple digital-product workflow, not physical manufacture
-or every live parameter combination.
+On 2026-09-10, [Civic Skyline](https://www.autonomous.ai/toys/product/civic-skyline)
+completed live Spark host-only publication under Dee with 32,678,604 observed
+tokens of its unchanged 200M cap. Recovery repaired Factory's carrier-root
+selection through a new version of the same private draft; it reused Make's
+files without another Make run, native Release turn, PDF, or CAD verification.
+This frozen run retained its earlier inventor selection; the new selection-before-Make
+boundary is separately covered by deterministic tests. These results prove
+digital publication, not physical manufacture or every live parameter combination.
 
 Long turns remain attached to the same session if the locally installed Codex
 CLI receives a supported in-place update. Workshop still rejects downgrades,
@@ -350,21 +357,21 @@ Shop -> Scoreboard (views, orders, prints, returns) -> back to Daydream
 
 Route diagrams: [Spark](docs/images/effort-spark.svg) · [Forge](docs/images/effort-forge.svg) · [Quest](docs/images/effort-quest.svg).
 
-Every run is keyed by a Wish id. Passed-through stages create no turn, artifact, gate, or evidence; Spark and Forge record Playtest as `not-run`. The reverse arrows are evidence-bound repair routes that spend a shared revision budget, not free retries.
+Every run is keyed by a Wish id. Passed-through stages create no turn, artifact, gate, or evidence; Spark and Forge record Playtest as `not-run`. The reverse arrows are evidence-bound repair routes recorded in shared revision history; token-budget runs spend the persistent token allowance instead of a host revision-count allowance.
 
-**Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Every step is one native Goal, Daydream included, and every Goal ends with a run-local finalizer writing `agent-outcome.json`, which is the only completion signal the host trusts. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
+**Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Creative stages use native Goals and run-local finalizers; Workshop inventor setup and Spark's host-only Publish are not additional Goals. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
 
 **Two sessions, by design.** `workshop start` is a loop: dream, build, dream again. A daydream is its own short native session. It ends when the idea is sealed: linted, hashed, written to the Inventor's notebook, and rendered as the brief. Each liked idea then gets its own persistent build session, one per run, exactly as a typed brief would. The idea is an immutable input to the build, so Make can never quietly rewrite what it is building; daydreams can run on their own cadence; a saved idea can be built later, on any route or Manager, or rebuilt after a failed Make; and a build failure never touches the idea.
 
-**What Make must prove.** Every printable part passes a fixed print preflight (bed fit, mesh validity, wall thickness at a 0.4 mm nozzle). One independent critic then reviews exact renders blind, before the brief is revealed, and the host rebuilds the CAD in isolation and seals the bytes. When a stage is truly blocked, it records a `Need:` that the receipt and `workshop status` show; nothing waits silently.
+**What Make must prove.** Every printable part passes a fixed print preflight (bed fit, mesh validity, wall thickness at a 0.4 mm nozzle). Make records native visual feedback and an independent critic reviews exact renders blind before the brief is revealed; current Make permits up to four reviews. Make then runs its integrated verifier. Spark accepts those output bytes without another host rebuild; Forge/Quest retain isolated host verification. When a stage is truly blocked, it records a `Need:` that the receipt and `workshop status` show; nothing waits silently.
 
-**What Release means.** Three facts about the same exact bytes:
+**What Release means.** Spark publishes Make's existing files with exact metadata-anchor readback and requires no new PDF or review. Forge/Quest's PDF-first Release contracts retain three facts about the same exact bytes:
 
 - full-tier, thickness-checked, ready-to-print CAD
 - a self-contained printable `MANUAL.pdf` for the box
 - authenticated public Factory readback of those CAD and manual hashes
 
-A multi-part toy crosses to the shop as one mesh per sealed occurrence in the colours Make sealed. The host renders the sealed assembly with a pinned three.js renderer (`tools/render/`, optional; see `workshop doctor`) so the manual and the listing cover show the exact product. The build session stays private; no transcript ships with the listing.
+For those PDF-first contracts, a multi-part toy crosses to the shop as one mesh per sealed occurrence in the colours Make sealed. The host can render the sealed assembly with a pinned three.js renderer (`tools/render/`, optional; see `workshop doctor`). Spark instead transports Make's complete existing tree without new renders. The build session stays private; no transcript ships with the listing.
 
 Workshop code ends there. Printing, delivery, and Review belong to Operations. Publication does not claim a physical print, pack, or delivery.
 

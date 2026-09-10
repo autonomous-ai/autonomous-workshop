@@ -13,9 +13,15 @@ Forge: Wish -> Invent -> Make -> Release
 Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
 
-For a new Codex run, the host may freeze a versioned economics profile for this
-entire session. Spark uses its low-reasoning fast profile. Current Forge and
-Quest runs use an index-first bounded high-reasoning Invent turn with decisive
+Use the selected model and reasoning effort in the host's immutable stage packet.
+Token-budget runs have no Workshop wall-clock, native-turn or lifecycle-round
+spending cap; Make's frozen internal checks and review allowance still apply.
+The historical economics profiles below govern only settings not superseded
+by those host-selected settings and token budgeting.
+
+The host may freeze a versioned economics profile for this entire session.
+Historical Spark profiles use low reasoning. Historical Forge and
+Quest profiles use an index-first bounded high-reasoning Invent turn with decisive
 medium recovery, then one 16-minute medium real-state Make proof runway followed
 by a 15-minute source-first high-reasoning final-Make handoff and normal recovery;
 Playtest and Release use medium. Make's minimal exact mechanism/form evidence
@@ -29,8 +35,8 @@ their own bound runtime profile.
 
 The Workshop is a thin harness around you. Codex performs the research,
 reasoning, creation, inspection, evaluation, and repair. The outer host owns
-identity, lifecycle order, durable checkpoints, deterministic gates, bounded
-rounds, and external-effect authority. The workflow skill is your playbook,
+identity, lifecycle order, durable checkpoints, deterministic gates, shared
+revision history and budgets, and external-effect authority. The workflow skill is your playbook,
 not another Manager agent.
 
 ## Authority
@@ -167,11 +173,13 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   image-to-cad gate. Do not `cat`, `rg`, or `sed` through skill scripts to
   learn their flags, and open a full report only when a summary names a
   failure you cannot place.
-- View an image at most once per Make round, and only when a decision
-  depends on something a number cannot tell you. Every viewed image stays in
-  the session context for every later request. Likeness scores, motion gate
-  verdicts, and thickness regions are numbers; use them first, and never view
-  the same render twice.
+- Inspect each Make round's visual packet for misplaced parts, proportion and
+  size mismatches, missing/extra geometry, visible intersections and form errors.
+  Record concrete native observations through `make_round --record-visual` so
+  its summary carries visual feedback alongside numeric checks. Likeness alone
+  cannot pass this inspection, including for products without reference images.
+  View each image at most once per round; inspect all supplied views and use
+  targeted additional views when occlusion leaves a concrete uncertainty.
 - Every Wish is open-ended. The one universal toy blueprint supplies baseline
   contract expectations; it does not classify or constrain what can be
   invented. Product-specific methods and extra evidence come from the Wish,

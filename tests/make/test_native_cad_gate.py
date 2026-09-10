@@ -1011,8 +1011,22 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         )
 
         self.assertEqual(completed.returncode, 2)
-        self.assertIn("positive review-round count", completed.stderr)
+        self.assertIn("one to four review rounds", completed.stderr)
         self.assertNotIn("check_layout", completed.stdout)
+
+    def test_signature_review_allows_three_repairs_but_not_a_fourth(self):
+        import runpy
+
+        self._write_signature_review(review_rounds=4)
+        validate = runpy.run_path(str(self.verifier))["_required_signature_review"]
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        self.assertEqual(validate(self.project, [self.project / "part_token.step.py"]),
+                         _sha(review_path.read_bytes()))
+        review = json.loads(review_path.read_text())
+        review["review_rounds"] = 5
+        review_path.write_text(json.dumps(review, sort_keys=True, separators=(",", ":")))
+        with self.assertRaisesRegex(ValueError, "one to four"):
+            validate(self.project, [self.project / "part_token.step.py"])
 
     def test_blocking_form_defect_cannot_unlock_final_geometry(self):
         self._write_signature_review(review_rounds=1)

@@ -6,12 +6,14 @@ reasoning output is already part of output. Children, retries and resumes share
 the allowance. Explicit resume never resets usage. The host may explicitly
 authorize a different total limit; only the host changes the private budget.
 
-This is the sole execution budget, superseding aggregate clocks, native-turn
-counts, lifecycle-round limits, proposal retry caps and review-round caps.
-There is no twenty-minute split or one-hour execution watchdog. Continue
-evidence-driven repairs and independent reviews while tokens remain; every
-review must still pass before finalization. Missing initial usage has a bounded startup grace period,
-and lost or inconsistent observed accounting stops work. Usage covers completed
+This is the sole Workshop execution budget, superseding aggregate host clocks,
+native-turn counts, lifecycle-round limits and proposal retry caps. It does not
+replace Make's frozen engineering checks or internal review allowance; current
+Make tools permit an initial independent review and three repair-and-rereview
+cycles. There is no twenty-minute split or one-hour host execution watchdog.
+Continue evidence-driven work within the token allowance and Make's own protocol.
+Valid pending initial usage has no elapsed-time limit; lost or inconsistent
+observed accounting stops work. Usage covers completed
 requests in discovered native root/child records; in-flight requests can
 overshoot a limit. This is neither an exact billing limit nor permission to
 drop required evidence. Every existing finalizer and product gate still applies.

@@ -274,8 +274,9 @@ Quest: Wish -> Invent -> Make -> Playtest -> Release
 Quest Playtest may return implementation evidence to Make or
 concept-invalidating evidence directly to Invent. A capable Forge or Quest
 Make stage may return exact build-blocking evidence to Invent. Every backward
-edge consumes the shared lifecycle round budget and is authorized only by a
-host-verified contract; Make never edits sealed Invent bytes.
+edge records shared revision history and is authorized only by a host-verified
+contract; only non-token runs consume the frozen lifecycle-round allowance.
+Make never edits sealed Invent bytes.
 
 Host rejection feedback remains bound to the exact current-stage proposal.
 Repair Make or Release in place and finalize changed bytes. Reviews after
