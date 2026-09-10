@@ -16,6 +16,7 @@ from unittest import mock
 
 import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
+from workshop.workflow.inventor_selection import INVENTOR_SELECTION_MARKER_NAME
 from workshop.runtime.codex import (
     DEFAULT_WORKSHOP_MODEL,
     CODEX_FAILURE_DIAGNOSTIC_FILENAME,
@@ -2652,6 +2653,38 @@ class CodexNativeSessionTest(unittest.TestCase):
                 cli_version="0.145.0",
                 timeout_seconds=3_601,
             )
+
+    def test_every_host_turn_boundary_marker_is_accepted(self):
+        """Each boundary the host can arm must survive the runtime allowlist.
+
+        The workflow tests drive a fake launcher, so a marker the host passes
+        but the runtime rejects only surfaces in a real session. Name all three
+        here: the stage proposal, the deep Make proof checkpoint, and the Spark
+        inventor selection.
+        """
+        run_root = Path("/run").resolve()
+        for name in (
+            "agent-outcome.json",
+            ".make-proof-ready.json",
+            INVENTOR_SELECTION_MARKER_NAME,
+        ):
+            with self.subTest(name=name):
+                marker = run_root / name
+                self.assertEqual(
+                    codex_runtime._validated_finalization_marker(marker, run_root),
+                    marker,
+                )
+        for rejected in (
+            run_root / "elsewhere.json",
+            run_root / "nested" / "agent-outcome.json",
+            Path("agent-outcome.json"),
+        ):
+            with self.subTest(rejected=str(rejected)):
+                with self.assertRaisesRegex(ContractError, "exact trusted in-run path"):
+                    codex_runtime._validated_finalization_marker(rejected, run_root)
+        self.assertIsNone(
+            codex_runtime._validated_finalization_marker(None, run_root)
+        )
 
     def test_finalization_marker_allows_bounded_goal_completion_grace(self):
         self.assertEqual(

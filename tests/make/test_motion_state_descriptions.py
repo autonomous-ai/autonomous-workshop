@@ -41,12 +41,11 @@ class StateDescriptionTests(unittest.TestCase):
         (root / "measure/motion.json").write_text(json.dumps(manifest))
         rows = []
         for ordinal, sample in enumerate((0, 10, 19, 30, 38, 50, 58, 72)):
-            path = f"measure/state-{ordinal}.stl"
-            # Opaque fixture bytes are intentional: this command describes
-            # bound declarations and cannot certify valid STL or CAD poses.
-            (root / path).write_bytes(f"opaque state {ordinal}".encode())
-            rows.append({"path": path, "condition_id": "cycle", "sample_index": sample,
-                         "sha256": self.presentation["digest"](root, path)})
+            # Opaque fixture hashes are intentional: states never reach disk,
+            # and this command describes bound declarations rather than
+            # certifying CAD poses.
+            rows.append({"condition_id": "cycle", "sample_index": sample,
+                         "sha256": hashlib.sha256(b"opaque state %d" % ordinal).hexdigest()})
         evidence = {"schema_version": 2, "kind": "declared-cad-motion-animation",
                     "sources": self.presentation["sources"](root), "assembly_entry": "model.step.py",
                     "states": rows, "render": {"azimuth": -45, "elevation": 35, "size": 256},
@@ -58,7 +57,7 @@ class StateDescriptionTests(unittest.TestCase):
     def files(self, root):
         return {p.relative_to(root).as_posix(): p.read_bytes() for p in root.rglob("*") if p.is_file()}
 
-    def test_descriptions_keep_paths_and_exact_samples_without_geometry_claims(self):
+    def test_descriptions_keep_identities_and_exact_samples_without_geometry_claims(self):
         with tempfile.TemporaryDirectory() as temporary, self.metadata_only():
             root = Path(temporary)
             evidence = self.fixture(root)
@@ -67,12 +66,15 @@ class StateDescriptionTests(unittest.TestCase):
             self.assertEqual(described["kind"], "declared-motion-sample-annotations")
             self.assertFalse(described["geometry_reconciled_by_this_command"])
             self.assertEqual(described["evidence_sha256"], hashlib.sha256(before["snap/MOTION-EVIDENCE.json"]).hexdigest())
-            self.assertEqual([r["path"] for r in described["states"]], [r["path"] for r in evidence["states"]])
+            self.assertEqual(
+                [(r["condition_id"], r["sample_index"], r["sha256"]) for r in described["states"]],
+                [(r["condition_id"], r["sample_index"], r["sha256"]) for r in evidence["states"]],
+            )
             self.assertEqual([r["movers"][0]["rotation_deg"] for r in described["states"]], [0, 50, 95, 150, 190, 250, 290, 360])
             self.assertEqual(self.files(root), before)
 
-    def test_stale_source_manifest_and_state_bytes_are_rejected(self):
-        for path in ("model.step.py", "measure/motion.json", "measure/state-2.stl"):
+    def test_stale_source_and_manifest_bytes_are_rejected(self):
+        for path in ("model.step.py", "measure/motion.json"):
             with self.subTest(path=path), tempfile.TemporaryDirectory() as temporary, self.metadata_only():
                 root = Path(temporary)
                 self.fixture(root)

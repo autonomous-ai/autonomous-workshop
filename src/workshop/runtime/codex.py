@@ -1754,9 +1754,13 @@ def _validated_finalization_marker(
         raise ContractError(
             "Codex finalization marker must be an exact trusted in-run path"
         ) from exc
+    # One literal per host-owned turn boundary: the stage proposal, the deep
+    # Make proof checkpoint, and the Spark inventor selection. Runtime never
+    # imports the workflow constants that name them.
     expected = {
         run_root / "agent-outcome.json",
         run_root / ".make-proof-ready.json",
+        run_root / ".workshop-inventor-selection.json",
     }
     if not marker.is_absolute() or marker not in expected:
         raise ContractError(

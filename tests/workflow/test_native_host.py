@@ -99,6 +99,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V10_CAPABILITY_PATH,
     DEEP_ECONOMICS_V11_CAPABILITY_PATH,
     DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V13_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -490,7 +491,8 @@ class NativeHostTest(unittest.TestCase):
             "deep-v10": DEEP_ECONOMICS_V10_CAPABILITY_PATH,
             "deep-v11": DEEP_ECONOMICS_V11_CAPABILITY_PATH,
             "deep-v12": DEEP_ECONOMICS_V12_CAPABILITY_PATH,
-            "deep-v13": DEEP_ECONOMICS_CAPABILITY_PATH,
+            "deep-v13": DEEP_ECONOMICS_V13_CAPABILITY_PATH,
+            "deep-v14": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
             "v3": SPARK_ECONOMICS_V3_CAPABILITY_PATH,
@@ -506,8 +508,8 @@ class NativeHostTest(unittest.TestCase):
                 SPARK_ECONOMICS_V3_CAPABILITY_PATH: "9" * 64,
                 SPARK_ECONOMICS_CAPABILITY_PATH: "a" * 64,
             }
-        elif economics_capability == "deep-v13":
-            # A real v13 run materializes the preserved v5-v12 references too. The
+        elif economics_capability == "deep-v14":
+            # A real v14 run materializes the preserved v5-v13 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
             inputs = {
@@ -519,7 +521,20 @@ class NativeHostTest(unittest.TestCase):
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH: "0" * 64,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH: "1" * 64,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH: "2" * 64,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH: "3" * 64,
                 DEEP_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+            }
+        elif economics_capability == "deep-v13":
+            inputs = {
+                DEEP_ECONOMICS_V5_CAPABILITY_PATH: "e" * 64,
+                DEEP_ECONOMICS_V6_CAPABILITY_PATH: "d" * 64,
+                DEEP_ECONOMICS_V7_CAPABILITY_PATH: "c" * 64,
+                DEEP_ECONOMICS_V8_CAPABILITY_PATH: "b" * 64,
+                DEEP_ECONOMICS_V9_CAPABILITY_PATH: "9" * 64,
+                DEEP_ECONOMICS_V10_CAPABILITY_PATH: "0" * 64,
+                DEEP_ECONOMICS_V11_CAPABILITY_PATH: "1" * 64,
+                DEEP_ECONOMICS_V12_CAPABILITY_PATH: "2" * 64,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH: "a" * 64,
             }
         elif economics_capability == "deep-v12":
             inputs = {
@@ -1472,10 +1487,6 @@ class NativeHostTest(unittest.TestCase):
                 "finding.json",
             ):
                 (proof / name).write_bytes((name + "\n").encode())
-            for index in range(3):
-                (proof / ("state-%d.stl" % index)).write_bytes(
-                    ("distinct-state-%d\n" % index).encode()
-                )
             marker.write_text(
                 json.dumps(
                     {
@@ -1495,7 +1506,7 @@ class NativeHostTest(unittest.TestCase):
                     encoding="utf-8"
                 )
             )
-            self.assertEqual(len(receipt["proof_artifacts"]), 13)
+            self.assertEqual(len(receipt["proof_artifacts"]), 10)
             self.assertEqual(
                 {
                     item["path"].rsplit("/", 1)[-1]
@@ -1509,9 +1520,6 @@ class NativeHostTest(unittest.TestCase):
                     "state-0.step",
                     "state-1.step",
                     "state-2.step",
-                    "state-0.stl",
-                    "state-1.stl",
-                    "state-2.stl",
                     "held.png",
                     "signature.png",
                     "finding.json",
@@ -1568,10 +1576,6 @@ class NativeHostTest(unittest.TestCase):
                 "finding.json",
             ):
                 (proof / name).write_bytes((name + "\n").encode())
-            for index in range(3):
-                (proof / ("state-%d.stl" % index)).write_bytes(
-                    ("distinct-state-%d\n" % index).encode()
-                )
             marker = _make_proof_ready_path(paths)
             marker.write_text(
                 json.dumps(
@@ -1593,7 +1597,7 @@ class NativeHostTest(unittest.TestCase):
                     encoding="utf-8"
                 )
             )
-            self.assertEqual(len(receipt["proof_artifacts"]), 13)
+            self.assertEqual(len(receipt["proof_artifacts"]), 10)
             self.assertTrue(
                 all(
                     item["path"].startswith(
