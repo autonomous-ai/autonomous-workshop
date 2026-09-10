@@ -137,19 +137,23 @@ def build_assembly(entry: Path):
 
 
 def index_parts(shape) -> dict[str, object]:
-    """Map every labelled leaf to its shape, in assembly pose."""
+    """Map labelled nodes to copies in their complete assembly pose."""
+    from build123d import Location
+
     found: dict[str, list[object]] = {}
 
-    def walk(node, trail: list[str]) -> None:
+    def walk(node, trail: list[str], parent_pose) -> None:
         label = getattr(node, "label", "") or ""
         path = trail + ([label] if label else [])
+        pose = parent_pose * node.location
         if label and trail:
-            found.setdefault(label, []).append(node)
-            found.setdefault(".".join(path), []).append(node)
+            placed = node.located(pose)
+            found.setdefault(label, []).append(placed)
+            found.setdefault(".".join(path), []).append(placed)
         for child in list(getattr(node, "children", []) or []):
-            walk(child, path)
+            walk(child, path, pose)
 
-    walk(shape, [])
+    walk(shape, [], Location())
     parts = {name: shapes[0] for name, shapes in found.items() if len(shapes) == 1}
     parts["__ambiguous__"] = sorted(name for name, shapes in found.items() if len(shapes) > 1)
     return parts
