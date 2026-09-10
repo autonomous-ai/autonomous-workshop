@@ -1,0 +1,19 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005",
+ "likeness": {},
+ "parts": {
+  "bishop": "f419c41cf666e0896080e9081666577ee90c95a699aa918c6b508a69715036e1",
+  "board_0_0": "d4b1a8f36cc169c517900043033cce8fc489e4d6cdf5491465a4c0bcffb193d4",
+  "board_0_1": "92825478995cf94f3e6f5e318fd74c29c5b6eed98d01991edc7783a736fcf450",
+  "board_1_0": "e9e0fd706f76f51aec17958dfc3caec52b4d33c7135798811d708d76ec2b0824",
+  "board_1_1": "c8e3febc965bbb49932b7c9a057de9e3e21fd7efd44627a36184d6c835c3d3d7",
+  "dark_tile": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+  "king": "1e99ccd26f41c21c67f01f9e9392877f344cce67ea43cd40e5d937363aeb4bb8",
+  "knight": "447539eb81ca27c2ace272e30cd400a3db06f1739d09abcd3f9a30582e8a2da3",
+  "pawn": "f818530d8e43b42c5e5a083a49f0545d8fb2ef013f9c731737805107af02c031",
+  "queen": "b891cbb8cac906779c82b514720b5e242f8df638052e7315a1665cc7fe2c2b04",
+  "rook": "8a7450219e03e84991099905c2e16b702fb47f2a3612eecff0e2cefff3d41f01"
+ },
+ "poses_path": null,
+ "round": 5
+}

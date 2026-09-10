@@ -1,0 +1,741 @@
+{
+  "assembly": "city.step.py",
+  "conditions": [
+    {
+      "id": "tile_a1-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_a1",
+        "obstacle_parts": [
+          "board_0_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_a3-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_a3",
+        "obstacle_parts": [
+          "board_0_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_a5-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_a5",
+        "obstacle_parts": [
+          "board_0_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_a7-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_a7",
+        "obstacle_parts": [
+          "board_0_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_b2-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_b2",
+        "obstacle_parts": [
+          "board_0_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_b4-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_b4",
+        "obstacle_parts": [
+          "board_0_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_b6-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_b6",
+        "obstacle_parts": [
+          "board_0_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_b8-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_b8",
+        "obstacle_parts": [
+          "board_0_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_c1-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_c1",
+        "obstacle_parts": [
+          "board_0_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_c3-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_c3",
+        "obstacle_parts": [
+          "board_0_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_c5-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_c5",
+        "obstacle_parts": [
+          "board_0_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_c7-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_c7",
+        "obstacle_parts": [
+          "board_0_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_d2-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_d2",
+        "obstacle_parts": [
+          "board_0_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_d4-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_d4",
+        "obstacle_parts": [
+          "board_0_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_d6-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_d6",
+        "obstacle_parts": [
+          "board_0_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_d8-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_d8",
+        "obstacle_parts": [
+          "board_0_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_e1-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_e1",
+        "obstacle_parts": [
+          "board_1_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_e3-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_e3",
+        "obstacle_parts": [
+          "board_1_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_e5-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_e5",
+        "obstacle_parts": [
+          "board_1_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_e7-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_e7",
+        "obstacle_parts": [
+          "board_1_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_f2-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_f2",
+        "obstacle_parts": [
+          "board_1_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_f4-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_f4",
+        "obstacle_parts": [
+          "board_1_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_f6-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_f6",
+        "obstacle_parts": [
+          "board_1_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_f8-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_f8",
+        "obstacle_parts": [
+          "board_1_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_g1-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_g1",
+        "obstacle_parts": [
+          "board_1_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_g3-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_g3",
+        "obstacle_parts": [
+          "board_1_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_g5-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_g5",
+        "obstacle_parts": [
+          "board_1_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_g7-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_g7",
+        "obstacle_parts": [
+          "board_1_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_h2-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_h2",
+        "obstacle_parts": [
+          "board_1_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_h4-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_h4",
+        "obstacle_parts": [
+          "board_1_0"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_h6-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_h6",
+        "obstacle_parts": [
+          "board_1_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    },
+    {
+      "id": "tile_h8-vertical-placement",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Gravity tile lifts 3 mm from seated z=2.4 to z=5.4, fully above the 5 mm playing field; reverse is placement. Fixed 0.5 mm sample spacing. No latch or retention claimed.",
+      "inputs": {
+        "moving_part": "tile_h8",
+        "obstacle_parts": [
+          "board_1_1"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.5
+      }
+    }
+  ]
+}

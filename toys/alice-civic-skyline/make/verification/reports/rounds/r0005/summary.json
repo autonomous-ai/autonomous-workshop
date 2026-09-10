@@ -1,0 +1,72 @@
+{
+ "changed": [
+  "bishop",
+  "king",
+  "knight",
+  "pawn",
+  "queen",
+  "rook"
+ ],
+ "checked": [
+  "bishop",
+  "king",
+  "knight",
+  "pawn",
+  "queen",
+  "rook"
+ ],
+ "entry": "city.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005",
+ "parts": [
+  "bishop",
+  "board_0_0",
+  "board_0_1",
+  "board_1_0",
+  "board_1_1",
+  "dark_tile",
+  "king",
+  "knight",
+  "pawn",
+  "queen",
+  "rook"
+ ],
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "round": 5,
+ "thickness": {
+  "bishop": {
+   "failures": [],
+   "thinnest_mm": 0.26,
+   "verdict": "PASS"
+  },
+  "king": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "knight": {
+   "failures": [],
+   "thinnest_mm": 0.31,
+   "verdict": "PASS"
+  },
+  "pawn": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "queen": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "rook": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  }
+ }
+}

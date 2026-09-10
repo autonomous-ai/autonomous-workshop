@@ -1,0 +1,162 @@
+{
+  "description": "Eleven geometry families mapped to the 68 named print jobs in parts/. Print each occurrence once; representatives are members of that inventory, not additional objects.",
+  "families": [
+    {
+      "cad_component": "c382d92a8c27b9f9",
+      "mesh_sha256": "6c9b319afcba0e9824da69aae58c6383b9dd2705f5be7bb617b7e2c3b4b1d394",
+      "occurrence_names": [
+        "board_0_0"
+      ],
+      "quantity": 1,
+      "representative": "board_0_0"
+    },
+    {
+      "cad_component": "d9217a4a40c49a41",
+      "mesh_sha256": "fc25e2e9c1dd43599c7ec53e636f9485b12e094b7ec65001c445dbd28a90387a",
+      "occurrence_names": [
+        "board_0_1"
+      ],
+      "quantity": 1,
+      "representative": "board_0_1"
+    },
+    {
+      "cad_component": "2f9d55b553b10a8e",
+      "mesh_sha256": "6d77684e5e197fdf5dd9e95de01c31b673301663603e4678754d324baa10f30c",
+      "occurrence_names": [
+        "board_1_0"
+      ],
+      "quantity": 1,
+      "representative": "board_1_0"
+    },
+    {
+      "cad_component": "ce3b691ddfbb6788",
+      "mesh_sha256": "efe6797672cffbcb3b96df9dae20de81e82348e22ac68514ad7293b30100ac65",
+      "occurrence_names": [
+        "board_1_1"
+      ],
+      "quantity": 1,
+      "representative": "board_1_1"
+    },
+    {
+      "cad_component": "1c9b8c286a8443bd",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "occurrence_names": [
+        "tile_a1",
+        "tile_a3",
+        "tile_a5",
+        "tile_a7",
+        "tile_b2",
+        "tile_b4",
+        "tile_b6",
+        "tile_b8",
+        "tile_c1",
+        "tile_c3",
+        "tile_c5",
+        "tile_c7",
+        "tile_d2",
+        "tile_d4",
+        "tile_d6",
+        "tile_d8",
+        "tile_e1",
+        "tile_e3",
+        "tile_e5",
+        "tile_e7",
+        "tile_f2",
+        "tile_f4",
+        "tile_f6",
+        "tile_f8",
+        "tile_g1",
+        "tile_g3",
+        "tile_g5",
+        "tile_g7",
+        "tile_h2",
+        "tile_h4",
+        "tile_h6",
+        "tile_h8"
+      ],
+      "quantity": 32,
+      "representative": "tile_a1"
+    },
+    {
+      "cad_component": "ade244c0ef709259",
+      "mesh_sha256": "8f5962d6e1c6bbea81a0e47195023b2321289265158c37d2ac0781453475e62d",
+      "occurrence_names": [
+        "ivory_king_e1",
+        "midnight_king_e8"
+      ],
+      "quantity": 2,
+      "representative": "ivory_king_e1"
+    },
+    {
+      "cad_component": "2b18625fcbc3a215",
+      "mesh_sha256": "7aa4a7d815b2c0272dd1d9d8a0e6db8156b81de00216891fdf6c6621fa3e864b",
+      "occurrence_names": [
+        "ivory_queen_d1",
+        "midnight_queen_d8"
+      ],
+      "quantity": 2,
+      "representative": "ivory_queen_d1"
+    },
+    {
+      "cad_component": "b53465ddc9ed8b03",
+      "mesh_sha256": "9208d0e069a6834aee9b813fad939d9b5e5057c28eb8ab24cc1c1f97dc9ccf77",
+      "occurrence_names": [
+        "ivory_bishop_c1",
+        "ivory_bishop_f1",
+        "midnight_bishop_c8",
+        "midnight_bishop_f8"
+      ],
+      "quantity": 4,
+      "representative": "ivory_bishop_c1"
+    },
+    {
+      "cad_component": "54a0d9997fde5e9a",
+      "mesh_sha256": "69f8229efe67f40bc0acdd9d2f0d8ee3c0062605c8f84347fe625c9d9c0785f8",
+      "occurrence_names": [
+        "ivory_knight_b1",
+        "ivory_knight_g1",
+        "midnight_knight_b8",
+        "midnight_knight_g8"
+      ],
+      "quantity": 4,
+      "representative": "ivory_knight_b1"
+    },
+    {
+      "cad_component": "a5150fe3b65b2a08",
+      "mesh_sha256": "dbca5ee656b07b9be568c4e638640c722025e755087b776c7935c5f5f55e93ec",
+      "occurrence_names": [
+        "ivory_rook_a1",
+        "ivory_rook_h1",
+        "midnight_rook_a8",
+        "midnight_rook_h8"
+      ],
+      "quantity": 4,
+      "representative": "ivory_rook_a1"
+    },
+    {
+      "cad_component": "c2f04af17a0b9c0a",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "occurrence_names": [
+        "ivory_pawn_a2",
+        "ivory_pawn_b2",
+        "ivory_pawn_c2",
+        "ivory_pawn_d2",
+        "ivory_pawn_e2",
+        "ivory_pawn_f2",
+        "ivory_pawn_g2",
+        "ivory_pawn_h2",
+        "midnight_pawn_a7",
+        "midnight_pawn_b7",
+        "midnight_pawn_c7",
+        "midnight_pawn_d7",
+        "midnight_pawn_e7",
+        "midnight_pawn_f7",
+        "midnight_pawn_g7",
+        "midnight_pawn_h7"
+      ],
+      "quantity": 16,
+      "representative": "ivory_pawn_a2"
+    }
+  ],
+  "schema_version": 1
+}

@@ -1,0 +1,6303 @@
+{
+  "assembly_repaired_occurrence_vertices": [
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 1.998361836655159e-06,
+      "occurrence": "ivory_king_e1",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 36,
+        "matched_vertex_incidences": 36,
+        "maximum_nearest_vertex_error_mm": 1.5258789076710855e-06,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 42,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 282,
+        "matched_vertex_incidences": 240,
+        "maximum_nearest_vertex_error_mm": 5.0038264175155485
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 1.5960698783776277e-06,
+      "occurrence": "ivory_queen_d1",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 52,
+        "matched_vertex_incidences": 52,
+        "maximum_nearest_vertex_error_mm": 6.76205898054711e-06,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 32,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 728,
+        "matched_vertex_incidences": 696,
+        "maximum_nearest_vertex_error_mm": 5.0038264175155485
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 5.026412151424064e-06,
+      "occurrence": "ivory_bishop_c1",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 40,
+        "matched_vertex_incidences": 40,
+        "maximum_nearest_vertex_error_mm": 6.103515630684342e-06,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 26,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 378,
+        "matched_vertex_incidences": 352,
+        "maximum_nearest_vertex_error_mm": 4.703974626616145
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 7.460873121617258e-06,
+      "occurrence": "ivory_bishop_f1",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 40,
+        "matched_vertex_incidences": 40,
+        "maximum_nearest_vertex_error_mm": 1.4529164320289432e-05,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 26,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 378,
+        "matched_vertex_incidences": 352,
+        "maximum_nearest_vertex_error_mm": 4.703974626616145
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 4.4506750145788504e-07,
+      "occurrence": "ivory_knight_b1",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 20,
+        "matched_vertex_incidences": 20,
+        "maximum_nearest_vertex_error_mm": 1.7059844799040143e-06,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 36,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 170,
+        "matched_vertex_incidences": 134,
+        "maximum_nearest_vertex_error_mm": 4.703974626616145
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 3.2952944720445564e-06,
+      "occurrence": "ivory_knight_g1",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 20,
+        "matched_vertex_incidences": 20,
+        "maximum_nearest_vertex_error_mm": 6.151014494525374e-06,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 36,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 170,
+        "matched_vertex_incidences": 134,
+        "maximum_nearest_vertex_error_mm": 4.703974626616145
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 1.3486990082536e-06,
+      "occurrence": "ivory_rook_a1",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 8,
+        "matched_vertex_incidences": 8,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 48,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 196,
+        "matched_vertex_incidences": 148,
+        "maximum_nearest_vertex_error_mm": 8.234834546000302
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 5.672556359023099e-06,
+      "occurrence": "ivory_rook_h1",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 8,
+        "matched_vertex_incidences": 8,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 48,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 196,
+        "matched_vertex_incidences": 148,
+        "maximum_nearest_vertex_error_mm": 8.234834546000302
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.9468992498161697e-06,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.9468992498161697e-06,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 3.4126008721102608e-06,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 1.0020901015791873e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.13202127036023065,
+      "occurrence": "ivory_pawn_a2",
+      "pass": true,
+      "source_curve_samples_checked": 443,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 451,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 85,
+        "maximum_nearest_vertex_error_mm": 4.107187219897811
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 3.7016450988858196e-06,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 3.7016450988858196e-06,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 5.71416580541495e-06,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 1.0020914457531452e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.13202052967235223,
+      "occurrence": "ivory_pawn_b2",
+      "pass": true,
+      "source_curve_samples_checked": 443,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 451,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 85,
+        "maximum_nearest_vertex_error_mm": 4.107186383264516
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 5.252589041049305e-06,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 5.252589041049305e-06,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 7.191102998849175e-06,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 3.006274337259436e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.13202052967235223,
+      "occurrence": "ivory_pawn_c2",
+      "pass": true,
+      "source_curve_samples_checked": 443,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 451,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 85,
+        "maximum_nearest_vertex_error_mm": 4.107188056534478
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 5.252589041049305e-06,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 5.252589041049305e-06,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 7.191102998849175e-06,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 3.006274337259436e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.13201994297389696,
+      "occurrence": "ivory_pawn_d2",
+      "pass": true,
+      "source_curve_samples_checked": 443,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 451,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 85,
+        "maximum_nearest_vertex_error_mm": 4.107193591404932
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 5.252589041049305e-06,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 5.252589041049305e-06,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 7.191102998849175e-06,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 3.006274337259436e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.13201994297389696,
+      "occurrence": "ivory_pawn_e2",
+      "pass": true,
+      "source_curve_samples_checked": 443,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 451,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 85,
+        "maximum_nearest_vertex_error_mm": 4.107193591404932
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.5355499699332142e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 3.006274337259436e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.1320211163728363,
+      "occurrence": "ivory_pawn_f2",
+      "pass": true,
+      "source_curve_samples_checked": 443,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 451,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 85,
+        "maximum_nearest_vertex_error_mm": 4.107188056534478
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.5355499699332142e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 1.0020887574066134e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.1320211163728363,
+      "occurrence": "ivory_pawn_g2",
+      "pass": true,
+      "source_curve_samples_checked": 443,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 451,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 85,
+        "maximum_nearest_vertex_error_mm": 4.107188056534478
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.5355499699332142e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 1.0020887574066134e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.1320211163728363,
+      "occurrence": "ivory_pawn_h2",
+      "pass": true,
+      "source_curve_samples_checked": 443,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 451,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 85,
+        "maximum_nearest_vertex_error_mm": 4.107188056534478
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 2.2745584835839776e-06,
+      "occurrence": "midnight_king_e8",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 36,
+        "matched_vertex_incidences": 36,
+        "maximum_nearest_vertex_error_mm": 6.1035156022626325e-06,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 42,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 282,
+        "matched_vertex_incidences": 240,
+        "maximum_nearest_vertex_error_mm": 5.003823881960741
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 2.917790071846908e-06,
+      "occurrence": "midnight_queen_d8",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 52,
+        "matched_vertex_incidences": 52,
+        "maximum_nearest_vertex_error_mm": 8.631674562972787e-06,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 32,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 728,
+        "matched_vertex_incidences": 696,
+        "maximum_nearest_vertex_error_mm": 5.003823881960741
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 4.991546362765882e-06,
+      "occurrence": "midnight_bishop_c8",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 40,
+        "matched_vertex_incidences": 40,
+        "maximum_nearest_vertex_error_mm": 1.160571096401024e-05,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 26,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 378,
+        "matched_vertex_incidences": 352,
+        "maximum_nearest_vertex_error_mm": 4.703972226180218
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 8.15995813771153e-06,
+      "occurrence": "midnight_bishop_f8",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 40,
+        "matched_vertex_incidences": 40,
+        "maximum_nearest_vertex_error_mm": 1.7571549679787305e-05,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 26,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 378,
+        "matched_vertex_incidences": 352,
+        "maximum_nearest_vertex_error_mm": 4.703978553136413
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 2.439516678318899e-06,
+      "occurrence": "midnight_knight_b8",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 20,
+        "matched_vertex_incidences": 20,
+        "maximum_nearest_vertex_error_mm": 1.2302029046336535e-05,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 36,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 170,
+        "matched_vertex_incidences": 134,
+        "maximum_nearest_vertex_error_mm": 4.703970995661842
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 3.7403533817189302e-06,
+      "occurrence": "midnight_knight_g8",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 20,
+        "matched_vertex_incidences": 20,
+        "maximum_nearest_vertex_error_mm": 1.3647875839232114e-05,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 36,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 170,
+        "matched_vertex_incidences": 134,
+        "maximum_nearest_vertex_error_mm": 4.703963733754108
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 5.441629069714439e-06,
+      "occurrence": "midnight_rook_a8",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 8,
+        "matched_vertex_incidences": 8,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 48,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 196,
+        "matched_vertex_incidences": 148,
+        "maximum_nearest_vertex_error_mm": 8.234834546000302
+      }
+    },
+    {
+      "maximum_unmatched_vertex_to_surface_distance_mm": 6.743495761789307e-06,
+      "occurrence": "midnight_rook_h8",
+      "pass": true,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 8,
+        "matched_vertex_incidences": 8,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 48,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 196,
+        "matched_vertex_incidences": 148,
+        "maximum_nearest_vertex_error_mm": 8.234834546000302
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.3985687845163852e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.3985687845163852e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.2207031248046007e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 1.0020874132354232e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.132022702663624,
+      "occurrence": "midnight_pawn_a7",
+      "pass": true,
+      "source_curve_samples_checked": 444,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 452,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 84,
+        "maximum_nearest_vertex_error_mm": 4.107188056534478
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.2207031248046007e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 1.0020887574066134e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.13202196197772129,
+      "occurrence": "midnight_pawn_b7",
+      "pass": true,
+      "source_curve_samples_checked": 444,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 452,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 84,
+        "maximum_nearest_vertex_error_mm": 4.107188056534478
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.2207031248046007e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 3.0062662722198397e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.13202196197772129,
+      "occurrence": "midnight_pawn_c7",
+      "pass": true,
+      "source_curve_samples_checked": 444,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 452,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 84,
+        "maximum_nearest_vertex_error_mm": 4.107188056534478
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.2207031248046007e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 3.0062662722198397e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.13202137527961672,
+      "occurrence": "midnight_pawn_d7",
+      "pass": true,
+      "source_curve_samples_checked": 444,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 452,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 84,
+        "maximum_nearest_vertex_error_mm": 4.107195264671958
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.2207031248046007e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 3.0062662722198397e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.13202137527961672,
+      "occurrence": "midnight_pawn_e7",
+      "pass": true,
+      "source_curve_samples_checked": 444,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 452,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 84,
+        "maximum_nearest_vertex_error_mm": 4.107195264671958
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.5355499699332142e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 3.0062662722198397e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.1320225486778546,
+      "occurrence": "midnight_pawn_f7",
+      "pass": true,
+      "source_curve_samples_checked": 444,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 452,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 84,
+        "maximum_nearest_vertex_error_mm": 4.107180848398521
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.5355499699332142e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 1.002086069065617e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.1320225486778546,
+      "occurrence": "midnight_pawn_g7",
+      "pass": true,
+      "source_curve_samples_checked": 444,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 452,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 84,
+        "maximum_nearest_vertex_error_mm": 4.107180848398521
+      }
+    },
+    {
+      "assembly_analytic_curved_surfaces": {
+        "pass": true,
+        "surfaces": [
+          {
+            "exposed_z_interval_mm": [
+              17,
+              22
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "shoulder_cone",
+            "normal_z_sign": -1,
+            "observed_exposed_z_span_mm": [
+              17.161291122436523,
+              22.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              17,
+              5.4,
+              0.6199999999999999
+            ],
+            "surface_triangles_checked": 116,
+            "surface_vertices_checked": 102
+          },
+          {
+            "exposed_z_interval_mm": [
+              22.0,
+              33.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.4648102750314251e-05,
+            "name": "cylindrical_tank",
+            "normal_z_sign": 0,
+            "observed_exposed_z_span_mm": [
+              22.0,
+              33.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              22.0,
+              8.5,
+              0
+            ],
+            "surface_triangles_checked": 72,
+            "surface_vertices_checked": 72
+          },
+          {
+            "exposed_z_interval_mm": [
+              33.0,
+              40.0
+            ],
+            "maximum_vertex_radial_equation_error_mm": 1.5355499699332142e-05,
+            "name": "roof_cone",
+            "normal_z_sign": 1,
+            "observed_exposed_z_span_mm": [
+              33.0,
+              40.0
+            ],
+            "occupied_xy_quadrants": 4,
+            "pass": true,
+            "radius_equation_z0_r0_slope": [
+              32.9,
+              8.5,
+              -0.943661971830986
+            ],
+            "surface_triangles_checked": 144,
+            "surface_vertices_checked": 108
+          }
+        ]
+      },
+      "maximum_noncurved_point_to_triangle_surface_distance_mm": 1.002086069065617e-06,
+      "maximum_unmatched_vertex_to_surface_distance_mm": 0.1320225486778546,
+      "occurrence": "midnight_pawn_h7",
+      "pass": true,
+      "source_curve_samples_checked": 444,
+      "source_curve_samples_exceeding_strict_mesh_distance": 297,
+      "source_feature_corners": {
+        "expected_vertex_incidences": 0,
+        "matched_vertex_incidences": 0,
+        "maximum_nearest_vertex_error_mm": 0.0,
+        "pass": true
+      },
+      "unmatched_vertices_checked_on_triangle_surfaces": 452,
+      "vertex_diagnostics": {
+        "all_vertices_explicitly_repeated": false,
+        "expected_vertex_incidences": 536,
+        "matched_vertex_incidences": 84,
+        "maximum_nearest_vertex_error_mm": 4.107180848398521
+      }
+    }
+  ],
+  "assembly_stl_sha256": "a7fb666e9f588814f50f6cb6b2236a0524c15d984964499c687c49da71d70a0e",
+  "assembly_tessellation_note": "Raw vertex mismatch counts and point-to-triangle distances are retained for all 32 pieces. Source-defined feature corners remain strict nearest-vertex checks. Noncurved samples must lie on assembly triangle surfaces at the same 0.00005 mm tolerance. The pawn shoulder, tank and roof are analytic curved surfaces: both exports are independently checked against the exact source radius/height equations with the same 0.00005 mm tolerance, including triangle/vertex counts, height span and quadrant coverage. Independently tessellated curved surfaces have different planar chords; samples on verified source curves need not coincide with the other export's chords. This establishes sampled source-geometry agreement and placement, not mesh identity or an exact continuous-surface proof.",
+  "audit_author": "native agent /root/repair_docs; numerical source/export audit, not the visual reviewer",
+  "audit_implementation_sha256": "4ecea2407965e932d0f56195fc4e3120d80e1ca383d570c0b2502c55285389bc",
+  "bishop": {
+    "bed_z_zero_and_expected_height_pass": true,
+    "bounds_mm": [
+      [
+        -13.858193397521973,
+        -13.858193397521973,
+        0.0
+      ],
+      [
+        13.858193397521973,
+        13.858193397521973,
+        64.0
+      ]
+    ],
+    "cornice_plan_scale": 1.04,
+    "full_wedge_cornice_corners": {
+      "expected_vertex_incidences": 8,
+      "matched_vertex_incidences": 8,
+      "maximum_nearest_vertex_error_mm": 5.18854924783045e-07,
+      "pass": true
+    },
+    "part_stl_sha256": "9208d0e069a6834aee9b813fad939d9b5e5057c28eb8ab24cc1c1f97dc9ccf77",
+    "reference_wedge_vertices_xy_mm": [
+      [
+        -11,
+        8
+      ],
+      [
+        11,
+        8
+      ],
+      [
+        1.6,
+        -13
+      ],
+      [
+        -1.6,
+        -13
+      ]
+    ],
+    "repaired_wedge_shoulders": [
+      {
+        "exposed_ramp_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -10.89,
+              7.92,
+              7.8
+            ],
+            [
+              10.89,
+              7.92,
+              7.8
+            ],
+            [
+              1.584,
+              -12.87,
+              7.8
+            ],
+            [
+              -1.584,
+              -12.87,
+              7.8
+            ],
+            [
+              -10.945,
+              7.96,
+              7.9
+            ],
+            [
+              10.945,
+              7.96,
+              7.9
+            ],
+            [
+              1.592,
+              -12.935,
+              7.9
+            ],
+            [
+              -1.592,
+              -12.935,
+              7.9
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 3.5427520005815666e-08,
+          "pass": true,
+          "surface_points_checked": 8
+        },
+        "pass": true,
+        "source_end_scale_z": [
+          1,
+          8
+        ],
+        "source_start_scale_z": [
+          0.8,
+          4
+        ],
+        "top_feature_corners": {
+          "expected_vertex_incidences": 4,
+          "matched_vertex_incidences": 4,
+          "maximum_nearest_vertex_error_mm": 2.3841857821338408e-08,
+          "pass": true
+        }
+      },
+      {
+        "exposed_ramp_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -11.385000000000002,
+              8.280000000000001,
+              53.9
+            ],
+            [
+              11.385000000000002,
+              8.280000000000001,
+              53.9
+            ],
+            [
+              1.6560000000000004,
+              -13.455000000000002,
+              53.9
+            ],
+            [
+              -1.6560000000000004,
+              -13.455000000000002,
+              53.9
+            ],
+            [
+              -11.412500000000001,
+              8.3,
+              53.95
+            ],
+            [
+              11.412500000000001,
+              8.3,
+              53.95
+            ],
+            [
+              1.6600000000000001,
+              -13.4875,
+              53.95
+            ],
+            [
+              -1.6600000000000001,
+              -13.4875,
+              53.95
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 4.160034465029578e-07,
+          "pass": true,
+          "surface_points_checked": 8
+        },
+        "pass": true,
+        "source_end_scale_z": [
+          1.04,
+          54
+        ],
+        "source_start_scale_z": [
+          0.94,
+          52
+        ],
+        "top_feature_corners": {
+          "expected_vertex_incidences": 4,
+          "matched_vertex_incidences": 4,
+          "maximum_nearest_vertex_error_mm": 5.18854924783045e-07,
+          "pass": true
+        }
+      }
+    ],
+    "three_tapered_horizontal_band_roofs": [
+      {
+        "band_start_z_mm": 25,
+        "exposed_start_scale": 0.8889285714285714,
+        "inner_loft_end_scale_z": [
+          0.94,
+          26.3
+        ],
+        "inner_loft_start_scale_z": [
+          0.885,
+          24.9
+        ],
+        "pass": true,
+        "roof_feature_corners": {
+          "expected_vertex_incidences": 8,
+          "matched_vertex_incidences": 8,
+          "maximum_nearest_vertex_error_mm": 8.099586915366505e-07,
+          "pass": true
+        },
+        "sloped_roof_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -9.918660714285714,
+              7.213571428571428,
+              25.325
+            ],
+            [
+              9.918660714285714,
+              7.213571428571428,
+              25.325
+            ],
+            [
+              1.4427142857142856,
+              -11.722053571428571,
+              25.325
+            ],
+            [
+              -1.4427142857142856,
+              -11.722053571428571,
+              25.325
+            ],
+            [
+              -10.059107142857144,
+              7.315714285714286,
+              25.65
+            ],
+            [
+              10.059107142857144,
+              7.315714285714286,
+              25.65
+            ],
+            [
+              1.4631428571428573,
+              -11.888035714285714,
+              25.65
+            ],
+            [
+              -1.4631428571428573,
+              -11.888035714285714,
+              25.65
+            ],
+            [
+              -10.199553571428572,
+              7.417857142857143,
+              25.975
+            ],
+            [
+              10.199553571428572,
+              7.417857142857143,
+              25.975
+            ],
+            [
+              1.4835714285714285,
+              -12.054017857142856,
+              25.975
+            ],
+            [
+              -1.4835714285714285,
+              -12.054017857142856,
+              25.975
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 1.9755644177705893e-07,
+          "pass": true,
+          "surface_points_checked": 12
+        }
+      },
+      {
+        "band_start_z_mm": 36,
+        "exposed_start_scale": 0.8889285714285714,
+        "inner_loft_end_scale_z": [
+          0.94,
+          37.3
+        ],
+        "inner_loft_start_scale_z": [
+          0.885,
+          35.9
+        ],
+        "pass": true,
+        "roof_feature_corners": {
+          "expected_vertex_incidences": 8,
+          "matched_vertex_incidences": 8,
+          "maximum_nearest_vertex_error_mm": 8.099586881901767e-07,
+          "pass": true
+        },
+        "sloped_roof_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -9.918660714285714,
+              7.213571428571428,
+              36.325
+            ],
+            [
+              9.918660714285714,
+              7.213571428571428,
+              36.325
+            ],
+            [
+              1.4427142857142856,
+              -11.722053571428571,
+              36.325
+            ],
+            [
+              -1.4427142857142856,
+              -11.722053571428571,
+              36.325
+            ],
+            [
+              -10.059107142857144,
+              7.315714285714286,
+              36.65
+            ],
+            [
+              10.059107142857144,
+              7.315714285714286,
+              36.65
+            ],
+            [
+              1.4631428571428573,
+              -11.888035714285714,
+              36.65
+            ],
+            [
+              -1.4631428571428573,
+              -11.888035714285714,
+              36.65
+            ],
+            [
+              -10.199553571428572,
+              7.417857142857143,
+              36.975
+            ],
+            [
+              10.199553571428572,
+              7.417857142857143,
+              36.975
+            ],
+            [
+              1.4835714285714285,
+              -12.054017857142856,
+              36.975
+            ],
+            [
+              -1.4835714285714285,
+              -12.054017857142856,
+              36.975
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 1.9755644177705893e-07,
+          "pass": true,
+          "surface_points_checked": 12
+        }
+      },
+      {
+        "band_start_z_mm": 47,
+        "exposed_start_scale": 0.8889285714285714,
+        "inner_loft_end_scale_z": [
+          0.94,
+          48.3
+        ],
+        "inner_loft_start_scale_z": [
+          0.885,
+          46.9
+        ],
+        "pass": true,
+        "roof_feature_corners": {
+          "expected_vertex_incidences": 8,
+          "matched_vertex_incidences": 8,
+          "maximum_nearest_vertex_error_mm": 8.099586881901767e-07,
+          "pass": true
+        },
+        "sloped_roof_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -9.918660714285714,
+              7.213571428571428,
+              47.325
+            ],
+            [
+              9.918660714285714,
+              7.213571428571428,
+              47.325
+            ],
+            [
+              1.4427142857142856,
+              -11.722053571428571,
+              47.325
+            ],
+            [
+              -1.4427142857142856,
+              -11.722053571428571,
+              47.325
+            ],
+            [
+              -10.059107142857144,
+              7.315714285714286,
+              47.65
+            ],
+            [
+              10.059107142857144,
+              7.315714285714286,
+              47.65
+            ],
+            [
+              1.4631428571428573,
+              -11.888035714285714,
+              47.65
+            ],
+            [
+              -1.4631428571428573,
+              -11.888035714285714,
+              47.65
+            ],
+            [
+              -10.199553571428572,
+              7.417857142857143,
+              47.975
+            ],
+            [
+              10.199553571428572,
+              7.417857142857143,
+              47.975
+            ],
+            [
+              1.4835714285714285,
+              -12.054017857142856,
+              47.975
+            ],
+            [
+              -1.4835714285714285,
+              -12.054017857142856,
+              47.975
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 1.9755644177705893e-07,
+          "pass": true,
+          "surface_points_checked": 12
+        }
+      }
+    ],
+    "vertices_requiring_assembly_triangle_surface_checks_mm": [
+      [
+        -11.8487548828125,
+        0.0,
+        8.0
+      ],
+      [
+        -11.439566612243652,
+        5.681408405303955,
+        7.7521538734436035
+      ],
+      [
+        -10.398736953735352,
+        7.04298734664917,
+        7.533939838409424
+      ],
+      [
+        -10.077129364013672,
+        5.938267230987549,
+        8.504307746887207
+      ],
+      [
+        -9.626198768615723,
+        7.813992977142334,
+        7.534982204437256
+      ],
+      [
+        -8.378334999084473,
+        -8.378334999084473,
+        8.0
+      ],
+      [
+        -8.011908531188965,
+        8.0,
+        8.506680488586426
+      ],
+      [
+        -6.79004430770874,
+        10.32918643951416,
+        7.753340244293213
+      ],
+      [
+        -6.447677135467529,
+        10.308993339538574,
+        8.0
+      ],
+      [
+        -3.7634077072143555,
+        -12.106314659118652,
+        7.752194881439209
+      ],
+      [
+        -2.3499808311462402,
+        -11.32451057434082,
+        8.504389762878418
+      ],
+      [
+        -1.8293741941452026,
+        -12.204176902770996,
+        7.658039093017578
+      ],
+      [
+        0.0,
+        11.8487548828125,
+        8.0
+      ],
+      [
+        1.1102230246251565e-16,
+        -12.869999885559082,
+        53.0
+      ],
+      [
+        1.8293741941452026,
+        -12.204176902770996,
+        7.658039093017578
+      ],
+      [
+        2.3499808311462402,
+        -11.32451057434082,
+        8.504389762878418
+      ],
+      [
+        3.7634077072143555,
+        -12.106314659118652,
+        7.752194881439209
+      ],
+      [
+        6.447677135467529,
+        10.308993339538574,
+        8.0
+      ],
+      [
+        6.79004430770874,
+        10.32918643951416,
+        7.753340244293213
+      ],
+      [
+        8.011908531188965,
+        8.0,
+        8.506680488586426
+      ],
+      [
+        8.378334999084473,
+        -8.378334999084473,
+        8.0
+      ],
+      [
+        9.626198768615723,
+        7.813992977142334,
+        7.534982204437256
+      ],
+      [
+        10.077129364013672,
+        5.938267230987549,
+        8.504307746887207
+      ],
+      [
+        10.398736953735352,
+        7.04298734664917,
+        7.533939838409424
+      ],
+      [
+        11.439566612243652,
+        5.681408405303955,
+        7.7521538734436035
+      ],
+      [
+        11.8487548828125,
+        0.0,
+        8.0
+      ]
+    ]
+  },
+  "board_double_open_corner_note": "At the common center the dark well opens through both edges of board00 and board11. These two corners have floor vertices at Z2.4 and no material at Z5. The source-derived vertex expectation therefore includes only the floor; exact triangle distance confirms 2.6 mm of empty height above it.",
+  "board_seam_and_internal_bridge_vertices": [
+    {
+      "doubly_open_corner_top_to_nearest_surface_mm": [
+        2.5999999046325684
+      ],
+      "doubly_open_corner_top_voids_xyz_mm": [
+        [
+          192.0,
+          192.0,
+          5.0
+        ]
+      ],
+      "expected_well_vertices": {
+        "expected_vertex_incidences": 113,
+        "matched_vertex_incidences": 113,
+        "maximum_nearest_vertex_error_mm": 9.536743172944284e-08,
+        "pass": true
+      },
+      "internal_chamfer_corner_incidences": 25,
+      "obsolete_seam_bevel_vertices_present": 0,
+      "part": "board_0_0",
+      "part_stl_sha256": "6c9b319afcba0e9824da69aae58c6383b9dd2705f5be7bb617b7e2c3b4b1d394",
+      "pass": true,
+      "square_open_seam_corner_incidences": 7
+    },
+    {
+      "doubly_open_corner_top_to_nearest_surface_mm": [],
+      "doubly_open_corner_top_voids_xyz_mm": [],
+      "expected_well_vertices": {
+        "expected_vertex_incidences": 112,
+        "matched_vertex_incidences": 112,
+        "maximum_nearest_vertex_error_mm": 9.536743172944284e-08,
+        "pass": true
+      },
+      "internal_chamfer_corner_incidences": 24,
+      "obsolete_seam_bevel_vertices_present": 0,
+      "part": "board_0_1",
+      "part_stl_sha256": "fc25e2e9c1dd43599c7ec53e636f9485b12e094b7ec65001c445dbd28a90387a",
+      "pass": true,
+      "square_open_seam_corner_incidences": 8
+    },
+    {
+      "doubly_open_corner_top_to_nearest_surface_mm": [],
+      "doubly_open_corner_top_voids_xyz_mm": [],
+      "expected_well_vertices": {
+        "expected_vertex_incidences": 112,
+        "matched_vertex_incidences": 112,
+        "maximum_nearest_vertex_error_mm": 9.536743172944284e-08,
+        "pass": true
+      },
+      "internal_chamfer_corner_incidences": 24,
+      "obsolete_seam_bevel_vertices_present": 0,
+      "part": "board_1_0",
+      "part_stl_sha256": "6d77684e5e197fdf5dd9e95de01c31b673301663603e4678754d324baa10f30c",
+      "pass": true,
+      "square_open_seam_corner_incidences": 8
+    },
+    {
+      "doubly_open_corner_top_to_nearest_surface_mm": [
+        2.5999999046325684
+      ],
+      "doubly_open_corner_top_voids_xyz_mm": [
+        [
+          0.0,
+          0.0,
+          5.0
+        ]
+      ],
+      "expected_well_vertices": {
+        "expected_vertex_incidences": 113,
+        "matched_vertex_incidences": 113,
+        "maximum_nearest_vertex_error_mm": 9.536743172944284e-08,
+        "pass": true
+      },
+      "internal_chamfer_corner_incidences": 25,
+      "obsolete_seam_bevel_vertices_present": 0,
+      "part": "board_1_1",
+      "part_stl_sha256": "efe6797672cffbcb3b96df9dae20de81e82348e22ac68514ad7293b30100ac65",
+      "pass": true,
+      "square_open_seam_corner_incidences": 7
+    }
+  ],
+  "king": {
+    "bed_z_zero_and_expected_height_pass": true,
+    "bounds_mm": [
+      [
+        -14.782072067260742,
+        -14.782072067260742,
+        0.0
+      ],
+      [
+        14.782072067260742,
+        14.782072067260742,
+        86.0
+      ]
+    ],
+    "part_stl_sha256": "8f5962d6e1c6bbea81a0e47195023b2321289265158c37d2ac0781453475e62d",
+    "repaired_rectangular_shoulders": [
+      {
+        "exposed_ramp_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -12.35,
+              -10.85,
+              7.8
+            ],
+            [
+              -12.35,
+              10.85,
+              7.8
+            ],
+            [
+              12.35,
+              -10.85,
+              7.8
+            ],
+            [
+              12.35,
+              10.85,
+              7.8
+            ],
+            [
+              -12.425,
+              -10.925,
+              7.9
+            ],
+            [
+              -12.425,
+              10.925,
+              7.9
+            ],
+            [
+              12.425,
+              -10.925,
+              7.9
+            ],
+            [
+              12.425,
+              10.925,
+              7.9
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 2.564716274321202e-08,
+          "pass": true,
+          "surface_points_checked": 8
+        },
+        "pass": true,
+        "source_end_width_depth_z_mm": [
+          25,
+          22,
+          8
+        ],
+        "source_start_width_depth_z_mm": [
+          19,
+          16,
+          4
+        ],
+        "top_feature_corners": {
+          "expected_vertex_incidences": 4,
+          "matched_vertex_incidences": 4,
+          "maximum_nearest_vertex_error_mm": 0.0,
+          "pass": true
+        }
+      },
+      {
+        "exposed_ramp_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -4.355,
+              -1.6,
+              80.8
+            ],
+            [
+              -4.355,
+              1.6,
+              80.8
+            ],
+            [
+              4.355,
+              -1.6,
+              80.8
+            ],
+            [
+              4.355,
+              1.6,
+              80.8
+            ],
+            [
+              -4.4275,
+              -1.6,
+              80.9
+            ],
+            [
+              -4.4275,
+              1.6,
+              80.9
+            ],
+            [
+              4.4275,
+              -1.6,
+              80.9
+            ],
+            [
+              4.4275,
+              1.6,
+              80.9
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 2.2391031079934193e-08,
+          "pass": true,
+          "surface_points_checked": 8
+        },
+        "pass": true,
+        "source_end_width_depth_z_mm": [
+          9,
+          3.2,
+          81
+        ],
+        "source_start_width_depth_z_mm": [
+          3.2,
+          3.2,
+          77
+        ],
+        "top_feature_corners": {
+          "expected_vertex_incidences": 4,
+          "matched_vertex_incidences": 4,
+          "maximum_nearest_vertex_error_mm": 2.3841857821338408e-08,
+          "pass": true
+        }
+      }
+    ],
+    "seven_tier_top_corners": {
+      "expected_vertex_incidences": 28,
+      "matched_vertex_incidences": 28,
+      "maximum_nearest_vertex_error_mm": 0.0,
+      "pass": true
+    },
+    "tier_dimensions_width_depth_start_height_mm": [
+      [
+        25,
+        22,
+        8,
+        10
+      ],
+      [
+        23,
+        20,
+        17,
+        9
+      ],
+      [
+        20,
+        17,
+        25,
+        10
+      ],
+      [
+        16,
+        14,
+        34,
+        29
+      ],
+      [
+        12,
+        11,
+        62,
+        6
+      ],
+      [
+        8,
+        8,
+        67,
+        6
+      ],
+      [
+        5,
+        5,
+        72,
+        7
+      ]
+    ],
+    "vertices_requiring_assembly_triangle_surface_checks_mm": [
+      [
+        -12.124894142150879,
+        -6.533045291900635,
+        7.49985933303833
+      ],
+      [
+        -12.124894142150879,
+        6.533045291900635,
+        7.49985933303833
+      ],
+      [
+        -11.413064956665039,
+        -8.028592109680176,
+        6.550752639770508
+      ],
+      [
+        -11.413018226623535,
+        8.02863883972168,
+        6.5506911277771
+      ],
+      [
+        -11.087339401245117,
+        -8.354317665100098,
+        6.116452693939209
+      ],
+      [
+        -11.087309837341309,
+        8.354347229003906,
+        6.116413116455078
+      ],
+      [
+        -10.773192405700684,
+        -8.668464660644531,
+        5.697589874267578
+      ],
+      [
+        -10.773178100585938,
+        8.668478965759277,
+        5.69757080078125
+      ],
+      [
+        -10.16599178314209,
+        -9.275664329528809,
+        5.700886249542236
+      ],
+      [
+        -10.165979385375977,
+        9.275677680969238,
+        5.700903415679932
+      ],
+      [
+        -9.851062774658203,
+        -9.590594291687012,
+        6.120792388916016
+      ],
+      [
+        -9.851036071777344,
+        9.590620994567871,
+        6.120827674865723
+      ],
+      [
+        -9.52620792388916,
+        -9.915449142456055,
+        6.553932189941406
+      ],
+      [
+        -9.526166915893555,
+        9.91549015045166,
+        6.5539870262146
+      ],
+      [
+        -8.033454895019531,
+        -10.624761581420898,
+        7.499682426452637
+      ],
+      [
+        -8.033454895019531,
+        10.624761581420898,
+        7.499682426452637
+      ],
+      [
+        -6.074855804443359,
+        -11.0,
+        8.50955867767334
+      ],
+      [
+        -6.074855804443359,
+        11.0,
+        8.50955867767334
+      ],
+      [
+        -5.921801567077637,
+        -12.336454391479492,
+        7.75477933883667
+      ],
+      [
+        -5.921801567077637,
+        12.336454391479492,
+        7.75477933883667
+      ],
+      [
+        -5.483498854638724e-13,
+        -12.638671875,
+        8.0
+      ],
+      [
+        5.483498854638724e-13,
+        12.638671875,
+        8.0
+      ],
+      [
+        5.921801567077637,
+        -12.336454391479492,
+        7.75477933883667
+      ],
+      [
+        5.921801567077637,
+        12.336454391479492,
+        7.75477933883667
+      ],
+      [
+        6.074855804443359,
+        -11.0,
+        8.50955867767334
+      ],
+      [
+        6.074855804443359,
+        11.0,
+        8.50955867767334
+      ],
+      [
+        8.033454895019531,
+        -10.624761581420898,
+        7.499682426452637
+      ],
+      [
+        8.033454895019531,
+        10.624761581420898,
+        7.499682426452637
+      ],
+      [
+        9.526166915893555,
+        -9.91549015045166,
+        6.5539870262146
+      ],
+      [
+        9.52620792388916,
+        9.915449142456055,
+        6.553932189941406
+      ],
+      [
+        9.851036071777344,
+        -9.590620994567871,
+        6.120827674865723
+      ],
+      [
+        9.851062774658203,
+        9.590594291687012,
+        6.120792388916016
+      ],
+      [
+        10.165979385375977,
+        -9.275677680969238,
+        5.700903415679932
+      ],
+      [
+        10.16599178314209,
+        9.275664329528809,
+        5.700886249542236
+      ],
+      [
+        10.773178100585938,
+        -8.668478965759277,
+        5.69757080078125
+      ],
+      [
+        10.773192405700684,
+        8.668464660644531,
+        5.697589874267578
+      ],
+      [
+        11.087309837341309,
+        -8.354347229003906,
+        6.116413116455078
+      ],
+      [
+        11.087339401245117,
+        8.354317665100098,
+        6.116452693939209
+      ],
+      [
+        11.413018226623535,
+        -8.02863883972168,
+        6.5506911277771
+      ],
+      [
+        11.413064956665039,
+        8.028592109680176,
+        6.550752639770508
+      ],
+      [
+        12.124894142150879,
+        -6.533045291900635,
+        7.49985933303833
+      ],
+      [
+        12.124894142150879,
+        6.533045291900635,
+        7.49985933303833
+      ]
+    ]
+  },
+  "knight": {
+    "bed_z_zero_and_expected_height_pass": true,
+    "bounds_mm": [
+      [
+        -13.858193397521973,
+        -13.858193397521973,
+        0.0
+      ],
+      [
+        13.858193397521973,
+        13.858193397521973,
+        58.0
+      ]
+    ],
+    "diamond_eye_recesses": [
+      {
+        "diamond_profile_xz_mm": [
+          [
+            0,
+            -1.8
+          ],
+          [
+            1.6,
+            0
+          ],
+          [
+            0,
+            2.1
+          ],
+          [
+            -1.6,
+            0
+          ]
+        ],
+        "feature_corners": {
+          "expected_vertex_incidences": 8,
+          "matched_vertex_incidences": 8,
+          "maximum_nearest_vertex_error_mm": 1.537753630792067e-06,
+          "pass": true
+        },
+        "outer_face_y_mm": -5.5,
+        "recess_bottom_y_mm": -4.8,
+        "side": -1
+      },
+      {
+        "diamond_profile_xz_mm": [
+          [
+            0,
+            -1.8
+          ],
+          [
+            1.6,
+            0
+          ],
+          [
+            0,
+            2.1
+          ],
+          [
+            -1.6,
+            0
+          ]
+        ],
+        "feature_corners": {
+          "expected_vertex_incidences": 8,
+          "matched_vertex_incidences": 8,
+          "maximum_nearest_vertex_error_mm": 1.537753630681902e-06,
+          "pass": true
+        },
+        "outer_face_y_mm": 5.5,
+        "recess_bottom_y_mm": 4.800000000000001,
+        "side": 1
+      }
+    ],
+    "part_stl_sha256": "69f8229efe67f40bc0acdd9d2f0d8ee3c0062605c8f84347fe625c9d9c0785f8",
+    "repaired_rectangular_shoulders": [
+      {
+        "exposed_ramp_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -9.95,
+              -8.0,
+              16.85
+            ],
+            [
+              -9.95,
+              8.0,
+              16.85
+            ],
+            [
+              9.95,
+              -8.0,
+              16.85
+            ],
+            [
+              9.95,
+              8.0,
+              16.85
+            ],
+            [
+              -9.975,
+              -8.0,
+              16.925
+            ],
+            [
+              -9.975,
+              8.0,
+              16.925
+            ],
+            [
+              9.975,
+              -8.0,
+              16.925
+            ],
+            [
+              9.975,
+              8.0,
+              16.925
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 0.0,
+          "pass": true,
+          "surface_points_checked": 8
+        },
+        "pass": true,
+        "source_end_width_depth_z_mm": [
+          20,
+          16,
+          17
+        ],
+        "source_start_width_depth_z_mm": [
+          18,
+          16,
+          14
+        ],
+        "top_feature_corners": {
+          "expected_vertex_incidences": 4,
+          "matched_vertex_incidences": 4,
+          "maximum_nearest_vertex_error_mm": 0.0,
+          "pass": true
+        }
+      }
+    ],
+    "vertices_requiring_assembly_triangle_surface_checks_mm": [
+      [
+        -11.8487548828125,
+        0.0,
+        8.0
+      ],
+      [
+        -10.863736152648926,
+        -6.254637241363525,
+        7.7539238929748535
+      ],
+      [
+        -10.863736152648926,
+        6.254637241363525,
+        7.7539238929748535
+      ],
+      [
+        -10.857069969177246,
+        -5.899600028991699,
+        8.0
+      ],
+      [
+        -10.857069969177246,
+        5.899600028991699,
+        8.0
+      ],
+      [
+        -9.0,
+        -7.01019287109375,
+        8.507847785949707
+      ],
+      [
+        -9.0,
+        7.01019287109375,
+        8.507847785949707
+      ],
+      [
+        -8.011908531188965,
+        -8.0,
+        8.506680488586426
+      ],
+      [
+        -8.011908531188965,
+        8.0,
+        8.506680488586426
+      ],
+      [
+        -7.075082302093506,
+        -9.12792682647705,
+        8.376669883728027
+      ],
+      [
+        -7.075082302093506,
+        9.12792682647705,
+        8.376669883728027
+      ],
+      [
+        -6.79004430770874,
+        -10.32918643951416,
+        7.753340244293213
+      ],
+      [
+        -6.79004430770874,
+        10.32918643951416,
+        7.753340244293213
+      ],
+      [
+        -6.447677135467529,
+        -10.308993339538574,
+        8.0
+      ],
+      [
+        -6.447677135467529,
+        10.308993339538574,
+        8.0
+      ],
+      [
+        -5.428770065307617,
+        -10.592958450317383,
+        8.5
+      ],
+      [
+        -5.428770065307617,
+        10.592958450317383,
+        8.5
+      ],
+      [
+        0.0,
+        -11.8487548828125,
+        8.0
+      ],
+      [
+        0.0,
+        11.8487548828125,
+        8.0
+      ],
+      [
+        5.428770065307617,
+        -10.592958450317383,
+        8.5
+      ],
+      [
+        5.428770065307617,
+        10.592958450317383,
+        8.5
+      ],
+      [
+        6.447677135467529,
+        -10.308993339538574,
+        8.0
+      ],
+      [
+        6.447677135467529,
+        10.308993339538574,
+        8.0
+      ],
+      [
+        6.79004430770874,
+        -10.32918643951416,
+        7.753340244293213
+      ],
+      [
+        6.79004430770874,
+        10.32918643951416,
+        7.753340244293213
+      ],
+      [
+        7.075082302093506,
+        -9.12792682647705,
+        8.376669883728027
+      ],
+      [
+        7.075082302093506,
+        9.12792682647705,
+        8.376669883728027
+      ],
+      [
+        8.011908531188965,
+        -8.0,
+        8.506680488586426
+      ],
+      [
+        8.011908531188965,
+        8.0,
+        8.506680488586426
+      ],
+      [
+        9.0,
+        -7.01019287109375,
+        8.507847785949707
+      ],
+      [
+        9.0,
+        7.01019287109375,
+        8.507847785949707
+      ],
+      [
+        10.857069969177246,
+        -5.899600028991699,
+        8.0
+      ],
+      [
+        10.857069969177246,
+        5.899600028991699,
+        8.0
+      ],
+      [
+        10.863736152648926,
+        -6.254637241363525,
+        7.7539238929748535
+      ],
+      [
+        10.863736152648926,
+        6.254637241363525,
+        7.7539238929748535
+      ],
+      [
+        11.8487548828125,
+        0.0,
+        8.0
+      ]
+    ]
+  },
+  "limitation": "Specific geometry and placement freshness facts only. Visual recognizability, manufacturing behavior, and host isolated rebuild are separate checks.",
+  "method": "Read-only source-parameter, exported STL vertex, and point-to-triangle surface audit; no geometry generation or mutation",
+  "pawn": {
+    "bed_z_zero_and_expected_height_pass": true,
+    "bounds_mm": [
+      [
+        -12.0104341506958,
+        -12.0104341506958,
+        0.0
+      ],
+      [
+        12.0104341506958,
+        12.0104341506958,
+        40.0
+      ]
+    ],
+    "part_stl_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+    "repaired_conical_shoulder": {
+      "analytic_cone_vertices_checked": 199,
+      "downward_surface_triangles": 247,
+      "maximum_vertex_radial_equation_error_mm": 6.302317974160587e-07,
+      "note": "The lower cone is buried inside the square stem. Exposed vertices must fit the source cone across all quadrants and extend into its lower quarter; no fixed angular tessellation is required.",
+      "observed_exposed_z_span_mm": [
+        17.161291122436523,
+        22.0
+      ],
+      "occupied_xy_quadrants": 4,
+      "pass": true,
+      "source_lower_radius_z_mm": [
+        5.4,
+        17
+      ],
+      "source_radial_growth_per_z": 0.6199999999999999,
+      "source_upper_radius_z_mm": [
+        8.5,
+        22
+      ]
+    },
+    "standalone_analytic_curved_surfaces": {
+      "pass": true,
+      "surfaces": [
+        {
+          "exposed_z_interval_mm": [
+            17,
+            22
+          ],
+          "maximum_vertex_radial_equation_error_mm": 6.302317974160587e-07,
+          "name": "shoulder_cone",
+          "normal_z_sign": -1,
+          "observed_exposed_z_span_mm": [
+            17.161291122436523,
+            22.0
+          ],
+          "occupied_xy_quadrants": 4,
+          "pass": true,
+          "radius_equation_z0_r0_slope": [
+            17,
+            5.4,
+            0.6199999999999999
+          ],
+          "surface_triangles_checked": 247,
+          "surface_vertices_checked": 199
+        },
+        {
+          "exposed_z_interval_mm": [
+            22.0,
+            33.0
+          ],
+          "maximum_vertex_radial_equation_error_mm": 4.110228832843177e-07,
+          "name": "cylindrical_tank",
+          "normal_z_sign": 0,
+          "observed_exposed_z_span_mm": [
+            22.0,
+            33.0
+          ],
+          "occupied_xy_quadrants": 4,
+          "pass": true,
+          "radius_equation_z0_r0_slope": [
+            22.0,
+            8.5,
+            0
+          ],
+          "surface_triangles_checked": 126,
+          "surface_vertices_checked": 126
+        },
+        {
+          "exposed_z_interval_mm": [
+            33.0,
+            40.0
+          ],
+          "maximum_vertex_radial_equation_error_mm": 4.2039258651982436e-07,
+          "name": "roof_cone",
+          "normal_z_sign": 1,
+          "observed_exposed_z_span_mm": [
+            33.0,
+            40.0
+          ],
+          "occupied_xy_quadrants": 4,
+          "pass": true,
+          "radius_equation_z0_r0_slope": [
+            32.9,
+            8.5,
+            -0.943661971830986
+          ],
+          "surface_triangles_checked": 318,
+          "surface_vertices_checked": 222
+        }
+      ]
+    },
+    "vertices_requiring_assembly_triangle_surface_checks_mm": [
+      [
+        -10.2689208984375,
+        -2.220446049250313e-16,
+        8.0
+      ],
+      [
+        -8.489434242248535,
+        -0.4236900210380554,
+        22.0
+      ],
+      [
+        -8.489434242248535,
+        -0.4236900210380554,
+        33.0
+      ],
+      [
+        -8.489434242248535,
+        0.4236900210380554,
+        22.0
+      ],
+      [
+        -8.489434242248535,
+        0.4236900210380554,
+        33.0
+      ],
+      [
+        -8.405061721801758,
+        -1.2668592929840088,
+        22.0
+      ],
+      [
+        -8.405061721801758,
+        -1.2668592929840088,
+        33.0
+      ],
+      [
+        -8.405061721801758,
+        1.2668592929840088,
+        22.0
+      ],
+      [
+        -8.405061721801758,
+        1.2668592929840088,
+        33.0
+      ],
+      [
+        -8.395184516906738,
+        -0.4189862608909607,
+        33.0
+      ],
+      [
+        -8.395184516906738,
+        0.4189862608909607,
+        33.0
+      ],
+      [
+        -8.311749458312988,
+        -1.2527947425842285,
+        33.0
+      ],
+      [
+        -8.311749458312988,
+        1.2527947425842285,
+        33.0
+      ],
+      [
+        -8.237156867980957,
+        -2.097437858581543,
+        22.0
+      ],
+      [
+        -8.237156867980957,
+        -2.097437858581543,
+        33.0
+      ],
+      [
+        -8.237156867980957,
+        2.097437858581543,
+        22.0
+      ],
+      [
+        -8.237156867980957,
+        2.097437858581543,
+        33.0
+      ],
+      [
+        -8.145709037780762,
+        -2.0741522312164307,
+        33.0
+      ],
+      [
+        -8.145709037780762,
+        2.0741522312164307,
+        33.0
+      ],
+      [
+        -7.658235549926758,
+        -3.688011884689331,
+        22.0
+      ],
+      [
+        -7.658235549926758,
+        -3.688011884689331,
+        33.0
+      ],
+      [
+        -7.658235549926758,
+        3.688011884689331,
+        22.0
+      ],
+      [
+        -7.658235549926758,
+        3.688011884689331,
+        33.0
+      ],
+      [
+        -7.573214530944824,
+        -3.6470677852630615,
+        33.0
+      ],
+      [
+        -7.573214530944824,
+        3.6470677852630615,
+        33.0
+      ],
+      [
+        -7.5,
+        -5.742852889198055e-15,
+        20.387096405029297
+      ],
+      [
+        -7.355889797210693,
+        -1.4631774425506592,
+        20.387096405029297
+      ],
+      [
+        -7.355889797210693,
+        1.4631774425506592,
+        20.387096405029297
+      ],
+      [
+        -7.261223793029785,
+        -7.261223793029785,
+        8.0
+      ],
+      [
+        -7.261223793029785,
+        7.261223793029785,
+        8.0
+      ],
+      [
+        -7.252972602844238,
+        -4.432199001312256,
+        22.0
+      ],
+      [
+        -7.252972602844238,
+        -4.432199001312256,
+        33.0
+      ],
+      [
+        -7.252972602844238,
+        4.432199001312256,
+        22.0
+      ],
+      [
+        -7.252972602844238,
+        4.432199001312256,
+        33.0
+      ],
+      [
+        -7.172450542449951,
+        -4.382993221282959,
+        33.0
+      ],
+      [
+        -7.172450542449951,
+        4.382993221282959,
+        33.0
+      ],
+      [
+        -6.929096698760986,
+        -2.8701257705688477,
+        20.387096405029297
+      ],
+      [
+        -6.929096698760986,
+        2.8701257705688477,
+        20.387096405029297
+      ],
+      [
+        -6.775626182556152,
+        -5.13233757019043,
+        22.0
+      ],
+      [
+        -6.775626182556152,
+        -5.13233757019043,
+        33.0
+      ],
+      [
+        -6.775626182556152,
+        5.13233757019043,
+        22.0
+      ],
+      [
+        -6.775626182556152,
+        5.13233757019043,
+        33.0
+      ],
+      [
+        -6.754225254058838,
+        5.171803181433466e-15,
+        34.75
+      ],
+      [
+        -6.700404167175293,
+        -5.075358867645264,
+        33.0
+      ],
+      [
+        -6.700404167175293,
+        5.075358867645264,
+        33.0
+      ],
+      [
+        -6.624444961547852,
+        -1.3176840543746948,
+        34.75
+      ],
+      [
+        -6.624444961547852,
+        1.3176840543746948,
+        34.75
+      ],
+      [
+        -6.5,
+        -4.977139340044904e-15,
+        18.774192810058594
+      ],
+      [
+        -6.3751044273376465,
+        -1.2680871486663818,
+        18.774192810058594
+      ],
+      [
+        -6.3751044273376465,
+        1.2680871486663818,
+        18.774192810058594
+      ],
+      [
+        -6.240090370178223,
+        -2.5847301483154297,
+        34.75
+      ],
+      [
+        -6.240090370178223,
+        2.5847301483154297,
+        34.75
+      ],
+      [
+        -6.236021995544434,
+        -4.166776657104492,
+        20.387096405029297
+      ],
+      [
+        -6.236021995544434,
+        4.166776657104492,
+        20.387096405029297
+      ],
+      [
+        -6.230940818786621,
+        -5.781468391418457,
+        22.0
+      ],
+      [
+        -6.230940818786621,
+        -5.781468391418457,
+        33.0
+      ],
+      [
+        -6.230940818786621,
+        5.781468391418457,
+        22.0
+      ],
+      [
+        -6.230940818786621,
+        5.781468391418457,
+        33.0
+      ],
+      [
+        -6.1617655754089355,
+        -5.717282772064209,
+        33.0
+      ],
+      [
+        -6.1617655754089355,
+        5.717282772064209,
+        33.0
+      ],
+      [
+        -6.0052170753479,
+        -2.4874422550201416,
+        18.774192810058594
+      ],
+      [
+        -6.0052170753479,
+        2.4874422550201416,
+        18.774192810058594
+      ],
+      [
+        -5.624329566955566,
+        -6.373140335083008,
+        22.0
+      ],
+      [
+        -5.624329566955566,
+        -6.373140335083008,
+        33.0
+      ],
+      [
+        -5.624329566955566,
+        6.373140335083008,
+        22.0
+      ],
+      [
+        -5.624329566955566,
+        6.373140335083008,
+        33.0
+      ],
+      [
+        -5.615932941436768,
+        -3.7524466514587402,
+        34.75
+      ],
+      [
+        -5.615932941436768,
+        3.7524466514587402,
+        34.75
+      ],
+      [
+        -5.561888694763184,
+        -6.302386283874512,
+        33.0
+      ],
+      [
+        -5.561888694763184,
+        6.302386283874512,
+        33.0
+      ],
+      [
+        -5.5,
+        -4.671657085418701,
+        19.9294490814209
+      ],
+      [
+        -5.5,
+        -3.900517463684082,
+        19.1656494140625
+      ],
+      [
+        -5.5,
+        -3.23287034034729,
+        18.580272674560547
+      ],
+      [
+        -5.5,
+        -2.7545247077941895,
+        18.211631774902344
+      ],
+      [
+        -5.5,
+        -2.2922580242156982,
+        17.900903701782227
+      ],
+      [
+        -5.5,
+        -1.8926690816879272,
+        17.671846389770508
+      ],
+      [
+        -5.5,
+        -1.5988047122955322,
+        17.52849578857422
+      ],
+      [
+        -5.5,
+        -1.3090869188308716,
+        17.40910530090332
+      ],
+      [
+        -5.5,
+        -1.0227644443511963,
+        17.313365936279297
+      ],
+      [
+        -5.5,
+        -0.7390946745872498,
+        17.241029739379883
+      ],
+      [
+        -5.5,
+        -0.4573418200016022,
+        17.191905975341797
+      ],
+      [
+        -5.5,
+        -0.17677511274814606,
+        17.165870666503906
+      ],
+      [
+        -5.5,
+        0.10333309322595596,
+        17.16285514831543
+      ],
+      [
+        -5.5,
+        0.41491031646728516,
+        17.18649673461914
+      ],
+      [
+        -5.5,
+        0.7627089619636536,
+        17.24618148803711
+      ],
+      [
+        -5.5,
+        1.113523006439209,
+        17.341272354125977
+      ],
+      [
+        -5.5,
+        1.4973888397216797,
+        17.48417854309082
+      ],
+      [
+        -5.5,
+        1.981015920639038,
+        17.71917724609375
+      ],
+      [
+        -5.5,
+        2.534864664077759,
+        18.05811882019043
+      ],
+      [
+        -5.5,
+        3.2289645671844482,
+        18.57708168029785
+      ],
+      [
+        -5.5,
+        4.248601913452148,
+        19.49978256225586
+      ],
+      [
+        -5.102817058563232,
+        3.907296917114202e-15,
+        36.5
+      ],
+      [
+        -5.004767894744873,
+        -0.9955102205276489,
+        36.5
+      ],
+      [
+        -5.004767894744873,
+        0.9955102205276489,
+        36.5
+      ],
+      [
+        -4.96182107925415,
+        -6.901473045349121,
+        22.0
+      ],
+      [
+        -4.96182107925415,
+        -6.901473045349121,
+        33.0
+      ],
+      [
+        -4.96182107925415,
+        6.901473045349121,
+        22.0
+      ],
+      [
+        -4.96182107925415,
+        6.901473045349121,
+        33.0
+      ],
+      [
+        -4.906735420227051,
+        -6.824853420257568,
+        33.0
+      ],
+      [
+        -4.906735420227051,
+        6.824853420257568,
+        33.0
+      ],
+      [
+        -4.77595853805542,
+        -4.77595853805542,
+        34.75
+      ],
+      [
+        -4.77595853805542,
+        4.77595853805542,
+        34.75
+      ],
+      [
+        -4.714387893676758,
+        -1.9527634382247925,
+        36.5
+      ],
+      [
+        -4.714387893676758,
+        1.9527634382247925,
+        36.5
+      ],
+      [
+        -4.248601913452148,
+        -5.5,
+        19.49978256225586
+      ],
+      [
+        -4.248601913452148,
+        5.5,
+        19.49978256225586
+      ],
+      [
+        -4.242837429046631,
+        -2.834973096847534,
+        36.5
+      ],
+      [
+        -4.242837429046631,
+        2.834973096847534,
+        36.5
+      ],
+      [
+        -4.166776657104492,
+        -6.236021995544434,
+        20.387096405029297
+      ],
+      [
+        -4.166776657104492,
+        6.236021995544434,
+        20.387096405029297
+      ],
+      [
+        -3.7524466514587402,
+        -5.615932941436768,
+        34.75
+      ],
+      [
+        -3.7524466514587402,
+        5.615932941436768,
+        34.75
+      ],
+      [
+        -3.60823655128479,
+        -3.60823655128479,
+        36.5
+      ],
+      [
+        -3.60823655128479,
+        3.60823655128479,
+        36.5
+      ],
+      [
+        -3.4959404468536377,
+        -7.747799873352051,
+        22.0
+      ],
+      [
+        -3.4959404468536377,
+        -7.747799873352051,
+        33.0
+      ],
+      [
+        -3.4959404468536377,
+        7.747799873352051,
+        22.0
+      ],
+      [
+        -3.4959404468536377,
+        7.747799873352051,
+        33.0
+      ],
+      [
+        -3.4571287631988525,
+        -7.6617841720581055,
+        33.0
+      ],
+      [
+        -3.4571287631988525,
+        7.6617841720581055,
+        33.0
+      ],
+      [
+        -3.4514083862304688,
+        2.6427908645531737e-15,
+        38.25
+      ],
+      [
+        -3.3850905895233154,
+        -0.673336386680603,
+        38.25
+      ],
+      [
+        -3.3850905895233154,
+        0.673336386680603,
+        38.25
+      ],
+      [
+        -3.2289645671844482,
+        -5.5,
+        18.57708168029785
+      ],
+      [
+        -3.2289645671844482,
+        5.5,
+        18.57708168029785
+      ],
+      [
+        -3.188685655593872,
+        -1.3207968473434448,
+        38.25
+      ],
+      [
+        -3.188685655593872,
+        1.3207968473434448,
+        38.25
+      ],
+      [
+        -2.8701257705688477,
+        -6.929096698760986,
+        20.387096405029297
+      ],
+      [
+        -2.8701257705688477,
+        6.929096698760986,
+        20.387096405029297
+      ],
+      [
+        -2.869741201400757,
+        -1.9174997806549072,
+        38.25
+      ],
+      [
+        -2.869741201400757,
+        1.9174997806549072,
+        38.25
+      ],
+      [
+        -2.834973096847534,
+        -4.242837429046631,
+        36.5
+      ],
+      [
+        -2.834973096847534,
+        4.242837429046631,
+        36.5
+      ],
+      [
+        -2.707136631011963,
+        -8.057382583618164,
+        22.0
+      ],
+      [
+        -2.707136631011963,
+        -8.057382583618164,
+        33.0
+      ],
+      [
+        -2.707136631011963,
+        8.057382583618164,
+        22.0
+      ],
+      [
+        -2.707136631011963,
+        8.057382583618164,
+        33.0
+      ],
+      [
+        -2.677082061767578,
+        -7.967930316925049,
+        33.0
+      ],
+      [
+        -2.677082061767578,
+        7.967930316925049,
+        33.0
+      ],
+      [
+        -2.5847301483154297,
+        -6.240090370178223,
+        34.75
+      ],
+      [
+        -2.5847301483154297,
+        6.240090370178223,
+        34.75
+      ],
+      [
+        -2.534864664077759,
+        -5.5,
+        18.05811882019043
+      ],
+      [
+        -2.534864664077759,
+        5.5,
+        18.05811882019043
+      ],
+      [
+        -2.4874422550201416,
+        -6.0052170753479,
+        18.774192810058594
+      ],
+      [
+        -2.4874422550201416,
+        6.0052170753479,
+        18.774192810058594
+      ],
+      [
+        -2.440514326095581,
+        -2.440514326095581,
+        38.25
+      ],
+      [
+        -2.440514326095581,
+        2.440514326095581,
+        38.25
+      ],
+      [
+        -1.981015920639038,
+        -5.5,
+        17.71917724609375
+      ],
+      [
+        -1.981015920639038,
+        5.5,
+        17.71917724609375
+      ],
+      [
+        -1.9527634382247925,
+        -4.714387893676758,
+        36.5
+      ],
+      [
+        -1.9527634382247925,
+        4.714387893676758,
+        36.5
+      ],
+      [
+        -1.9174997806549072,
+        -2.869741201400757,
+        38.25
+      ],
+      [
+        -1.9174997806549072,
+        2.869741201400757,
+        38.25
+      ],
+      [
+        -1.891427993774414,
+        -8.286887168884277,
+        22.0
+      ],
+      [
+        -1.891427993774414,
+        -8.286887168884277,
+        33.0
+      ],
+      [
+        -1.891427993774414,
+        8.286887168884277,
+        22.0
+      ],
+      [
+        -1.891427993774414,
+        8.286887168884277,
+        33.0
+      ],
+      [
+        -1.870429515838623,
+        -8.194887161254883,
+        33.0
+      ],
+      [
+        -1.870429515838623,
+        8.194887161254883,
+        33.0
+      ],
+      [
+        -1.7977625131607056,
+        -0.08972259610891342,
+        40.0
+      ],
+      [
+        -1.7977625131607056,
+        0.08972259610891342,
+        40.0
+      ],
+      [
+        -1.779895544052124,
+        -0.26827606558799744,
+        40.0
+      ],
+      [
+        -1.779895544052124,
+        0.26827606558799744,
+        40.0
+      ],
+      [
+        -1.744339108467102,
+        -0.44416332244873047,
+        40.0
+      ],
+      [
+        -1.744339108467102,
+        0.44416332244873047,
+        40.0
+      ],
+      [
+        -1.62174391746521,
+        -0.780990719795227,
+        40.0
+      ],
+      [
+        -1.62174391746521,
+        0.780990719795227,
+        40.0
+      ],
+      [
+        -1.5359236001968384,
+        -0.9385833740234375,
+        40.0
+      ],
+      [
+        -1.5359236001968384,
+        0.9385833740234375,
+        40.0
+      ],
+      [
+        -1.4973888397216797,
+        -5.5,
+        17.48417854309082
+      ],
+      [
+        -1.4973888397216797,
+        5.5,
+        17.48417854309082
+      ],
+      [
+        -1.4631774425506592,
+        -7.355889797210693,
+        20.387096405029297
+      ],
+      [
+        -1.4631774425506592,
+        7.355889797210693,
+        20.387096405029297
+      ],
+      [
+        -1.4348385334014893,
+        -1.0868479013442993,
+        40.0
+      ],
+      [
+        -1.4348385334014893,
+        1.0868479013442993,
+        40.0
+      ],
+      [
+        -1.3207968473434448,
+        -3.188685655593872,
+        38.25
+      ],
+      [
+        -1.3207968473434448,
+        3.188685655593872,
+        38.25
+      ],
+      [
+        -1.3194934129714966,
+        -1.2243108749389648,
+        40.0
+      ],
+      [
+        -1.3194934129714966,
+        1.2243108749389648,
+        40.0
+      ],
+      [
+        -1.3176840543746948,
+        -6.624444961547852,
+        34.75
+      ],
+      [
+        -1.3176840543746948,
+        6.624444961547852,
+        34.75
+      ],
+      [
+        -1.2680871486663818,
+        -6.3751044273376465,
+        18.774192810058594
+      ],
+      [
+        -1.2680871486663818,
+        6.3751044273376465,
+        18.774192810058594
+      ],
+      [
+        -1.1910345554351807,
+        -1.3496061563491821,
+        40.0
+      ],
+      [
+        -1.1910345554351807,
+        1.3496061563491821,
+        40.0
+      ],
+      [
+        -1.113523006439209,
+        -5.5,
+        17.341272354125977
+      ],
+      [
+        -1.113523006439209,
+        5.5,
+        17.341272354125977
+      ],
+      [
+        -1.0569214820861816,
+        -8.434033393859863,
+        22.0
+      ],
+      [
+        -1.0569214820861816,
+        -8.434033393859863,
+        33.0
+      ],
+      [
+        -1.0569214820861816,
+        8.434033393859863,
+        22.0
+      ],
+      [
+        -1.0569214820861816,
+        8.434033393859863,
+        33.0
+      ],
+      [
+        -1.0507385730743408,
+        -1.4614883661270142,
+        40.0
+      ],
+      [
+        -1.0507385730743408,
+        1.4614883661270142,
+        40.0
+      ],
+      [
+        -1.0451875925064087,
+        -8.340399742126465,
+        33.0
+      ],
+      [
+        -1.0451875925064087,
+        8.340399742126465,
+        33.0
+      ],
+      [
+        -0.9955102205276489,
+        -5.004767894744873,
+        36.5
+      ],
+      [
+        -0.9955102205276489,
+        5.004767894744873,
+        36.5
+      ],
+      [
+        -0.7627089619636536,
+        -5.5,
+        17.24618148803711
+      ],
+      [
+        -0.7627089619636536,
+        5.5,
+        17.24618148803711
+      ],
+      [
+        -0.7403168082237244,
+        -1.6407105922698975,
+        40.0
+      ],
+      [
+        -0.7403168082237244,
+        1.6407105922698975,
+        40.0
+      ],
+      [
+        -0.673336386680603,
+        -3.3850905895233154,
+        38.25
+      ],
+      [
+        -0.673336386680603,
+        3.3850905895233154,
+        38.25
+      ],
+      [
+        -0.5732759833335876,
+        -1.7062692642211914,
+        40.0
+      ],
+      [
+        -0.5732759833335876,
+        1.7062692642211914,
+        40.0
+      ],
+      [
+        -0.41491031646728516,
+        -5.5,
+        17.18649673461914
+      ],
+      [
+        -0.41491031646728516,
+        5.5,
+        17.18649673461914
+      ],
+      [
+        -0.4005376696586609,
+        -1.7548702955245972,
+        40.0
+      ],
+      [
+        -0.4005376696586609,
+        1.7548702955245972,
+        40.0
+      ],
+      [
+        -0.22381867468357086,
+        -1.7860305309295654,
+        40.0
+      ],
+      [
+        -0.22381867468357086,
+        1.7860305309295654,
+        40.0
+      ],
+      [
+        -0.21191087365150452,
+        -8.497358322143555,
+        22.0
+      ],
+      [
+        -0.21191087365150452,
+        -8.497358322143555,
+        33.0
+      ],
+      [
+        -0.21191087365150452,
+        8.497358322143555,
+        22.0
+      ],
+      [
+        -0.21191087365150452,
+        8.497358322143555,
+        33.0
+      ],
+      [
+        -0.20955826342105865,
+        -8.403020858764648,
+        33.0
+      ],
+      [
+        -0.20955826342105865,
+        8.403020858764648,
+        33.0
+      ],
+      [
+        -0.10333309322595596,
+        -5.5,
+        17.16285514831543
+      ],
+      [
+        -0.10333309322595596,
+        5.5,
+        17.16285514831543
+      ],
+      [
+        -0.04487524554133415,
+        -1.7994405031204224,
+        40.0
+      ],
+      [
+        -0.04487524554133415,
+        1.7994405031204224,
+        40.0
+      ],
+      [
+        -2.220446049250313e-16,
+        10.2689208984375,
+        8.0
+      ],
+      [
+        2.1133781730416133e-16,
+        -3.4514083862304688,
+        38.25
+      ],
+      [
+        2.220446049250313e-16,
+        -10.2689208984375,
+        8.0
+      ],
+      [
+        3.1245743111054736e-16,
+        -5.102817058563232,
+        36.5
+      ],
+      [
+        3.9801022047273465e-16,
+        6.5,
+        18.774192810058594
+      ],
+      [
+        4.135770184471538e-16,
+        -6.754225254058838,
+        34.75
+      ],
+      [
+        4.592425233973236e-16,
+        7.5,
+        20.387096405029297
+      ],
+      [
+        8.562385860283548e-15,
+        3.4514083862304688,
+        38.25
+      ],
+      [
+        1.2659263150553365e-14,
+        5.102817058563232,
+        36.5
+      ],
+      [
+        1.612544902566005e-14,
+        -6.5,
+        18.774192810058594
+      ],
+      [
+        1.675614128785613e-14,
+        6.754225254058838,
+        34.75
+      ],
+      [
+        1.8606286555423492e-14,
+        -7.5,
+        20.387096405029297
+      ],
+      [
+        0.13451416790485382,
+        -1.7949668169021606,
+        40.0
+      ],
+      [
+        0.13451416790485382,
+        1.7949668169021606,
+        40.0
+      ],
+      [
+        0.17677511274814606,
+        -5.5,
+        17.165870666503906
+      ],
+      [
+        0.17677511274814606,
+        5.5,
+        17.165870666503906
+      ],
+      [
+        0.4573418200016022,
+        -5.5,
+        17.191905975341797
+      ],
+      [
+        0.4573418200016022,
+        5.5,
+        17.191905975341797
+      ],
+      [
+        0.48751285672187805,
+        -1.732723593711853,
+        40.0
+      ],
+      [
+        0.48751285672187805,
+        1.732723593711853,
+        40.0
+      ],
+      [
+        0.6281538009643555,
+        -8.382129669189453,
+        33.0
+      ],
+      [
+        0.6281538009643555,
+        8.382129669189453,
+        33.0
+      ],
+      [
+        0.6352058053016663,
+        -8.476232528686523,
+        22.0
+      ],
+      [
+        0.6352058053016663,
+        -8.476232528686523,
+        33.0
+      ],
+      [
+        0.6352058053016663,
+        8.476232528686523,
+        22.0
+      ],
+      [
+        0.6352058053016663,
+        8.476232528686523,
+        33.0
+      ],
+      [
+        0.6576138734817505,
+        -1.6755727529525757,
+        40.0
+      ],
+      [
+        0.6576138734817505,
+        1.6755727529525757,
+        40.0
+      ],
+      [
+        0.673336386680603,
+        -3.3850905895233154,
+        38.25
+      ],
+      [
+        0.673336386680603,
+        3.3850905895233154,
+        38.25
+      ],
+      [
+        0.7390946745872498,
+        -5.5,
+        17.241029739379883
+      ],
+      [
+        0.7390946745872498,
+        5.5,
+        17.241029739379883
+      ],
+      [
+        0.821179211139679,
+        -1.601769208908081,
+        40.0
+      ],
+      [
+        0.821179211139679,
+        1.601769208908081,
+        40.0
+      ],
+      [
+        0.9765833020210266,
+        -1.5120466947555542,
+        40.0
+      ],
+      [
+        0.9765833020210266,
+        1.5120466947555542,
+        40.0
+      ],
+      [
+        0.9955102205276489,
+        -5.004767894744873,
+        36.5
+      ],
+      [
+        0.9955102205276489,
+        5.004767894744873,
+        36.5
+      ],
+      [
+        1.0227644443511963,
+        -5.5,
+        17.313365936279297
+      ],
+      [
+        1.0227644443511963,
+        5.5,
+        17.313365936279297
+      ],
+      [
+        1.1222816705703735,
+        -1.4072966575622559,
+        40.0
+      ],
+      [
+        1.1222816705703735,
+        1.4072966575622559,
+        40.0
+      ],
+      [
+        1.2568262815475464,
+        -1.2885602712631226,
+        40.0
+      ],
+      [
+        1.2568262815475464,
+        1.2885602712631226,
+        40.0
+      ],
+      [
+        1.2680871486663818,
+        -6.3751044273376465,
+        18.774192810058594
+      ],
+      [
+        1.2680871486663818,
+        6.3751044273376465,
+        18.774192810058594
+      ],
+      [
+        1.3090869188308716,
+        -5.5,
+        17.40910530090332
+      ],
+      [
+        1.3090869188308716,
+        5.5,
+        17.40910530090332
+      ],
+      [
+        1.3176840543746948,
+        -6.624444961547852,
+        34.75
+      ],
+      [
+        1.3176840543746948,
+        6.624444961547852,
+        34.75
+      ],
+      [
+        1.3207968473434448,
+        -3.188685655593872,
+        38.25
+      ],
+      [
+        1.3207968473434448,
+        3.188685655593872,
+        38.25
+      ],
+      [
+        1.4631774425506592,
+        -7.355889797210693,
+        20.387096405029297
+      ],
+      [
+        1.4631774425506592,
+        7.355889797210693,
+        20.387096405029297
+      ],
+      [
+        1.487229824066162,
+        -1.0139760971069336,
+        40.0
+      ],
+      [
+        1.487229824066162,
+        1.0139760971069336,
+        40.0
+      ],
+      [
+        1.580798864364624,
+        -0.8608571887016296,
+        40.0
+      ],
+      [
+        1.580798864364624,
+        0.8608571887016296,
+        40.0
+      ],
+      [
+        1.5988047122955322,
+        -5.5,
+        17.52849578857422
+      ],
+      [
+        1.5988047122955322,
+        5.5,
+        17.52849578857422
+      ],
+      [
+        1.658657193183899,
+        -0.6991826295852661,
+        40.0
+      ],
+      [
+        1.658657193183899,
+        0.6991826295852661,
+        40.0
+      ],
+      [
+        1.7200310230255127,
+        -0.5305593013763428,
+        40.0
+      ],
+      [
+        1.7200310230255127,
+        0.5305593013763428,
+        40.0
+      ],
+      [
+        1.7643104791641235,
+        -0.3566630482673645,
+        40.0
+      ],
+      [
+        1.7643104791641235,
+        0.3566630482673645,
+        40.0
+      ],
+      [
+        1.79105544090271,
+        -0.17922212183475494,
+        40.0
+      ],
+      [
+        1.79105544090271,
+        0.17922212183475494,
+        40.0
+      ],
+      [
+        1.8926690816879272,
+        -5.5,
+        17.671846389770508
+      ],
+      [
+        1.8926690816879272,
+        5.5,
+        17.671846389770508
+      ],
+      [
+        1.9174997806549072,
+        -2.869741201400757,
+        38.25
+      ],
+      [
+        1.9174997806549072,
+        2.869741201400757,
+        38.25
+      ],
+      [
+        1.9527634382247925,
+        -4.714387893676758,
+        36.5
+      ],
+      [
+        1.9527634382247925,
+        4.714387893676758,
+        36.5
+      ],
+      [
+        2.276585817337036,
+        -8.091466903686523,
+        33.0
+      ],
+      [
+        2.276585817337036,
+        8.091466903686523,
+        33.0
+      ],
+      [
+        2.2922580242156982,
+        -5.5,
+        17.900903701782227
+      ],
+      [
+        2.2922580242156982,
+        5.5,
+        17.900903701782227
+      ],
+      [
+        2.3021440505981445,
+        -8.182306289672852,
+        22.0
+      ],
+      [
+        2.3021440505981445,
+        -8.182306289672852,
+        33.0
+      ],
+      [
+        2.3021440505981445,
+        8.182306289672852,
+        22.0
+      ],
+      [
+        2.3021440505981445,
+        8.182306289672852,
+        33.0
+      ],
+      [
+        2.440514326095581,
+        -2.440514326095581,
+        38.25
+      ],
+      [
+        2.440514326095581,
+        2.440514326095581,
+        38.25
+      ],
+      [
+        2.4874422550201416,
+        -6.0052170753479,
+        18.774192810058594
+      ],
+      [
+        2.4874422550201416,
+        6.0052170753479,
+        18.774192810058594
+      ],
+      [
+        2.5847301483154297,
+        -6.240090370178223,
+        34.75
+      ],
+      [
+        2.5847301483154297,
+        6.240090370178223,
+        34.75
+      ],
+      [
+        2.7545247077941895,
+        -5.5,
+        18.211631774902344
+      ],
+      [
+        2.7545247077941895,
+        5.5,
+        18.211631774902344
+      ],
+      [
+        2.834973096847534,
+        -4.242837429046631,
+        36.5
+      ],
+      [
+        2.834973096847534,
+        4.242837429046631,
+        36.5
+      ],
+      [
+        2.869741201400757,
+        -1.9174997806549072,
+        38.25
+      ],
+      [
+        2.869741201400757,
+        1.9174997806549072,
+        38.25
+      ],
+      [
+        2.8701257705688477,
+        -6.929096698760986,
+        20.387096405029297
+      ],
+      [
+        2.8701257705688477,
+        6.929096698760986,
+        20.387096405029297
+      ],
+      [
+        3.0709228515625,
+        -7.824584007263184,
+        33.0
+      ],
+      [
+        3.0709228515625,
+        7.824584007263184,
+        33.0
+      ],
+      [
+        3.105398654937744,
+        -7.912426948547363,
+        22.0
+      ],
+      [
+        3.105398654937744,
+        -7.912426948547363,
+        33.0
+      ],
+      [
+        3.105398654937744,
+        7.912426948547363,
+        22.0
+      ],
+      [
+        3.105398654937744,
+        7.912426948547363,
+        33.0
+      ],
+      [
+        3.188685655593872,
+        -1.3207968473434448,
+        38.25
+      ],
+      [
+        3.188685655593872,
+        1.3207968473434448,
+        38.25
+      ],
+      [
+        3.23287034034729,
+        -5.5,
+        18.580272674560547
+      ],
+      [
+        3.23287034034729,
+        5.5,
+        18.580272674560547
+      ],
+      [
+        3.3850905895233154,
+        -0.673336386680603,
+        38.25
+      ],
+      [
+        3.3850905895233154,
+        0.673336386680603,
+        38.25
+      ],
+      [
+        3.4514083862304688,
+        -8.453512692166453e-16,
+        38.25
+      ],
+      [
+        3.60823655128479,
+        -3.60823655128479,
+        36.5
+      ],
+      [
+        3.60823655128479,
+        3.60823655128479,
+        36.5
+      ],
+      [
+        3.7524466514587402,
+        -5.615932941436768,
+        34.75
+      ],
+      [
+        3.7524466514587402,
+        5.615932941436768,
+        34.75
+      ],
+      [
+        3.8347396850585938,
+        -7.479936599731445,
+        33.0
+      ],
+      [
+        3.8347396850585938,
+        7.479936599731445,
+        33.0
+      ],
+      [
+        3.877790689468384,
+        -7.563910484313965,
+        22.0
+      ],
+      [
+        3.877790689468384,
+        -7.563910484313965,
+        33.0
+      ],
+      [
+        3.877790689468384,
+        7.563910484313965,
+        22.0
+      ],
+      [
+        3.877790689468384,
+        7.563910484313965,
+        33.0
+      ],
+      [
+        3.900517463684082,
+        -5.5,
+        19.1656494140625
+      ],
+      [
+        3.900517463684082,
+        5.5,
+        19.1656494140625
+      ],
+      [
+        4.166776657104492,
+        -6.236021995544434,
+        20.387096405029297
+      ],
+      [
+        4.166776657104492,
+        6.236021995544434,
+        20.387096405029297
+      ],
+      [
+        4.242837429046631,
+        -2.834973096847534,
+        36.5
+      ],
+      [
+        4.242837429046631,
+        2.834973096847534,
+        36.5
+      ],
+      [
+        4.560445308685303,
+        -7.06095027923584,
+        33.0
+      ],
+      [
+        4.560445308685303,
+        7.06095027923584,
+        33.0
+      ],
+      [
+        4.611643314361572,
+        -7.1402201652526855,
+        22.0
+      ],
+      [
+        4.611643314361572,
+        -7.1402201652526855,
+        33.0
+      ],
+      [
+        4.611643314361572,
+        7.1402201652526855,
+        22.0
+      ],
+      [
+        4.611643314361572,
+        7.1402201652526855,
+        33.0
+      ],
+      [
+        4.671657085418701,
+        -5.5,
+        19.9294490814209
+      ],
+      [
+        4.671657085418701,
+        5.5,
+        19.9294490814209
+      ],
+      [
+        4.714387893676758,
+        -1.9527634382247925,
+        36.5
+      ],
+      [
+        4.714387893676758,
+        1.9527634382247925,
+        36.5
+      ],
+      [
+        4.77595853805542,
+        -4.77595853805542,
+        34.75
+      ],
+      [
+        4.77595853805542,
+        4.77595853805542,
+        34.75
+      ],
+      [
+        5.004767894744873,
+        -0.9955102205276489,
+        36.5
+      ],
+      [
+        5.004767894744873,
+        0.9955102205276489,
+        36.5
+      ],
+      [
+        5.102817058563232,
+        -1.2498297244421894e-15,
+        36.5
+      ],
+      [
+        5.2408270835876465,
+        -6.571789264678955,
+        33.0
+      ],
+      [
+        5.2408270835876465,
+        6.571789264678955,
+        33.0
+      ],
+      [
+        5.299663543701172,
+        -6.645567417144775,
+        22.0
+      ],
+      [
+        5.299663543701172,
+        -6.645567417144775,
+        33.0
+      ],
+      [
+        5.299663543701172,
+        6.645567417144775,
+        22.0
+      ],
+      [
+        5.299663543701172,
+        6.645567417144775,
+        33.0
+      ],
+      [
+        5.5,
+        -4.60404109954834,
+        19.859146118164062
+      ],
+      [
+        5.5,
+        -3.7744579315185547,
+        19.0493106842041
+      ],
+      [
+        5.5,
+        -3.2211318016052246,
+        18.570690155029297
+      ],
+      [
+        5.5,
+        -2.691030979156494,
+        18.166196823120117
+      ],
+      [
+        5.5,
+        -2.2362351417541504,
+        17.866506576538086
+      ],
+      [
+        5.5,
+        -1.9036365747451782,
+        17.6776180267334
+      ],
+      [
+        5.5,
+        -1.5771363973617554,
+        17.518800735473633
+      ],
+      [
+        5.5,
+        -1.2556886672973633,
+        17.389549255371094
+      ],
+      [
+        5.5,
+        -0.938263475894928,
+        17.289445877075195
+      ],
+      [
+        5.5,
+        -0.6238440871238708,
+        17.218172073364258
+      ],
+      [
+        5.5,
+        -0.3114232122898102,
+        17.175498962402344
+      ],
+      [
+        5.5,
+        0.30760565400123596,
+        17.175153732299805
+      ],
+      [
+        5.5,
+        0.6161727905273438,
+        17.216787338256836
+      ],
+      [
+        5.5,
+        0.9659672975540161,
+        17.297067642211914
+      ],
+      [
+        5.5,
+        1.3591783046722412,
+        17.428152084350586
+      ],
+      [
+        5.5,
+        1.8039637804031372,
+        17.626272201538086
+      ],
+      [
+        5.5,
+        2.352332592010498,
+        17.938594818115234
+      ],
+      [
+        5.5,
+        3.037825345993042,
+        18.424488067626953
+      ],
+      [
+        5.5,
+        4.0125956535339355,
+        19.271211624145508
+      ],
+      [
+        5.5,
+        4.731503963470459,
+        19.992170333862305
+      ],
+      [
+        5.615932941436768,
+        -3.7524466514587402,
+        34.75
+      ],
+      [
+        5.615932941436768,
+        3.7524466514587402,
+        34.75
+      ],
+      [
+        5.8691229820251465,
+        -6.017314434051514,
+        33.0
+      ],
+      [
+        5.8691229820251465,
+        6.017314434051514,
+        33.0
+      ],
+      [
+        5.9350128173828125,
+        -6.084868431091309,
+        22.0
+      ],
+      [
+        5.9350128173828125,
+        -6.084868431091309,
+        33.0
+      ],
+      [
+        5.9350128173828125,
+        6.084868431091309,
+        22.0
+      ],
+      [
+        5.9350128173828125,
+        6.084868431091309,
+        33.0
+      ],
+      [
+        6.0052170753479,
+        -2.4874422550201416,
+        18.774192810058594
+      ],
+      [
+        6.0052170753479,
+        2.4874422550201416,
+        18.774192810058594
+      ],
+      [
+        6.236021995544434,
+        -4.166776657104492,
+        20.387096405029297
+      ],
+      [
+        6.236021995544434,
+        4.166776657104492,
+        20.387096405029297
+      ],
+      [
+        6.240090370178223,
+        -2.5847301483154297,
+        34.75
+      ],
+      [
+        6.240090370178223,
+        2.5847301483154297,
+        34.75
+      ],
+      [
+        6.3751044273376465,
+        -1.2680871486663818,
+        18.774192810058594
+      ],
+      [
+        6.3751044273376465,
+        1.2680871486663818,
+        18.774192810058594
+      ],
+      [
+        6.5,
+        -1.5920408818909386e-15,
+        18.774192810058594
+      ],
+      [
+        6.624444961547852,
+        -1.3176840543746948,
+        34.75
+      ],
+      [
+        6.624444961547852,
+        1.3176840543746948,
+        34.75
+      ],
+      [
+        6.754225254058838,
+        -1.6543080737886151e-15,
+        34.75
+      ],
+      [
+        6.929096698760986,
+        -2.8701257705688477,
+        20.387096405029297
+      ],
+      [
+        6.929096698760986,
+        2.8701257705688477,
+        20.387096405029297
+      ],
+      [
+        6.945060729980469,
+        -4.735062122344971,
+        33.0
+      ],
+      [
+        6.945060729980469,
+        4.735062122344971,
+        33.0
+      ],
+      [
+        7.023029804229736,
+        -4.788220405578613,
+        22.0
+      ],
+      [
+        7.023029804229736,
+        -4.788220405578613,
+        33.0
+      ],
+      [
+        7.023029804229736,
+        4.788220405578613,
+        22.0
+      ],
+      [
+        7.023029804229736,
+        4.788220405578613,
+        33.0
+      ],
+      [
+        7.261223793029785,
+        -7.261223793029785,
+        8.0
+      ],
+      [
+        7.261223793029785,
+        7.261223793029785,
+        8.0
+      ],
+      [
+        7.355889797210693,
+        -1.4631774425506592,
+        20.387096405029297
+      ],
+      [
+        7.355889797210693,
+        1.4631774425506592,
+        20.387096405029297
+      ],
+      [
+        7.382009029388428,
+        -4.0200276374816895,
+        33.0
+      ],
+      [
+        7.382009029388428,
+        4.0200276374816895,
+        33.0
+      ],
+      [
+        7.464883327484131,
+        -4.065158843994141,
+        22.0
+      ],
+      [
+        7.464883327484131,
+        -4.065158843994141,
+        33.0
+      ],
+      [
+        7.464883327484131,
+        4.065158843994141,
+        22.0
+      ],
+      [
+        7.464883327484131,
+        4.065158843994141,
+        33.0
+      ],
+      [
+        7.5,
+        -1.8369700935892946e-15,
+        20.387096405029297
+      ],
+      [
+        7.745591640472412,
+        -3.265040636062622,
+        33.0
+      ],
+      [
+        7.745591640472412,
+        3.265040636062622,
+        33.0
+      ],
+      [
+        7.832547664642334,
+        -3.3016958236694336,
+        22.0
+      ],
+      [
+        7.832547664642334,
+        -3.3016958236694336,
+        33.0
+      ],
+      [
+        7.832547664642334,
+        3.3016958236694336,
+        22.0
+      ],
+      [
+        7.832547664642334,
+        3.3016958236694336,
+        33.0
+      ],
+      [
+        8.032195091247559,
+        -2.4776041507720947,
+        33.0
+      ],
+      [
+        8.032195091247559,
+        2.4776041507720947,
+        33.0
+      ],
+      [
+        8.122368812561035,
+        -2.5054190158843994,
+        22.0
+      ],
+      [
+        8.122368812561035,
+        -2.5054190158843994,
+        33.0
+      ],
+      [
+        8.122368812561035,
+        2.5054190158843994,
+        22.0
+      ],
+      [
+        8.122368812561035,
+        2.5054190158843994,
+        33.0
+      ],
+      [
+        8.238970756530762,
+        -1.6655439138412476,
+        33.0
+      ],
+      [
+        8.238970756530762,
+        1.6655439138412476,
+        33.0
+      ],
+      [
+        8.331465721130371,
+        -1.6842422485351562,
+        22.0
+      ],
+      [
+        8.331465721130371,
+        -1.6842422485351562,
+        33.0
+      ],
+      [
+        8.331465721130371,
+        1.6842422485351562,
+        22.0
+      ],
+      [
+        8.331465721130371,
+        1.6842422485351562,
+        33.0
+      ],
+      [
+        8.363863945007324,
+        -0.8369308710098267,
+        33.0
+      ],
+      [
+        8.363863945007324,
+        0.8369308710098267,
+        33.0
+      ],
+      [
+        8.457761764526367,
+        -0.8463267087936401,
+        22.0
+      ],
+      [
+        8.457761764526367,
+        -0.8463267087936401,
+        33.0
+      ],
+      [
+        8.457761764526367,
+        0.8463267087936401,
+        22.0
+      ],
+      [
+        8.457761764526367,
+        0.8463267087936401,
+        33.0
+      ],
+      [
+        10.2689208984375,
+        2.220446049250313e-16,
+        8.0
+      ]
+    ]
+  },
+  "queen": {
+    "actual_stepped_fan_upper_arc_vertices": [
+      {
+        "bottom_z_mm": 48,
+        "center_z_mm": 51,
+        "depth_mm": 14,
+        "expected_vertex_incidences": 10,
+        "matched_vertex_incidences": 10,
+        "maximum_nearest_vertex_error_mm": 1.5368121284304727e-06,
+        "pass": true,
+        "radius_mm": 10,
+        "sample_angles_degrees": [
+          60,
+          75,
+          90,
+          105,
+          120
+        ]
+      },
+      {
+        "bottom_z_mm": 54,
+        "center_z_mm": 57,
+        "depth_mm": 11,
+        "expected_vertex_incidences": 10,
+        "matched_vertex_incidences": 10,
+        "maximum_nearest_vertex_error_mm": 2.344988035934689e-06,
+        "pass": true,
+        "radius_mm": 7.6,
+        "sample_angles_degrees": [
+          60,
+          75,
+          90,
+          105,
+          120
+        ]
+      },
+      {
+        "bottom_z_mm": 60,
+        "center_z_mm": 63,
+        "depth_mm": 8,
+        "expected_vertex_incidences": 10,
+        "matched_vertex_incidences": 10,
+        "maximum_nearest_vertex_error_mm": 3.051757815342171e-06,
+        "pass": true,
+        "radius_mm": 5.2,
+        "sample_angles_degrees": [
+          60,
+          75,
+          90,
+          105,
+          120
+        ]
+      },
+      {
+        "bottom_z_mm": 65,
+        "center_z_mm": 69,
+        "depth_mm": 5,
+        "expected_vertex_incidences": 10,
+        "matched_vertex_incidences": 10,
+        "maximum_nearest_vertex_error_mm": 3.051757815342171e-06,
+        "pass": true,
+        "radius_mm": 3.2,
+        "sample_angles_degrees": [
+          60,
+          75,
+          90,
+          105,
+          120
+        ]
+      }
+    ],
+    "bed_z_zero_and_expected_height_pass": true,
+    "bounds_mm": [
+      [
+        -14.782072067260742,
+        -14.782072067260742,
+        0.0
+      ],
+      [
+        14.782072067260742,
+        14.782072067260742,
+        76.0
+      ]
+    ],
+    "part_stl_sha256": "7aa4a7d815b2c0272dd1d9d8a0e6db8156b81de00216891fdf6c6621fa3e864b",
+    "repaired_rectangular_shoulders": [
+      {
+        "exposed_ramp_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -11.4,
+              -10.375,
+              7.8
+            ],
+            [
+              -11.4,
+              10.375,
+              7.8
+            ],
+            [
+              11.4,
+              -10.375,
+              7.8
+            ],
+            [
+              11.4,
+              10.375,
+              7.8
+            ],
+            [
+              -11.45,
+              -10.4375,
+              7.9
+            ],
+            [
+              -11.45,
+              10.4375,
+              7.9
+            ],
+            [
+              11.45,
+              -10.4375,
+              7.9
+            ],
+            [
+              11.45,
+              10.4375,
+              7.9
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 1.3335827072053849e-08,
+          "pass": true,
+          "surface_points_checked": 8
+        },
+        "pass": true,
+        "source_end_width_depth_z_mm": [
+          23,
+          21,
+          8
+        ],
+        "source_start_width_depth_z_mm": [
+          19,
+          16,
+          4
+        ],
+        "top_feature_corners": {
+          "expected_vertex_incidences": 4,
+          "matched_vertex_incidences": 4,
+          "maximum_nearest_vertex_error_mm": 0.0,
+          "pass": true
+        }
+      },
+      {
+        "exposed_ramp_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -9.95,
+              -8.0,
+              46.85
+            ],
+            [
+              -9.95,
+              8.0,
+              46.85
+            ],
+            [
+              9.95,
+              -8.0,
+              46.85
+            ],
+            [
+              9.95,
+              8.0,
+              46.85
+            ],
+            [
+              -9.975,
+              -8.0,
+              46.925
+            ],
+            [
+              -9.975,
+              8.0,
+              46.925
+            ],
+            [
+              9.975,
+              -8.0,
+              46.925
+            ],
+            [
+              9.975,
+              8.0,
+              46.925
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 0.0,
+          "pass": true,
+          "surface_points_checked": 8
+        },
+        "pass": true,
+        "source_end_width_depth_z_mm": [
+          20,
+          16,
+          47
+        ],
+        "source_start_width_depth_z_mm": [
+          18,
+          16,
+          44
+        ],
+        "top_feature_corners": {
+          "expected_vertex_incidences": 4,
+          "matched_vertex_incidences": 4,
+          "maximum_nearest_vertex_error_mm": 0.0,
+          "pass": true
+        }
+      }
+    ],
+    "tip_3_2_mm_square_top_corners": {
+      "expected_vertex_incidences": 4,
+      "matched_vertex_incidences": 4,
+      "maximum_nearest_vertex_error_mm": 3.371747868310783e-08,
+      "pass": true
+    },
+    "vertices_requiring_assembly_triangle_surface_checks_mm": [
+      [
+        -12.638671875,
+        5.483498854638724e-13,
+        8.0
+      ],
+      [
+        -11.5,
+        -5.574073791503906,
+        8.510058403015137
+      ],
+      [
+        -11.5,
+        5.574073791503906,
+        8.510058403015137
+      ],
+      [
+        -11.249761581420898,
+        -7.408703327178955,
+        7.499524116516113
+      ],
+      [
+        -11.249761581420898,
+        7.408703327178955,
+        7.499524116516113
+      ],
+      [
+        -10.675095558166504,
+        -8.766560554504395,
+        6.350192070007324
+      ],
+      [
+        -10.675079345703125,
+        8.76657772064209,
+        6.350159168243408
+      ],
+      [
+        -9.969898223876953,
+        -9.471758842468262,
+        6.354813575744629
+      ],
+      [
+        -9.969884872436523,
+        9.471772193908691,
+        6.354835510253906
+      ],
+      [
+        -8.467354774475098,
+        -10.188316345214844,
+        7.501306533813477
+      ],
+      [
+        -8.467354774475098,
+        10.188316345214844,
+        7.501306533813477
+      ],
+      [
+        -6.575662612915039,
+        -10.5,
+        8.509044647216797
+      ],
+      [
+        -6.575662612915039,
+        10.5,
+        8.509044647216797
+      ],
+      [
+        -6.189529895782471,
+        -12.069129943847656,
+        7.754522323608398
+      ],
+      [
+        -6.189529895782471,
+        12.069129943847656,
+        7.754522323608398
+      ],
+      [
+        -5.483498854638724e-13,
+        -12.638671875,
+        8.0
+      ],
+      [
+        5.483498854638724e-13,
+        12.638671875,
+        8.0
+      ],
+      [
+        6.189529895782471,
+        -12.069129943847656,
+        7.754522323608398
+      ],
+      [
+        6.189529895782471,
+        12.069129943847656,
+        7.754522323608398
+      ],
+      [
+        6.575662612915039,
+        -10.5,
+        8.509044647216797
+      ],
+      [
+        6.575662612915039,
+        10.5,
+        8.509044647216797
+      ],
+      [
+        8.467354774475098,
+        -10.188316345214844,
+        7.501306533813477
+      ],
+      [
+        8.467354774475098,
+        10.188316345214844,
+        7.501306533813477
+      ],
+      [
+        9.969884872436523,
+        -9.471772193908691,
+        6.354835510253906
+      ],
+      [
+        9.969898223876953,
+        9.471758842468262,
+        6.354813575744629
+      ],
+      [
+        10.675079345703125,
+        -8.76657772064209,
+        6.350159168243408
+      ],
+      [
+        10.675095558166504,
+        8.766560554504395,
+        6.350192070007324
+      ],
+      [
+        11.249761581420898,
+        -7.408703327178955,
+        7.499524116516113
+      ],
+      [
+        11.249761581420898,
+        7.408703327178955,
+        7.499524116516113
+      ],
+      [
+        11.5,
+        -5.574073791503906,
+        8.510058403015137
+      ],
+      [
+        11.5,
+        5.574073791503906,
+        8.510058403015137
+      ],
+      [
+        12.638671875,
+        -5.483498854638724e-13,
+        8.0
+      ]
+    ]
+  },
+  "render_provenance": "Not assessed here; the canonical renderer runs after this export audit.",
+  "result": "pass",
+  "rook": {
+    "bed_z_zero_and_expected_height_pass": true,
+    "bounds_mm": [
+      [
+        -13.858193397521973,
+        -13.858193397521973,
+        0.0
+      ],
+      [
+        13.858193397521973,
+        13.858193397521973,
+        52.0
+      ]
+    ],
+    "part_stl_sha256": "dbca5ee656b07b9be568c4e638640c722025e755087b776c7935c5f5f55e93ec",
+    "repaired_rectangular_shoulders": [
+      {
+        "exposed_ramp_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -10.4,
+              -9.4,
+              7.8
+            ],
+            [
+              -10.4,
+              9.4,
+              7.8
+            ],
+            [
+              10.4,
+              -9.4,
+              7.8
+            ],
+            [
+              10.4,
+              9.4,
+              7.8
+            ],
+            [
+              -10.45,
+              -9.45,
+              7.9
+            ],
+            [
+              -10.45,
+              9.45,
+              7.9
+            ],
+            [
+              10.45,
+              -9.45,
+              7.9
+            ],
+            [
+              10.45,
+              9.45,
+              7.9
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 3.1047120083041415e-08,
+          "pass": true,
+          "surface_points_checked": 8
+        },
+        "pass": true,
+        "source_end_width_depth_z_mm": [
+          21,
+          19,
+          8
+        ],
+        "source_start_width_depth_z_mm": [
+          17,
+          15,
+          4
+        ],
+        "top_feature_corners": {
+          "expected_vertex_incidences": 4,
+          "matched_vertex_incidences": 4,
+          "maximum_nearest_vertex_error_mm": 0.0,
+          "pass": true
+        }
+      },
+      {
+        "exposed_ramp_edges": {
+          "expected_surface_points_xyz_mm": [
+            [
+              -11.925,
+              -10.925,
+              43.85
+            ],
+            [
+              -11.925,
+              10.925,
+              43.85
+            ],
+            [
+              11.925,
+              -10.925,
+              43.85
+            ],
+            [
+              11.925,
+              10.925,
+              43.85
+            ],
+            [
+              -11.9625,
+              -10.9625,
+              43.925
+            ],
+            [
+              -11.9625,
+              10.9625,
+              43.925
+            ],
+            [
+              11.9625,
+              -10.9625,
+              43.925
+            ],
+            [
+              11.9625,
+              10.9625,
+              43.925
+            ]
+          ],
+          "maximum_point_to_triangle_surface_error_mm": 1.6005909088788345e-15,
+          "pass": true,
+          "surface_points_checked": 8
+        },
+        "pass": true,
+        "source_end_width_depth_z_mm": [
+          24,
+          22,
+          44
+        ],
+        "source_start_width_depth_z_mm": [
+          21,
+          19,
+          41
+        ],
+        "top_feature_corners": {
+          "expected_vertex_incidences": 4,
+          "matched_vertex_incidences": 4,
+          "maximum_nearest_vertex_error_mm": 0.0,
+          "pass": true
+        }
+      }
+    ],
+    "vertices_requiring_assembly_triangle_surface_checks_mm": [
+      [
+        -11.8487548828125,
+        0.0,
+        8.0
+      ],
+      [
+        -11.66567325592041,
+        -5.451480388641357,
+        7.754753589630127
+      ],
+      [
+        -11.66567325592041,
+        5.451480388641357,
+        7.754753589630127
+      ],
+      [
+        -11.25,
+        0.0,
+        42.5
+      ],
+      [
+        -10.5,
+        -5.507754325866699,
+        8.509507179260254
+      ],
+      [
+        -10.5,
+        5.507754325866699,
+        8.509507179260254
+      ],
+      [
+        -10.25017261505127,
+        -7.240932464599609,
+        7.500344753265381
+      ],
+      [
+        -10.25017261505127,
+        7.240932464599609,
+        7.500344753265381
+      ],
+      [
+        -9.80488395690918,
+        -8.421669006347656,
+        6.609767913818359
+      ],
+      [
+        -9.80487060546875,
+        8.421682357788086,
+        6.609741687774658
+      ],
+      [
+        -9.421492576599121,
+        -8.805061340332031,
+        6.610121726989746
+      ],
+      [
+        -9.421480178833008,
+        8.805072784423828,
+        6.610145568847656
+      ],
+      [
+        -8.241260528564453,
+        -9.250088691711426,
+        7.500178337097168
+      ],
+      [
+        -8.241260528564453,
+        9.250088691711426,
+        7.500178337097168
+      ],
+      [
+        -6.509358882904053,
+        -9.5,
+        8.508415222167969
+      ],
+      [
+        -6.509358882904053,
+        9.5,
+        8.508415222167969
+      ],
+      [
+        -6.349059581756592,
+        -11.142552375793457,
+        7.5
+      ],
+      [
+        -6.349059581756592,
+        11.142552375793457,
+        7.5
+      ],
+      [
+        -5.986922264099121,
+        -11.131033897399902,
+        7.754207611083984
+      ],
+      [
+        -5.986922264099121,
+        11.131033897399902,
+        7.754207611083984
+      ],
+      [
+        -5.625561714172363,
+        -11.131108283996582,
+        8.0
+      ],
+      [
+        -5.625561714172363,
+        11.131108283996582,
+        8.0
+      ],
+      [
+        0.0,
+        -11.8487548828125,
+        8.0
+      ],
+      [
+        0.0,
+        -10.25,
+        42.5
+      ],
+      [
+        0.0,
+        10.25,
+        42.5
+      ],
+      [
+        0.0,
+        11.8487548828125,
+        8.0
+      ],
+      [
+        5.625561714172363,
+        -11.131108283996582,
+        8.0
+      ],
+      [
+        5.625561714172363,
+        11.131108283996582,
+        8.0
+      ],
+      [
+        5.986922264099121,
+        -11.131033897399902,
+        7.754207611083984
+      ],
+      [
+        5.986922264099121,
+        11.131033897399902,
+        7.754207611083984
+      ],
+      [
+        6.349059581756592,
+        -11.142552375793457,
+        7.5
+      ],
+      [
+        6.349059581756592,
+        11.142552375793457,
+        7.5
+      ],
+      [
+        6.509358882904053,
+        -9.5,
+        8.508415222167969
+      ],
+      [
+        6.509358882904053,
+        9.5,
+        8.508415222167969
+      ],
+      [
+        8.241260528564453,
+        -9.250088691711426,
+        7.500178337097168
+      ],
+      [
+        8.241260528564453,
+        9.250088691711426,
+        7.500178337097168
+      ],
+      [
+        9.421480178833008,
+        -8.805072784423828,
+        6.610145568847656
+      ],
+      [
+        9.421492576599121,
+        8.805061340332031,
+        6.610121726989746
+      ],
+      [
+        9.80487060546875,
+        -8.421682357788086,
+        6.609741687774658
+      ],
+      [
+        9.80488395690918,
+        8.421669006347656,
+        6.609767913818359
+      ],
+      [
+        10.25017261505127,
+        -7.240932464599609,
+        7.500344753265381
+      ],
+      [
+        10.25017261505127,
+        7.240932464599609,
+        7.500344753265381
+      ],
+      [
+        10.5,
+        -5.507754325866699,
+        8.509507179260254
+      ],
+      [
+        10.5,
+        5.507754325866699,
+        8.509507179260254
+      ],
+      [
+        11.25,
+        0.0,
+        42.5
+      ],
+      [
+        11.66567325592041,
+        -5.451480388641357,
+        7.754753589630127
+      ],
+      [
+        11.66567325592041,
+        5.451480388641357,
+        7.754753589630127
+      ],
+      [
+        11.8487548828125,
+        0.0,
+        8.0
+      ]
+    ]
+  },
+  "source_sha256": "22fe1658c0312032d99c89dfd061c6f40bd50f2595f2f3c9aa913716dcd80b69",
+  "vertex_match_tolerance_mm": 5e-05
+}

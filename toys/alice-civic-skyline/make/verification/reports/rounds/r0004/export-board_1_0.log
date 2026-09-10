@@ -1,0 +1,6 @@
+$ <HOME>/miniconda/bin/python3.12 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_board_1_0.step.py --stl <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/parts/board_1_0.stl --json
+(52.6s, exit 0)
+--- stdout
+{"ok":true,"files":[{"format":"stl","path":"<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/parts/board_1_0.stl"}]}
+
+--- stderr
