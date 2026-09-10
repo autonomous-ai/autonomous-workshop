@@ -222,7 +222,7 @@ class ManufacturingManifestTests(unittest.TestCase):
         self.assert_invalid("sourcing specification")
 
     def test_source_urls_do_not_carry_credentials(self):
-        for url in ("http://supplier.example/motor", "https://user:secret@supplier.example/motor", "file:///tmp/motor", "https://[invalid"):
+        for url in ("http://supplier.example/motor", "https://user:secret@supplier.example/motor", "https://@supplier.example/motor", "file:///tmp/motor", "https://[invalid"):
             self.document["components"][-1]["sourcing"]["url"] = url
             with self.subTest(url=url):
                 self.assert_invalid("public HTTPS")

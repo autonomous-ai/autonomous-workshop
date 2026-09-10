@@ -234,7 +234,7 @@ def _public_document_links(path: PurePosixPath, text: str, public_paths: set[str
         except ValueError as exc:
             raise ManufacturingManifestError("public document link is malformed") from exc
         if parsed.scheme or parsed.netloc:
-            if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+            if parsed.scheme != "https" or not parsed.hostname or parsed.username is not None or parsed.password is not None:
                 _error("public document external links must use HTTPS without credentials")
             continue
         if not parsed.path:
@@ -457,7 +457,7 @@ def validate_manifest(product_root: Path, product: Mapping[str, Any], *, cad_pro
             _text(source["url"], "sourcing URL", 2000)
             try:
                 parsed = urlsplit(source["url"])
-                valid = parsed.scheme == "https" and bool(parsed.hostname) and not parsed.username and not parsed.password
+                valid = parsed.scheme == "https" and bool(parsed.hostname) and parsed.username is None and parsed.password is None
             except ValueError:
                 valid = False
             if not valid:

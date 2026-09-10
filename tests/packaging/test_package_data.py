@@ -15,6 +15,7 @@ from workshop.runtime.package_data import (
     product_run_domain_skill_roots,
 )
 from workshop.workflow.inventor_selection import INVENTOR_SELECTION_CAPABILITY_PATH
+from workshop.workflow.agent_run import _reject_private_agent_bytes
 
 
 REPOSITORY = Path(__file__).resolve().parents[2]
@@ -29,6 +30,17 @@ SCHEMA_OWNERS = {
 
 
 class PackageDataTest(unittest.TestCase):
+    def test_domain_skill_bytes_can_cross_the_native_input_boundary(self):
+        # Test the actual shipped files: a benign URL check once resembled a
+        # keyed secret to the unchanged host scanner and prevented every launch.
+        for name, root in product_run_domain_skill_roots().items():
+            for path in root.rglob("*"):
+                if not path.is_file() or "__pycache__" in path.parts or path.suffix in (".pyc", ".pyo"):
+                    continue
+                relative = ".agents/skills/%s/%s" % (name, path.relative_to(root).as_posix())
+                with self.subTest(path=relative):
+                    _reject_private_agent_bytes(relative, path.read_bytes())
+
     def test_selection_capability_is_bound_in_source_and_installed_assets(self):
         source = product_run_agent_assets(REPOSITORY)
         relative = Path(INVENTOR_SELECTION_CAPABILITY_PATH).relative_to(
