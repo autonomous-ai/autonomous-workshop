@@ -17,6 +17,15 @@ python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest - < m.jso
 python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest m.json --list-parts
 ```
 
+With `--json`, stdout contains only the completed result document. Flushed
+stderr progress identifies assembly loading, the active condition, sweep or
+drive-evidence phase, and sampled step. Sample updates are throttled to one
+per 30 seconds within a phase and capped at 32 per condition; phase changes
+may report earlier. Condition start and completion remain visible. These
+messages help locate long-running work in a preserved timeout log. They are
+diagnostics only: incomplete output or a timeout cannot establish a passing
+condition or replace the final JSON evidence.
+
 A manifest belongs at `<project-dir>/measure/motion.json` next to the other
 verification artifacts. Exit 0 when every condition holds, 1 on any failure and
 on any condition that could not run — a manifest naming a part that does not

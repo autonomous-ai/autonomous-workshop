@@ -18,6 +18,23 @@ report from older host-owned JSON evidence; it no longer asks Spark agents to
 invent a second verification artifact. These are instruction corrections;
 frozen running products keep their materialized text until an explicit refresh.
 
+## Motion progress diagnostics (2026-09-10)
+
+`cad/scripts/check_motion --json` emits flushed, bounded progress on stderr
+while preserving its final stdout result document. Assembly loading and each
+condition have start/completion diagnostics; sweep and drive phases report
+their current sample at most once per 30 seconds within a phase, with at most
+32 sample updates per condition. Scoped progress restores the parent across
+assembly-sequence and retention checks. Imported tool functions remain quiet
+unless diagnostics are explicitly enabled.
+
+The existing Make runner retains these stderr bytes on timeout, so a
+900-second failure can identify active work instead of leaving an empty log.
+Progress never supplies gate evidence, changes a threshold or verdict, retries
+geometry, or changes the final JSON schema. Regression coverage includes real
+subprocess timeout capture, unchanged completed results, nested conditions,
+throttling and bounds. No live pilot files or frozen tools are changed.
+
 ## Complete-product authored colors (2026-09-10)
 
 Workshop's `cad/scripts/render_product` now descends to leaf occurrences with

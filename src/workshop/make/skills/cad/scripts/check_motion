@@ -61,6 +61,7 @@ import io
 import json
 import math
 import sys
+import time
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
@@ -99,6 +100,49 @@ def consistency_tolerance(*volumes: float) -> float:
 
 class ManifestError(Exception):
     """The manifest asks for something this gate cannot answer."""
+
+
+_PROGRESS = ContextVar('motion_progress', default=None)
+PROGRESS_INTERVAL_SECONDS = 30.0
+MAX_SAMPLE_PROGRESS = 32
+
+
+@contextmanager
+def progress_scope(condition, *, enabled=False):
+    """Optional CLI diagnostics, separate from all geometry and result evidence."""
+    if not enabled and _PROGRESS.get() is None:
+        yield
+        return
+    state = {'condition': str(condition)[:160], 'samples': 0,
+             'last_sample_at': None, 'last_sample_phase': None}
+    token = _PROGRESS.set(state)
+    try:
+        yield
+    finally:
+        _PROGRESS.reset(token)
+
+
+def report_progress(phase, *, step=None, steps=None, status=None):
+    state = _PROGRESS.get()
+    if state is None:
+        return
+    if step is not None:
+        now = time.monotonic()
+        if state['samples'] >= MAX_SAMPLE_PROGRESS:
+            return
+        if (state['last_sample_at'] is not None
+                and state['last_sample_phase'] == phase
+                and now - state['last_sample_at'] < PROGRESS_INTERVAL_SECONDS):
+            return
+        state.update(samples=state['samples'] + 1, last_sample_at=now,
+                     last_sample_phase=phase)
+    record = {'condition': state['condition'], 'phase': phase}
+    if step is not None:
+        record.update(step=step, steps=steps)
+    if status is not None:
+        record['status'] = status
+    print('check_motion progress: ' + json.dumps(record, sort_keys=True),
+          file=sys.stderr, flush=True)
 
 
 # --- loading the assembly -------------------------------------------------
@@ -459,6 +503,7 @@ def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) 
     """
     first = 1 if allow_seated else 0
     for step in range(first, steps + 1):
+        report_progress('sweep', step=step, steps=steps)
         moved = place(moving, step / steps)
         for name, obstacle in obstacles:
             volume = overlap_volume(moved, obstacle)
@@ -761,6 +806,7 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
                 continue
             frozen_hit = None
             for step in range(first_step, steps + 1):
+                report_progress('drive-frozen', step=step, steps=steps)
                 volume = overlap_volume(posed(parent, parent_shape, parent_place, step), frozen)
                 if volume > overlap_tol:
                     frozen_hit = {"step": step, "overlapMm3": volume}
@@ -771,6 +817,7 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
             if pair not in nominal:
                 nominal[pair] = None
                 for step in range(first_step, steps + 1):
+                    report_progress('drive-contact', step=step, steps=steps)
                     distance = float(surface_distance(
                         posed(parent, parent_shape, parent_place, step),
                         posed(target, target_shape, target_place, step),
@@ -864,6 +911,7 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
     def sweep_cycle():
         """First collision in the declared nominal poses, or None."""
         for step in range(1 if allow_seated else 0, steps + 1):
+            report_progress('coupled-sweep', step=step, steps=steps)
             posed = [
                 (name, place(shape, step))
                 for name, shape, place, driven in placed
@@ -934,8 +982,11 @@ def run_condition(condition: dict, parts: dict, index: int) -> dict:
     # operations. Nested assembly-sequence conditions share this cache; it is
     # discarded when the outer condition returns or raises.
     threshold = (condition.get("thresholds") or {}).get("maxOverlapMm3", DEFAULT_OVERLAP_TOL)
-    with validation_scope(), decision_scope(threshold):
-        return _run_condition(condition, parts, index)
+    with progress_scope(condition.get('id', f'condition_{index}')), validation_scope(), decision_scope(threshold):
+        report_progress('start')
+        result = _run_condition(condition, parts, index)
+        report_progress('complete', status=result['status'])
+        return result
 
 
 def _run_condition(condition: dict, parts: dict, index: int) -> dict:
@@ -1556,7 +1607,10 @@ def main() -> int:
     try:
         manifest = load_manifest(args.manifest)
         entry = find_assembly_entry(project, manifest.get("assembly"))
-        parts = index_parts(build_assembly(entry))
+        with progress_scope('assembly', enabled=args.json):
+            report_progress('start')
+            parts = index_parts(build_assembly(entry))
+            report_progress('complete')
     except ManifestError as error:
         print(f"check_motion: {error}", file=sys.stderr)
         return 2
@@ -1573,9 +1627,15 @@ def main() -> int:
         print("check_motion: manifest has no conditions", file=sys.stderr)
         return 2
 
-    results = [run_condition(condition, parts, index)
-               for index, condition in enumerate(conditions)]
-    retention_result = check_retention_closure(manifest, parts, results)
+    with progress_scope('checks', enabled=args.json):
+        results = [run_condition(condition, parts, index)
+                   for index, condition in enumerate(conditions)]
+        with progress_scope('retention-closure'):
+            if manifest.get('retention') is not None:
+                report_progress('start')
+            retention_result = check_retention_closure(manifest, parts, results)
+            if retention_result is not None:
+                report_progress('complete', status=retention_result['status'])
     if retention_result is not None:
         results.append(retention_result)
     failed = [r for r in results if r["status"] == "fail"]
