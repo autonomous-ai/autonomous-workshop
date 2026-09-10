@@ -157,9 +157,25 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   the single proposal. A child cannot advance a stage, change authority, or
   perform an external effect.
 - Keep the root Manager on the stage's critical path. Delegate only bounded
-  work with a concrete deliverable; do not delegate the whole stage or make
-  finalization depend on a child. Build and verify a conforming baseline early,
-  then use remaining capacity for focused quality improvements.
+  work with a concrete deliverable; do not delegate the whole stage or
+  finalization. Build and verify a conforming baseline early only after its
+  required design dependencies are reviewed, then use remaining capacity for
+  focused quality improvements.
+- A delegated selected-Inventor design is a required dependency for the CAD
+  construction that consumes it. Wait for the Inventor's completed design,
+  read its exact artifacts, and resolve design decisions and open issues that
+  affect construction before authoring or generating dependent CAD. A progress
+  message, partial file, or elapsed time is not a completed handoff. While
+  waiting, perform only independent preparation; do not build a competing
+  baseline or silently take over the delegated design.
+- Preserve the Inventor task identity, expected deliverable paths, and pending
+  dependency in concise workspace notes. After compaction or resume, inspect
+  those notes, the native agent status, and any completed artifacts before
+  continuing CAD. Compaction does not clear the dependency. If the child
+  failed or is unavailable, explicitly reconcile its saved work and reassign
+  the unfinished design before proceeding; do not treat failure as completion.
+  An already reviewed, sealed Invent contract satisfies this dependency for
+  Forge/Quest Make without repeating Invent.
 
 ## Product work
 
