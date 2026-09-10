@@ -10,6 +10,7 @@ from unittest import mock
 import psutil
 
 from cli.main import main
+from workshop.workflow.effort import SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT
 from tests.invent.fake_gamevault import install_fake_gamevault
 
 
@@ -40,13 +41,88 @@ import sys
 from pathlib import Path
 
 if sys.argv[1:] == ["--version"]:
-    print("codex-cli 0.150.0")
+    print("codex-cli 0.153.4")
     raise SystemExit(0)
 
 run_root = Path.cwd()
+# A token-budget run reads its own usage back out of the native rollout, so
+# the fixture leaves one behind under CODEX_HOME the way codex exec does.
+import datetime
+import uuid
+
+codex_home = Path(os.environ["CODEX_HOME"])
+codex_home.mkdir(parents=True, exist_ok=True)
+identity = codex_home / "fixture-thread.json"
+if identity.is_file():
+    # A resumed turn must report the session it was bound to, not a new one.
+    bound = json.loads(identity.read_text(encoding="utf-8"))
+    thread_id, day = bound["thread_id"], bound["day"]
+else:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    thread_id = str(uuid.UUID(int=(
+        (int(now.timestamp() * 1000) << 80) | (7 << 76) | (0x2 << 62) | 0x123456789ABCDEF
+    )))
+    day = now.strftime("%Y/%m/%d")
+    identity.write_text(
+        json.dumps({"thread_id": thread_id, "day": day}), encoding="utf-8"
+    )
+sessions = codex_home / "sessions" / day
+sessions.mkdir(parents=True, exist_ok=True)
+rollout_path = sessions / ("rollout-" + thread_id + ".jsonl")
+# codex exec resets its counters per process, so every turn appends its own
+# task whose first request is its own baseline (total == last).
+turn = len([line for line in rollout_path.read_text(encoding="utf-8").splitlines()
+            if "task_started" in line]) + 1 if rollout_path.is_file() else 1
+counters = {
+    "input_tokens": 1200 * turn,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 340 * turn,
+    "reasoning_output_tokens": 0,
+}
+records = []
+if not rollout_path.is_file():
+    records.append({"type": "session_meta", "payload": {
+        "id": thread_id, "cwd": str(run_root), "cli_version": "0.153.4"}})
+records.extend((
+    {"type": "turn_context", "payload": {"model": "gpt-5.6-sol"}},
+    {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "turn-%d" % turn}},
+    {"type": "event_msg", "payload": {"type": "token_count", "info": {
+        "total_token_usage": counters, "last_token_usage": counters}}},
+))
+with rollout_path.open("a", encoding="utf-8") as stream:
+    for record in records:
+        stream.write(json.dumps(record, sort_keys=True) + chr(10))
 wish = json.loads((run_root / "WISH.json").read_text(encoding="utf-8"))
 stage = json.loads((run_root / "STAGE.json").read_text(encoding="utf-8"))
 prompt = sys.stdin.read()
+selection = stage["inputs"]["workshop_selection"]
+if selection["status"] == "pending":
+    # Spark's setup boundary wants the selection marker, not a proposal. A
+    # premature agent-outcome.json here is exactly what the host discards.
+    roster = stage["inputs"]["inventor_roster"]["inventors"]
+    (run_root / selection["marker_path"]).write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "kind": "autonomous-workshop.inventor-selection-ready",
+                "product_id": selection["product_id"],
+                "checkpoint_sha256": selection["checkpoint_sha256"],
+                "wish_sha256": selection["wish_sha256"],
+                "inventor_roster_sha256": selection["inventor_roster_sha256"],
+                "selected_inventor_id": roster[0]["inventor_id"],
+                "ranking": [
+                    {"inventor_id": item["inventor_id"], "rationale": "fixture ranking"}
+                    for item in roster
+                ],
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    print(json.dumps({"type": "thread.started", "thread_id": thread_id}))
+    print(json.dumps({"type": "turn.completed", "usage": {}}))
+    raise SystemExit(0)
 (run_root / "agent-outcome.json").write_text(
     json.dumps(
         {
@@ -87,7 +163,7 @@ prompt = sys.stdin.read()
     ),
     encoding="utf-8",
 )
-print(json.dumps({"type": "thread.started", "thread_id": "12345678-1234-5678-9234-567812345678"}))
+print(json.dumps({"type": "thread.started", "thread_id": thread_id}))
 print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": "agent_message", "text": "fixture complete"}}))
 print(json.dumps({"type": "turn.completed", "usage": {}}))
 """,
@@ -101,6 +177,7 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
             environment = {
                 "WORKSHOP_HOME": str(home),
                 "WORKSHOP_CODEX_BIN": str(fake_codex),
+                "CODEX_HOME": str(root / "codex-home"),
                 "FACTORY_PASSWORD": "must-not-reach-native-codex",
                 "PATH": os.environ.get("PATH", os.defpath),
                 "HOME": os.environ.get("HOME", str(root)),
@@ -152,7 +229,7 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
                 )
             self.assertIn("--strict-config", observed["arguments"])
             self.assertIn(
-                "model_auto_compact_token_limit=64000",
+                "model_auto_compact_token_limit=%d" % SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
                 observed["arguments"],
             )
             self.assertNotIn("--sandbox", observed["arguments"])
