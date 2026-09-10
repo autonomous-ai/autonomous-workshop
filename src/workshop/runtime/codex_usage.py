@@ -12,12 +12,15 @@ import json
 import os
 from pathlib import Path
 import stat
+import time
 import uuid
 
 from workshop.errors import ContractError
 from workshop.runtime._compacted_usage import InvalidRecord, consume_compacted_record
 
 MAX_LINE_BYTES = 4 * 1024 * 1024
+_IDENTITY_READ_ATTEMPTS = 3
+_IDENTITY_RETRY_DELAY_SECONDS = 0.05
 SUPPORTED_VERSION = "0.153.4"
 COUNTERS = (
     "input_tokens", "cached_input_tokens", "cache_write_input_tokens",
@@ -31,6 +34,10 @@ class UsageUnavailable(ContractError):
 
 class UsageNotReady(UsageUnavailable):
     """The native root identity has not been materialized yet; no usage claim."""
+
+
+class _IncompleteIdentity(UsageUnavailable):
+    """The first metadata record may still be in its native append."""
 
 
 def _object(pairs):
@@ -89,6 +96,20 @@ def _identity(path):
     Only the root and ancestry-bound descendants are streamed by _records,
     which preserves record bounds without an aggregate file-size cap.
     """
+    for attempt in range(_IDENTITY_READ_ATTEMPTS):
+        try:
+            return _read_identity(path)
+        except _IncompleteIdentity:
+            # A rollout can become visible before its first append completes.
+            # Reopen a fresh snapshot, never omit the unidentified candidate.
+            # Persistent incompleteness and every other invalid identity fail.
+            if attempt == _IDENTITY_READ_ATTEMPTS - 1:
+                raise
+            time.sleep(_IDENTITY_RETRY_DELAY_SECONDS)
+
+
+def _read_identity(path):
+    """Read and validate one snapshot of the first metadata record."""
     try:
         fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         with os.fdopen(fd, "rb") as stream:
@@ -99,7 +120,7 @@ def _identity(path):
             if len(line) > MAX_LINE_BYTES:
                 raise UsageUnavailable("native session metadata exceeds safe bounds")
             if not line.endswith(b"\n"):
-                raise UsageUnavailable("native usage file lacks session identity")
+                raise _IncompleteIdentity("native usage file lacks session identity")
             record = json.loads(line, object_pairs_hook=_object)
     except (OSError, ValueError, UnicodeError) as exc:
         raise UsageUnavailable("native usage file is unavailable or malformed") from exc
