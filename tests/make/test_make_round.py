@@ -458,6 +458,13 @@ class MakeRoundTest(unittest.TestCase):
                     out.mkdir()
                     for view in ("front", "top", "iso"):
                         (out / (view + ".png")).write_bytes(view.encode())
+                if tool in ("check_thickness", "check_overhang"):
+                    stdout, code = _gate_output(tool, fails=False)
+                    log = kwargs.get("log")
+                    if log is not None:
+                        Path(log).parent.mkdir(parents=True, exist_ok=True)
+                        Path(log).write_text(stdout, encoding="utf-8")
+                    return subprocess.CompletedProcess(command, code, stdout, "")
                 return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
 
             def run_component(name):
