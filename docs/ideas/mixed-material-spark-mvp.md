@@ -323,26 +323,14 @@ The user has authorized launching all six pilots through the CLI with Spark,
 Codex Astra, ultra reasoning effort and a 100,000,000-token allowance **per
 product**. The six allowances total 600,000,000 tokens; usage remains accounted
 per run rather than as one shared allowance. No pilot was launched while these
-Wish files were authored. Record actual run IDs and outcomes separately.
+Wish files were authored; all six were subsequently launched. The authoritative
+[CLI pilot record](mixed-material-cli-runs.md) contains the exact commands,
+selected Inventors, Dee account connections, run IDs, failures and resumes.
 
-Run from the checkout containing the validated implementation. The explicit
-flags below match the CLI parser; the quoted file substitution passes each
-multiline Wish as one argument. Omit an Inventor override so the native Manager
-selects from the eligible roster. The operator launches and monitors all runs;
-these recipes add no scheduler or workflow route.
-
-```bash
-uv run workshop wish "$(cat docs/ideas/mixed-material-pilots/01-harbor-relay-pinball.txt)" --workflow spark --agent codex --model astra --effort ultra --max-tokens 100000000
-uv run workshop wish "$(cat docs/ideas/mixed-material-pilots/02-cloudline-coaster.txt)" --workflow spark --agent codex --model astra --effort ultra --max-tokens 100000000
-uv run workshop wish "$(cat docs/ideas/mixed-material-pilots/03-switchyard-relay.txt)" --workflow spark --agent codex --model astra --effort ultra --max-tokens 100000000
-uv run workshop wish "$(cat docs/ideas/mixed-material-pilots/04-rainmark-studio.txt)" --workflow spark --agent codex --model astra --effort ultra --max-tokens 100000000
-uv run workshop wish "$(cat docs/ideas/mixed-material-pilots/05-liltwing-flight-garden.txt)" --workflow spark --agent codex --model astra --effort ultra --max-tokens 100000000
-uv run workshop wish "$(cat docs/ideas/mixed-material-pilots/06-atlas-vault.txt)" --workflow spark --agent codex --model astra --effort ultra --max-tokens 100000000
-```
-
-Use `uv run workshop status <printed-product-id> --json` to inspect an existing
-run and `uv run workshop resume <printed-product-id>` to continue that exact
-session. Keep the frozen per-run model, effort and token allowance. Fix observed
+The operator launches and monitors all runs; the recipes add no scheduler or
+workflow route. Use the documented `status` and `resume` commands to inspect
+or continue an existing session. Keep the frozen per-run model, effort and
+token allowance. Fix observed
 Make implementation failures in the builder checkout with focused validation;
 a repository edit does not silently rewrite a running product's frozen skill
 bytes. Monitor the real runs for contract, engineering, complete-product visual

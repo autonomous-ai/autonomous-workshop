@@ -101,8 +101,11 @@ The existing Alice and Bob connections were preserved.
 - An additional 51-test suite passed Make registry/LOCK, real STEP renderer,
   contributor contracts and package-data checks. Separate credential/CLI tests
   cover connection reuse, absent or misbound sources and authentication failure.
-- The full installed-wheel smoke has not run: the dependency environment lacks
-  the pinned build backend. Source CLI and materialization checks pass.
+- Built the wheel with an isolated build backend. Installed-wheel CLI, asset,
+  dependency-import and deterministic native-session checks pass in a temporary
+  environment using existing dependencies read-only. Workshop and CLI imports
+  were confirmed to come from that wheel. A clean dependency download remains
+  unverified because PyPI metadata requests repeatedly timed out.
 
 ## Runs
 
@@ -140,3 +143,43 @@ sends every actual packaged domain-skill file through the native input scanner.
 The scanner was not relaxed or bypassed. All 41 affected contract, packaging
 and finalizer checks passed. Retried the same documented Wish command at
 `0556b83d`; initialization and the native Make session started successfully.
+
+### Live issue 2: wheel inventor inventory lagged behind source
+
+The wheel audit found a separate hardcoded inventory in `setup.py` omitted the
+three new Inventors and the existing Ferro Line bundle. Revision `4671a5a9`
+includes all four; the rebuilt wheel passes exact inventor/skill asset checks.
+The deterministic installed-wheel fake was updated for the supported native
+runtime and current Spark setup protocol. It verifies setup and Make use the
+same session, the frozen profile survives, exact fixture token usage is
+reconciled, and credentials stay outside native input. This fake does not
+perform model work or publication.
+
+### Live issue 3: native turns stopped before Make completion
+
+All six initial native turns stopped between 14:55 and 14:59 UTC. Harbor Relay
+recorded `provider-transport / stream-disconnected`; the other five recorded
+unclassified terminal errors. The diagnostics do not establish a shared cause.
+Saved session identities and unfinished design/research files remained present;
+none had an accepted Make result or publication receipt.
+
+Resumed the exact sessions through the ordinary CLI on 2026-09-10, preserving
+each original Wish, Inventor, Astra/ultra profile and remaining 100M allowance:
+
+```sh
+# 15:30:18 UTC
+"$workshop_python" -m cli resume wish-20260910-143721-492a87cb
+# 15:30:31 UTC
+"$workshop_python" -m cli resume wish-20260910-143749-b20aacdc
+# 15:31:12 UTC
+"$workshop_python" -m cli resume wish-20260910-143655-4d851b36
+# 15:31:25 UTC
+"$workshop_python" -m cli resume wish-20260910-143717-dbe8ad47
+# 15:31:38 UTC
+"$workshop_python" -m cli resume wish-20260910-143744-c4614e19
+# 15:31:53 UTC
+"$workshop_python" -m cli resume wish-20260910-143753-a2e10997
+```
+
+Each entered `session.resume`; no tool refresh or new Wish was used. A resume
+starting successfully is not evidence that the product is complete.
