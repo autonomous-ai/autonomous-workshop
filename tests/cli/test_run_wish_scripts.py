@@ -37,9 +37,45 @@ class RunWishScriptsTest(unittest.TestCase):
                 self.assertEqual(args.workflow, 'spark')
                 self.assertEqual(args.effort, effort)
 
+    def test_astra_ultra_commands_accept_alias_and_full_model_id(self):
+        for model in ('astra', 'gpt-6-astra'):
+            with self.subTest(model=model):
+                command = runner.build_command(
+                    {**self.config(), 'model': model, 'effort': 'ultra',
+                     'max_tokens': 100_000_000}, None
+                )
+                args = parser().parse_args(command[3:])
+                self.assertEqual(args.agent, 'codex')
+                self.assertEqual(args.model, model)
+                self.assertEqual(args.effort, 'ultra')
+                self.assertEqual(args.max_tokens, 100_000_000)
+
+    def test_ultra_rejects_other_models_and_managers_before_launch(self):
+        selections = [
+            ('codex', model)
+            for model in ('sol', 'gpt-5.6-sol', 'terra', 'gpt-5.6-terra',
+                          'luna', 'gpt-5.6-luna')
+        ] + [('claude', 'opus'), ('claude', 'gpt-6-astra'), ('grok', 'grok-4.6')]
+        for agent, model in selections:
+            with self.subTest(agent=agent, model=model):
+                config = {**self.config(), 'agent': agent, 'model': model,
+                          'effort': 'ultra'}
+                with self.assertRaises(runner.SetupError):
+                    runner.build_command(config, None)
+                with mock.patch.object(runner, 'CONFIG', config), \
+                     mock.patch.object(sys, 'argv', ['run_wish.py', '--yes']), \
+                     mock.patch.object(runner.subprocess, 'run') as launch, \
+                     contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(runner.main(), 2)
+                launch.assert_not_called()
+
     def test_resume_only_passes_id_and_explicit_total_budget(self):
         for limit in (None, 12_000_000):
-            command = runner.build_command({**self.config(), 'max_tokens':limit}, 'wish-test')
+            # Even a currently invalid CONFIG selection cannot replace frozen settings.
+            command = runner.build_command(
+                {**self.config(), 'model': 'sol', 'effort': 'ultra',
+                 'max_tokens': limit}, 'wish-test'
+            )
             args = parser().parse_args(command[3:])
             self.assertEqual(args.product_id, 'wish-test')
             self.assertEqual(args.max_tokens, limit)
@@ -48,10 +84,11 @@ class RunWishScriptsTest(unittest.TestCase):
             self.assertTrue(args.strict)
 
     def test_resume_rejects_explicit_runtime_overrides_before_launch(self):
-        for option, value in [('--model','sol'),('--workflow','forge'),('--effort','high'),('--agent','claude')]:
-            with self.subTest(option=option), mock.patch.object(sys,'argv',['run_wish.py','--resume','wish-test',option,value]), mock.patch.object(runner.subprocess,'run') as launch, contextlib.redirect_stderr(io.StringIO()):
+        for option, value in [('--model','sol'),('--workflow','forge'),('--effort','high'),('--effort','ultra'),('--reasoning-effort','ultra'),('--agent','claude')]:
+            with self.subTest(option=option, value=value), mock.patch.object(sys,'argv',['run_wish.py','--resume','wish-test',option,value]), mock.patch.object(runner.subprocess,'run') as launch, contextlib.redirect_stderr(io.StringIO()) as error:
                 with self.assertRaises(SystemExit) as e:runner.main()
                 self.assertEqual(e.exception.code,2)
+                self.assertIn('Resume dùng cấu hình đã đóng băng', error.getvalue())
                 launch.assert_not_called()
 
     def test_resume_does_not_adopt_config_token_limit(self):
@@ -111,3 +148,17 @@ class RunWishScriptsTest(unittest.TestCase):
         result=subprocess.run(command[:3]+['wish','--help'],capture_output=True,text=True,timeout=10)
         self.assertEqual(result.returncode,0,result.stderr)
         self.assertIn('--max-tokens',result.stdout)
+
+    def test_both_script_entrypoints_parse_ultra_without_installed_package(self):
+        for script in ('run_wish.py', 'run_wish_codex.py'):
+            for model in ('astra', 'gpt-6-astra'):
+                with self.subTest(script=script, model=model):
+                    result = subprocess.run(
+                        [sys.executable, '-S', str(ROOT / script), '--dry-run',
+                         '--agent', 'codex', '--model', model, '--effort', 'ultra',
+                         '--max-tokens', '100000000'],
+                        capture_output=True, text=True, timeout=10,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn('--effort ultra', result.stdout)
+                    self.assertIn('--max-tokens 100000000', result.stdout)

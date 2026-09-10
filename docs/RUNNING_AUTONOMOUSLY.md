@@ -1,17 +1,20 @@
 # Run Workshop without a builder chat
 
-Current runner interface after updating to `bbc0a85a`:
+Current runner interface:
 
 ```sh
 .venv/bin/python run_wish_codex.py --wish 'make a beherit from berserk' --workflow spark --effort medium --dry-run
 .venv/bin/python run_wish_codex.py --wish 'make a beherit from berserk' --workflow spark --effort medium --yes
+.venv/bin/python run_wish_codex.py --wish 'a rubber-band-powered pinball toy' --workflow spark --model astra --effort ultra --max-tokens 100000000 --dry-run
 .venv/bin/python run_wish.py --wish 'make a beherit from berserk' --agent claude --model sonnet --workflow spark --effort high --dry-run
 .venv/bin/python run_wish_codex.py --resume <wish-id> --yes
 ```
 
 `run_wish.py` defaults to Claude/Sonnet/high/Spark; `run_wish_codex.py` defaults
 to Codex/Astra/medium/Spark. `--workflow` selects Spark/Forge/Quest; `--effort`
-selects reasoning. The underlying CLI uses `--agent`. Runner aliases
+selects reasoning. `ultra` requires Codex with `astra` or `gpt-6-astra`; the
+runner validates this through the same runtime policy as the CLI. The
+underlying CLI uses `--agent`. Runner aliases
 `--manager` and `--reasoning-effort` translate to the current spelling;
 old `--effort spark` is rejected. OpenRouter override is not supported by the
 new host CLI, so `--openrouter` fails explicitly rather than silently routing
@@ -20,7 +23,7 @@ somewhere else. The runner no longer loads gateway credentials from `.env`.
 Resume uses the host's frozen runtime, model and reasoning; do not supply
 replacement selection flags. It ignores CONFIG's token limit on resume.
 An explicit `--max-tokens N` sets the total allowance while preserving charged
-usage. New Codex products default to ten million input-plus-output tokens;
+usage. New Codex products use the host's default input-plus-output token cap;
 Claude does not have equivalent measured-token enforcement. The stale local
 `budgets-v2.md` reference was removed from the source template. Existing product
 workspaces are untouched and retain their frozen instructions.
@@ -38,12 +41,21 @@ historical records below are not current live acceptance claims.
 
 ## Local Codex installation
 
-This Apple Silicon workstation has isolated Codex 0.153.4 under
-`~/.local/share/workshop/codex-0.153.4/`. Both runners select its native executable
-through `WORKSHOP_CODEX_BIN` when no explicit override exists. The global Codex
-installation and shell PATH are unchanged. Dry-run displays the selection.
-Version validation and `codex login status` passed; installation did not launch
-or resume a product. Direct `python -m cli` commands do not use runner selection.
+Both runners check for an optional isolated Codex 0.153.4 installation under
+`~/.local/share/workshop/codex-0.153.4/` and select its native executable only
+when that file exists and `WORKSHOP_CODEX_BIN` is unset. That isolated path is
+absent on this workstation as checked on 2026-09-10. The installed native
+executable below reports Codex 0.153.4; select it explicitly for either runner
+or direct `python -m cli` commands:
+
+```sh
+export WORKSHOP_CODEX_BIN="$HOME/.local/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex"
+"$WORKSHOP_CODEX_BIN" --version
+```
+
+The explicit override takes precedence. Dry-run displays the selected override
+without launching or resuming a product. Paths are workstation-specific;
+confirm the executable exists and reports the supported version locally.
 
 ## Historical local validation before pull (2026-09-07)
 
@@ -78,7 +90,7 @@ tokens and the frozen model selection.
 The opt-in local sandbox test (no model call) is:
 
 ```sh
-WORKSHOP_SANDBOX_TEST_BIN="$HOME/.local/share/workshop/codex-0.153.4/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex" .venv/bin/python -m unittest tests.runtime.test_python_framework_policy
+WORKSHOP_SANDBOX_TEST_BIN="$WORKSHOP_CODEX_BIN" .venv/bin/python -m unittest tests.runtime.test_python_framework_policy
 ```
 
 It checks a real CAD STEP export, finalizer startup, and denial of an `.env`
