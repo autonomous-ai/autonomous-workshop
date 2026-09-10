@@ -6,6 +6,26 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ## Unreleased
 
+### Fixed
+
+- The full CAD-gate tier's command names the overhang angle beside the nozzle
+  (`--print-gates --nozzle 0.4 --overhang-angle 45`), so the receipt records
+  both thresholds the print-ready claim was measured against instead of
+  inheriting `verify_project`'s own default for one of them. Report bytes are
+  unchanged. See ADR 0063.
+- A failed CAD gate no longer banks the wrong anti-pattern in the shared game
+  vault. The host's finding embeds the tier, and the full tier is spelled
+  `full-with-thickness`, so the keyword classifier filed every full-tier
+  rejection under `underbuilt-shell`; classification now reads the verifier's
+  own tail (`classify_text`) while the banked finding keeps the tier. A print
+  gate's `RESULT:` line outranks the keyword sweep, and the host CAD-gate codes
+  that never refused the geometry — `cad-not-print-ready`,
+  `sealed-product-changed`, `verifier-timeout`, `verifier-output-limit` — are
+  protocol slips that teach the vault nothing.
+- `NativeCadGateEvidence`'s field defaults paired the full tier with the lower
+  tier's verifier mode, a combination no policy accepts; the default is now the
+  tier that claims nothing.
+
 ### Added
 
 - Codex products accept `--max-tokens` (default 10,000,000), persisted across

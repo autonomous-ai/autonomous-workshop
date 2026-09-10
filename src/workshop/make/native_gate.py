@@ -42,16 +42,22 @@ NATIVE_MADE_REQUIRED_ROOT_FILES = (
 )
 NATIVE_CAD_VERIFIER_MODE = "final-fresh-strict-fit-not-print-ready"
 NATIVE_CAD_PRINT_GATES_VERIFIER_MODE = "final-fresh-strict-fit-print-gates"
-# Retained only so a historical receipt still parses; the live gate never
-# produces this value.  The mesh gates are back, but they read the B-rep
-# directly, so the `--exports` verifier this names is still gone.
+# The name of the retired pre-tier mode, kept so the string that appears in
+# ADR 0063 and in archived receipts has one definition.  No receipt carrying it
+# is accepted: no live tier maps to it, so `NativeCadGateEvidence` refuses it.
+# The mesh gates are back, but they read the B-rep directly, so the `--exports`
+# verifier this names is still gone.
 NATIVE_CAD_LEGACY_FULL_VERIFIER_MODE = "final-fresh-exports-strict-fit"
 NATIVE_CAD_FULL_TIER = "full-with-thickness"
 NATIVE_CAD_NON_PRINT_READY_TIER = "digitally-verified-not-print-ready"
-# The nozzle the print-ready claim is made at.  It is in the command, and so in
-# the receipt, because a wall that passes at 0.4 mm can fail at 0.6 mm: a claim
-# that does not name its nozzle is not a claim.
+# The nozzle and overhang angle the print-ready claim is made at.  Both are in
+# the command, and so in the receipt, because a wall that passes at 0.4 mm can
+# fail at 0.6 mm and a face that passes at 45 deg can fail at 60: a claim that
+# does not name the thresholds it was measured against is not a claim.  Naming
+# them also stops the receipt depending on a verifier default that upstream
+# owns and can move without Workshop noticing.
 NATIVE_CAD_GATE_NOZZLE_MM = "0.4"
+NATIVE_CAD_GATE_OVERHANG_ANGLE_DEG = "45"
 DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS = 1_800.0
 MAX_NATIVE_CAD_OUTPUT_BYTES = 1024 * 1024
 DEFAULT_NATIVE_CAD_OUTPUT_BYTES = MAX_NATIVE_CAD_OUTPUT_BYTES
@@ -316,7 +322,13 @@ _FULL_CAD_GATE_POLICY = _CadGatePolicy(
     verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
     # No --skip-thickness: skipping the wall gate forfeits the claim upstream,
     # so the tier that carries the claim always pays for all three gates.
-    extra_arguments=("--print-gates", "--nozzle", NATIVE_CAD_GATE_NOZZLE_MM),
+    extra_arguments=(
+        "--print-gates",
+        "--nozzle",
+        NATIVE_CAD_GATE_NOZZLE_MM,
+        "--overhang-angle",
+        NATIVE_CAD_GATE_OVERHANG_ANGLE_DEG,
+    ),
 )
 _NON_PRINT_READY_CAD_GATE_POLICY = _CadGatePolicy(
     tier=NATIVE_CAD_NON_PRINT_READY_TIER,
@@ -822,7 +834,10 @@ class NativeCadGateEvidence:
     stdout: CapturedVerifierStream
     stderr: CapturedVerifierStream
     source_tree_unchanged: bool
-    verification_tier: str = NATIVE_CAD_FULL_TIER
+    # The default pair is the tier that claims nothing.  It has to agree with
+    # the default verifier_mode below: the two are checked against one policy,
+    # so a default that named the full tier could never be used at all.
+    verification_tier: str = NATIVE_CAD_NON_PRINT_READY_TIER
     legacy_full_tier_compatibility: bool = False
     evidence_stage: str = "make"
     schema_version: int = 3
@@ -1229,6 +1244,7 @@ __all__ = [
     "NATIVE_CAD_FULL_TIER",
     "NATIVE_CAD_NON_PRINT_READY_TIER",
     "NATIVE_CAD_GATE_NOZZLE_MM",
+    "NATIVE_CAD_GATE_OVERHANG_ANGLE_DEG",
     "NATIVE_CAD_LEGACY_FULL_VERIFIER_MODE",
     "NATIVE_CAD_PRINT_GATES_VERIFIER_MODE",
     "NATIVE_CAD_VERIFIER_MODE",

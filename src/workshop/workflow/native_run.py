@@ -87,8 +87,6 @@ from workshop.make.revision import (
     NativeMakeInventRevision,
 )
 from workshop.make.native_gate import (
-    NATIVE_CAD_GATE_KIND,
-    NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     NativeCadGateError,
     NativeMadeTreeGateError,
@@ -2447,6 +2445,16 @@ def _record_make_evidence(
 
 
 def _cad_gate_failure(rejection: NativeCadGateError, checkpoint: AgentRunCheckpoint) -> dict[str, Any]:
+    """One CAD-gate rejection in the shape :func:`build_make_rows` reads.
+
+    The banked ``finding`` names the round, the code and the tier, because a
+    reader of the vault needs all three. The anti-pattern is chosen from
+    ``classify_text`` -- the verifier's own tail alone -- so the sentence the
+    host wrote around it cannot decide the class. Without that split the full
+    tier's own name, ``full-with-thickness``, files every rejection under a thin
+    wall, overhang refusals included.
+    """
+
     evidence = rejection.evidence
     tail = ""
     for stream in (evidence.stderr, evidence.stdout):
@@ -2458,6 +2466,7 @@ def _cad_gate_failure(rejection: NativeCadGateError, checkpoint: AgentRunCheckpo
         "code": rejection.failure_code,
         "finding": "Make round %d failed the host CAD gate %s (%s tier). %s"
         % (checkpoint.round_index, rejection.failure_code, evidence.verification_tier, tail),
+        "classify_text": tail,
         "evidence_class": "deterministic-cad-gate",
         "severity": "block",
     }
