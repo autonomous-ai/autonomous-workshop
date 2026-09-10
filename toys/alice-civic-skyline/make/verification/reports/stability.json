@@ -1,0 +1,1007 @@
+{
+  "method": "Exact exported STL volume integrals; uniform-density solid approximation. This is not printed stability or durability evidence.",
+  "assumed_design_floor_tip_angle_deg": 15,
+  "families": {
+    "king": {
+      "source_sha256": "8f5962d6e1c6bbea81a0e47195023b2321289265158c37d2ac0781453475e62d",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          -14.782072067260742,
+          -14.782072067260742,
+          0.0
+        ],
+        [
+          14.782072067260742,
+          14.782072067260742,
+          86.0
+        ]
+      ],
+      "volume_mm3": 24975.515826567796,
+      "uniform_solid_center_of_mass_mm": [
+        -3.4139486400721674e-17,
+        1.1351379228239957e-16,
+        26.327139302493407
+      ],
+      "triangle_count": 560,
+      "unique_vertex_count": 282,
+      "undirected_edge_count": 840,
+      "consistent_winding": true,
+      "support_inradius_mm": 14.782072520180588,
+      "minimum_com_support_margin_mm": 14.782072520180588,
+      "minimum_uniform_solid_tip_angle_deg": 29.313190966823303
+    },
+    "queen": {
+      "source_sha256": "7aa4a7d815b2c0272dd1d9d8a0e6db8156b81de00216891fdf6c6621fa3e864b",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          -14.782072067260742,
+          -14.782072067260742,
+          0.0
+        ],
+        [
+          14.782072067260742,
+          14.782072067260742,
+          76.0
+        ]
+      ],
+      "volume_mm3": 23533.740986747016,
+      "uniform_solid_center_of_mass_mm": [
+        -2.8984810647564763e-17,
+        -8.695443194269429e-17,
+        26.206592054615193
+      ],
+      "triangle_count": 1452,
+      "unique_vertex_count": 728,
+      "undirected_edge_count": 2178,
+      "consistent_winding": true,
+      "support_inradius_mm": 14.782072520180588,
+      "minimum_com_support_margin_mm": 14.782072520180588,
+      "minimum_uniform_solid_tip_angle_deg": 29.42557681675566
+    },
+    "bishop": {
+      "source_sha256": "9208d0e069a6834aee9b813fad939d9b5e5057c28eb8ab24cc1c1f97dc9ccf77",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          -13.858193397521973,
+          -13.858193397521973,
+          0.0
+        ],
+        [
+          13.858193397521973,
+          13.858193397521973,
+          64.0
+        ]
+      ],
+      "volume_mm3": 17139.24516719673,
+      "uniform_solid_center_of_mass_mm": [
+        0.003342979399297797,
+        0.1029415678733919,
+        25.636595247449254
+      ],
+      "triangle_count": 752,
+      "unique_vertex_count": 378,
+      "undirected_edge_count": 1128,
+      "consistent_winding": true,
+      "support_inradius_mm": 13.858192987669302,
+      "minimum_com_support_margin_mm": 13.75525141979591,
+      "minimum_uniform_solid_tip_angle_deg": 28.21567186739888
+    },
+    "knight": {
+      "source_sha256": "69f8229efe67f40bc0acdd9d2f0d8ee3c0062605c8f84347fe625c9d9c0785f8",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          -13.858193397521973,
+          -13.858193397521973,
+          0.0
+        ],
+        [
+          13.858193397521973,
+          13.858193397521973,
+          58.0
+        ]
+      ],
+      "volume_mm3": 15604.852479133833,
+      "uniform_solid_center_of_mass_mm": [
+        0.1778995436428042,
+        1.3090866242034969e-16,
+        21.57440637101486
+      ],
+      "triangle_count": 336,
+      "unique_vertex_count": 170,
+      "undirected_edge_count": 504,
+      "consistent_winding": true,
+      "support_inradius_mm": 13.858192987669302,
+      "minimum_com_support_margin_mm": 13.680293444026498,
+      "minimum_uniform_solid_tip_angle_deg": 32.37871272613955
+    },
+    "rook": {
+      "source_sha256": "dbca5ee656b07b9be568c4e638640c722025e755087b776c7935c5f5f55e93ec",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          -13.858193397521973,
+          -13.858193397521973,
+          0.0
+        ],
+        [
+          13.858193397521973,
+          13.858193397521973,
+          52.0
+        ]
+      ],
+      "volume_mm3": 21782.060150652072,
+      "uniform_solid_center_of_mass_mm": [
+        -1.670172050729006e-16,
+        2.0877150634112572e-16,
+        24.33845507943274
+      ],
+      "triangle_count": 388,
+      "unique_vertex_count": 196,
+      "undirected_edge_count": 582,
+      "consistent_winding": true,
+      "support_inradius_mm": 13.858192987669302,
+      "minimum_com_support_margin_mm": 13.858192987669302,
+      "minimum_uniform_solid_tip_angle_deg": 29.656967005930664
+    },
+    "pawn": {
+      "source_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          -12.0104341506958,
+          -12.0104341506958,
+          0.0
+        ],
+        [
+          12.0104341506958,
+          12.0104341506958,
+          40.0
+        ]
+      ],
+      "volume_mm3": 8699.71791427651,
+      "uniform_solid_center_of_mass_mm": [
+        0.00010748879434255583,
+        -2.174672836494899e-05,
+        15.613809551452654
+      ],
+      "triangle_count": 1068,
+      "unique_vertex_count": 536,
+      "undirected_edge_count": 1602,
+      "consistent_winding": true,
+      "support_inradius_mm": 12.010433922646728,
+      "minimum_com_support_margin_mm": 12.010326433852386,
+      "minimum_uniform_solid_tip_angle_deg": 37.56790893410137
+    },
+    "dark_tile": {
+      "source_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          -20.75,
+          -20.75,
+          0.0
+        ],
+        [
+          20.75,
+          20.75,
+          2.5999999046325684
+        ]
+      ],
+      "volume_mm3": 4457.04983651638,
+      "uniform_solid_center_of_mass_mm": [
+        0.0,
+        1.0202877857921678e-16,
+        1.2999999523162842
+      ],
+      "triangle_count": 28,
+      "unique_vertex_count": 16,
+      "undirected_edge_count": 42,
+      "consistent_winding": true
+    },
+    "board_0_0": {
+      "source_sha256": "6c9b319afcba0e9824da69aae58c6383b9dd2705f5be7bb617b7e2c3b4b1d394",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          192.0,
+          192.0,
+          6.199999809265137
+        ]
+      ],
+      "volume_mm3": 149086.50049954158,
+      "uniform_solid_center_of_mass_mm": [
+        92.60941564302401,
+        92.68211563485437,
+        2.233161429816951
+      ],
+      "triangle_count": 948,
+      "unique_vertex_count": 476,
+      "undirected_edge_count": 1422,
+      "consistent_winding": true
+    },
+    "board_0_1": {
+      "source_sha256": "fc25e2e9c1dd43599c7ec53e636f9485b12e094b7ec65001c445dbd28a90387a",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          192.0,
+          192.0,
+          6.199999809265137
+        ]
+      ],
+      "volume_mm3": 148795.46146065247,
+      "uniform_solid_center_of_mass_mm": [
+        92.86488106351693,
+        99.37377744161678,
+        2.2264708184486484
+      ],
+      "triangle_count": 2348,
+      "unique_vertex_count": 1176,
+      "undirected_edge_count": 3522,
+      "consistent_winding": true
+    },
+    "board_1_0": {
+      "source_sha256": "6d77684e5e197fdf5dd9e95de01c31b673301663603e4678754d324baa10f30c",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          192.0,
+          192.0,
+          6.199999809265137
+        ]
+      ],
+      "volume_mm3": 148693.5011918545,
+      "uniform_solid_center_of_mass_mm": [
+        99.16584187302341,
+        92.68136129183144,
+        2.224493738068471
+      ],
+      "triangle_count": 364,
+      "unique_vertex_count": 184,
+      "undirected_edge_count": 546,
+      "consistent_winding": true
+    },
+    "board_1_1": {
+      "source_sha256": "efe6797672cffbcb3b96df9dae20de81e82348e22ac68514ad7293b30100ac65",
+      "watertight": true,
+      "shells": 1,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          192.0,
+          192.0,
+          6.199999809265137
+        ]
+      ],
+      "volume_mm3": 148809.10117411613,
+      "uniform_solid_center_of_mass_mm": [
+        99.3740189282034,
+        99.14281838831668,
+        2.227049552538718
+      ],
+      "triangle_count": 444,
+      "unique_vertex_count": 224,
+      "undirected_edge_count": 666,
+      "consistent_winding": true
+    }
+  },
+  "occurrences": [
+    {
+      "name": "board_0_0",
+      "family": "board_0_0",
+      "mesh_sha256": "6c9b319afcba0e9824da69aae58c6383b9dd2705f5be7bb617b7e2c3b4b1d394",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "board_0_1",
+      "family": "board_0_1",
+      "mesh_sha256": "fc25e2e9c1dd43599c7ec53e636f9485b12e094b7ec65001c445dbd28a90387a",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "board_1_0",
+      "family": "board_1_0",
+      "mesh_sha256": "6d77684e5e197fdf5dd9e95de01c31b673301663603e4678754d324baa10f30c",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "board_1_1",
+      "family": "board_1_1",
+      "mesh_sha256": "efe6797672cffbcb3b96df9dae20de81e82348e22ac68514ad7293b30100ac65",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "tile_a1",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_a3",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_a5",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_a7",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_b2",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_b4",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_b6",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_b8",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_c1",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_c3",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_c5",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_c7",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_d2",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_d4",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_d6",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_d8",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_e1",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_e3",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_e5",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_e7",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_f2",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_f4",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_f6",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_f8",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_g1",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_g3",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_g5",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_g7",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_h2",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_h4",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_h6",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "tile_h8",
+      "family": "dark_tile",
+      "mesh_sha256": "ec861c7161427687499c06d4dce094ef4e44c0f87ffd7759be0aa56dde7435cd",
+      "color_srgb": [
+        0.17,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "name": "ivory_rook_a1",
+      "family": "rook",
+      "mesh_sha256": "dbca5ee656b07b9be568c4e638640c722025e755087b776c7935c5f5f55e93ec",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_knight_b1",
+      "family": "knight",
+      "mesh_sha256": "69f8229efe67f40bc0acdd9d2f0d8ee3c0062605c8f84347fe625c9d9c0785f8",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_bishop_c1",
+      "family": "bishop",
+      "mesh_sha256": "9208d0e069a6834aee9b813fad939d9b5e5057c28eb8ab24cc1c1f97dc9ccf77",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_queen_d1",
+      "family": "queen",
+      "mesh_sha256": "7aa4a7d815b2c0272dd1d9d8a0e6db8156b81de00216891fdf6c6621fa3e864b",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_king_e1",
+      "family": "king",
+      "mesh_sha256": "8f5962d6e1c6bbea81a0e47195023b2321289265158c37d2ac0781453475e62d",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_bishop_f1",
+      "family": "bishop",
+      "mesh_sha256": "9208d0e069a6834aee9b813fad939d9b5e5057c28eb8ab24cc1c1f97dc9ccf77",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_knight_g1",
+      "family": "knight",
+      "mesh_sha256": "69f8229efe67f40bc0acdd9d2f0d8ee3c0062605c8f84347fe625c9d9c0785f8",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_rook_h1",
+      "family": "rook",
+      "mesh_sha256": "dbca5ee656b07b9be568c4e638640c722025e755087b776c7935c5f5f55e93ec",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_pawn_a2",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_pawn_b2",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_pawn_c2",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_pawn_d2",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_pawn_e2",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_pawn_f2",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_pawn_g2",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "ivory_pawn_h2",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.91,
+        0.85,
+        0.69
+      ]
+    },
+    {
+      "name": "midnight_rook_a8",
+      "family": "rook",
+      "mesh_sha256": "dbca5ee656b07b9be568c4e638640c722025e755087b776c7935c5f5f55e93ec",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_knight_b8",
+      "family": "knight",
+      "mesh_sha256": "69f8229efe67f40bc0acdd9d2f0d8ee3c0062605c8f84347fe625c9d9c0785f8",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_bishop_c8",
+      "family": "bishop",
+      "mesh_sha256": "9208d0e069a6834aee9b813fad939d9b5e5057c28eb8ab24cc1c1f97dc9ccf77",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_queen_d8",
+      "family": "queen",
+      "mesh_sha256": "7aa4a7d815b2c0272dd1d9d8a0e6db8156b81de00216891fdf6c6621fa3e864b",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_king_e8",
+      "family": "king",
+      "mesh_sha256": "8f5962d6e1c6bbea81a0e47195023b2321289265158c37d2ac0781453475e62d",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_bishop_f8",
+      "family": "bishop",
+      "mesh_sha256": "9208d0e069a6834aee9b813fad939d9b5e5057c28eb8ab24cc1c1f97dc9ccf77",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_knight_g8",
+      "family": "knight",
+      "mesh_sha256": "69f8229efe67f40bc0acdd9d2f0d8ee3c0062605c8f84347fe625c9d9c0785f8",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_rook_h8",
+      "family": "rook",
+      "mesh_sha256": "dbca5ee656b07b9be568c4e638640c722025e755087b776c7935c5f5f55e93ec",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_pawn_a7",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_pawn_b7",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_pawn_c7",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_pawn_d7",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_pawn_e7",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_pawn_f7",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_pawn_g7",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    },
+    {
+      "name": "midnight_pawn_h7",
+      "family": "pawn",
+      "mesh_sha256": "dac3e1a760de8b186e30a47490ddbda75c9cef1441813b86f2913fe6b15e63cb",
+      "color_srgb": [
+        0.1,
+        0.22,
+        0.25
+      ]
+    }
+  ],
+  "occurrence_count": 68,
+  "chessmen": 32,
+  "tiles": 32,
+  "panels": 4
+}

@@ -28,12 +28,17 @@ The public start surfaces are:
 --workflow spark|forge|quest
 --agent codex|claude|grok
 --model <model-or-supported-alias>
---effort low|medium|high|xhigh
+--effort low|medium|high|xhigh|ultra
 ```
 
 `workshop start`, `workshop daydream`, and `workshop wish` use the same agent,
 model, and reasoning vocabulary. `--workflow` is absent from `daydream`
 because a standalone daydream does not execute a product lifecycle.
+
+As of 2026-09-09, `ultra` is supported only with Codex `gpt-6-astra`
+(including its `astra` alias), matching the installed Codex 0.153.4 model
+catalog. It is passed literally, not mapped to `xhigh` or `max`. Frozen
+runtime selection and native launch validation both enforce this restriction.
 
 Codex defaults to `gpt-5.6-sol` at `medium`; `astra`, `sol`, `terra`, and `luna`
 are friendly aliases for their exact Codex model ids. Claude Code defaults to

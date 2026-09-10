@@ -7,6 +7,7 @@ import zipfile
 from email.parser import BytesParser
 from email.policy import default as email_policy
 from pathlib import Path, PurePosixPath
+from unittest import mock
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import (
@@ -33,6 +34,7 @@ from workshop.integrations.factory import (
     factory_credentials_from_environment,
 )
 from workshop.make.contracts import Made
+from workshop.release.native import direct_release_claims, playtest_omission_sha256
 from workshop.runtime import EffectLedger, Receipt
 from workshop.wish import Wish
 
@@ -388,6 +390,80 @@ class FactoryTransport:
             self.public = True
             return HttpResponse(200, {}, b"{}")
         raise AssertionError("unexpected Factory call %s %s" % (method, url))
+
+
+def backend_import_workspace(content):
+    """Port the backend's lexical WalkDir source-root selection, not its CAD."""
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        files = {name: archive.read(name) for name in archive.namelist()}
+    def walk(prefix=""):
+        children = sorted({name[len(prefix):].split("/", 1)[0] for name in files if name.startswith(prefix)})
+        for child in children:
+            path = prefix + child
+            if path in files:
+                yield path
+            else:
+                yield from walk(path + "/")
+    root = ""
+    for path in walk():
+        if path.lower().endswith(".py") and b"def gen_step" in files[path]:
+            root = path.rsplit("/", 1)[0] + "/" if "/" in path else ""
+            break
+    result = {name[len(root):]: value for name, value in files.items() if name.startswith(root)}
+    if root and "project.json" in files:
+        result["project.json"] = files["project.json"]
+    return root, result
+
+
+class RootSelectingFactoryTransport(FactoryTransport):
+    """Exercise real importer root loss and append-only version semantics."""
+    def __init__(self):
+        super().__init__(include_thumbnails=False)
+        self.history = "history-1"
+        self.versions = 0
+        self.snapshots = {}
+        self.selected_roots = []
+        self.version_failure = None
+        self.fail_version_readback = False
+
+    def design(self):
+        design = super().design()
+        design["current_history_id"] = self.history
+        design["project_url"] = "https://cdn.autonomous.ai/projects/%s/" % self.history
+        if self.public:
+            design["published_history_id"] = self.history
+        return design
+
+    def _ingest(self, headers, body):
+        parts = multipart_parts(headers, body)
+        root, files = backend_import_workspace(parts["file"][0])
+        self.selected_roots.append(root)
+        self.snapshots[self.history] = files
+
+    def __call__(self, method, url, headers, body, timeout):
+        if method == "POST" and url.endswith("/designs/import"):
+            self._ingest(headers, body)
+        elif method == "POST" and url.endswith("/verified-toy/import"):
+            self.calls.append((method, url, dict(headers), body, timeout))
+            self.versions += 1
+            if self.version_failure == "before-send":
+                raise TimeoutError("private transport detail")
+            if isinstance(self.version_failure, int):
+                return HttpResponse(self.version_failure, {}, b"private version failure response")
+            self.history = "history-%d" % (self.versions + 1)
+            self._ingest(headers, body)
+            if self.version_failure == "lost-response":
+                raise TimeoutError("private transport detail")
+            return HttpResponse(200, {}, canonical_json(self.design()))
+        elif method == "GET" and url.startswith("https://cdn.autonomous.ai/projects/"):
+            self.calls.append((method, url, dict(headers), body, timeout))
+            path = url.split("/projects/", 1)[1]
+            history, relative = path.split("/", 1)
+            content = self.snapshots.get(history, {}).get(relative)
+            if self.fail_version_readback and self.versions:
+                content = None
+            return HttpResponse(200 if content is not None else 404, {}, content or b"not found")
+        return super().__call__(method, url, headers, body, timeout)
 
 
 class FactoryReleaseTest(unittest.TestCase):
@@ -746,6 +822,293 @@ class FactoryReleaseTest(unittest.TestCase):
             call for call in transport.calls if call[1].endswith("/manual.pdf")
         )
         self.assertNotIn("Authorization", manual_call[2])
+
+    def use_make_output_release(self):
+        (self.release / "MANUAL.md").unlink()
+        self.page = {
+            "schema_version": 6, "kind": "workshop.release-package",
+            "status": "make-output-ready", "title": "Verified Toy",
+            "summary": "An exact toy page authored before Factory import.",
+            "what_arrives": [], "limitations": [],
+            "product_artifact_sha256": self.made.artifact_sha256,
+            "playtest_status": "not-run",
+            "playtest_evidence_artifact_sha256": playtest_omission_sha256(),
+            "claims": direct_release_claims(), "source_document": None,
+        }
+        content = canonical_json(self.page)
+        (self.release / "product.json").write_bytes(content)
+        self.manifest = build_artifact_manifest(self.release, created_at="content-addressed")
+        return content
+
+    def test_make_output_publishes_exact_assets_without_pdf_geometry_or_rich_content(self):
+        # An existing PDF is an opaque Make artifact, not a new mandatory
+        # manual or another opportunity to invoke a PDF quality gate.
+        (self.made.artifact_root / "MANUAL.pdf").write_bytes(b"%PDF-existing Make artifact, copied as-is")
+        self._reseal_product()
+        anchor = self.use_make_output_release()
+        transport = FactoryTransport(include_thumbnails=False)
+        anchor_calls = []
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                anchor_calls.append((method, url, headers))
+                return HttpResponse(200, {"Content-Type": "application/json"}, anchor)
+            return transport(method, url, headers, body, timeout)
+        with mock.patch("workshop.integrations.factory._posed_provider", side_effect=AssertionError("CAD must not run")), mock.patch("workshop.integrations.factory.key_parts", side_effect=AssertionError("CAD must not run")), mock.patch.object(FactoryAgentSession, "verify_pdf_manual", side_effect=AssertionError("PDF must not run")):
+            receipt = self.writer(send)(self.context, self.release, self.manifest)
+            public = FactoryPublicTransition(self.ledger, FactoryAgentSession(FactoryAgentCredentials("alice", "test-secret"), transport=send)).publish(receipt)
+            self.assertTrue(public.is_verified_public)
+            self.assertEqual(public.details["publication_anchor_readback_sha256"], hashlib.sha256(anchor).hexdigest())
+            self.assertNotIn("manual_sha256", public.details)
+            self.assertNotIn("manual_path", public.details)
+            self.assertNotIn("factory_content", public.details)
+            self.assertEqual(transport.use_case_writes, 0)
+            self.assertEqual(transport.story_block_writes, 0)
+            self.assertEqual(transport.part_color_writes, [])
+            self.assertTrue(anchor_calls)
+            self.assertTrue(all("Authorization" not in call[2] for call in anchor_calls))
+            import_call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+            parts = multipart_parts(import_call[2], import_call[3])
+            with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+                self.assertNotIn("MANUAL.pdf", archive.namelist())
+                self.assertNotIn("MANUAL.md", archive.namelist())
+                self.assertEqual(archive.read("workshop-release-page.json"), anchor)
+                facts = json.loads(archive.read("workshop-product-facts.json"))
+                for entry in facts["make_artifacts"]["files"]:
+                    self.assertEqual(archive.read(entry["archive_path"]), (self.made.artifact_root / entry["source_path"]).read_bytes())
+
+    def test_make_output_rejects_changed_public_anchor(self):
+        self.use_make_output_release()
+        transport = FactoryTransport(include_thumbnails=False)
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(200, {}, b"different")
+            return transport(method, url, headers, body, timeout)
+        with self.assertRaises((ReceiptError, AmbiguousEffectError)):
+            self.writer(send)(self.context, self.release, self.manifest)
+
+    def test_missing_make_output_anchor_preserves_safe_cause_and_never_reimports(self):
+        self.use_make_output_release()
+        transport = FactoryTransport(include_thumbnails=False)
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(404, {}, b"private provider response must not be logged")
+            return transport(method, url, headers, body, timeout)
+        writer = self.writer(send)
+        for _ in range(2):
+            with self.assertRaisesRegex(AmbiguousEffectError, "anchor readback returned HTTP 404"):
+                writer(self.context, self.release, self.manifest)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.state, "unknown")
+        self.assertIn("anchor readback returned HTTP 404", intent.error)
+        self.assertNotIn("private provider response", intent.error)
+        self.assertEqual(transport.imports, 1)
+
+    def test_readback_failure_diagnostics_withhold_arbitrary_exception_text(self):
+        self.use_make_output_release()
+        transport = FactoryTransport(include_thumbnails=False)
+        with mock.patch.object(FactoryReleaseWriter, "_readback_private", side_effect=RuntimeError("Bearer test-secret private-user-value")):
+            with self.assertRaisesRegex(AmbiguousEffectError, "RuntimeError: diagnostic details withheld") as raised:
+                self.writer(transport)(self.context, self.release, self.manifest)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertNotIn("test-secret", intent.error)
+        self.assertNotIn("test-secret", str(raised.exception))
+        self.assertNotIn("private-user-value", intent.error)
+
+    def test_make_output_unknown_import_reconciles_without_reupload(self):
+        anchor = self.use_make_output_release()
+        transport = FactoryTransport(include_thumbnails=False, fail_get=True)
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(200, {}, anchor)
+            return transport(method, url, headers, body, timeout)
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(send)(self.context, self.release, self.manifest)
+        self.assertEqual(transport.imports, 1)
+        transport.fail_get = False
+        receipt = self.writer(send)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.imports, 1)
+        self.assertEqual(self.writer(send)(self.context, self.release, self.manifest), receipt)
+        self.assertEqual(transport.imports, 1)
+
+    def test_make_output_changed_anchor_stops_before_publication(self):
+        anchor = [self.use_make_output_release()]
+        transport = FactoryTransport(include_thumbnails=False)
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(200, {}, anchor[0])
+            return transport(method, url, headers, body, timeout)
+        receipt = self.writer(send)(self.context, self.release, self.manifest)
+        anchor[0] = b"changed"
+        transition = FactoryPublicTransition(self.ledger, FactoryAgentSession(FactoryAgentCredentials("alice", "test-secret"), transport=send))
+        with self.assertRaises(AmbiguousEffectError):
+            transition.publish(receipt)
+        self.assertFalse(transport.public)
+        self.assertFalse(any(call[1].endswith("/publish") for call in transport.calls))
+
+    def use_nested_make_output(self):
+        product = self.made.artifact_root
+        (product / "cad").mkdir()
+        (product / "main.py").rename(product / "cad/main.py")
+        (product / "README.md").write_bytes(b"Exact original Make documentation.\n")
+        self._reseal_product()
+        self.use_make_output_release()
+
+    def legacy_flattened_import(self, transport):
+        self.use_nested_make_output()
+        # Reproduce the pre-marker writer without changing any saved intent.
+        with mock.patch.object(self.ledger, "latest", return_value=mock.Mock(request={})):
+            with self.assertRaisesRegex(AmbiguousEffectError, "anchor readback returned HTTP 404"):
+                self.writer(transport)(self.context, self.release, self.manifest)
+        original = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(original.state, "unknown")
+        self.assertNotIn("import_root_mapping", original.request)
+        self.assertEqual(transport.selected_roots, ["cad/"])
+        return original
+
+    def test_root_marker_keeps_nested_cad_and_all_original_make_bytes(self):
+        self.use_nested_make_output()
+        transport = RootSelectingFactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.selected_roots, [""])
+        files = transport.snapshots["history-1"]
+        self.assertIn("assembled.stl", files)
+        self.assertIn("README.md", files)
+        self.assertIn("workshop-release-page.json", files)
+        facts = json.loads(files["workshop-product-facts.json"])
+        for entry in facts["make_artifacts"]["files"]:
+            self.assertEqual(files[entry["archive_path"]], (self.made.artifact_root / entry["source_path"]).read_bytes())
+
+    def test_root_marker_collision_rehomes_earlier_make_sources_without_byte_changes(self):
+        self.use_nested_make_output()
+        product = self.made.artifact_root
+        (product / "000").mkdir()
+        (product / "000/earlier.py").write_bytes(b"def gen_step():\n    return 'earlier original source'\n")
+        (product / "000_workshop_import_root.py").write_bytes(b"# Original Make file, preserved exactly\n")
+        self._reseal_product()
+        transport = RootSelectingFactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+        files = transport.snapshots["history-1"]
+        self.assertEqual(transport.selected_roots, [""])
+        facts = json.loads(files["workshop-product-facts.json"])
+        mapping = {entry["source_path"]: entry["archive_path"] for entry in facts["make_artifacts"]["files"]}
+        self.assertEqual(mapping["000/earlier.py"], "_workshop/make/000/earlier.py")
+        self.assertEqual(mapping["000_workshop_import_root.py"], "_workshop/make/000_workshop_import_root.py")
+        self.assertEqual(mapping["assembled.stl"], "assembled.stl")
+        for source, archive in mapping.items():
+            self.assertEqual(files[archive], (product / source).read_bytes())
+
+    def test_legacy_root_loss_repairs_same_private_design_with_distinct_intent(self):
+        transport = RootSelectingFactoryTransport()
+        original = self.legacy_flattened_import(transport)
+        saved = original.request, original.response, original.pack_sha256
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.imports, 1)
+        self.assertEqual(transport.versions, 1)
+        self.assertEqual(transport.selected_roots, ["cad/", ""])
+        version = self.ledger.latest("verified-toy", "factory-import-version")
+        self.assertEqual(version.state, "succeeded")
+        self.assertNotEqual(version.pack_sha256, original.pack_sha256)
+        self.assertEqual(version.request["source_import_intent_id"], original.intent_id)
+        self.assertEqual(receipt.details["effect_request_sha256"], version.request_sha256)
+        preserved = self.ledger.get(original.intent_id)
+        self.assertEqual((preserved.request, preserved.response, preserved.pack_sha256), saved)
+        self.assertEqual(preserved.state, "unknown")
+        self.assertEqual(self.writer(transport)(self.context, self.release, self.manifest), receipt)
+        self.assertEqual(transport.versions, 1)
+        version_call = next(call for call in transport.calls if call[1].endswith("/verified-toy/import"))
+        self.assertEqual(set(multipart_parts(version_call[2], version_call[3])), {"file"})
+        public = FactoryPublicTransition(self.ledger, FactoryAgentSession(FactoryAgentCredentials("alice", "test-secret"), transport=transport)).publish(receipt)
+        self.assertTrue(public.is_verified_public)
+        self.assertEqual(public.current_history_id, "history-2")
+
+    def test_unknown_version_reconciles_lost_response_without_duplicate(self):
+        transport = RootSelectingFactoryTransport()
+        self.legacy_flattened_import(transport)
+        transport.version_failure = "lost-response"
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        transport.version_failure = None
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.imports, 1)
+        self.assertEqual(transport.versions, 1)
+
+    def test_unknown_version_without_remote_effect_is_not_blindly_retried(self):
+        transport = RootSelectingFactoryTransport()
+        self.legacy_flattened_import(transport)
+        transport.version_failure = "before-send"
+        for _ in range(2):
+            with self.assertRaises(AmbiguousEffectError):
+                self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(transport.versions, 1)
+        self.assertEqual(transport.imports, 1)
+
+    def test_version_http_500_is_ambiguous_and_not_retried(self):
+        transport = RootSelectingFactoryTransport()
+        self.legacy_flattened_import(transport)
+        transport.version_failure = 500
+        for _ in range(2):
+            with self.assertRaises(AmbiguousEffectError):
+                self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(self.ledger.latest("verified-toy", "factory-import-version").state, "unknown")
+        self.assertEqual(transport.versions, 1)
+
+    def test_version_http_524_is_ambiguous_and_not_retried(self):
+        transport = RootSelectingFactoryTransport()
+        self.legacy_flattened_import(transport)
+        transport.version_failure = 524
+        for _ in range(2):
+            with self.assertRaises(AmbiguousEffectError):
+                self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(self.ledger.latest("verified-toy", "factory-import-version").state, "unknown")
+        self.assertEqual(transport.versions, 1)
+
+    def test_version_readback_failure_reconciles_exact_returned_history(self):
+        transport = RootSelectingFactoryTransport()
+        self.legacy_flattened_import(transport)
+        transport.fail_version_readback = True
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        version = self.ledger.latest("verified-toy", "factory-import-version")
+        self.assertEqual(version.response["current_history_id"], "history-2")
+        transport.fail_version_readback = False
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(receipt.current_history_id, "history-2")
+        self.assertEqual(transport.versions, 1)
+
+    def test_unknown_version_cannot_reconcile_unrelated_history_with_same_anchor(self):
+        transport = RootSelectingFactoryTransport()
+        self.legacy_flattened_import(transport)
+        transport.version_failure = "lost-response"
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        transport.version_failure = None
+        transport.history = "external-history"
+        transport.snapshots[transport.history] = dict(transport.snapshots["history-2"])
+        transport.snapshots[transport.history]["workshop-product-facts.json"] = b'{"unrelated":true}'
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(self.ledger.latest("verified-toy", "factory-import-version").state, "unknown")
+        self.assertEqual(transport.versions, 1)
+
+    def test_root_repair_refuses_public_design(self):
+        transport = RootSelectingFactoryTransport()
+        self.legacy_flattened_import(transport)
+        transport.public = True
+        with self.assertRaises((ReceiptError, AmbiguousEffectError, StateConflict)):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(transport.versions, 0)
+
+    def test_root_repair_refuses_unexpected_private_history(self):
+        transport = RootSelectingFactoryTransport()
+        self.legacy_flattened_import(transport)
+        transport.history = "external-history"
+        with self.assertRaises((ReceiptError, AmbiguousEffectError, StateConflict)):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(transport.versions, 0)
 
     def test_pdf_first_import_rejects_changed_cdn_manual_bytes(self):
         self.use_pdf_first_release()

@@ -20,7 +20,7 @@ from workshop.errors import ContractError
 DEFAULT_MANAGER_ID = "codex"
 MANAGER_PROJECT_KIND = "autonomous-workshop.manager-project"
 MANAGER_PROJECT_PATH = "MANAGER.json"
-SUPPORTED_REASONING_EFFORTS = ("low", "medium", "high", "xhigh")
+SUPPORTED_REASONING_EFFORTS = ("low", "medium", "high", "xhigh", "ultra")
 _MANAGER_ID_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
 _MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 
@@ -239,6 +239,10 @@ def manager_runtime_selection(
         )
     if spec.manager_id == "grok" and selected_model != spec.default_model:
         raise ContractError("Workshop Grok model must be %s" % spec.default_model)
+    if selected_effort == "ultra" and (
+        spec.manager_id != "codex" or selected_model != "gpt-6-astra"
+    ):
+        raise ContractError("ultra reasoning effort requires Codex with model astra")
     return ManagerRuntimeSelection(spec, selected_model, selected_effort)
 
 

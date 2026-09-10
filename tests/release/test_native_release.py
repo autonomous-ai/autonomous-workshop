@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 from workshop.artifacts import build_artifact_manifest
-from workshop.errors import ArtifactError, ContractError, StateConflict
+from workshop.errors import ArtifactError, ContractError, ReceiptError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.revision import (
@@ -39,6 +39,7 @@ from workshop.release.native import (
     direct_release_claims,
     playtest_omission_record,
     playtest_omission_sha256,
+    prepare_make_output_release,
     read_native_release,
     validate_release_product,
 )
@@ -238,6 +239,43 @@ def _manual_pdf(
 
 
 class NativeReleaseTest(unittest.TestCase):
+    def test_make_output_release_reuses_readme_without_pdf_or_review(self):
+        from workshop.release.contracts import ProductRelease
+        with mock.patch("workshop.release.native.validate_release_pdf_manual", side_effect=AssertionError("PDF must not run")), mock.patch("workshop.release.contracts.validate_release_pdf_manual", side_effect=AssertionError("PDF must not run")):
+            before = build_artifact_manifest(self.run_root / self.made.product_root, created_at="content-addressed")
+            release = prepare_make_output_release(self.run_root, self.made)
+            self.assertEqual(release.schema_version, 4)
+            self.assertEqual(release.manual_path, "README.md")
+            package = release.validate_package_tree(self.run_root, self.made, None)
+            local = ProductRelease.from_root(package.root, release.product_artifact_sha256, release.manual_path, release.claims)
+            self.assertEqual(local.claims, direct_release_claims())
+            source = self.run_root / self.made.product_root / release.product["source_document"]["source_path"]
+            self.assertEqual((package.root / "README.md").read_bytes(), source.read_bytes())
+            self.assertFalse((package.root / "MANUAL.pdf").exists())
+            self.assertFalse((package.root / "MANUAL-DESIGN.json").exists())
+            self.assertEqual(release.product["status"], "make-output-ready")
+            self.assertEqual(prepare_make_output_release(self.run_root, self.made), release)
+            self.assertEqual(read_native_release(self.run_root), release)
+            self.assertEqual(build_artifact_manifest(self.run_root / self.made.product_root, created_at="content-addressed"), before)
+
+    def test_make_output_release_needs_no_readme_or_new_asset(self):
+        from workshop.release.contracts import ProductRelease
+        product_root = self.run_root / self.made.product_root
+        (product_root / "cad/project/README.md").unlink()
+        made = replace(self.made, product=self.made.to_dict()["product"], product_manifest=build_artifact_manifest(product_root, created_at="content-addressed"))
+        release = prepare_make_output_release(self.run_root, made)
+        self.assertIsNone(release.manual_path)
+        self.assertIsNone(release.product["source_document"])
+        package = release.validate_package_tree(self.run_root, made, None)
+        ProductRelease.from_root(package.root, release.product_artifact_sha256, None, release.claims)
+        self.assertEqual({entry.path for entry in release.package_manifest.entries}, {"product.json", "PLAYTEST-NOT-RUN.json"})
+
+    def test_make_output_release_rejects_changed_made_bytes(self):
+        prepare_make_output_release(self.run_root, self.made)
+        (self.run_root / self.made.product_root / "assembled.stl").write_bytes(b"different")
+        with self.assertRaises((ArtifactError, ContractError)):
+            prepare_make_output_release(self.run_root, self.made)
+
     def test_public_token_summary_keeps_legacy_gross_counts_without_guessing(self):
         legacy = _public_token_summary(_legacy_token_summary())
         self.assertEqual(legacy["schema_version"], 2)
@@ -655,13 +693,25 @@ class NativeReleaseTest(unittest.TestCase):
         details = {
             "release_sha256": release.package_manifest.artifact_sha256,
             "product_page_sha256": release.product_json_sha256,
-            "manual_sha256": entries[release.manual_path].sha256,
             "primary_model_path": "assembled.stl",
             "primary_model_sha256": self.made.product["cad"][
                 "assembled_stl"
             ]["sha256"],
             "page_url": "https://www.autonomous.ai/factory/product/%s" % slug,
         }
+        if release.schema_version == 4:
+            details.update(
+                publication_mode="make-output-v1",
+                publication_anchor_path="workshop-release-page.json",
+                publication_anchor_sha256=release.product_json_sha256,
+                publication_anchor_readback_sha256=release.product_json_sha256,
+                publication_anchor_url=(
+                    "https://cdn.autonomous.ai/projects/%s/workshop-release-page.json"
+                    % slug
+                ),
+            )
+        else:
+            details["manual_sha256"] = entries[release.manual_path].sha256
         if release.schema_version == 1:
             details.update(
                 {
@@ -669,7 +719,7 @@ class NativeReleaseTest(unittest.TestCase):
                     "cover_url": "https://cdn.autonomous.ai/%s.png" % slug,
                 }
             )
-        else:
+        elif release.schema_version in (2, 3):
             details["manual_path"] = NATIVE_RELEASE_MANUAL_PATH
         return Receipt(
             payload_sha256="1" * 64,
@@ -752,9 +802,9 @@ class NativeReleaseTest(unittest.TestCase):
     def test_release_product_validator_rejects_unknown_release_schema_versions(self):
         release = self._release()
 
-        for schema_version in (0, 4, 999, True):
+        for schema_version in (0, 5, 999, True):
             with self.subTest(schema_version=schema_version), self.assertRaisesRegex(
-                ContractError, "schema_version must be 1, 2, or 3"
+                ContractError, "schema_version must be 1, 2, 3, or 4"
             ):
                 validate_release_product(
                     release.product,
@@ -1717,6 +1767,182 @@ class NativeReleaseTest(unittest.TestCase):
             "![Moon Nook](make/verification/renders/iso.png)",
             (target / "README.md").read_text(encoding="utf-8"),
         )
+
+    def _make_output_archive_inputs(self, *, with_readme=True):
+        if not with_readme:
+            product_root = self.run_root / self.made.product_root
+            (product_root / "cad/project/README.md").unlink()
+            self.made = replace(
+                self.made,
+                product=self.made.to_dict()["product"],
+                product_manifest=build_artifact_manifest(
+                    product_root, created_at="content-addressed"
+                ),
+            )
+            (self.run_root / "artifacts/make/r0001/made.json").write_bytes(
+                _canonical(self.made.to_dict())
+            )
+        spark_inputs = self.run_root / "artifacts/make/r0001"
+        for name in ("assignment.json", "invented.json"):
+            (self.run_root / "artifacts/invent" / name).rename(spark_inputs / name)
+        (self.run_root / "artifacts/invent").rmdir()
+        release = prepare_make_output_release(self.run_root, self.made)
+        repository = self.run_root / "make-output-repository"
+        (repository / "toys").mkdir(parents=True)
+        return release, repository, self._public_receipt(release)
+
+    def test_public_archive_make_output_reuses_readme_and_preserves_privacy(self):
+        release, repository, receipt = self._make_output_archive_inputs()
+        private_secret = b"private-test-secret-not-for-publication"
+        for relative in (
+            ".env", "native-session.json", "transcript.jsonl",
+            "host_state/inventor-selection.json", ".codex/agents/eve.toml",
+        ):
+            path = self.run_root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(private_secret)
+        receipt = replace(receipt, details={**receipt.details, "private_debug": private_secret.decode()})
+        before = self.made.validate_product_tree(self.run_root).artifact_manifest
+        with mock.patch(
+            "workshop.release.native.validate_release_pdf_manual",
+            side_effect=AssertionError("archive must not author or review a PDF"),
+        ):
+            target = materialize_public_example(
+                repository, self.run_root, release=release, made=self.made,
+                inventor_id="eve", receipt=receipt, effort="spark",
+            )
+
+        source = self.run_root / self.made.product_root / release.product["source_document"]["source_path"]
+        self.assertEqual((target / "release/README.md").read_bytes(), source.read_bytes())
+        self.assertFalse((target / "playtest").exists())
+        self.assertFalse((target / "invent").exists())
+        self.assertFalse((target / "release/MANUAL.pdf").exists())
+        self.assertFalse((target / "release/MANUAL-DESIGN.json").exists())
+        self.assertTrue((target / "make/models/assembled.stl").is_file())
+        self.assertEqual(
+            json.loads((target / "release/PLAYTEST-NOT-RUN.json").read_bytes()),
+            playtest_omission_record(),
+        )
+        publication = json.loads((target / "publication/PUBLICATION.json").read_bytes())
+        identities = publication["identities"]
+        self.assertNotIn("manual_sha256", identities)
+        self.assertNotIn("manual_path", identities)
+        self.assertEqual(identities["publication_anchor_sha256"], release.product_json_sha256)
+        self.assertEqual(identities["publication_anchor_readback_sha256"], release.product_json_sha256)
+        self.assertEqual(publication["publication"]["publication_anchor_url"], receipt.details["publication_anchor_url"])
+        self.assertEqual(publication["publication"]["publication_mode"], "make-output-v1")
+        wish = json.loads((target / "wish/wish.json").read_bytes())
+        self.assertEqual(wish["objective_disclosure"], "withheld")
+        self.assertNotIn("objective", wish)
+        for path in target.rglob("*"):
+            if path.is_file():
+                self.assertNotIn(private_secret, path.read_bytes())
+        readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn("| Release | host | accepted |", readme)
+        self.assertIn("no native Release turn or new manual", readme)
+        self.assertIn("[the existing README](release/README.md)", readme)
+        self.assertNotIn("[customer manual]", readme)
+        self.assertNotIn("selection is folded into Make", readme)
+        self.assertIn("not proof of physical manufacture", readme)
+        self.assertEqual(
+            json.loads((target / "MANIFEST.json").read_bytes())["artifact_manifest"],
+            build_public_archive_manifest(target).to_dict(),
+        )
+        self.assertEqual(self.made.validate_product_tree(self.run_root).artifact_manifest, before)
+        self.assertEqual(
+            materialize_public_example(
+                repository, self.run_root, release=release, made=self.made,
+                inventor_id="eve", receipt=receipt, effort="spark",
+            ),
+            target,
+        )
+
+    def test_public_archive_make_output_needs_no_readme_or_pdf(self):
+        release, repository, receipt = self._make_output_archive_inputs(with_readme=False)
+        target = materialize_public_example(
+            repository, self.run_root, release=release, made=self.made,
+            inventor_id="eve", receipt=receipt,
+        )
+        self.assertIsNone(release.manual_path)
+        self.assertFalse((target / "release/README.md").exists())
+        self.assertFalse((target / "release/MANUAL.pdf").exists())
+        self.assertFalse((target / "playtest").exists())
+        readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn("No README or customer manual was created", readme)
+        self.assertNotIn("[customer manual]", readme)
+        self.assertNotIn("release/None", readme)
+        self.assertNotIn("release/MANUAL.pdf", readme)
+        self.assertEqual(
+            {path.name for path in (target / "release").iterdir()},
+            {"product.json", "PLAYTEST-NOT-RUN.json", "release.json", "ATTEMPTS.json"},
+        )
+
+    def test_public_archive_make_output_requires_exact_anchor_readback(self):
+        release, repository, receipt = self._make_output_archive_inputs()
+        changed_values = {
+            "publication_mode": "manual-first",
+            "publication_anchor_path": "MANUAL.pdf",
+            "publication_anchor_sha256": "0" * 64,
+            "publication_anchor_readback_sha256": "1" * 64,
+            "publication_anchor_url": "https://cdn.autonomous.ai/projects/other/workshop-release-page.json",
+            "primary_model_sha256": "2" * 64,
+            "product_page_sha256": "3" * 64,
+            "release_sha256": "4" * 64,
+        }
+        for field, changed in changed_values.items():
+            for missing in (False, True):
+                with self.subTest(field=field, missing=missing):
+                    details = dict(receipt.details)
+                    if missing:
+                        details.pop(field)
+                    else:
+                        details[field] = changed
+                    with self.assertRaises(StateConflict):
+                        materialize_public_example(
+                            repository, self.run_root, release=release, made=self.made,
+                            inventor_id="eve", receipt=replace(receipt, details=details),
+                        )
+                    self.assertFalse((repository / "toys/eve-moon-nook").exists())
+        for project_url in (
+            "https://other.test/projects/moon-nook/",
+            "https://cdn.autonomous.ai/projects/moon-nook/?token=private",
+        ):
+            with self.subTest(project_url=project_url), self.assertRaises((StateConflict, ReceiptError)):
+                materialize_public_example(
+                    repository, self.run_root, release=release, made=self.made,
+                    inventor_id="eve", receipt=replace(receipt, project_url=project_url),
+                )
+
+    def test_public_archive_make_output_rejects_changed_made_bytes(self):
+        release, repository, receipt = self._make_output_archive_inputs()
+        (self.run_root / self.made.product_root / "assembled.stl").write_bytes(b"changed")
+        with self.assertRaisesRegex(ArtifactError, "differs from its manifest"):
+            materialize_public_example(
+                repository, self.run_root, release=release, made=self.made,
+                inventor_id="eve", receipt=receipt,
+            )
+
+    def test_public_archive_make_output_readme_must_be_from_exact_made_tree(self):
+        release, repository, _ = self._make_output_archive_inputs()
+        product = release.to_dict()["product"]
+        product["source_document"]["source_path"] = "not-in-made/README.md"
+        product_bytes = _canonical(product)
+        package_root = self.run_root / release.package_root
+        (package_root / release.product_json_path).write_bytes(product_bytes)
+        rebound = self._rebuild_release(
+            release,
+            product=product,
+            product_json_sha256=_sha(product_bytes),
+            package_manifest=build_artifact_manifest(
+                package_root, created_at="content-addressed"
+            ),
+        )
+        self._write_contract(rebound)
+        with self.assertRaisesRegex(StateConflict, "README differs from the original Made bytes"):
+            materialize_public_example(
+                repository, self.run_root, release=rebound, made=self.made,
+                inventor_id="eve", receipt=self._public_receipt(rebound),
+            )
 
     def test_public_hero_ignores_arbitrary_diagnostic_images(self):
         staging = self.run_root / "hero-selection"

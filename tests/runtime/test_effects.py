@@ -230,6 +230,66 @@ class EffectLedgerTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "native Factory effect schema"):
             EffectLedger(other)
 
+    def test_schema_three_migration_preserves_unknown_import_and_success_receipt(self):
+        sending = self.ledger.begin(self.prepare().intent_id)
+        original = self.ledger.mark_unknown(
+            sending.intent_id, sending.effect_token, "anchor unavailable",
+            response={"id": "design-one", "slug": "orbit-dog"},
+        )
+        publication = self.ledger.begin(self.prepare(kind="factory-publish").intent_id)
+        published = self.ledger.mark_succeeded(
+            publication.intent_id, publication.effect_token,
+            self.receipt(publication, status="public"), {"id": "design-one"},
+        )
+        # Recreate the actual v3 constraint, not merely its version label.
+        with sqlite3.connect(self.path) as connection:
+            schema = connection.execute(
+                "SELECT sql FROM sqlite_master WHERE name='effect_intents'"
+            ).fetchone()[0]
+            old_schema = schema.replace(
+                "CREATE TABLE effect_intents", "CREATE TABLE effect_intents_old"
+            ).replace("'factory-import-version',", "")
+            connection.executescript(
+                "BEGIN IMMEDIATE;" + old_schema + ";"
+                "INSERT INTO effect_intents_old SELECT * FROM effect_intents;"
+                "DROP TABLE effect_intents;"
+                "ALTER TABLE effect_intents_old RENAME TO effect_intents;"
+                "CREATE INDEX effect_product_kind ON effect_intents(product_id, kind, created_at);"
+                "UPDATE effect_ledger_meta SET schema_version=3;COMMIT;"
+            )
+        before = self.path.read_bytes()
+        self.assertEqual(EffectLedger.inspect_latest(self.path, "orbit-dog", "factory-import"), original)
+        self.assertIsNone(EffectLedger.inspect_latest(self.path, "orbit-dog", "factory-import-version"))
+        self.assertEqual(self.path.read_bytes(), before)
+
+        self.ledger = EffectLedger(self.path)
+        self.assertEqual(self.ledger.get(original.intent_id), original)
+        self.assertEqual(self.ledger.get(published.intent_id), published)
+        version = self.prepare(
+            kind="factory-import-version",
+            request={"method": "POST", "path": "/designs/orbit-dog/import",
+                     "original_import_intent_id": original.intent_id},
+            pack_sha256="f" * 64,
+        )
+        self.assertNotEqual(version.intent_id, original.intent_id)
+        self.assertEqual(version.state, "planned")
+        self.assertEqual(self.ledger.get(original.intent_id), original)
+        with sqlite3.connect(self.path) as connection:
+            self.assertEqual(connection.execute("SELECT schema_version FROM effect_ledger_meta").fetchone()[0], 4)
+
+    def test_unknown_version_import_cannot_be_reopened_or_replaced(self):
+        original = self.prepare()
+        planned = self.prepare(kind="factory-import-version")
+        sending = self.ledger.begin(planned.intent_id)
+        unknown = self.ledger.mark_unknown(
+            sending.intent_id, sending.effect_token, "version response lost"
+        )
+        with self.assertRaises(AmbiguousEffectError):
+            self.ledger.begin(unknown.intent_id)
+        with self.assertRaises(AmbiguousEffectError):
+            self.prepare(kind="factory-import-version", pack_sha256="f" * 64)
+        self.assertEqual(self.ledger.get(original.intent_id), original)
+
 
 if __name__ == "__main__":
     unittest.main()

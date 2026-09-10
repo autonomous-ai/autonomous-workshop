@@ -13,9 +13,15 @@ Forge: Wish -> Invent -> Make -> Release
 Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
 
-For a new Codex run, the host may freeze a versioned economics profile for this
-entire session. Spark uses its low-reasoning fast profile. Current Forge and
-Quest runs use an index-first bounded high-reasoning Invent turn with decisive
+Use the selected model and reasoning effort in the host's immutable stage packet.
+Token-budget runs have no Workshop wall-clock, native-turn or lifecycle-round
+spending cap; Make's frozen internal checks and review allowance still apply.
+The historical economics profiles below govern only settings not superseded
+by those host-selected settings and token budgeting.
+
+The host may freeze a versioned economics profile for this entire session.
+Historical Spark profiles use low reasoning. Historical Forge and
+Quest profiles use an index-first bounded high-reasoning Invent turn with decisive
 medium recovery, then one 16-minute medium real-state Make proof runway followed
 by a 15-minute source-first high-reasoning final-Make handoff and normal recovery;
 Playtest and Release use medium. Make's minimal exact mechanism/form evidence
@@ -29,8 +35,8 @@ their own bound runtime profile.
 
 The Workshop is a thin harness around you. Codex performs the research,
 reasoning, creation, inspection, evaluation, and repair. The outer host owns
-identity, lifecycle order, durable checkpoints, deterministic gates, bounded
-rounds, and external-effect authority. The workflow skill is your playbook,
+identity, lifecycle order, durable checkpoints, deterministic gates, shared
+revision history and budgets, and external-effect authority. The workflow skill is your playbook,
 not another Manager agent.
 
 ## Authority
@@ -51,6 +57,15 @@ loop is how you work while pursuing that Goal; it is not a separate runtime or
 Workshop program. Never implement a cognitive, reward, judge, retry, or
 feedback loop in Python.
 
+- A Spark packet with `inputs.workshop_selection.status: pending` is Workshop
+  setup before Make. Follow the selection reference, persist the selection
+  marker, and return without starting a Make Goal or product work. Workshop
+  resumes this same session with `status: selected` before Make begins. This
+  setup exception creates neither another Goal nor a successful stage gate.
+- A Release packet with
+  `inputs.release_contract.native_release_schema_version: 4` is host-owned
+  Spark Publish, not a native creative stage. Return control without a Release
+  Goal, Release finalizer, new manual, or additional product verification.
 - Keep at most one native Goal active. On each host-authorized Invent, Make,
   Playtest, or Release attempt, create one Goal for that stage. If that
   exact stage Goal is already active after a resume, continue it instead of
@@ -118,10 +133,12 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   and declared skill bytes. Do not reconstruct an Inventor from memory, scan a
   second identity tree, or invent an undeclared specialist.
 - An Inventor is a standard Codex custom subagent with Workshop-specific Taste
-  and craft. Compare the immutable roster and select the best fit inside the
-  first enabled creative stage: Invent for Forge/Quest or Make for Spark. Use
-  that exact `.codex/agents/<inventor-id>.toml` agent and its bound skills.
-- In the first creative stage, rank the complete host-derived
+  and craft. New marked Spark runs receive Workshop's selected inventor before
+  Make; use that assignment without reranking. Without that setup packet,
+  compare the immutable roster and select inside the first creative stage:
+  Invent for Forge/Quest or Make for frozen older Spark. Use that exact
+  `.codex/agents/<inventor-id>.toml` agent and its bound skills.
+- When selection has not already been accepted, rank the complete host-derived
   `inventor_discovery_index`, then open only the best three full custom-agent
   TOMLs before selecting. The index is not a router or score; it is the exact
   Taste-header discovery view that avoids repeatedly loading the entire full
@@ -179,10 +196,16 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
 - Keep substantive concepts, source notes, designs, CAD, simulations, manual
   content, bounded Release facts, and evidence in the assigned private run
   workspace.
-- During Release, use the materialized `manual-design` skill to create and
-  inspect the exact printable `MANUAL.pdf`. It must stand alone in the box;
-  website metadata, QR links, and the required public page are not substitutes
-  for teaching the owner how to use the product safely.
+- Spark's schema-v4 host-owned Publish transfers Make's existing output and
+  site-required metadata without a native Release turn. It may include an
+  existing README, but does not require authoring a PDF, manual review, asset
+  regeneration, or duplicate Make verification. The host owns upload and
+  authenticated readback; publication is not proof of physical testing.
+- Other Release packets retain their exact authoring contract. For a PDF-first
+  native Release, use the materialized `manual-design` skill to create and
+  inspect `MANUAL.pdf`; it must stand alone in the box. Historical Markdown
+  packets retain their original format. The host-owned Spark Publish protocol
+  does not load the manual-design skill or impose these authoring tasks.
 - Return only the bounded outcome required by the workflow skill: stage,
   status, changed artifact paths and hashes, gate references, needs, and the
   proposed next transition.

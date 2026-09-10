@@ -1,0 +1,66 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-10T00:15:12+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 1085.20 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=02a9feb5b859d2774850bfa0363e26ed665563a6520d5451eb2d1d13307c43de` | note | 0.00 |
+| 2 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' artifacts/make/r0001/product/cad` | rc=0 | 0.19 |
+| 3 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' artifacts/make/r0001/product/cad/city.step.py artifacts/make/r0001/product/cad/part_bishop.step.py artifacts/make/r0001/product/cad/part_board_0_0.step.py artifacts/make/r0001/product/cad/part_board_0_1.step.py artifacts/make/r0001/product/cad/part_board_1_0.step.py artifacts/make/r0001/product/cad/part_board_1_1.step.py artifacts/make/r0001/product/cad/part_dark_tile.step.py artifacts/make/r0001/product/cad/part_king.step.py artifacts/make/r0001/product/cad/part_knight.step.py artifacts/make/r0001/product/cad/part_pawn.step.py artifacts/make/r0001/product/cad/part_queen.step.py artifacts/make/r0001/product/cad/part_rook.step.py --write --json` | rc=0 | 120.03 |
+| 4 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' artifacts/make/r0001/product/cad --bed 220.0 220.0 --entry artifacts/make/r0001/product/cad/part_bishop.step.py --entry artifacts/make/r0001/product/cad/part_board_0_0.step.py --entry artifacts/make/r0001/product/cad/part_board_0_1.step.py --entry artifacts/make/r0001/product/cad/part_board_1_0.step.py --entry artifacts/make/r0001/product/cad/part_board_1_1.step.py --entry artifacts/make/r0001/product/cad/part_dark_tile.step.py --entry artifacts/make/r0001/product/cad/part_king.step.py --entry artifacts/make/r0001/product/cad/part_knight.step.py --entry artifacts/make/r0001/product/cad/part_pawn.step.py --entry artifacts/make/r0001/product/cad/part_queen.step.py --entry artifacts/make/r0001/product/cad/part_rook.step.py --strict` | rc=0 | 18.26 |
+| 5 | `<HOME>/miniconda/bin/python3.12 artifacts/make/r0001/product/cad/measure/check_fit.py` | rc=0 | 10.94 |
+| 6 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_numbers' artifacts/make/r0001/product/cad` | rc=0 | 11.35 |
+| 7 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_format' artifacts/make/r0001/product/cad` | rc=0 | 0.10 |
+| 8 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 9 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 10 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion' artifacts/make/r0001/product/cad --manifest artifacts/make/r0001/product/cad/measure/motion.json` | rc=0 | 295.88 |
+| 11 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (25 JSONL requests)` | rc=0 | 343.72 |
+| 12 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/city.step --glb --json` | rc=0 | 7.50 |
+| 13 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_bishop.step --stl --json` | rc=0 | 4.25 |
+| 14 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_bishop.stl --bed 220x220x220` | rc=0 | 1.01 |
+| 15 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_bishop.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-bishop.md` | rc=0 | 1.49 |
+| 16 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_bishop.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-bishop.md` | rc=0 | 18.19 |
+| 17 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_board_0_0.step --stl --json` | rc=0 | 3.89 |
+| 18 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_board_0_0.stl --bed 220x220x220` | rc=0 | 0.92 |
+| 19 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_board_0_0.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-board_0_0.md` | rc=0 | 2.40 |
+| 20 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_board_0_0.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-board_0_0.md` | rc=0 | 16.98 |
+| 21 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_board_0_1.step --stl --json` | rc=0 | 3.68 |
+| 22 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_board_0_1.stl --bed 220x220x220` | rc=0 | 1.10 |
+| 23 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_board_0_1.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-board_0_1.md` | rc=0 | 2.64 |
+| 24 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_board_0_1.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-board_0_1.md` | rc=0 | 16.74 |
+| 25 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_board_1_0.step --stl --json` | rc=0 | 3.83 |
+| 26 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_board_1_0.stl --bed 220x220x220` | rc=0 | 1.01 |
+| 27 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_board_1_0.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-board_1_0.md` | rc=0 | 2.27 |
+| 28 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_board_1_0.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-board_1_0.md` | rc=0 | 16.65 |
+| 29 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_board_1_1.step --stl --json` | rc=0 | 3.95 |
+| 30 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_board_1_1.stl --bed 220x220x220` | rc=0 | 1.09 |
+| 31 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_board_1_1.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-board_1_1.md` | rc=0 | 2.58 |
+| 32 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_board_1_1.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-board_1_1.md` | rc=0 | 15.94 |
+| 33 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_dark_tile.step --stl --json` | rc=0 | 3.56 |
+| 34 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_dark_tile.stl --bed 220x220x220` | rc=0 | 1.00 |
+| 35 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_dark_tile.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-dark_tile.md` | rc=0 | 1.46 |
+| 36 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_dark_tile.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-dark_tile.md` | rc=0 | 7.85 |
+| 37 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_king.step --stl --json` | rc=0 | 3.98 |
+| 38 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_king.stl --bed 220x220x220` | rc=0 | 1.03 |
+| 39 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_king.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-king.md` | rc=0 | 1.33 |
+| 40 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_king.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-king.md` | rc=0 | 18.18 |
+| 41 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_knight.step --stl --json` | rc=0 | 3.87 |
+| 42 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_knight.stl --bed 220x220x220` | rc=0 | 1.11 |
+| 43 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_knight.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-knight.md` | rc=0 | 1.35 |
+| 44 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_knight.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-knight.md` | rc=0 | 20.92 |
+| 45 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_pawn.step --stl --json` | rc=0 | 3.79 |
+| 46 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_pawn.stl --bed 220x220x220` | rc=0 | 0.96 |
+| 47 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_pawn.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-pawn.md` | rc=0 | 1.37 |
+| 48 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_pawn.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-pawn.md` | rc=0 | 19.60 |
+| 49 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_queen.step --stl --json` | rc=0 | 4.61 |
+| 50 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_queen.stl --bed 220x220x220` | rc=0 | 1.03 |
+| 51 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_queen.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-queen.md` | rc=0 | 1.54 |
+| 52 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_queen.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-queen.md` | rc=0 | 20.65 |
+| 53 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/export' artifacts/make/r0001/product/cad/part_rook.step --stl --json` | rc=0 | 4.22 |
+| 54 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_rook.stl --bed 220x220x220` | rc=0 | 0.95 |
+| 55 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_rook.stl --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-rook.md` | rc=0 | 1.43 |
+| 56 | `<HOME>/miniconda/bin/python3.12 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_rook.stl --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-rook.md` | rc=0 | 30.73 |

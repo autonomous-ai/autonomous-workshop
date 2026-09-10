@@ -337,6 +337,18 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(start.call_args.kwargs["manager_model"], "claude-opus-5")
         self.assertEqual(start.call_args.kwargs["manager_reasoning_effort"], "medium")
 
+    def test_wish_astra_ultra_with_200m_budget(self):
+        with mock.patch("cli.main.generate_wish_id", return_value="wish-ultra"), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "NYC chess set", "--workflow", "spark",
+                           "--agent", "codex", "--model", "astra", "--effort", "ultra",
+                           "--max-tokens", "200000000", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["manager_model"], "gpt-6-astra")
+        self.assertEqual(start.call_args.kwargs["manager_reasoning_effort"], "ultra")
+        self.assertEqual(start.call_args.kwargs["max_tokens"], 200000000)
+
     def test_wish_mock_covers_every_supported_runtime_combination(self):
         cases = []
         for workflow in WORKFLOW_NAMES:

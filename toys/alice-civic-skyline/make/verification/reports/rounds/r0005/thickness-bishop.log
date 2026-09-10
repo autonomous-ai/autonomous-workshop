@@ -1,0 +1,17 @@
+$ <HOME>/miniconda/bin/python3.12 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/parts/bishop.stl --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/thickness-bishop.md
+(15.5s, exit 0)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/parts/bishop.stl: 17.08 cm3 solid, grid 0.170 mm (168x168x381), 178808 surface samples, grid resolved to 0.085 mm, exact where under the minimum
+  PASS  wall >= 0.80 mm (grid +/-0.09, exact where under) 0.6% of surface below (1015 of 178808 samples); thinnest 0.26 mm at (-11.0, 7.9, 14.8) in 4 region(s); no region is a wall, 4 taper(s) at feature edges (0.55% of surface, budget 2%); 490 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 10.98 mm, p95 59.90 mm, max 63.98 mm
+  WARN  hollowable at 1.20 mm wall     10.85 of 17.08 cm3 (64%) in 1 pocket(s)
+  PASS  filament that would save       1.63 cm3, 2.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.36 mm at (10.3, 7.4, 48.4)    492 samples, 15.9 mm2, runs 49.6 mm, band 0.32 mm
+        2. [taper] 0.26 mm at (-11.0, 7.9, 14.8)    450 samples, 14.4 mm2, runs 49.1 mm, band 0.29 mm
+        3. [taper] 0.38 mm at (-9.8, 7.0, 59.0)     37 samples, 1.2 mm2, runs 2.7 mm, band 0.46 mm
+        4. [taper] 0.39 mm at (9.7, 7.2, 57.2)     36 samples, 1.2 mm2, runs 2.7 mm, band 0.45 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/thickness-bishop.md
+
+--- stderr

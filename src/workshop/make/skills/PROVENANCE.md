@@ -497,3 +497,12 @@ engagement, the declared ratio or phase, force transmission, or physical
 operation. Numerical contact and Boolean consistency tolerances are unchanged.
 Frozen runs keep their exact materialized tools. Private product evidence and
 unqualified gear construction experiments remain outside Git.
+
+## Earlier review-count compatibility correction (2026-09-09)
+
+An earlier local correction allowed positive signature-review counts instead
+of the former two-review allowance. Integration with the team's ADR 0060
+superseded that change: Make's current four-review policy and verifier are
+preserved unchanged, in accordance with the instruction to leave Make alone.
+Workshop token budgeting removes host execution caps, not Make's internal
+review allowance. The lock binds the integrated team skill bytes.

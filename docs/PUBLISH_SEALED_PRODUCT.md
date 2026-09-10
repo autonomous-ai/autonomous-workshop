@@ -2,13 +2,51 @@
 
 Factory publication is the required host-effect portion of Release. Workshop
 does not complete a run after merely creating local files: it completes only
-after the exact ready-to-print CAD and canonical `MANUAL.pdf` are public and
-authenticated readback proves their hashes.
+after authenticated readback proves publication of its digital handoff. A public
+receipt is not evidence of physical printing or manufacture.
 
 Printing, packing, shipping, delivery, and customer Review begin after this
 digital handoff and belong to Operations.
 
-## What Release supplies
+## Spark: publish Make's output
+
+Spark uses Workshop inventor selection before Make: an explicit `--inventor`
+binds immediately; otherwise the Manager chooses once before beginning Make,
+within the same native root session. Selection is not Make's responsibility.
+
+Once Make finalizes, Workshop accepts the submitted files without another CAD
+rebuild, geometry review, assembly acceptance pass, or host rendering. The host
+preserves their identities and exact bytes; a hash match is not a quality score.
+
+The host derives site metadata and a schema-4 Release carrier at
+`artifacts/release/publish-package`. Make's existing README or PDF can travel
+unchanged, but neither is newly required. There is no native Release turn,
+manual-generation task, or manual review. Publication uses the host-held account
+and a durable effect ledger so an uncertain response cannot cause a blind
+duplicate upload. Playtest is explicitly `not-run`.
+
+Live acceptance passed on 2026-09-10 for
+[Civic Skyline](https://www.autonomous.ai/toys/product/civic-skyline), under Dee.
+The normal CLI exited zero with public, verified completion. Its first import
+exposed Factory selecting a nested CAD directory and omitting root metadata.
+The repaired transport preserves Make's full tree in a root-selectable carrier;
+an append-only version import recovered the same private draft without changing
+the original uncertain effect intent. Exact public metadata-anchor readback
+proved the repaired version before publication completed.
+The existing Alice inventor, Wish, root session and 32,678,604/200,000,000-token
+accounting were unchanged. No Make rerun, native Release turn, new PDF, render,
+or extra CAD verification was needed. This older run retained frozen inventor
+selection; new selection-before-Make is separately covered by deterministic
+tests. See [ADR 0061](adr/0061-spark-make-owned-verification.md).
+
+## Forge, Quest, and preserved older Release contracts
+
+The remaining PDF-first engineering and manual requirements below describe
+Forge/Quest and already-created older Release packages, not new Spark carriers.
+An existing sealed or effect-bearing Release is reconciled under its exact
+original contract rather than regenerated during migration.
+
+### What Release supplies
 
 The native Manager writes `artifacts/release/package` with at least:
 
@@ -82,12 +120,12 @@ uv run workshop start <inventor-id> --wish "I wish for ..." --ref side.jpg
 uv run workshop resume <wish-id>
 ```
 
-`workshop wish` without `--inventor` lets Match choose the Inventor from the
-whole roster, and Release then publishes with that Inventor's credential,
+`workshop wish` without `--inventor` lets the Manager choose from the whole roster
+(in Workshop setup before Make for new Spark runs), and Release publishes with that Inventor's credential,
 falling back to the host-wide Factory login when the chosen Inventor has
 none. `workshop wish --inventor <id>` and `workshop start <inventor-id>
 --wish` seal the named Inventor into the Wish instead: the run materializes
-only that Inventor's custom agent, Match can bind nobody else, and Release
+only that Inventor's custom agent, selection can bind nobody else, and Release
 publishes with that Inventor's own account (ADR 0053). A daydream built by
 `workshop start` is pinned the same way.
 
@@ -109,17 +147,19 @@ outside the coding-agent session.
 Once local validation passes, the host:
 
 1. records a hash-bound Factory effect intent before network I/O;
-2. imports the exact production CAD, `MANUAL.pdf`, and supported product facts;
+2. imports Make's existing tree and metadata anchor for Spark, or the sealed
+   production CAD, `MANUAL.pdf`, and product facts for PDF-first contracts;
 3. promotes that same remote design publicly; and
-4. completes Release only after authenticated readback and the public manual
-   URL prove the exact sealed CAD and PDF hashes.
+4. completes Release only after authenticated public readback proves the exact
+   publication anchor for Spark, or the sealed CAD and PDF hashes for PDF-first contracts.
 
-The Factory ZIP is a narrow production transport, not a mirror of the Made
+For PDF-first contracts, the Factory ZIP is a narrow production transport, not a mirror of the Made
 engineering tree. For a mesh product it contains one validated primary model
 and only the exact production parts and occurrence metadata supported by the
 current contract. Alternate exports, play poses, slicer-project files, and
 other redundant representations stay local so file-format duplication cannot
-be mistaken for extra printable parts or fulfillment cost.
+be mistaken for extra printable parts or fulfillment cost. Spark's carrier instead
+preserves Make's complete submitted tree and its exact metadata anchor.
 
 Factory's mutable category ordering is never trusted: the handoff explicitly
 declares the canonical `toys` category, and authenticated readback must preserve

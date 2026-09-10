@@ -461,7 +461,7 @@ def _persist_codex_failure_diagnostic(
     model: str,
     reasoning_effort: str,
     auto_compact_token_limit: Optional[int],
-    timeout_seconds: int,
+    timeout_seconds: Optional[int],
     session_checkpoint_sha256: Optional[str],
     failure: CodexInvocationError,
 ) -> None:
@@ -1861,7 +1861,7 @@ class _FinalizationMarkerWatch:
 
     The marker never proves a successful turn.  It only prevents a Codex
     process whose public JSONL stream remains open after finalization from
-    occupying the launcher until the one-hour turn timeout.
+    occupying the launcher indefinitely after its work has been submitted.
     """
 
     def __init__(
@@ -2133,7 +2133,7 @@ class CodexNativeSessionLauncher:
         auto_compact_token_limit: Optional[int] = None,
         runtime_profile_sha256: Optional[str] = None,
         binary: Optional[str] = None,
-        timeout_seconds: int = DEFAULT_CODEX_TIMEOUT_SECONDS,
+        timeout_seconds: Optional[int] = DEFAULT_CODEX_TIMEOUT_SECONDS,
         popen_factory: Any = subprocess.Popen,
         version_runner: Any = subprocess.run,
         cli_version: Optional[str] = None,
@@ -2143,8 +2143,10 @@ class CodexNativeSessionLauncher:
                 "Workshop Codex model must be gpt-6-astra, gpt-5.6-sol, "
                 "gpt-5.6-terra, or gpt-5.6-luna"
             )
-        if reasoning_effort not in ("low", "medium", "high", "xhigh"):
+        if reasoning_effort not in ("low", "medium", "high", "xhigh", "ultra"):
             raise ValueError("unsupported Codex reasoning effort")
+        if reasoning_effort == "ultra" and model != "gpt-6-astra":
+            raise ValueError("ultra reasoning effort requires gpt-6-astra")
         if (
             auto_compact_token_limit is not None
             and (
@@ -2160,8 +2162,10 @@ class CodexNativeSessionLauncher:
                 runtime_profile_sha256,
                 "Codex runtime profile sha256",
             )
-        if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600:
-            raise ValueError("Codex timeout_seconds must be from 1 to 3,600")
+        if timeout_seconds is not None and (
+            type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600
+        ):
+            raise ValueError("Codex timeout_seconds must be from 1 to 3,600 or None")
         self.binary = _resolved_codex_binary(
             binary or os.environ.get("WORKSHOP_CODEX_BIN") or shutil.which("codex")
         )
@@ -2894,13 +2898,19 @@ class CodexNativeSessionLauncher:
         _process_guard: Optional[_NativeProcessGuard] = None,
         _finalization_watch: Optional[_FinalizationMarkerWatch] = None,
         _deadline: Optional[float] = None,
+        _terminal_state: Optional[dict[str, Any]] = None,
     ) -> tuple[bool, Optional[str], Optional[tuple[int, int]]]:
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
+        if self.timeout_seconds is None and self.token_budget_observer is None:
+            raise CodexInvocationError("untimed native execution requires a token budget observer")
         deadline = (
             _deadline
             if _deadline is not None
-            else time.monotonic() + self.timeout_seconds
+            else (
+                math.inf if self.timeout_seconds is None
+                else time.monotonic() + self.timeout_seconds
+            )
         )
         if _process_guard is None:
             try:
@@ -2951,6 +2961,7 @@ class CodexNativeSessionLauncher:
             usage_stop = threading.Event()
             usage_failure = []
             usage_thread = None
+            terminal_state: dict[str, Any] = {}
             def watch_usage():
                 while not usage_stop.wait(2.0):
                     try:
@@ -2981,6 +2992,7 @@ class CodexNativeSessionLauncher:
                     _process_guard=process_guard,
                     _finalization_watch=finalization_watch,
                     _deadline=deadline,
+                    _terminal_state=terminal_state,
                 )
                 if usage_failure:
                     raise CodexInvocationError("product token budget stopped native execution; inspect Workshop status")
@@ -3007,6 +3019,10 @@ class CodexNativeSessionLauncher:
                     # Recover the final observed requests even after timeout or
                     # cancellation. The ledger is already durable per sample.
                     try:
+                        if terminal_state.get("completed"):
+                            reconcile = getattr(self.token_budget_observer, "reconcile_completed_turn", None)
+                            if callable(reconcile):
+                                reconcile(terminal_state.get("usage"))
                         self.token_budget_observer()
                     except Exception:
                         final_usage_failed = True
@@ -3036,13 +3052,19 @@ class CodexNativeSessionLauncher:
         def drain_stderr() -> None:
             nonlocal stderr_size, stderr_tail
             try:
-                for raw in process.stderr:
+                while True:
+                    # Bound retained diagnostics and each read, not the lifetime
+                    # diagnostic volume of a token-budget native turn.
+                    raw = process.stderr.readline(16 * 1024)
+                    if raw in ("", b""):
+                        break
                     text = _stream_text(raw)
                     stderr_size += len(text.encode("utf-8", errors="replace"))
                     stderr_tail = (stderr_tail + text)[
                         -_MAX_TRANSIENT_DIAGNOSTIC_CHARS:
                     ]
-                    if stderr_size > MAX_CODEX_STDERR_BYTES:
+                    if (self.timeout_seconds is not None
+                            and stderr_size > MAX_CODEX_STDERR_BYTES):
                         stderr_overflow.set()
                         process_guard.reap()
                         return
@@ -3062,9 +3084,11 @@ class CodexNativeSessionLauncher:
             timed_out.set()
             process_guard.reap()
 
-        timer = threading.Timer(max(0.001, deadline - time.monotonic()), expire)
-        timer.daemon = True
-        timer.start()
+        timer = None
+        if math.isfinite(deadline):
+            timer = threading.Timer(max(0.001, deadline - time.monotonic()), expire)
+            timer.daemon = True
+            timer.start()
 
         used_web_search = False
         observed_thread_id: Optional[str] = None
@@ -3097,6 +3121,11 @@ class CodexNativeSessionLauncher:
                             diagnostic_code="provider-transport",
                         )
                     diagnosis = event_stats.terminal_error
+                    if _is_retryable_service_failure(event):
+                        raise CodexRecoverableInvocationError(
+                            "Codex provider is temporarily unavailable; retrying the same session",
+                            diagnostic_code="provider-transport",
+                        )
                     detail = ""
                     if diagnosis is not None:
                         parts = [
@@ -3148,6 +3177,8 @@ class CodexNativeSessionLauncher:
                     _validate_agent_message(item.get("text"))
                 if event_type == "turn.completed":
                     token_usage = _native_token_usage(event.get("usage"))
+                    if _terminal_state is not None:
+                        _terminal_state.update(completed=True, usage=token_usage)
                     turn_completed = True
                     if finalization_watch is not None:
                         finalization_watch.observe_turn_completed()
@@ -3157,7 +3188,8 @@ class CodexNativeSessionLauncher:
             activity_reporter.observe("failed")
             process_guard.reap()
         finally:
-            timer.cancel()
+            if timer is not None:
+                timer.cancel()
 
         if (
             not turn_completed
@@ -3193,7 +3225,9 @@ class CodexNativeSessionLauncher:
                 )
         else:
             try:
-                returncode = process.wait(timeout=max(0.001, remaining))
+                returncode = process.wait(
+                    timeout=max(0.001, remaining) if math.isfinite(remaining) else None
+                )
             except (subprocess.TimeoutExpired, OSError, ValueError):
                 timed_out.set()
                 process_guard.reap()
@@ -3934,6 +3968,28 @@ def _terminal_failure_diagnosis(
         code=_terminal_failure_code(event),
         message_bytes=message_bytes,
     )
+
+
+def _is_retryable_service_failure(event: Mapping[str, Any]) -> bool:
+    """Retry explicit provider service failures, never arbitrary tool prose.
+
+    Access, quota, context and malformed-request errors require different
+    remedies and must not turn into an automatic paid retry loop.
+    """
+    if event.get("type") not in ("turn.failed", "error"):
+        return False
+    code = _terminal_failure_code(event)
+    if code in ("overloaded", "overloaded_error", "server_overloaded",
+                "service_unavailable", "internal_server_error"):
+        return True
+    message = _terminal_failure_message(event)
+    if not isinstance(message, str):
+        return False
+    return re.match(
+        r"^(?:(?:the )?(?:model|server|service|provider) (?:is )?(?:currently )?)?"
+        r"(?:overloaded\b|at capacity\b|service unavailable\b|internal server error\b)",
+        message.strip(), re.IGNORECASE,
+    ) is not None
 
 
 def _is_explicit_transient_event_failure(event: Mapping[str, Any]) -> bool:

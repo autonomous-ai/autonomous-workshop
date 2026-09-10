@@ -30,10 +30,11 @@ from workshop.errors import (
 from workshop.runtime.contracts import Receipt
 
 
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION = 4
 _KINDS = frozenset(
     (
         "factory-import",
+        "factory-import-version",
         "factory-content",
         "factory-part-colors",
         "factory-publish",
@@ -144,7 +145,7 @@ class EffectIntent:
 
 
 class EffectLedger:
-    """Private SQLite outbox for the three Factory effects in one Wish run."""
+    """Private SQLite outbox for credential-bearing effects in one Wish run."""
 
     def __init__(self, path: Path) -> None:
         self.path = Path(path)
@@ -214,11 +215,11 @@ class EffectLedger:
                     CREATE TABLE effect_ledger_meta (
                         schema_version INTEGER NOT NULL
                     );
-                    INSERT INTO effect_ledger_meta(schema_version) VALUES (3);
+                    INSERT INTO effect_ledger_meta(schema_version) VALUES (4);
                     CREATE TABLE effect_intents (
                         id TEXT PRIMARY KEY,
                         idempotency_key TEXT NOT NULL UNIQUE,
-                        kind TEXT NOT NULL CHECK(kind IN ('factory-import','factory-content',
+                        kind TEXT NOT NULL CHECK(kind IN ('factory-import','factory-import-version','factory-content',
                             'factory-part-colors','factory-publish')),
                         product_id TEXT NOT NULL,
                         request_sha256 TEXT NOT NULL,
@@ -280,14 +281,14 @@ class EffectLedger:
                 version = connection.execute(
                     "SELECT schema_version FROM effect_ledger_meta"
                 ).fetchone()
-            if version is not None and version[0] == 2:
+            if version is not None and version[0] in (2, 3):
                 connection.executescript(
                     """
                     BEGIN IMMEDIATE;
-                    CREATE TABLE effect_intents_v3 (
+                    CREATE TABLE effect_intents_v4 (
                         id TEXT PRIMARY KEY,
                         idempotency_key TEXT NOT NULL UNIQUE,
-                        kind TEXT NOT NULL CHECK(kind IN ('factory-import','factory-content',
+                        kind TEXT NOT NULL CHECK(kind IN ('factory-import','factory-import-version','factory-content',
                             'factory-part-colors','factory-publish')),
                         product_id TEXT NOT NULL,
                         request_sha256 TEXT NOT NULL,
@@ -305,13 +306,13 @@ class EffectLedger:
                         created_at TEXT NOT NULL,
                         updated_at TEXT NOT NULL
                     );
-                    INSERT INTO effect_intents_v3
+                    INSERT INTO effect_intents_v4
                         SELECT * FROM effect_intents;
                     DROP TABLE effect_intents;
-                    ALTER TABLE effect_intents_v3 RENAME TO effect_intents;
+                    ALTER TABLE effect_intents_v4 RENAME TO effect_intents;
                     CREATE INDEX effect_product_kind
                         ON effect_intents(product_id, kind, created_at);
-                    UPDATE effect_ledger_meta SET schema_version=3;
+                    UPDATE effect_ledger_meta SET schema_version=4;
                     COMMIT;
                     """
                 )
@@ -411,7 +412,10 @@ class EffectLedger:
             versions = connection.execute(
                 "SELECT schema_version FROM effect_ledger_meta"
             ).fetchall()
-            if len(versions) != 1 or versions[0][0] != _SCHEMA_VERSION:
+            # Historical versions have the same immutable row layout; only
+            # the allowed effect kinds differ. Inspection must remain read-only
+            # before an explicit resume migrates their CHECK constraint.
+            if len(versions) != 1 or versions[0][0] not in (1, 2, 3, _SCHEMA_VERSION):
                 raise StateConflict("effect ledger schema version is unavailable")
             row = connection.execute(
                 """SELECT * FROM effect_intents

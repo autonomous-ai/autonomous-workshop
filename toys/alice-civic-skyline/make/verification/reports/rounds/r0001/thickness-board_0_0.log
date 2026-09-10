@@ -1,0 +1,20 @@
+$ <HOME>/miniconda/bin/python3.12 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/parts/board_0_0.stl --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-board_0_0.md
+(20.0s, exit 1)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/parts/board_0_0.stl: 146.63 cm3 solid, grid 0.291 mm (664x664x26), 383060 surface samples, grid resolved to 0.146 mm, exact where under the minimum
+  FAIL  wall >= 0.80 mm (grid +/-0.15, exact where under) 0.0% of surface below (56 of 383060 samples); thinnest 0.33 mm at (192.0, 106.3, 3.2) in 7 region(s); 4 wall(s) (widest band 1.27 mm), 0 taper(s) at feature edges and 3 spot(s) too small to be a wall (0.01% of surface, budget 2%); 30 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 4.80 mm, p95 41.91 mm, max 191.80 mm
+  WARN  hollowable at 1.20 mm wall     54.83 of 146.63 cm3 (37%) in 1 pocket(s)
+  PASS  filament that would save       8.22 cm3, 10.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.42 mm at (192.0, 190.4, 3.8)     11 samples, 3.9 mm2, runs 3.2 mm, band 1.22 mm
+        2. [wall ] 0.39 mm at (67.6, 192.0, 3.5)      9 samples, 2.5 mm2, runs 1.9 mm, band 1.27 mm
+        3. [wall ] 0.34 mm at (192.0, 151.7, 2.6)      9 samples, 2.4 mm2, runs 2.0 mm, band 1.22 mm
+        4. [spot ] 0.36 mm at (151.6, 192.0, 3.5)      7 samples, 2.2 mm2, runs 0.8 mm, band 2.57 mm
+        5. [wall ] 0.33 mm at (192.0, 106.3, 3.2)      9 samples, 2.1 mm2, runs 1.9 mm, band 1.09 mm
+        6. [spot ] 0.39 mm at (192.0, 67.6, 3.4)      6 samples, 1.7 mm2, runs 1.4 mm, band 1.27 mm
+        ... and 1 smaller region(s)
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-board_0_0.md
+
+--- stderr

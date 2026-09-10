@@ -18,9 +18,6 @@ from workshop.errors import ContractError
 from workshop.runtime._compacted_usage import InvalidRecord, consume_compacted_record
 
 MAX_LINE_BYTES = 4 * 1024 * 1024
-MAX_ROLLOUT_BYTES = 128 * 1024 * 1024
-MAX_CANDIDATES = 4096
-MAX_THREADS = 32
 SUPPORTED_VERSION = "0.153.4"
 COUNTERS = (
     "input_tokens", "cached_input_tokens", "cache_write_input_tokens",
@@ -30,6 +27,10 @@ COUNTERS = (
 
 class UsageUnavailable(ContractError):
     """Usage cannot safely be attributed; never interpret this as zero."""
+
+
+class UsageNotReady(UsageUnavailable):
+    """The native root identity has not been materialized yet; no usage claim."""
 
 
 def _object(pairs):
@@ -42,12 +43,12 @@ def _object(pairs):
 
 
 def _records(path):
-    """Ignore only a trailing partial append; reject links and oversized files."""
+    """Stream a file-size snapshot; bound individual records, not run length."""
     try:
         fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         with os.fdopen(fd, "rb") as stream:
             info = os.fstat(stream.fileno())
-            if not stat.S_ISREG(info.st_mode) or info.st_size > MAX_ROLLOUT_BYTES:
+            if not stat.S_ISREG(info.st_mode):
                 raise UsageUnavailable("native usage file exceeds safe bounds")
             remaining = info.st_size
             while remaining:
@@ -84,9 +85,9 @@ def _records(path):
 def _identity(path):
     """Read a bounded identity before deciding whose body may be inspected.
 
-    An unrelated rollout can exceed the selected-file size limit. Discovery
-    needs only its first metadata record; _records still enforces the full
-    file bound for the root and every ancestry-bound descendant.
+    Discovery needs only the first metadata record, regardless of body size.
+    Only the root and ancestry-bound descendants are streamed by _records,
+    which preserves record bounds without an aggregate file-size cap.
     """
     try:
         fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
@@ -206,7 +207,6 @@ def read_product_usage(sessions_root, *, thread_id, workspace):
     if root.is_symlink() or not root.is_dir():
         raise UsageUnavailable("native session directory is unavailable")
     candidates = {}
-    count = 0
     for path in root.glob("*/*/*/rollout-*.jsonl"):
         try:
             path_day = datetime.strptime("/".join(path.parts[-4:-1]), "%Y/%m/%d").date()
@@ -214,9 +214,6 @@ def read_product_usage(sessions_root, *, thread_id, workspace):
             continue
         if path_day < day - timedelta(days=1):
             continue
-        count += 1
-        if count > MAX_CANDIDATES:
-            raise UsageUnavailable("native session discovery exceeds safe bounds")
         if any(p.is_symlink() for p in (path, path.parent, path.parent.parent, path.parent.parent.parent)):
             raise UsageUnavailable("linked native session paths are forbidden")
         meta = _identity(path)
@@ -236,7 +233,7 @@ def read_product_usage(sessions_root, *, thread_id, workspace):
         # a duplicate inside the selected product tree still fails closed.
         candidates.setdefault(candidate_id, []).append((path, parent))
     if thread_id not in candidates:
-        raise UsageUnavailable("native root usage is not available yet")
+        raise UsageNotReady("native root usage is not available yet")
     selected = {thread_id}
     while True:
         expanded = selected | {
@@ -244,8 +241,6 @@ def read_product_usage(sessions_root, *, thread_id, workspace):
             for candidate_id, records in candidates.items()
             if any(parent in selected for _, parent in records)
         }
-        if len(expanded) > MAX_THREADS:
-            raise UsageUnavailable("native product ancestry exceeds safe bounds")
         if expanded == selected:
             break
         selected = expanded

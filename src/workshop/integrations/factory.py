@@ -55,6 +55,7 @@ from workshop.make.assembly_package import (
 )
 from workshop.release.native import (
     DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+    MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
     FACTORY_CONTENT_BODY_MAX,
     FACTORY_CONTENT_BODY_MIN,
     FACTORY_CONTENT_LABEL_MAX,
@@ -78,6 +79,14 @@ FACTORY_IMPORT_STRING_LIMITS = {
     "description": 2_000,
 }
 FACTORY_RELEASE_PAGE_PATH = "workshop-release-page.json"
+FACTORY_IMPORT_ROOT_MAPPING = "workshop-import-root-v1"
+FACTORY_IMPORT_ROOT_PATH = "000_workshop_import_root.py"
+FACTORY_IMPORT_ROOT_CONTENT = (
+    b"# Workshop transport boundary, not product source or executable CAD.\n"
+    b"# Factory's legacy folder detector looks for the literal def gen_step.\n"
+    b"# Keep the complete uploaded tree; original Make sources remain unchanged.\n"
+)
+MAKE_OUTPUT_PUBLICATION_MODE = "make-output-v1"
 FACTORY_RELEASE_LEGACY_MANUAL_PATH = "MANUAL.md"
 FACTORY_RELEASE_MANUAL_PATH = FACTORY_RELEASE_LEGACY_MANUAL_PATH
 FACTORY_RELEASE_PDF_MANUAL_PATH = "MANUAL.pdf"
@@ -107,6 +116,7 @@ FACTORY_MODEL_METADATA_PATHS = frozenset(
         "product.json",
         "project.json",
         FACTORY_RELEASE_PAGE_PATH,
+        FACTORY_IMPORT_ROOT_PATH,
         "workshop-product-facts.json",
     )
 )
@@ -231,6 +241,9 @@ def _project_notes(
 
 def _manual_path_for_release_product(product: Mapping[str, Any]) -> str:
     schema_version = product.get("schema_version")
+    if schema_version == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION:
+        # The metadata carrier, not a fabricated manual, is the readback anchor.
+        return FACTORY_RELEASE_PAGE_PATH
     if schema_version == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
         return FACTORY_RELEASE_LEGACY_MANUAL_PATH
     if schema_version in (
@@ -271,8 +284,9 @@ def _factory_product_page_url(slug: Any) -> str:
 def _factory_project_file_url(project_url: Any, path: str) -> str:
     """Derive one immutable public file URL from authenticated Factory readback."""
 
-    if path != FACTORY_RELEASE_PDF_MANUAL_PATH:
-        raise ContractError("Factory project readback supports only MANUAL.pdf")
+    if path not in (FACTORY_RELEASE_PDF_MANUAL_PATH, FACTORY_RELEASE_PAGE_PATH,
+                    "workshop-product-facts.json", FACTORY_IMPORT_ROOT_PATH):
+        raise ContractError("Factory project readback path is unsupported")
     value = _https_url(project_url, "Factory project URL")
     try:
         parsed = urllib.parse.urlsplit(value)
@@ -294,7 +308,7 @@ def _factory_project_file_url(project_url: Any, path: str) -> str:
         (
             "https",
             DEFAULT_FACTORY_PROJECT_CDN_HOST,
-            parsed.path + FACTORY_PROJECT_PDF_MANUAL_FILENAME,
+            parsed.path + (FACTORY_PROJECT_PDF_MANUAL_FILENAME if path == FACTORY_RELEASE_PDF_MANUAL_PATH else path),
             "",
             "",
         )
@@ -1220,6 +1234,14 @@ def _assert_factory_handoff(content: bytes) -> None:
             if hashlib.sha256(primary_content).hexdigest() != primary_sha256:
                 raise ContractError("Factory handoff primary model hash differs")
             make_artifacts = _declared_make_artifacts(facts)
+            import_root = facts.get("import_root")
+            if import_root is not None:
+                if import_root != {
+                    "mapping": FACTORY_IMPORT_ROOT_MAPPING,
+                    "path": FACTORY_IMPORT_ROOT_PATH,
+                    "sha256": hashlib.sha256(FACTORY_IMPORT_ROOT_CONTENT).hexdigest(),
+                } or archive.read(FACTORY_IMPORT_ROOT_PATH) != FACTORY_IMPORT_ROOT_CONTENT:
+                    raise ContractError("Factory import root marker is not exact")
             for archive_path, binding in make_artifacts.items():
                 try:
                     source_content = archive.read(archive_path)
@@ -1249,7 +1271,7 @@ def _assert_factory_handoff(content: bytes) -> None:
                     "Factory handoff Release product facts are not canonical"
                 )
             manual_path = _manual_path_for_release_product(release_page)
-            manual = facts.get("manual")
+            manual = facts.get("publication_anchor" if release_page.get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION else "manual")
             if (
                 not isinstance(manual, Mapping)
                 or manual.get("path") != manual_path
@@ -1287,7 +1309,7 @@ def _assert_factory_handoff(content: bytes) -> None:
                 if not isinstance(product, Mapping):
                     raise ContractError("Factory handoff product.json is malformed")
                 forbidden = FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(product)
-                if forbidden:
+                if forbidden and release_page.get("schema_version") != MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION:
                     raise ContractError(
                         "Factory handoff Made product.json contains Release page fields: %s"
                         % sorted(forbidden)
@@ -1304,6 +1326,8 @@ def _build_model_handoff(
     facts: Mapping[str, Any],
     release_page_content: bytes,
     manual_content: bytes,
+    *,
+    preserve_import_root: bool = False,
 ) -> Mapping[str, Any]:
     """Create the exact model-and-page ZIP that crosses Factory's boundary."""
 
@@ -1329,7 +1353,8 @@ def _build_model_handoff(
     transport_primary = primary_source
     occurrence: Optional[Mapping[str, Any]] = None
     transport_reason: Optional[str] = None
-    if sealed_primary["kind"] == "mesh":
+    make_output = facts.get("release", {}).get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
+    if sealed_primary["kind"] == "mesh" and not make_output:
         occurrence, transport_reason = _validated_occurrence_transport(
             root,
             manifest,
@@ -1348,6 +1373,16 @@ def _build_model_handoff(
         ):
             occurrence = None
     conflict_paths = set(FACTORY_HANDOFF_RESERVED_PATHS)
+    if preserve_import_root:
+        conflict_paths.add(FACTORY_IMPORT_ROOT_PATH)
+        # Factory walks directories lexically before it chooses a source root.
+        # A rare earlier-sorting Make directory must not beat our root marker.
+        # Preserve its exact files under the already-declared conflict mapping.
+        conflict_paths.update(
+            entry.path for entry in manifest.entries
+            if len(PurePosixPath(entry.path).parts) > 1
+            and PurePosixPath(entry.path).parts[0] <= FACTORY_IMPORT_ROOT_PATH
+        )
     conflict_paths.update(
         entry.path
         for entry in manifest.entries
@@ -1370,6 +1405,12 @@ def _build_model_handoff(
         "sha256": primary_sha256,
     }
     transport_facts = dict(facts)
+    if preserve_import_root:
+        transport_facts["import_root"] = {
+            "mapping": FACTORY_IMPORT_ROOT_MAPPING,
+            "path": FACTORY_IMPORT_ROOT_PATH,
+            "sha256": hashlib.sha256(FACTORY_IMPORT_ROOT_CONTENT).hexdigest(),
+        }
     transport_facts["primary_model"] = primary_model
     if make_artifacts:
         transport_facts["make_artifacts"] = {
@@ -1418,7 +1459,7 @@ def _build_model_handoff(
     if not isinstance(manual_content, bytes) or not manual_content:
         raise ContractError("Factory handoff requires sealed %s bytes" % manual_path)
     manual_sha256 = hashlib.sha256(manual_content).hexdigest()
-    manual_binding = facts.get("manual")
+    manual_binding = facts.get("publication_anchor" if make_output else "manual")
     if (
         not isinstance(manual_binding, Mapping)
         or manual_binding.get("path") != manual_path
@@ -1468,7 +1509,7 @@ def _build_model_handoff(
             for path in FACTORY_HOST_HANDOFF_PATHS
         ):
             raise ContractError("Made contains a reserved Factory handoff path")
-        cover_render = _host_cover_render(context)
+        cover_render = None if make_output else _host_cover_render(context)
         if cover_render is not None:
             assert_packable_content(FACTORY_COVER_RENDER_PATH, cover_render)
             target = staging.joinpath(*PurePosixPath(FACTORY_COVER_RENDER_PATH).parts)
@@ -1481,6 +1522,8 @@ def _build_model_handoff(
         (staging / FACTORY_RELEASE_PAGE_PATH).write_bytes(release_page_content)
         (staging / manual_path).write_bytes(manual_content)
         (staging / "project.json").write_bytes(project_payload)
+        if preserve_import_root:
+            (staging / FACTORY_IMPORT_ROOT_PATH).write_bytes(FACTORY_IMPORT_ROOT_CONTENT)
         result = dict(build_pack(staging, destination))
     content, pack_sha256, handoff_artifact_sha256 = load_artifact_payload(destination)
     if (
@@ -1841,6 +1884,22 @@ class FactoryClient:
             raise ContractError("Factory design slug is required")
         return self._request(
             "GET", "/designs/%s" % urllib.parse.quote(slug, safe="")
+        )
+
+    def import_model_version(
+        self, slug: str, *, content: bytes, idempotency_key: str
+    ) -> HttpResponse:
+        """Append content to an existing owner draft, never create a design."""
+
+        if not isinstance(slug, str) or not slug:
+            raise ContractError("Factory design slug is required")
+        _assert_factory_handoff(content)
+        body, content_type = _multipart(
+            (), (("file", "model-handoff.zip", "application/zip", content),)
+        )
+        return self._request(
+            "POST", "/designs/%s/import" % urllib.parse.quote(slug, safe=""),
+            body=body, content_type=content_type, idempotency_key=idempotency_key,
         )
 
     def write_use_case(
@@ -2227,6 +2286,50 @@ class FactoryAgentSession:
             "manual_readback_sha256": observed,
         }
 
+    def verify_publication_anchor(
+        self, project_url: Any, expected_sha256: Any
+    ) -> Mapping[str, str]:
+        """Read back exact Make-output metadata without a PDF or creative check."""
+
+        expected = require_sha256(expected_sha256, "Factory publication anchor sha256")
+        url = _factory_project_file_url(project_url, FACTORY_RELEASE_PAGE_PATH)
+        try:
+            response = self._project_file_transport(
+                "GET", url,
+                {"Accept": "application/json", "User-Agent": FACTORY_USER_AGENT},
+                None, self._timeout_seconds,
+            )
+        except (ContractError, EffectError):
+            raise
+        except Exception as exc:
+            raise AmbiguousEffectError("Factory publication anchor readback is unavailable") from exc
+        response = FactoryProjectFileResponse(response.status, response.headers, response.body)
+        if response.status != 200:
+            raise AmbiguousEffectError("Factory publication anchor readback returned HTTP %s" % response.status)
+        observed = hashlib.sha256(response.body).hexdigest()
+        if not response.body or observed != expected:
+            raise ReceiptError("Factory publication anchor differs from the sealed Make-output metadata")
+        return {"publication_anchor_url": url, "publication_anchor_readback_sha256": observed}
+
+    def verify_import_root_facts(
+        self, project_url: str, expected_sha256: str
+    ) -> Mapping[str, str]:
+        """Bind a repaired version to its exact original-import provenance."""
+
+        expected = require_sha256(expected_sha256, "Factory root facts sha256")
+        url = _factory_project_file_url(project_url, "workshop-product-facts.json")
+        response = self._project_file_transport(
+            "GET", url, {"Accept": "application/json", "User-Agent": FACTORY_USER_AGENT},
+            None, self._timeout_seconds,
+        )
+        response = FactoryProjectFileResponse(response.status, response.headers, response.body)
+        if response.status != 200:
+            raise AmbiguousEffectError("Factory import root facts readback is unavailable")
+        observed = hashlib.sha256(response.body).hexdigest()
+        if not response.body or observed != expected:
+            raise ReceiptError("Factory import root facts differ from the exact repaired handoff")
+        return {"import_root_facts_url": url, "import_root_facts_readback_sha256": observed}
+
 
 def _assert_sealed_release(root: Path, manifest: ArtifactManifest) -> Path:
     requested = Path(root)
@@ -2272,8 +2375,9 @@ def _release_manual(
     release_product: Mapping[str, Any],
 ) -> Tuple[bytes, str, str]:
     manual_path = _manual_path_for_release_product(release_product)
-    path = root / manual_path
-    entry = _manifest_entry(manifest, manual_path)
+    source_path = "product.json" if manual_path == FACTORY_RELEASE_PAGE_PATH else manual_path
+    path = root / source_path
+    entry = _manifest_entry(manifest, source_path)
     if entry is None or path.is_symlink() or not path.is_file():
         raise ContractError("Release %s must be a sealed regular file" % manual_path)
     try:
@@ -2423,6 +2527,37 @@ def _same_factory_identity(left: Receipt, right: Receipt) -> bool:
     )
 
 
+def _safe_factory_readback_cause(error: Exception) -> str:
+    """Expose only adapter-authored diagnostics, never arbitrary provider text."""
+
+    messages = {
+        "Factory import did not return a private draft",
+        "Factory readback does not identify the imported draft",
+        "Factory readback does not preserve the exact import",
+        "Factory project URL is outside the pinned immutable CDN",
+        "Factory publication anchor readback is unavailable",
+        "Factory publication anchor differs from the sealed Make-output metadata",
+        "Factory MANUAL.pdf readback is unavailable",
+        "Factory MANUAL.pdf readback differs from the sealed Release",
+        "Factory draft readback is not valid JSON",
+        "Factory draft readback must be a JSON object",
+        "Factory import response is not valid JSON",
+        "Factory import response must be a JSON object",
+        "Factory Receipt lacks exact Make-output publication readback",
+        "Factory import requires authenticated private readback",
+    }
+    allowed_types = (AmbiguousEffectError, ReceiptError, ContractError, EffectError, StateConflict,
+                     TimeoutError, ConnectionError, OSError, ValueError, RuntimeError)
+    name = next((kind.__name__ for kind in allowed_types if type(error) is kind), "Exception")
+    message = str(error)
+    if message in messages or re.fullmatch(
+        r"(?:authenticated Factory draft|Factory publication anchor|Factory MANUAL\.pdf) "
+        r"readback returned HTTP [1-5][0-9]{2}", message,
+    ):
+        return "%s: %s" % (name, message)
+    return "%s: diagnostic details withheld" % name
+
+
 def _factory_receipt(
     design: Mapping[str, Any],
     intent: EffectIntent,
@@ -2476,6 +2611,7 @@ class FactoryReleaseWriter:
         details = receipt.details
         if details.get("product_id") != intent.product_id:
             raise ReceiptError("Factory Receipt belongs to a different product")
+        make_output = intent.request.get("publication_mode") == MAKE_OUTPUT_PUBLICATION_MODE
         required_hashes = (
             "release_sha256",
             "playtest_evidence_sha256",
@@ -2483,7 +2619,7 @@ class FactoryReleaseWriter:
             "product_facts_sha256",
             "primary_model_sha256",
             "product_page_sha256",
-            "manual_sha256",
+            "publication_anchor_sha256" if make_output else "manual_sha256",
             "effect_request_sha256",
         )
         for name in required_hashes:
@@ -2500,8 +2636,17 @@ class FactoryReleaseWriter:
             "product_page_sha256"
         ):
             raise ReceiptError("Factory Receipt belongs to different product-page bytes")
-        if details.get("manual_sha256") != intent.request.get("manual_sha256"):
+        document_hash_key = "publication_anchor_sha256" if make_output else "manual_sha256"
+        if details.get(document_hash_key) != intent.request.get(document_hash_key):
             raise ReceiptError("Factory Receipt belongs to different manual bytes")
+        if make_output and (
+            details.get("publication_mode") != MAKE_OUTPUT_PUBLICATION_MODE
+            or details.get("publication_anchor_path") != FACTORY_RELEASE_PAGE_PATH
+            or intent.request.get("publication_anchor_path") != FACTORY_RELEASE_PAGE_PATH
+            or details.get("publication_anchor_url") != _factory_project_file_url(receipt.project_url, FACTORY_RELEASE_PAGE_PATH)
+            or details.get("publication_anchor_readback_sha256") != details.get("publication_anchor_sha256")
+        ):
+            raise ReceiptError("Factory Receipt lacks exact Make-output publication readback")
         metadata = intent.request.get("metadata")
         requested_category = (
             metadata.get("category") if isinstance(metadata, Mapping) else None
@@ -2533,10 +2678,27 @@ class FactoryReleaseWriter:
                     "Factory Receipt does not preserve exact MANUAL.pdf readback"
                 )
         _https_url(details.get("page_url"), "Factory page URL")
-        if requested_manual_path is None:
+        if requested_manual_path is None and not make_output:
             _https_url(details.get("cover_url"), "Factory cover URL")
         if details.get("content_owner") != "workshop-manager":
             raise ReceiptError("Factory import must preserve Workshop page ownership")
+        if intent.kind == "factory-import-version":
+            for key in ("source_import_intent_id", "source_import_request_sha256",
+                        "previous_history_id", "previous_project_url"):
+                if details.get(key) != intent.request.get(key):
+                    raise ReceiptError("Factory repaired version lost its original import binding")
+            if (
+                details.get("import_root_mapping") != FACTORY_IMPORT_ROOT_MAPPING
+                or details.get("import_root_facts_readback_sha256") != intent.request.get("product_facts_sha256")
+                or details.get("product_facts_sha256") != intent.request.get("product_facts_sha256")
+                or details.get("import_root_facts_url") != _factory_project_file_url(receipt.project_url, "workshop-product-facts.json")
+                or receipt.design_id != intent.request.get("design_id")
+                or receipt.root_id != intent.request.get("root_id")
+                or receipt.slug != intent.request.get("slug")
+                or receipt.current_history_id == intent.request.get("previous_history_id")
+                or receipt.project_url == intent.request.get("previous_project_url")
+            ):
+                raise ReceiptError("Factory repaired version lacks exact immutable source readback")
 
     def _readback_private(
         self,
@@ -2544,6 +2706,8 @@ class FactoryReleaseWriter:
         intent: EffectIntent,
         imported_design: Mapping[str, Any],
         proof: Mapping[str, Any],
+        *,
+        document_readback: bool = True,
     ) -> Tuple[Receipt, Mapping[str, Any]]:
         imported = _factory_receipt(imported_design, intent, proof)
         imported.assert_owner(intent.request.get("owner_id"))
@@ -2567,6 +2731,7 @@ class FactoryReleaseWriter:
         pdf_first = (
             intent.request.get("manual_path") == FACTORY_RELEASE_PDF_MANUAL_PATH
         )
+        make_output = intent.request.get("publication_mode") == MAKE_OUTPUT_PUBLICATION_MODE
         if (
             not isinstance(metadata, Mapping)
             or observed_design.get("origin") != "import"
@@ -2581,7 +2746,7 @@ class FactoryReleaseWriter:
                 )
             )
             or (
-                not pdf_first
+                not pdf_first and not make_output
                 and (
                     not isinstance(imported_covers, list)
                     or not imported_covers
@@ -2597,12 +2762,24 @@ class FactoryReleaseWriter:
         requested_category = metadata.get("category")
         if requested_category is not None:
             details["factory_category_slug"] = requested_category
+        if not document_readback:
+            # Identity-only observation for a repair preflight; never returned
+            # as a successful effect or persisted as a verified import receipt.
+            return Receipt.from_dict({**observed.to_dict(), "details": details}), observed_design
         if pdf_first:
             details.update(
                 self.session.verify_pdf_manual(
                     observed.project_url, intent.request.get("manual_sha256")
                 )
             )
+        elif make_output:
+            details.update(self.session.verify_publication_anchor(
+                observed.project_url, intent.request.get("publication_anchor_sha256")
+            ))
+            if intent.kind == "factory-import-version":
+                details.update(self.session.verify_import_root_facts(
+                    observed.project_url, intent.request.get("product_facts_sha256")
+                ))
         else:
             details["cover_url"] = _https_url(
                 imported_covers[0], "Factory cover URL"
@@ -2613,6 +2790,131 @@ class FactoryReleaseWriter:
         final = Receipt.from_dict({**observed.to_dict(), "details": details})
         self._assert_private_receipt(final, intent)
         return final, observed_design
+
+    def _repair_import_root(
+        self, client: FactoryClient, original: EffectIntent, proof: Mapping[str, Any],
+        context: Any, facts: Mapping[str, Any], page_content: bytes, manual_content: bytes,
+    ) -> Receipt:
+        """Append the complete carrier to one exact still-private imported draft.
+
+        The original create stays unknown: its upload was accepted but its
+        complete package was not published. The distinct version intent owns
+        the repaired bytes and never grants another create or blind retry.
+        """
+
+        if (
+            original.state != "unknown" or original.kind != "factory-import"
+            or original.request.get("publication_mode") != MAKE_OUTPUT_PUBLICATION_MODE
+            or original.request.get("import_root_mapping") is not None
+            or not isinstance(original.response, Mapping)
+        ):
+            raise StateConflict("Factory root repair requires an exact legacy Make-output draft")
+        old = _factory_receipt(original.response, original, proof)
+        old.assert_owner(original.request.get("owner_id"))
+        if not old.is_verified_draft:
+            raise StateConflict("Factory root repair cannot change a public design")
+        _factory_project_file_url(old.project_url, FACTORY_RELEASE_PAGE_PATH)
+        provenance = {
+            "source_import_intent_id": original.intent_id,
+            "source_import_request_sha256": original.request_sha256,
+            "previous_history_id": old.current_history_id,
+            "previous_project_url": old.project_url,
+        }
+        repair_facts = {**facts, "import_root_repair": provenance}
+        with tempfile.TemporaryDirectory(prefix="workshop-root-repair-") as temporary:
+            handoff = _build_model_handoff(
+                context, Path(temporary) / "model-handoff.zip", repair_facts,
+                page_content, manual_content, preserve_import_root=True,
+            )
+        request = {
+            **original.request,
+            "path": "/designs/%s/import" % urllib.parse.quote(old.slug, safe=""),
+            "import_root_mapping": FACTORY_IMPORT_ROOT_MAPPING,
+            "design_id": old.design_id, "root_id": old.root_id,
+            "slug": old.slug, **provenance,
+            "product_facts_sha256": handoff["product_facts_sha256"],
+        }
+        version = self.ledger.prepare(
+            kind="factory-import-version", product_id=original.product_id, request=request,
+            pack_sha256=handoff["pack_sha256"], handoff_artifact_sha256=handoff["artifact_sha256"],
+            product_artifact_sha256=original.product_artifact_sha256,
+            release_sha256=original.release_sha256,
+            playtest_evidence_sha256=original.playtest_evidence_sha256,
+        )
+        version_proof = {
+            **proof, **provenance, **_handoff_proof_details(handoff),
+            "import_root_mapping": FACTORY_IMPORT_ROOT_MAPPING,
+            "product_facts_sha256": handoff["product_facts_sha256"],
+        }
+
+        def check_version_identity(design: Mapping[str, Any]) -> None:
+            observed = _factory_receipt(design, version, version_proof)
+            if (
+                not observed.is_verified_draft
+                or any(getattr(observed, key) != getattr(old, key)
+                       for key in ("design_id", "root_id", "slug", "owner_id"))
+                or observed.current_history_id == old.current_history_id
+                or observed.project_url == old.project_url
+            ):
+                raise ReceiptError("Factory root repair does not identify the expected new private version")
+
+        def read_version(design: Mapping[str, Any]) -> Tuple[Receipt, Mapping[str, Any]]:
+            check_version_identity(design)
+            return self._readback_private(client, version, design, version_proof)
+
+        if version.state == "succeeded":
+            if version.receipt is None:
+                raise StateConflict("Factory root repair lacks its durable receipt")
+            self._assert_private_receipt(version.receipt, version)
+            if version.receipt.details.get("import_root_facts_readback_sha256") != handoff["product_facts_sha256"]:
+                raise ReceiptError("Factory root repair receipt lacks exact source provenance")
+            return version.receipt
+        if version.state == "sending":
+            version = self.ledger.strand_as_unknown(version.intent_id, "host exited during Factory root repair")
+        if version.state == "unknown":
+            candidate = version.response
+            if candidate is None:
+                response = client.get_design(old.slug)
+                if response.status != 200:
+                    raise AmbiguousEffectError("Factory root repair remains unknown; no upload was retried")
+                candidate = _json_body(response, "Factory root repair reconciliation")
+            try:
+                receipt, observed = read_version(candidate)
+                self.ledger.resolve_succeeded(version.intent_id, receipt, {"version": dict(candidate), "readback": dict(observed)})
+                return receipt
+            except (ContractError, EffectError, StateConflict) as exc:
+                raise AmbiguousEffectError("Factory root repair remains unknown; no upload was retried (%s)" % _safe_factory_readback_cause(exc)) from exc
+
+        # A new effect is allowed only while authenticated state is still the
+        # exact original draft and its full carrier is conclusively absent.
+        self._readback_private(client, original, original.response, proof, document_readback=False)
+        try:
+            self.session.verify_publication_anchor(old.project_url, original.request.get("publication_anchor_sha256"))
+        except AmbiguousEffectError as exc:
+            if str(exc) != "Factory publication anchor readback returned HTTP 404":
+                raise
+        else:
+            raise StateConflict("Factory root repair is unnecessary or the original bytes changed")
+        context.assert_current()
+        sending = self.ledger.begin(version.intent_id)
+        assert sending.effect_token is not None
+        imported_design = None
+        try:
+            response = client.import_model_version(old.slug, content=handoff["content"], idempotency_key=sending.idempotency_key)
+            if response.status != 200:
+                if response.status in PROVEN_NO_EFFECT_STATUSES:
+                    self.ledger.mark_rejected(sending.intent_id, sending.effect_token, "Factory root repair returned HTTP %s" % response.status)
+                    raise EffectError("Factory rejected root repair with HTTP %s" % response.status)
+                raise AmbiguousEffectError("Factory root repair returned an ambiguous HTTP status")
+            imported_design = _json_body(response, "Factory root repair response")
+            receipt, observed = read_version(imported_design)
+            self.ledger.mark_succeeded(sending.intent_id, sending.effect_token, receipt, {"version": dict(imported_design), "readback": dict(observed)})
+            return receipt
+        except Exception as exc:
+            if self.ledger.get(sending.intent_id).state == "sending":
+                self.ledger.mark_unknown(sending.intent_id, sending.effect_token,
+                    "Factory root repair lacks exact readback (%s)" % _safe_factory_readback_cause(exc), response=imported_design)
+            raise AmbiguousEffectError("Factory root repair outcome is unproven; no upload will be blindly retried (%s)" % _safe_factory_readback_cause(exc)) from exc
 
     def _recover_unknown(
         self,
@@ -2651,7 +2953,8 @@ class FactoryReleaseWriter:
             )
         except (ContractError, EffectError, ReceiptError, StateConflict) as exc:
             raise AmbiguousEffectError(
-                "Factory import remains unknown; it will not be retried"
+                "Factory import remains unknown; it will not be retried (%s)"
+                % _safe_factory_readback_cause(exc)
             ) from exc
         assert resolved.receipt is not None
         return resolved.receipt
@@ -3268,6 +3571,8 @@ class FactoryReleaseWriter:
         part_colors: Mapping[str, str],
         part_keys: Sequence[Mapping[str, Any]] = (),
     ) -> Receipt:
+        if page.get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION:
+            return imported
         if page.get("schema_version") == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
             draft = self._ensure_page_content(
                 client,
@@ -3279,6 +3584,7 @@ class FactoryReleaseWriter:
         elif page.get("schema_version") in (
             RELEASE_PRODUCT_SCHEMA_VERSION,
             DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+            MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
         ):
             draft = imported
         else:
@@ -3320,11 +3626,17 @@ class FactoryReleaseWriter:
             page.get("playtest_evidence_artifact_sha256"),
             "Release Playtest evidence sha256",
         )
-        if FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(context.made.product):
+        if page.get("schema_version") != MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION and FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(context.made.product):
             raise ContractError("Made product facts contain Release page fields")
         identity = self.session.login()
         client = FactoryClient(self.session.authenticated_transport)
 
+        make_output = page.get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
+        previous_import = self.ledger.latest(context.wish.product_id, "factory-import")
+        preserve_import_root = make_output and (
+            previous_import is None
+            or previous_import.request.get("import_root_mapping") == FACTORY_IMPORT_ROOT_MAPPING
+        )
         product_facts = {
             "schema_version": 2,
             "kind": "workshop.product-facts",
@@ -3335,7 +3647,7 @@ class FactoryReleaseWriter:
             "wish": context.wish.to_dict(),
             "product": dict(context.made.product),
             "release": dict(page),
-            "manual": {
+            ("publication_anchor" if make_output else "manual"): {
                 "path": manual_path,
                 "sha256": manual_sha256,
             },
@@ -3348,11 +3660,12 @@ class FactoryReleaseWriter:
                 product_facts,
                 page_content,
                 manual_content,
+                preserve_import_root=preserve_import_root,
             )
         primary = handoff["primary_model"]
         made_root = Path(context.made.artifact_root).resolve(strict=True)
-        part_colors = _sealed_part_colors(made_root, context.made.artifact_manifest)
-        if not part_colors:
+        part_colors = {} if make_output else _sealed_part_colors(made_root, context.made.artifact_manifest)
+        if not part_colors and not make_output:
             part_colors = _package_part_colors(
                 made_root, context.made.artifact_manifest
             )
@@ -3390,7 +3703,14 @@ class FactoryReleaseWriter:
             "manual_sha256": handoff["manual_sha256"],
             "metadata": dict(metadata),
         }
-        if manual_path == FACTORY_RELEASE_PDF_MANUAL_PATH:
+        if make_output:
+            request.pop("manual_sha256")
+            request.update(publication_mode=MAKE_OUTPUT_PUBLICATION_MODE,
+                           publication_anchor_path=FACTORY_RELEASE_PAGE_PATH,
+                           publication_anchor_sha256=handoff["manual_sha256"])
+            if preserve_import_root:
+                request["import_root_mapping"] = FACTORY_IMPORT_ROOT_MAPPING
+        elif manual_path == FACTORY_RELEASE_PDF_MANUAL_PATH:
             request["manual_path"] = manual_path
         intent = self.ledger.prepare(
             kind="factory-import",
@@ -3411,7 +3731,12 @@ class FactoryReleaseWriter:
             "content_owner": "workshop-manager",
             **_handoff_proof_details(handoff),
         }
-        if manual_path == FACTORY_RELEASE_PDF_MANUAL_PATH:
+        if make_output:
+            proof.pop("manual_sha256")
+            proof.update(publication_mode=MAKE_OUTPUT_PUBLICATION_MODE,
+                         publication_anchor_path=FACTORY_RELEASE_PAGE_PATH,
+                         publication_anchor_sha256=handoff["manual_sha256"])
+        elif manual_path == FACTORY_RELEASE_PDF_MANUAL_PATH:
             proof["manual_path"] = manual_path
         if intent.state == "succeeded":
             if intent.receipt is None:
@@ -3433,7 +3758,19 @@ class FactoryReleaseWriter:
                 intent.intent_id, "host exited while Factory import was sending"
             )
         if intent.state == "unknown":
-            imported = self._recover_unknown(client, intent, proof)
+            can_repair_root = (
+                make_output and not preserve_import_root
+                and isinstance(intent.response, Mapping)
+            )
+            if can_repair_root and self.ledger.latest(intent.product_id, "factory-import-version") is not None:
+                imported = self._repair_import_root(client, intent, proof, context, product_facts, page_content, manual_content)
+            else:
+                try:
+                    imported = self._recover_unknown(client, intent, proof)
+                except AmbiguousEffectError as exc:
+                    if not can_repair_root or not isinstance(exc.__cause__, AmbiguousEffectError) or str(exc.__cause__) != "Factory publication anchor readback returned HTTP 404":
+                        raise
+                    imported = self._repair_import_root(client, intent, proof, context, product_facts, page_content, manual_content)
             return self._complete_release_draft(
                 client,
                 imported,
@@ -3496,11 +3833,13 @@ class FactoryReleaseWriter:
                 self.ledger.mark_unknown(
                     sending.intent_id,
                     sending.effect_token,
-                    "Factory accepted import but exact readback was unavailable",
+                    "Factory accepted import but exact readback was unavailable (%s)"
+                    % _safe_factory_readback_cause(exc),
                     response=response_value,
                 )
             raise AmbiguousEffectError(
-                "Factory accepted import but exact readback is not proven"
+                "Factory accepted import but exact readback is not proven (%s)"
+                % _safe_factory_readback_cause(exc)
             ) from exc
         assert completed.receipt is not None
         return self._complete_release_draft(
@@ -3542,6 +3881,10 @@ class FactoryPublicTransition:
                     design.get("project_url"), draft.details.get("manual_sha256")
                 )
             )
+        elif FactoryPublicTransition._is_make_output(draft):
+            details.update(self.session.verify_publication_anchor(
+                design.get("project_url"), draft.details.get("publication_anchor_sha256")
+            ))
         receipt = _factory_receipt(design, intent, details)
         receipt.assert_owner(owner_id)
         if not _same_factory_identity(draft, receipt):
@@ -3549,6 +3892,15 @@ class FactoryPublicTransition:
         if not receipt.is_verified_public:
             raise ReceiptError("Factory readback does not prove an active public listing")
         return receipt
+
+    @staticmethod
+    def _is_make_output(draft: Receipt) -> bool:
+        mode = draft.details.get("publication_mode")
+        if mode is None:
+            return False
+        if mode != MAKE_OUTPUT_PUBLICATION_MODE or draft.details.get("publication_anchor_path") != FACTORY_RELEASE_PAGE_PATH:
+            raise ReceiptError("Factory draft has an unsupported publication mode")
+        return True
 
     @staticmethod
     def _is_pdf_first(draft: Receipt) -> bool:
@@ -3563,7 +3915,7 @@ class FactoryPublicTransition:
     def _assert_exact_content(
         design: Mapping[str, Any], draft: Receipt
     ) -> None:
-        if FactoryPublicTransition._is_pdf_first(draft):
+        if FactoryPublicTransition._is_pdf_first(draft) or FactoryPublicTransition._is_make_output(draft):
             return
         target = draft.details.get("factory_content")
         expected_sha256 = require_sha256(
@@ -3642,13 +3994,14 @@ class FactoryPublicTransition:
             draft.details.get("product_page_sha256"),
             "Factory draft product-page sha256",
         )
+        make_output = self._is_make_output(draft)
         manual_sha256 = require_sha256(
-            draft.details.get("manual_sha256"),
+            draft.details.get("publication_anchor_sha256" if make_output else "manual_sha256"),
             "Factory draft manual sha256",
         )
         pdf_first = self._is_pdf_first(draft)
         factory_content_sha256: Optional[str] = None
-        if not pdf_first:
+        if not pdf_first and not make_output:
             factory_content_sha256 = require_sha256(
                 draft.details.get("factory_content_sha256"),
                 "Factory draft rich-content sha256",
@@ -3683,7 +4036,12 @@ class FactoryPublicTransition:
         category_slug = self._expected_category(draft)
         if category_slug is not None:
             request["category_slug"] = category_slug
-        if pdf_first:
+        if make_output:
+            request.pop("manual_sha256")
+            request.update(publication_mode=MAKE_OUTPUT_PUBLICATION_MODE,
+                           publication_anchor_path=FACTORY_RELEASE_PAGE_PATH,
+                           publication_anchor_sha256=manual_sha256)
+        elif pdf_first:
             request["manual_path"] = FACTORY_RELEASE_PDF_MANUAL_PATH
         else:
             request["factory_content_sha256"] = factory_content_sha256
@@ -3727,6 +4085,8 @@ class FactoryPublicTransition:
                 self.session.verify_pdf_manual(
                     before.project_url, manual_sha256
                 )
+            elif make_output:
+                self.session.verify_publication_anchor(before.project_url, manual_sha256)
         except (ContractError, EffectError, ReceiptError) as exc:
             raise AmbiguousEffectError("Factory publication preflight is unavailable") from exc
         if before.is_verified_public:
@@ -3794,6 +4154,8 @@ class FactoryPublicTransition:
 
 __all__ = [
     "DEFAULT_FACTORY_API",
+    "MAKE_OUTPUT_PUBLICATION_MODE",
+    "FACTORY_RELEASE_PAGE_PATH",
     "FACTORY_CONTENT_MAPPING",
     "FACTORY_COVER_RENDER_PATH",
     "FACTORY_TOY_CATEGORY_SLUG",

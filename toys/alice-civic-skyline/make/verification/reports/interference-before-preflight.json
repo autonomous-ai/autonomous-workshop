@@ -1,0 +1,20 @@
+{
+  "command": "$WORKSHOP_PYTHON .agents/skills/cad/scripts/inspect interfere artifacts/make/r0001/product/cad/city.step.py",
+  "city_step_sha256": "4238eb6d666cddd42e09c27308eabf51bdd098a2c9e9dbf4982fbe3691f960fd",
+  "result": {
+    "ok": true,
+    "entry": "artifacts/make/r0001/product/cad/city",
+    "tolerance": 1.0,
+    "stats": {
+      "occurrences": 68,
+      "pairs_total": 2278,
+      "pairs_tested": 86,
+      "pairs_skipped_bbox": 2192,
+      "pairs_truncated": 0
+    },
+    "clashCount": 0,
+    "clashes": [],
+    "errors": []
+  },
+  "evidence": "Exact JSON stdout from completed standalone inspect interfere command, exit code 0; retained before print preflight."
+}

@@ -732,7 +732,7 @@ def run_bounded_verifier(
     *,
     cwd: Path,
     environment: Mapping[str, str],
-    timeout_seconds: float,
+    timeout_seconds: Optional[float],
     max_output_bytes: int,
 ) -> VerifierProcessResult:
     """Run without a shell while draining stdout and stderr into hard bounds."""
@@ -769,6 +769,17 @@ def run_bounded_verifier(
         except (AttributeError, OSError):
             process.kill()
         returncode = process.wait()
+    except BaseException:
+        # Cancellation must reap the isolated verifier and its tools even when
+        # token-budget runs have no wall-clock deadline.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except (AttributeError, OSError):
+            process.kill()
+        process.wait()
+        for thread in threads:
+            thread.join()
+        raise
     for thread in threads:
         thread.join()
     duration_ms = max(0, int(round((time.monotonic() - started) * 1000)))
@@ -1007,7 +1018,7 @@ def verify_native_made_cad(
     expected_verifier_sha256: str,
     runner: Optional[VerifierRunner] = None,
     python_executable: str = sys.executable,
-    timeout_seconds: float = DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS,
+    timeout_seconds: Optional[float] = DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS,
     max_output_bytes: int = DEFAULT_NATIVE_CAD_OUTPUT_BYTES,
     legacy_full_tier_validator: Optional[Callable[[], None]] = None,
     evidence_stage: str = "make",
@@ -1028,7 +1039,7 @@ def verify_native_made_cad(
         or "\x00" in python_executable
     ):
         raise ContractError("native CAD gate Python executable is invalid")
-    if (
+    if timeout_seconds is not None and (
         not isinstance(timeout_seconds, (int, float))
         or isinstance(timeout_seconds, bool)
         or timeout_seconds <= 0
@@ -1140,7 +1151,7 @@ def verify_native_made_cad(
                 command,
                 cwd=temporary_root,
                 environment=environment,
-                timeout_seconds=float(timeout_seconds),
+                timeout_seconds=None if timeout_seconds is None else float(timeout_seconds),
                 max_output_bytes=max_output_bytes,
             )
             if not isinstance(candidate, VerifierProcessResult):

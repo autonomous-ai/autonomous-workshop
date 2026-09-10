@@ -33,12 +33,21 @@ skill is your workflow playbook, not a separate agent process.
    pass its host gate. The rejection-bound subject is a new attempt: address
    its exact feedback and change the rejected artifact or evidence before
    finalizing. Never resubmit unchanged rejected bytes.
-4. Read only the reference for the current stage:
+4. If `inputs.workshop_selection` exists, read
+   [Workshop inventor selection](references/inventor-selection-v1.md) first.
+   A `pending` selection is Workshop setup before Make: do not load Make or
+   create its Goal yet. Return after the selection marker; the host resumes
+   this same session with the accepted inventor. A `selected` handoff is
+   authoritative; reuse its selection/ranking without repeating selection.
+   After that accepted handoff, or when there is no setup packet, read only the
+   reference for the current stage:
    - Invent: [references/invent.md](references/invent.md)
    - Make: [references/make.md](references/make.md)
    - Playtest: [references/playtest.md](references/playtest.md)
-   - Release:
-     [references/release-deliver.md](references/release-deliver.md)
+   - Release: inspect `inputs.release_contract.native_release_schema_version`.
+     Version `4` is host-owned Spark Publish: return control without a Release
+     Goal, manual authoring/review, or Release finalizer. For other versions,
+     read [references/release-deliver.md](references/release-deliver.md).
 5. Read [references/effects-and-recovery.md](references/effects-and-recovery.md)
    before a resume, retry, ambiguous result, or effect-related wait.
 
@@ -50,7 +59,8 @@ stages; do not create stage-specific sessions or impersonate Python workers.
 For Codex, this run's [product token budget](references/token-budget-v1.md)
 survives resumes and covers all enabled stages and native children. It replaces
 aggregate time and turn budgets; the host reports the exact configured limit.
-Leave allowance for Release. Read the reference for measurement boundaries.
+Leave allowance for a native Release when the packet requires one. Read the
+reference for measurement boundaries.
 
 The successful run is not the run with the most research, commands, agents, or
 prose. Concentrate the native session on one memorable product promise and the
@@ -102,7 +112,7 @@ few decisions and checks that make it real.
 
 ## Run one native Goal for the current stage
 
-For each host-authorized Invent, Make, Playtest, or Release attempt,
+For each host-authorized Invent, Make, Playtest, or native Release attempt,
 create one native Goal. Keep only one Goal active at a time. If the Goal
 for this exact subject is already active after a resume, continue it. A changed
 checkpoint with the same subject is a packet refresh, not a new Goal attempt.
@@ -138,8 +148,10 @@ truthfully blocked, use the `need` finalizer below and return without claiming
 Goal completion. Native Goals guide Codex work; they never advance host stages
 or replace durable checkpoints, gates, round budgets, or invalidation.
 
-Wish is a host-created input, so it is not an agent Goal. Publication is the
-host-owned effect portion of Release. This design follows Codex's official patterns for
+Wish is a host-created input, so it is not an agent Goal. Schema-v4 Spark
+Release is entirely host-owned Publish and creates no native Goal. Other
+Release versions have native authoring followed by the host publication effect.
+This design follows Codex's official patterns for
 [durable Goals](https://learn.chatgpt.com/use-cases/follow-goals) and
 [eval-driven difficult work](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
 
@@ -147,9 +159,10 @@ host-owned effect portion of Release. This design follows Codex's official patte
 
 `.codex/agents/*.toml` remains the host identity binding for every Inventor.
 `MANAGER.json` names this runtime and its native agent directory. During the
-first enabled creative stage, compare every eligible custom agent in the
-host-provided roster and select the best fit. Forge and
-Quest select during Invent; Spark selects during Make. Use the exact selected
+first enabled creative stage, use the host-provided roster. New marked Spark
+runs select at Workshop's setup boundary before Make; the handoff supplies
+Make's exact selected inventor. Forge and Quest select during Invent. Frozen
+older Spark runs without the setup packet retain selection during Make. Use the exact selected
 Inventor agent. Its host-materialized instructions
 bind its exact source manifest, full Taste, and skill artifacts under
 `.agents/skills/`.
@@ -189,7 +202,7 @@ domain skills can solve fabrication after creative ownership is correct.
   from CAD checks or AI judgment. Add product-specific deterministic inspection
   when the artifact requires it.
 - Codex owns Inventor selection, research, concept exploration, design, CAD
-  iteration, and the finished in-box manual. Website
+  iteration, and any in-box manual required by a native Release packet. Website
   metadata is a secondary transport artifact, not the creative center of
   Release.
 - Use Workshop programs only as deterministic tools. Do not build a Python
@@ -211,7 +224,8 @@ run the materialized finalizer:
 ```
 
 Use `--help` for exact arguments. The active ready commands are `invent`,
-`make`, `make-revision`, `playtest`, and `release`; the stage references
+`make`, `make-revision`, `playtest`, and `release`; schema-v4 host-owned Spark
+Publish does not invoke the native `release` command. The stage references
 describe their inputs. Frozen historical runs may still receive Match. The
 finalizer validates and hashes exact bytes, writes the canonical contract under
 `artifacts/`, and atomically writes `agent-outcome.json` bound to the current
@@ -220,8 +234,8 @@ and cannot pass a host gate.
 
 Do not hand-edit the generated contract or `agent-outcome.json`. After a
 successful finalizer, mark the active native Goal complete and return control
-to the host. The host rereads the full artifact tree, reruns trusted checks,
-seals accepted bytes, and alone advances the checkpoint.
+to the host. The host reads and preserves the exact accepted bytes, applies
+the checks owned by this workflow's protocol, and alone advances the checkpoint.
 
 If a concrete operator or environment condition prevents safe progress, leave
 prior sealed artifacts untouched and durably return exactly one need:
@@ -260,26 +274,32 @@ Quest: Wish -> Invent -> Make -> Playtest -> Release
 Quest Playtest may return implementation evidence to Make or
 concept-invalidating evidence directly to Invent. A capable Forge or Quest
 Make stage may return exact build-blocking evidence to Invent. Every backward
-edge consumes the shared lifecycle round budget and is authorized only by a
-host-verified contract; Make never edits sealed Invent bytes.
+edge records shared revision history and is authorized only by a host-verified
+contract; only non-token runs consume the frozen lifecycle-round allowance.
+Make never edits sealed Invent bytes.
 
 Host rejection feedback remains bound to the exact current-stage proposal.
 Repair Make or Release in place and finalize changed bytes. Reviews after
 delivery may inform a future Wish but never rewrite a completed run.
 
-Release prepares a self-contained, printable `MANUAL.pdf` that can teach the
-new owner without a website, video, QR code, or phone. Spark and Forge prepare
-bounded `product.json` facts with `playtest_status: not-run`; Quest binds its
-claims to the exact passing Playtest evidence. Read and
-use the materialized `manual-design` skill during Release. Codex authors and
-visually reviews the exact PDF, but it does not publish, print, pack, or ship
-it. Codex never receives Factory, payment, manufacturing, postage, or carrier
-credentials and must not perform those effects directly.
+For `inputs.release_contract.native_release_schema_version: 4`, Spark's Release
+is host-owned Publish. After Make finalizes, the host packages Make's existing
+files and site-required metadata, includes an existing README when available,
+and uploads them. It does not launch a native Release turn, regenerate CAD or
+assets, author a new PDF, require a manual review, or repeat Make verification.
+If this packet is observed on resume, return control to the host; do not invent
+a native Release task. The output remains bound to Make's exact bytes and
+truthfully records Playtest as `not-run`.
 
-Release succeeds only when the host has reverified full-tier,
-thickness-checked, print-ready CAD, validated the exact `MANUAL.pdf`, published
-both through Factory, and authenticated public hash readback. Missing
-credentials or an unavailable service leaves Release waiting and resumable;
-the effect ledger reconciles before any retry. Codex never receives effect
-credentials and must not publish, manufacture, buy, ship, or claim delivery.
-Never convert a wait or ambiguity into success.
+Historical native Release packets and Forge/Quest retain their packet-selected
+authoring contract. A PDF-first packet requires a self-contained `MANUAL.pdf`;
+use the materialized `manual-design` skill and its review workflow only there.
+Older Markdown-first packets retain their original manual format. Spark and
+Forge record Playtest as `not-run`; Quest binds claims to its passing evidence.
+
+Every route completes only after host-owned publication and authenticated
+public readback of the exact handoff. Missing credentials or an unavailable
+service leaves publication waiting and resumable; the effect ledger reconciles
+before retry. A skipped host verification is not a passing engineering check.
+Codex never receives effect credentials and must not publish, manufacture, buy,
+ship, or claim delivery. Never convert a wait or ambiguity into success.

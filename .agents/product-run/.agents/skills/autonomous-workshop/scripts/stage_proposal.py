@@ -1085,7 +1085,8 @@ def _load_stage(run_root: Path, expected_stage: str) -> dict[str, Any]:
             raise ProposalError("Match and Invent STAGE round must be null")
     else:
         current_round = _positive_int(stage["round"], "STAGE round")
-        if current_round > maximum:
+        token_budgeted = (run_root / ".agents/skills/autonomous-workshop/references/token-budget-v1.md").is_file()
+        if current_round > maximum and not token_budgeted:
             raise ProposalError("STAGE round exceeds max_rounds")
     _mapping(stage["inputs"], "STAGE inputs", nonempty=True)
     return stage

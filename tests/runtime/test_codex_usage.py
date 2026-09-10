@@ -52,6 +52,22 @@ def test_counts_resumes_and_deduplicates_notifications(tmp_path):
     assert result["status"] == "observed"
 
 
+def test_more_than_32_native_sessions_are_counted_exactly(tmp_path):
+    write(tmp_path, records() + [usage()])
+    for index in range(40):
+        child = "01a0795f-26fd-7902-be2c-%012d" % index
+        write(tmp_path, records(child, ROOT) + [usage()], child)
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    assert len(result["threads"]) == 41
+    assert result["total_tokens"] == 41 * 110
+    from workshop.workflow.token_budget import ProductTokenBudget
+    budget = ProductTokenBudget()
+    budget.observe(result)
+    restored = ProductTokenBudget()
+    restored.restore(budget.to_dict())
+    assert restored.to_dict() == budget.to_dict()
+
+
 def test_followup_task_keeps_cumulative_usage_then_process_resume_resets(tmp_path):
     events = records() + [usage(200)] + [
         {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
@@ -293,19 +309,17 @@ def test_large_non_compaction_record_remains_rejected(tmp_path, kind):
         read_thread_usage(path, thread_id=ROOT, workspace=Path("/toy"))
 
 
-def test_large_compaction_does_not_bypass_file_size_bound(tmp_path, monkeypatch):
+def test_large_compaction_does_not_hide_regressing_usage(tmp_path, monkeypatch):
     import workshop.runtime.codex_usage as module
 
-    path = write(tmp_path, records() + [usage(100), {"type": "compacted", "message": "x" * 4096}])
-    monkeypatch.setattr(module, "MAX_ROLLOUT_BYTES", 2048)
-    with pytest.raises(UsageUnavailable, match="file exceeds"):
+    monkeypatch.setattr(module, "MAX_LINE_BYTES", 1024)
+    path = write(tmp_path, records() + [usage(100),
+        {"type": "compacted", "message": "x" * 4096}, usage(50)])
+    with pytest.raises(UsageUnavailable, match="regressed"):
         read_thread_usage(path, thread_id=ROOT, workspace=Path("/toy"))
 
 
-def test_oversized_unrelated_rollout_body_does_not_stop_product_usage(tmp_path, monkeypatch):
-    import workshop.runtime.codex_usage as module
-
-    monkeypatch.setattr(module, "MAX_ROLLOUT_BYTES", 2048)
+def test_oversized_unrelated_rollout_body_does_not_stop_product_usage(tmp_path):
     write(tmp_path, records() + [usage(100)])
     write(tmp_path, records(CHILD, ROOT) + [usage(200)], CHILD)
     other = write(tmp_path, records("unrelated", cwd="/elsewhere")[:1], "unrelated")
@@ -322,18 +336,18 @@ def test_oversized_unrelated_rollout_body_does_not_stop_product_usage(tmp_path, 
 
 
 @pytest.mark.parametrize("target_thread,parent", [(ROOT, None), (CHILD, ROOT)])
-def test_identity_discovery_does_not_relax_selected_rollout_size_limit(
+def test_identity_discovery_does_not_relax_selected_record_size_limit(
     tmp_path, monkeypatch, target_thread, parent,
 ):
     import workshop.runtime.codex_usage as module
 
-    monkeypatch.setattr(module, "MAX_ROLLOUT_BYTES", 2048)
+    monkeypatch.setattr(module, "MAX_LINE_BYTES", 1024)
     write(tmp_path, records() + [usage(100)])
     target = write(tmp_path, records(target_thread, parent) + [usage(200)], target_thread)
     with target.open("ab") as stream:
-        stream.write(b" " * 2048)
+        stream.write(json.dumps({"type": "event_msg", "payload": "x" * 2048}).encode() + b"\n")
 
-    with pytest.raises(UsageUnavailable, match="file exceeds safe bounds"):
+    with pytest.raises(UsageUnavailable, match="record exceeds"):
         read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
 
 

@@ -682,7 +682,7 @@ def _copy_playtest(
     made: NativeMade,
     made_attempts: Mapping[int, NativeMade],
 ) -> None:
-    if release.schema_version == 3:
+    if release.schema_version in (3, 4):
         return
     attempts = []
     playtested = None

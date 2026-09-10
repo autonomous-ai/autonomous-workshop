@@ -19,6 +19,7 @@ from workshop.make.contracts import Made
 from workshop.playtest.contracts import Playtested
 from workshop.product import ToyBlueprint
 from workshop.release.native import (
+    MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
     MAX_NATIVE_RELEASE_MANUAL_BYTES,
     validate_release_pdf_manual,
     validate_release_product,
@@ -53,6 +54,14 @@ def _canonical_json(value: Any) -> bytes:
         ).encode("utf-8")
     except (TypeError, ValueError, UnicodeError) as exc:
         raise ContractError("ProductRelease product.json must be finite JSON") from exc
+
+
+def _plain_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: _plain_json(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_plain_json(item) for item in value]
+    return value
 
 
 @dataclass(frozen=True)
@@ -118,7 +127,7 @@ class ProductRelease:
     root: Path
     manifest: ArtifactManifest
     product_artifact_sha256: str
-    manual_path: str
+    manual_path: str | None
     claims: Mapping[str, Any]
 
     def __post_init__(self) -> None:
@@ -133,6 +142,29 @@ class ProductRelease:
             self.product_artifact_sha256,
             "ProductRelease product artifact sha256",
         )
+        if self.manual_path in (None, "README.md"):
+            _fresh_manifest(root, self.manifest)
+            try:
+                content = (root / "product.json").read_bytes()
+                page = validate_release_product(json.loads(content.decode("utf-8")), release_schema_version=4)
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                raise ContractError("Make-output publication metadata is unavailable") from exc
+            if content != _canonical_json(page) or page["schema_version"] != MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION:
+                raise ContractError("Make-output publication metadata is not canonical")
+            claims = _plain_json(self.claims)
+            if page["product_artifact_sha256"] != self.product_artifact_sha256 or page["claims"] != claims:
+                raise ContractError("Make-output publication identifies different product bytes")
+            document = page["source_document"]
+            expected_path = "README.md" if document is not None else None
+            if self.manual_path != expected_path:
+                raise ContractError("Make-output publication document binding is invalid")
+            if document is not None:
+                entry = next((entry for entry in self.manifest.entries if entry.path == self.manual_path), None)
+                if entry is None or entry.sha256 != document["sha256"]:
+                    raise ArtifactError("Make-output publication document bytes differ")
+            object.__setattr__(self, "root", root.resolve(strict=True))
+            object.__setattr__(self, "claims", claims)
+            return
         _text(
             self.manual_path,
             "ProductRelease manual_path",
@@ -231,7 +263,7 @@ class ProductRelease:
         cls,
         root: Path,
         product_artifact_sha256: str,
-        manual_path: str,
+        manual_path: str | None,
         claims: Mapping[str, Any],
     ) -> "ProductRelease":
         resolved = Path(root).resolve(strict=True)

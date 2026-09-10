@@ -271,18 +271,47 @@ class _FakeLauncher:
             encoding="utf-8",
         )
 
+    @classmethod
+    def _finish_turn(cls, arguments):
+        root = Path(arguments["run_root"])
+        stage = json.loads((root / "STAGE.json").read_text(encoding="utf-8"))
+        selection = stage["inputs"].get("workshop_selection", {})
+        if selection.get("status") != "pending":
+            cls._write_waiting(arguments)
+            return
+        # The ordinary fake follows setup before Make. Keep _write_waiting
+        # separate so selection rejection tests can submit premature proposals.
+        roster = stage["inputs"]["inventor_roster"]["inventors"]
+        marker = {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.inventor-selection-ready",
+            "product_id": stage["product_id"],
+            "checkpoint_sha256": stage["checkpoint_sha256"],
+            "wish_sha256": selection["wish_sha256"],
+            "inventor_roster_sha256": selection["inventor_roster_sha256"],
+            "selected_inventor_id": roster[0]["inventor_id"],
+            "ranking": [
+                {"inventor_id": row["inventor_id"], "rationale": "Native fixture choice."}
+                for row in roster
+            ],
+        }
+        (root / selection["marker_path"]).write_text(
+            json.dumps(marker, sort_keys=True, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+
     def start(self, **arguments):
         self.starts.append(dict(arguments))
         if self.fail_first_start:
             self.fail_first_start = False
             raise CodexInvocationError("fixture interruption before thread.started")
         self._checkpoint(arguments)
-        self._write_waiting(arguments)
+        self._finish_turn(arguments)
         return _FakeOutcome(arguments)
 
     def resume(self, **arguments):
         self.resumes.append(dict(arguments))
-        self._write_waiting(arguments)
+        self._finish_turn(arguments)
         return _FakeOutcome(arguments)
 
 
@@ -1850,6 +1879,32 @@ class NativeHostTest(unittest.TestCase):
         ):
             _materialized_release_contract(checkpoint)
 
+    def test_spark_publish_does_not_require_an_additional_manual_review(self):
+        checkpoint = self._release_protocol_checkpoint(
+            manual_first=True, direct_release=True, manual_design=True,
+        )
+        for workflow in ("spark", "forge", "quest"):
+            with self.subTest(workflow=workflow):
+                selected = AgentRunCheckpoint(
+                    **{
+                        **checkpoint.__dict__,
+                        "effort": workflow,
+                        "input_sha256s": {
+                            **checkpoint.input_sha256s,
+                            ".agents/skills/autonomous-workshop/references/effort-routes-v1.md": "a" * 64,
+                        },
+                    }
+                )
+                contract = _materialized_release_contract(selected)
+                self.assertEqual(
+                    "manual_design_evidence_path" in contract,
+                    workflow != "spark",
+                )
+                self.assertEqual(
+                    "manual_design_evidence_schema_version" in contract,
+                    workflow != "spark",
+                )
+
     def test_host_prunes_only_empty_make_directories_before_native_resume(self):
         with tempfile.TemporaryDirectory() as temporary:
             run_root = Path(temporary).resolve() / "run"
@@ -2282,7 +2337,11 @@ class NativeHostTest(unittest.TestCase):
             self.assertTrue((workspace / ".agents/skills/design-vault/vault_tools.py").is_file())
             self.assertTrue((workspace / ".agents/skills/design-vault/SKILL.md").is_file())
             self.assertFalse((workspace / ".agents/skills/design-vault/__pycache__").exists())
-            prompt = arguments["prompt"]
+            self.assertEqual(len(launcher.resumes), 1)
+            self.assertEqual(launcher.resumes[0]["run_root"], arguments["run_root"])
+            self.assertNotEqual(arguments["finalization_marker"], workspace / "agent-outcome.json")
+            self.assertEqual(launcher.resumes[0]["finalization_marker"], workspace / "agent-outcome.json")
+            prompt = launcher.resumes[0]["prompt"]
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
             self.assertIn("current make stage", prompt)
@@ -2878,8 +2937,8 @@ class NativeHostTest(unittest.TestCase):
                     0,
                 )
             resumed_receipt = json.loads(output.getvalue())
-            self.assertEqual(len(launcher.resumes), 1)
-            resumed = launcher.resumes[0]
+            self.assertEqual(len(launcher.resumes), 2)
+            resumed = launcher.resumes[-1]
             for field in (
                 "product_id",
                 "wish_sha256",
@@ -2941,7 +3000,9 @@ class NativeHostTest(unittest.TestCase):
             receipt = json.loads(output.getvalue())
             self.assertEqual(receipt["action"], "started-after-interruption")
             self.assertEqual(len(recovered.starts), 1)
-            self.assertEqual(recovered.resumes, [])
+            self.assertEqual(len(recovered.resumes), 1)
+            self.assertEqual(recovered.resumes[0]["run_root"], recovered.starts[0]["run_root"])
+            self.assertEqual(recovered.resumes[0]["finalization_marker"].name, "agent-outcome.json")
 
     def test_launcher_failure_after_exact_proposal_uses_normal_gate_and_continues(self):
         launcher = _FinalizedMatchThenFailLauncher()
@@ -3146,6 +3207,8 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run.ProductTokenBudget", MeteredFakeBudget
             ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher", return_value=launcher
+            ), mock.patch(
+                "workshop.workflow.native_run.MAX_BUDGETED_TURNS", 0
             ):
                 with self.assertRaisesRegex(WorkshopError, "persistent token limit"):
                     start_native_run(Wish.create("token-budget-test", "a small toy"), max_tokens=1000)
