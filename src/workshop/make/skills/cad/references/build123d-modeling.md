@@ -171,6 +171,21 @@ body.color = filament("sunflower yellow")
 lens.color = filament("cyan", 0.42)     # with alpha
 ```
 
+`render_product` carries authored leaf or inherited alpha from the exact STEP:
+zero is invisible, one is opaque, and intermediate values use schematic
+far-to-near source-over blending. Author a purchased clear sheet with
+`cadgen.srgb("#9CCADB", alpha=0.2)` and use the normal `scripts/gen --write`
+export path to retain that alpha in STEP. All geometry remains in the model and
+its framing. Transparent faces receive no opaque silhouette outline; fully
+invisible faces contribute no fill, outline or shadow.
+
+This presentation does not simulate refraction, reflections, mirror images or
+physical light transmission. Mean triangle-depth sorting can approximate
+crossing or overlapping transparent surfaces incorrectly. Inspect the exact
+product views and retain optical limitations in the internal evidence;
+appearance is not material qualification or proof that an optical mechanism
+works. `render_review` remains an opaque geometry-review view.
+
 | name | hex | name | hex |
 | --- | --- | --- | --- |
 | `beige` | `#F7E6DE` | `gray` | `#9FA19F` |

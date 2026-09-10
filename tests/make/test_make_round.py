@@ -148,6 +148,25 @@ class MakeRoundTest(unittest.TestCase):
         path.write_text(json.dumps(value))
         return path
 
+    def _reference_round(self, project):
+        """A passing numeric fixture with real bound reference evidence."""
+        (project / "ref").mkdir()
+        reference = project / "ref/hero.png"
+        reference.write_bytes(b"synthetic reference, never rendered by the dry-run verifier")
+        (project / "toy_spec.md").write_text("# Synthetic dry-run specification\n")
+        (project / "measure").mkdir()
+        for name in ("check_spec.py", "check_landmarks.py"):
+            (project / "measure" / name).write_text("raise SystemExit(0)\n")
+        module, summary = self._round(project)
+        packet_path = Path(summary["visual"]["packet"])
+        packet = json.loads(packet_path.read_text())
+        packet["references"] = {str(reference): module.file_hash(reference)}
+        packet_path.write_text(json.dumps(packet))
+        summary["visual"]["packet_sha256"] = module.file_hash(packet_path)
+        summary["refs"] = [["hero", str(reference)]]
+        (Path(summary["out"]) / "summary.json").write_text(json.dumps(summary))
+        return module, summary
+
     def test_no_reference_round_requires_visual_inspection_and_reports_errors(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -244,6 +263,91 @@ class MakeRoundTest(unittest.TestCase):
             self.assertIn(str(project / "measure/verification-pipeline.md"), command)
             self.assertFalse(result["ok"])
             self.assertEqual(result["full"]["returncode"], 2)
+
+    def test_image_derived_full_requires_explicit_power_before_consuming_feedback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._reference_round(project)
+            feedback = self._feedback(project, summary)
+            saved = Path(summary["out"]) / "summary.json"
+            before = saved.read_bytes()
+            with mock.patch.object(module, "run") as runner:
+                with self.assertRaisesRegex(ValueError, "explicit --powered or --unpowered"):
+                    module.record_visual(project, feedback, full=True)
+                runner.assert_not_called()
+            self.assertEqual(saved.read_bytes(), before)
+            self.assertFalse((Path(summary["out"]) / "visual-feedback.json").exists())
+            with mock.patch.object(module, "skills_root", return_value=project), mock.patch.object(
+                module, "run", return_value=subprocess.CompletedProcess([], 0, "", "")
+            ):
+                result = module.record_visual(project, feedback, full=True, power_classification="unpowered")
+            self.assertTrue(result["ok"])
+
+    def test_power_flags_reject_nonfinal_conflicting_and_nonimage_unpowered_calls(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(project)
+            feedback = self._feedback(project, summary)
+            saved = Path(summary["out"]) / "summary.json"
+            before = saved.read_bytes()
+            invalid = (["--powered"], ["--full", "--powered"],
+                       ["--record-visual", str(feedback), "--unpowered"],
+                       ["--record-visual", str(feedback), "--full", "--unpowered"])
+            with mock.patch.object(module, "run") as runner, contextlib.redirect_stderr(io.StringIO()):
+                for options in invalid:
+                    with self.subTest(options=options):
+                        self.assertEqual(module.main([str(project), *options]), 2)
+                with self.assertRaises(SystemExit) as conflict:
+                    module.main([str(project), "--record-visual", str(feedback), "--full",
+                                 "--powered", "--unpowered"])
+                self.assertEqual(conflict.exception.code, 2)
+                runner.assert_not_called()
+            self.assertEqual(saved.read_bytes(), before)
+            self.assertFalse((Path(summary["out"]) / "visual-feedback.json").exists())
+
+    def test_final_power_classification_reaches_real_verifier_dry_run_and_refusals(self):
+        # The real verifier parses flags and checks manifest presence; --dry-run
+        # plans its remaining gates without fabricating engineering evidence.
+        cases = ((True, "unpowered", False, 0, ""),
+                 (True, "powered", True, 0, ""),
+                 (True, "powered", False, 1, "requires measure/power.json"),
+                 (True, "unpowered", True, 1, "contradicts"),
+                 (False, "powered", True, 0, ""))
+        for image_derived, classification, manifest, expected_exit, diagnostic in cases:
+            with self.subTest(image_derived=image_derived, classification=classification, manifest=manifest), \
+                    tempfile.TemporaryDirectory() as tmp:
+                project = Path(tmp)
+                module, summary = self._reference_round(project) if image_derived else self._round(project)
+                if manifest:
+                    (project / "measure/power.json").write_text("{}")
+                feedback = self._feedback(project, summary)
+                calls = []
+
+                def dry_run(command, **kwargs):
+                    calls.append(command)
+                    return subprocess.run([*command, "--dry-run"], cwd=kwargs["cwd"],
+                                          capture_output=True, text=True, timeout=30)
+
+                with mock.patch.object(module, "run", side_effect=dry_run), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    code = module.main([str(project), "--record-visual", str(feedback),
+                                        "--full", "--" + classification])
+                self.assertEqual(code, expected_exit)
+                self.assertEqual(len(calls), 1)
+                command = calls[0]
+                self.assertIn("--" + classification, command)
+                self.assertEqual("--image-derived" in command, image_derived)
+                self.assertIn("--strict-fit", command)
+                self.assertIn("--print-gates", command)
+                self.assertNotIn("--fresh", command)
+                final = json.loads((Path(summary["out"]) / "summary.json").read_text())
+                self.assertEqual(final["full"]["power_classification"], classification)
+                self.assertEqual(final["ok"], expected_exit == 0)
+                self.assertEqual(final["full"]["returncode"], 0 if expected_exit == 0 else 2)
+                if diagnostic:
+                    self.assertIn(diagnostic, final["full"]["tail"])
+                # A dry-run fixture never emits a passing final engineering report.
+                self.assertFalse((project / "measure/verification-pipeline.md").exists())
 
     def test_one_piece_entry_is_built_and_reported_as_the_product(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -439,11 +543,14 @@ class MakeRoundTest(unittest.TestCase):
                         module, "run",
                         return_value=subprocess.CompletedProcess([], 0, "", ""),
                     ) as runner:
-                module.record_visual(project, self._feedback(project, summary), full=True)
+                result = module.record_visual(project, self._feedback(project, summary), full=True)
             command = runner.call_args.args[0]
             self.assertIn("--print-gates", command)
             self.assertIn("--nozzle", command)
             self.assertNotIn("--skip-thickness", command)
+            self.assertNotIn("--powered", command)
+            self.assertNotIn("--unpowered", command)
+            self.assertIsNone(result["full"]["power_classification"])
 
     def test_thin_nonprinted_card_builds_but_only_printed_body_is_print_gated(self):
         with tempfile.TemporaryDirectory() as tmp:

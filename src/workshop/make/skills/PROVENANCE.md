@@ -35,6 +35,27 @@ arrays and CLI hero/motion/state output. This fixes presentation; it adds no
 host renderer, geometry format, texture model or material qualification. Frozen
 runs retain their existing materialized renderer bytes.
 
+## Complete-product schematic transparency (2026-09-10)
+
+Workshop's `cad/scripts/render_product` retains authored or inherited alpha in
+an aligned RGBA scene array. Existing RGB callers remain supported and opaque
+renders retain their existing pixels. Partial alpha uses source-over blending
+in the existing far-to-near triangle order; zero-alpha faces contribute no
+fill, outline or shadow, and transparent faces receive no opaque outline.
+The alpha-only raster path uses pixel centres and half-open shared edges in
+bounded row strips, preventing a coplanar triangulation seam from blending
+twice while preserving separate transparent layers.
+Geometry and STEP bytes are unchanged, including exact full-model framing.
+
+A synthetic clear-sheet/solid audit demonstrated that normal cadgen STEP
+export/import retained alpha while the previous product rasterizer discarded
+it. Regression tests cover real STEP front/behind placement, reversed child
+order, inherited alpha, zero-alpha disappearance, opaque RGB compatibility,
+sampling/pose/state alignment and invalid alpha. This is schematic transparency,
+not refraction, reflection or physical transmission evidence. Mean triangle
+depth remains approximate for crossing surfaces. No runtime dependency or host
+renderer was added; frozen pilots keep their original tool bytes.
+
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at

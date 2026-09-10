@@ -12,6 +12,8 @@ product photography.
 Authored leaf/occurrence colors are preserved through nested assembly
 placements. The base/accent palette supplies only otherwise uncolored faces;
 color is appearance evidence, not a material or fabrication certification.
+Authored alpha gives schematic, depth-sorted transparency. This is not an
+optical simulation: it does not model refraction, reflections or transmission.
 
 Examples:
 
@@ -132,8 +134,16 @@ def _authored_rgb(color) -> tuple[int, int, int]:
     return tuple(result)
 
 
+def _authored_rgba(color) -> tuple[int, int, int, float]:
+    channels = () if color is None else tuple(color)
+    alpha = float(channels[3]) if len(channels) >= 4 else 1.0
+    if not math.isfinite(alpha) or not 0 <= alpha <= 1:
+        raise ValueError("authored color alpha must be finite and between zero and one")
+    return (*_authored_rgb(color), alpha)
+
+
 def load_scene(source: Path) -> tuple[np.ndarray, np.ndarray]:
-    """Tessellate exact CAD into aligned triangle vertices and authored RGBs."""
+    """Tessellate exact CAD into aligned vertices, sRGBs and linear alpha."""
 
     shape = _build_shape(source)
     facets = []
@@ -144,7 +154,7 @@ def load_scene(source: Path) -> tuple[np.ndarray, np.ndarray]:
             continue
         points = np.asarray([[p.X, p.Y, p.Z] for p in vertices], dtype=np.float64)
         facets.append(points[np.asarray(faces, dtype=np.int64)])
-        colors.append(np.tile(_authored_rgb(color), (len(faces), 1)))
+        colors.append(np.tile(_authored_rgba(color), (len(faces), 1)))
     if not facets:
         raise ValueError(f"{source} tessellated to no triangles")
     return np.concatenate(facets).reshape(-1, 3, 3), np.concatenate(colors)
@@ -214,6 +224,47 @@ def _shade(color: tuple[int, int, int], light: float) -> tuple[int, int, int]:
     )
 
 
+def _translucent_triangle(image: Image.Image, points, color, alpha: float) -> None:
+    """Source-over one triangle with half-open shared edges and bounded strips.
+
+    PIL's inclusive polygons paint a shared triangulation edge twice. Pixel
+    centres and the top-left rule give that edge to exactly one triangle.
+    Separate depth layers still composite separately in the caller's order.
+    """
+    opacity = round(alpha * 255)
+    if opacity == 0:
+        return
+    a, b, c = points
+    area = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+    if area == 0:
+        return
+    if area < 0:
+        b, c = c, b
+    left = max(0, min(a[0], b[0], c[0]))
+    right = min(image.width, max(a[0], b[0], c[0]))
+    top = max(0, min(a[1], b[1], c[1]))
+    bottom = min(image.height, max(a[1], b[1], c[1]))
+    if left >= right or top >= bottom:
+        return
+    rgb = np.asarray(color, dtype=np.uint16)
+    for row in range(top, bottom, 32):
+        end = min(row + 32, bottom)
+        y, x = np.ogrid[row:end, left:right]
+        x, y = x + 0.5, y + 0.5
+        inside = np.ones((end - row, right - left), dtype=bool)
+        for start, finish in ((a, b), (b, c), (c, a)):
+            dx, dy = finish[0] - start[0], finish[1] - start[1]
+            edge = dx * (y - start[1]) - dy * (x - start[0])
+            top_left = dy < 0 or (dy == 0 and dx > 0)
+            inside &= (edge > 0) | ((edge == 0) & top_left)
+        if not np.any(inside):
+            continue
+        pixels = np.asarray(image.crop((left, row, right, end))).copy()
+        selected = pixels[inside].astype(np.uint16)
+        pixels[inside] = ((selected * (255 - opacity) + rgb * opacity + 127) // 255).astype(np.uint8)
+        image.paste(Image.fromarray(pixels), (left, row))
+
+
 def _gradient(size: int, top: tuple[int, int, int], bottom: tuple[int, int, int]):
     rows = np.empty((size, size, 3), dtype=np.uint8)
     for row in range(size):
@@ -258,12 +309,15 @@ def render(
         raise ValueError("exact CAD state contains non-finite vertices")
     if triangle_colors is not None:
         triangle_colors = np.asarray(triangle_colors)
-        if triangle_colors.shape != (len(triangles), 3):
-            raise ValueError("triangle colors must supply one RGB per triangle")
-        authored = np.all((triangle_colors >= 0) & (triangle_colors <= 255), axis=1)
-        fallback = np.all(triangle_colors == -1, axis=1)
+        if triangle_colors.shape not in {(len(triangles), 3), (len(triangles), 4)}:
+            raise ValueError("triangle colors must supply one RGB or RGBA per triangle")
+        rgb = triangle_colors[:, :3]
+        authored = np.all((rgb >= 0) & (rgb <= 255), axis=1)
+        fallback = np.all(rgb == -1, axis=1)
         if not np.isfinite(triangle_colors).all() or not np.all(authored | fallback):
             raise ValueError("triangle colors must be RGB values or an uncolored sentinel")
+        if triangle_colors.shape[1] == 4 and not np.all((triangle_colors[:, 3] >= 0) & (triangle_colors[:, 3] <= 1)):
+            raise ValueError("triangle colors alpha must be between zero and one")
 
     triangles = _posed_triangles(triangles, pose_degrees)
 
@@ -273,6 +327,9 @@ def render(
         triangles = triangles[indices]
         if triangle_colors is not None:
             triangle_colors = triangle_colors[indices]
+
+    alphas = (triangle_colors[:, 3] if triangle_colors is not None and triangle_colors.shape[1] == 4
+              else np.ones(len(triangles)))
 
     scale_factor = 2
     canvas_size = size * scale_factor
@@ -307,11 +364,13 @@ def render(
     shadow_width = max(canvas_size * 0.20, span_x * fit * 0.42)
     shadow_height = max(canvas_size * 0.025, span_y * fit * 0.055)
     cx = canvas_size / 2.0
-    cy = min(canvas_size * 0.82, float(screen_y.max()) + canvas_size * 0.025)
-    shadow_pen.ellipse(
-        (cx - shadow_width, cy - shadow_height, cx + shadow_width, cy + shadow_height),
-        fill=(34, 38, 55, 62),
-    )
+    visible_geometry = alphas > 0
+    if np.any(visible_geometry):
+        cy = min(canvas_size * 0.82, float(screen_y[visible_geometry].max()) + canvas_size * 0.025)
+        shadow_pen.ellipse(
+            (cx - shadow_width, cy - shadow_height, cx + shadow_width, cy + shadow_height),
+            fill=(34, 38, 55, 62),
+        )
     shadow = shadow.filter(ImageFilter.GaussianBlur(canvas_size * 0.018))
     image = Image.alpha_composite(image.convert("RGBA"), shadow).convert("RGB")
 
@@ -331,10 +390,10 @@ def render(
     order = np.argsort(depth.mean(axis=1), kind="stable")
     pen = ImageDraw.Draw(image)
     for index in order:
-        if not valid[index] or not facing_camera[index]:
+        if not valid[index] or not facing_camera[index] or alphas[index] == 0:
             continue
         if triangle_colors is not None and triangle_colors[index, 0] >= 0:
-            material = tuple(int(channel) for channel in triangle_colors[index])
+            material = tuple(int(channel) for channel in triangle_colors[index, :3])
         else:
             material = _blend(base, accent, 0.12 + 0.70 * float(color_mix[index]))
         color = _shade(material, 0.52 + 0.63 * float(diffuse[index]))
@@ -342,7 +401,12 @@ def render(
             (int(round(screen_x[index, corner])), int(round(screen_y[index, corner])))
             for corner in range(3)
         ]
-        pen.polygon(points, fill=color)
+        if alphas[index] == 1:
+            pen.polygon(points, fill=color)
+        else:
+            # Schematic source-over appearance, in the existing far-to-near
+            # triangle order. Mean depth remains approximate for crossing faces.
+            _translucent_triangle(image, points, color, float(alphas[index]))
 
     # A restrained outline restores silhouette clarity after flat triangle
     # shading, especially for pale palettes.
@@ -350,7 +414,7 @@ def render(
     mask = Image.new("L", (canvas_size, canvas_size), 0)
     mask_pen = ImageDraw.Draw(mask)
     for index in order:
-        if valid[index]:
+        if valid[index] and alphas[index] == 1:
             mask_pen.polygon(
                 [
                     (int(round(screen_x[index, corner])), int(round(screen_y[index, corner])))

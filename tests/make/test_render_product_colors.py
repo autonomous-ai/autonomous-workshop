@@ -63,7 +63,7 @@ class ProductColorTests(unittest.TestCase):
         expected, expected_colors = self.load_shape(flat)
         np.testing.assert_allclose(actual, expected, atol=1e-10, rtol=0)
         np.testing.assert_array_equal(colors, expected_colors)
-        self.assertEqual({tuple(row) for row in colors}, {(255, 0, 0), (0, 255, 0)})
+        self.assertEqual({tuple(row) for row in colors}, {(255, 0, 0, 1), (0, 255, 0, 1)})
         after = [(id(node.parent), tuple(node.position), tuple(node.orientation),
                   tuple(node.color) if node.color is not None else None) for node in nodes]
         self.assertEqual(before, after)
@@ -80,7 +80,7 @@ class ProductColorTests(unittest.TestCase):
         bounds = shape.bounding_box()
         np.testing.assert_allclose(triangles.min(axis=(0, 1)), tuple(bounds.min), atol=1e-6, rtol=0)
         np.testing.assert_allclose(triangles.max(axis=(0, 1)), tuple(bounds.max), atol=1e-6, rtol=0)
-        self.assertEqual({tuple(row) for row in colors}, {(255, 0, 0), (0, 255, 0)})
+        self.assertEqual({tuple(row) for row in colors}, {(255, 0, 0, 1), (0, 255, 0, 1)})
         self.assert_red_and_green(self.tool["render"](triangles, triangle_colors=colors, **STYLE))
 
     def test_group_color_inherits_and_linear_rgb_is_encoded_for_png(self):
@@ -89,7 +89,7 @@ class ProductColorTests(unittest.TestCase):
         group.color = Color(0.5, 0.0, 0.0)
         before = tuple(child.color)
         _, colors = self.load_shape(Compound(children=[group]))
-        self.assertEqual({tuple(row) for row in colors}, {(188, 0, 0)})
+        self.assertEqual({tuple(row) for row in colors}, {(188, 0, 0, 1)})
         self.assertEqual(tuple(child.color), before)
 
     def test_palette_and_nonprinted_midtones_round_trip_through_step(self):
@@ -107,11 +107,12 @@ class ProductColorTests(unittest.TestCase):
             _, colors = self.tool["load_scene"](path)
             self.assertEqual(path.read_bytes(), before)
             self.assertEqual(list(Path(temporary).iterdir()), [path])
-        self.assertEqual({tuple(row) for row in colors}, {(142, 60, 6), (209, 130, 46)})
+        self.assertEqual({tuple(row) for row in colors}, {(142, 60, 6, 1), (209, 130, 46, 1)})
 
     def test_uncolored_shape_keeps_the_existing_palette_pixels(self):
         triangles, colors = self.load_shape(Box(2, 3, 4))
-        self.assertTrue(np.all(colors == -1))
+        self.assertTrue(np.all(colors[:, :3] == -1))
+        self.assertTrue(np.all(colors[:, 3] == 1))
         actual = self.tool["render"](triangles, triangle_colors=colors, **STYLE)
         expected = self.tool["render"](triangles, **STYLE)
         np.testing.assert_array_equal(np.asarray(actual), np.asarray(expected))

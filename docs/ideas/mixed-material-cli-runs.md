@@ -80,7 +80,8 @@ exact private source before saving the target binding, without shared-account
 fallback. Credential values never entered this document or the source tree.
 The existing Alice and Bob connections were preserved.
 
-- `doctor`: ready; Codex signed in, 16 inventor bundles validated, nine domain
+- Initial `doctor`: ready; Codex signed in, 16 inventor bundles before adding
+  the three new specialists (the later CLI check validated 19), nine domain
   skills materialized including mixed-materials, host-only Factory credentials
   available. Optional host rendering unavailable; Spark uses Make's own images.
 - Before launch, found that `make_round` attempted print checks on every part,
@@ -222,3 +223,28 @@ selection priority, alternate-name acceptance and rejection of a wrong first
 fallback image. The host still copies Make's bytes; this adds no host render or
 geometry review. Running pilots retain their frozen finalizer until an explicit
 supported tool refresh.
+
+### Make audit: power classification and clear-material rendering
+
+The actual final verifier refuses image-derived work without explicit
+`--powered` or `--unpowered`, but Make-round's final shortcut could not forward
+either choice. It now accepts that explicit choice with
+`--record-visual <feedback.json> --full`; a missing required choice fails before
+consuming feedback. It does not infer an unpowered product from a missing
+manifest. The verifier still rejects absent powered-system evidence and
+contradictory declarations. All 45 focused Make-round/motion/pose tests passed,
+including five actual verifier dry-run/refusal cases.
+
+A real STEP audit found the exporter preserved transparent sheet alpha but
+`render_product` discarded it, producing identical opaque images for alpha 0,
+0.2 and 1. The renderer now preserves alpha with ordered source-over blending.
+A half-open triangle fill prevents shared triangulation edges from blending
+twice. Separate overlapping layers still blend separately. All four saved
+opaque comparison images retain their exact previous PNG bytes.
+
+This is schematic transparency: no reflection, refraction or physical light
+transmission is simulated. Mean triangle depth remains approximate for crossing
+surfaces. The existing geometry-only state-difference check stays unchanged.
+The final 70-test package-data, registry, Make-round and renderer suite passed,
+including the actual native-byte scanner; visual inspection confirmed the
+clear panel reveals the object behind it without a diagonal seam.

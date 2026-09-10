@@ -4,6 +4,7 @@
     make_round <project>/cad [--ref LABEL=PATH ...] [--min 0.90] [--nozzle 0.4]
                [--overhang-angle 45] [--all-parts] [--no-motion] [--full]
                [--out DIR] [--json] [--record-visual FEEDBACK.json]
+               [--powered | --unpowered]
                [--self-check]
 
 Every verdict comes from the original cad and image-to-cad tools, run
@@ -80,12 +81,20 @@ def prepare_visual(project, entry, out, cad, refs):
             "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"}
 
 
-def record_visual(project, feedback_path, full=False):
+def record_visual(project, feedback_path, full=False, *, power_classification=None):
     """Attach native observations to the last round without rebuilding it."""
+    if power_classification not in (None, "powered", "unpowered"):
+        raise ValueError("power classification must be powered or unpowered")
+    if power_classification is not None and not full:
+        raise ValueError("--powered/--unpowered require --record-visual --full")
     state = json.loads((project / "measure" / STATE_NAME).read_text())
     out = Path(state["last_out"])
     summary_path = out / "summary.json"
     summary = json.loads(summary_path.read_text())
+    if full and summary["refs"] and power_classification is None:
+        raise ValueError("image-derived final verification requires explicit --powered or --unpowered")
+    if power_classification == "unpowered" and not summary["refs"]:
+        raise ValueError("--unpowered requires an image-derived round with reference views")
     visual = summary["visual"]
     if visual["status"] != "pending":
         raise ValueError("visual feedback is only accepted once for a pending round")
@@ -130,6 +139,8 @@ def record_visual(project, feedback_path, full=False):
                    "--report", str(project / "measure/verification-pipeline.md")]
         if printable:
             command += ["--print-gates", "--nozzle", str(summary.get("nozzle", 0.4))]
+        if power_classification is not None:
+            command.append("--" + power_classification)
         if summary["refs"]:
             command.append("--image-derived")
             for label, ref in summary["refs"]:
@@ -137,6 +148,7 @@ def record_visual(project, feedback_path, full=False):
         done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
         summary["full"] = {"ok": done.returncode == 0, "returncode": done.returncode,
                            "tail": tail(done.stdout or done.stderr),
+                           "power_classification": power_classification,
                            "print_gates_ran": bool(printable),
                            "print_ready_claim": bool(printable) and done.returncode == 0}
         summary["ok"] = done.returncode == 0
@@ -556,9 +568,14 @@ def make_round(args) -> int:
     if not project.is_dir():
         print("make_round: not a directory: %s" % project, file=sys.stderr)
         return 2
+    power_classification = getattr(args, "power_classification", None)
+    if power_classification is not None and not (args.record_visual and args.full):
+        print("make_round: --powered/--unpowered require --record-visual --full", file=sys.stderr)
+        return 2
     if args.record_visual:
         try:
-            summary = record_visual(project, args.record_visual, args.full)
+            summary = record_visual(project, args.record_visual, args.full,
+                                    power_classification=power_classification)
         except (ValueError, KeyError, OSError, TypeError) as exc:
             print("make_round: %s" % exc, file=sys.stderr)
             return 2
@@ -956,6 +973,11 @@ def main(argv=None) -> int:
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
     parser.add_argument("--record-visual", help="record native Manager feedback for the last round without rebuilding")
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
+    power = parser.add_mutually_exclusive_group()
+    power.add_argument("--powered", dest="power_classification", action="store_const", const="powered",
+                       help="with --record-visual --full: require the verifier's functional electrical-load checks")
+    power.add_argument("--unpowered", dest="power_classification", action="store_const", const="unpowered",
+                       help="with --record-visual --full: explicitly classify an image-derived product as having no electrical load")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
     parser.add_argument("--self-check", action="store_true")

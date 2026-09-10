@@ -125,7 +125,29 @@ repair-and-rereview cycles (four reviews total). After a passing hash-bound
 blind review, the final `--record-visual` may also use
 `--full` to invoke `verify_project --strict-fit` once. Normally run
 the integrated verifier directly after blind review; never start a new round
-just to run it. The host alone performs the authoritative `--fresh` rebuild.
+just to run it. The Make finalizer is still required. Spark accepts Make's
+verification without a duplicate host rebuild; other workflows retain their
+materialized host-verification policy.
+
+When using this final shortcut, pass `--powered` for any functional electrical
+load. An image-derived round (one with reference views) requires an explicit
+choice: `--powered` or `--unpowered`. For example, after independent blind review:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --record-visual <feedback.json> --full --powered
+```
+
+Use `--unpowered` instead for an image-derived product with no functional
+electrical load. The flags are mutually exclusive and only valid with
+`--record-visual --full`; `--unpowered` requires reference views. Missing
+classification for an image-derived final run is refused before feedback is
+recorded. Classification is never inferred from a missing power manifest.
+The unchanged verifier requires `measure/power.json` for `--powered` and
+refuses `--unpowered` if that manifest exists. It still validates the independent
+review and all engineering gates. Unflagged non-image-derived runs retain their
+existing behavior. The final summary records the explicit choice, or `null`
+when none was supplied.
 
 The summary names, in order: the changed parts and their build verdicts, the
 likeness score per view with the change since
@@ -144,7 +166,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
 | inspection views | `"$WORKSHOP_PYTHON" $C/render_review <entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection |
-| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--image-derived --likeness-ref L=PATH ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
+| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--print-gates --nozzle N] [--powered \| --unpowered] [--image-derived --likeness-ref L=PATH ...] --report <project>/measure/verification-pipeline.md` | explicit power choice forwarded; exit 0 = verifier passed; Make finalizer still required; Spark has no duplicate host rebuild |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
 
 `render_views.py --match` searches the camera pose and scores with the
