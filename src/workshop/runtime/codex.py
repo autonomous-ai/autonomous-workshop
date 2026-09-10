@@ -117,7 +117,7 @@ _CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS = (
     "media.githubusercontent.com",
     "*.public.blob.vercel-storage.com",
 )
-_CODEX_COMPONENT_NETWORK_DOMAINS = (
+_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_REFERENCE_IMAGES = (
     *_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS,
     "datasheets.raspberrypi.com",
     "dfimg.dfrobot.com",
@@ -132,6 +132,16 @@ _CODEX_COMPONENT_NETWORK_DOMAINS = (
     "www.waveshare.com",
     "www.waveshare.net",
 )
+# `--ref` is the preferred path and its bytes are sealed before a run starts,
+# but a Wish that only names an existing object leaves the run with nothing to
+# look at, and a text-derived shape does not resemble the named thing. The
+# reference images that would fix that live on whichever CDN a search happens
+# to return, so an enumerated host list cannot serve them. The containment that
+# matters is kept by `limited` mode, not by this map: it restricts methods to
+# GET, HEAD and OPTIONS, so a wider map grants reads and no way to send
+# anything out. The filesystem profile is unchanged and still denies `:root`
+# and every `.env*`, so a read stays bounded to the run's own workspace.
+_CODEX_COMPONENT_NETWORK_DOMAINS = ("*",)
 _CODEX_REASONING_ITEM_TYPES = frozenset(("reasoning",))
 _CODEX_TOOL_ITEM_TYPES = frozenset(
     (
@@ -748,36 +758,78 @@ def _run_policy_before_component_network(
     )
 
 
-def _run_policy_before_supplier_drawings(
+def _network_domains_argument(domains: tuple[str, ...]) -> str:
+    """Render the exact domain-map argument one policy generation carries."""
+
+    return "permissions.%s.network.domains={%s}" % (
+        CODEX_PERMISSION_PROFILE,
+        ",".join('%s="allow"' % _toml_string(domain) for domain in domains),
+    )
+
+
+def _rolled_back_network_domains(
     run_root: Path,
     run_policy: _CodexRunPolicy,
+    *,
+    expected: tuple[str, ...],
+    predecessor: tuple[str, ...],
+    label: str,
 ) -> _CodexRunPolicy:
-    """Reconstruct the first scoped proxy before supplier drawing hosts."""
+    """Rebuild one policy generation with its predecessor's domain map.
 
-    current_domains = "permissions.%s.network.domains={%s}" % (
-        CODEX_PERMISSION_PROFILE,
-        ",".join(
-            '%s="allow"' % _toml_string(domain)
-            for domain in _CODEX_COMPONENT_NETWORK_DOMAINS
-        ),
-    )
-    if current_domains not in run_policy.permission_config_arguments:
+    Each rollback validates the generation it is rolling back *from*, so a
+    resumed session can only step back through generations that actually
+    existed, never sideways into an arbitrary domain map.
+    """
+
+    if (
+        _network_domains_argument(expected)
+        not in run_policy.permission_config_arguments
+    ):
         raise CodexInvocationError(
-            "Codex runtime policy has no supplier drawing network binding"
+            "Codex runtime policy has no %s network binding" % label
         )
     return _CodexRunPolicy(
         permission_config_arguments=_permission_config_arguments(
             run_root,
             run_policy.trusted_python_runtime_paths,
             run_policy.trusted_codex_runtime_paths,
-            component_network_domains=(
-                _CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS
-            ),
+            component_network_domains=predecessor,
         ),
         trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
         trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
         environment_allowlist=run_policy.environment_allowlist,
         environment_overrides=run_policy.environment_overrides,
+    )
+
+
+def _run_policy_before_reference_images(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Reconstruct the supplier-only domain map before reference images."""
+
+    return _rolled_back_network_domains(
+        run_root,
+        run_policy,
+        expected=_CODEX_COMPONENT_NETWORK_DOMAINS,
+        predecessor=_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_REFERENCE_IMAGES,
+        label="reference image",
+    )
+
+
+def _run_policy_before_supplier_drawings(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Reconstruct the first scoped proxy before supplier drawing hosts."""
+
+    return _rolled_back_network_domains(
+        run_root,
+        run_policy,
+        expected=_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_REFERENCE_IMAGES,
+        predecessor=_CODEX_COMPONENT_NETWORK_DOMAINS_BEFORE_SUPPLIER_DRAWINGS,
+        label="supplier drawing",
     )
 
 
@@ -1129,7 +1181,89 @@ def _trusted_runtime_path_identity(
     )
 
 
+def _python_framework_library() -> Optional[Path]:
+    """Resolve a framework install name relative to its framework prefix."""
+    if not sysconfig.get_config_var("PYTHONFRAMEWORK"):
+        return None
+    prefix = sysconfig.get_config_var("PYTHONFRAMEWORKPREFIX")
+    name = sysconfig.get_config_var("INSTSONAME")
+    try:
+        if not isinstance(prefix, str) or not isinstance(name, str):
+            raise ValueError("missing framework configuration")
+        library = (Path(prefix) / name).resolve(strict=True)
+        if not library.is_file():
+            raise ValueError("not a library")
+        return library
+    except (OSError, ValueError) as exc:
+        raise CodexInvocationError("Python framework library is unavailable") from exc
+
+
+def _python_framework_launcher_directories() -> tuple[Path, ...]:
+    """Allow traversal of exact launcher aliases, never the Homebrew tree."""
+    if not sysconfig.get_config_var("PYTHONFRAMEWORK"):
+        return ()
+    pending = Path(sys.executable)
+    directories: set[Path] = set()
+    seen: set[Path] = set()
+    for _ in range(64):
+        if pending in seen:
+            raise CodexInvocationError("Python launcher symlink cycle")
+        seen.add(pending)
+        # Resolve directory symlinks independently of the executable symlink.
+        for parent in reversed(pending.parents):
+            if parent.is_symlink():
+                directories.add(parent.parent.resolve(strict=True))
+        if not pending.is_symlink():
+            return tuple(sorted(directories))
+        if pending != Path(sys.executable):
+            directories.add(pending.parent.resolve(strict=True))
+        target = pending.readlink()
+        pending = target if target.is_absolute() else pending.parent / target
+    raise CodexInvocationError("Python launcher symlink chain is too long")
+
+
+def _python_framework_dependencies() -> tuple[Path, ...]:
+    """Discover the bounded native stdlib dependency closure without secrets."""
+    if sys.platform != "darwin" or not sysconfig.get_config_var("PYTHONFRAMEWORK"):
+        return ()
+    library = _python_framework_library()
+    pending = list((Path(sysconfig.get_path("stdlib")) / "lib-dynload").glob("*.so"))
+    if library is not None:
+        pending.append(library)
+    seen: set[Path] = set()
+    dependencies: set[Path] = set()
+    while pending:
+        target = pending.pop().resolve(strict=True)
+        if target in seen:
+            continue
+        seen.add(target)
+        if len(seen) > 256:
+            raise CodexInvocationError("Python native dependency closure is too large")
+        try:
+            result = subprocess.run(
+                ["/usr/bin/otool", "-L", str(target)], check=True,
+                capture_output=True, text=True, timeout=10,
+                env={"PATH": "/usr/bin:/bin", "LANG": "C"},
+            )
+            for line in result.stdout.splitlines():
+                name = line.strip().split(" (", 1)[0]
+                if not name.startswith("/") or name.endswith(":"):
+                    continue
+                if name.startswith(("/usr/lib/", "/System/Library/")):
+                    continue
+                dependency = Path(name).resolve(strict=True)
+                if not dependency.is_file():
+                    raise OSError("native dependency is not a file")
+                if dependency != target:
+                    dependencies.update((dependency, dependency.parent))
+                    pending.append(dependency)
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise CodexInvocationError("Cannot inspect Python framework dependencies") from exc
+    return tuple(sorted(dependencies))
+
+
 def _python_runtime_permission_identities(
+    *, include_framework: bool = True,
 ) -> tuple[_TrustedRuntimePathIdentity, ...]:
     """Return exact identities for the read-only Python runtime trust boundary.
 
@@ -1214,6 +1348,12 @@ def _python_runtime_permission_identities(
         # libraries. Grant the exact interpreter-owned directory read-only so
         # the loader cannot silently fall back to ABI-incompatible system libs.
         candidates.add(runtime_library_directory)
+    if include_framework:
+        framework = _python_framework_library()
+        if framework is not None:
+            candidates.add(framework)
+            candidates.update(_python_framework_launcher_directories())
+            candidates.update(_python_framework_dependencies())
     return tuple(
         _trusted_runtime_path_identity(path)
         for path in sorted(candidates, key=lambda candidate: str(candidate))
@@ -2382,9 +2522,13 @@ class CodexNativeSessionLauncher:
                 else None
             ),
         )
-        policy_before_supplier_drawings = _run_policy_before_supplier_drawings(
+        policy_before_reference_images = _run_policy_before_reference_images(
             root,
             run_policy,
+        )
+        policy_before_supplier_drawings = _run_policy_before_supplier_drawings(
+            root,
+            policy_before_reference_images,
         )
         policy_before_component_network = _run_policy_before_component_network(
             root,
@@ -2413,7 +2557,19 @@ class CodexNativeSessionLauncher:
             root,
             historical_policy,
         )
+        pre_framework_paths = _python_runtime_permission_identities(include_framework=False)
+        pre_framework_policy = _CodexRunPolicy(
+            permission_config_arguments=_permission_config_arguments(
+                root, pre_framework_paths, run_policy.trusted_codex_runtime_paths,
+            ),
+            trusted_python_runtime_paths=pre_framework_paths,
+            trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
+            environment_allowlist=run_policy.environment_allowlist,
+            environment_overrides=run_policy.environment_overrides,
+        )
         predecessor_policies: list[tuple[_CodexRunPolicy, bool]] = [
+            (pre_framework_policy, True),
+            (policy_before_reference_images, True),
             (policy_before_supplier_drawings, True),
             (policy_before_component_network, True),
             (legacy_python_policy, True),

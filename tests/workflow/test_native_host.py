@@ -118,6 +118,8 @@ from workshop.workflow.effort import (
     SPARK_ECONOMICS_CAPABILITY_PATH,
     SPARK_ECONOMICS_V1_CAPABILITY_PATH,
     SPARK_ECONOMICS_V2_CAPABILITY_PATH,
+    SPARK_ECONOMICS_V3_CAPABILITY_PATH,
+    SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
 )
 
@@ -520,9 +522,20 @@ class NativeHostTest(unittest.TestCase):
             "deep-v13": DEEP_ECONOMICS_CAPABILITY_PATH,
             "v1": SPARK_ECONOMICS_V1_CAPABILITY_PATH,
             "v2": SPARK_ECONOMICS_V2_CAPABILITY_PATH,
-            "v3": SPARK_ECONOMICS_CAPABILITY_PATH,
+            "v3": SPARK_ECONOMICS_V3_CAPABILITY_PATH,
+            "v4": SPARK_ECONOMICS_CAPABILITY_PATH,
         }
-        if economics_capability == "deep-v13":
+        if economics_capability == "v4":
+            # A real v4 Spark run materializes the preserved v1-v3 references
+            # too. The host must select the newest frozen profile, not branch
+            # merely on an older file's presence.
+            inputs = {
+                SPARK_ECONOMICS_V1_CAPABILITY_PATH: "c" * 64,
+                SPARK_ECONOMICS_V2_CAPABILITY_PATH: "b" * 64,
+                SPARK_ECONOMICS_V3_CAPABILITY_PATH: "9" * 64,
+                SPARK_ECONOMICS_CAPABILITY_PATH: "a" * 64,
+            }
+        elif economics_capability == "deep-v13":
             # A real v13 run materializes the preserved v5-v12 references too. The
             # host must select the newest frozen profile, not branch merely on
             # an older file's presence.
@@ -648,6 +661,39 @@ class NativeHostTest(unittest.TestCase):
             auto_compact_token_limit=SPARK_AUTO_COMPACT_TOKEN_LIMIT,
             timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
         )
+
+    def test_v4_spark_raises_the_ceiling_no_further_than_deep(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v4"
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            launcher = _native_launcher(checkpoint)
+
+        self.assertIs(launcher, launcher_type.return_value)
+        launcher_type.assert_called_once_with(
+            reasoning_effort="low",
+            auto_compact_token_limit=SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
+            timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+        )
+
+    def test_v4_spark_keeps_the_twenty_minute_budgeted_turn_boundary(self):
+        for capability in ("v3", "v4"):
+            with self.subTest(capability=capability):
+                checkpoint = self._launcher_checkpoint(
+                    effort="spark", economics_capability=capability
+                )
+                checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+                bounded = _budgeted_turn_launcher(
+                    checkpoint,
+                    CodexNativeSessionLauncher(
+                        reasoning_effort="low",
+                        timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
+                    ),
+                    3600,
+                )
+                self.assertEqual(bounded.timeout_seconds, 1200)
 
     def test_new_runtime_choice_overrides_legacy_stage_reasoning_profile(self):
         checkpoint = self._launcher_checkpoint(
@@ -2236,6 +2282,8 @@ class NativeHostTest(unittest.TestCase):
                         "of",
                         "my",
                         "dog",
+                        "--inventor",
+                        "soren-voss",
                         "--json",
                     )
                 )
@@ -2257,7 +2305,7 @@ class NativeHostTest(unittest.TestCase):
                     Wish.create(
                         product_id,
                         "a wind-up version of my dog",
-                        context={"source": "workshop-cli"},
+                        context={"source": "workshop-cli", "inventor_id": "soren-voss"},
                     )
                 ),
             )
@@ -2299,17 +2347,9 @@ class NativeHostTest(unittest.TestCase):
                     / "product-manual-visual-system.md"
                 ).is_file()
             )
-            for inventor_id in (
-                "abo",
-                "alice",
-                "bob",
-                "eve",
-                "ivy",
-                "leo",
-                "mira-fold",
-                "pico-press",
-                "tess-loop",
-            ):
+            # Pin selection: this fixture tests the Make/effect boundary.
+            # Automatic roster selection has its own host integration suite.
+            for inventor_id in ("soren-voss",):
                 self.assertTrue(
                     (workspace / ".codex" / "agents" / (inventor_id + ".toml")).is_file()
                 )
@@ -2439,7 +2479,7 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run._gamevault_client",
                 side_effect=GameVaultUnavailable("no game vault token: set WORKSHOP_GAMEVAULT_TOKEN"),
             ), redirect_stdout(stdout), redirect_stderr(StringIO()):
-                result = main(("wish", "a", "quiet", "orrery", "--json"))
+                result = main(("wish", "a", "quiet", "orrery", "--inventor", "soren-voss", "--json"))
             self.assertEqual(result, 0)
             receipt = json.loads(stdout.getvalue())
             self.assertEqual(len(launcher.starts), 1)
@@ -2478,7 +2518,7 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run._gamevault_client",
                 return_value=fake_client(BrokenExport()),
             ), redirect_stdout(stdout), redirect_stderr(StringIO()):
-                result = main(("wish", "a", "quiet", "orrery", "--json"))
+                result = main(("wish", "a", "quiet", "orrery", "--inventor", "soren-voss", "--json"))
             self.assertEqual(result, 0)
             receipt = json.loads(stdout.getvalue())
             self.assertEqual(len(launcher.starts), 1)
@@ -2568,7 +2608,7 @@ class NativeHostTest(unittest.TestCase):
                         "workshop.workflow.native_run._gamevault_client",
                         side_effect=default_client,
                     ), redirect_stdout(stdout), redirect_stderr(StringIO()):
-                        result = main(("wish", "a", "quiet", "orrery", "--json"))
+                        result = main(("wish", "a", "quiet", "orrery", "--inventor", "soren-voss", "--json"))
                     self.assertEqual(result, 0)
                     receipt = json.loads(stdout.getvalue())
                     self.assertEqual(len(launcher.starts), 1)
@@ -2914,7 +2954,7 @@ class NativeHostTest(unittest.TestCase):
                 return_value=launcher,
             ), redirect_stdout(output), redirect_stderr(StringIO()):
                 self.assertEqual(
-                    main(("wish", "a moon that waddles", "--json")),
+                    main(("wish", "a moon that waddles", "--inventor", "soren-voss", "--json")),
                     0,
                 )
             started_receipt = json.loads(output.getvalue())
@@ -2978,7 +3018,7 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=interrupted,
             ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
-                self.assertEqual(main(("wish", "a tiny orbit", "--json")), 2)
+                self.assertEqual(main(("wish", "a tiny orbit", "--inventor", "soren-voss", "--json")), 2)
 
             product_ids = [path.name for path in (home / "runs").iterdir()]
             self.assertEqual(len(product_ids), 1)
