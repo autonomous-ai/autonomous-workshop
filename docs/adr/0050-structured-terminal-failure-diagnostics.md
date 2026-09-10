@@ -31,6 +31,16 @@ Classification examines at most the existing bounded diagnostic prefix. It
 does not retain excerpts. Unknown text produces the explicit category and
 signature `unclassified`; it does not silently disappear.
 
+Four fixed native literals also have exact diagnoses after case and whitespace
+normalization: `in-process app-server runtime is closed` maps to
+`native-runtime` / `app-server-closed`; `Luna response exceeded the output limit`
+to `native-runtime` / `luna-output-limit`; `Requested an operation in invalid
+state` to `native-runtime` / `handshake-invalid-state`; and `invalid JSON in
+cached Login token file` to `access` / `cached-login-token-invalid-json`.
+These matches require the complete message within the existing diagnostic
+bound; surrounding prose or a truncated prefix cannot select them. They add no
+retry authority and do not identify the cause of historical unclassified errors.
+
 The adapter includes safe category, signature, and code fields in the raised
 terminal-failure summary and writes the complete structured diagnosis to the
 host-private `0600` `codex-turn-failure.json` record. That record advances to
@@ -45,10 +55,10 @@ effect.
 ## Consequences
 
 Operators can distinguish common access, request, context, rate-limit,
-provider-service, and transport failures without exposing arbitrary provider
-text. Known signatures can be expanded deliberately with tests. Unrecognized
-failures remain fail-closed but are visibly `unclassified`, with a safe code
-and message size when available.
+provider-service, transport, and recognized native-runtime failures without
+exposing arbitrary provider text. Known signatures can be expanded deliberately
+with tests. Unrecognized failures remain fail-closed but are visibly
+`unclassified`, with a safe code and message size when available.
 
 Historical failures that predate schema version 2 cannot gain a more specific
 diagnosis because Workshop no longer has their raw terminal messages.

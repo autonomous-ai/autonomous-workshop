@@ -42,6 +42,28 @@ WISH_SHA256 = "a" * 64
 CONSTITUTION_SHA256 = "b" * 64
 ROOT_MARKER = ".workshop-product-run-root"
 TEST_CODEX_BINARY = str(Path("/bin/sh").resolve(strict=True))
+FIXED_NATIVE_FAILURE_DIAGNOSES = (
+    (
+        "in-process app-server runtime is closed",
+        "native-runtime",
+        "app-server-closed",
+    ),
+    (
+        "Luna response exceeded the output limit",
+        "native-runtime",
+        "luna-output-limit",
+    ),
+    (
+        "Requested an operation in invalid state",
+        "native-runtime",
+        "handshake-invalid-state",
+    ),
+    (
+        "invalid JSON in cached Login token file",
+        "access",
+        "cached-login-token-invalid-json",
+    ),
+)
 
 
 def permission_arguments(root, binary=TEST_CODEX_BINARY):
@@ -3758,6 +3780,163 @@ class CodexNativeSessionTest(unittest.TestCase):
                 },
             )
             self.assertNotIn(secret, raw)
+
+    def test_fixed_native_failures_persist_safe_diagnoses_without_recovery(self):
+        for literal, category, signature in FIXED_NATIVE_FAILURE_DIAGNOSES:
+            for event_type in ("error", "turn.failed"):
+                for message in (
+                    literal, "\t" + "\n ".join(literal.upper().split()) + "\n"
+                ):
+                    with self.subTest(
+                        signature=signature, event_type=event_type, message=message
+                    ), tempfile.TemporaryDirectory() as temporary:
+                        root = Path(temporary).resolve() / "run"
+                        root.mkdir()
+                        state_root = self.host_state(root)
+                        failure = {"type": event_type}
+                        if event_type == "error":
+                            failure["message"] = message
+                        else:
+                            failure["error"] = {"message": message}
+                        launcher, factory = self.launcher([
+                            {"stdout": [
+                                event({
+                                    "type": "thread.started", "thread_id": THREAD_ID,
+                                }),
+                                event(failure),
+                            ]},
+                        ])
+
+                        with self.assertRaises(CodexInvocationError) as caught:
+                            self.start(launcher, root, host_state_root=state_root)
+
+                        self.assertNotIsInstance(
+                            caught.exception, CodexRecoverableInvocationError
+                        )
+                        self.assertEqual(len(factory.calls), 1)
+                        self.assertTrue(factory.processes[0].terminated)
+                        diagnostic = caught.exception.diagnostic
+                        self.assertEqual(
+                            diagnostic.reason, "explicit-terminal-failure"
+                        )
+                        self.assertFalse(diagnostic.turn_completed)
+                        self.assertTrue(diagnostic.process_tree_reaped)
+                        expected = {
+                            "event_type": event_type,
+                            "category": category,
+                            "signature": signature,
+                            "code": None,
+                            "message_bytes": len(message.encode("utf-8")),
+                        }
+                        self.assertEqual(
+                            diagnostic.terminal_error.to_dict(), expected
+                        )
+                        diagnostic_path = (
+                            state_root / CODEX_FAILURE_DIAGNOSTIC_FILENAME
+                        )
+                        raw = diagnostic_path.read_text(encoding="utf-8")
+                        persisted = json.loads(raw)
+                        self.assertEqual(persisted["schema_version"], 2)
+                        self.assertEqual(
+                            persisted["diagnostic"]["terminal_error"], expected
+                        )
+                        self.assertEqual(
+                            stat.S_IMODE(diagnostic_path.stat().st_mode), 0o600
+                        )
+                        self.assertNotIn(literal.casefold(), raw.casefold())
+                        rendered = str(caught.exception)
+                        self.assertIn("category=%s" % category, rendered)
+                        self.assertIn("signature=%s" % signature, rendered)
+                        self.assertNotIn(literal.casefold(), rendered.casefold())
+
+    def test_fixed_native_diagnoses_require_complete_bounded_terminal_messages(self):
+        secret = "FACTORY_PASSWORD=never-persist-this"
+        for literal, category, signature in FIXED_NATIVE_FAILURE_DIAGNOSES:
+            messages = (
+                ("prefix", "tool failed: " + literal),
+                ("suffix", literal + ": " + secret),
+                ("punctuation", literal + "."),
+                (
+                    "lookalike",
+                    literal.replace("e", "\N{CYRILLIC SMALL LETTER IE}", 1),
+                ),
+                ("hidden-suffix", literal + " " * 4096 + secret),
+                ("over-bound", literal + " " * (4097 - len(literal))),
+            )
+            for event_type in ("error", "turn.failed"):
+                for name, message in messages:
+                    with self.subTest(
+                        signature=signature, event_type=event_type, case=name
+                    ):
+                        failure = {"type": event_type}
+                        if event_type == "error":
+                            failure["message"] = message
+                        else:
+                            failure["error"] = {"message": message}
+                        diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
+                        self.assertEqual(diagnosis.category, "unclassified")
+                        self.assertEqual(diagnosis.signature, "unclassified")
+                        self.assertFalse(
+                            codex_runtime._is_explicit_transient_event_failure(failure)
+                        )
+                        self.assertFalse(
+                            codex_runtime._is_retryable_service_failure(failure)
+                        )
+                        self.assertNotIn(secret, json.dumps(diagnosis.to_dict()))
+                with self.subTest(
+                    signature=signature, event_type=event_type, case="at-bound"
+                ):
+                    message = literal + " " * (4096 - len(literal))
+                    failure = {"type": event_type}
+                    if event_type == "error":
+                        failure["message"] = message
+                    else:
+                        failure["error"] = {"message": message}
+                    diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
+                    self.assertEqual(
+                        (diagnosis.category, diagnosis.signature), (category, signature)
+                    )
+            for failure in (
+                {"type": "error", "error": {"message": literal}},
+                {"type": "turn.failed", "message": literal},
+                {
+                    "type": "item.completed",
+                    "item": {"type": "agent_message", "text": literal},
+                },
+                {
+                    "type": "item.completed",
+                    "item": {"type": "command_execution", "aggregated_output": literal},
+                },
+            ):
+                with self.subTest(signature=signature, failure=failure):
+                    diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
+                    self.assertEqual(diagnosis.category, "unclassified")
+                    self.assertEqual(diagnosis.signature, "unclassified")
+
+    def test_fixed_native_diagnoses_preserve_independent_retry_codes(self):
+        for literal, category, signature in FIXED_NATIVE_FAILURE_DIAGNOSES:
+            for event_type in ("error", "turn.failed"):
+                for code in (None, "overloaded"):
+                    with self.subTest(
+                        signature=signature, event_type=event_type, code=code
+                    ):
+                        payload = {"message": literal, "code": code}
+                        failure = (
+                            {"type": event_type, **payload} if event_type == "error"
+                            else {"type": event_type, "error": payload}
+                        )
+                        diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
+                        self.assertEqual(
+                            (diagnosis.category, diagnosis.signature),
+                            (category, signature),
+                        )
+                        self.assertFalse(
+                            codex_runtime._is_explicit_transient_event_failure(failure)
+                        )
+                        self.assertEqual(
+                            codex_runtime._is_retryable_service_failure(failure),
+                            code == "overloaded",
+                        )
 
     def test_terminal_failure_rejects_unsafe_provider_code(self):
         secret = "FACTORY_PASSWORD=never-persist-this"

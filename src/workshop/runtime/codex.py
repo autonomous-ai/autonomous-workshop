@@ -73,6 +73,21 @@ _TRANSIENT_DIAGNOSTIC_HEADS = frozenset(
 )
 _MAX_NATIVE_FAILURE_MESSAGE_CHARS = 4 * 1024
 _SAFE_TERMINAL_ERROR_CODE = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,127}$")
+# Complete native literals only; these diagnoses never grant retry authority.
+_EXACT_TERMINAL_ERROR_DIAGNOSES = {
+    "in-process app-server runtime is closed": (
+        "native-runtime", "app-server-closed",
+    ),
+    "luna response exceeded the output limit": (
+        "native-runtime", "luna-output-limit",
+    ),
+    "requested an operation in invalid state": (
+        "native-runtime", "handshake-invalid-state",
+    ),
+    "invalid json in cached login token file": (
+        "access", "cached-login-token-invalid-json",
+    ),
+}
 _TERMINAL_ERROR_SIGNATURES = (
     (
         "invalid-encrypted-content",
@@ -4098,12 +4113,17 @@ def _terminal_failure_diagnosis(
         normalized = " ".join(
             message[:_MAX_NATIVE_FAILURE_MESSAGE_CHARS].casefold().split()
         )
+    exact_diagnosis = None
+    if message is not None and len(message) <= _MAX_NATIVE_FAILURE_MESSAGE_CHARS:
+        exact_diagnosis = _EXACT_TERMINAL_ERROR_DIAGNOSES.get(normalized)
     signature = "unclassified"
     for candidate, needles in _TERMINAL_ERROR_SIGNATURES:
         if any(needle in normalized for needle in needles):
             signature = candidate
             break
-    if signature == "stream-disconnected":
+    if exact_diagnosis is not None:
+        category, signature = exact_diagnosis
+    elif signature == "stream-disconnected":
         category = "provider-transport"
     elif signature == "rate-limited":
         category = "rate-limit"
