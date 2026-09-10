@@ -109,6 +109,10 @@ class ManagerRegistryTest(unittest.TestCase):
         ):
             for model_argument, canonical_model in models.items():
                 for effort in SUPPORTED_REASONING_EFFORTS:
+                    if effort == "ultra" and (agent != "codex" or canonical_model != "gpt-6-astra"):
+                        with self.assertRaises(ContractError):
+                            manager_runtime_selection(agent, model=model_argument, reasoning_effort=effort)
+                        continue
                     observed += 1
                     with self.subTest(
                         agent=agent, model=model_argument, effort=effort
@@ -120,7 +124,7 @@ class ManagerRegistryTest(unittest.TestCase):
                         )
                         self.assertEqual(selection.model, canonical_model)
                         self.assertEqual(selection.reasoning_effort, effort)
-        self.assertEqual(observed, 44)
+        self.assertEqual(observed, 46)
 
     def test_every_canonical_runtime_selection_round_trips_manager_project(self):
         canonical_models = {
@@ -136,6 +140,8 @@ class ManagerRegistryTest(unittest.TestCase):
         for agent, models in canonical_models.items():
             for model in models:
                 for effort in SUPPORTED_REASONING_EFFORTS:
+                    if effort == "ultra" and (agent != "codex" or model != "gpt-6-astra"):
+                        continue
                     observed += 1
                     with self.subTest(agent=agent, model=model, effort=effort):
                         selection = manager_runtime_selection(
@@ -157,7 +163,7 @@ class ManagerRegistryTest(unittest.TestCase):
         self.assertEqual(parsed_spec.manager_id, "grok")
         self.assertEqual(parsed_model, "grok-4.6")
         self.assertIsNone(parsed_effort)
-        self.assertEqual(observed + 1, 21)
+        self.assertEqual(observed + 1, 22)
 
     def test_every_effort_is_rejected_for_agent_without_effort_control(self):
         for effort in SUPPORTED_REASONING_EFFORTS:

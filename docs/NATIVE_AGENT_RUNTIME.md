@@ -43,6 +43,33 @@ does not govern ordinary source-repository work.
 
 ## Runtime boundary
 
+### Current token-budget and Spark handoff policy
+
+For token-budget products, the **total input-plus-output token allowance** is
+the execution limit across stages, children, and resumes. Historical clocks,
+native-turn counts, proposal-retry counts, and lifecycle-round allowances
+described below do not stop these runs. Accounting integrity, credential
+isolation, exact file identity, and authenticated effect reconciliation remain
+required; they are not alternative spending budgets.
+
+Spark accepts Make's output without repeating CAD verification, build-group
+validation, or production-part acceptance in the Workshop host. Make's own
+engineering and visual process stays unchanged. Publish also does not replay
+CAD or require a separate manual-design review. Handoff receipts say host CAD
+verification and manual review were **not run**, not that omitted checks passed.
+See [ADR 0061](adr/0061-spark-make-owned-verification.md).
+
+New marked Spark runs select the inventor in Workshop setup before Make. A user
+override binds without a model turn; automatic selection resumes the same native
+session into Make after the choice is durable. Spark publication uses schema 4
+Release/schema 6 product metadata and Make's existing files. There is no native
+Release turn or required new PDF. The host publishes through the existing
+credential-isolated Factory adapter and verifies the uploaded metadata anchor.
+This path passes deterministic end-to-end tests; live acceptance is still in
+progress, so tests must not be reported as a real published product.
+The historical architecture below documents the contracts still needed for
+Forge, Quest, and older receipts; it does not reinstate duplicate Spark gates.
+
 Every `workshop wish` first creates and populates one persistent toy project,
 freezes its effort, then launches one native Codex session in that directory
 for the first enabled creative stage. That same session performs all cognitive
@@ -916,11 +943,17 @@ New Codex runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
 30,000,000 input-plus-output tokens across all stages, native children and
 resumes. Cached input is included once; reasoning is already part of output.
 The host persists completed-request usage from a version-pinned Codex 0.153.4
-rollout adapter. Missing/regressing accounting fails closed after a bounded
-initial reporting grace. In-flight requests may overshoot the observed cap.
+rollout adapter. A valid request awaiting its first usage report has no time
+limit and remains explicitly pending. Unavailable, malformed, or regressing
+established accounting fails closed. Completed root-turn input/output usage is
+reconciled against the native terminal event before a saved proposal or effect
+can advance; unresolved accounting survives resume in private host state.
+Canceled or still-in-flight descendants are not presented as completed usage.
+In-flight requests may overshoot the observed cap.
 `resume --max-tokens N` changes the total cap without resetting consumption.
 Normal twenty-minute splits and aggregate time/turn allowances are superseded;
-a one-hour emergency launch watchdog remains. Daydream is outside each product
+there is no wall-clock launch watchdog or native-turn, proposal-retry, or
+lifecycle-round execution cap for token-budget products. Daydream is outside each product
 allowance. Other runtime adapters retain their frozen policy. See
 [ADR 0049](adr/0049-product-wide-token-budget.md). Quiet Arc completed a live
 Spark/Codex/Astra/medium trial with same-session recovery and verified Factory

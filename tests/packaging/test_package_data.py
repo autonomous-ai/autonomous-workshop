@@ -6,6 +6,7 @@ from pathlib import Path
 
 from workshop.artifacts.schema_registry import discover_schemas
 from workshop.contributors.extensions import fingerprint_extension_skill
+from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.package_data import (
     BUNDLED_INVENTOR_IDS,
     PackageDataError,
@@ -13,6 +14,7 @@ from workshop.runtime.package_data import (
     packaged_inventors_root,
     product_run_domain_skill_roots,
 )
+from workshop.workflow.inventor_selection import INVENTOR_SELECTION_CAPABILITY_PATH
 
 
 REPOSITORY = Path(__file__).resolve().parents[2]
@@ -27,6 +29,22 @@ SCHEMA_OWNERS = {
 
 
 class PackageDataTest(unittest.TestCase):
+    def test_selection_capability_is_bound_in_source_and_installed_assets(self):
+        source = product_run_agent_assets(REPOSITORY)
+        relative = Path(INVENTOR_SELECTION_CAPABILITY_PATH).relative_to(
+            ".agents/skills/autonomous-workshop"
+        )
+        expected = (source.skill_root / relative).read_bytes()
+        self.assertTrue(expected)
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary) / "site-packages/workshop/runtime"
+            snapshot = runtime / "_agent_assets/.agents/product-run"
+            shutil.copytree(REPOSITORY / ".agents/product-run", snapshot)
+            installed = product_run_agent_assets(package_file=runtime / "agent_assets.py")
+            self.assertEqual(installed.source, "package")
+            self.assertEqual((installed.skill_root / relative).read_bytes(), expected)
+            self.assertEqual(installed.sha256, source.sha256)
+
     def test_bundled_inventory_matches_every_source_inventor(self):
         source_ids = tuple(
             sorted(

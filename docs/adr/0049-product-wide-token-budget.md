@@ -10,6 +10,9 @@ does not include the separate daydream selection loop. Input plus output is
 counted, including cached input once and reasoning as part of output. No
 pricing table or dollar estimate participates in enforcement.
 
+On 2026-09-09 the explicitly selectable maximum was raised to 200,000,000
+tokens. The default remains 30,000,000 and existing saved caps do not change.
+
 The default was raised from 10M to 30M on 2026-09-07 after Crosscurrent's
 verified digital package used 17,724,704 tokens before publication. This gives
 complex products repair headroom; it is a ceiling, not a target. Existing runs
@@ -39,16 +42,34 @@ rollouts are not a stable public API; a future supported app-server usage
 adapter can replace this bridge with the same accounting contract.
 
 The host samples completed-request usage while the native process runs and
-persists each observation. A new thread may have up to three minutes to report
-its first usage. Pending usage is explicitly marked, not presented as complete
-zero-cost execution. Crossing the cap or losing established accounting stops
+persists each observation. A valid pending request has no first-report timer;
+the former three-minute grace was removed on 2026-09-10. Pending usage is
+explicitly marked, not presented as complete zero-cost execution. Completed
+root-turn input/output usage is reconciled with the native terminal event
+before accepting a proposal or performing an effect. A private durable record
+preserves unresolved completed-turn accounting across resume. Canceled or
+in-flight descendants remain pending rather than becoming fabricated completed
+usage. Crossing the cap or losing established accounting stops
 the supervised native process. In-flight requests can overshoot the allowance;
 this is an observed-usage stop, not provider-side hard preauthorization.
 
 The ordinary twenty-minute split and aggregate time/turn limits no longer
-govern marked token-budget products. A one-hour per-launch emergency watchdog
-remains. Revision/review limits and all deterministic engineering, artifact,
-assembly and publication gates remain unchanged. Python observes, budgets and
+govern marked token-budget products. On 2026-09-09 the one-hour per-launch
+watchdog was removed, together with native-turn, proposal-rejection and
+lifecycle-round spending caps. New review tools accept any positive review
+count instead of stopping at two. Existing materialized tools remain frozen
+unless explicitly updated with `resume --refresh-tools`; this host operation
+records exact allowlisted review-tool changes and preserves the session and
+token ledger, including recovery after an interrupted rebind. Token-budget
+host CAD verification has no wall-clock deadline; cancellation still reaps its
+subprocess tree. Accounting accepts more than 32 ancestry-bound sessions while
+retaining input-size and identity checks. Temporary provider service overloads
+are eligible for same-session recovery with backoff. Other
+host execution budget changes apply on the next launch, not inside an already
+running process. Deterministic engineering, artifact,
+assembly and publication gates were unchanged by this budget decision; the later
+Spark-only orchestration changes are recorded in [ADR 0061](0061-spark-make-owned-verification.md).
+Python observes, budgets and
 supervises; it does not select designs, judge quality or implement repairs.
 
 Peekabud's recovered root-plus-child completed requests total 4,721,922 tokens

@@ -248,3 +248,11 @@ part of this adaptation.
   lock still covers every tree under `make/skills/`. It sequences the reviewed
   `cad` and `image-to-cad` tools without changing them; a resync of the
   upstream skills does not touch it.
+
+## Earlier review-count compatibility correction (2026-09-09)
+
+The CAD verifier's signature-review and motion-review count fields accept
+positive integers instead of enforcing the former two-review host allowance.
+This correction predates the later instruction to leave Make internals alone;
+the lock records its exact existing bytes. Geometry and evidence checks are
+unchanged by this count-field correction.

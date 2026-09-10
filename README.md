@@ -42,7 +42,7 @@ Our initial Inventors seed the shop and exercise the system. The long-term platf
 ## What works today and what comes next
 
 - **Available in the CLI:** `workshop create inventor --taste ./TASTE.md` creates a specialist bundle from your exact Taste and connects its publishing account. `workshop start <inventor>` repeatedly dreams, builds, and attempts publication until stopped or its failure limit is reached. `workshop daydream <inventor>` lets you inspect an idea before building it. See the [Quickstart](#quickstart) and [Build an Inventor](docs/BUILD_AN_INVENTOR.md).
-- **Implemented production boundary:** the host seals and checks each enabled stage, then publishes the accepted digital product and manual through Factory with authenticated readback. Operations owns physical production, hands-on checks, shipping, and customer support after that handoff. Publication alone does not prove manufacture or delivery.
+- **Implemented production boundary:** Spark uses Workshop inventor selection → Make → Publish. Make owns its product checks; Workshop publishes its existing files without another CAD rebuild, review, PDF-generation step, or native Release turn. Forge and Quest retain their deeper stage contracts. Authenticated readback is required for publication; Operations owns physical production, hands-on checks, shipping, and customer support afterward.
 - **Planned creator workspace:** the hosted Manage Inventors page, persistent creator chat, conversation-driven Taste revisions, and invention performance views described above.
 - **Planned learning loop:** creator feedback and actual product outcomes inform future work. Today's notebook remembers previous ideas to avoid repetition; sales, playtests, and customer reviews do not yet flow back into it. Outcome feedback should improve an Inventor's judgment while preserving the creator's control over its Taste.
 
@@ -95,13 +95,23 @@ product and stops. Omit `--inventor` on a Wish to let the Manager choose the
 best match. `start <inventor> --once` dreams and builds one Inventor-generated
 idea. `resume <wish-id>` continues the same unfinished product and session.
 
+For new Spark runs, Workshop selects the inventor before starting Make. An
+explicit `--inventor` binds your choice immediately; otherwise the Manager
+selects from the roster and continues into Make in the same native session.
+Publish uses the existing Make files and optional existing README. It does not
+require a newly authored manual. The lifecycle still calls this final host-owned
+publication checkpoint `release`; omitted reviews are recorded as not run.
+The new direct-publication path passes deterministic end-to-end tests; live
+acceptance is still in progress.
+
 `start <inventor> --wish "..."` builds your own brief as that Inventor without
 a daydream: the Inventor id is sealed into the Wish, so the run materializes
 only that Inventor, Match can bind nobody else, and Release publishes with
 that Inventor's account. `--ref` attaches up to eight reference images (PNG,
 JPEG, or WebP) to a `wish` or a `start --wish`, each a local file or an
 `http(s)` link that is downloaded once at Wish time and sealed by its bytes;
-`--max-rounds` raises the Invent-Make round budget:
+`--max-rounds` sets the legacy Invent-Make round budget (not a spending limit
+for token-budgeted products):
 
 ```bash
 uv run workshop start ferro-line --workflow forge --max-rounds 6 \
@@ -126,7 +136,10 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
-`start` and `wish` accept `--max-tokens N`, default **30,000,000** per Codex
+Codex Astra also supports `--effort ultra`, passed unchanged to native Codex.
+Ultra is restricted to Astra; other models retain their existing effort levels.
+
+`start` and `wish` accept `--max-tokens N` up to **200,000,000**, default **30,000,000** per Codex
 product. Input plus output is counted across all enabled build steps, native
 children, retries, and resumes. Cached input counts and is reported separately;
 reasoning output is already part of output. `start` gives each product its own
@@ -141,7 +154,8 @@ uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra t
 Omitting `--max-tokens` on resume preserves the saved allowance. Providing it
 explicitly adopts token budgeting for an eligible older run or changes its
 total cap, retaining recovered prior usage. Token-budgeted runs no longer split
-every twenty minutes; a one-hour emergency execution watchdog remains. Native
+on a wall-clock timer. Tokens are their only execution budget: no turn,
+proposal-retry, or lifecycle-round cap. Required checks and safety boundaries remain. Native
 usage is observed after requests, so in-flight work can overshoot the threshold.
 Missing usage is not free work. This is not a dollar cap. The local usage adapter
 currently requires Codex 0.153.4; other Managers retain their existing policy.
@@ -166,7 +180,7 @@ One run is one native coding-agent session — the shop lead. Resume cannot swit
 
 ```bash
 uv run workshop start pico-press --agent codex    # Sol + medium; default
-uv run workshop start pico-press --agent claude   # Opus 5 + high; experimental
+uv run workshop start pico-press --agent claude   # Opus 5 + medium; experimental
 uv run workshop start pico-press --agent grok     # experimental
 ```
 

@@ -160,7 +160,7 @@ The canonical schema-v6 review contains exactly: `schema_version`, `kind`,
 `finished_product_desirable`, `review_rounds`, `critical_form_requirements`,
 `blocking_visual_defects`, `print_preflight_sha256`, `largest_risk`, and
 `resolution`. Use kind `autonomous-workshop.signature-experience-review`.
-Every boolean is true; `review_rounds` is one or two; blockers are empty; each
+Every boolean is true; `review_rounds` is a positive count; blockers are empty; each
 critical requirement has exactly `requirement`, `blind_evidence`, and
 `matches: true`. Evaluate form against the actual Wish: an exposed mechanism
 or a flat component is not inherently a defect. Wrong required relationships,

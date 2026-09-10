@@ -8,11 +8,12 @@ from workshop.workflow.budgets import LifetimeBudget, LifetimeTurnBudget
 
 TOKEN_BUDGET_CAPABILITY_PATH = ".agents/skills/autonomous-workshop/references/token-budget-v1.md"
 DEFAULT_PRODUCT_TOKENS = 30_000_000
+MAX_PRODUCT_TOKENS = 200_000_000
 
 
 def validate_limit(value):
-    if type(value) is not int or not 1_000 <= value <= 100_000_000:
-        raise ContractError("product token limit must be an integer from 1,000 to 100,000,000")
+    if type(value) is not int or not 1_000 <= value <= MAX_PRODUCT_TOKENS:
+        raise ContractError("product token limit must be an integer from 1,000 to 200,000,000")
     return value
 
 
@@ -38,7 +39,7 @@ class ProductTokenBudget(LifetimeBudget):
                 or value.get("status") != "observed"):
             raise ContractError("product token observation source is invalid")
         threads = value.get("threads")
-        if not isinstance(threads, list) or not 1 <= len(threads) <= 32:
+        if not isinstance(threads, list) or not threads:
             raise ContractError("product token thread coverage is invalid")
         totals = {key: 0 for key in COUNTERS}
         seen = set()
@@ -100,7 +101,7 @@ class ProductTokenBudget(LifetimeBudget):
         pass  # Observed native usage, not wall time, advances this budget.
 
     def turn_timeout_seconds(self, step):
-        return 3600  # Emergency outer watchdog; no normal 20-minute split.
+        return None  # Product execution is bounded by observed tokens, not time.
 
     def exhausted_message(self, step, which, product_id):
         return "This product reached its persistent token limit; observed usage remains charged across resume."

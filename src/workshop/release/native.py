@@ -1,12 +1,13 @@
-"""Credential-free authored Release proposal for one native-agent product run.
+"""Credential-free Release contracts for one native-agent product run.
 
 The native coding-agent session assembles the complete customer package
 without credentials or remote effects. This module binds exact Made input,
 plus either passing Playtest evidence or a canonical record that Playtest was
 not run, to exact package bytes. The trusted host validates the local
 ``ProductRelease`` component first. The workflow's terminal Release gate then
-revalidates print-ready CAD and requires host-owned Factory publication with
-authenticated readback.
+requires host-owned Factory publication with authenticated readback. Historical
+schemas retain their manual-first checks. Schema 4 is a host-prepared,
+Make-output publication carrier: no new PDF, product verification, or review.
 """
 
 from __future__ import annotations
@@ -38,6 +39,7 @@ from workshop.playtest.native import NativePlaytested
 NATIVE_RELEASE_KIND = "autonomous-workshop.release"
 NATIVE_RELEASE_PATH = "artifacts/release/release.json"
 NATIVE_RELEASE_PACKAGE_ROOT = "artifacts/release/package"
+MAKE_OUTPUT_RELEASE_PACKAGE_ROOT = "artifacts/release/publish-package"
 NATIVE_RELEASE_MANUAL_PATH = "MANUAL.pdf"
 NATIVE_RELEASE_LEGACY_MANUAL_PATH = "MANUAL.md"
 NATIVE_RELEASE_PRODUCT_PATH = "product.json"
@@ -50,6 +52,9 @@ MAX_NATIVE_RELEASE_PDF_PAGES = 64
 RELEASE_PRODUCT_SCHEMA_VERSION = 4
 RELEASE_PRODUCT_STATUS = "manual-ready"
 DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION = 5
+MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION = 6
+MAKE_OUTPUT_RELEASE_PRODUCT_STATUS = "make-output-ready"
+MAKE_OUTPUT_RELEASE_DOCUMENT_PATH = "README.md"
 DIRECT_RELEASE_PLAYTEST_STATUS = "not-run"
 LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION = 3
 LEGACY_RELEASE_PRODUCT_STATUS = "page-ready"
@@ -800,13 +805,13 @@ def validate_release_product(
     if release_schema_version is not None:
         if (
             type(release_schema_version) is not int
-            or release_schema_version not in (1, 2, 3)
+            or release_schema_version not in (1, 2, 3, 4)
         ):
-            raise ContractError("native Release schema_version must be 1, 2, or 3")
+            raise ContractError("native Release schema_version must be 1, 2, 3, or 4")
     product = copy_json_mapping(value, "native Release product.json", nonempty=True)
     product_schema_version = product.get("schema_version")
     if release_schema_version is not None:
-        expected = {1: 3, 2: 4, 3: 5}[release_schema_version]
+        expected = {1: 3, 2: 4, 3: 5, 4: 6}[release_schema_version]
         if product_schema_version != expected:
             raise ContractError(
                 "native Release schema_version %d requires product.json schema_version %d"
@@ -818,7 +823,32 @@ def validate_release_product(
         return _validate_manual_release_product(product)
     if product_schema_version == DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION:
         return _validate_direct_release_product(product)
-    raise ContractError("native Release product.json schema_version must be 3, 4, or 5")
+    if product_schema_version == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION:
+        if set(product) != _DIRECT_RELEASE_PRODUCT_FIELDS | {"source_document"}:
+            raise ContractError("Make-output Release product fields are invalid")
+        if product.get("status") != MAKE_OUTPUT_RELEASE_PRODUCT_STATUS:
+            raise ContractError("Make-output Release status is invalid")
+        document = product.get("source_document")
+        if document is not None:
+            if not isinstance(document, Mapping) or set(document) != {"source_path", "sha256"}:
+                raise ContractError("Make-output source document binding is invalid")
+            _safe_relative(document["source_path"], "Make-output source document")
+            require_sha256(document["sha256"], "Make-output source document sha256")
+        if (
+            product.get("kind") != "workshop.release-package"
+            or product.get("playtest_status") != DIRECT_RELEASE_PLAYTEST_STATUS
+            or product.get("playtest_evidence_artifact_sha256") != playtest_omission_sha256()
+            or product.get("claims") != direct_release_claims()
+        ):
+            raise ContractError("Make-output publication must truthfully record Playtest as not run")
+        require_sha256(product.get("product_artifact_sha256"), "Make-output product sha256")
+        _page_text(product.get("title"), "Make-output title", 300)
+        _page_text(product.get("summary"), "Make-output summary", 2_000)
+        for name in ("what_arrives", "limitations"):
+            if not isinstance(product[name], list) or not all(isinstance(item, str) for item in product[name]):
+                raise ContractError("Make-output %s must be an existing text list" % name)
+        return product
+    raise ContractError("native Release product.json schema_version must be 3, 4, 5, or 6")
 
 
 @dataclass(frozen=True)
@@ -827,7 +857,7 @@ class NativeReleasePackage:
 
     root: Path
     manifest: ArtifactManifest
-    manual_path: str
+    manual_path: str | None
     product: Mapping[str, Any]
     claims: Mapping[str, Any]
     made: Made
@@ -840,7 +870,11 @@ class NativeReleasePackage:
 
 @dataclass(frozen=True)
 class NativeRelease:
-    """One sealed Release package proposed before any authenticated effect."""
+    """One sealed Release package proposed before any authenticated effect.
+
+    ``manual_path`` is retained for wire compatibility. In schema 4 it names an
+    optional unchanged README, or is null; it does not claim a reviewed manual.
+    """
 
     round: int
     made_sha256: str
@@ -849,7 +883,7 @@ class NativeRelease:
     playtest_evidence_artifact_sha256: str
     package_root: str
     package_manifest: ArtifactManifest
-    manual_path: str
+    manual_path: str | None
     product_json_path: str
     product_json_sha256: str
     product: Mapping[str, Any]
@@ -858,11 +892,11 @@ class NativeRelease:
     release_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version not in (1, 2, 3):
-            raise ContractError("native Release schema_version must be 1, 2, or 3")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2, 3, 4):
+            raise ContractError("native Release schema_version must be 1, 2, 3, or 4")
         if self.kind != NATIVE_RELEASE_KIND:
             raise ContractError("native Release kind is invalid")
-        if type(self.round) is not int or not 1 <= self.round <= 100:
+        if type(self.round) is not int or self.round < 1 or (self.schema_version != 4 and self.round > 100):
             raise ContractError("native Release round must be from 1 through 100")
         for value, label in (
             (self.made_sha256, "native Release Made sha256"),
@@ -875,11 +909,17 @@ class NativeRelease:
             (self.product_json_sha256, "native Release product.json sha256"),
         ):
             require_sha256(value, label)
-        if self.package_root != NATIVE_RELEASE_PACKAGE_ROOT:
+        allowed_roots = {NATIVE_RELEASE_PACKAGE_ROOT}
+        if self.schema_version == 4:
+            allowed_roots.add(MAKE_OUTPUT_RELEASE_PACKAGE_ROOT)
+        if self.package_root not in allowed_roots:
             raise ContractError("native Release package_root is not canonical")
         _safe_relative(self.package_root, "native Release package_root")
+        if not isinstance(self.product, Mapping):
+            raise ContractError("native Release product must be a mapping")
         expected_manual_path = (
-            NATIVE_RELEASE_LEGACY_MANUAL_PATH
+            (MAKE_OUTPUT_RELEASE_DOCUMENT_PATH if self.product.get("source_document") is not None else None)
+            if self.schema_version == 4 else NATIVE_RELEASE_LEGACY_MANUAL_PATH
             if self.schema_version == 1
             else NATIVE_RELEASE_MANUAL_PATH
         )
@@ -896,18 +936,20 @@ class NativeRelease:
         if self.package_manifest.created_at != "content-addressed":
             raise ContractError("native Release manifest must be content-addressed")
         inventory = {entry.path: entry for entry in self.package_manifest.entries}
-        required_paths = [self.manual_path, self.product_json_path]
-        if self.schema_version == 3:
+        required_paths = [self.product_json_path]
+        if self.manual_path is not None:
+            required_paths.append(self.manual_path)
+        if self.schema_version in (3, 4):
             required_paths.append(NATIVE_RELEASE_PLAYTEST_OMISSION_PATH)
         for required in required_paths:
             if required not in inventory:
                 raise ContractError("native Release manifest lacks %s" % required)
-        manual_limit = (
+        manual_limit = (inventory[self.manual_path].bytes if self.schema_version == 4 and self.manual_path is not None else
             MAX_NATIVE_RELEASE_LEGACY_MANUAL_BYTES
             if self.schema_version == 1
             else MAX_NATIVE_RELEASE_MANUAL_BYTES
         )
-        if not 1 <= inventory[self.manual_path].bytes <= manual_limit:
+        if self.manual_path is not None and self.schema_version != 4 and not 1 <= inventory[self.manual_path].bytes <= manual_limit:
             raise ContractError(
                 "native Release %s must be non-empty and at most %d bytes"
                 % (self.manual_path, manual_limit)
@@ -917,7 +959,7 @@ class NativeRelease:
             for path in inventory
             if PurePosixPath(path).suffix.casefold() in _FORBIDDEN_MEDIA_SUFFIXES
         )
-        if forbidden_media:
+        if forbidden_media and self.schema_version != 4:
             raise ContractError(
                 "native Release package cannot contain media files: %s"
                 % forbidden_media
@@ -1028,7 +1070,7 @@ class NativeRelease:
     ) -> None:
         if not isinstance(made, NativeMade):
             raise ContractError("native Release context requires NativeMade")
-        if self.schema_version == 3:
+        if self.schema_version in (3, 4):
             omission_sha256 = playtest_omission_sha256()
             if (
                 playtested is not None
@@ -1082,31 +1124,31 @@ class NativeRelease:
             raise ArtifactError("native Release package differs from its manifest")
         inventory = {entry.path: entry for entry in current.entries}
 
-        manual_limit = (
+        manual_limit = (inventory[self.manual_path].bytes if self.schema_version == 4 and self.manual_path is not None else
             MAX_NATIVE_RELEASE_LEGACY_MANUAL_BYTES
             if self.schema_version == 1
             else MAX_NATIVE_RELEASE_MANUAL_BYTES
         )
-        manual = _read_regular(
+        manual = None if self.manual_path is None else _read_regular(
             package_root / self.manual_path,
             "native Release %s" % self.manual_path,
             manual_limit,
         )
-        manual_entry = next(
+        manual_entry = next((
             entry for entry in self.package_manifest.entries if entry.path == self.manual_path
-        )
-        if hashlib.sha256(manual).hexdigest() != manual_entry.sha256:
+        ), None)
+        if manual is not None and (manual_entry is None or hashlib.sha256(manual).hexdigest() != manual_entry.sha256):
             raise ArtifactError(
                 "native Release %s hash differs from its manifest" % self.manual_path
             )
-        if self.schema_version == 1:
+        if self.schema_version == 1 and manual is not None:
             try:
                 manual_text = manual.decode("utf-8")
             except UnicodeError as exc:
                 raise ContractError("native Release MANUAL.md must be UTF-8") from exc
             if not manual_text.strip():
                 raise ContractError("native Release MANUAL.md must be substantive")
-        else:
+        elif self.schema_version in (2, 3):
             validate_release_pdf_manual(manual, run_root=root)
 
         observed_product: dict[str, Any] | None = None
@@ -1134,7 +1176,7 @@ class NativeRelease:
             raise ContractError("native Release proposal differs from product.json")
 
         canonical_made = made.validate_product_tree(root)
-        if self.schema_version == 3:
+        if self.schema_version in (3, 4):
             omission_path = package_root / NATIVE_RELEASE_PLAYTEST_OMISSION_PATH
             omission = _read_regular(
                 omission_path,
@@ -1163,7 +1205,22 @@ class NativeRelease:
             expected_claims = _expected_claims(canonical_playtested)
         if observed_product["claims"] != expected_claims:
             raise ContractError("native Release claims differ from exact Playtest evidence")
-        if observed_product.get("title") != canonical_made.product.get("title"):
+        expected_title = canonical_made.product.get("title")
+        if self.schema_version == 4:
+            expected_title = expected_title[:300].rstrip()
+            if observed_product["summary"] != canonical_made.product["summary"]:
+                raise ContractError("Make-output summary differs from exact Made facts")
+            for name in ("what_arrives", "limitations"):
+                original = canonical_made.product.get(name)
+                expected = list(original) if isinstance(original, (tuple, list)) and all(isinstance(item, str) for item in original) else []
+                if observed_product[name] != expected:
+                    raise ContractError("Make-output %s differs from exact Made facts" % name)
+            document = observed_product["source_document"]
+            if document is not None:
+                source = next((entry for entry in made.product_manifest.entries if entry.path == document["source_path"]), None)
+                if source is None or manual_entry is None or source.sha256 != document["sha256"] or source.sha256 != manual_entry.sha256:
+                    raise ArtifactError("Make-output document differs from the original Made bytes")
+        if observed_product.get("title") != expected_title:
             raise ContractError("native Release title differs from the exact Made product")
         unchanged = build_artifact_manifest(
             package_root, created_at=self.package_manifest.created_at
@@ -1179,6 +1236,92 @@ class NativeRelease:
             made=canonical_made,
             playtested=canonical_playtested,
         )
+
+
+def prepare_make_output_release(run_root: Path, made: NativeMade) -> NativeRelease:
+    """Seal a deterministic publication carrier without changing Make output.
+
+    No manual, image, CAD, review, or model invocation is created. An existing
+    README is copied byte-for-byte when present; otherwise there is no document.
+    The product metadata is the always-present public readback anchor.
+    """
+
+    root = _canonical_run_root(run_root)
+    canonical_made = made.validate_product_tree(root)
+    entries = made.product_manifest.entries
+    candidates = sorted(
+        (entry for entry in entries if entry.bytes > 0 and PurePosixPath(entry.path).name == "README.md"),
+        key=lambda entry: (entry.path != "README.md", entry.path),
+    )
+    source = candidates[0] if candidates else None
+    document = None if source is None else {"source_path": source.path, "sha256": source.sha256}
+    facts = canonical_made.product
+    def optional_texts(name: str) -> list[str]:
+        value = facts.get(name)
+        return list(value) if isinstance(value, (list, tuple)) and all(isinstance(item, str) for item in value) else []
+
+    product = validate_release_product({
+        "schema_version": MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
+        "kind": "workshop.release-package",
+        "status": MAKE_OUTPUT_RELEASE_PRODUCT_STATUS,
+        "title": facts["title"][:300].rstrip(),
+        "summary": facts["summary"],
+        "what_arrives": optional_texts("what_arrives"),
+        "limitations": optional_texts("limitations"),
+        "product_artifact_sha256": made.product_manifest.artifact_sha256,
+        "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
+        "playtest_evidence_artifact_sha256": playtest_omission_sha256(),
+        "claims": direct_release_claims(),
+        "source_document": document,
+    }, release_schema_version=4)
+    contents = {
+        NATIVE_RELEASE_PRODUCT_PATH: _canonical_json(product),
+        NATIVE_RELEASE_PLAYTEST_OMISSION_PATH: _canonical_json(playtest_omission_record()),
+    }
+    if source is not None:
+        contents[MAKE_OUTPUT_RELEASE_DOCUMENT_PATH] = _read_regular(
+            root / made.product_root / source.path, "Made publication document", source.bytes
+        )
+    package_root = root / MAKE_OUTPUT_RELEASE_PACKAGE_ROOT
+    directory = root
+    for part in PurePosixPath(MAKE_OUTPUT_RELEASE_PACKAGE_ROOT).parts:
+        directory = directory / part
+        directory.mkdir(exist_ok=True)
+        if not stat.S_ISDIR(directory.lstat().st_mode):
+            raise ArtifactError("Make-output publication path contains a link or non-directory")
+    _real_directory(root, MAKE_OUTPUT_RELEASE_PACKAGE_ROOT, "Make-output publication package")
+    for path, content in contents.items():
+        target = package_root / path
+        if target.exists() or target.is_symlink():
+            if _read_regular(target, "existing publication carrier", len(content)) != content:
+                raise ArtifactError("existing publication carrier differs from Make output")
+        else:
+            with target.open("xb") as stream:
+                stream.write(content)
+    release = NativeRelease(
+        schema_version=4,
+        round=made.round,
+        made_sha256=made.made_sha256,
+        playtested_sha256=playtest_omission_sha256(),
+        product_artifact_sha256=made.product_manifest.artifact_sha256,
+        playtest_evidence_artifact_sha256=playtest_omission_sha256(),
+        package_root=MAKE_OUTPUT_RELEASE_PACKAGE_ROOT,
+        package_manifest=build_artifact_manifest(package_root, created_at="content-addressed"),
+        manual_path=MAKE_OUTPUT_RELEASE_DOCUMENT_PATH if source is not None else None,
+        product_json_path=NATIVE_RELEASE_PRODUCT_PATH,
+        product_json_sha256=hashlib.sha256(contents[NATIVE_RELEASE_PRODUCT_PATH]).hexdigest(),
+        product=product,
+    )
+    release.validate_package_tree(root, made, None)
+    target = root / NATIVE_RELEASE_PATH
+    content = _canonical_json(release.to_dict())
+    if target.exists() or target.is_symlink():
+        if _read_regular(target, "existing Make-output Release", MAX_NATIVE_RELEASE_CONTRACT_BYTES) != content:
+            raise ArtifactError("existing Release differs from Make-output publication")
+    else:
+        with target.open("xb") as stream:
+            stream.write(content)
+    return release
 
 
 def read_native_release(run_root: Path) -> NativeRelease:
@@ -1207,6 +1350,10 @@ __all__ = [
     "FACTORY_CONTENT_STORY_BLOCKS_MAX",
     "DIRECT_RELEASE_PLAYTEST_STATUS",
     "DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION",
+    "MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION",
+    "MAKE_OUTPUT_RELEASE_PRODUCT_STATUS",
+    "MAKE_OUTPUT_RELEASE_DOCUMENT_PATH",
+    "MAKE_OUTPUT_RELEASE_PACKAGE_ROOT",
     "LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION",
     "LEGACY_RELEASE_PRODUCT_STATUS",
     "MAX_NATIVE_RELEASE_CONTRACT_BYTES",
@@ -1231,4 +1378,5 @@ __all__ = [
     "direct_release_claims",
     "playtest_omission_record",
     "playtest_omission_sha256",
+    "prepare_make_output_release",
 ]

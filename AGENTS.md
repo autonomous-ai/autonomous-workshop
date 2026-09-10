@@ -40,25 +40,36 @@ All implementation and product-run work must preserve these boundaries:
   no turn, artifact, gate, or evidence. Spark/Forge Release explicitly records
   Playtest `not-run`; Quest requires passing Playtest evidence. Frozen older
   runs retain their materialized protocol when resumed.
-- New Codex Spark runs also freeze their versioned economics capability and use
-  one low-reasoning native session across Make and Release. Current v3 runs add
-  a 64k automatic-compaction ceiling and a 20-minute boundary per native turn;
-  same-session recovery remains bounded. Forge, Quest, other Managers, and
-  older Spark runs retain their frozen runtime profile. This changes cognitive
-  spend only; every deterministic product and publication gate remains
-  identical.
+- New marked Spark runs select the Inventor in Workshop setup before Make.
+  An explicit `--inventor` binds immediately; otherwise the native Manager
+  chooses once, and the same root session continues into Make. Setup is not
+  a separate Match Goal or product gate. Older runs retain their frozen
+  selection protocol and accepted inventor.
+- Codex runs freeze their selected model, reasoning effort, and total token
+  allowance across stages, descendants, and resumes. Token-budget runs have
+  no wall-clock, native-turn, proposal-retry, or lifecycle-round spending cap.
+  Pending usage is not subject to a first-report timer; completed usage must
+  still be accounted for. Other runtime adapters retain their frozen policy.
+- Spark accepts Make's output as-is: no duplicate host CAD rebuild, geometry
+  acceptance pass, or new manual review. Host-only Release publishes existing
+  Make assets with deterministic site metadata; it creates no native Release
+  turn or new PDF. Identity, exact bytes, credential isolation, and authenticated
+  effect reconciliation remain host responsibilities. Forge/Quest keep their
+  existing verification. See ADR 0061 for migration and live-acceptance status.
 - A capable Forge or Quest Make attempt may return directly to Invent only when
   exact preserved evidence proves that the sealed concept prevents any
   conforming build. Quest Playtest returns directly to Make for implementation
   defects or to Invent for concept defects. Every backward edge records a
   failed host gate, invalidates the named downstream artifacts, and consumes
-  the one shared lifecycle revision budget. Spark has no separate Invent stage
+  the shared revision history (and the frozen revision allowance only for
+  non-token-budget runs). Spark has no separate Invent stage
   to return to, and frozen runs gain no capability they did not materialize.
-- Every active Invent, Make, Playtest, or Release attempt uses
+- Every active creative Invent, Make, Playtest, or PDF-first Release attempt uses
   one native Codex Goal with one objective, proof artifacts, and a verifiable
-  stopping condition: the current stage finalizer succeeds. Inventor selection
-  is folded into the first active creative stage instead of a separate Match
-  turn. Only one Goal is active at a time. Codex works toward it by observing,
+  stopping condition: the current stage finalizer succeeds. New Spark selection
+  is Workshop setup; Spark Publish is a host effect, not another creative Goal.
+  Older selection protocols remain folded into their first active stage.
+  Only one Goal is active at a time. Codex works toward it by observing,
   acting, evaluating exact output,
   and improving. That loop is native-agent behavior, not a Python program.
   Wish is a host boundary rather than an agent Goal. Authenticated publication
@@ -107,7 +118,9 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0021-compacted-spark-and-signature-review.md`, and
 `docs/adr/0022-blind-review-before-final-verification.md`, and
 `docs/adr/0023-bounded-spark-turn-and-semantic-review.md`, and
-`docs/adr/0050-structured-terminal-failure-diagnostics.md` before changing the CLI, runtime,
+`docs/adr/0050-structured-terminal-failure-diagnostics.md`, and
+`docs/adr/0049-product-wide-token-budget.md`, and
+`docs/adr/0061-spark-make-owned-verification.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -134,6 +147,10 @@ hash, and requires the final verification report inside the declared
 self-contained CAD project.
 ADR 0050 retains a bounded structured diagnosis for terminal provider failures
 while continuing to discard unsafe free-form provider text.
+ADR 0049 supersedes earlier time/turn/retry/round spending caps for token-budget
+products. ADR 0061 supersedes duplicate host verification and native manual
+authoring for Spark only; it leaves Make's own implementation intact. Do not
+reintroduce these removed boundaries from an older ADR or frozen-run fixture.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

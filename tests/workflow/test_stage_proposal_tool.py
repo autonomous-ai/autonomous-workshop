@@ -555,7 +555,7 @@ class StageProposalToolTest(unittest.TestCase):
             "anti_generic_signature_visible": True,
             "signature_experience_unmistakable": True,
             "finished_product_desirable": True,
-            "review_rounds": 1,
+            "review_rounds": 3,
             "critical_form_requirements": [
                 {
                     "requirement": "The observatory must be rounded and volumetric.",
@@ -1443,7 +1443,7 @@ class StageProposalToolTest(unittest.TestCase):
         )
 
         review["relationship_matches_wish"] = True
-        review["review_rounds"] = 3
+        review["review_rounds"] = 0
         review_path.write_bytes(canonical_json(review))
         unbounded_review = self.run_tool(
             "make",
@@ -1455,7 +1455,7 @@ class StageProposalToolTest(unittest.TestCase):
             "cad/project/validation/cad-build.json",
             expected=2,
         )
-        self.assertIn("one or two review rounds", unbounded_review.stderr)
+        self.assertIn("positive review-round count", unbounded_review.stderr)
 
         review["review_rounds"] = 1
         review["critical_form_requirements"][0]["matches"] = False

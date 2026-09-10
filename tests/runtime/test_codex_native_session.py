@@ -768,12 +768,12 @@ class CodexNativeSessionTest(unittest.TestCase):
             launcher, factory = self.launcher(
                 [{"stdout": self.start_events()}],
                 model="gpt-6-astra",
-                effort="high",
+                effort="ultra",
             )
             self.start(launcher, root)
             command = factory.calls[0][0]
             self.assertEqual(command[command.index("--model") + 1], "gpt-6-astra")
-            self.assertIn('model_reasoning_effort="high"', command)
+            self.assertIn('model_reasoning_effort="ultra"', command)
 
     def test_every_supported_model_and_effort_constructs_exact_runtime(self):
         models = (
@@ -795,6 +795,11 @@ class CodexNativeSessionTest(unittest.TestCase):
                     self.assertEqual(launcher.reasoning_effort, effort)
                     self.assertEqual(factory.calls, [])
         self.assertEqual(observed, 16)
+
+    def test_ultra_rejects_other_native_models(self):
+        for model in ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"):
+            with self.subTest(model=model), self.assertRaisesRegex(ValueError, "requires gpt-6-astra"):
+                self.launcher([], model=model, effort="ultra")
 
     def test_terminal_usage_is_reduced_to_exact_bounded_token_counters(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -2556,6 +2561,76 @@ class CodexNativeSessionTest(unittest.TestCase):
             DEFAULT_CODEX_TIMEOUT_SECONDS,
         )
 
+    def test_token_only_start_and_resume_never_arm_a_wall_clock_timer(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [{"stdout": self.start_events()}, {"stdout": self.start_events()}],
+                timeout_seconds=None,
+            )
+            launcher.token_budget_observer = mock.Mock()
+            with mock.patch.object(codex_runtime.threading, "Timer") as timer:
+                self.assertEqual(self.start(launcher, root).status, "completed")
+                self.assertEqual(self.resume(launcher, root).status, "completed")
+                timer.assert_not_called()
+            launcher.token_budget_observer.assert_called()
+
+    def test_untimed_execution_requires_token_monitor_before_spawning(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher([], timeout_seconds=None)
+            with self.assertRaisesRegex(CodexInvocationError, "requires a token budget observer"):
+                self.start(launcher, root)
+            self.assertEqual(factory.calls, [])
+
+    def test_token_observer_reconciles_documented_terminal_usage_after_process_reap(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            events = self.start_events(terminal=False) + [event({
+                "type": "turn.completed", "usage": {"input_tokens": 100, "output_tokens": 10}
+            })]
+            launcher, factory = self.launcher([{"stdout": events}], timeout_seconds=None)
+            observer = mock.Mock()
+            def reconcile(usage):
+                self.assertIsNotNone(factory.processes[0].returncode)
+                self.assertEqual(usage, (100, None, None, 10, None))
+            observer.reconcile_completed_turn.side_effect = reconcile
+            launcher.token_budget_observer = observer
+            self.assertEqual(self.start(launcher, root).status, "completed")
+            observer.reconcile_completed_turn.assert_called_once()
+
+    def test_token_terminal_reconciliation_failure_prevents_successful_return(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher([{"stdout": self.start_events()}], timeout_seconds=None)
+            observer = mock.Mock()
+            observer.reconcile_completed_turn.side_effect = ContractError("completed request has no counters")
+            launcher.token_budget_observer = observer
+            with self.assertRaisesRegex(CodexInvocationError, "token budget stopped"):
+                self.start(launcher, root)
+            self.assertIsNotNone(factory.processes[0].returncode)
+
+    def test_token_only_turn_streams_diagnostics_beyond_legacy_total_limit(self):
+        for diagnostics in (
+            ["private diagnostic\n"] * (MAX_CODEX_STDERR_BYTES // 8),
+            ["x" * (MAX_CODEX_STDERR_BYTES * 2)],
+        ):
+            with self.subTest(chunks=len(diagnostics)), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, factory = self.launcher(
+                    [{"stdout": self.start_events(), "stderr": diagnostics}],
+                    timeout_seconds=None,
+                )
+                launcher.token_budget_observer = mock.Mock()
+                self.assertEqual(self.start(launcher, root).status, "completed")
+                self.assertTrue(factory.processes[0].stderr.closed)
+                launcher.token_budget_observer.assert_called()
+
     def test_completed_turn_is_reaped_after_a_short_natural_exit_grace(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -2588,7 +2663,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 {"stdout": self.start_events(terminal=False),
                  "block_stdout_after_values": True, "stdout_block_timeout": 5,
                  "hang_until_terminated": True},
-            ])
+            ], timeout_seconds=None)
             observed = threading.Event()
 
             def stop_for_budget():
@@ -3602,6 +3677,31 @@ class CodexNativeSessionTest(unittest.TestCase):
                     "provider-transport",
                 )
                 self.assertTrue(factory.processes[0].terminated)
+
+    def test_service_failure_retry_classification_is_narrow(self):
+        for message in ("The model is overloaded. Try again later.", "Service unavailable", "Internal server error"):
+            self.assertTrue(codex_runtime._is_retryable_service_failure(
+                {"type": "error", "message": message}))
+        for message in ("quota exceeded", "unauthorized", "invalid request", "tool failed: overloaded part", "context length exceeded"):
+            self.assertFalse(codex_runtime._is_retryable_service_failure(
+                {"type": "error", "message": message}))
+
+    def test_overload_recovery_preserves_exact_native_session(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher([
+                {"stdout": [
+                    event({"type": "thread.started", "thread_id": THREAD_ID}),
+                    event({"type": "error", "message": "The model is currently overloaded. Please try again later."}),
+                ]},
+                {"stdout": self.start_events()},
+            ])
+            with self.assertRaises(CodexRecoverableInvocationError):
+                self.start(launcher, root)
+            self.assertTrue(factory.processes[0].terminated)
+            self.assertEqual(self.resume(launcher, root).status, "completed")
+            self.assertIn(THREAD_ID, factory.calls[1][0])
 
     def test_unanchored_failed_turn_message_cannot_select_recovery(self):
         with tempfile.TemporaryDirectory() as temporary:

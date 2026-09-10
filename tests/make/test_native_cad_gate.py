@@ -1,5 +1,6 @@
 import dataclasses
 import hashlib
+import io
 import json
 import os
 import stat
@@ -832,6 +833,22 @@ class NativeCadGateTest(unittest.TestCase):
             )
 
     def test_default_runner_drains_and_bounds_both_streams_without_shell(self):
+        self._assert_default_runner_drains_and_bounds_both_streams()
+
+    def test_untimed_verifier_cancellation_reaps_its_process_group(self):
+        process = mock.Mock(pid=12345, stdout=io.BytesIO(b""), stderr=io.BytesIO(b""))
+        process.wait.side_effect = [KeyboardInterrupt(), 0]
+        with mock.patch("workshop.make.native_gate.subprocess.Popen", return_value=process), mock.patch(
+            "workshop.make.native_gate.os.killpg"
+        ) as killpg, self.assertRaises(KeyboardInterrupt):
+            run_bounded_verifier(["verifier"], cwd=self.run_root, environment={},
+                                 timeout_seconds=None, max_output_bytes=32)
+        killpg.assert_called_once()
+        self.assertEqual(process.wait.call_count, 2)
+        self.assertTrue(process.stdout.closed)
+        self.assertTrue(process.stderr.closed)
+
+    def _assert_default_runner_drains_and_bounds_both_streams(self):
         result = run_bounded_verifier(
             (
                 sys.executable,
@@ -840,7 +857,7 @@ class NativeCadGateTest(unittest.TestCase):
             ),
             cwd=self.run_root,
             environment={"PYTHONDONTWRITEBYTECODE": "1"},
-            timeout_seconds=10,
+            timeout_seconds=None,
             max_output_bytes=32,
         )
 
@@ -994,7 +1011,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         )
 
         self.assertEqual(completed.returncode, 2)
-        self.assertIn("one or two review rounds", completed.stderr)
+        self.assertIn("positive review-round count", completed.stderr)
         self.assertNotIn("check_layout", completed.stdout)
 
     def test_blocking_form_defect_cannot_unlock_final_geometry(self):

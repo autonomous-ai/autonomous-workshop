@@ -14,11 +14,21 @@ runtime, model, and reasoning level. Codex defaults to `gpt-5.6-sol` at medium;
 Claude Code defaults to `claude-opus-5` at medium. Status and resume read those
 durable choices rather than accepting replacements.
 
+`--agent codex --model astra --effort ultra` enables native Astra Ultra.
+Ultra is rejected for other models and agents; the default remains medium.
+
 `workshop wish --inventor <id> "..."` pins the exact Inventor in the immutable
 Wish and materializes only that Inventor into the run roster. Without the flag,
 the complete eligible roster is materialized and the native Manager chooses the
 best match. A Wish created by `workshop start <id>` is pinned automatically to
 the Inventor who produced its sealed daydream.
+
+New Spark runs bind that selection in Workshop setup before Make; automatic
+selection and Make use the same native session. Publish is then host-owned:
+it uploads Make's existing files, derives site metadata, and verifies public
+readback. It does not start another native turn, rebuild CAD, review the product,
+or require a new PDF. The durable publication checkpoint is still named
+`release`. Existing Forge/Quest and historical Release contracts remain readable.
 
 `workshop create inventor` and the first `workshop start <inventor-id>` open
 `https://www.autonomous.ai/toys/inventor/login` when that Inventor is not yet
@@ -50,10 +60,14 @@ sources and cardinality: `workshop wish` makes one product from a human-provided
 idea, while `workshop start` continuously makes products from an Inventor's own
 ideas. `workshop start --once` is the bounded autonomous-idea variant.
 
-`start` and `wish` accept `--max-tokens N` (default `30000000`) for the whole
+`start` and `wish` accept `--max-tokens N` (maximum `200000000`, default `30000000`) for the whole
 Codex product, including all build stages, native children and resumes. The
-separate Daydream session is excluded. Input plus output is counted, including
-cached input but without counting reasoning output twice. `resume` without the
+separate Daydream session is excluded. All revisions and retries share that
+allowance without a native-turn or wall-clock execution cap.
+`--max-rounds` remains legacy metadata for token-budget products, not a stop
+condition. Engineering gates and failure-closed accounting remain mandatory.
+Input plus output includes cached input without counting reasoning output
+twice. `resume` without the
 flag retains the saved cap; an explicit value changes the total, not remaining,
 allowance and preserves recovered usage. Older eligible runs explicitly adopt
 token accounting this way. The local usage adapter currently requires Codex

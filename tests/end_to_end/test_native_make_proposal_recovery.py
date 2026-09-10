@@ -211,6 +211,23 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
             ),
         )
 
+    def test_spark_rejected_make_proposal_recovers_in_same_session_to_publish(self):
+        launcher = _ChangedArtifactAgent(rejected_attempt_limit=1)
+        effects = _FactoryEffects()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            wish = Wish.create("spark-make-repair", "Make a simple printable pocket game.")
+            patches = self._base_patches(home, launcher, effects)
+            # Keep the current Spark template, not the compatibility fixture.
+            with patches[0], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7], patches[8]:
+                receipt = start_native_run(wish, effort="spark")
+        self.assertEqual((receipt["stage"], receipt["status"]), ("release", "complete"))
+        self.assertEqual(len(launcher.starts), 1)
+        self.assertEqual([packet["stage"] for packet in launcher.stage_packets], ["make", "make"])
+        original, repaired = launcher.stage_packets[:2]
+        self.assertEqual(original["checkpoint_sha256"], repaired["checkpoint_sha256"])
+        self.assertEqual(repaired["inputs"]["host_make_proposal_rejection"]["rejection_number"], 1)
+
     def test_frozen_make_metadata_rejection_survives_crash_and_resumes_same_session(self):
         launcher = _FrozenAliasMakeAgent()
         effects = _FactoryEffects()
@@ -386,6 +403,9 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
             self.assertTrue(repaired_product["summary"])
 
     def test_make_artifact_binding_rejection_is_repaired(self):
+        self.enterContext(mock.patch(
+            "workshop.workflow.native_run._MAX_MAKE_PROPOSAL_REJECTIONS", 1
+        ))
         launcher = _ChangedArtifactAgent()
         effects = _FactoryEffects()
         with tempfile.TemporaryDirectory() as temporary:
@@ -448,6 +468,9 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
                 "Build a toy whose invalid Make proposals must stay bounded.",
             )
             patches = self._base_patches(home, launcher, effects)
+            # Exercise a genuinely frozen non-token run, not a marked token
+            # checkpoint whose module constant has only been hidden from the host.
+            (patches[1].kwargs["return_value"].skill_root / "references" / "token-budget-v1.md").unlink()
             with (
                 patches[0],
                 patches[1],

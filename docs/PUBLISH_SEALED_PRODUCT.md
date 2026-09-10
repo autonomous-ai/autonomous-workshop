@@ -2,13 +2,42 @@
 
 Factory publication is the required host-effect portion of Release. Workshop
 does not complete a run after merely creating local files: it completes only
-after the exact ready-to-print CAD and canonical `MANUAL.pdf` are public and
-authenticated readback proves their hashes.
+after authenticated readback proves publication of its digital handoff. A public
+receipt is not evidence of physical printing or manufacture.
 
 Printing, packing, shipping, delivery, and customer Review begin after this
 digital handoff and belong to Operations.
 
-## What Release supplies
+## Spark: publish Make's output
+
+Spark uses Workshop inventor selection before Make: an explicit `--inventor`
+binds immediately; otherwise the Manager chooses once before beginning Make,
+within the same native root session. Selection is not Make's responsibility.
+
+Once Make finalizes, Workshop accepts the submitted files without another CAD
+rebuild, geometry review, assembly acceptance pass, or host rendering. The host
+preserves their identities and exact bytes; a hash match is not a quality score.
+
+The host derives site metadata and a schema-4 Release carrier at
+`artifacts/release/publish-package`. Make's existing README or PDF can travel
+unchanged, but neither is newly required. There is no native Release turn,
+manual-generation task, or manual review. Publication uses the host-held account
+and a durable effect ledger so an uncertain response cannot cause a blind
+duplicate upload. Playtest is explicitly `not-run`.
+
+This path is deterministically tested. The first live acceptance has finished
+Make and imported a draft, but exposed a Factory project-root selection mismatch:
+the CDN retained the nested CAD directory without the root publication metadata.
+Public completion is not yet proven. See [ADR 0061](adr/0061-spark-make-owned-verification.md).
+
+## Forge, Quest, and preserved older Release contracts
+
+The remaining PDF-first engineering and manual requirements below describe
+Forge/Quest and already-created older Release packages, not new Spark carriers.
+An existing sealed or effect-bearing Release is reconciled under its exact
+original contract rather than regenerated during migration.
+
+### What Release supplies
 
 The native Manager writes `artifacts/release/package` with at least:
 
