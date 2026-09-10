@@ -179,6 +179,12 @@ export path to retain that alpha in STEP. All geometry remains in the model and
 its framing. Transparent faces receive no opaque silhouette outline; fully
 invisible faces contribute no fill, outline or shadow.
 
+The product renderer retains every triangle from each occurrence's in-memory
+tessellation, including scenes above 75,000 triangles. It never reduces cost
+by discarding triangles or components. Larger assemblies take more rendering
+time and memory; the source STEP, display tessellation defaults and mandatory
+CAD checks are unchanged.
+
 Exact-state sheets compare neutral RGB views. A triangle keeps its opacity in
 that comparison only when its exact world-space vertices, opacity and
 unambiguous coincident multiplicity agree across every state. An unchanged

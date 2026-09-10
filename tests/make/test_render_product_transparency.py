@@ -1,8 +1,10 @@
 """Authored STEP alpha gives schematic transparency without changing geometry."""
 
 from pathlib import Path
+from collections import Counter
 import runpy
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -158,27 +160,50 @@ class ProductTransparencyTests(unittest.TestCase):
                     rgb = self.render(triangles, colors[:, :3], view=view, pose_degrees=pose)
                     self.assertEqual(rgba.tobytes(), rgb.tobytes())
 
-    def test_sampling_keeps_alpha_and_rgb_bound_to_the_same_triangles(self):
-        triangles, colors = self.load_shape(self.scene(0.2))
-        triangles = np.tile(triangles, (3200, 1, 1))
-        colors = np.tile(colors, (3200, 1))
-        indices = np.linspace(0, len(triangles) - 1, 75000, dtype=np.int64)
-        # Spy on the pens to avoid repeatedly rasterizing duplicate probe faces.
-        calls = []
+    def test_large_scene_keeps_every_triangle_and_its_rgb_alpha(self):
+        triangle = np.array([[0., 0., 0.], [2., 0., 0.], [0., 0., 2.]])
+        triangles = np.tile(triangle, (76800, 1, 1))
+        colors = np.tile((0., 0., 255., 1.), (len(triangles), 1))
+        colors[:38400] = (0., 255., 0., 0.4)
+        # Both late, small components fell between the former sampling indices.
+        triangles[76756] = triangle * 0.1 + (-5, 0, 0)
+        triangles[76798] = triangle * 0.1 + (5, 0, 0)
+        colors[76756] = (255., 0., 0., 1.)
+        colors[76798] = (255., 0., 255., 0.2)
+        calls = Counter()
+        # Count complete surface coverage without repeatedly painting the same
+        # probe face. The real pixel control below checks the small occurrence.
         def draw(image, *args):
-            mode = (image.mode, args)
-            pen = mock.Mock()
-            pen.polygon.side_effect = lambda points, **kwargs: calls.append((mode, points, kwargs))
-            return pen
+            def polygon(points, *, fill):
+                calls[(image.mode, fill)] += 1
+            return SimpleNamespace(polygon=polygon, ellipse=lambda *args, **kwargs: None)
         def transparent(image, points, color, alpha):
-            calls.append(("transparent", points, color, alpha))
+            calls[("transparent", color, alpha)] += 1
         with mock.patch.object(self.tool["ImageDraw"], "Draw", side_effect=draw), \
              mock.patch.dict(self.tool["render"].__globals__, {"_translucent_triangle": transparent}):
             self.render(triangles, colors)
-            actual = calls[:]
-            calls.clear()
-            self.render(triangles[indices], colors[indices])
-        self.assertEqual(calls, actual)
+        light = self.tool["_normal"](np.array([-0.55, -0.75, 1.6]))
+        intensity = 0.52 + 0.63 * abs(light[1])
+        shaded = lambda color: self.tool["_shade"](color, intensity)
+        self.assertEqual(calls, Counter({
+            ("RGB", shaded((0, 0, 255))): 38398,
+            ("RGB", shaded((255, 0, 0))): 1,
+            ("transparent", shaded((0, 255, 0)), 0.4): 38400,
+            ("transparent", shaded((255, 0, 255)), 0.2): 1,
+            ("L", 255): 38399,
+        }))
+
+    def test_late_small_translucent_component_keeps_exact_pixels_above_old_limit(self):
+        triangle = np.array([[0., 0., 0.], [2., 0., 0.], [0., 0., 2.]])
+        triangles = np.tile(triangle, (76800, 1, 1))
+        colors = np.tile((0., 0., 255., 1.), (len(triangles), 1))
+        triangles[-2] = triangle * 0.2 + (3, 0, 0)
+        colors[-2] = (255., 0., 0., 0.4)
+        # Repainting an opaque filler face adds no coverage. Every surface and
+        # the one translucent occurrence must match this complete small scene.
+        expected = self.render(triangles[[0, -2]], colors[[0, -2]])
+        actual = self.render(triangles, colors)
+        self.assertEqual(actual.tobytes(), expected.tobytes())
 
     def test_motion_and_exact_state_frames_keep_each_alpha_array_aligned(self):
         first, first_colors = self.load_shape(self.scene(0.2))

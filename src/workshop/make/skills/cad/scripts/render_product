@@ -321,13 +321,8 @@ def render(
 
     triangles = _posed_triangles(triangles, pose_degrees)
 
-    # Bound presentation cost without changing the STEP or its geometry gates.
-    if len(triangles) > 75_000:
-        indices = np.linspace(0, len(triangles) - 1, 75_000, dtype=np.int64)
-        triangles = triangles[indices]
-        if triangle_colors is not None:
-            triangle_colors = triangle_colors[indices]
-
+    # Retain every tessellated surface. Sampling triangle indices opens holes
+    # in otherwise complete faces and can erase entire small occurrences.
     alphas = (triangle_colors[:, 3] if triangle_colors is not None and triangle_colors.shape[1] == 4
               else np.ones(len(triangles)))
 
@@ -346,7 +341,7 @@ def render(
     span_y = float(bounds_y.max() - bounds_y.min())
     span = max(span_x, span_y)
     if span <= 1e-9:
-        raise ValueError("STL projection has no area")
+        raise ValueError("CAD projection has no area")
     fit = canvas_size * 0.72 / span
     x_mid = float((bounds_x.min() + bounds_x.max()) / 2.0)
     y_mid = float((bounds_y.min() + bounds_y.max()) / 2.0)
