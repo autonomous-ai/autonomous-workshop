@@ -216,14 +216,30 @@ own cycle.
 }
 ```
 
-Each mover takes a `rotation`, a `translation`, or both — rotation first. Either
-one may be a `start`/`end` pair, which interpolates, or an explicit table
-(`angles_deg`, `offsets_mm`) holding exactly `steps + 1` absolute values
-measured from the assembly pose. Use the table for anything whose motion is not
-uniform: a Geneva wheel, a cam follower, a crank slider, a four-bar coupler. The
-project already solved that kinematics to place the geometry, so the table is
-that solution written down, not a second guess at it. Every mover is tested
-against every other mover and against the obstacles at every sample.
+Each mover takes a `rotation`, a `translation`, or both — rotation first.
+Rotation uses its `axis_point` and `axis_direction` with scalar `start_deg` and
+`end_deg`, or an `angles_deg` table. Translation uses a `vector` in millimetres
+with scalar `start` and `end` multipliers (defaults 0 and 1), or an `offsets_mm`
+table. For example, this mover starts 80 mm behind its assembly pose and ends
+at that pose:
+
+```json
+{"part": "shuttle",
+ "translation": {"vector": [80, 0, 0], "start": -1, "end": 0}}
+```
+
+At each sample the offset is `vector * (start + (end - start) * i / steps)`.
+`start` and `end` are numbers, not `[x, y, z]` points; omitting `vector` while
+supplying start/end points is invalid. For a two-step motion, the equivalent
+explicit translation is `{"offsets_mm": [[-80, 0, 0], [-40, 0, 0], [0, 0, 0]]}`.
+Both table forms must contain exactly `steps + 1` absolute angles or offsets
+relative to the original assembly pose, not incremental per-step changes.
+
+Use the table for anything whose motion is not uniform: a Geneva wheel, a cam
+follower, a crank slider, a four-bar coupler. The project already solved that
+kinematics to place the geometry, so the table is that solution written down,
+not a second guess at it. Every mover is tested against every other mover and
+against the obstacles at every sample.
 
 ### The table proposes motion; contact evidence has a narrower scope
 
