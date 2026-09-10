@@ -338,12 +338,18 @@ def _material(shape):
     values = [solid_volume(s, require_solid=True) for s in solids]
     if len(solids) == 1:
         return solids[0], values[0]
-    normalized = _boolean_shape(BRepAlgoAPI_Fuse, solids[:1], solids[1:])
-    measured = solid_volume(normalized, require_solid=True)
-    tolerance = consistency_tolerance(*values)
-    if (measured < max(values) - tolerance or
-            measured > math.fsum(values) + tolerance):
-        raise ValueError('motion group union has inconsistent volume')
+    try:
+        normalized = _boolean_shape(BRepAlgoAPI_Fuse, solids[:1], solids[1:])
+        measured = solid_volume(normalized, require_solid=True)
+        tolerance = consistency_tolerance(*values)
+        if (measured < max(values) - tolerance or
+                measured > math.fsum(values) + tolerance):
+            raise ValueError('motion group union has inconsistent volume')
+    except ValueError as error:
+        label = getattr(shape, 'label', '') or '<unnamed>'
+        raise ValueError(
+            f'normalizing group {label!r} ({len(solids)} solids): {error}'
+        ) from error
     return normalized, measured
 
 

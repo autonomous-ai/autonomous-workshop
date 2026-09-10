@@ -151,13 +151,39 @@ class MotionBooleanMeasurementTests(unittest.TestCase):
                         self.assertEqual(result['status'], status, result)
 
     def test_group_union_failure_is_inconclusive(self):
-        operation = type('UnfinishedGroupUnion', (FakeOperation,), {'done': False})
-        for expect in ('clear', 'blocked'):
-            with self.subTest(expect=expect):
-                group = Compound(children=[Box(2, 2, 2), Box(2, 2, 2)])
-                with patch.object(operations, 'BRepAlgoAPI_Fuse', operation):
-                    result = self.run_pair(expect, moving=group)
-                self.assertEqual(result['status'], 'inconclusive', result)
+        shell = Shell(list(Box(2, 2, 2).faces())[:-1])
+        invalid = Solid(BRepBuilderAPI_MakeSolid(shell.wrapped).Solid())
+        cases = {
+            'did not complete': {'done': False},
+            'returned invalid geometry': {'result': invalid.wrapped},
+        }
+        for reason, attributes in cases.items():
+            operation = type('BrokenGroupUnion', (FakeOperation,), attributes)
+            for as_obstacle in (False, True):
+                for expect in ('clear', 'blocked'):
+                    with self.subTest(reason=reason, as_obstacle=as_obstacle, expect=expect):
+                        group = Compound(children=[Box(2, 2, 2), Box(2, 2, 2)], label='shuttle')
+                        probe = Box(2, 2, 2)
+                        probe.label = 'probe'
+                        assembly = Compound(children=[group, probe], label='assembly')
+                        parts = self.tool['index_parts'](assembly)
+                        condition = self.condition(expect)
+                        condition['inputs'].update(
+                            moving_part='probe' if as_obstacle else 'shuttle',
+                            obstacle_parts=['shuttle' if as_obstacle else 'probe'],
+                            translation=[0, 0, 1], steps=1, allow_seated_contact=True)
+                        before = [(node.label, tuple(node.position), node.volume)
+                                  for node in (group, *group.children)]
+                        with patch.object(operations, 'BRepAlgoAPI_Fuse', wraps=operation) as fuse:
+                            result = self.tool['run_condition'](condition, parts, 0)
+                        self.assertEqual(fuse.call_count, 1)  # Context adds no retry.
+                        self.assertEqual(result['status'], 'inconclusive', result)
+                        self.assertEqual(set(result), {'id', 'check', 'description', 'status', 'detail'})
+                        self.assertEqual(result['detail'],
+                                         "ValueError: normalizing group 'shuttle' (2 solids): "
+                                         f'motion Boolean operation {reason}')
+                        self.assertEqual([(node.label, tuple(node.position), node.volume)
+                                          for node in (group, *group.children)], before)
 
     def test_group_union_does_not_change_input_instances(self):
         a, b = Box(2, 2, 2), Box(2, 2, 2).translate((1, 0, 0))
@@ -186,6 +212,36 @@ class MotionBooleanMeasurementTests(unittest.TestCase):
             payload = json.loads(output.getvalue())
             self.assertFalse(payload['ok'])
             self.assertEqual(payload['results'][0]['status'], 'inconclusive')
+
+    def test_group_diagnostic_preserves_default_cli_result_schema_and_exit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            (project / 'assembly.step.py').write_text(
+                'from build123d import Box, Compound\n'
+                'def gen_step():\n'
+                '    moving = Box(2, 2, 2)\n'
+                '    moving.label = "moving"\n'
+                '    fixed = Compound(children=[Box(2, 2, 2), Box(2, 2, 2)], label="fixed")\n'
+                '    return Compound(children=[moving, fixed], label="assembly")\n')
+            manifest = project / 'motion.json'
+            manifest.write_text(json.dumps({'conditions': [self.condition()]}))
+            operation = type('UnfinishedGroupUnion', (FakeOperation,), {'done': False})
+            output = io.StringIO()
+            with patch.object(sys, 'argv', [str(CHECK), str(project), '--manifest', str(manifest), '--json']), \
+                    patch.object(operations, 'BRepAlgoAPI_Fuse', wraps=operation) as fuse, \
+                    contextlib.redirect_stdout(output):
+                status = self.tool['main']()
+            self.assertEqual(fuse.call_count, 1)
+            self.assertEqual(status, 1, output.getvalue())
+            payload = json.loads(output.getvalue())
+            self.assertEqual(set(payload), {'ok', 'project', 'assembly', 'results'})
+            self.assertFalse(payload['ok'])
+            result = payload['results'][0]
+            self.assertEqual(set(result), {'id', 'check', 'description', 'status', 'detail'})
+            self.assertEqual(result['status'], 'inconclusive')
+            self.assertEqual(result['detail'],
+                             "ValueError: normalizing group 'fixed' (2 solids): "
+                             'motion Boolean operation did not complete')
 
 
 if __name__ == '__main__':
