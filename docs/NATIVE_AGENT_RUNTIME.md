@@ -45,6 +45,9 @@ does not govern ordinary source-repository work.
 
 ### Current token-budget and Spark handoff policy
 
+New Spark v4 runs compact at 192k; frozen v3 runs retain 64k. This
+compaction setting does not restore the historical spending caps below.
+
 For token-budget products, the **total input-plus-output token allowance** is
 the Workshop execution limit across stages, children, and resumes. Historical host clocks,
 native-turn counts, proposal-retry counts, and lifecycle-round allowances

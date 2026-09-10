@@ -24,8 +24,11 @@ SPARK_ECONOMICS_V1_CAPABILITY_PATH = (
 SPARK_ECONOMICS_V2_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/spark-economics-v2.md"
 )
-SPARK_ECONOMICS_CAPABILITY_PATH = (
+SPARK_ECONOMICS_V3_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/spark-economics-v3.md"
+)
+SPARK_ECONOMICS_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/spark-economics-v4.md"
 )
 DEEP_ECONOMICS_V1_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/deep-economics-v1.md"
@@ -67,10 +70,15 @@ DEEP_ECONOMICS_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/deep-economics-v13.md"
 )
 SPARK_AUTO_COMPACT_TOKEN_LIMIT = 64_000
+# A 64,000-token ceiling holds a simple product's whole Make but forces a
+# complex one to compact every few requests, and each compaction drops the
+# state the Goal had just established. Spark v4 keeps every other frozen
+# setting and raises only this ceiling to the value deep runs use (ADR 0038 as
+# lowered by 274ac4d8), so Spark never exceeds the deeper workflow.
+SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT = DEEP_AUTO_COMPACT_TOKEN_LIMIT = 192_000
 SPARK_NATIVE_TURN_TIMEOUT_SECONDS = 60 * 60
 DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT = 32_000
 DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT = 24_000
-DEEP_AUTO_COMPACT_TOKEN_LIMIT = 192_000
 DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT = 16_000
 DEEP_NATIVE_TURN_TIMEOUT_SECONDS = 60 * 60
 DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS = 12 * 60
@@ -222,7 +230,9 @@ __all__ = [
     "SPARK_ECONOMICS_CAPABILITY_PATH",
     "SPARK_ECONOMICS_V1_CAPABILITY_PATH",
     "SPARK_ECONOMICS_V2_CAPABILITY_PATH",
+    "SPARK_ECONOMICS_V3_CAPABILITY_PATH",
     "SPARK_NATIVE_TURN_TIMEOUT_SECONDS",
+    "SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT",
     "WORKSHOP_EFFORTS",
     "WorkshopEffort",
     "workshop_effort",

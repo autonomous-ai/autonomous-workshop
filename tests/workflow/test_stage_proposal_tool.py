@@ -356,6 +356,25 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("exact host-supplied WORKSHOP_PYTHON", result.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
+    def test_python_identity_accepts_alias_but_rejects_different_binary(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_python_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            binary = root / "python"
+            binary.write_bytes(b"host executable")
+            alias = root / "python-alias"
+            alias.symlink_to(binary)
+            other = root / "other-python"
+            other.write_bytes(b"different executable")
+            with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(binary)}):
+                with mock.patch.object(sys, "executable", str(alias)):
+                    self.assertEqual(tool._workshop_python(), binary)
+                with mock.patch.object(sys, "executable", str(other)):
+                    with self.assertRaisesRegex(tool.ProposalError, "exact host-supplied"):
+                        tool._workshop_python()
+
     def assert_canonical_file(self, relative):
         content = (self.run_root / relative).read_bytes()
         document = json.loads(content.decode("utf-8"))
