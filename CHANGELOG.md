@@ -75,6 +75,9 @@ Keep a Changelog and uses semantic versioning for released distributions.
   spans. This catches cantilevers and thin ledges, preserves short rotated
   bridges and supported collars, and keeps decisions stable when equivalent STL
   triangle records or cyclic vertex orders change.
+- Make final and print-preflight verification refuse a project whose README or
+  spec names a `<name>.step.py` entry that does not exist, so a delivered file
+  map or rebuild command cannot cite a removed entry and fail on first use.
 
 - Allow generated inventor commands to parse run options and positional Wish
   text in either order.

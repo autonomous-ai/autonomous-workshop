@@ -102,6 +102,11 @@ BED_DECLARATION = re.compile(
 SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 ASSEMBLY_HEADING = re.compile(r"^#{1,6}\s+.*\bassembly\b", re.IGNORECASE)
 ASSEMBLY_ORDER = re.compile(r"\bassembly\s+(?:order|procedure|steps?|sequence)\b", re.IGNORECASE)
+# A documented `<name>.step.py` entry, optionally path-prefixed. Wildcards and
+# placeholders (`part_*.step.py`, `<name>.step.py`) are prose, not references.
+ENTRY_REFERENCE = re.compile(
+    r"(?<![\w*.\-/])((?:[\w.\-]+/)*[A-Za-z0-9_][\w.\-]*\.step\.py)(?![\w\-]|\.\w)"
+)
 MATING_ACTION = re.compile(
     r"\b(?:insert|install|seat|fit|press|slide|slot|screw|bolt|snap|thread|"
     r"attach|fasten|lock|bond|glue|feed|mate)\w*\b",
@@ -527,6 +532,32 @@ def _documented_assembly_claims(project: Path) -> list[str]:
             if scoped and MATING_ACTION.search(line):
                 claims.append(f"{path.name}:{line_number}: {line.strip()}")
     return claims
+
+
+def _documented_entry_references(project: Path) -> list[str]:
+    """Entry names the README/spec documents but the project does not contain.
+
+    The file map and rebuild commands are the delivered reconstruction recipe.
+    A documented `<name>.step.py` that is absent makes that recipe fail on the
+    reader's first command, even when every existing entry generates a valid
+    solid. Inspect only the project's README/spec, resolve each reference by
+    its basename in the project root or by the written path, and report the
+    missing ones with their file and line.
+    """
+    missing: list[str] = []
+    for path in (project / "README.md", *sorted(project.glob("*_spec.md"))):
+        if not path.is_file():
+            continue
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
+        ):
+            for match in ENTRY_REFERENCE.finditer(line):
+                reference = match.group(1)
+                name = reference.rsplit("/", 1)[-1]
+                if (project / name).is_file() or (project / reference).is_file():
+                    continue
+                missing.append(f"{path.name}:{line_number}: {reference}")
+    return missing
 
 
 def _read_likeness_history(project: Path) -> list[dict]:
@@ -1945,6 +1976,30 @@ def self_check() -> int:
             fixture("a documented assembly path cannot become a skipped motion gate",
                     img + ["--unpowered"], "no motion manifest exists")
 
+            project = _sc_project(root, {
+                "README.md": "# Widget\n\n## Files\n\n- `widget.step.py` is the entry.\n"
+                             "- `part_token.step.py` is a review entry.\n",
+            })
+            fixture("a README that names a missing entry cannot ship a broken rebuild recipe",
+                    img + ["--unpowered"], "does not exist in the project")
+
+            project = _sc_project(root, {
+                "widget_spec.md": "# spec\n\nRebuild with `gen part_token.step.py --write`.\n",
+            })
+            fixture("a spec rebuild command naming a missing entry is refused too",
+                    img + ["--unpowered"], "does not exist in the project")
+
+            project = _sc_project(root, {
+                "README.md": "# Widget\n\n- `widget.step.py` is the sole entry.\n"
+                             "- Generate every `part_*.step.py`; name entries `<name>.step.py`.\n"
+                             "- `proj/widget.step.py` from the parent; keep `widget.step.py.bak` out.\n",
+            })
+            names = _documented_entry_references(project)
+            hit = names == []
+            print(f"{'ok  ' if hit else 'FAIL'} existing, wildcard, placeholder and "
+                  f"path-prefixed entry references are not missing  - {names}")
+            ok &= hit
+
             project = _sc_project(root)
             _sc_refuses(img)
             report = project / "measure" / "verification-pipeline.md"
@@ -2301,6 +2356,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         ]
     except (OSError, SyntaxError, ValueError) as exc:
         refuse(str(exc))
+
+    missing_entries = _documented_entry_references(project) if not args.quick else []
+    if missing_entries:
+        refuse(
+            "README/spec names a CAD entry that does not exist in the project: "
+            f"{missing_entries[0]}. The file map and rebuild commands must reference "
+            "only existing *.step.py entries; remove the stale name or restore the "
+            "entry, because a documented rebuild command fails on a missing file"
+        )
 
     if not args.quick and not args.print_preflight and not args.dry_run:
         try:

@@ -498,6 +498,29 @@ operation. Numerical contact and Boolean consistency tolerances are unchanged.
 Frozen runs keep their exact materialized tools. Private product evidence and
 unqualified gear construction experiments remain outside Git.
 
+## Documented entry references (2026-09-10)
+
+A delivered project could pass every geometry gate while its README file map
+and rebuild command named a `<name>.step.py` entry that no longer existed. The
+documented rebuild command then failed on the reader's first step, although
+the remaining entries generated valid solids. Nothing read the documentation
+for existence, only for assembly-action claims.
+
+`verify_project` now resolves every `<name>.step.py` reference in README.md
+and `*_spec.md` by basename in the project root or by the written path, in
+print-preflight and final modes, and refuses on the first missing one with its
+file and line. Wildcards, placeholders, suffixed names and absent documents
+are not references. `--quick` is unchanged. The refusal is recorded in the
+pipeline report like other preflight refusals.
+
+Contract tests cover existing, wildcard, placeholder, path-prefixed, spec and
+fenced-command references, refusal before geometry work in both gated modes,
+quick-mode passthrough and report recording. A text-only replay over forty
+preserved and archived project READMEs found no false positive and the one
+preserved defect. This checks documentation consistency only; it does not
+establish that a documented command reproduces the delivered geometry.
+Frozen runs keep their exact materialized tools.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead

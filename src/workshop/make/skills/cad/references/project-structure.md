@@ -181,6 +181,12 @@ targets. What a manifest would carry
 lives in prose instead — the spec owns design intent and the dimension ledger,
 the README owns the file map and the rebuild commands. Both are read by the
 next agent, so keep them current the way you would keep a manifest current.
+Keeping them current is checked, not assumed: `verify_project` (print-preflight
+and final) refuses when the README or a `*_spec.md` names a `<name>.step.py`
+entry that does not exist in the project, because a file map or rebuild command
+that cites a removed entry fails on the reader's first command. Wildcards such
+as `part_*.step.py` and placeholders such as `<name>.step.py` are prose and are
+not checked. Delete the stale name or restore the entry; do not leave both.
 
 **The JSON in a project is output, never input.** A measurement ledger under
 `measure/` and the descriptors inside `__cadgen__/` are both records of
