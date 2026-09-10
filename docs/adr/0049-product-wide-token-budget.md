@@ -12,6 +12,10 @@ pricing table or dollar estimate participates in enforcement.
 
 On 2026-09-09 the explicitly selectable maximum was raised to 200,000,000
 tokens. The default remains 30,000,000 and existing saved caps do not change.
+On 2026-09-10 the supported maximum was raised again to 500,000,000 tokens.
+The 30,000,000 default and previously saved limits remain unchanged; an
+explicit `resume --max-tokens 500000000` updates the total cap while preserving
+all recovered prior usage. Values above 500,000,000 are refused.
 
 The default was raised from 10M to 30M on 2026-09-07 after Crosscurrent's
 verified digital package used 17,724,704 tokens before publication. This gives
