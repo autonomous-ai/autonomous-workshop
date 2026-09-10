@@ -106,6 +106,37 @@ The existing Alice and Bob connections were preserved.
 
 ## Runs
 
-Pending launch after the first implementation's targeted checks. Add actual
-product ids, source revision, status, commands and observed defects here; no
-launch or success is implied by the command list above.
+Initial implementation: `13e6468c`. First live startup correction: `0556b83d`.
+All six successful initializations below froze the corrected source on
+2026-09-10. Each command is the corresponding Wish command above; each uses
+Spark, `gpt-6-astra`, ultra, and a 100,000,000-token product limit.
+
+| Pilot | Inventor | Run id | Initial observation |
+|---|---|---|---|
+| Harbor Relay Pinball | Arlo | `wish-20260910-143655-4d851b36` | Make active; native tools and specialist work observed |
+| Cloudline Coaster | Lila | `wish-20260910-143717-dbe8ad47` | Make active; native tools observed |
+| Switchyard Relay | Arlo | `wish-20260910-143721-492a87cb` | Make active; native tools observed |
+| Rainmark Studio | Lila | `wish-20260910-143744-c4614e19` | Make active; native tools observed |
+| Liltwing Flight Garden | Lila | `wish-20260910-143749-b20aacdc` | Make active; native tools observed |
+| Atlas Vault | Neri | `wish-20260910-143753-a2e10997` | Make active; native tools observed |
+
+At 14:39 UTC the pinball's ordinary CLI `status --json` confirmed Spark,
+Astra, ultra, a 100M allowance, an active Make checkpoint and observed usage
+across the native root and two descendant sessions. Publication had not started.
+Initialization is not a completed product or publication claim.
+
+### Live issue 1: native input scanner rejected harmless source
+
+The first pinball invocation at revision `13e6468c` printed
+`wish-20260910-143515-e96ebbd6`, then failed initialization with
+`agent artifact contains credential-shaped content`. No native session started;
+`status` correctly reported no saved workspace.
+
+The actual shipped manufacturing validator had a URL check ending in
+`parsed.password:`. The unchanged host scanner read the attribute/colon and
+following source as a possible keyed secret. Rewrote the check to use explicit
+`is not None`, which also rejects empty URL userinfo. Added a regression that
+sends every actual packaged domain-skill file through the native input scanner.
+The scanner was not relaxed or bypassed. All 41 affected contract, packaging
+and finalizer checks passed. Retried the same documented Wish command at
+`0556b83d`; initialization and the native Make session started successfully.

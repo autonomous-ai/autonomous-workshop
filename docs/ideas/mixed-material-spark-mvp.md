@@ -65,8 +65,8 @@ combinations and craft methods; Workshop products must have original designs.
 
 ## Proposed original pilot collection
 
-**Portfolio status: planned; no pilot has been launched, fabricated or tested
-under this brief.** The MVP is a collection of compelling interactive products,
+**Portfolio status: all six pilots launched through the CLI; Make work is in
+progress. None is yet claimed fabricated or physically tested.** The MVP is a collection of compelling interactive products,
 not a collection of material demonstrations. Each starts from a successful
 play/mechanism category and seeks an original interaction, silhouette and repeat
 play loop. “Stronger than the reference” is an ambition until comparable physical
