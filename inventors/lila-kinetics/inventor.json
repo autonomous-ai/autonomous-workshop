@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "a7c44038ad396285bf4773fafa50e150e165853bd12199e98003378519fc3932",
+      "kind": "codex-skill",
+      "name": "lila-kinetics-inventor",
+      "path": "skills/lila-kinetics-inventor"
+    }
+  ],
+  "id": "lila-kinetics",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "9b19990fce6252b6d80d17f480c228aa207fee8641eb0e8da726a1880fb76bac",
+      "kind": "codex-skill",
+      "name": "arlo-playfield-inventor",
+      "path": "skills/arlo-playfield-inventor"
+    }
+  ],
+  "id": "arlo-playfield",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

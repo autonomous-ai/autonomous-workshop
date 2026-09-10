@@ -1581,6 +1581,26 @@ class DaydreamCommandTest(unittest.TestCase):
         lease.assert_not_called()
         self.assertIn("workshop login", stderr.getvalue())
 
+    def test_login_reuses_selected_saved_account_without_browser(self):
+        output = StringIO()
+        with mock.patch("cli.main.reuse_factory_credentials", return_value=(self.home / "credentials/inventors/new-craft.env", "dee")) as reuse, mock.patch("cli.main._browser_login") as browser, redirect_stdout(output), redirect_stderr(StringIO()):
+            result = main(("login", "new-craft", "--reuse-from", "bob"))
+        self.assertEqual(result, 0)
+        reuse.assert_called_once_with("bob", "new-craft")
+        browser.assert_not_called()
+        self.assertIn("Connected new-craft to @dee.", output.getvalue())
+        self.assertNotIn("FACTORY_PASSWORD", output.getvalue())
+
+    def test_login_reuse_failure_does_not_open_browser_or_report_connected(self):
+        from workshop.errors import ContractError
+        output, error = StringIO(), StringIO()
+        with mock.patch("cli.main.reuse_factory_credentials", side_effect=ContractError("source credential unavailable")), mock.patch("cli.main._browser_login") as browser, redirect_stdout(output), redirect_stderr(error):
+            result = main(("login", "new-craft", "--reuse-from", "missing"))
+        self.assertEqual(result, 2)
+        browser.assert_not_called()
+        self.assertNotIn("Connected", output.getvalue())
+        self.assertIn("source credential unavailable", error.getvalue())
+
     def test_login_opens_browser_and_stores_the_generated_credential(self):
         mock.patch.stopall()
         environment = mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(self.home)})
@@ -1907,6 +1927,33 @@ class PersonaCommandTest(unittest.TestCase):
                 0,
             )
         login.assert_called_once_with("mira", mock.ANY)
+
+    def test_local_inventor_creation_needs_no_account_or_external_effect(self):
+        with tempfile.TemporaryDirectory() as temporary, mock.patch(
+            "cli.main._ensure_publishing_account"
+        ) as account, mock.patch("cli.main._browser_login") as login:
+            output = StringIO()
+            with redirect_stdout(output), redirect_stderr(StringIO()):
+                result = main(("create", "inventor", "craft-fable", "--description",
+                    "mixed-material mechanical stories", "--local-only", "--root", temporary, "--json"))
+            self.assertEqual(result, 0)
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(receipt["publishing_account"], "not-checked")
+            self.assertEqual(receipt["validation"], "static-passed")
+            self.assertEqual(receipt["status"], "experimental")
+            self.assertTrue((Path(temporary) / "inventors/craft-fable/inventor.json").is_file())
+            account.assert_not_called()
+            login.assert_not_called()
+
+    def test_local_inventor_creation_still_rejects_invalid_bundle_input(self):
+        with tempfile.TemporaryDirectory() as temporary, mock.patch(
+            "cli.main._ensure_publishing_account"
+        ) as account, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("create", "inventor", "invalid/id", "--description",
+                "mixed-material toys", "--local-only", "--root", temporary, "--json"))
+            self.assertEqual(result, 2)
+            self.assertEqual(list((Path(temporary) / "inventors").iterdir()), [])
+            account.assert_not_called()
 
     def test_create_inventor_validates_root_before_browser_login(self):
         with tempfile.TemporaryDirectory() as temporary, mock.patch(

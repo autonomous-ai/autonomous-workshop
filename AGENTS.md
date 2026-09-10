@@ -125,7 +125,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0061-spark-make-owned-verification.md`, and
 `docs/adr/0062-step-only-cad-toolchain.md`, and
 `docs/adr/0063-print-gates-on-source.md`, and
-`docs/adr/0064-operator-selected-turn-boundary.md` before changing the CLI, runtime,
+`docs/adr/0064-operator-selected-turn-boundary.md`, and
+`docs/adr/0064-spark-mixed-material-products.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -178,6 +179,14 @@ none of them: a run that does not ask keeps the exact boundary it froze. It
 bounds a wall clock only; no gate, review, round or token allowance moves.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
+
+ADR 0064 adds an optional Spark Make manufacturing manifest for complete
+mixed-material products assembled by Autonomous staff. Make owns structural
+validation and printed-subset engineering; the host only seals identity and
+publishes the explicit public presentation. Never upload the private BOM,
+sourcing, fabrication instructions, source or old internal attempts merely
+because they belong to the accepted Made tree. Unmarked runs retain their
+existing behavior, and digital evidence never establishes physical production.
 
 ## Repository ownership
 

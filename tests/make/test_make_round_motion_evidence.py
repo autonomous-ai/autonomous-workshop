@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from tests.make.test_make_round import _gate_output, fake_visual_render, load_module, record_fixture_visual_pass
+from tests.make.test_make_round import _gate_output, _install_gate_identity, fake_visual_render, load_module, record_fixture_visual_pass
 
 
 class MakeRoundMotionEvidenceTest(unittest.TestCase):
@@ -19,8 +19,8 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             root = Path(directory)
             project = root / "product"
             project.mkdir()
-            (project / "toy.step.py").write_text("# never executed by these fake tools\n")
-            (project / "part_body.step.py").write_text("# deterministic fake export\n")
+            (project / "toy.step.py").write_text("def gen_step(): pass\n")
+            (project / "part_body.step.py").write_text("def gen_step(): pass\n")
             measure = project / "measure"
             measure.mkdir()
             (measure / "motion.json").write_text("{}\n")
@@ -28,6 +28,7 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             cad = skills / "cad" / "scripts"
             cad.mkdir(parents=True)
             (cad / "gen").write_text("# fake generator identity\n")
+            _install_gate_identity(skills)
             (skills / "image-to-cad" / "scripts").mkdir(parents=True)
             calls = []
 

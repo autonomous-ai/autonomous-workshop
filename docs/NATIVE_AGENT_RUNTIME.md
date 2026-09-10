@@ -64,6 +64,15 @@ CAD or require a separate manual-design review. Handoff receipts say host CAD
 verification and manual review were **not run**, not that omitted checks passed.
 See [ADR 0061](adr/0061-spark-make-owned-verification.md).
 
+New Spark Make products can bind an internal mixed-material manufacturing
+manifest. Make validates complete-assembly occurrence coverage, fabrication and
+sourcing references, and the explicitly printed subset. The full package stays
+private; Spark Publish transports only its hash-bound public presentation,
+including exact complete-scene and hero copies. This is a finished-product
+workflow for Autonomous's workshop staff. See
+[ADR 0064](adr/0064-spark-mixed-material-products.md) for the compatibility and
+disclosure boundary. Digital checks do not establish physical assembly or play.
+
 New marked Spark runs select the inventor in Workshop setup before Make. A user
 override binds without a model turn; automatic selection resumes the same native
 session into Make after the choice is durable. Spark publication uses schema 4

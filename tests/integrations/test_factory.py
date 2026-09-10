@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 import zipfile
+from tests.release.public_projection_fixture import PRIVATE_SENTINEL, add_public_presentation
 from email.parser import BytesParser
 from email.policy import default as email_policy
 from pathlib import Path, PurePosixPath
@@ -871,6 +872,113 @@ class FactoryReleaseTest(unittest.TestCase):
             self.writer(FactoryTransport(include_thumbnails=False))(
                 self.context, self.release, self.manifest
             )
+
+    def _use_public_presentation(self, *, hero_name="hero.png"):
+        from workshop.release.native import make_public_projection
+
+        root = self.made.artifact_root
+        marker = add_public_presentation(root)
+        if hero_name != "hero.png":
+            content = b"\xff\xd8\xff" + b"finished-product-image"
+            (root / "public" / hero_name).write_bytes(content)
+            path = root / "internal/manufacturing.json"
+            manifest = json.loads(path.read_bytes())
+            manifest["public_assets"] = [item for item in manifest["public_assets"] if item["path"] != "public/hero.png"] + [{"path": "public/" + hero_name, "sha256": hashlib.sha256(content).hexdigest()}]
+            path.write_bytes(canonical_json(manifest))
+            marker["manifest_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+        product = dict(self.made.product)
+        product.update(manufacturing=marker, private_supplier=PRIVATE_SENTINEL.decode())
+        (root / "product.json").write_bytes(canonical_json(product))
+        self._reseal_product(product)
+        self.context.wish = Wish.create("verified-toy", PRIVATE_SENTINEL.decode())
+        self.use_make_output_release()
+        self.page["public_projection"] = make_public_projection(root, product)
+        anchor = canonical_json(self.page)
+        (self.release / "product.json").write_bytes(anchor)
+        self.manifest = build_artifact_manifest(self.release, created_at="content-addressed")
+        return anchor
+
+    def test_mixed_material_projection_uploads_complete_scene_without_manufacturing(self):
+        anchor = self._use_public_presentation()
+        before = build_artifact_manifest(self.made.artifact_root, created_at="content-addressed")
+        transport = FactoryTransport(include_thumbnails=False)
+
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(200, {"Content-Type": "application/json"}, anchor)
+            return transport(method, url, headers, body, timeout)
+
+        with mock.patch("workshop.integrations.factory._posed_provider", side_effect=AssertionError("no CAD rebuild")), mock.patch("workshop.integrations.factory.key_parts", side_effect=AssertionError("no CAD keying")):
+            draft = self.writer(send)(self.context, self.release, self.manifest)
+            public = FactoryPublicTransition(self.ledger, FactoryAgentSession(FactoryAgentCredentials("alice", "test-secret"), transport=send)).publish(draft)
+        self.assertTrue(public.is_verified_public)
+        image_sha = hashlib.sha256((self.made.artifact_root / "public/hero.png").read_bytes()).hexdigest()
+        self.assertEqual(public.details["public_cover_mapping"], {"source_path": "public/hero.png", "archive_path": "assembled_review/_assembled.png", "sha256": image_sha})
+        self.assertEqual(public.details["cover_render_sha256"], image_sha)
+        self.assertEqual(public.details["public_primary_mapping"], {"source_path": "public/assembled.step", "archive_path": "assembled.step", "sha256": hashlib.sha256(TETRA_STEP).hexdigest()})
+        imported = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        content = multipart_parts(imported[2], imported[3])["file"][0]
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            self.assertEqual(set(archive.namelist()), {"assembled.step", "public/assembled.step", "public/hero.png", "assembled_review/_assembled.png", "project.json", "_inventor-artifact.json", "workshop-product-facts.json", "workshop-release-page.json", "000_workshop_import_root.py"})
+            self.assertEqual(archive.read("assembled.step"), TETRA_STEP)
+            self.assertEqual(archive.read("assembled_review/_assembled.png"), archive.read("public/hero.png"))
+            for path in ("public/assembled.step", "public/hero.png"):
+                self.assertEqual(archive.read(path), (self.made.artifact_root / path).read_bytes())
+            for path in archive.namelist():
+                self.assertNotIn(PRIVATE_SENTINEL, archive.read(path))
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertNotIn("wish", facts)
+            self.assertEqual(set(facts["product"]), {"title", "summary"})
+            self.assertEqual(facts["source_artifact_sha256"], self.made.artifact_sha256)
+        self.assertEqual(build_artifact_manifest(self.made.artifact_root, created_at="content-addressed"), before)
+
+    def test_mixed_material_cover_alias_preserves_jpeg_format_and_bytes(self):
+        anchor = self._use_public_presentation(hero_name="finished.jpg")
+        transport = FactoryTransport(include_thumbnails=False)
+
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(200, {"Content-Type": "application/json"}, anchor)
+            return transport(method, url, headers, body, timeout)
+
+        draft = self.writer(send)(self.context, self.release, self.manifest)
+        self.assertEqual(draft.details["public_cover_mapping"]["archive_path"], "assembled_review/_assembled.jpg")
+        imported = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        content = multipart_parts(imported[2], imported[3])["file"][0]
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            self.assertEqual(archive.read("assembled_review/_assembled.jpg"), archive.read("public/finished.jpg"))
+            self.assertNotIn("public/hero.png", archive.namelist())
+            self.assertNotIn("assembled_review/_assembled.png", archive.namelist())
+
+    def test_mixed_material_projection_rejects_resealed_public_asset_tampering(self):
+        self._use_public_presentation()
+        (self.made.artifact_root / "public/hero.png").write_bytes(b"\x89PNG\r\n\x1a\nchanged")
+        self._reseal_product()
+        transport = FactoryTransport()
+        with self.assertRaisesRegex(ContractError, "sha256 differs"):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertFalse(any(call[1].endswith("/designs/import") for call in transport.calls))
+
+    def test_mixed_material_projection_refuses_missing_release_binding(self):
+        self._use_public_presentation()
+        self.page.pop("public_projection")
+        (self.release / "product.json").write_bytes(canonical_json(self.page))
+        self.manifest = build_artifact_manifest(self.release, created_at="content-addressed")
+        transport = FactoryTransport()
+        with self.assertRaisesRegex(ContractError, "projection differs"):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertFalse(any(call[1].endswith("/designs/import") for call in transport.calls))
+
+    def test_malformed_manufacturing_marker_cannot_fall_back_to_full_tree_upload(self):
+        product = dict(self.made.product)
+        product["manufacturing"] = None
+        (self.made.artifact_root / "product.json").write_bytes(canonical_json(product))
+        self._reseal_product(product)
+        self.use_make_output_release()
+        transport = FactoryTransport()
+        with self.assertRaisesRegex(ContractError, "manufacturing"):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertFalse(any(call[1].endswith("/designs/import") for call in transport.calls))
 
     def test_make_output_rejects_changed_public_anchor(self):
         self.use_make_output_release()

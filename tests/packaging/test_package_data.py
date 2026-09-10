@@ -68,6 +68,7 @@ class PackageDataTest(unittest.TestCase):
                 "electromechanical-integration",
                 "image-to-cad",
                 "make-round",
+                "mixed-materials",
                 "manual-design",
                 "step-parts",
             },
@@ -79,6 +80,7 @@ class PackageDataTest(unittest.TestCase):
             "electromechanical-integration": "make",
             "image-to-cad": "make",
             "make-round": "make",
+            "mixed-materials": "make",
             "manual-design": "release",
             "step-parts": "make",
         }

@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from tests.make.test_make_round import _gate_output, fake_visual_render, load_module, record_fixture_visual_pass
+from tests.make.test_make_round import _gate_output, _install_gate_identity, fake_visual_render, load_module, record_fixture_visual_pass
 
 
 class MakeRoundPoseEvidenceTest(unittest.TestCase):
@@ -20,11 +20,12 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
             root = Path(tmp)
             project = root / "product"
             project.mkdir()
-            (project / "toy.step.py").write_text("# fake source\n")
+            (project / "toy.step.py").write_text("def gen_step(): pass\n")
             skills = root / "skills"
             cad = skills / "cad/scripts"
             cad.mkdir(parents=True)
             (cad / "gen").write_text("# fake generator\n")
+            _install_gate_identity(skills)
             (skills / "image-to-cad/scripts").mkdir(parents=True)
             refs = []
             for label in ("hero", "side"):
@@ -173,4 +174,3 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

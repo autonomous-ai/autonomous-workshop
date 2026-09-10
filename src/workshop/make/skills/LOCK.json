@@ -3,7 +3,7 @@
   "schema_version": 1,
   "skills": {
     "cad": {
-      "sha256": "ab620f6df5769f1ca51526b82540af2394bc65f177b9f36e1135c435c5250b40",
+      "sha256": "e43eb4eeb9e2d124a2776c645d77c3f4297d0edb270993fde0c1cc153fda5f14",
       "source_commit": "facbc582ceee2b73e655711afa112e9bf10d7592",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
@@ -23,8 +23,12 @@
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "make-round": {
-      "sha256": "e6835f692499b0fd837128695d5b9fdcd237bc92b93c32a1ce3079cecb3832fa",
+      "sha256": "479e04a4fbe3325383cb9186541fab491e7769c0e708db4eb42ab7bfe01f4a55",
       "source_commit": "db64280a9ee12f3d3e8a728c64906f00a456c150",
+      "source_url": "https://github.com/autonomous-ai/autonomous-workshop"
+    },
+    "mixed-materials": {
+      "sha256": "62974bb4dcd84ffadcc59219491466cf37229e73a25002c7c55ecd7f506fae50",
       "source_url": "https://github.com/autonomous-ai/autonomous-workshop"
     },
     "step-parts": {

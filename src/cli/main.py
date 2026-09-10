@@ -58,6 +58,7 @@ from workshop.runtime.credentials import (
     factory_credential_environment,
     factory_service_credential_environment,
     store_factory_credentials,
+    reuse_factory_credentials,
 )
 from workshop.runtime.codex import (
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
@@ -781,9 +782,13 @@ def _dream_or_load(
 
 
 def _login(args: argparse.Namespace) -> int:
-    """Explicitly start the same browser authorization used by create/start."""
+    """Connect through browser authorization or reuse an exact saved account."""
 
-    _browser_login(args.inventor, sys.stdout)
+    if args.reuse_from is not None:
+        _, username = reuse_factory_credentials(args.reuse_from, args.inventor)
+        print("Connected %s to @%s." % (args.inventor, username))
+    else:
+        _browser_login(args.inventor, sys.stdout)
     print("Next: %s" % _shell_command("workshop", "start", args.inventor))
     return 0
 
@@ -1450,7 +1455,8 @@ def _create_inventor(args: argparse.Namespace) -> int:
         name = _default_inventor_name(inventor_id)
     collection = prepare_inventor_collection(args.root)
     progress = sys.stderr if args.json else sys.stdout
-    _ensure_publishing_account(inventor_id, progress)
+    if not args.local_only:
+        _ensure_publishing_account(inventor_id, progress)
     destination = create_inventor(
         collection,
         inventor_id,
@@ -1478,6 +1484,7 @@ def _create_inventor(args: argparse.Namespace) -> int:
         "manifest_sha256": manifest_sha256,
         "skills": [extension.to_dict() for extension in manifest.extensions],
         "validation": "static-passed",
+        **({"publishing_account": "not-checked"} if args.local_only else {}),
     }
     if args.json:
         _print_json(receipt)
@@ -1486,6 +1493,8 @@ def _create_inventor(args: argparse.Namespace) -> int:
         print("Taste: %s" % (destination / "TASTE.md"))
         print("Skill: %s" % (destination / manifest.extensions[0].path / "SKILL.md"))
         print("Checks: static-passed")
+        if args.local_only:
+            print("Created locally. Publishing account setup was not requested.")
         print("Next: %s" % _shell_command("workshop", "start", manifest.inventor_id))
     return 0
 
@@ -1779,6 +1788,10 @@ def parser() -> argparse.ArgumentParser:
         metavar="INVENTOR",
         help="Inventor id to connect, such as pico-press",
     )
+    login.add_argument(
+        "--reuse-from", metavar="INVENTOR",
+        help="authenticate and reuse this Inventor's saved account without browser login",
+    )
     login.set_defaults(handler=_login)
 
     stop = subcommands.add_parser(
@@ -1999,6 +2012,10 @@ def parser() -> argparse.ArgumentParser:
         help="routing boundary for a generated Taste (required without --taste)",
     )
     inventor.add_argument("--root", type=Path, default=Path.cwd())
+    inventor.add_argument(
+        "--local-only", action="store_true",
+        help="create and validate the local bundle without connecting a publishing account",
+    )
     inventor.add_argument("--json", action="store_true")
     inventor.set_defaults(handler=_create_inventor)
 

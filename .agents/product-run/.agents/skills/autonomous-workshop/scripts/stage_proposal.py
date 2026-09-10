@@ -2105,6 +2105,29 @@ def _validate_signature_review(
             raise ProposalError("Make motion presentation is invalid: %s" % exc) from exc
 
 
+def _validate_manufacturing_manifest(
+    run_root: Path,
+    product_root: Path,
+    product: Mapping[str, Any],
+    inputs: Mapping[str, Any],
+    cad_project_path: str,
+) -> None:
+    """Validate an explicitly opted-in Spark build with its frozen Make tool."""
+    if "manufacturing" not in product:
+        return
+    if inputs.get("creative_source_required") is not True:
+        raise ProposalError("mixed-material manufacturing is supported by Spark Make only")
+    relative = ".agents/skills/mixed-materials/scripts/manufacturing_manifest.py"
+    # Older materialized runs have no such helper. Loading it only behind the
+    # new declaration preserves their original finalizer behavior.
+    _read_regular(run_root, relative, "mixed-material Make validator", maximum=512 * 1024)
+    try:
+        validator = runpy.run_path(str(run_root / relative))["validate_manifest"]
+        validator(product_root, product, cad_project_path=cad_project_path)
+    except (ValueError, OSError, TypeError) as exc:
+        raise ProposalError("Make manufacturing manifest is invalid: %s" % exc) from exc
+
+
 def _make_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -2185,6 +2208,9 @@ def _make_contract(
     product = _mapping(product_document, "Make product.json", nonempty=True)
     _bounded_text(product.get("title"), "Make product title", 2_000)
     _bounded_text(product.get("summary"), "Make product summary", 2_000)
+    _validate_manufacturing_manifest(
+        run_root, product_root, product, inputs, project_relative.as_posix()
+    )
     verification_sha256, _, _ = _hash_regular(
         run_root,
         "%s/%s" % (product_root_value, verification_relative.as_posix()),

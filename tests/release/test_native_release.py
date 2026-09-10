@@ -9,6 +9,7 @@ import zlib
 from dataclasses import replace
 from pathlib import Path
 from unittest import mock
+from tests.release.public_projection_fixture import PRIVATE_SENTINEL, add_public_presentation
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError, ReceiptError, StateConflict
@@ -1856,6 +1857,110 @@ class NativeReleaseTest(unittest.TestCase):
             ),
             target,
         )
+
+    def _mixed_material_archive_inputs(self, *, public_readme=False):
+        root = self.run_root / self.made.product_root
+        scene = b"ISO-10303-21;\nHEADER;ENDSEC;DATA;ENDSEC;END-ISO-10303-21;\n"
+        (root / "assembled.step").write_bytes(scene)
+        marker = add_public_presentation(root, public_readme=public_readme)
+        product = self.made.to_dict()["product"]
+        product["cad"]["assembled_step"] = {"path": "assembled.step", "bytes": len(scene), "sha256": _sha(scene)}
+        product.update(manufacturing=marker, private_supplier=PRIVATE_SENTINEL.decode())
+        product_bytes = _canonical(product)
+        (root / "product.json").write_bytes(product_bytes)
+        self.made = replace(self.made, product=product, product_json_sha256=_sha(product_bytes), product_manifest=build_artifact_manifest(root, created_at="content-addressed"))
+        (self.run_root / "artifacts/make/r0001/made.json").write_bytes(_canonical(self.made.to_dict()))
+        release, repository, receipt = self._make_output_archive_inputs()
+        from workshop.release.native import public_cover_mapping
+        primary = release.product["public_projection"]["primary_model"]
+        cover = public_cover_mapping(release.product["public_projection"])
+        receipt = replace(receipt, details={**receipt.details, "public_primary_mapping": {"source_path": primary["path"], "archive_path": "assembled.step", "sha256": primary["sha256"]}, "public_cover_mapping": cover, "cover_render_sha256": cover["sha256"]})
+        return release, repository, receipt
+
+    def test_mixed_material_release_does_not_select_private_readme(self):
+        release, _, _ = self._mixed_material_archive_inputs()
+        self.assertIsNone(release.manual_path)
+        self.assertIsNone(release.product["source_document"])
+        self.assertEqual({entry.path for entry in release.package_manifest.entries}, {"product.json", "PLAYTEST-NOT-RUN.json"})
+        self.assertEqual(release.validate_package_tree(self.run_root, self.made, None).made.artifact_manifest, self.made.product_manifest)
+
+    def test_mixed_material_release_reuses_only_explicit_public_readme(self):
+        release, _, _ = self._mixed_material_archive_inputs(public_readme=True)
+        self.assertEqual(release.product["source_document"]["source_path"], "public/README.md")
+        self.assertEqual((self.run_root / release.package_root / "README.md").read_bytes(), (self.run_root / self.made.product_root / "public/README.md").read_bytes())
+
+    def test_mixed_material_public_archive_omits_private_bom_and_all_build_history(self):
+        release, repository, receipt = self._mixed_material_archive_inputs(public_readme=True)
+        before = self.made.validate_product_tree(self.run_root).artifact_manifest
+        # Even a historical source containing sensitive text must never enter
+        # the public presentation through the normal workflow-archive copier.
+        (self.run_root / "artifacts/make/r0001/private-attempt.md").write_bytes(PRIVATE_SENTINEL)
+        with mock.patch("workshop.release.public_example.write_public_workflow_archive", side_effect=AssertionError("private workflow history must not be exported")):
+            target = materialize_public_example(repository, self.run_root, release=release, made=self.made, inventor_id="eve", receipt=receipt, effort="spark", disclose_exact_wish=True)
+        self.assertEqual({path.relative_to(target).as_posix() for path in target.rglob("*") if path.is_file()}, {"public/assembled.step", "public/hero.png", "public/README.md", "workshop-release-page.json", "PUBLICATION.json", "README.md", "MANIFEST.json"})
+        for path in target.rglob("*"):
+            if path.is_file():
+                self.assertNotIn(PRIVATE_SENTINEL, path.read_bytes())
+        for item in release.product["public_projection"]["files"]:
+            self.assertEqual((target / item["path"]).read_bytes(), (self.run_root / self.made.product_root / item["path"]).read_bytes())
+        self.assertEqual(self.made.validate_product_tree(self.run_root).artifact_manifest, before)
+        self.assertEqual(json.loads((target / "MANIFEST.json").read_bytes())["artifact_manifest"], build_public_archive_manifest(target).to_dict())
+        self.assertEqual(materialize_public_example(repository, self.run_root, release=release, made=self.made, inventor_id="eve", receipt=receipt, effort="spark"), target)
+
+    def test_mixed_material_public_archive_requires_exact_scene_alias_receipt(self):
+        release, repository, receipt = self._mixed_material_archive_inputs()
+        receipt = replace(receipt, details={**receipt.details, "public_primary_mapping": {"source_path": "private.step", "archive_path": "assembled.step", "sha256": "a" * 64}})
+        with self.assertRaisesRegex(StateConflict, "scene differs"):
+            materialize_public_example(repository, self.run_root, release=release, made=self.made, inventor_id="eve", receipt=receipt, effort="spark")
+        self.assertEqual(list((repository / "toys").iterdir()), [])
+
+    def test_mixed_material_public_cover_prefers_hero_then_declaration_order(self):
+        from workshop.release.native import make_public_projection, public_cover_mapping
+        self._mixed_material_archive_inputs()
+        root = self.run_root / self.made.product_root
+        product = self.made.to_dict()["product"]
+        path = root / "internal/manufacturing.json"
+        manifest = json.loads(path.read_bytes())
+        extras = []
+        for name in ("zeta.png", "alpha.png"):
+            content = b"\x89PNG\r\n\x1a\n" + name.encode()
+            (root / "public" / name).write_bytes(content)
+            extras.append({"path": "public/" + name, "sha256": _sha(content)})
+        manifest["public_assets"] = extras + manifest["public_assets"]
+        for keep_hero, expected in ((True, "public/hero.png"), (False, "public/zeta.png")):
+            with self.subTest(keep_hero=keep_hero):
+                if not keep_hero:
+                    manifest["public_assets"] = [item for item in manifest["public_assets"] if item["path"] != "public/hero.png"]
+                content = _canonical(manifest)
+                path.write_bytes(content)
+                product["manufacturing"]["manifest_sha256"] = _sha(content)
+                projection = make_public_projection(root, product)
+                self.assertEqual(projection["primary_image"]["path"], expected)
+                self.assertEqual(public_cover_mapping(projection), {"source_path": expected, "archive_path": "assembled_review/_assembled.png", "sha256": _sha((root / expected).read_bytes())})
+
+    def test_mixed_material_public_archive_requires_exact_cover_receipt(self):
+        release, repository, receipt = self._mixed_material_archive_inputs()
+        receipt = replace(receipt, details={**receipt.details, "cover_render_sha256": "a" * 64})
+        with self.assertRaisesRegex(StateConflict, "cover differs"):
+            materialize_public_example(repository, self.run_root, release=release, made=self.made, inventor_id="eve", receipt=receipt, effort="spark")
+        self.assertEqual(list((repository / "toys").iterdir()), [])
+
+    def test_mixed_material_private_history_export_refuses_direct_caller(self):
+        from workshop.release.public_archive import write_public_workflow_archive
+        release, repository, _ = self._mixed_material_archive_inputs()
+        writer = mock.Mock(side_effect=AssertionError("no private byte may be copied"))
+        with self.assertRaisesRegex(StateConflict, "manufacturing history is private"):
+            write_public_workflow_archive(repository, self.run_root, made=self.made, release=release, title="Public title", summary="Public summary", publication={}, writer=writer, disclose_exact_wish=True)
+        writer.assert_not_called()
+
+    def test_mixed_material_release_rejects_public_asset_and_manifest_tampering(self):
+        release, _, _ = self._mixed_material_archive_inputs()
+        root = self.run_root / self.made.product_root
+        (root / "public/hero.png").write_bytes(b"\x89PNG\r\n\x1a\nchanged")
+        with self.assertRaises((ContractError, ArtifactError)):
+            release.validate_package_tree(self.run_root, self.made, None)
+        with self.assertRaises((ContractError, ArtifactError)):
+            prepare_make_output_release(self.run_root, self.made)
 
     def test_public_archive_make_output_needs_no_readme_or_pdf(self):
         release, repository, receipt = self._make_output_archive_inputs(with_readme=False)

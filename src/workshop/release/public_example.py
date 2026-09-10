@@ -35,8 +35,10 @@ from workshop.release.native import (
     NATIVE_RELEASE_LEGACY_MANUAL_PATH,
     NATIVE_RELEASE_MANUAL_PATH,
     NativeRelease,
+    make_public_projection,
+    public_cover_mapping,
 )
-from workshop.release.public_archive import write_public_workflow_archive
+from workshop.release.public_archive import build_public_archive_manifest, write_public_workflow_archive
 from workshop.runtime import Receipt
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
@@ -1171,6 +1173,86 @@ def _copy_model(
     }
 
 
+def _install_public_snapshot(staging: Path, toys: Path, target: Path) -> Path:
+    if fcntl is None:
+        raise StateConflict("public example publication requires POSIX locking")
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(str(toys), flags)
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        if target.exists() or target.is_symlink():
+            existing = _real_directory(target, "existing public example")
+            if _trees_are_identical(existing, staging):
+                return existing
+            raise StateConflict("public example already exists with different or partial bytes")
+        try:
+            _install_staging_exclusively(staging, parent_descriptor=descriptor, target_name=target.name, target=target)
+        except OSError as exc:
+            raise StateConflict("public example could not be installed without overwrite") from exc
+    finally:
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+        finally:
+            os.close(descriptor)
+    return target
+
+
+def _materialize_public_presentation(
+    toys: Path,
+    target: Path,
+    *,
+    product_root: Path,
+    product_entries: Mapping[str, Any],
+    release: NativeRelease,
+    product_json: bytes,
+    projection: Mapping[str, Any],
+    receipt: Receipt,
+) -> Path:
+    """Publish the sealed customer presentation, without private build history."""
+
+    primary = projection["primary_model"]
+    mapping = {"source_path": primary["path"], "archive_path": "assembled.step", "sha256": primary["sha256"]}
+    if receipt.details.get("primary_model_path") != "assembled.step" or receipt.details.get("primary_model_sha256") != primary["sha256"] or receipt.details.get("public_primary_mapping") != mapping:
+        raise StateConflict("public Factory scene differs from the Make presentation")
+    cover_mapping = public_cover_mapping(projection)
+    if receipt.details.get("public_cover_mapping") != cover_mapping or receipt.details.get("cover_render_sha256") != cover_mapping["sha256"]:
+        raise StateConflict("public Factory cover differs from the Make presentation")
+    staging = Path(tempfile.mkdtemp(prefix=".public-example-", dir=str(toys))).resolve(strict=True)
+    try:
+        for item in projection["files"]:
+            content = _bound_bytes(product_root, product_entries, item["path"], label="public presentation asset")
+            if hashlib.sha256(content).hexdigest() != item["sha256"]:
+                raise StateConflict("public presentation asset differs from its declared bytes")
+            _write_public_file(staging, item["path"], content)
+        _write_public_file(staging, "workshop-release-page.json", product_json)
+        page_url = _https_public_url(receipt.details.get("page_url"), "public page URL")
+        publication = {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.public-product-presentation",
+            "page_url": page_url,
+            "product_artifact_sha256": release.product_artifact_sha256,
+            "release_sha256": release.package_manifest.artifact_sha256,
+            "publication_anchor_sha256": release.product_json_sha256,
+            "publication_anchor_readback_sha256": receipt.details["publication_anchor_readback_sha256"],
+            "public_projection": projection,
+            "public_primary_mapping": mapping,
+            "public_cover_mapping": cover_mapping,
+        }
+        _write_public_file(staging, "PUBLICATION.json", _canonical_json(publication))
+        title = " ".join(str(release.product["title"]).split())
+        hero = "![%s](%s)\n\n" % (title, projection["primary_image"]["path"])
+        readme = "# %s\n\n%s%s\n\n[View product](%s).\n\nThis presentation shows the complete product. Publication does not establish physical manufacture or testing.\n" % (title, hero, release.product["summary"], page_url)
+        _write_public_file(staging, "README.md", readme.encode("utf-8"))
+        manifest = build_public_archive_manifest(staging)
+        _write_public_file(staging, "MANIFEST.json", _canonical_json({"schema_version": 1, "kind": "autonomous-workshop.public-product-presentation-manifest", "scope": "all files except MANIFEST.json and README.md", "artifact_manifest": manifest.to_dict()}))
+        for directory in (staging, *(item for item in staging.rglob("*") if item.is_dir())):
+            os.chmod(directory, 0o755)
+        return _install_public_snapshot(staging, toys, target)
+    finally:
+        if staging.exists() and staging != target:
+            shutil.rmtree(staging)
+
+
 def materialize_public_example(
     repository_root: Path,
     run_root: Path,
@@ -1348,6 +1430,15 @@ def materialize_public_example(
             )
 
     target = toys / (inventor_id + "-" + slug)
+    if make_output:
+        projection = make_public_projection(product_root, made_product.product)
+        if release.to_dict()["product"].get("public_projection") != projection:
+            raise StateConflict("public Release projection differs from the exact Made presentation")
+        if projection is not None:
+            return _materialize_public_presentation(
+                toys, target, product_root=product_root, product_entries=product_entries,
+                release=release, product_json=product_json, projection=projection, receipt=receipt,
+            )
     staging = Path(
         tempfile.mkdtemp(prefix=".public-example-", dir=str(toys))
     ).resolve(strict=True)

@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "52cea9d38ff54d28b06de1c9f3398efe49e131ff0cdd805f8a4bd060af3718f3",
+      "kind": "codex-skill",
+      "name": "neri-wonder-inventor",
+      "path": "skills/neri-wonder-inventor"
+    }
+  ],
+  "id": "neri-wonder",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

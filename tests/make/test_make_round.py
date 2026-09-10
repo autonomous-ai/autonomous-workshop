@@ -57,6 +57,11 @@ def _install_gate_identity(project):
     scripts.mkdir(parents=True, exist_ok=True)
     for name in ("check_thickness", "check_overhang", "meshlib.py", "printlib.py"):
         (scripts / name).write_text("# fixture %s\n" % name, encoding="utf-8")
+    # Exercise the real shared, standard-library discovery policy while the
+    # expensive geometry and measurement tools remain deterministic fakes.
+    (scripts / "printlib.py").write_bytes(
+        (product_run_domain_skill_roots()["cad"] / "scripts/printlib.py").read_bytes()
+    )
 
 
 def _gate_output(tool, *, fails):
@@ -98,10 +103,11 @@ class MakeRoundTest(unittest.TestCase):
         overhang_fails=False,
         argv=None,
         calls=None,
+        part_source=None,
     ):
         module = load_module()
         (project / "toy.step.py").write_text("def gen_step(): pass\n")
-        (project / "part_wheel.step.py").write_text("def gen_step(): pass\n")
+        (project / "part_wheel.step.py").write_text(part_source or "def gen_step(): pass\n")
         _install_gate_identity(project)
         def fake_run(command, **kwargs):
             tool = Path(command[1]).name
@@ -244,6 +250,7 @@ class MakeRoundTest(unittest.TestCase):
             project = Path(tmp)
             module = load_module()
             (project / "toy.step.py").write_text("def gen_step(): pass\n")
+            _install_gate_identity(project)
             calls = []
 
             def fake_run(command, **kwargs):
@@ -437,6 +444,109 @@ class MakeRoundTest(unittest.TestCase):
             self.assertIn("--print-gates", command)
             self.assertIn("--nozzle", command)
             self.assertNotIn("--skip-thickness", command)
+
+    def test_thin_nonprinted_card_builds_but_only_printed_body_is_print_gated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / "part_card.step.py").write_text(
+                "PRINTABLE = False\nTHICKNESS_MM = 0.2\ndef gen_step(): pass\n"
+            )
+            calls = []
+            module, summary = self._round(project, calls=calls)
+            self.assertTrue(summary["checks_ok"])
+            self.assertEqual(set(summary["build"]), {"card", "wheel"})
+            self.assertEqual(summary["print_targets"], ["wheel"])
+            self.assertEqual(summary["nonprinted"], ["card"])
+            self.assertNotIn("card", summary["print"])
+            self.assertIn("nonprinted component", module.render_summary(summary))
+            built = [Path(command[2]).name for command in calls if Path(command[1]).name == "gen"]
+            self.assertEqual(built, ["part_card.step.py", "part_wheel.step.py"])
+            gated = [Path(command[2]).name for command in calls if Path(command[1]).name in ("check_thickness", "check_overhang")]
+            self.assertEqual(gated, ["part_wheel.step.py", "part_wheel.step.py"])
+
+    def test_no_printed_components_omit_final_print_gates_and_print_ready_claim(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            calls = []
+            module, summary = self._round(
+                project, calls=calls,
+                part_source="PRINTABLE = False\nTHICKNESS_MM = 0.2\ndef gen_step(): pass\n",
+            )
+            self.assertTrue(summary["checks_ok"])
+            self.assertEqual(summary["print"], {})
+            self.assertEqual(summary["print_targets"], [])
+            self.assertEqual(summary["nonprinted"], ["wheel"])
+            self.assertFalse(any(Path(command[1]).name.startswith("check_") for command in calls))
+            with mock.patch.object(module, "skills_root", return_value=project), mock.patch.object(
+                module, "run", return_value=subprocess.CompletedProcess([], 0, "", "")
+            ) as runner:
+                result = module.record_visual(project, self._feedback(project, summary), full=True)
+            command = runner.call_args.args[0]
+            self.assertNotIn("--print-gates", command)
+            self.assertNotIn("--nozzle", command)
+            self.assertTrue(result["ok"])
+            self.assertFalse(result["full"]["print_gates_ran"])
+            self.assertFalse(result["full"]["print_ready_claim"])
+
+    def test_nonprinted_build_failure_still_blocks_round_without_fabricating_print_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(
+                project, build_fails=True,
+                part_source="PRINTABLE = False\ndef gen_step(): pass\n",
+            )
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual(summary["build"]["wheel"]["verdict"], "FAIL")
+            self.assertEqual(summary["print"], {})
+            self.assertEqual(summary["nonprinted"], ["wheel"])
+
+    def test_printable_flag_change_invalidates_scope_even_when_step_bytes_are_identical(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, first = self._round(project)
+            self.assertEqual(first["print_targets"], ["wheel"])
+            source = project / "part_wheel.step.py"
+            source.write_text("PRINTABLE = False\ndef gen_step(): pass\n")
+            calls = []
+            self._round_again(module, project, calls, [])
+            second = json.loads((project / "measure/rounds/r0002/summary.json").read_text())
+            self.assertIn("wheel", second["changed"])
+            self.assertEqual(second["print"], {})
+            self.assertEqual(second["reused"], [])
+            self.assertFalse(any(Path(command[1]).name.startswith("check_") for command in calls))
+            source.write_text("PRINTABLE = True\ndef gen_step(): pass\n")
+            calls.clear()
+            self._round_again(module, project, calls, [])
+            third = json.loads((project / "measure/rounds/r0003/summary.json").read_text())
+            self.assertEqual(third["print_targets"], ["wheel"])
+            self.assertEqual(third["reused"], [])
+            self.assertEqual(third["print"]["wheel"]["measured_round"], 3)
+            self.assertEqual(len([command for command in calls if Path(command[1]).name.startswith("check_")]), 2)
+
+    def test_explicit_printable_combined_entry_uses_the_final_verifiers_selection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, _ = self._round(project)
+            (project / "toy.step.py").write_text("PRINTABLE = True\ndef gen_step(): pass\n")
+            calls = []
+            self._round_again(module, project, calls, [])
+            second = json.loads((project / "measure/rounds/r0002/summary.json").read_text())
+            self.assertEqual(second["print_targets"], ["toy", "wheel"])
+            self.assertIn("toy", second["build"])
+            self.assertEqual(second["print"]["toy"]["verdict"], "PASS")
+
+    def test_malformed_printable_declarations_fail_before_any_tool_runs(self):
+        for declaration in ('PRINTABLE = "False"', "PRINTABLE = 0", "PRINTABLE = bool(0)", "PRINTABLE = ["):
+            with self.subTest(declaration=declaration), tempfile.TemporaryDirectory() as tmp:
+                project = Path(tmp)
+                module = load_module()
+                _install_gate_identity(project)
+                (project / "toy.step.py").write_text("def gen_step(): pass\n")
+                (project / "part_card.step.py").write_text(declaration + "\ndef gen_step(): pass\n")
+                with mock.patch.object(module, "skills_root", return_value=project), mock.patch.object(module, "run") as runner, contextlib.redirect_stderr(io.StringIO()) as errors:
+                    self.assertEqual(module.main([str(project)]), 2)
+                    runner.assert_not_called()
+                self.assertIn("print target discovery failed", errors.getvalue())
 
     def test_visual_pass_cannot_unlock_full_verification_after_numeric_failure(self):
         with tempfile.TemporaryDirectory() as tmp:

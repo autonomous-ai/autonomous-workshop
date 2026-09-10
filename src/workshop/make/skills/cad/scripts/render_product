@@ -9,6 +9,10 @@ deliverable this toolchain writes.  `image-to-cad/render_views.py` remains the
 binary-silhouette tool for likeness measurement; its output must not be used as
 product photography.
 
+Authored leaf/occurrence colors are preserved through nested assembly
+placements. The base/accent palette supplies only otherwise uncolored faces;
+color is appearance evidence, not a material or fabrication certification.
+
 Examples:
 
     render_product assembled.step -o snap/iso.png --view iso \
@@ -91,21 +95,65 @@ def _build_shape(source: Path):
     raise ValueError(f"{source} is neither a {ENTRY_SUFFIX} entry nor a STEP file")
 
 
-def load_triangles(source: Path) -> np.ndarray:
-    """Tessellate exact CAD state into an (N, 3, 3) triangle vertex array."""
+def _colored_leaves(shape, parent_location=None, inherited_color=None):
+    """Yield world-placed leaves and effective colors without mutating CAD.
+
+    Match render_review's assembly placement and color inheritance: tessellating
+    a parent would merge its children and erase their authored appearance.
+    """
+
+    color = getattr(shape, "color", None)
+    if color is None:
+        color = inherited_color
+    children = list(getattr(shape, "children", ()) or ())
+    if children:
+        location = shape.location
+        if parent_location is not None:
+            location = parent_location * location
+        for child in children:
+            yield from _colored_leaves(child, location, color)
+    else:
+        placed = shape if parent_location is None else shape.moved(parent_location)
+        yield placed, color
+
+
+def _authored_rgb(color) -> tuple[int, int, int]:
+    if color is None:
+        return (-1, -1, -1)  # Preserve the established base/accent fallback.
+    channels = tuple(color)
+    if len(channels) < 3:
+        return (-1, -1, -1)
+    # build123d/OCP colors are linear RGB; PNG colors are sRGB.
+    result = []
+    for value in channels[:3]:
+        value = min(1.0, max(0.0, float(value)))
+        encoded = 12.92 * value if value <= 0.0031308 else 1.055 * value ** (1 / 2.4) - 0.055
+        result.append(round(encoded * 255))
+    return tuple(result)
+
+
+def load_scene(source: Path) -> tuple[np.ndarray, np.ndarray]:
+    """Tessellate exact CAD into aligned triangle vertices and authored RGBs."""
 
     shape = _build_shape(source)
-    children = list(getattr(shape, "children", ()) or ()) or [shape]
     facets = []
-    for child in children:
+    colors = []
+    for child, color in _colored_leaves(shape):
         vertices, faces = child.tessellate(TESSELLATION_TOLERANCE)
         if not len(vertices) or not len(faces):
             continue
         points = np.asarray([[p.X, p.Y, p.Z] for p in vertices], dtype=np.float64)
         facets.append(points[np.asarray(faces, dtype=np.int64)])
+        colors.append(np.tile(_authored_rgb(color), (len(faces), 1)))
     if not facets:
         raise ValueError(f"{source} tessellated to no triangles")
-    return np.concatenate(facets).reshape(-1, 3, 3)
+    return np.concatenate(facets).reshape(-1, 3, 3), np.concatenate(colors)
+
+
+def load_triangles(source: Path) -> np.ndarray:
+    """Return exact triangles for callers that do not need appearance data."""
+
+    return load_scene(source)[0]
 
 
 def _hex_color(value: str) -> tuple[int, int, int]:
@@ -202,11 +250,20 @@ def render(
     background: tuple[int, int, int],
     pose_degrees: float = 0.0,
     framing: np.ndarray | None = None,
+    triangle_colors: np.ndarray | None = None,
 ) -> Image.Image:
     if triangles.ndim != 3 or triangles.shape[1:] != (3, 3) or not len(triangles):
         raise ValueError("exact CAD state contains no renderable triangles")
     if not np.isfinite(triangles).all():
         raise ValueError("exact CAD state contains non-finite vertices")
+    if triangle_colors is not None:
+        triangle_colors = np.asarray(triangle_colors)
+        if triangle_colors.shape != (len(triangles), 3):
+            raise ValueError("triangle colors must supply one RGB per triangle")
+        authored = np.all((triangle_colors >= 0) & (triangle_colors <= 255), axis=1)
+        fallback = np.all(triangle_colors == -1, axis=1)
+        if not np.isfinite(triangle_colors).all() or not np.all(authored | fallback):
+            raise ValueError("triangle colors must be RGB values or an uncolored sentinel")
 
     triangles = _posed_triangles(triangles, pose_degrees)
 
@@ -214,6 +271,8 @@ def render(
     if len(triangles) > 75_000:
         indices = np.linspace(0, len(triangles) - 1, 75_000, dtype=np.int64)
         triangles = triangles[indices]
+        if triangle_colors is not None:
+            triangle_colors = triangle_colors[indices]
 
     scale_factor = 2
     canvas_size = size * scale_factor
@@ -264,9 +323,9 @@ def render(
     normals[valid] /= lengths[valid, None]
     light_direction = _normal(np.array([-0.55, -0.75, 1.6], dtype=np.float64))
     diffuse = np.abs(normals @ light_direction)
-    # Horizontal display faces take the accent while vertical walls retain the
-    # base color. This is stable across the model height and avoids arbitrary
-    # triangle-shaped color bands on broad planar faces.
+    # For uncolored faces, horizontal surfaces take the fallback accent while
+    # vertical walls retain the base. Authored occurrence colors bypass this
+    # palette; lighting still shades their actual color.
     color_mix = np.abs(normals[:, 2]) ** 4
     facing_camera = (normals @ forward) > 1e-8
     order = np.argsort(depth.mean(axis=1), kind="stable")
@@ -274,7 +333,10 @@ def render(
     for index in order:
         if not valid[index] or not facing_camera[index]:
             continue
-        material = _blend(base, accent, 0.12 + 0.70 * float(color_mix[index]))
+        if triangle_colors is not None and triangle_colors[index, 0] >= 0:
+            material = tuple(int(channel) for channel in triangle_colors[index])
+        else:
+            material = _blend(base, accent, 0.12 + 0.70 * float(color_mix[index]))
         color = _shade(material, 0.52 + 0.63 * float(diffuse[index]))
         points = [
             (int(round(screen_x[index, corner])), int(round(screen_y[index, corner])))
@@ -313,6 +375,7 @@ def motion_sheet(
     base: tuple[int, int, int],
     accent: tuple[int, int, int],
     background: tuple[int, int, int],
+    triangle_colors: np.ndarray | None = None,
 ) -> Image.Image:
     """Render several exact whole-product poses in one deterministic process."""
 
@@ -327,6 +390,7 @@ def motion_sheet(
             accent=accent,
             background=background,
             pose_degrees=angle,
+            triangle_colors=triangle_colors,
         )
         for angle in angles
     ]
@@ -345,11 +409,14 @@ def state_sheet(
     accent: tuple[int, int, int],
     background: tuple[int, int, int],
     minimum_difference: float = 2.0,
+    state_colors: tuple[np.ndarray, ...] | None = None,
 ) -> tuple[Image.Image, tuple[float, ...]]:
     """Render distinct exact geometry states from one fixed camera."""
 
     if not 2 <= len(states) <= 5:
         raise ValueError("state sheet requires between two and five state meshes")
+    if state_colors is not None and len(state_colors) != len(states):
+        raise ValueError("state colors must supply one array per exact state")
     frames = [
         render(
             triangles,
@@ -358,11 +425,21 @@ def state_sheet(
             base=base,
             accent=accent,
             background=background,
+            triangle_colors=None if state_colors is None else state_colors[index],
+        )
+        for index, triangles in enumerate(states)
+    ]
+    # Preserve the existing geometry-state distinction: repainting unchanged
+    # parts cannot turn duplicate geometry into evidence of product motion.
+    difference_frames = frames if state_colors is None else [
+        render(
+            triangles, size=size, view=view, base=base, accent=accent,
+            background=background,
         )
         for triangles in states
     ]
     samples = [
-        np.asarray(frame.resize((96, 96)), dtype=np.float64) for frame in frames
+        np.asarray(frame.resize((96, 96)), dtype=np.float64) for frame in difference_frames
     ]
     differences = tuple(
         float(np.mean(np.abs(samples[left] - samples[right])))
@@ -494,8 +571,10 @@ def main() -> None:
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--view", choices=("iso", "front", "rear", "right", "top"), default="iso")
     parser.add_argument("--size", type=int, default=900)
-    parser.add_argument("--base", type=_hex_color, default=_hex_color("#35AEB8"))
-    parser.add_argument("--accent", type=_hex_color, default=_hex_color("#FFB445"))
+    parser.add_argument("--base", type=_hex_color, default=_hex_color("#35AEB8"),
+                        help="fallback base for parts without authored colors")
+    parser.add_argument("--accent", type=_hex_color, default=_hex_color("#FFB445"),
+                        help="fallback accent for parts without authored colors")
     parser.add_argument("--background", type=_hex_color, default=_hex_color("#FFF5E6"))
     parser.add_argument("--pose-degrees", type=float, default=0.0)
     parser.add_argument("--motion-sheet", type=Path)
@@ -544,7 +623,7 @@ def main() -> None:
         or not 0.1 <= args.min_state_difference <= 32.0
     ):
         parser.error("--min-state-difference must be between 0.1 and 32.0")
-    triangles = load_triangles(args.source)
+    triangles, triangle_colors = load_scene(args.source)
     product = render(
         triangles,
         size=args.size,
@@ -553,6 +632,7 @@ def main() -> None:
         accent=args.accent,
         background=args.background,
         pose_degrees=args.pose_degrees,
+        triangle_colors=triangle_colors,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     product.save(args.output, format="PNG", optimize=True)
@@ -566,6 +646,7 @@ def main() -> None:
             base=args.base,
             accent=args.accent,
             background=args.background,
+            triangle_colors=triangle_colors,
         )
         args.motion_sheet.parent.mkdir(parents=True, exist_ok=True)
         signature.save(args.motion_sheet, format="PNG", optimize=True)
@@ -574,7 +655,8 @@ def main() -> None:
             f"({signature.width}x{signature.height} RGB, {len(args.motion_angles)} poses)"
         )
     if args.state_sheet is not None:
-        state_meshes = tuple(load_triangles(path) for path in args.state_source)
+        state_scenes = tuple(load_scene(path) for path in args.state_source)
+        state_meshes = tuple(scene[0] for scene in state_scenes)
         signature, differences = state_sheet(
             state_meshes,
             size=args.size,
@@ -583,6 +665,7 @@ def main() -> None:
             accent=args.accent,
             background=args.background,
             minimum_difference=args.min_state_difference,
+            state_colors=tuple(scene[1] for scene in state_scenes),
         )
         args.state_sheet.parent.mkdir(parents=True, exist_ok=True)
         signature.save(args.state_sheet, format="PNG", optimize=True)

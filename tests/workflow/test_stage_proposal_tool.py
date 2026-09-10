@@ -20,6 +20,7 @@ from workshop.errors import ContractError
 from workshop.invent.native import NativeInvented
 from tests.invent.test_native_contract import BUILD_PLAN_VIOLATIONS, CONCEPT_VIOLATIONS, v4_concept, v5_concept
 from tests.make.test_build_groups import seal_group, write_parts
+from tests.make.test_manufacturing_manifest import make_mixed_product, seal_manifest
 from tests.invent.test_vault import write_vault
 from tests.playtest.test_native_playtested import DIMS, LEAD_ANSWER_CASES, SCORE_CASES
 from workshop.invent.vault import Vault
@@ -803,6 +804,49 @@ class StageProposalToolTest(unittest.TestCase):
             ),
         )
         self.assertEqual(proposal.outcome.proposed_transition, "playtest")
+
+    def mixed_product(self):
+        root, _, _, verification = self.create_product()
+        product, manifest = make_mixed_product(root)
+        # Reuse the existing finalizer's synthetic visual evidence, while the
+        # mixed fixture supplies a complete, deliberately nonexecuting BOM.
+        for source in tuple((root / "cad").iterdir()):
+            if source.name == "project":
+                continue
+            name = "part_display.step.py" if source.name == "assembled.step.py" else source.name
+            shutil.move(str(source), str(root / "cad/project" / name))
+        (root / "cad/project/moon.step.py").write_text("PRINTABLE = False\n")
+        for component in manifest["components"]:
+            for binding in component["files"]:
+                if binding["path"].startswith("cad/"):
+                    binding["path"] = "cad/project/" + binding["path"][4:]
+        product = seal_manifest(root, manifest)
+        helper_root = self.run_root / ".agents/skills/mixed-materials"
+        shutil.copytree(REPOSITORY / "src/workshop/make/skills/mixed-materials", helper_root)
+        return root, product, (root / "product.json").read_bytes(), verification
+
+    def test_spark_make_seals_mixed_material_contract_without_executing_cad(self):
+        root, product, product_bytes, verification = self.mixed_product()
+        with mock.patch.object(self, "create_product", return_value=(root, product, product_bytes, verification)):
+            self.test_spark_make_seals_all_compound_creative_contracts()
+        made, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
+        self.assertEqual(made["product"]["manufacturing"], product["manufacturing"])
+        self.assertIn("internal/manufacturing.json", {row["path"] for row in made["product_manifest"]["entries"]})
+
+    def test_spark_make_rejects_changed_internal_manifest_before_sealing(self):
+        root, product, _, _ = self.mixed_product()
+        (root / "internal/manufacturing.json").write_text("{}\n")
+        self.write_stage("make", {**self.match_inputs(), "creative_source_required": True,
+            "assignment_contract_path": "artifacts/make/r0001/assignment.json",
+            "invented_contract_path": "artifacts/make/r0001/invented.json"}, round_index=1)
+        self.write_json("drafts/spark-make.json", {
+            "selected_inventor_id": "eve", "ranking": [item.to_dict() for item in self.assignment.ranking],
+            "concept": self.invented.to_dict()["concept"], "research": self.invented.to_dict()["research"]})
+        result = self.run_tool("make", "--source", "drafts/spark-make.json",
+            "--product-root", "artifacts/make/r0001/product", "--cad-project-path", "cad/project",
+            "--cad-verification-path", "cad/project/validation/cad-build.json", expected=2)
+        self.assertIn("manufacturing", result.stderr)
+        self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
 
     def test_spark_make_requires_creative_source_before_sealing(self):
         self.create_product()

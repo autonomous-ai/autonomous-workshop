@@ -25,6 +25,7 @@ from workshop.errors import ManifestError, WorkshopError
 BUNDLED_INVENTOR_IDS = (
     "abo",
     "alice",
+    "arlo-playfield",
     "bob",
     "eve",
     "ferro-line",
@@ -32,9 +33,11 @@ BUNDLED_INVENTOR_IDS = (
     "ivy",
     "kestrel-knot",
     "leo",
+    "lila-kinetics",
     "luma-vale",
     "mara-masque",
     "mira-fold",
+    "neri-wonder",
     "orin-shadow",
     "pico-press",
     "sonora-reed",
@@ -53,6 +56,7 @@ _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (
     ),
     ("image-to-cad", Path("make/skills/image-to-cad")),
     ("make-round", Path("make/skills/make-round")),
+    ("mixed-materials", Path("make/skills/mixed-materials")),
     ("manual-design", Path("release/skills/manual-design")),
     ("step-parts", Path("make/skills/step-parts")),
 )

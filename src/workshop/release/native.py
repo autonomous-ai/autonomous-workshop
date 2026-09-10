@@ -824,8 +824,11 @@ def validate_release_product(
     if product_schema_version == DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION:
         return _validate_direct_release_product(product)
     if product_schema_version == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION:
-        if set(product) != _DIRECT_RELEASE_PRODUCT_FIELDS | {"source_document"}:
+        fields = _DIRECT_RELEASE_PRODUCT_FIELDS | {"source_document"}
+        if set(product) not in (fields, fields | {"public_projection"}):
             raise ContractError("Make-output Release product fields are invalid")
+        if "public_projection" in product:
+            validate_public_projection(product["public_projection"])
         if product.get("status") != MAKE_OUTPUT_RELEASE_PRODUCT_STATUS:
             raise ContractError("Make-output Release status is invalid")
         document = product.get("source_document")
@@ -834,6 +837,11 @@ def validate_release_product(
                 raise ContractError("Make-output source document binding is invalid")
             _safe_relative(document["source_path"], "Make-output source document")
             require_sha256(document["sha256"], "Make-output source document sha256")
+            if "public_projection" in product and (
+                document["source_path"] != "public/README.md"
+                or {"path": document["source_path"], "sha256": document["sha256"]} not in product["public_projection"]["files"]
+            ):
+                raise ContractError("Make-output document must be an explicitly public README")
         if (
             product.get("kind") != "workshop.release-package"
             or product.get("playtest_status") != DIRECT_RELEASE_PLAYTEST_STATUS
@@ -849,6 +857,67 @@ def validate_release_product(
                 raise ContractError("Make-output %s must be an existing text list" % name)
         return product
     raise ContractError("native Release product.json schema_version must be 3, 4, 5, or 6")
+
+
+def validate_public_projection(value: Any) -> dict[str, Any]:
+    """Validate public file identities; this does not inspect product engineering."""
+
+    projection = copy_json_mapping(value, "Make public projection", nonempty=True)
+    if set(projection) != {"schema_version", "files", "primary_model", "primary_image"} or type(projection["schema_version"]) is not int or projection["schema_version"] != 1:
+        raise ContractError("Make public projection fields are invalid")
+    files = projection["files"]
+    if not isinstance(files, list) or not files:
+        raise ContractError("Make public projection requires public files")
+    paths = []
+    for item in files:
+        if not isinstance(item, Mapping) or set(item) != {"path", "sha256"}:
+            raise ContractError("Make public file binding is invalid")
+        pure = _safe_relative(item["path"], "Make public file")
+        if len(pure.parts) < 2 or pure.parts[0] != "public":
+            raise ContractError("Make public files must remain under public/")
+        require_sha256(item["sha256"], "Make public file sha256")
+        paths.append(item["path"])
+    if paths != sorted(set(paths)):
+        raise ContractError("Make public file bindings must be unique and sorted")
+    primary = projection["primary_model"]
+    if not isinstance(primary, Mapping) or set(primary) != {"path", "sha256"} or primary not in files or PurePosixPath(primary["path"]).suffix.casefold() not in (".step", ".stp"):
+        raise ContractError("Make public primary model must identify a public STEP")
+    image = projection["primary_image"]
+    if not isinstance(image, Mapping) or set(image) != {"path", "sha256"} or image not in files or PurePosixPath(image["path"]).suffix.casefold() not in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
+        raise ContractError("Make public primary image must identify a public image")
+    return projection
+
+
+def public_cover_mapping(projection: Mapping[str, Any]) -> dict[str, str]:
+    """Map an existing Make image to Factory's conventional cover filename."""
+    image = projection["primary_image"]
+    suffix = PurePosixPath(image["path"]).suffix.casefold()
+    return {"source_path": image["path"], "archive_path": "assembled_review/_assembled" + suffix, "sha256": image["sha256"]}
+
+
+def make_public_projection(product_root: Path, product: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Select exact Make-owned presentation bytes for an opted-in Spark product."""
+
+    if "manufacturing" not in product:
+        return None
+    from workshop.make.manufacturing import public_asset_paths, read_manifest
+
+    paths = public_asset_paths(product_root, product)
+    if paths is None:
+        return None
+    manifest = read_manifest(product_root, product)
+    files = sorted((dict(item) for item in manifest["public_assets"]), key=lambda item: item["path"])
+    if tuple(item["path"] for item in files) != tuple(sorted(paths)):
+        raise ContractError("Make public assets differ from their manufacturing binding")
+    assembled_sha256 = manifest["assembly"]["step"]["sha256"]
+    primary = next((item for item in files if item["sha256"] == assembled_sha256 and PurePosixPath(item["path"]).suffix.casefold() in (".step", ".stp")), None)
+    if primary is None:
+        raise ContractError("Make public assets lack the complete assembly STEP")
+    images = [item for item in manifest["public_assets"] if PurePosixPath(item["path"]).suffix.casefold() in (".png", ".jpg", ".jpeg", ".webp", ".gif")]
+    image = next((item for item in images if item["path"] == "public/hero.png"), images[0] if images else None)
+    if image is None:
+        raise ContractError("Make public assets lack a finished-product image")
+    return validate_public_projection({"schema_version": 1, "files": files, "primary_model": dict(primary), "primary_image": dict(image)})
 
 
 @dataclass(frozen=True)
@@ -1207,6 +1276,9 @@ class NativeRelease:
             raise ContractError("native Release claims differ from exact Playtest evidence")
         expected_title = canonical_made.product.get("title")
         if self.schema_version == 4:
+            projection = make_public_projection(canonical_made.artifact_root, canonical_made.product)
+            if observed_product.get("public_projection") != projection:
+                raise ContractError("Make-output public projection differs from exact Made assets")
             expected_title = expected_title[:300].rstrip()
             if observed_product["summary"] != canonical_made.product["summary"]:
                 raise ContractError("Make-output summary differs from exact Made facts")
@@ -1248,9 +1320,11 @@ def prepare_make_output_release(run_root: Path, made: NativeMade) -> NativeRelea
 
     root = _canonical_run_root(run_root)
     canonical_made = made.validate_product_tree(root)
+    projection = make_public_projection(canonical_made.artifact_root, canonical_made.product)
+    public_paths = None if projection is None else {item["path"] for item in projection["files"]}
     entries = made.product_manifest.entries
     candidates = sorted(
-        (entry for entry in entries if entry.bytes > 0 and PurePosixPath(entry.path).name == "README.md"),
+        (entry for entry in entries if entry.bytes > 0 and PurePosixPath(entry.path).name == "README.md" and (public_paths is None or entry.path == "public/README.md" and entry.path in public_paths)),
         key=lambda entry: (entry.path != "README.md", entry.path),
     )
     source = candidates[0] if candidates else None
@@ -1273,6 +1347,7 @@ def prepare_make_output_release(run_root: Path, made: NativeMade) -> NativeRelea
         "playtest_evidence_artifact_sha256": playtest_omission_sha256(),
         "claims": direct_release_claims(),
         "source_document": document,
+        **({"public_projection": projection} if projection is not None else {}),
     }, release_schema_version=4)
     contents = {
         NATIVE_RELEASE_PRODUCT_PATH: _canonical_json(product),

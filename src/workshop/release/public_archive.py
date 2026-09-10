@@ -808,6 +808,8 @@ def write_public_workflow_archive(
 ) -> None:
     """Write every workflow-shaped file except root README and MANIFEST."""
 
+    if release.schema_version == 4 and "manufacturing" in made.product:
+        raise StateConflict("mixed-material products require the public presentation projection; manufacturing history is private")
     raw_writer = writer
     sanitizations: list[dict[str, Any]] = []
 

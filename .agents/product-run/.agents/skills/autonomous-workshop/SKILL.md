@@ -42,7 +42,9 @@ skill is your workflow playbook, not a separate agent process.
    After that accepted handoff, or when there is no setup packet, read only the
    reference for the current stage:
    - Invent: [references/invent.md](references/invent.md)
-   - Make: [references/make.md](references/make.md)
+   - Make: [references/make.md](references/make.md). For Spark products with
+     stock or purchased components, also use the materialized `mixed-materials`
+     skill for the complete assembly and internal manufacturing handoff.
    - Playtest: [references/playtest.md](references/playtest.md)
    - Release: inspect `inputs.release_contract.native_release_schema_version`.
      Version `4` is host-owned Spark Publish: return control without a Release

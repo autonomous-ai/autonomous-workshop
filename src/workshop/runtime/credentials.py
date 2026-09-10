@@ -422,6 +422,42 @@ def store_factory_credentials(
     return _store_factory_values(values, path)
 
 
+def reuse_factory_credentials(
+    source_inventor_id: str,
+    target_inventor_id: str,
+    *,
+    environment: Optional[Mapping[str, str]] = None,
+) -> tuple[Path, str]:
+    """Authenticate one exact saved account, then bind it to another Inventor.
+
+    Explicit reuse never falls back to shared credentials or environment
+    username/password overrides. Only the selected private source file is read;
+    its source binding is required and its exact account is authenticated before
+    the target file is atomically stored. No native-agent process receives it.
+    """
+    from workshop.integrations.factory import (
+        FactoryAgentSession,
+        factory_credentials_from_environment,
+    )
+
+    inventor_credential_file(target_inventor_id, environment)
+    source = inventor_credential_file(source_inventor_id, environment)
+    loaded = _parse_credential_file(
+        _read_private_credential_file(source), _FACTORY_CREDENTIAL_NAME,
+        label="source Inventor Factory",
+    )
+    if loaded.get("FACTORY_INVENTOR_ID") != source_inventor_id:
+        raise ContractError("source Factory credential is not bound to Inventor %s" % source_inventor_id)
+    account = factory_service_credential_environment(loaded)
+    credentials = factory_credentials_from_environment(account)
+    identity = FactoryAgentSession(credentials).login()
+    path = store_factory_credentials(
+        credentials.username, credentials.password,
+        inventor_id=target_inventor_id, environment=environment,
+    )
+    return path, identity.username
+
+
 def factory_service_credential_environment(
     values: Mapping[str, str],
 ) -> Mapping[str, str]:
@@ -462,5 +498,6 @@ __all__ = [
     "factory_credential_file",
     "factory_service_credential_environment",
     "store_factory_credentials",
+    "reuse_factory_credentials",
     "validate_factory_credential_configuration",
 ]

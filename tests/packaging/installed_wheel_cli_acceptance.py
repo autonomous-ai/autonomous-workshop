@@ -33,6 +33,7 @@ SKILL_PATHS = {
     "image-to-cad": "make/skills/image-to-cad",
     "make-round": "make/skills/make-round",
     "manual-design": "release/skills/manual-design",
+    "mixed-materials": "make/skills/mixed-materials",
     "step-parts": "make/skills/step-parts",
 }
 SKILLS = tuple(SKILL_PATHS)
@@ -42,6 +43,7 @@ LISTED_MAKE_SKILLS = tuple(
 INVENTORS = (
     "abo",
     "alice",
+    "arlo-playfield",
     "bob",
     "eve",
     "ferro-line",
@@ -49,9 +51,11 @@ INVENTORS = (
     "ivy",
     "kestrel-knot",
     "leo",
+    "lila-kinetics",
     "luma-vale",
     "mara-masque",
     "mira-fold",
+    "neri-wonder",
     "orin-shadow",
     "pico-press",
     "sonora-reed",

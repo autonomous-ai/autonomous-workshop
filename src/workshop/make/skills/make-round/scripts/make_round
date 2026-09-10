@@ -24,6 +24,7 @@ from importlib.metadata import PackageNotFoundError, version as package_version
 import json
 import os
 import re
+import runpy
 import subprocess
 import sys
 import tempfile
@@ -122,16 +123,22 @@ def record_visual(project, feedback_path, full=False):
         if not summary["ok"]:
             raise ValueError("final verification requires a clean round and visual pass")
         cad = skills_root() / "cad" / "scripts"
+        printable = printable_entries(project, cad)
         # The final verifier independently requires the separate blind review.
         command = [sys.executable, str(cad / "verify_project"), str(project),
-                   "--strict-fit", "--print-gates", "--nozzle", str(summary.get("nozzle", 0.4)),
+                   "--strict-fit",
                    "--report", str(project / "measure/verification-pipeline.md")]
+        if printable:
+            command += ["--print-gates", "--nozzle", str(summary.get("nozzle", 0.4))]
         if summary["refs"]:
             command.append("--image-derived")
             for label, ref in summary["refs"]:
                 command += ["--likeness-ref", "%s=%s" % (label, ref)]
         done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
-        summary["full"] = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)}
+        summary["full"] = {"ok": done.returncode == 0, "returncode": done.returncode,
+                           "tail": tail(done.stdout or done.stderr),
+                           "print_gates_ran": bool(printable),
+                           "print_ready_claim": bool(printable) and done.returncode == 0}
         summary["ok"] = done.returncode == 0
     (out / "visual-feedback.json").write_text(json.dumps(feedback, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
@@ -175,9 +182,8 @@ class _RootsView:
 def parse_build(stdout: str, stderr: str, returncode: int) -> dict:
     """The verdict and the reason from one part's `gen --write` run.
 
-    Nothing here measures a wall: the toolchain writes STEP only and has no
-    mesh, overhang or thickness gate, so a part that builds is *built*, never
-    printable.
+    Nothing here measures a wall. Print gates separately inspect printable
+    source entries; building a component alone is never a printability claim.
     """
     if returncode == 0:
         return {"verdict": "PASS", "failures": []}
@@ -271,6 +277,25 @@ def print_context(cad: Path, nozzle: float, angle: float) -> dict | None:
     }
 
 
+def printable_entries(project: Path, cad: Path) -> set[Path]:
+    """Use the final verifier's exact source-selection policy without CAD.
+
+    printlib imports only the standard library at module scope. Calling its
+    discovery and literal-declaration helpers never executes project sources.
+    A broken declaration is refused before any generation or gate invocation.
+    """
+    try:
+        namespace = runpy.run_path(str(cad / "printlib.py"))
+        # Check every entry even if a malformed file lacks gen_step and would
+        # otherwise disappear from the final verifier's discovery scan.
+        for source in project.glob("*.step.py"):
+            namespace["declared_printable"](source)
+        grouped = namespace["iter_printable_entries"](project)
+        return {path for paths in grouped.values() for path in paths}
+    except (OSError, KeyError, SyntaxError, ValueError, TypeError) as exc:
+        raise ValueError("print target discovery failed: %s" % exc) from exc
+
+
 def reusable_print(item: dict | None) -> bool:
     """Only a recorded PASS of both gates, with its original tool logs, reuses."""
     if not isinstance(item, dict) or item.get("verdict") != "PASS":
@@ -327,6 +352,8 @@ def render_summary(summary: dict) -> str:
         lines.append("  build %-4s %-28s%s" % (item["verdict"], role, extra))
         gates = (summary.get("print") or {}).get(role)
         if gates is None:
+            if role in summary.get("nonprinted", []):
+                lines.append("  print not-run %-25s nonprinted component" % role)
             continue
         wall = gates["thickness"]
         thin = "" if wall.get("thinnest_mm") is None else "  thinnest %.2f mm" % wall["thinnest_mm"]
@@ -557,6 +584,11 @@ def make_round(args) -> int:
     else:
         print("make_round: expected exactly one entry *.step.py (found %d); pass --entry" % len(entries), file=sys.stderr)
         return 2
+    try:
+        print_targets = printable_entries(project, cad)
+    except ValueError as exc:
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
     measure = project / "measure"
     measure.mkdir(exist_ok=True)
     state_path = measure / STATE_NAME
@@ -568,6 +600,16 @@ def make_round(args) -> int:
     # A one-piece project exposes its buildable geometry through the entry.
     if not parts:
         parts = [entry]
+    # An explicitly printable combined entry is also a print target under
+    # printlib's policy. Build it when present, just like the final verifier.
+    parts = sorted(set(parts) | print_targets)
+    roles = {part: part.name.removeprefix("part_").removesuffix(".step.py") for part in parts}
+    if len(set(roles.values())) != len(roles):
+        print("make_round: component source roles must be unique", file=sys.stderr)
+        return 2
+    printable_roles = {roles[part] for part in parts if part in print_targets}
+    nonprinted_roles = sorted(set(roles.values()) - printable_roles)
+    source_digests = {roles[part]: file_hash(part) for part in parts}
 
     # 1. build every part once; hash the STEP bytes so the next round knows what moved.
     digests: dict[str, str] = {}
@@ -585,6 +627,11 @@ def make_round(args) -> int:
             continue
         digests[role] = hashlib.sha256(step.read_bytes()).hexdigest()
     changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
+    # A PRINTABLE declaration can change while generated STEP bytes remain
+    # identical. Source identity prevents reuse of a previous print scope.
+    changed = sorted(set(changed) | {
+        role for role in digests if (state.get("part_sources") or {}).get(role) != source_digests[role]
+    })
 
     # 2. record the build verdict for what moved.
     for role in changed:
@@ -601,7 +648,7 @@ def make_round(args) -> int:
     previous_print = state.get("print") or {}
     same_context = context is not None and context == state.get("print_context")
     printing: dict[str, dict] = {}
-    for role in sorted(digests):
+    for role in sorted(set(digests) & printable_roles):
         prior = previous_print.get(role)
         if (
             not args.all_parts and role not in changed and same_context
@@ -644,7 +691,7 @@ def make_round(args) -> int:
         }
         if printing[role]["verdict"] == "FAIL" and role not in changed:
             changed.append(role)
-    for role in build_failures:
+    for role in sorted(set(build_failures) & printable_roles):
         # A part that did not build has no solid to measure. Say that, rather
         # than reporting an absent gate as a pass.
         printing[role] = {
@@ -741,6 +788,8 @@ def make_round(args) -> int:
         "checked": sorted(build),
         "build": build,
         "print": printing,
+        "print_targets": sorted(printable_roles),
+        "nonprinted": nonprinted_roles,
         "reused": sorted(role for role in printing if printing[role].get("measured_round") != round_index),
         "nozzle": args.nozzle,
         "overhang_angle": args.overhang_angle,
@@ -758,6 +807,7 @@ def make_round(args) -> int:
     state = {
         "round": round_index,
         "parts": digests,
+        "part_sources": source_digests,
         "print": printing,
         "print_context": context,
         "likeness": {item["label"]: item["iou"] for item in likeness if "iou" in item},

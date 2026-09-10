@@ -2,6 +2,7 @@ import os
 import stat
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from workshop.errors import ContractError
@@ -221,6 +222,65 @@ class InventorAccountTest(unittest.TestCase):
         self.addCleanup(self._temporary.cleanup)
         self.home = Path(self._temporary.name).resolve() / "home"
         self.environment = {"WORKSHOP_HOME": str(self.home)}
+
+    def test_reuse_authenticates_exact_scoped_source_before_private_storage(self):
+        from workshop.runtime.credentials import reuse_factory_credentials, store_factory_credentials
+        source = store_factory_credentials("dee", "source-secret", inventor_id="bob", environment=self.environment)
+        before = source.read_bytes()
+        target = self.home / "credentials/inventors/new-craft.env"
+        environment = {**self.environment, "FACTORY_USERNAME": "wrong", "FACTORY_PASSWORD": "wrong-secret"}
+        session = mock.Mock()
+
+        def authenticate():
+            self.assertFalse(target.exists())
+            return mock.Mock(username="dee")
+
+        session.login.side_effect = authenticate
+        with mock.patch("workshop.integrations.factory.FactoryAgentSession", return_value=session) as factory:
+            path, username = reuse_factory_credentials("bob", "new-craft", environment=environment)
+        credentials = factory.call_args.args[0]
+        self.assertEqual((credentials.username, credentials.password), ("dee", "source-secret"))
+        session.login.assert_called_once_with()
+        self.assertEqual(username, "dee")
+        self.assertEqual(path, target)
+        self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(path.parent.stat().st_mode), 0o700)
+        self.assertEqual(source.read_bytes(), before)
+        self.assertEqual(dict(factory_credential_environment(self.environment, inventor_id="new-craft")), {"FACTORY_USERNAME": "dee", "FACTORY_PASSWORD": "source-secret", "FACTORY_INVENTOR_ID": "new-craft"})
+
+    def test_reuse_never_falls_back_to_shared_or_environment_credentials(self):
+        from workshop.runtime.credentials import reuse_factory_credentials, store_factory_credentials
+        store_factory_credentials("shared", "shared-secret", environment=self.environment)
+        environment = {**self.environment, "FACTORY_USERNAME": "environment", "FACTORY_PASSWORD": "environment-secret"}
+        with mock.patch("workshop.integrations.factory.FactoryAgentSession") as factory, self.assertRaises(ContractError):
+            reuse_factory_credentials("missing", "new-craft", environment=environment)
+        factory.assert_not_called()
+        self.assertFalse((self.home / "credentials/inventors/new-craft.env").exists())
+
+    def test_reuse_rejects_wrong_source_binding_and_unsafe_permissions(self):
+        from workshop.runtime.credentials import reuse_factory_credentials, store_factory_credentials
+        source = store_factory_credentials("dee", "source-secret", inventor_id="bob", environment=self.environment)
+        original = source.read_bytes()
+        for invalid in ("binding", "permissions", "target"):
+            with self.subTest(invalid=invalid):
+                source.write_bytes(original.replace(b"FACTORY_INVENTOR_ID=bob", b"FACTORY_INVENTOR_ID=other") if invalid == "binding" else original)
+                source.chmod(0o644 if invalid == "permissions" else 0o600)
+                with mock.patch("workshop.integrations.factory.FactoryAgentSession") as factory, self.assertRaises(ContractError):
+                    reuse_factory_credentials("bob", "../unsafe" if invalid == "target" else "new-craft", environment=self.environment)
+                factory.assert_not_called()
+        self.assertFalse((self.home / "credentials/inventors/new-craft.env").exists())
+
+    def test_reuse_failed_authentication_preserves_existing_target(self):
+        from workshop.errors import EffectError
+        from workshop.runtime.credentials import reuse_factory_credentials, store_factory_credentials
+        store_factory_credentials("dee", "source-secret", inventor_id="bob", environment=self.environment)
+        target = store_factory_credentials("previous", "previous-secret", inventor_id="new-craft", environment=self.environment)
+        before = target.read_bytes()
+        session = mock.Mock()
+        session.login.side_effect = EffectError("authentication rejected")
+        with mock.patch("workshop.integrations.factory.FactoryAgentSession", return_value=session), self.assertRaises(EffectError):
+            reuse_factory_credentials("bob", "new-craft", environment=self.environment)
+        self.assertEqual(target.read_bytes(), before)
 
     def test_each_inventor_publishes_as_its_own_stored_account(self):
         from workshop.runtime.credentials import (

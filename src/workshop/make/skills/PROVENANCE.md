@@ -1,5 +1,35 @@
 # Shared skill provenance
 
+## Workshop mixed-materials skill (2026-09-10)
+
+`mixed-materials` is implemented locally by Workshop, not vendored from the CAD
+repository. Its exact tree is bound in `LOCK.json`; the new entry has no upstream
+source commit. The standard-library tool validates internal manufacturing
+references and public file selection without running CAD. Its schema and
+standalone CLI are materialized into new runs alongside the skill.
+
+The local `make-round` adaptation uses CAD's existing printable-source discovery
+for its print subset, retains building and visually inspecting nonprinted parts,
+and includes source hashes in print-result reuse. An all-nonprinted project keeps
+a geometry-only final verification and makes no print-ready claim. See ADR 0064.
+
+## Complete-product authored colors (2026-09-10)
+
+Workshop's `cad/scripts/render_product` now descends to leaf occurrences with
+accumulated parent placements, matching the existing `render_review` convention.
+It preserves leaf or inherited STEP colors, converting linear RGB to PNG sRGB,
+and uses the existing base/accent palette only for uncolored triangles. Color
+rows remain aligned during presentation poses and triangle sampling. Product,
+viewpoint and exact-state sheets carry the same authored appearance.
+
+Exact-state difference checks retain their geometry-based appearance comparison:
+recoloring otherwise unchanged geometry cannot pass as a new operating state.
+Regression coverage includes nested transforms, source immutability, real STEP
+round trips, color inheritance/encoding, uncolored fallback, malformed color
+arrays and CLI hero/motion/state output. This fixes presentation; it adds no
+host renderer, geometry format, texture model or material qualification. Frozen
+runs retain their existing materialized renderer bytes.
+
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at

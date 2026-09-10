@@ -4,7 +4,7 @@ Read `STAGE.json` once. It binds the sealed Wish, Invent result, selected
 Inventor, exact output root, round, transition, and any host rejection. Repair
 the cited bytes when a rejection exists; never resubmit unchanged work.
 
-Create or continue one Make Goal. Its objective is the exact printable product
+Create or continue one Make Goal. Its objective is the exact complete product
 that satisfies the sealed concept and Wish. Its stopping condition is a
 successful `make` finalizer writing `agent-outcome.json`. Only an exact
 build-blocking contradiction may use the optional
@@ -97,6 +97,16 @@ early-proof or recovery turn, takes precedence over them.
 
 ## Ownership and pipeline
 
+For a new Spark product that combines printed parts with paperboard, wood,
+fabric, cord, springs, motors, or other stock and purchased components, read
+`.agents/skills/mixed-materials/SKILL.md` alongside CAD. Use its manufacturing
+manifest to describe the complete assembled object and the internal workshop
+handoff. Autonomous staff fabricate, assemble, inspect, and ship the finished
+product; the customer does not receive an assembly kit or the internal BOM.
+Every visible component belongs in the complete assembly and final images.
+The `manufacturing` marker is Spark-only; do not retrofit it into older frozen
+runs or apply it to Forge/Quest.
+
 Make owns the stage inputs and output paths, independent blind review, bounded
 visual repair, final product contract, and Make finalizer. The materialized
 `cad` skill owns CAD planning, modeling methods, applicable progressive
@@ -132,7 +142,7 @@ are separate. Frozen older runs retain their materialized rules and tools.
    likeness passes or no reference image exists. Pending or inconclusive visual
    feedback is not a pass. These self-checks do not replace independent review.
    Run only additional narrow checks affected by an edit. `make_round` gates
-   every part that builds with `check_thickness` and `check_overhang` at the
+   every printable part that builds with `check_thickness` and `check_overhang` at the
    fixed 0.4 mm nozzle standard, so a wall or overhang defect surfaces in the
    round that caused it rather than at final verification.
 4. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
@@ -188,11 +198,13 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   as the package names the occurrence (`STAGE.json.production_parts_rule`).
   The host rejects a multi-part Make without them. The shop receives these
   files as its addressable parts and renders each in the colour sealed on it;
-- a surface colour on every leaf part of a multi-part model, authored as
-  `Color(r, g, b)` with channels 0..1 taken directly from the sRGB hex you want
-  the shop to show (`Color(0.82, 0.51, 0.18)` shows as `#d1822e`). Do not
-  pre-convert channels to linear; the STEP, the GLB, the host renders, and the
-  listing all read the sealed channels as sRGB;
+- a surface colour on every leaf part of a multi-part model. For printed
+  parts, use `cadfilament.filament("<stock colour name>")`; for purchased or
+  other non-printed surfaces, use `cadgen.color.srgb("#rrggbb")`. These helpers
+  convert sRGB colours into the linear channels used by the CAD toolchain.
+  Make's product renderer encodes those channels back to sRGB for its PNGs:
+  `srgb("#d1822e")` preserves that authored colour before lighting. Do not
+  pass sRGB hex channels directly to `Color(r, g, b)`;
 - `product.json` with nonempty `title` and `summary` strings. Both are
   customer copy that reaches the shop unchanged: the title is a sayable name
   of one to four words with no dimensions, part counts, or sentences, and
@@ -210,6 +222,16 @@ The root `assembled.*` files are sealed delivery copies of the final combined
 CAD output. They do not replace the self-contained CAD project or its isolated
 verification. Before finalizing, confirm every packet-named root file exists as
 a nonempty regular file; a nested combined export alone is not publishable.
+
+For marked mixed-material Spark products, the manufacturing manifest replaces
+the blanket per-occurrence printed-production rule above. Printed components
+have printable sources; nonprinted components have dimensioned fabrication or
+sourcing specifications and explicitly nonprintable geometry. Repeated
+occurrences may share one component definition with an exact quantity.
+The Make finalizer checks this structural contract; Spark's host does not
+rebuild the CAD or introduce a second engineering gate. Keep the full workshop
+package internal and select only complete-product assets under `public/` for
+publication, as the mixed-materials skill specifies.
 
 The canonical schema-v8 review contains exactly: `schema_version`, `kind`,
 `concept_sha256`, `iso_sha256`, `signature_sha256`, `reviewer`,
@@ -229,7 +251,10 @@ thickness and overhang reports there and seal product status
 seal `digitally-verified-not-print-ready` with `false` when the round did not
 open the print gates, and then never call the product print-ready. The host
 reruns the verifier in the tier those two declarations name, so a claim the
-sealed project cannot reproduce is refused rather than downgraded.
+sealed project cannot reproduce is refused rather than downgraded. Spark
+accepts Make's verification without a duplicate host rerun. For a mixed-material
+product, print evidence covers only its printed components; it does not certify
+cutting, sewing, sourcing, physical assembly, or the finished toy.
 Every boolean is true; `review_rounds` is an integer from one through four; blockers are empty; each
 critical requirement has exactly `requirement`, `blind_evidence`, and
 `matches: true`. Evaluate form against the actual Wish: an exposed mechanism

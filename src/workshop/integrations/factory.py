@@ -63,6 +63,8 @@ from workshop.release.native import (
     LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION,
     MAX_NATIVE_RELEASE_MANUAL_BYTES,
     RELEASE_PRODUCT_SCHEMA_VERSION,
+    make_public_projection,
+    public_cover_mapping,
     validate_release_product,
 )
 from workshop.runtime import EffectIntent, EffectLedger, Receipt
@@ -350,12 +352,18 @@ def _read_json_file(path: Path, label: str) -> Mapping[str, Any]:
     return dict(value)
 
 
-def _sealed_primary(context: Any) -> Mapping[str, str]:
+def _sealed_primary(context: Any, *, public_projection: Optional[Mapping[str, Any]] = None) -> Mapping[str, str]:
     context.made.assert_current()
     root = Path(context.made.artifact_root).resolve(strict=True)
     product = _read_json_file(root / "product.json", "Made product.json")
     if _canonical_sha256(product) != _canonical_sha256(context.made.product):
         raise ContractError("Made product facts do not match sealed product.json")
+    if public_projection is not None:
+        primary = public_projection["primary_model"]
+        content = _read_bound_file(root, context.made.artifact_manifest, primary["path"])
+        if not content or hashlib.sha256(content).hexdigest() != primary["sha256"]:
+            raise ContractError("Factory public scene differs from sealed Make bytes")
+        return {"kind": "solid", "path": primary["path"], "sha256": primary["sha256"]}
 
     # Current native Make projects are bound to the Wish by the host checkpoint,
     # Made contract, and passing Playtest; they do not require the legacy
@@ -688,6 +696,10 @@ def _handoff_proof_details(handoff: Mapping[str, Any]) -> Dict[str, Any]:
         details["handoff_transport_reason"] = reason
     if transport.get("viewer_groups") is not None:
         details["viewer_groups"] = int(transport["viewer_groups"])
+    if handoff.get("public_primary_mapping") is not None:
+        details["public_primary_mapping"] = dict(handoff["public_primary_mapping"])
+    if handoff.get("public_cover_mapping") is not None:
+        details["public_cover_mapping"] = dict(handoff["public_cover_mapping"])
     value = handoff.get("cover_render_sha256")
     if value is not None:
         details["cover_render_sha256"] = require_sha256(
@@ -1275,6 +1287,28 @@ def _assert_factory_handoff(content: bytes) -> None:
                 raise ContractError(
                     "Factory handoff Release product facts are not canonical"
                 )
+            projection = release_page.get("public_projection")
+            if projection is not None:
+                expected_paths = {item["path"] for item in projection["files"]}
+                expected_primary = projection["primary_model"]
+                if (
+                    set(make_artifacts) != expected_paths
+                    or any(make_artifacts[item["path"]]["source_path"] != item["path"] or make_artifacts[item["path"]]["sha256"] != item["sha256"] for item in projection["files"])
+                    or primary_path != "assembled.step"
+                    or primary_sha256 != expected_primary["sha256"]
+                    or facts.get("public_primary_mapping") != {"source_path": expected_primary["path"], "archive_path": "assembled.step", "sha256": primary_sha256}
+                ):
+                    raise ContractError("Factory public scene mapping differs from the Release projection")
+                cover_mapping = public_cover_mapping(projection)
+                cover_path = cover_mapping["archive_path"]
+                if facts.get("public_cover_mapping") != cover_mapping or cover_path not in names or hashlib.sha256(archive.read(cover_path)).hexdigest() != cover_mapping["sha256"]:
+                    raise ContractError("Factory public cover mapping differs from the Release projection")
+                allowed = expected_paths | {cover_path} | {"assembled.step", "project.json", "_inventor-artifact.json", "workshop-product-facts.json", FACTORY_RELEASE_PAGE_PATH, FACTORY_IMPORT_ROOT_PATH}
+                if set(names) - allowed:
+                    raise ContractError("Factory public projection contains an undeclared file")
+                allowed_facts = {"schema_version", "kind", "source_artifact_sha256", "release_sha256", "playtest_evidence_sha256", "inventor", "product", "release", "publication_anchor", "public_primary_mapping", "public_cover_mapping", "primary_model", "make_artifacts", "import_root"}
+                if set(facts) - allowed_facts or facts.get("product") != {"title": release_page["title"], "summary": release_page["summary"]}:
+                    raise ContractError("Factory public projection contains private product facts")
             manual_path = _manual_path_for_release_product(release_page)
             manual = facts.get("publication_anchor" if release_page.get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION else "manual")
             if (
@@ -1301,7 +1335,7 @@ def _assert_factory_handoff(content: bytes) -> None:
                     name,
                     primary_kind=primary_kind,
                     primary_path=primary_path,
-                    made_artifact_paths=frozenset(make_artifacts),
+                    made_artifact_paths=frozenset(make_artifacts) | (frozenset((cover_path,)) if projection is not None else frozenset()),
                 ):
                     raise ContractError(
                         "Factory model handoff contains non-model output: %s" % name
@@ -1344,7 +1378,11 @@ def _build_model_handoff(
     current = build_artifact_manifest(root, created_at=manifest.created_at)
     if current.to_dict() != manifest.to_dict():
         raise ContractError("Made bytes changed before Factory handoff")
-    sealed_primary = _sealed_primary(context)
+    make_output = facts.get("release", {}).get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
+    projection = make_public_projection(root, context.made.product) if make_output else None
+    if make_output and facts["release"].get("public_projection") != projection:
+        raise ContractError("Factory public projection differs from sealed Make assets")
+    sealed_primary = _sealed_primary(context, public_projection=projection)
     primary_source = sealed_primary["path"]
     primary_sha256 = require_sha256(
         sealed_primary["sha256"], "Factory primary model sha256"
@@ -1355,10 +1393,9 @@ def _build_model_handoff(
 
     # Keep assembled.step at the root when Make provides it. Factory's importer
     # ranks that conventional name above all part solids for the product viewer.
-    transport_primary = primary_source
+    transport_primary = "assembled.step" if projection is not None else primary_source
     occurrence: Optional[Mapping[str, Any]] = None
     transport_reason: Optional[str] = None
-    make_output = facts.get("release", {}).get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
     if sealed_primary["kind"] == "solid" and not make_output:
         occurrence, transport_reason = _validated_occurrence_transport(
             root,
@@ -1399,10 +1436,16 @@ def _build_model_handoff(
         )
         conflict_paths.update(item["path"] for item in occurrence["occurrences"])
         conflict_paths.discard(primary_source)
-    make_artifacts = _make_artifact_entries(
-        manifest,
-        conflict_paths=frozenset(conflict_paths),
-    )
+    if projection is None:
+        make_artifacts = _make_artifact_entries(
+            manifest,
+            conflict_paths=frozenset(conflict_paths),
+        )
+    else:
+        public_paths = {item["path"] for item in projection["files"]}
+        make_artifacts = tuple(sorted(((entry, entry.path) for entry in manifest.entries if entry.path in public_paths), key=lambda item: item[0].path))
+        if {entry.path for entry, _ in make_artifacts} != public_paths:
+            raise ContractError("Factory public assets differ from the sealed inventory")
 
     primary_model = {
         "kind": sealed_primary["kind"],
@@ -1410,6 +1453,13 @@ def _build_model_handoff(
         "sha256": primary_sha256,
     }
     transport_facts = dict(facts)
+    public_primary_mapping = None
+    cover_mapping = None
+    if projection is not None:
+        public_primary_mapping = {"source_path": primary_source, "archive_path": transport_primary, "sha256": primary_sha256}
+        transport_facts["public_primary_mapping"] = public_primary_mapping
+        cover_mapping = public_cover_mapping(projection)
+        transport_facts["public_cover_mapping"] = cover_mapping
     if preserve_import_root:
         transport_facts["import_root"] = {
             "mapping": FACTORY_IMPORT_ROOT_MAPPING,
@@ -1497,6 +1547,10 @@ def _build_model_handoff(
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
             target.chmod(0o755 if entry.executable else 0o644)
+        if projection is not None:
+            # Factory ranks this conventional root name. It is only a carrier
+            # alias of Make's complete public scene, with identical bytes.
+            (staging / transport_primary).write_bytes(_read_bound_file(root, manifest, primary_source))
         if occurrence is not None:
             (staging / occurrence["step_path"]).write_bytes(
                 _read_bound_file(root, manifest, occurrence["source_step"])
@@ -1515,15 +1569,20 @@ def _build_model_handoff(
         ):
             raise ContractError("Made contains a reserved Factory handoff path")
         cover_render_source_path = None
-        if make_output:
+        cover_path = FACTORY_COVER_RENDER_PATH
+        if cover_mapping is not None:
+            # Exact presentation bytes, not a new host render or image conversion.
+            cover_render = _read_bound_file(root, manifest, cover_mapping["source_path"])
+            cover_path = cover_mapping["archive_path"]
+        elif make_output:
             cover_render, cover_render_source_path = _sealed_make_output_cover(
                 root, manifest
             )
         else:
             cover_render = _host_cover_render(context)
         if cover_render is not None:
-            assert_packable_content(FACTORY_COVER_RENDER_PATH, cover_render)
-            target = staging.joinpath(*PurePosixPath(FACTORY_COVER_RENDER_PATH).parts)
+            assert_packable_content(cover_path, cover_render)
+            target = staging.joinpath(*PurePosixPath(cover_path).parts)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(cover_render)
             target.chmod(0o644)
@@ -1547,6 +1606,8 @@ def _build_model_handoff(
         {
             "content": content,
             "primary_model": primary_model,
+            **({"public_primary_mapping": public_primary_mapping} if public_primary_mapping is not None else {}),
+            **({"public_cover_mapping": cover_mapping} if cover_mapping is not None else {}),
             "product_facts_sha256": hashlib.sha256(facts_payload).hexdigest(),
             "product_page_sha256": hashlib.sha256(
                 release_page_content
@@ -3640,10 +3701,12 @@ class FactoryReleaseWriter:
         )
         if page.get("schema_version") != MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION and FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(context.made.product):
             raise ContractError("Made product facts contain Release page fields")
+        make_output = page.get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
+        projection = make_public_projection(Path(context.made.artifact_root), context.made.product) if make_output else None
+        if make_output and page.get("public_projection") != projection:
+            raise ContractError("Factory Release projection differs from exact Make assets")
         identity = self.session.login()
         client = FactoryClient(self.session.authenticated_transport)
-
-        make_output = page.get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
         previous_import = self.ledger.latest(context.wish.product_id, "factory-import")
         preserve_import_root = make_output and (
             previous_import is None
@@ -3656,8 +3719,12 @@ class FactoryReleaseWriter:
             "release_sha256": release_sha256,
             "playtest_evidence_sha256": playtest_sha256,
             "inventor": {"name": context.taste.name},
-            "wish": context.wish.to_dict(),
-            "product": dict(context.made.product),
+            **({
+                "product": {"title": page["title"], "summary": page["summary"]},
+            } if projection is not None else {
+                "wish": context.wish.to_dict(),
+                "product": dict(context.made.product),
+            }),
             "release": dict(page),
             ("publication_anchor" if make_output else "manual"): {
                 "path": manual_path,

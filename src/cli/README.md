@@ -42,6 +42,18 @@ match the Inventor selected for publication. The publishing credential never
 enters browser JavaScript, a URL, run workspace, or native-agent environment.
 `workshop login <inventor-id>` explicitly repeats the same flow.
 
+`workshop create inventor <id> --taste <path/TASTE.md> --local-only` creates
+and statically checks a local experimental Inventor without connecting an
+account. Use this while authoring a new Taste and specialist skill. The flag
+does not change publication authentication or grant external-effect authority;
+normal `create inventor` and `start` retain their account setup behavior.
+
+`workshop login <target-inventor> --reuse-from <connected-inventor>` connects
+another Inventor to an existing saved publishing account. It reads only that
+Inventor's private credential, authenticates it, then atomically stores the
+target binding. It never falls back to the shared account or environment
+credentials. The command prints the connected account name, never its secrets.
+
 `workshop start <inventor-id>` is the front door and a loop: it asks one
 Inventor to dream one fresh, Taste-fitting idea through `workshop.daydream`, prints the
 sealed concept card, seals it as a Wish, starts the same native session
