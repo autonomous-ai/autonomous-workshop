@@ -56,6 +56,30 @@ not refraction, reflection or physical transmission evidence. Mean triangle
 depth remains approximate for crossing surfaces. No runtime dependency or host
 renderer was added; frozen pilots keep their original tool bytes.
 
+## Per-pixel opaque depth for product views (2026-09-10)
+
+Two valid, nonintersecting STEP plates separated by 0.5 mm reproduced a severe
+Product painter-order error in only 24 triangles: the lower plate covered
+almost half of the nearer plate's top. `render_product` now adapts the bounded
+orthographic barycentric depth interpolation already used by `render_review`.
+It completes an opaque depth buffer, then clips transparent fragments against
+that buffer without letting transparency write depth. Shared edges use the
+existing half-open coverage rule so one translucent surface blends once.
+
+Camera, placement, palette, shading, shadow, silhouette outline, exact STEP
+inputs and geometry/review gates remain unchanged. Pixel-centre coverage can
+differ from the former inclusive polygon fill. Transparent-to-transparent
+source-over order is still based on triangle mean depth and is approximate,
+including some nonintersecting overlapping surfaces; this is not an optical
+simulation. No dependencies or host rendering path were added.
+
+Regression coverage includes real STEP round trips, separated stacked plates,
+triangle order and subdivision, front/rear transparent clipping, interpolated
+fragment depth, no transparent depth writes, coplanar seams, zero-alpha
+disappearance, RGB/RGBA compatibility and complete large-scene coverage. The
+private diagnostic fixture and rendered comparisons remain outside Git.
+Frozen running products retain their materialized tool until explicitly refreshed.
+
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at

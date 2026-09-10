@@ -12,7 +12,8 @@ product photography.
 Authored leaf/occurrence colors are preserved through nested assembly
 placements. The base/accent palette supplies only otherwise uncolored faces;
 color is appearance evidence, not a material or fabrication certification.
-Authored alpha gives schematic, depth-sorted transparency. This is not an
+Opaque visibility uses per-pixel depth. Authored alpha is clipped against that
+depth, then blended in approximate far-to-near triangle order. This is not an
 optical simulation: it does not model refraction, reflections or transmission.
 
 Examples:
@@ -224,26 +225,31 @@ def _shade(color: tuple[int, int, int], light: float) -> tuple[int, int, int]:
     )
 
 
-def _translucent_triangle(image: Image.Image, points, color, alpha: float) -> None:
-    """Source-over one triangle with half-open shared edges and bounded strips.
+def _raster_triangle(pixels, depth_buffer, points, vertex_depths, color, alpha: float) -> None:
+    """Rasterize orthographic depth in bounded strips, with half-open edges.
 
-    PIL's inclusive polygons paint a shared triangulation edge twice. Pixel
-    centres and the top-left rule give that edge to exactly one triangle.
-    Separate depth layers still composite separately in the caller's order.
+    Opaque fragments replace only farther surfaces. Translucent fragments are
+    clipped against the completed opaque buffer and never write depth, so a
+    nearer transparent layer cannot discard a farther transparent layer.
+    Their source-over order remains the caller's approximation. Depth math
+    follows render_review; half-open edges blend a triangulated surface once.
     """
     opacity = round(alpha * 255)
     if opacity == 0:
         return
     a, b, c = points
     area = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
-    if area == 0:
+    if abs(area) < 1e-12:
         return
+    za, zb, zc = vertex_depths
     if area < 0:
         b, c = c, b
-    left = max(0, min(a[0], b[0], c[0]))
-    right = min(image.width, max(a[0], b[0], c[0]))
-    top = max(0, min(a[1], b[1], c[1]))
-    bottom = min(image.height, max(a[1], b[1], c[1]))
+        zb, zc = zc, zb
+        area = -area
+    left = max(0, math.floor(min(a[0], b[0], c[0])))
+    right = min(pixels.shape[1], math.ceil(max(a[0], b[0], c[0])))
+    top = max(0, math.floor(min(a[1], b[1], c[1])))
+    bottom = min(pixels.shape[0], math.ceil(max(a[1], b[1], c[1])))
     if left >= right or top >= bottom:
         return
     rgb = np.asarray(color, dtype=np.uint16)
@@ -252,17 +258,30 @@ def _translucent_triangle(image: Image.Image, points, color, alpha: float) -> No
         y, x = np.ogrid[row:end, left:right]
         x, y = x + 0.5, y + 0.5
         inside = np.ones((end - row, right - left), dtype=bool)
-        for start, finish in ((a, b), (b, c), (c, a)):
+        edges = []
+        for start, finish in ((b, c), (c, a), (a, b)):
             dx, dy = finish[0] - start[0], finish[1] - start[1]
-            edge = dx * (y - start[1]) - dy * (x - start[0])
+            # Reversing a shared edge negates this expression, including its
+            # rounding, so the top-left rule cannot paint the seam twice.
+            constant = start[0] * finish[1] - finish[0] * start[1]
+            edge = dx * y - dy * x + constant
+            edges.append(edge)
             top_left = dy < 0 or (dy == 0 and dx > 0)
             inside &= (edge > 0) | ((edge == 0) & top_left)
         if not np.any(inside):
             continue
-        pixels = np.asarray(image.crop((left, row, right, end))).copy()
-        selected = pixels[inside].astype(np.uint16)
-        pixels[inside] = ((selected * (255 - opacity) + rgb * opacity + 127) // 255).astype(np.uint8)
-        image.paste(Image.fromarray(pixels), (left, row))
+        depth = (edges[0] * za + edges[1] * zb + edges[2] * zc) / area
+        existing = depth_buffer[row:end, left:right]
+        visible = inside & (depth > existing + 1e-9)
+        if not np.any(visible):
+            continue
+        chunk = pixels[row:end, left:right]
+        if alpha == 1:
+            existing[visible] = depth[visible]
+            chunk[visible] = color
+        else:
+            selected = chunk[visible].astype(np.uint16)
+            chunk[visible] = ((selected * (255 - opacity) + rgb * opacity + 127) // 255).astype(np.uint8)
 
 
 def _gradient(size: int, top: tuple[int, int, int], bottom: tuple[int, int, int]):
@@ -383,25 +402,25 @@ def render(
     color_mix = np.abs(normals[:, 2]) ** 4
     facing_camera = (normals @ forward) > 1e-8
     order = np.argsort(depth.mean(axis=1), kind="stable")
-    pen = ImageDraw.Draw(image)
-    for index in order:
-        if not valid[index] or not facing_camera[index] or alphas[index] == 0:
-            continue
-        if triangle_colors is not None and triangle_colors[index, 0] >= 0:
-            material = tuple(int(channel) for channel in triangle_colors[index, :3])
-        else:
-            material = _blend(base, accent, 0.12 + 0.70 * float(color_mix[index]))
-        color = _shade(material, 0.52 + 0.63 * float(diffuse[index]))
-        points = [
-            (int(round(screen_x[index, corner])), int(round(screen_y[index, corner])))
-            for corner in range(3)
-        ]
-        if alphas[index] == 1:
-            pen.polygon(points, fill=color)
-        else:
-            # Schematic source-over appearance, in the existing far-to-near
-            # triangle order. Mean depth remains approximate for crossing faces.
-            _translucent_triangle(image, points, color, float(alphas[index]))
+    pixels = np.asarray(image).copy()
+    depth_buffer = np.full((canvas_size, canvas_size), -np.inf)
+    # A triangle's mean depth cannot order its partially overlapping surfaces.
+    # Complete opaque visibility first, then clip every transparent fragment
+    # against it. Transparent-to-transparent ordering remains approximate.
+    for opaque_pass in (True, False):
+        for index in order:
+            if not valid[index] or not facing_camera[index] or alphas[index] == 0:
+                continue
+            if (alphas[index] == 1) != opaque_pass:
+                continue
+            if triangle_colors is not None and triangle_colors[index, 0] >= 0:
+                material = tuple(int(channel) for channel in triangle_colors[index, :3])
+            else:
+                material = _blend(base, accent, 0.12 + 0.70 * float(color_mix[index]))
+            color = _shade(material, 0.52 + 0.63 * float(diffuse[index]))
+            points = list(zip(screen_x[index], screen_y[index]))
+            _raster_triangle(pixels, depth_buffer, points, depth[index], color, float(alphas[index]))
+    image = Image.fromarray(pixels)
 
     # A restrained outline restores silhouette clarity after flat triangle
     # shading, especially for pale palettes.

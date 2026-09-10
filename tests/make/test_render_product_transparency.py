@@ -131,16 +131,17 @@ class ProductTransparencyTests(unittest.TestCase):
         )
         for triangles in triangulations:
             for reverse in (False, True):
-                image = Image.new("RGB", (80, 80), (100, 100, 100))
+                pixels = np.full((80, 80, 3), 100, dtype=np.uint8)
+                depths = np.full((80, 80), -np.inf)
                 for points in reversed(triangles) if reverse else triangles:
-                    self.tool["_translucent_triangle"](image, points, (200, 0, 0), 0.2)
-                pixels = np.asarray(image)
+                    self.tool["_raster_triangle"](pixels, depths, points, (0, 0, 0), (200, 0, 0), 0.2)
                 np.testing.assert_array_equal(pixels[2:78, 2:78], np.full((76, 76, 3), (120, 80, 80)))
-                self.assertEqual(image.getpixel((1, 1)), (100, 100, 100))
+                self.assertEqual(tuple(pixels[1, 1]), (100, 100, 100))
                 # A genuinely separate second layer must blend again.
                 for points in triangles:
-                    self.tool["_translucent_triangle"](image, points, (200, 0, 0), 0.2)
-                np.testing.assert_array_equal(np.asarray(image)[2:78, 2:78], np.full((76, 76, 3), (136, 64, 64)))
+                    self.tool["_raster_triangle"](pixels, depths, points, (1, 1, 1), (200, 0, 0), 0.2)
+                np.testing.assert_array_equal(pixels[2:78, 2:78], np.full((76, 76, 3), (136, 64, 64)))
+                self.assertTrue(np.isneginf(depths).all())
 
     def test_inherited_alpha_survives_nested_placements_without_mutation(self):
         leaf = Box(3, 4, 5)
@@ -177,19 +178,19 @@ class ProductTransparencyTests(unittest.TestCase):
             def polygon(points, *, fill):
                 calls[(image.mode, fill)] += 1
             return SimpleNamespace(polygon=polygon, ellipse=lambda *args, **kwargs: None)
-        def transparent(image, points, color, alpha):
-            calls[("transparent", color, alpha)] += 1
+        def raster(pixels, depths, points, vertex_depths, color, alpha):
+            calls[("raster", color, alpha)] += 1
         with mock.patch.object(self.tool["ImageDraw"], "Draw", side_effect=draw), \
-             mock.patch.dict(self.tool["render"].__globals__, {"_translucent_triangle": transparent}):
+             mock.patch.dict(self.tool["render"].__globals__, {"_raster_triangle": raster}):
             self.render(triangles, colors)
         light = self.tool["_normal"](np.array([-0.55, -0.75, 1.6]))
         intensity = 0.52 + 0.63 * abs(light[1])
         shaded = lambda color: self.tool["_shade"](color, intensity)
         self.assertEqual(calls, Counter({
-            ("RGB", shaded((0, 0, 255))): 38398,
-            ("RGB", shaded((255, 0, 0))): 1,
-            ("transparent", shaded((0, 255, 0)), 0.4): 38400,
-            ("transparent", shaded((255, 0, 255)), 0.2): 1,
+            ("raster", shaded((0, 0, 255)), 1.0): 38398,
+            ("raster", shaded((255, 0, 0)), 1.0): 1,
+            ("raster", shaded((0, 255, 0)), 0.4): 38400,
+            ("raster", shaded((255, 0, 255)), 0.2): 1,
             ("L", 255): 38399,
         }))
 

@@ -185,6 +185,13 @@ by discarding triangles or components. Larger assemblies take more rendering
 time and memory; the source STEP, display tessellation defaults and mandatory
 CAD checks are unchanged.
 
+Opaque surfaces use per-pixel depth, so long lower faces cannot paint over
+nearer surfaces merely because their triangle centres sort later. Transparent
+fragments blend only when they lie in front of the completed opaque depth at
+that pixel; they do not hide farther transparent fragments from subsequent
+blending. Camera, palette and shading remain unchanged. Pixel-centre edge
+coverage can differ from older polygon-filled images.
+
 Exact-state sheets compare neutral RGB views. A triangle keeps its opacity in
 that comparison only when its exact world-space vertices, opacity and
 unambiguous coincident multiplicity agree across every state. An unchanged
@@ -195,8 +202,10 @@ need a clearer fixed camera view. The displayed frames keep authored appearance;
 this comparison does not replace the motion or geometry checks.
 
 This presentation does not simulate refraction, reflections, mirror images or
-physical light transmission. Mean triangle-depth sorting can approximate
-crossing or overlapping transparent surfaces incorrectly. Inspect the exact
+physical light transmission. Ordering between transparent layers still uses
+mean triangle depth and can blend overlapping transparent surfaces incorrectly,
+even when the underlying solids do not intersect. Per-pixel opaque depth does
+not make that transparent-to-transparent ordering exact. Inspect the exact
 product views and retain optical limitations in the internal evidence;
 appearance is not material qualification or proof that an optical mechanism
 works. `render_review` remains an opaque geometry-review view.
