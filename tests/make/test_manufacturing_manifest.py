@@ -90,6 +90,164 @@ def make_mixed_product(root: Path) -> tuple[dict, dict]:
     return seal_manifest(root, document), document
 
 
+def make_purchased_subassembly(root: Path) -> tuple[dict, dict]:
+    """One procurement unit with two colored leaves from a real gen descriptor.
+
+    The committed descriptor was captured from scripts/gen on two synthetic,
+    differently colored solids grouped as one purchased unit. Provenance paths
+    were omitted; occurrence, component and hierarchy records are unchanged.
+    """
+    _, document = make_mixed_product(root)
+    bind_file(root, "cad/part_body.step.py", b"PRINTABLE = False\n")
+    fixture = Path(__file__).with_name("fixtures") / "purchased_unit_assembly.json"
+    content = fixture.read_bytes()
+    document["assembly"]["occurrences"] = bind_file(root, "internal/assembled.step.json", content)
+    bind_file(root, "assembled.step.json", content)
+    motor = document["components"][3]
+    motor.update(quantity=1, occurrences=["body", "terminal"], assembly_unit_ids=["o1.1"])
+    document["components"] = [motor]
+    document["assembly_steps"][0]["components"] = ["motor"]
+    return seal_manifest(root, document), document
+
+
+class PurchasedAssemblyUnitTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.product, self.document = make_purchased_subassembly(self.root)
+        self.motor = self.document["components"][0]
+        self.descriptor = json.loads((self.root / "assembled.step.json").read_bytes())
+
+    def validate(self):
+        content = encoded(self.descriptor)
+        bind_file(self.root, "assembled.step.json", content)
+        self.document["assembly"]["occurrences"] = bind_file(self.root, "internal/assembled.step.json", content)
+        self.product = seal_manifest(self.root, self.document)
+        return validate_manifest(self.root, self.product, cad_project_path="cad")
+
+    def test_one_purchased_unit_preserves_two_colored_leaves_and_exact_hierarchy(self):
+        before = (self.root / "assembled.step.json").read_bytes()
+        self.assertEqual(validate_manifest(self.root, self.product, cad_project_path="cad"), self.document)
+        self.assertEqual(self.motor["quantity"], 1)
+        self.assertEqual(len(self.descriptor["occurrences"]), 2)
+        colors = [row["color"] for row in self.descriptor["occurrences"]]
+        self.assertNotEqual(colors[0], colors[1])
+        self.assertEqual((self.root / "assembled.step.json").read_bytes(), before)
+        self.assertEqual((self.root / "internal/assembled.step.json").read_bytes(), before)
+        self.assertEqual(public_asset_paths(self.root, self.product), ("public/assembled.step", "public/hero.png"))
+
+    def test_two_purchased_units_use_exact_ids_even_when_parent_names_repeat(self):
+        first = self.descriptor["assembly"]["root"]["children"][0]
+        second = copy.deepcopy(first)
+        def relocate(node):
+            node["id"] = node["id"].replace("o1.1", "o1.2", 1)
+            node["leafPartIds"] = [value.replace("o1.1", "o1.2", 1) for value in node["leafPartIds"]]
+            if node["nodeType"] == "part":
+                node["name"] += "_second"
+            for child in node["children"]:
+                relocate(child)
+        relocate(second)
+        root = self.descriptor["assembly"]["root"]
+        root["children"].append(second)
+        root["leafPartIds"].extend(second["leafPartIds"])
+        for row in list(self.descriptor["occurrences"]):
+            repeated = copy.deepcopy(row)
+            repeated["id"] = repeated["id"].replace("o1.1", "o1.2", 1)
+            repeated["name"] += "_second"
+            repeated["transform"][3] += 30
+            self.descriptor["occurrences"].append(repeated)
+        self.descriptor["stats"]["occurrenceCount"] = 4
+        self.motor.update(quantity=2, occurrences=[row["name"] for row in self.descriptor["occurrences"]], assembly_unit_ids=["o1.1", "o1.2"])
+        self.assertEqual(first["name"], second["name"])
+        self.assertEqual(self.validate(), self.document)
+
+    def test_without_grouping_the_previous_leaf_quantity_rule_is_unchanged(self):
+        del self.motor["assembly_unit_ids"]
+        with self.assertRaisesRegex(ManufacturingManifestError, "assembly occurrence count"):
+            self.validate()
+        self.motor["quantity"] = 2
+        self.assertEqual(self.validate(), self.document)
+
+    def test_quantity_cannot_count_leaves_instead_of_declared_physical_units(self):
+        self.motor["quantity"] = 2
+        with self.assertRaisesRegex(ManufacturingManifestError, "assembly unit count"):
+            self.validate()
+
+    def test_duplicated_unknown_root_leaf_and_name_unit_references_fail(self):
+        for ids in (["o1.1", "o1.1"], ["o1.9"], ["o1"], ["o1.1.1", "o1.1.2"], ["purchased_unit"]):
+            self.motor.update(assembly_unit_ids=ids, quantity=len(ids))
+            with self.subTest(ids=ids), self.assertRaises(ManufacturingManifestError):
+                self.validate()
+
+    def test_ancestor_and_descendant_units_cannot_count_the_same_leaves_twice(self):
+        outer = self.descriptor["assembly"]["root"]["children"][0]
+        inner = copy.deepcopy(outer)
+        inner["id"] = "o1.1.1"
+        inner["leafPartIds"] = [value.replace("o1.1.", "o1.1.1.", 1) for value in inner["leafPartIds"]]
+        for leaf in inner["children"]:
+            leaf["id"] = leaf["id"].replace("o1.1.", "o1.1.1.", 1)
+            leaf["leafPartIds"] = [leaf["id"]]
+        outer["children"] = [inner]
+        outer["leafPartIds"] = inner["leafPartIds"][:]
+        self.descriptor["assembly"]["root"]["leafPartIds"] = inner["leafPartIds"][:]
+        for row in self.descriptor["occurrences"]:
+            row["id"] = row["id"].replace("o1.1.", "o1.1.1.", 1)
+        self.motor.update(quantity=2, assembly_unit_ids=["o1.1", "o1.1.1"])
+        with self.assertRaisesRegex(ManufacturingManifestError, "overlap"):
+            self.validate()
+
+    def test_grouped_component_must_claim_every_leaf_of_its_unit(self):
+        self.motor["occurrences"] = ["body"]
+        with self.assertRaisesRegex(ManufacturingManifestError, "exactly cover"):
+            self.validate()
+
+    def test_two_components_cannot_claim_the_same_physical_unit(self):
+        other = copy.deepcopy(self.motor)
+        other["id"] = "other_motor"
+        self.document["components"].append(other)
+        with self.assertRaisesRegex(ManufacturingManifestError, "two components"):
+            self.validate()
+
+    def test_grouped_units_require_purchased_process_and_nonempty_id_list(self):
+        for value in ([], None, "o1.1", [True]):
+            self.motor["assembly_unit_ids"] = value
+            with self.subTest(value=value), self.assertRaises(ManufacturingManifestError):
+                self.validate()
+        self.motor.update(assembly_unit_ids=["o1.1"], process="handcraft")
+        with self.assertRaisesRegex(ManufacturingManifestError, "only for purchased"):
+            self.validate()
+
+    def test_grouping_requires_complete_unambiguous_cad_hierarchy(self):
+        original = copy.deepcopy(self.descriptor)
+        cases = ("missing_tree", "duplicate_leaf_id", "duplicate_tree_id", "leaf_name", "parent_path", "missing_leaf", "extra_declared_leaf", "duplicate_declared_leaf", "unlisted_occurrence")
+        for case in cases:
+            self.descriptor = copy.deepcopy(original)
+            root = self.descriptor["assembly"]["root"]
+            unit = root["children"][0]
+            if case == "missing_tree":
+                del self.descriptor["assembly"]
+            elif case == "duplicate_leaf_id":
+                self.descriptor["occurrences"][1]["id"] = self.descriptor["occurrences"][0]["id"]
+            elif case == "duplicate_tree_id":
+                unit["children"][1]["id"] = unit["children"][0]["id"]
+            elif case == "leaf_name":
+                unit["children"][0]["name"] = "unrelated"
+            elif case == "parent_path":
+                unit["children"][0]["id"] = "o9.1"
+            elif case == "missing_leaf":
+                unit["children"].pop()
+            elif case == "extra_declared_leaf":
+                unit["leafPartIds"].append("o1.99")
+            elif case == "duplicate_declared_leaf":
+                unit["leafPartIds"].append(unit["leafPartIds"][0])
+            elif case == "unlisted_occurrence":
+                self.descriptor["occurrences"].append({"id": "o1.9", "name": "orphan"})
+                self.descriptor["stats"]["occurrenceCount"] += 1
+            with self.subTest(case=case), self.assertRaises(ManufacturingManifestError):
+                self.validate()
+
+
 class ManufacturingManifestTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()

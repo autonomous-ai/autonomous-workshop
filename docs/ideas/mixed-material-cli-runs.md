@@ -183,3 +183,27 @@ each original Wish, Inventor, Astra/ultra profile and remaining 100M allowance:
 
 Each entered `session.resume`; no tool refresh or new Wish was used. A resume
 starting successfully is not evidence that the product is complete.
+
+### Make audit: purchased units and misleading verification instructions
+
+A real imported-STEP audit confirmed Cloudline's selected motor is one CAD
+leaf, correctly counted as one unit. A separate synthetic multipart motor
+exposed a general defect: retaining its two colored leaves forced the old BOM
+rule to count two purchased motors; flattening retained geometry but lost the
+separate colors. The manifest now supports optional purchased
+`assembly_unit_ids`, bound to exact non-root CAD subassemblies. Quantity counts
+those physical units while every descendant leaf remains covered exactly once.
+No supplier packaging or physical performance is inferred from that grouping.
+
+Captured real CAD hierarchy tests cover color preservation, repeated units,
+overlap, missing leaves, malformed hierarchy and inflated quantities. The
+combined manufacturing, skill-registry and finalizer suite passed 100 tests.
+An additional 25 package-data/registry checks passed, including the actual
+materialized-byte credential scanner. These suites overlap.
+
+Liltwing's native contract audit also exposed stale CAD guidance asking Spark
+to author a verification JSON despite its finalizer requiring the verifier's
+actual Markdown report. Corrected that guidance and Make-round's old claim
+that every material receives print gates. Instructions now describe the
+implemented printed subset and actual generated evidence. Neither correction
+changes engineering thresholds or the running pilots' frozen tools.

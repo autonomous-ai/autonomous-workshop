@@ -30,7 +30,11 @@ circuits; a controller, firmware, network, or custom PCB needs a separate
 explicit brief. No purchasing or manufacturing authority comes from this skill.
 
 Give every installed part a stable component identity and every placed copy a
-named occurrence. Model the full assembled shape, including nonprinted parts,
+named occurrence. A bought subassembly may contain several colored CAD leaves
+while remaining one purchased unit. Preserve that hierarchy and use the optional
+`assembly_unit_ids` binding in the manifest contract; do not inflate procurement
+quantity to the leaf count or erase colors by flattening the assembly.
+Model the full assembled shape, including nonprinted parts,
 cord routes, springs, fabric/card shapes, hardware, and purchased components.
 Use documented approximate envelopes when exact geometry is unavailable and
 record that limitation internally. Hidden parts may be occluded in the beauty

@@ -33,6 +33,7 @@ FORBIDDEN_SUFFIXES = frozenset({".stl", ".3mf", ".glb", ".gltf", ".dxf", ".dwg",
 TOP_FIELDS = {"schema_version", "kind", "delivery", "assembly", "components", "stock", "consumables", "tools", "assembly_steps", "public_assets"}
 ID = re.compile(r"^[a-z0-9][a-z0-9_-]{0,127}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+ASSEMBLY_NODE_ID = re.compile(r"^o[1-9][0-9]*(?:\.[1-9][0-9]*)*$")
 
 
 class ManufacturingManifestError(ValueError):
@@ -308,7 +309,7 @@ def _inventory(value: Any, label: str, *, tools: bool = False) -> set[str]:
     return ids
 
 
-def _occurrence_names(root: Path, assembly: Mapping[str, Any]) -> set[str]:
+def _occurrence_inventory(root: Path, assembly: Mapping[str, Any]) -> tuple[set[str], Mapping[str, Any]]:
     step_content = _bound_file(root, assembly["step"], "complete assembly STEP")
     descriptor_content = _bound_file(root, assembly["occurrences"], "assembly occurrence descriptor", maximum=MAX_JSON_BYTES)
     if step_content != _regular_bytes(root, "assembled.step", "canonical assembled.step"):
@@ -333,7 +334,77 @@ def _occurrence_names(root: Path, assembly: Mapping[str, Any]) -> set[str]:
         count = stats.get("occurrenceCount", len(names))
         if type(count) is not int or count != len(names):
             _error("assembly occurrenceCount differs from its occurrences")
-    return names
+    return names, descriptor
+
+
+def _assembly_node_id(value: Any) -> str:
+    if not isinstance(value, str) or len(value) > 128 or ASSEMBLY_NODE_ID.fullmatch(value) is None:
+        _error("assembly unit/node ID must be an exact CAD occurrence ID such as o1.2")
+    return value
+
+
+def _assembly_node_ids(value: Any, label: str) -> list[str]:
+    result = [_assembly_node_id(item) for item in _list(value, label, nonempty=True)]
+    if len(result) != len(set(result)):
+        _error(f"{label} contains duplicate IDs")
+    return result
+
+
+def _assembly_unit_leaves(descriptor: Mapping[str, Any]) -> dict[str, set[str]]:
+    """Resolve physical-unit subassemblies against the exact rendered leaf tree.
+
+    This runs only for the optional purchased-unit representation. Historical
+    descriptors without hierarchy or occurrence IDs keep their original rules.
+    """
+    leaf_names: dict[str, str] = {}
+    for row in descriptor["occurrences"]:
+        node_id = _assembly_node_id(row.get("id"))
+        if node_id in leaf_names:
+            _error("assembly leaf occurrence IDs must be unique")
+        leaf_names[node_id] = row["name"]
+    assembly = descriptor.get("assembly")
+    if not isinstance(assembly, Mapping) or not isinstance(assembly.get("root"), Mapping):
+        _error("assembly_unit_ids require the exact CAD assembly hierarchy")
+    seen: set[str] = set()
+    units: dict[str, set[str]] = {}
+
+    def walk(node: Any, depth: int, parent: str | None = None) -> set[str]:
+        if depth > 64 or len(seen) >= MAX_ITEMS * 4:
+            _error("assembly unit hierarchy exceeds its depth or node limit")
+        if not isinstance(node, Mapping):
+            _error("assembly unit hierarchy node must be an object")
+        node_id = _assembly_node_id(node.get("id"))
+        if node_id in seen:
+            _error("assembly unit hierarchy contains duplicate node IDs")
+        if parent is not None and node_id.rpartition(".")[0] != parent:
+            _error("assembly unit hierarchy node ID differs from its parent path")
+        seen.add(node_id)
+        children = _list(node.get("children"), "assembly unit children")
+        node_type = node.get("nodeType")
+        declared = set(_assembly_node_ids(node.get("leafPartIds"), "assembly node leafPartIds"))
+        if node_type == "part" and depth > 0:
+            if children or node_id not in leaf_names or node.get("name") != leaf_names[node_id]:
+                _error("assembly unit leaf differs from the rendered occurrence")
+            leaves = {node_id}
+        else:
+            expected_type = "assembly" if depth == 0 else "subassembly"
+            if node_type != expected_type or not children or node_id in leaf_names:
+                _error("assembly unit hierarchy has an invalid assembly/subassembly node")
+            leaves: set[str] = set()
+            for child in children:
+                child_leaves = walk(child, depth + 1, node_id)
+                if leaves & child_leaves:
+                    _error("assembly unit hierarchy overlaps leaf occurrences")
+                leaves.update(child_leaves)
+            if depth > 0:
+                units[node_id] = {leaf_names[item] for item in leaves}
+        if declared != leaves:
+            _error("assembly node leafPartIds differ from its exact descendant leaves")
+        return leaves
+
+    if walk(assembly["root"], 0) != set(leaf_names):
+        _error("assembly unit hierarchy must cover every rendered leaf exactly once")
+    return units
 
 
 def _files(root: Path, value: Any, label: str, *, nonempty: bool = False) -> list[str]:
@@ -416,7 +487,8 @@ def validate_manifest(product_root: Path, product: Mapping[str, Any], *, cad_pro
         return None
     root = _root(product_root)
     _public_paths(root, document, product)
-    occurrence_names = _occurrence_names(root, _assembly_bindings(document))
+    occurrence_names, descriptor = _occurrence_inventory(root, _assembly_bindings(document))
+    assembly_units: dict[str, set[str]] | None = None
     stock_ids = _inventory(document["stock"], "stock")
     consumable_ids = _inventory(document["consumables"], "consumables")
     tool_ids = _inventory(document["tools"], "tools", tools=True)
@@ -426,7 +498,7 @@ def validate_manifest(product_root: Path, product: Mapping[str, Any], *, cad_pro
     covered: set[str] = set()
     components = _list(document["components"], "components", nonempty=True)
     for component in components:
-        _object(component, "component", {"id", "name", "material", "process", "quantity", "occurrences", "specification", "files", "stock_ids"}, {"sourcing", "dimensions_mm"})
+        _object(component, "component", {"id", "name", "material", "process", "quantity", "occurrences", "specification", "files", "stock_ids"}, {"sourcing", "dimensions_mm", "assembly_unit_ids"})
         component_id = _id(component["id"], "component id")
         if component_id in component_ids or component_id in stock_ids | consumable_ids | tool_ids:
             _error("component IDs must be globally unique")
@@ -442,7 +514,25 @@ def validate_manifest(product_root: Path, product: Mapping[str, Any], *, cad_pro
             _error("component process is unsupported")
         quantity = _number(component["quantity"], "component quantity", integer=True)
         occurrences = _identifiers(component["occurrences"], "component occurrences", occurrence_names, nonempty=True)
-        if quantity != len(occurrences):
+        if "assembly_unit_ids" in component:
+            if process != "purchased":
+                _error("assembly_unit_ids are supported only for purchased components")
+            unit_ids = _assembly_node_ids(component["assembly_unit_ids"], "component assembly_unit_ids")
+            if quantity != len(unit_ids):
+                _error("purchased component quantity must equal its assembly unit count")
+            if assembly_units is None:
+                assembly_units = _assembly_unit_leaves(descriptor)
+            unit_occurrences: set[str] = set()
+            for unit_id in unit_ids:
+                if unit_id not in assembly_units:
+                    _error("assembly_unit_ids must identify exact non-root CAD subassemblies")
+                leaves = assembly_units[unit_id]
+                if unit_occurrences & leaves:
+                    _error("purchased assembly units overlap leaf occurrences")
+                unit_occurrences.update(leaves)
+            if unit_occurrences != set(occurrences):
+                _error("purchased assembly units must exactly cover the component occurrences")
+        elif quantity != len(occurrences):
             _error("component quantity must equal its assembly occurrence count")
         if covered & set(occurrences):
             _error("an assembly occurrence cannot belong to two components")

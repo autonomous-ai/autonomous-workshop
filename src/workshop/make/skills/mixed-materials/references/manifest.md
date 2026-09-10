@@ -139,8 +139,10 @@ mechanism must include every other installed component it uses.
   `cut-to-length`, `purchased`, `handcraft`. These describe responsibility and
   preparation, not a claim that a CAM toolchain exists.
 - Component `quantity` is a positive integer equal to the number of names in
-  `occurrences`. Each complete-assembly occurrence belongs to exactly one
-  component definition; no missing, extra or multiply claimed occurrences.
+  `occurrences`, unless a purchased component uses the optional
+  `assembly_unit_ids` representation below. Each complete-assembly leaf still
+  belongs to exactly one component definition; no missing, extra or multiply
+  claimed occurrences.
 - The descriptor is a strict JSON `kind: "assembly-package"`,
   `schemaVersion: 2`, `entryKind: "assembly"` document from the CAD assembly.
   Its internal copy must match root `assembled.step.json` byte-for-byte.
@@ -177,6 +179,53 @@ mechanism must include every other installed component it uses.
 - Lists are bounded to 512 items; manifest JSON is bounded to 2 MiB; each
   referenced file is a nonempty regular file no larger than 95 MiB. Duplicate
   JSON keys, nonfinite numeric values, traversal and symlinks fail closed.
+
+## Purchased subassemblies: physical units and colored CAD parts
+
+A purchased motor can be one procurement unit represented by several colored
+CAD leaves. Preserve its complete imported hierarchy and colors. Do not report
+two motors because its body and terminal appear separately, or flatten the
+geometry just to satisfy the BOM count.
+
+For a `purchased` component only, optionally add `assembly_unit_ids`:
+
+```json
+{
+  "quantity": 1,
+  "occurrences": ["motor_body", "motor_terminal"],
+  "assembly_unit_ids": ["o1.2"]
+}
+```
+
+These are additional fields within the otherwise complete purchased component,
+not a replacement component schema. `o1.2` must identify the exact subassembly
+node in the sealed descriptor's `assembly.root` hierarchy. Its descendant leaf
+IDs resolve through `descriptor.occurrences` to `motor_body` and
+`motor_terminal`. Parent display names are not identifiers: two units may both
+be named "motor" but have different occurrence IDs.
+
+- `assembly_unit_ids` is a nonempty list of unique exact CAD subassembly IDs,
+  such as `o1.2` or `o1.4.1`. Root assembly IDs, individual leaf IDs and unknown
+  IDs are refused. IDs contain positive numeric path segments and are bounded
+  to 128 characters.
+- `quantity` equals the number of selected physical units. Two placed bought
+  motors use two distinct subassembly IDs, even when their geometry is shared.
+- The union of each selected unit's descendant leaves must equal the
+  component's existing `occurrences` list exactly. Units cannot overlap or
+  include both an ancestor and its descendant. Every product leaf remains
+  covered by exactly one component across the complete BOM.
+- The hierarchy must agree with the descriptor's leaf IDs/names and each
+  node's `leafPartIds`, have unique node IDs with consistent parent paths, and
+  cover all rendered leaves exactly once. The opt-in hierarchy check is bounded
+  to 64 levels and 2,048 nodes. It reads data only; it never runs CAD.
+- Without `assembly_unit_ids`, existing manifests keep the original leaf-count
+  rule and do not require hierarchy/occurrence-ID fields. Printed and fabricated
+  components retain that rule; this option does not change their print subset.
+
+The supplier specification still establishes what is bought as a unit. Exact
+CAD grouping is structural identity, not proof of supplier packaging, physical
+assembly, pricing or performance. The public projection remains unchanged and
+never includes these internal procurement relationships.
 
 ## Print subset and fabrication representations
 

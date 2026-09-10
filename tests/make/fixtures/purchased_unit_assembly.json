@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 2,
+  "entryKind": "assembly",
+  "kind": "assembly-package",
+  "packageSchemaVersion": 3,
+  "rootName": "gen_hierarchy",
+  "units": "mm",
+  "components": {
+    "15801a3df7b84845": {
+      "glb": "components/15801a3df7b84845.glb",
+      "contentHash": "15801a3df7b8484559490eee5b969717b936642ba3a430f7d0ef9ef7c8d8abc7"
+    },
+    "07e3eb2850fe896b": {
+      "glb": "components/07e3eb2850fe896b.glb",
+      "contentHash": "07e3eb2850fe896be71e22a994fb0cd8f93557cde910e165f14d3f002884f3a7"
+    }
+  },
+  "occurrences": [
+    {
+      "id": "o1.1.1",
+      "name": "body",
+      "component": "15801a3df7b84845",
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "color": [
+        0.4019778,
+        0.4019778,
+        0.4019778,
+        1.0
+      ]
+    },
+    {
+      "id": "o1.1.2",
+      "name": "terminal",
+      "component": "07e3eb2850fe896b",
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        9.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "color": [
+        0.6583748,
+        0.3515326,
+        0.0144438,
+        1.0
+      ]
+    }
+  ],
+  "assembly": {
+    "root": {
+      "id": "o1",
+      "name": "purchased-unit-probe",
+      "nodeType": "assembly",
+      "leafPartIds": [
+        "o1.1.1",
+        "o1.1.2"
+      ],
+      "children": [
+        {
+          "id": "o1.1",
+          "name": "purchased_unit",
+          "nodeType": "subassembly",
+          "leafPartIds": [
+            "o1.1.1",
+            "o1.1.2"
+          ],
+          "children": [
+            {
+              "id": "o1.1.1",
+              "name": "body",
+              "nodeType": "part",
+              "leafPartIds": [
+                "o1.1.1"
+              ],
+              "children": []
+            },
+            {
+              "id": "o1.1.2",
+              "name": "terminal",
+              "nodeType": "part",
+              "leafPartIds": [
+                "o1.1.2"
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "stats": {
+    "occurrenceCount": 2,
+    "shapeCount": 2
+  }
+}

@@ -132,13 +132,23 @@ printability is unverified and has to be reported that way. Pass `--nozzle`
 the diameter the print will actually use; `--skip-thickness` forfeits the
 claim even though the run is otherwise green.
 
-In an Autonomous Workshop Make handoff that choice picks the sealed tier, and
-two declarations have to agree. A run **with** passing `--print-gates` seals
-root product status `full-with-thickness` and records the literal boolean
-`final_pipeline.print_ready_claim: true` in the hash-bound CAD verification
-JSON. A run **without** it seals `digitally-verified-not-print-ready` and
-`false`. The host reruns the verifier itself in the tier the pair names, so a
-claim the sealed project cannot reproduce is a refusal, not a downgrade.
+In an Autonomous Workshop Make handoff that choice picks the sealed tier.
+A run **with** passing `--print-gates` declares root product status
+`full-with-thickness` and literal boolean `print_ready_claim: true`. A run
+**without** it declares `digitally-verified-not-print-ready` and `false`.
+For mixed-material products this claim covers the printed subset only.
+
+Current Spark Make finalization takes the verifier's actual generated Markdown
+report, normally `cad/measure/verification-pipeline.md`, through
+`--cad-verification-path` relative to the product root. Use its final passing
+record; do not author a replacement report or an extra verification JSON.
+When `make_round --record-visual <feedback.json> --full` invokes this verifier,
+its round summary also
+records `full.print_gates_ran` and `full.print_ready_claim`. Spark's host accepts
+Make's result without a duplicate verifier run. Other lifecycle protocols keep
+their materialized host-verification contract, including any host-owned
+`final_pipeline.print_ready_claim` evidence; that is not a JSON schema for a
+Spark agent to invent.
 
 ## Generated vs imported STEP
 

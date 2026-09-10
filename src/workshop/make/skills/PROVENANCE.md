@@ -12,6 +12,11 @@ The local `make-round` adaptation uses CAD's existing printable-source discovery
 for its print subset, retains building and visually inspecting nonprinted parts,
 and includes source hashes in print-result reuse. An all-nonprinted project keeps
 a geometry-only final verification and makes no print-ready claim. See ADR 0064.
+The local Make-round tool card documents that subset explicitly. CAD's
+step-generation reference distinguishes Spark's real Markdown verification
+report from older host-owned JSON evidence; it no longer asks Spark agents to
+invent a second verification artifact. These are instruction corrections;
+frozen running products keep their materialized text until an explicit refresh.
 
 ## Complete-product authored colors (2026-09-10)
 
