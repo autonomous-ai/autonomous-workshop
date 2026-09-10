@@ -20,6 +20,12 @@ calls were reassembling by hand.
   deciding what to repair next. Then inspect the visual packet and record the
   Manager's findings using `--record-visual` without rebuilding. Read its summary; open a full report only
   when the summary names a failure you cannot place.
+- Finish project edits and standalone `gen --write` calls, including subagent
+  work, before starting `make_round`. While the round runs or its visual packet
+  awaits feedback, keep other agents and commands from changing this project's
+  sources, constraints, or STEP files. A concurrent `gen --write` can invalidate
+  the packet even without a Python edit; `CADGEN_WARM=0` does not make it safe.
+  Independent read-only work may continue.
 - Do not read the cad or image-to-cad scripts to learn their flags. The
   exact invocations are below; they are the same programs the host gates
   run, unchanged.

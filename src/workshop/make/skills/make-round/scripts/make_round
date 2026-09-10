@@ -12,6 +12,10 @@ rounds, and prints a summary short enough to read instead of the logs. It
 never lowers a threshold or edits source. Native Manager visual observations
 are recorded against exact evidence; this tool makes no model calls.
 
+Finish project edits and standalone gen --write calls before this command.
+While it runs or awaits visual feedback, other agents and commands must not
+change the project's sources, constraints or STEP files, even with CADGEN_WARM=0.
+
 Exit 0: all checks and native visual feedback passed. Exit 1: failed or pending. Exit 2: the
 round could not run.
 """
