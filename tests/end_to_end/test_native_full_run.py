@@ -35,7 +35,9 @@ from workshop.invent.native import NativeInvented
 from workshop.integrations.factory import FACTORY_CONTENT_MAPPING
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
+    NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_NON_PRINT_READY_TIER,
+    NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     CapturedVerifierStream,
@@ -98,6 +100,48 @@ def _read_json(path):
 
 def _sha256(content):
     return hashlib.sha256(content).hexdigest()
+
+
+PRINT_GATE_FIXTURES = {
+    "thickness": (
+        "Thickness and hollow", "--nozzle", "0.4",
+        "12.25 cm3 solid, grid 0.100 mm, 4096 surface samples",
+        "| wall >= 0.80 mm | PASS | 0.0% of surface below |",
+        "RESULT: printable at this wall",
+    ),
+    "overhang": (
+        "Overhang and support", "--angle", "45.0",
+        "65.5 cm2 of surface, grid 0.400 mm, 0 unsupported samples",
+        "| overhang | PASS | 0 regions need support |",
+        "RESULT: prints unsupported",
+    ),
+}
+
+
+def _write_print_gate_reports(project, roles):
+    """Seal one passing thickness and overhang report per printable part.
+
+    ADR 0063: a print-ready claim is only as good as the reports behind it, and
+    the finalizer refuses a review that cites a report it cannot hash.
+    """
+
+    measure = project / "measure"
+    measure.mkdir(parents=True, exist_ok=True)
+    bindings = {}
+    for role in sorted(roles):
+        for gate, (title, option, value, head, row, result) in PRINT_GATE_FIXTURES.items():
+            relative = "measure/%s-%s.md" % (gate, role)
+            path = project / relative
+            path.write_text(
+                "# %s\n\n"
+                "`part_%s.step.py %s %s --report %s`\n\n"
+                "part_%s.step.py: %s\n\n"
+                "| check | status | detail |\n|---|---|---|\n%s\n\n%s\n"
+                % (title, role, option, value, relative, role, head, row, result),
+                encoding="utf-8",
+            )
+            bindings[relative] = _sha256(path.read_bytes())
+    return bindings
 
 
 def _manual_pdf():
@@ -629,6 +673,9 @@ class _OneSessionProductAgent:
             "from build import build\n",
             encoding="utf-8",
         )
+        print_gates = _write_print_gate_reports(
+            product_root / "cad" / "project", _fixture_components()
+        )
         render_path = product_root / "cad" / "project" / "snap" / "iso.png"
         render_path.parent.mkdir(parents=True, exist_ok=True)
         render = Image.new("RGB", (800, 800), (244, 238, 224))
@@ -656,7 +703,7 @@ class _OneSessionProductAgent:
         _write_json(
             signature_path.with_name("SIGNATURE-REVIEW.json"),
             {
-                "schema_version": 7,
+                "schema_version": 8,
                 "kind": "autonomous-workshop.signature-experience-review",
                 "concept_sha256": _sha256(_canonical_json(invented["concept"])),
                 "iso_sha256": _sha256(render_path.read_bytes()),
@@ -686,6 +733,7 @@ class _OneSessionProductAgent:
                     }
                 ],
                 "blocking_visual_defects": [],
+                "print_gate_sha256s": print_gates,
                 "largest_risk": "The three play states could read as decoration.",
                 "resolution": "Separated color and position make the state change explicit.",
             },
@@ -1517,10 +1565,10 @@ class NativeFullRunTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         def writer(unused_ledger, unused_inventor_id, unused_credentials):
@@ -1579,10 +1627,10 @@ class NativeFullRunTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -1733,10 +1781,10 @@ class NativeFullRunTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -1822,10 +1870,10 @@ class NativeFullRunTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -1888,10 +1936,10 @@ class NativeFullRunTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -2498,10 +2546,10 @@ class NativeFullRunTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -2598,10 +2646,10 @@ class NativeFullRunTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -2721,10 +2769,10 @@ class NativeFullRunTest(unittest.TestCase):
                         passed=True,
                         receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                         verifier_sha256=arguments["expected_verifier_sha256"],
-                        verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                        verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                        thickness_gate_required=False,
-                        print_ready_eligible=False,
+                        verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                        verification_tier=NATIVE_CAD_FULL_TIER,
+                        thickness_gate_required=True,
+                        print_ready_eligible=True,
                     )
 
                 with tempfile.TemporaryDirectory() as temporary:
@@ -2858,10 +2906,10 @@ class NativeFullRunTest(unittest.TestCase):
                     (made.made_sha256 + str(len(cad_calls))).encode("ascii")
                 ),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -3076,8 +3124,16 @@ class NativeFullRunTest(unittest.TestCase):
                     (made.made_sha256 + str(len(cad_calls))).encode("ascii")
                 ),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
+                verifier_mode=(
+                    NATIVE_CAD_VERIFIER_MODE
+                    if lower
+                    else NATIVE_CAD_PRINT_GATES_VERIFIER_MODE
+                ),
+                verification_tier=(
+                    NATIVE_CAD_NON_PRINT_READY_TIER
+                    if lower
+                    else NATIVE_CAD_FULL_TIER
+                ),
                 thickness_gate_required=not lower,
                 print_ready_eligible=not lower,
             )
@@ -3086,7 +3142,9 @@ class NativeFullRunTest(unittest.TestCase):
             cad_calls.append((made, dict(arguments)))
             call = len(cad_calls)
             if call == 2:
-                self.assertFalse(arguments["require_print_ready"])
+                # A passing Playtest is a print-ready claim (ADR 0063), so this
+                # lower-tier revision is refused before it can reach Release.
+                self.assertTrue(arguments["require_print_ready"])
                 self.assertEqual(effects.publish_calls, [])
                 raise _failed_cad_gate(
                     made,
@@ -3184,10 +3242,10 @@ class NativeFullRunTest(unittest.TestCase):
                     (made.made_sha256 + str(len(cad_calls))).encode("ascii")
                 ),
                 verifier_sha256=arguments["expected_verifier_sha256"],
-                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                thickness_gate_required=False,
-                print_ready_eligible=False,
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -3323,7 +3381,9 @@ class NativeFullRunTest(unittest.TestCase):
             for made, arguments in cad_calls:
                 self.assertEqual(arguments["run_root"], paths.workspace)
                 self.assertEqual(arguments["host_state_root"], paths.host_state)
-                self.assertFalse(arguments["require_print_ready"])
+                # This route has no Playtest, so Make hands straight to Release
+                # and both gates demand print-ready evidence (ADR 0063).
+                self.assertTrue(arguments["require_print_ready"])
                 self.assertEqual(
                     arguments["expected_verifier_sha256"], verifier_sha256
                 )
@@ -3479,7 +3539,7 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertTrue(
                 (paths.workspace / "artifacts/make/r0001/product/groups/pieces.json").is_file()
             )
-            self.assertFalse(
+            self.assertTrue(
                 release_gate["evidence"]["checks"]["cad_print_ready_eligible"]
             )
             self.assertEqual(
@@ -3523,10 +3583,10 @@ class NativeFullRunTest(unittest.TestCase):
                         passed=True,
                         receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                         verifier_sha256=arguments["expected_verifier_sha256"],
-                        verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-                        verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-                        thickness_gate_required=False,
-                        print_ready_eligible=False,
+                        verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                        verification_tier=NATIVE_CAD_FULL_TIER,
+                        thickness_gate_required=True,
+                        print_ready_eligible=True,
                     )
 
                 with mock.patch.dict(

@@ -98,9 +98,15 @@ the design or repeat completed subagent work.
 Use one deliberate verification funnel. During source edits, build the smallest
 entry that exposes the changed relationship and run only its relevant narrow
 check. As soon as plausible exact draft geometry exists, generate **every declared
-part** with `--write` so each carries a fresh `.step`. There is no cheap print
-preflight and no mesh, overhang or wall-thickness gate anywhere in the
-toolchain, so never call a candidate printable or print-ready. Then render the candidate and perform the blind
+part** with `--write` so each carries a fresh `.step`, then run
+`verify_project <cad-project> --print-gates --nozzle 0.4`. This cheap gate
+builds **every declared printable part** from source and checks its
+tessellation for mesh soundness, overhang and wall thickness at the same
+standard 0.4 mm nozzle profile the final gate uses; it writes no mesh. Do not
+omit a printable, invoke `check_thickness` with a smaller nozzle, pass
+`--skip-thickness`, or weaken a threshold to manufacture a pass. Repair and
+regenerate until every `measure/thickness-<role>.md` and
+`measure/overhang-<role>.md` passes. Then render the candidate and perform the blind
 signature review below **before** the expensive integrated final verifier.
 Resolve at most one largest visual defect coherently, rebuild, rerun those two
 narrow artifact checks, and rerender the exact final candidate; then run the
@@ -335,7 +341,7 @@ Preserve the final review as canonical JSON at
 
 ```json
 {
-  "schema_version": 7,
+  "schema_version": 8,
   "kind": "autonomous-workshop.signature-experience-review",
   "concept_sha256": "<exact canonical Invented concept hash>",
   "iso_sha256": "<lowercase SHA-256 of final iso.png>",
@@ -365,18 +371,23 @@ Preserve the final review as canonical JSON at
     }
   ],
   "blocking_visual_defects": [],
+  "print_gate_sha256s": {
+    "measure/thickness-<role>.md": "<lowercase SHA-256 of the passing wall report>",
+    "measure/overhang-<role>.md": "<lowercase SHA-256 of the passing overhang report>"
+  },
   "largest_risk": "<strongest concrete final finding>",
   "resolution": "<specific geometry, pose, or composition resolution>"
 }
 ```
 
 The finalizer requires every confirmation, all unprompted reads, at least one
-explicit critical-form check, no blocking visual defect, the exact passing
-all-printable 0.4 mm preflight hash, the exact Invented
-concept binding, one to four review rounds, and exact final-image hashes. It also
-requires the current CAD report to be a passing final full-tier run containing
-a successful thickness row; omitting a failed check cannot reach the host's
-isolated gate. This is review evidence, not a numeric beauty score; never claim
+explicit critical-form check, no blocking visual defect, the exact hashes of
+the passing 0.4 mm thickness and overhang reports it cites, the exact Invented
+concept binding, one to four review rounds, and exact final-image hashes. A
+review that cites no print-gate report is the lower tier and must seal
+`digitally-verified-not-print-ready`; a review that cites one must cover both
+gates and every report it names must pass. Omitting a failed check cannot reach
+the host's isolated gate, which reruns the verifier in the declared tier. This is review evidence, not a numeric beauty score; never claim
 an independent or blind review that did not occur. Any geometry change
 invalidates the review: rerender and obtain a fresh blind read instead of
 copying old prose and replacing hashes. The public toy archive keeps the review
@@ -433,8 +444,9 @@ Each miss requires repair in the same Make session; the host records rejection
 history and token-budget products retain their shared token allowance.
 
 Spark and Forge advance directly to Release and therefore require the full
-verifier at Make. No tier asserts wall thickness or print-ready eligibility any
-more; Release publishes a digitally verified STEP whose printability is
+verifier at Make, including wall thickness and print-ready eligibility. A
+Release that publishes a print-ready product needs the full tier; a run that
+never opened the print gates seals the lower tier and its printability stays
 unverified. They
 must not simulate Playtest; Release records that it was not run. Quest advances
 to the host-authored Playtest stage below.

@@ -87,7 +87,6 @@ from workshop.make.revision import (
     NativeMakeInventRevision,
 )
 from workshop.make.native_gate import (
-    NATIVE_CAD_NON_PRINT_READY_TIER,
     NATIVE_CAD_GATE_KIND,
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
@@ -224,6 +223,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V11_CAPABILITY_PATH,
     DEEP_ECONOMICS_V12_CAPABILITY_PATH,
     DEEP_ECONOMICS_V13_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V14_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -4818,6 +4818,7 @@ def _phased_deep_capability_path(
 
     for path in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
         DEEP_ECONOMICS_V13_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -4838,7 +4839,8 @@ def _phased_deep_profile_name(checkpoint: AgentRunCheckpoint) -> str:
 
     path = _phased_deep_capability_path(checkpoint)
     names = {
-        DEEP_ECONOMICS_CAPABILITY_PATH: "v14",
+        DEEP_ECONOMICS_CAPABILITY_PATH: "v15",
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH: "v14",
         DEEP_ECONOMICS_V13_CAPABILITY_PATH: "v13",
         DEEP_ECONOMICS_V12_CAPABILITY_PATH: "v12",
         DEEP_ECONOMICS_V11_CAPABILITY_PATH: "v11",
@@ -5253,6 +5255,7 @@ def _native_launcher(
                         DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                         if phased_deep_path in (
                             DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -5265,6 +5268,7 @@ def _native_launcher(
                 elif (
                     phased_deep_path in (
                         DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -5276,6 +5280,7 @@ def _native_launcher(
                         DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
                         if phased_deep_path in (
                             DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                         )
                         else (
@@ -5302,6 +5307,7 @@ def _native_launcher(
                     DEEP_AUTO_COMPACT_TOKEN_LIMIT
                     if phased_deep_path in (
                         DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -5463,6 +5469,7 @@ def _deep_make_critical_path_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V13_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -5486,6 +5493,7 @@ def _deep_make_critical_path_prompt(
             _phased_deep_capability_path(checkpoint)
             in (
                 DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -5532,6 +5540,7 @@ def _deep_make_critical_path_prompt(
     )
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V14_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V13_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -5546,6 +5555,7 @@ def _deep_make_critical_path_prompt(
         return prompt
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V14_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V13_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -5747,6 +5757,7 @@ def _deep_make_recovery_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V13_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -5768,6 +5779,7 @@ def _deep_make_recovery_prompt(
             _phased_deep_capability_path(checkpoint)
             in (
                 DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V14_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -5776,10 +5788,8 @@ def _deep_make_recovery_prompt(
         ):
             profile_name = _phased_deep_profile_name(checkpoint)
             targeted_repair = ""
-            if (
-                _phased_deep_capability_path(checkpoint)
-                == DEEP_ECONOMICS_V13_CAPABILITY_PATH
-            ):
+            profile_path = _phased_deep_capability_path(checkpoint)
+            if profile_path == DEEP_ECONOMICS_V13_CAPABILITY_PATH:
                 targeted_repair = (
                     " If the current print-preflight failure is wall thickness, "
                     "read that report's complete region table and only the "
@@ -5787,6 +5797,19 @@ def _deep_make_recovery_prompt(
                     "source repair. Repair all named regions together; use "
                     "constant-wall construction for a shell instead of blind "
                     "scalar changes or repeated full-preflight probes."
+                )
+            elif profile_path == DEEP_ECONOMICS_CAPABILITY_PATH:
+                # v14 routed nothing here: it had no wall to measure.  The print
+                # gates read the B-rep directly now, so the report is back and
+                # so is the route into it.
+                targeted_repair = (
+                    " If a print gate failed, read the complete region table in "
+                    "that part's measure/thickness-<role>.md or "
+                    "measure/overhang-<role>.md and only the CAD reference "
+                    "references/print-optimisation.md before one source repair. "
+                    "Repair all named regions together; use constant-wall "
+                    "construction for a shell instead of blind scalar changes "
+                    "or repeated full-gate probes."
                 )
             return (
                 f" The {profile_name} proof marker remains valid. Continue final-product "
@@ -5822,6 +5845,7 @@ def _deep_make_recovery_prompt(
         _phased_deep_capability_path(checkpoint)
         in (
             DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             DEEP_ECONOMICS_V13_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         )
@@ -5917,6 +5941,7 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
     if (
         _phased_deep_capability_path(checkpoint) in (
             DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             DEEP_ECONOMICS_V13_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -6035,6 +6060,7 @@ def _v10_make_proof_artifact_bindings(
         return None
     if _phased_deep_capability_path(checkpoint) in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
         DEEP_ECONOMICS_V13_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
     ):
@@ -6136,6 +6162,7 @@ def _read_make_proof_acceptance(
     proof_artifacts = value.get("proof_artifacts")
     requires_artifacts = _phased_deep_capability_path(checkpoint) in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V14_CAPABILITY_PATH,
         DEEP_ECONOMICS_V13_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -6251,6 +6278,7 @@ def _make_proof_ready(
         valid
         and _phased_deep_capability_path(checkpoint) in (
             DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V14_CAPABILITY_PATH,
             DEEP_ECONOMICS_V13_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
@@ -6291,6 +6319,7 @@ def _v13_operator_resume_recovery(
         and checkpoint.stage == "make"
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V14_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V13_CAPABILITY_PATH in checkpoint.input_sha256s
         )
         and _make_proof_ready(paths, checkpoint)
@@ -6742,7 +6771,8 @@ _MAKE_PRODUCTION_PARTS_RULE = (
     "channels 0..1 taken directly from the sRGB hex the shop should show). The "
     "host rejects a multi-part Make without both; the shop renders and colours "
     "each part from these files and colours. STEP is the only geometry format "
-    "the toolchain writes, so never call these parts print-ready."
+    "the toolchain writes; a part is print-ready only behind a passing "
+    "verify_project --print-gates run at the nozzle the print will use."
 )
 
 
@@ -6921,7 +6951,7 @@ def _evaluate_make_stage(
                 run_root=run.run_root,
                 host_state_root=run.host_state_root,
                 expected_verifier_sha256=verifier_sha256,
-                require_print_ready=False,
+                require_print_ready=transition == "release",
                 **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
             )
     except NativeMadeTreeGateError as error:
@@ -7491,7 +7521,7 @@ def _evaluate_playtest_stage(
         host_state_root=run.host_state_root,
         expected_verifier_sha256=verifier_sha256,
         evidence_stage="playtest",
-        require_print_ready=False,
+        require_print_ready=playtested.verdict == "pass",
         **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
     )
     vault = context.get("design_vault")
@@ -8300,17 +8330,18 @@ def _prepare_spark_publication(
     return prepare_make_output_release(run.run_root, made)
 
 
-def _verify_release_cad(
+def _verify_release_print_ready_cad(
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
     made: NativeMade,
 ) -> Any:
     """Spark preserves Make bytes; other routes retain independent verification.
 
-    Release no longer asks for print-ready CAD evidence, because no gate can
-    produce it: the CAD toolchain writes STEP alone and runs no mesh, overhang
-    or wall-thickness check.  Release publishes a digitally verified exchange
-    solid and says so; printability is unverified.
+    Release asks for print-ready CAD evidence again.  The mesh, overhang and
+    wall-thickness gates read the B-rep directly now, so the full tier is
+    reachable without a mesh deliverable, and a route whose terminal artifact
+    is a ready-to-print handoff has to reach it.  Spark returns before this:
+    ADR 0061 gives it Make's own verification and no host rebuild.
     """
 
     if checkpoint.effort == "spark":
@@ -8326,15 +8357,16 @@ def _verify_release_cad(
         host_state_root=run.host_state_root,
         expected_verifier_sha256=verifier_sha256,
         evidence_stage="release",
-        require_print_ready=False,
+        require_print_ready=True,
         **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
     )
-    if not evidence.passed or evidence.verification_tier != (
-        NATIVE_CAD_NON_PRINT_READY_TIER
+    if (
+        not evidence.passed
+        or not evidence.thickness_gate_required
+        or not evidence.print_ready_eligible
     ):
         raise StateConflict(
-            "Release requires passing digitally-verified, not-print-ready CAD "
-            "evidence"
+            "Release requires passing full-tier, print-gated CAD evidence"
         )
     return evidence
 
@@ -8382,7 +8414,7 @@ def _evaluate_release_stage(
         or release.manual_path != NATIVE_RELEASE_MANUAL_PATH
     ):
         raise _LegacyReleaseUpgradeRequired(_LEGACY_RELEASE_UPGRADE_NEED)
-    cad_evidence = _verify_release_cad(
+    cad_evidence = _verify_release_print_ready_cad(
         run, checkpoint, context["made"]
     )
     with wish_run_timing_span(
@@ -9822,7 +9854,7 @@ def _resume_native_run_locked(
                 action="legacy-release-needs-upgrade",
             )
         try:
-            _verify_release_cad(run, checkpoint, verified.made)
+            _verify_release_print_ready_cad(run, checkpoint, verified.made)
         except NativeCadGateError:
             return _native_receipt(
                 checkpoint,

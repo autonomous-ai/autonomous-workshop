@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""One Make iteration: build, likeness, motion, visual feedback.
+"""One Make iteration: build, print gates, likeness, motion, visual feedback.
 
-    make_round <project>/cad [--ref LABEL=PATH ...] [--min 0.90]
-               [--all-parts] [--no-motion] [--full] [--out DIR] [--json]
-               [--record-visual FEEDBACK.json] [--self-check]
+    make_round <project>/cad [--ref LABEL=PATH ...] [--min 0.90] [--nozzle 0.4]
+               [--overhang-angle 45] [--all-parts] [--no-motion] [--full]
+               [--out DIR] [--json] [--record-visual FEEDBACK.json]
+               [--self-check]
 
 Every verdict comes from the original cad and image-to-cad tools, run
 unchanged; this script only sequences them, remembers what changed between
@@ -19,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+from importlib.metadata import PackageNotFoundError, version as package_version
 import json
 import os
 import re
@@ -122,7 +124,8 @@ def record_visual(project, feedback_path, full=False):
         cad = skills_root() / "cad" / "scripts"
         # The final verifier independently requires the separate blind review.
         command = [sys.executable, str(cad / "verify_project"), str(project),
-                   "--strict-fit", "--report", str(project / "measure/verification-pipeline.md")]
+                   "--strict-fit", "--print-gates", "--nozzle", str(summary.get("nozzle", 0.4)),
+                   "--report", str(project / "measure/verification-pipeline.md")]
         if summary["refs"]:
             command.append("--image-derived")
             for label, ref in summary["refs"]:
@@ -186,6 +189,108 @@ def parse_build(stdout: str, stderr: str, returncode: int) -> dict:
     return {"verdict": "FAIL", "failures": fails[-4:] or ["gen exit %d" % returncode]}
 
 
+def parse_thickness(stdout: str) -> dict:
+    """The verdict and the thinnest region from a check_thickness run."""
+    verdict = "PASS" if "RESULT: printable at this wall" in stdout else "FAIL"
+    fails = []
+    wall_pass = False
+    thinnest = None
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if re.match(r"PASS\s+wall\s+>=", stripped):
+            wall_pass = True
+        if stripped.startswith("FAIL"):
+            verdict = "FAIL"
+            fails.append(" ".join(stripped.split()[1:])[:80])
+        match = re.match(r"\d+\.\s+\[[a-z ]+\]\s+([0-9.]+) mm", stripped)
+        if match:
+            value = float(match.group(1))
+            thinnest = value if thinnest is None else min(thinnest, value)
+    if "RESULT: WALL BELOW MINIMUM" in stdout:
+        verdict = "FAIL"
+    if not fails and "RESULT: WALL BELOW MINIMUM" not in stdout and wall_pass:
+        verdict = "PASS"
+    if verdict == "FAIL" and not fails:
+        fails.append("no passing wall result" if "RESULT: WALL BELOW MINIMUM" not in stdout else "wall below minimum")
+    return {"verdict": verdict, "thinnest_mm": thinnest, "failures": fails[:4]}
+
+
+def parse_overhang(stdout: str) -> dict:
+    """The verdict and the largest unsupported region from a check_overhang run.
+
+    A `bridge` is spannable and does not fail the gate; only an `overhang`
+    does. The gate has already decided that, so read its RESULT rather than
+    re-deciding here, and keep the region rows for the repair prompt.
+    """
+    verdict = "PASS" if "RESULT: prints unsupported" in stdout else "FAIL"
+    fails = []
+    largest = None
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("FAIL"):
+            verdict = "FAIL"
+            fails.append(" ".join(stripped.split()[1:])[:80])
+        match = re.match(r"\d+\.\s+\[([a-z ]+)\]\s+([0-9.]+) mm2", stripped)
+        if match and match.group(1).strip() == "overhang":
+            area = float(match.group(2))
+            largest = area if largest is None else max(largest, area)
+    if "RESULT: NEEDS SUPPORT" in stdout:
+        verdict = "FAIL"
+    if verdict == "FAIL" and not fails:
+        fails.append("needs support" if "RESULT: NEEDS SUPPORT" in stdout else "no overhang result")
+    return {"verdict": verdict, "overhang_mm2": largest, "failures": fails[:4]}
+
+
+def print_context(cad: Path, nozzle: float, angle: float) -> dict | None:
+    """Inputs to this print measurement, without importing numerical libraries.
+
+    An unavailable identity disables reuse; it never supplies passing evidence.
+    The wrapper hash also invalidates results after a parsing/cache-rule change,
+    and `printlib.py` is in here because it owns the tessellation both gates
+    measure -- a change to the deviation would change every verdict.
+    """
+    try:
+        sources = {
+            name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for name, path in (
+                ("check_thickness", cad / "check_thickness"),
+                ("check_overhang", cad / "check_overhang"),
+                ("meshlib.py", cad / "meshlib.py"),
+                ("printlib.py", cad / "printlib.py"),
+                ("make_round", Path(__file__)),
+            )
+        }
+        packages = {name: package_version(name) for name in ("numpy", "scipy")}
+    except (OSError, PackageNotFoundError):
+        return None
+    return {
+        "nozzle": nozzle, "overhang_angle": angle, "sources": sources,
+        "packages": packages,
+        "python": str(Path(sys.executable).resolve()), "python_version": sys.version,
+        "platform": sys.platform,
+    }
+
+
+def reusable_print(item: dict | None) -> bool:
+    """Only a recorded PASS of both gates, with its original tool logs, reuses."""
+    if not isinstance(item, dict) or item.get("verdict") != "PASS":
+        return False
+    if not {"thickness", "overhang", "measured_round", "logs"} <= item.keys():
+        return False
+    if not isinstance(item["logs"], dict) or not item["logs"]:
+        return False
+    for path, digest in item["logs"].items():
+        try:
+            if hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
+                return False
+        except (OSError, TypeError, ValueError):
+            return False
+    return all(
+        isinstance(item.get(gate), dict) and item[gate].get("verdict") == "PASS"
+        for gate in ("thickness", "overhang")
+    )
+
+
 def diff_parts(previous: dict, current: dict) -> list[str]:
     """Roles whose STEP bytes changed, or every role when nothing was recorded."""
     if not previous:
@@ -220,9 +325,22 @@ def render_summary(summary: dict) -> str:
         item = summary["build"][role]
         extra = ("  " + "; ".join(item["failures"])) if item["verdict"] == "FAIL" and item["failures"] else ""
         lines.append("  build %-4s %-28s%s" % (item["verdict"], role, extra))
+        gates = (summary.get("print") or {}).get(role)
+        if gates is None:
+            continue
+        wall = gates["thickness"]
+        thin = "" if wall.get("thinnest_mm") is None else "  thinnest %.2f mm" % wall["thinnest_mm"]
+        why = ("  " + "; ".join(wall["failures"])) if wall["verdict"] == "FAIL" and wall["failures"] else ""
+        lines.append("  wall  %-4s %-28s%s%s" % (wall["verdict"], role, thin, why))
+        over = gates["overhang"]
+        area = "" if over.get("overhang_mm2") is None else "  largest %.0f mm2" % over["overhang_mm2"]
+        why = ("  " + "; ".join(over["failures"])) if over["verdict"] == "FAIL" and over["failures"] else ""
+        lines.append("  over  %-4s %-28s%s%s" % (over["verdict"], role, area, why))
     unchecked = [r for r in summary["parts"] if r not in summary["checked"]]
     if unchecked:
         lines.append("  build skip %d unchanged part(s): %s" % (len(unchecked), ", ".join(unchecked[:6]) + (" ..." if len(unchecked) > 6 else "")))
+        if summary.get("reused"):
+            lines[-1] += "  (retained PASS evidence)"
     for item in summary["likeness"]:
         if "error" in item:
             lines.append("  like  FAIL %-10s %s" % (item["label"], item["error"][:70]))
@@ -468,13 +586,74 @@ def make_round(args) -> int:
         digests[role] = hashlib.sha256(step.read_bytes()).hexdigest()
     changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
 
-    # 2. record the build verdict for what moved; nothing measures a wall.
+    # 2. record the build verdict for what moved.
     for role in changed:
         build[role] = {"verdict": "PASS", "failures": []}
     for role, parsed in build_failures.items():
         build[role] = parsed
         if role not in changed:
             changed.append(role)
+
+    # 2b. gate the parts that built, from source. Reuse only a passing pair
+    # measured from the same bytes under the same conditions: a failed or
+    # legacy entry is re-measured even when its STEP did not change.
+    context = print_context(cad, args.nozzle, args.overhang_angle)
+    previous_print = state.get("print") or {}
+    same_context = context is not None and context == state.get("print_context")
+    printing: dict[str, dict] = {}
+    for role in sorted(digests):
+        prior = previous_print.get(role)
+        if (
+            not args.all_parts and role not in changed and same_context
+            and reusable_print(prior)
+        ):
+            printing[role] = prior
+            continue
+        part = next(p for p in parts if p.name.removeprefix("part_").removesuffix(".step.py") == role)
+        logs = {}
+        gates = {}
+        for gate, extra in (
+            ("thickness", ["--nozzle", str(args.nozzle)]),
+            ("overhang", ["--angle", str(args.overhang_angle)]),
+        ):
+            log = out / ("%s-%s.log" % (gate, role))
+            done = run(
+                [python, str(cad / ("check_" + gate)), str(part), *extra,
+                 "--report", str(out / ("%s-%s.md" % (gate, role)))],
+                cwd=project,
+                log=log,
+            )
+            parsed = (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout)
+            if done.returncode not in (0, 1):
+                # 0 pass, 1 measured-and-failed; anything else is the tool
+                # failing to measure, which is never a printability verdict.
+                parsed["verdict"] = "FAIL"
+                parsed["failures"] = (
+                    ["check_%s exit %d: %s" % (gate, done.returncode, tail(done.stderr)[:60])]
+                    + parsed["failures"]
+                )[:4]
+            gates[gate] = parsed
+            if log.is_file():
+                logs[str(log.resolve())] = hashlib.sha256(log.read_bytes()).hexdigest()
+        printing[role] = {
+            "verdict": "PASS" if all(g["verdict"] == "PASS" for g in gates.values()) else "FAIL",
+            "thickness": gates["thickness"],
+            "overhang": gates["overhang"],
+            "measured_round": round_index,
+            "logs": logs,
+        }
+        if printing[role]["verdict"] == "FAIL" and role not in changed:
+            changed.append(role)
+    for role in build_failures:
+        # A part that did not build has no solid to measure. Say that, rather
+        # than reporting an absent gate as a pass.
+        printing[role] = {
+            "verdict": "FAIL",
+            "thickness": {"verdict": "FAIL", "thinnest_mm": None, "failures": ["build failed"]},
+            "overhang": {"verdict": "FAIL", "overhang_mm2": None, "failures": ["build failed"]},
+            "measured_round": round_index,
+            "logs": {},
+        }
 
     # 3. likeness per reference, replaying the previous pose when one exists.
     refs = parse_refs(args.refs, sorted(project.glob("*_spec.md")))
@@ -548,6 +727,7 @@ def make_round(args) -> int:
 
     ok = (
         all(item["verdict"] == "PASS" for item in build.values())
+        and all(item["verdict"] == "PASS" for item in printing.values())
         and all(item.get("ok") for item in likeness)
         and (motion is None or motion["verdict"] == "pass")
         and (full is None or full["ok"])
@@ -560,6 +740,10 @@ def make_round(args) -> int:
         "changed": changed,
         "checked": sorted(build),
         "build": build,
+        "print": printing,
+        "reused": sorted(role for role in printing if printing[role].get("measured_round") != round_index),
+        "nozzle": args.nozzle,
+        "overhang_angle": args.overhang_angle,
         "likeness": likeness,
         "min": args.min,
         "motion": motion,
@@ -574,6 +758,8 @@ def make_round(args) -> int:
     state = {
         "round": round_index,
         "parts": digests,
+        "print": printing,
+        "print_context": context,
         "likeness": {item["label"]: item["iou"] for item in likeness if "iou" in item},
         "poses_path": poses_path,
         "pose_paths": pose_paths,
@@ -604,6 +790,56 @@ def self_check() -> int:
     check(parsed["verdict"] == "FAIL" and parsed["failures"][-1].startswith("ValueError"), "a failing build yields FAIL and the reason")
     check(parse_build('{"ok":true}\n', "", 0) == {"verdict": "PASS", "failures": []}, "a clean build yields PASS")
     check(parse_build("", "", 3)["failures"] == ["gen exit 3"], "a silent non-zero build still names its exit code")
+    thin = parse_thickness(
+        "part_frame.step.py: 4.20 cm3 solid, grid 0.100 mm\n"
+        "  FAIL  wall >= 0.80 mm (+/-0.10)        2.1% of surface below\n"
+        "        1. [wall ] 0.42 mm at (1.0, 2.0, 3.0)  12 samples\n"
+        "RESULT: WALL BELOW MINIMUM\n"
+    )
+    check(thin["verdict"] == "FAIL" and thin["thinnest_mm"] == 0.42, "a thin wall yields FAIL and the thinnest region")
+    passing = parse_thickness(
+        "part_frame.step.py: 4.20 cm3 solid\n"
+        "  PASS  wall >= 0.80 mm (+/-0.10)        0.0% of surface below\n"
+        "RESULT: printable at this wall\n"
+    )
+    check(passing["verdict"] == "PASS" and passing["failures"] == [], "a sound wall yields PASS")
+    check(parse_thickness("")["verdict"] == "FAIL", "a silent thickness run is never a pass")
+    over = parse_overhang(
+        "part_frame.step.py: 13.8 cm2 of surface\n"
+        "  FAIL  unsupported area                  473.9 mm2\n"
+        "        1. [overhang] 473.9 mm2 at (0.0, 0.0, 6.0)  span 20.0 mm\n"
+        "RESULT: NEEDS SUPPORT\n"
+    )
+    check(over["verdict"] == "FAIL" and over["overhang_mm2"] == 473.9, "an unsupported region yields FAIL and its area")
+    bridged = parse_overhang(
+        "part_frame.step.py: 13.8 cm2 of surface\n"
+        "        1. [bridge  ] 192.3 mm2 at (0.0, 0.0, 6.0)  span 9.7 mm\n"
+        "RESULT: prints unsupported\n"
+    )
+    check(
+        bridged["verdict"] == "PASS" and bridged["overhang_mm2"] is None,
+        "a spannable bridge is not an overhang failure",
+    )
+    check(parse_overhang("")["verdict"] == "FAIL", "a silent overhang run is never a pass")
+    with tempfile.TemporaryDirectory() as tmp:
+        log = Path(tmp) / "thickness-frame.log"
+        log.write_text("RESULT: printable at this wall\n", encoding="utf-8")
+        digest = hashlib.sha256(log.read_bytes()).hexdigest()
+        record = {
+            "verdict": "PASS", "measured_round": 2,
+            "thickness": {"verdict": "PASS", "thinnest_mm": 1.2, "failures": []},
+            "overhang": {"verdict": "PASS", "overhang_mm2": None, "failures": []},
+            "logs": {str(log): digest},
+        }
+        check(reusable_print(record), "a passing pair with intact logs is reusable")
+        check(not reusable_print({**record, "verdict": "FAIL"}), "a failed record is never reused")
+        check(
+            not reusable_print({**record, "overhang": {"verdict": "FAIL", "failures": []}}),
+            "a pair is only reusable when both gates passed",
+        )
+        check(not reusable_print({**record, "logs": {}}), "a record without its tool log is not reused")
+        log.write_text("tampered\n", encoding="utf-8")
+        check(not reusable_print(record), "an edited tool log invalidates the record")
     check(diff_parts({}, {"a": "1", "b": "2"}) == ["a", "b"], "the first round checks every part")
     check(diff_parts({"a": "1", "b": "2"}, {"a": "1", "b": "3", "c": "4"}) == ["b", "c"], "later rounds check only changed or new parts")
     check(parse_refs(["hero=ref/hero.png", "side=/abs/side.png"], []) == [("hero", "ref/hero.png"), ("side", "/abs/side.png")], "--ref pairs parse")
@@ -638,13 +874,22 @@ def self_check() -> int:
         check(True, "a malformed --ref is refused")
     summary = {
         "round": 3, "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
-        "build": {"frame": {"verdict": "FAIL", "failures": ["ValueError: wall must be positive"]}},
+        "build": {"frame": {"verdict": "PASS", "failures": []}},
+        "print": {"frame": {
+            "verdict": "FAIL",
+            "thickness": {"verdict": "FAIL", "thinnest_mm": 0.42, "failures": ["wall >= 0.80 mm"]},
+            "overhang": {"verdict": "PASS", "overhang_mm2": None, "failures": []},
+        }},
+        "reused": ["knob"],
         "likeness": [{"label": "hero", "iou": 0.901, "ok": True, "delta": 0.023, "az": -90.0, "el": -16.9, "fov": 0}],
         "min": 0.9, "motion": {"verdict": "pass", "detail": "47 conditions"}, "full": None, "ok": False, "out": "/p/cad/measure/rounds/r0003",
     }
     text = render_summary(summary)
-    check("build FAIL frame" in text and "IoU 0.901 vs 0.90  +0.023" in text and "skip 2 unchanged" in text and text.splitlines()[-1].startswith("  FAIL"), "the summary names the changed part, the score delta, and the verdict")
-    check(len(text.splitlines()) <= 8, "the summary stays short")
+    check("build PASS frame" in text and "IoU 0.901 vs 0.90  +0.023" in text and "skip 2 unchanged" in text and text.splitlines()[-1].startswith("  FAIL"), "the summary names the changed part, the score delta, and the verdict")
+    check("wall  FAIL" in text and "thinnest 0.42 mm" in text, "a failing wall gate reaches the summary with its measurement")
+    check("over  PASS" in text, "the overhang gate reports beside the wall gate")
+    check("(retained PASS evidence)" in text, "reused gate evidence is named rather than implied")
+    check(len(text.splitlines()) <= 10, "the summary stays short")
     print("\nall fixtures pass" if ok else "\nself-check FAILED")
     return 0 if ok else 1
 
@@ -655,6 +900,8 @@ def main(argv=None) -> int:
     parser.add_argument("--entry", help="entry generator name when more than one non-part *.step.py exists")
     parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH", help="reference view; repeatable; default from the spec ledger")
     parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
+    parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle diameter for the wall gate (default 0.4 mm)")
+    parser.add_argument("--overhang-angle", type=float, default=45.0, help="slope from vertical the printer bridges unsupported (default 45 deg)")
     parser.add_argument("--all-parts", action="store_true", help="report every built part, not only the changed ones")
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
     parser.add_argument("--record-visual", help="record native Manager feedback for the last round without rebuilding")

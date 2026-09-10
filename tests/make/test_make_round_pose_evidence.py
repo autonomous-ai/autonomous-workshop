@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from tests.make.test_make_round import fake_visual_render, load_module, record_fixture_visual_pass
+from tests.make.test_make_round import _gate_output, fake_visual_render, load_module, record_fixture_visual_pass
 
 
 class MakeRoundPoseEvidenceTest(unittest.TestCase):
@@ -33,7 +33,8 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
                 refs.append(label + "=" + str(ref))
             args = SimpleNamespace(
                 project=str(project), entry=None, out=None, all_parts=False,
-                refs=refs, min=0.9, no_motion=True, full=False, json=True, record_visual=None,
+                refs=refs, min=0.9, nozzle=0.4, overhang_angle=45.0,
+                no_motion=True, full=False, json=True, record_visual=None,
             )
             cameras = {"hero": {"az": 10.0, "el": 5.0}, "side": {"az": 100.0, "el": 15.0}}
             control = {"replay_iou": 0.95, "search_iou": 0.95}
@@ -71,6 +72,10 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
                     stdout = json.dumps({
                         "ok": ok, "views": [{"label": label, "iou": iou, "ok": ok, **pose}],
                     }, indent=2)
+                elif tool in ("check_thickness", "check_overhang"):
+                    # These fixtures are about camera replay; keep the print
+                    # gates green so the pose is the only variable.
+                    stdout, code = _gate_output(tool, fails=False)
                 else:
                     raise AssertionError(tool)
                 log.write_text(stdout)

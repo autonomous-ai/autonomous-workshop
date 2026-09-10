@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import signal
 import stat
 import subprocess
@@ -40,12 +41,17 @@ NATIVE_MADE_REQUIRED_ROOT_FILES = (
     "assembled.step.json",
 )
 NATIVE_CAD_VERIFIER_MODE = "final-fresh-strict-fit-not-print-ready"
+NATIVE_CAD_PRINT_GATES_VERIFIER_MODE = "final-fresh-strict-fit-print-gates"
 # Retained only so a historical receipt still parses; the live gate never
-# produces either value.  The CAD toolchain writes STEP alone and runs no mesh,
-# overhang or wall-thickness gate, so no run can substantiate print readiness.
+# produces this value.  The mesh gates are back, but they read the B-rep
+# directly, so the `--exports` verifier this names is still gone.
 NATIVE_CAD_LEGACY_FULL_VERIFIER_MODE = "final-fresh-exports-strict-fit"
 NATIVE_CAD_FULL_TIER = "full-with-thickness"
 NATIVE_CAD_NON_PRINT_READY_TIER = "digitally-verified-not-print-ready"
+# The nozzle the print-ready claim is made at.  It is in the command, and so in
+# the receipt, because a wall that passes at 0.4 mm can fail at 0.6 mm: a claim
+# that does not name its nozzle is not a claim.
+NATIVE_CAD_GATE_NOZZLE_MM = "0.4"
 DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS = 1_800.0
 MAX_NATIVE_CAD_OUTPUT_BYTES = 1024 * 1024
 DEFAULT_NATIVE_CAD_OUTPUT_BYTES = MAX_NATIVE_CAD_OUTPUT_BYTES
@@ -305,6 +311,13 @@ class _CadGatePolicy:
     extra_arguments: tuple[str, ...] = ()
 
 
+_FULL_CAD_GATE_POLICY = _CadGatePolicy(
+    tier=NATIVE_CAD_FULL_TIER,
+    verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+    # No --skip-thickness: skipping the wall gate forfeits the claim upstream,
+    # so the tier that carries the claim always pays for all three gates.
+    extra_arguments=("--print-gates", "--nozzle", NATIVE_CAD_GATE_NOZZLE_MM),
+)
 _NON_PRINT_READY_CAD_GATE_POLICY = _CadGatePolicy(
     tier=NATIVE_CAD_NON_PRINT_READY_TIER,
     verifier_mode=NATIVE_CAD_VERIFIER_MODE,
@@ -313,15 +326,20 @@ _MISSING_CAD_CLAIM = object()
 
 
 def _cad_gate_policy(made: NativeMade, product_root: Path) -> _CadGatePolicy:
-    """Require two agreeing, exact-byte-bound not-print-ready declarations.
+    """Select a gate tier from two agreeing, exact-byte-bound declarations.
 
-    There is only one tier left.  The CAD toolchain writes STEP alone and has
-    no mesh, overhang or wall-thickness gate, so nothing a run can produce
-    substantiates print readiness.  A Made artifact therefore has to say so
-    twice: the canonical product status *and* a literal false
-    ``print_ready_claim`` in the declared, hash-bound CAD receipt.  Either one
-    missing is a refusal rather than a downgrade, so a product that still
-    claims print readiness cannot pass a gate that can no longer check it.
+    The mesh, overhang and wall-thickness gates read the B-rep directly now, so
+    a run can substantiate print readiness again -- but only by paying for the
+    gates.  Free-form status alone never chooses a tier.  Each tier requires the
+    canonical product status *and* a matching literal ``print_ready_claim`` in
+    the declared, hash-bound CAD receipt, and the host reruns the verifier in
+    the tier that pair names.  A half-declared claim is a refusal rather than a
+    downgrade, so product metadata that reads as print-ready cannot ride on a
+    run that never opened the print gates.
+
+    Historical receipts without a structured claim are refused outright.  Their
+    tier was decided by an ``--exports`` verifier that no longer exists, and
+    guessing which of today's two tiers they meant would be inventing evidence.
     """
 
     verification_entry = next(
@@ -366,13 +384,15 @@ def _cad_gate_policy(made: NativeMade, product_root: Path) -> _CadGatePolicy:
             claim = final_pipeline.get("print_ready_claim", _MISSING_CAD_CLAIM)
 
     product_status = made.product.get("status")
-    if product_status != NATIVE_CAD_NON_PRINT_READY_TIER or claim is not False:
-        raise ContractError(
-            "product status and CAD print_ready_claim must both declare "
-            "%s; no gate can substantiate a print-ready claim"
-            % NATIVE_CAD_NON_PRINT_READY_TIER
-        )
-    return _NON_PRINT_READY_CAD_GATE_POLICY
+    if product_status == NATIVE_CAD_NON_PRINT_READY_TIER and claim is False:
+        return _NON_PRINT_READY_CAD_GATE_POLICY
+    if product_status == NATIVE_CAD_FULL_TIER and claim is True:
+        return _FULL_CAD_GATE_POLICY
+    raise ContractError(
+        "product status and CAD print_ready_claim must name the same tier: "
+        "%s with false, or %s with true"
+        % (NATIVE_CAD_NON_PRINT_READY_TIER, NATIVE_CAD_FULL_TIER)
+    )
 
 
 def _entries_sha256(entries: Sequence[ArtifactEntry]) -> str:
@@ -426,8 +446,8 @@ def _is_verifier_authored_volatile_report(path: str) -> bool:
     in its pipeline report.  That record is useful during an interactive Make
     pass, but it is not a reproducible CAD deliverable.  Do not broaden this
     allowlist: source, geometry, JSON evidence, and every other report remain
-    byte-sealed.  The per-part thickness reports this once also covered are
-    gone with the gate that wrote them.
+    byte-sealed.  The per-part print-gate reports are not volatile; the gate
+    compares them exactly apart from their directory-location metadata.
     """
 
     return path == "measure/verification-pipeline.md"
@@ -435,6 +455,63 @@ def _is_verifier_authored_volatile_report(path: str) -> bool:
 
 def _is_step_exchange_file(path: str) -> bool:
     return path.lower().endswith((".step", ".stp"))
+
+
+# Each print gate opens its report with its own fixed title and echoes the
+# argument vector it was given, which carries the project's location.  Nothing
+# else in the file is location-bearing: the head line names the entry by
+# basename, and every measurement is a number.
+_PRINT_GATE_REPORTS = {
+    "overhang": ("# Overhang and support\n", "--angle"),
+    "thickness": ("# Thickness and hollow\n", "--nozzle"),
+}
+
+
+def _print_gate_report_kind(path: str) -> Optional[str]:
+    match = re.fullmatch(r"measure/(overhang|thickness)-([^/]+)\.md", path)
+    return match.group(1) if match is not None else None
+
+
+def _print_gate_report_without_location(content: bytes, relative: str) -> bytes:
+    """Normalize only the path-bearing argument line of a known report.
+
+    Unlike the volatile timing-report exemption, every measurement, option,
+    check, region and line of prose stays exact.  Unknown report formats fail
+    closed.  The entry and the report must sit under the same project
+    directory, and the entry must be the part the report is named for, so a
+    report cannot be re-pointed at another part's geometry.
+    """
+
+    kind = _print_gate_report_kind(relative)
+    if kind is None:  # pragma: no cover - callers check first
+        raise ArtifactError("unsupported print gate report path")
+    title, option = _PRINT_GATE_REPORTS[kind]
+    try:
+        lines = content.decode("utf-8").splitlines(keepends=True)
+    except UnicodeError as exc:
+        raise ArtifactError("invalid print gate report encoding") from exc
+    if len(lines) < 7 or lines[:2] != [title, "\n"]:
+        raise ArtifactError("unsupported print gate report format")
+    invocation = re.fullmatch(
+        r"`([^`\r\n]+) %s ([0-9]+(?:\.[0-9]+)?) --report ([^`\r\n]+)`\n"
+        % re.escape(option),
+        lines[2],
+    )
+    if invocation is None:
+        raise ArtifactError("unsupported print gate report invocation")
+    entry, value, report = invocation.groups()
+    role = relative[len("measure/%s-" % kind) : -len(".md")]
+    entry_name = PurePosixPath(entry).name
+    if (
+        entry_name not in (role + ".step.py", "part_" + role + ".step.py")
+        or not report.endswith(relative)
+        or entry[: -len(entry_name)] != report[: -len(relative)]
+        or lines[3] != "\n"
+        or not lines[4].startswith(entry_name + ": ")
+    ):
+        raise ArtifactError("print gate report path bindings differ")
+    lines[2] = "`%s %s %s --report %s`\n" % (entry_name, option, value, relative)
+    return "".join(lines).encode("utf-8")
 
 
 def _assert_copied_inputs_unchanged(
@@ -449,9 +526,10 @@ def _assert_copied_inputs_unchanged(
     graph (``canonical_step_digest``) rather than by bytes: Open CASCADE hands
     out presentation-style entity ids in pointer order, so a faithful fresh
     re-export of the same model can differ byte-for-byte while describing the
-    identical geometry, colours, and assembly. Every other declared file, and a
-    STEP file whose graph changed, still fails
-    closed. ``sealed_root`` is the
+    identical geometry, colours, and assembly. Known print-gate reports may
+    change only their directory-location metadata, never measurements or check
+    results. Every other declared file, and a STEP file whose graph changed,
+    still fails closed. ``sealed_root`` is the
     exact sealed project the isolated copy was made from; without it STEP
     files stay byte-compared.
     """
@@ -469,6 +547,33 @@ def _assert_copied_inputs_unchanged(
             if bool(identity.st_mode & stat.S_IXUSR) != entry.executable:
                 raise ArtifactError(
                     "CAD verifier changed a declared report mode: %s" % entry.path
+                )
+            continue
+        if sealed_root is not None and _print_gate_report_kind(entry.path):
+            content, identity = _read_regular(
+                project_root.joinpath(*relative.parts),
+                "isolated print gate report",
+                MAX_NATIVE_CAD_VOLATILE_REPORT_BYTES,
+            )
+            sealed, _ = _read_regular(
+                sealed_root.joinpath(*relative.parts),
+                "sealed print gate report",
+                entry.bytes,
+            )
+            if (
+                bool(identity.st_mode & stat.S_IXUSR) != entry.executable
+                or len(sealed) != entry.bytes
+                or hashlib.sha256(sealed).hexdigest() != entry.sha256
+            ):
+                raise ArtifactError(
+                    "CAD verifier changed a declared project file: %s" % entry.path
+                )
+            if content != sealed and (
+                _print_gate_report_without_location(content, entry.path)
+                != _print_gate_report_without_location(sealed, entry.path)
+            ):
+                raise ArtifactError(
+                    "CAD verifier changed a declared project file: %s" % entry.path
                 )
             continue
         if sealed_root is not None and _is_step_exchange_file(entry.path):
@@ -758,11 +863,10 @@ class NativeCadGateEvidence:
         _safe_relative(self.cad_project_path, "native CAD gate project path")
         if self.verifier_path != NATIVE_CAD_VERIFIER_PATH:
             raise ContractError("native CAD gate verifier path is invalid")
-        policy = (
-            _NON_PRINT_READY_CAD_GATE_POLICY
-            if self.verification_tier == NATIVE_CAD_NON_PRINT_READY_TIER
-            else None
-        )
+        policy = {
+            NATIVE_CAD_FULL_TIER: _FULL_CAD_GATE_POLICY,
+            NATIVE_CAD_NON_PRINT_READY_TIER: _NON_PRINT_READY_CAD_GATE_POLICY,
+        }.get(self.verification_tier)
         if policy is None or self.verifier_mode != policy.verifier_mode:
             raise ContractError("native CAD gate verification tier is invalid")
         if not isinstance(self.command, tuple) or not self.command or not all(
@@ -831,19 +935,21 @@ class NativeCadGateEvidence:
 
     @property
     def thickness_gate_required(self) -> bool:
-        """No wall is measured anywhere in the toolchain any more."""
-
-        return False
+        return self.verification_tier == NATIVE_CAD_FULL_TIER
 
     @property
     def print_ready_eligible(self) -> bool:
         """Whether the deterministic CAD receipt may support print-ready copy.
 
-        Never.  STEP is the only format written, and no mesh, overhang or
-        wall-thickness gate survives to substantiate the claim.
+        Only the tier whose command actually opened the print gates, at the
+        nozzle recorded in that command.  ``legacy_full_tier_compatibility`` is
+        always false now, so a replayed historical receipt cannot reach here.
         """
 
-        return False
+        return (
+            self.thickness_gate_required
+            and not self.legacy_full_tier_compatibility
+        )
 
 
 class NativeCadGateError(ArtifactError):
@@ -1080,9 +1186,9 @@ def verify_native_made_cad(
                 failure_code = "verifier-output-limit"
             elif result.returncode != 0:
                 failure_code = "verifier-nonzero"
-            elif require_print_ready:
-                # Nothing in the toolchain measures a wall, a mesh or an
-                # overhang any more, so no verifier result can advance a
+            elif require_print_ready and gate_policy.tier != NATIVE_CAD_FULL_TIER:
+                # The lower tier may pass every digital check it declared, but
+                # it never opened the print gates, so it cannot advance a
                 # workflow whose terminal artifact is a ready-to-print handoff.
                 failure_code = "cad-not-print-ready"
 
@@ -1122,7 +1228,9 @@ __all__ = [
     "NATIVE_MADE_REQUIRED_ROOT_FILES",
     "NATIVE_CAD_FULL_TIER",
     "NATIVE_CAD_NON_PRINT_READY_TIER",
+    "NATIVE_CAD_GATE_NOZZLE_MM",
     "NATIVE_CAD_LEGACY_FULL_VERIFIER_MODE",
+    "NATIVE_CAD_PRINT_GATES_VERIFIER_MODE",
     "NATIVE_CAD_VERIFIER_MODE",
     "NATIVE_CAD_VERIFIER_PATH",
     "NativeCadGateError",

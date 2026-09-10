@@ -1844,6 +1844,94 @@ def _validate_make_product_render(project: Path) -> None:
             )
 
 
+PRINT_GATE_RESULTS = {
+    "thickness": ("# Thickness and hollow\n", "RESULT: printable at this wall"),
+    "overhang": ("# Overhang and support\n", "RESULT: prints unsupported"),
+}
+MAX_PRINT_GATE_REPORT_BYTES = 1_000_000
+
+
+def _validate_review_print_gates(
+    run_root: Path,
+    *,
+    review: Mapping[str, Any],
+    project_relative: PurePosixPath,
+) -> None:
+    """Bind the review to the print-gate reports that back its claim.
+
+    An empty mapping is the honest no-claim case: the round never opened the
+    print gates, so the product is not print-ready and must say so.  A
+    non-empty mapping has to name real, passing reports whose bytes hash to what
+    the review recorded, and to cover both gates -- a wall measurement with no
+    overhang measurement is half an answer.  The host reruns the verifier in the
+    tier the product declares, so this binds the *review* to the same evidence
+    rather than standing in for that gate.
+    """
+
+    bindings = review["print_gate_sha256s"]
+    if not isinstance(bindings, dict) or any(
+        not isinstance(key, str) for key in bindings
+    ):
+        raise ProposalError(
+            "Make signature review print_gate_sha256s must be a report-to-digest map"
+        )
+    if not bindings:
+        return
+    covered = set()
+    for relative, digest in sorted(bindings.items()):
+        candidate = PurePosixPath(relative)
+        if (
+            candidate.is_absolute()
+            or ".." in candidate.parts
+            or candidate.parent != PurePosixPath("measure")
+            or not candidate.name.endswith(".md")
+        ):
+            raise ProposalError(
+                "Make signature review print gate %s must be a project measure/*.md report"
+                % relative
+            )
+        gate = candidate.name.split("-", 1)[0]
+        if gate not in PRINT_GATE_RESULTS:
+            raise ProposalError(
+                "Make signature review print gate %s is not a thickness or overhang report"
+                % relative
+            )
+        expected = _sha256(digest, "Make signature review print gate %s" % relative)
+        report_relative = (project_relative / candidate).as_posix()
+        actual, _, _ = _hash_regular(
+            run_root, report_relative, "Make print gate report"
+        )
+        if actual != expected:
+            raise ProposalError(
+                "Make signature review is not bound to the exact %s report" % gate
+            )
+        content, _ = _read_regular(
+            run_root,
+            report_relative,
+            "Make print gate report",
+            maximum=MAX_PRINT_GATE_REPORT_BYTES,
+        )
+        try:
+            text = content.decode("utf-8")
+        except UnicodeError as exc:
+            raise ProposalError("Make print gate report must be UTF-8 text") from exc
+        title, passing = PRINT_GATE_RESULTS[gate]
+        if not text.startswith(title):
+            raise ProposalError(
+                "Make print gate report %s is not a %s report" % (relative, gate)
+            )
+        if passing not in text:
+            raise ProposalError(
+                "Make signature review cites a failing %s report: %s" % (gate, relative)
+            )
+        covered.add(gate)
+    if covered != set(PRINT_GATE_RESULTS):
+        raise ProposalError(
+            "Make signature review print evidence must cover both the wall and "
+            "the overhang gate"
+        )
+
+
 def _validate_signature_review(
     run_root: Path,
     *,
@@ -1896,6 +1984,7 @@ def _validate_signature_review(
             "review_rounds",
             "critical_form_requirements",
             "blocking_visual_defects",
+            "print_gate_sha256s",
             "largest_risk",
             "resolution",
         },
@@ -1903,7 +1992,7 @@ def _validate_signature_review(
     )
     if (
         type(review["schema_version"]) is not int
-        or review["schema_version"] != 7
+        or review["schema_version"] != 8
         or review["kind"] != SIGNATURE_REVIEW_KIND
         or review["concept_sha256"] != concept_sha256
     ):
@@ -1954,6 +2043,11 @@ def _validate_signature_review(
     )
     if blockers:
         raise ProposalError("Make signature review still has blocking visual defects")
+    _validate_review_print_gates(
+        run_root,
+        review=review,
+        project_relative=review_relative.parent.parent,
+    )
     for field, label in (
         ("wish_revealed_after_blind_read", "Wish was revealed only after the blind read"),
         ("held_object_unmistakable", "held object is unmistakable"),

@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from tests.make.test_make_round import fake_visual_render, load_module, record_fixture_visual_pass
+from tests.make.test_make_round import _gate_output, fake_visual_render, load_module, record_fixture_visual_pass
 
 
 class MakeRoundMotionEvidenceTest(unittest.TestCase):
@@ -43,11 +43,18 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
                 if tool == "check_motion":
                     log.write_text(stdout + stderr)
                     return subprocess.CompletedProcess(command, returncode, stdout, stderr)
+                if tool in ("check_thickness", "check_overhang"):
+                    # These fixtures are about motion evidence; keep the print
+                    # gates green so a motion verdict is the only variable.
+                    gate_out, code = _gate_output(tool, fails=False)
+                    log.write_text(gate_out)
+                    return subprocess.CompletedProcess(command, code, gate_out, "")
                 raise AssertionError("Unexpected real-tool request: " + tool)
 
             args = SimpleNamespace(
                 project=str(project), entry=None, out=None, all_parts=False,
-                refs=[], min=0.90, no_motion=False, full=False, json=True, record_visual=None,
+                refs=[], min=0.90, nozzle=0.4, overhang_angle=45.0,
+                no_motion=False, full=False, json=True, record_visual=None,
             )
             output = io.StringIO()
             with (
@@ -57,7 +64,10 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             ):
                 code = module.make_round(args)
             self.assertEqual(code, 1)
-            self.assertEqual(calls, ["gen", "check_motion", "render_review"])
+            self.assertEqual(
+            calls,
+            ["gen", "check_thickness", "check_overhang", "check_motion", "render_review"],
+        )
             pending = json.loads(output.getvalue())
             self.assertFalse(pending["ok"])
             self.assertEqual(pending["visual"]["status"], "pending")

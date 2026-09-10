@@ -81,6 +81,48 @@ def sha256(content):
     return hashlib.sha256(content).hexdigest()
 
 
+PRINT_GATE_FIXTURES = {
+    "thickness": (
+        "Thickness and hollow", "--nozzle", "0.4",
+        "12.25 cm3 solid, grid 0.100 mm, 4096 surface samples",
+        "| wall >= 0.80 mm | PASS | 0.0% of surface below |",
+        "RESULT: printable at this wall",
+    ),
+    "overhang": (
+        "Overhang and support", "--angle", "45.0",
+        "65.5 cm2 of surface, grid 0.400 mm, 0 unsupported samples",
+        "| overhang | PASS | 0 regions need support |",
+        "RESULT: prints unsupported",
+    ),
+}
+
+
+def write_print_gate_reports(project, roles):
+    """Seal one passing thickness and overhang report per printable part.
+
+    ADR 0063: the finalizer refuses a review citing a report it cannot hash, so
+    a fixture that claims print readiness has to produce the evidence too.
+    """
+
+    measure = project / "measure"
+    measure.mkdir(parents=True, exist_ok=True)
+    bindings = {}
+    for role in sorted(roles):
+        for gate, (title, option, value, head, row, result) in PRINT_GATE_FIXTURES.items():
+            relative = "measure/%s-%s.md" % (gate, role)
+            path = project / relative
+            path.write_text(
+                "# %s\n\n"
+                "`part_%s.step.py %s %s --report %s`\n\n"
+                "part_%s.step.py: %s\n\n"
+                "| check | status | detail |\n|---|---|---|\n%s\n\n%s\n"
+                % (title, role, option, value, relative, role, head, row, result),
+                encoding="utf-8",
+            )
+            bindings[relative] = sha256(path.read_bytes())
+    return bindings
+
+
 def manual_pdf(
     *,
     page_count=1,
@@ -511,6 +553,9 @@ class StageProposalToolTest(unittest.TestCase):
         )
         (product_root / "cad/project/validation/cad-build.json").write_bytes(verification)
         (product_root / "cad/project/measure").mkdir()
+        print_gates = write_print_gate_reports(
+            product_root / "cad/project", ("moon",)
+        )
         write_parts(product_root, self.invented.to_dict()["concept"])
         for group in self.invented.to_dict()["concept"]["build_plan"]:
             seal_group(product_root, self.invented.to_dict()["concept"], group["group"])
@@ -529,7 +574,7 @@ class StageProposalToolTest(unittest.TestCase):
             product_root / "cad/project/snap/signature.png", format="PNG"
         )
         review = {
-            "schema_version": 7,
+            "schema_version": 8,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": self.invented.concept_sha256,
             "iso_sha256": sha256(
@@ -563,6 +608,7 @@ class StageProposalToolTest(unittest.TestCase):
                 }
             ],
             "blocking_visual_defects": [],
+            "print_gate_sha256s": print_gates,
             "largest_risk": "The three states need a stronger direction cue.",
             "resolution": "The final sheet uses separated contrasting states.",
         }
