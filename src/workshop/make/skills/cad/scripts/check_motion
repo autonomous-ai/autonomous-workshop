@@ -19,11 +19,12 @@ of question for a machine: a gear pair, a cam and its follower, a Geneva drive
 and a linkage all move at once, and holding the follower still turns the
 mechanism's whole working motion into a collision. `coupled_motion_collision`
 takes a pose per mover per sample -- the project's own kinematics, tabulated --
-and asks the only two questions a rigid-body sweep can settle about a running
-mechanism: that the parts clear each other all the way through the cycle, and
-that the driver actually reaches the follower. Marking a mover `"driven": true`
-runs the sweep a second time with that mover frozen; if nothing collides then,
-the pair transmits no motion and the manifest is measuring a gap.
+and asks whether the declared samples clear each other. Marking a mover
+`"driven": true` additionally requires input-connected sampled contact
+evidence: every edge has both a frozen-target collision and a nominal contact
+witness. Static obstacles cannot supply drive edges. This is a necessary
+geometric condition; it does not establish sustained contact, the prescribed
+kinematic relationship, force transmission, or physical operation.
 
 A condition says which answer it wants. `"expect": "clear"` (the default) is a
 motion that must be possible; `"expect": "blocked"` is a capture -- a dovetail
@@ -77,6 +78,8 @@ DEFAULT_STEPS = 12
 DEFAULT_OVERLAP_TOL = 1e-3  # mm3; contact is not collision
 # Agreement between Common and A + B - Fuse, independent of a manifest's threshold.
 VOLUME_CONSISTENCY_MM3 = 1e-6
+# Numerical contact tolerance, not a manifest-selectable operating clearance.
+CONTACT_DISTANCE_MM = 1e-6
 
 
 class ManifestError(Exception):
@@ -607,6 +610,79 @@ def _pose_table(spec: dict, steps: int, field: str):
     return place
 
 
+def surface_distance(a, b):
+    """Finite minimum distance between the actual placed solid materials."""
+    from OCP.BRepExtrema import BRepExtrema_DistShapeShape
+    a, _ = _material(a)
+    b, _ = _material(b)
+    if not _is_valid(a) or not _is_valid(b):
+        raise ManifestError("drive contact distance has invalid geometry")
+    # OCCT's shape-taking constructor performs the query immediately.
+    # Calling Perform again repeats the same expensive distance search.
+    measurement = BRepExtrema_DistShapeShape(a.wrapped, b.wrapped)
+    if not measurement.IsDone() or measurement.NbSolution() < 1:
+        raise ManifestError("drive contact distance did not complete")
+    distance = float(measurement.Value())
+    if not math.isfinite(distance) or distance < 0:
+        raise ManifestError("drive contact distance is not finite and nonnegative")
+    return distance
+
+
+def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
+    """Necessary sampled contact evidence, not a transmission/dynamics proof.
+
+    A candidate parent must touch the target's frozen pose, and the same pair
+    must have contact in at least one nominal operating pose. Every target
+    must be reachable from an independently declared input along such edges.
+    Static obstacles never become drive edges.
+    """
+    roots = [name for name, _shape, _place, driven in placed if not driven]
+    targets = [entry for entry in placed if entry[3]]
+    first_step = 1 if allow_seated else 0
+    nominal = {}
+    edges = []
+    for target, target_shape, target_place, _ in targets:
+        frozen = target_place(target_shape, 0)
+        for parent, parent_shape, parent_place, _ in placed:
+            if parent == target:
+                continue
+            frozen_hit = None
+            for step in range(first_step, steps + 1):
+                volume = overlap_volume(parent_place(parent_shape, step), frozen)
+                if volume > overlap_tol:
+                    frozen_hit = {"step": step, "overlapMm3": volume}
+                    break
+            if frozen_hit is None:
+                continue
+            pair = tuple(sorted((parent, target)))
+            if pair not in nominal:
+                nominal[pair] = None
+                for step in range(first_step, steps + 1):
+                    distance = float(surface_distance(
+                        parent_place(parent_shape, step),
+                        target_place(target_shape, step)))
+                    # Keep validation at the decision boundary, before using
+                    # a distance measurement as contact evidence.
+                    if not math.isfinite(distance) or distance < 0:
+                        raise ManifestError("drive contact distance is not finite and nonnegative")
+                    if distance <= CONTACT_DISTANCE_MM:
+                        nominal[pair] = {"step": step, "distanceMm": distance}
+                        break
+            if nominal[pair] is not None:
+                edges.append({"from": parent, "to": target,
+                              "frozenWitness": frozen_hit,
+                              "nominalWitness": nominal[pair]})
+    reached = set(roots)
+    while True:
+        extra = {edge["to"] for edge in edges if edge["from"] in reached} - reached
+        if not extra:
+            break
+        reached.update(extra)
+    return {"scope": "necessary sampled contact evidence; no force, sustained-contact or physical proof",
+            "inputParts": roots, "edges": edges,
+            "unreachedDrivenParts": [name for name, *_ in targets if name not in reached]}
+
+
 def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
     """Several parts driven through one cycle together, pose table by pose table."""
     movers = inputs.get("movers")
@@ -619,13 +695,30 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
     allow_seated = bool(inputs.get("allow_seated_contact", False))
 
     placed = []
+    selected_names = set()
+    selected_nodes = []
+    node_keys = parts.get("__node_keys__", {})
     for index, spec in enumerate(movers):
         if not isinstance(spec, dict):
             raise ManifestError(f"movers[{index}] must be an object")
         name = spec.get("part")
         if not name or not isinstance(name, str):
             raise ManifestError(f"movers[{index}] requires a part name")
+        if name in selected_names:
+            raise ManifestError(
+                f"movers repeat {name}; name each assembly occurrence only once")
         shape = resolve_parts(name, parts, f"movers[{index}].part")[0][1]
+        key = node_keys.get(name)
+        if key is not None:
+            # Aliases share one node key; a group also owns its descendant
+            # leaves. Both cases would otherwise move one occurrence twice.
+            for prior_name, prior_key in selected_nodes:
+                if key[:len(prior_key)] == prior_key or prior_key[:len(key)] == key:
+                    raise ManifestError(
+                        f"movers {prior_name} and {name} select overlapping assembly "
+                        "occurrences; name each occurrence only once")
+            selected_nodes.append((name, key))
+        selected_names.add(name)
         placed.append((name, shape, _pose_table(spec, steps, f"movers[{index}]"),
                        bool(spec.get("driven", False))))
     if len(placed) < 2 and any(driven for *_, driven in placed):
@@ -654,32 +747,21 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
     elif inputs.get("obstacle_parts"):
         obstacles = resolve_parts(inputs["obstacle_parts"], parts, "obstacle_parts")
 
-    def sweep_cycle(freeze=frozenset(), involving=None):
-        """First contact over the cycle, or None.
-
-        `freeze` holds movers at sample 0 while the rest run. `involving`
-        restricts the answer to contacts that touch one named part, which is
-        what makes a per-follower transmission test mean anything: with three
-        followers on one cam, a single "something collided" would pass a
-        machine driving only one of them.
-        """
+    def sweep_cycle():
+        """First collision in the declared nominal poses, or None."""
         for step in range(1 if allow_seated else 0, steps + 1):
             posed = [
-                (name, place(shape, 0 if name in freeze else step))
+                (name, place(shape, step))
                 for name, shape, place, driven in placed
             ]
             for first in range(len(posed)):
                 for second in range(first + 1, len(posed)):
-                    if involving and involving not in (posed[first][0], posed[second][0]):
-                        continue
                     volume = overlap_volume(posed[first][1], posed[second][1])
                     if volume > tol:
                         return {"step": step, "steps": steps,
                                 "between": [posed[first][0], posed[second][0]],
                                 "overlapMm3": round(volume, 6)}
                 for obstacle_name, obstacle in obstacles:
-                    if involving and involving != posed[first][0]:
-                        continue
                     volume = overlap_volume(posed[first][1], obstacle)
                     if volume > tol:
                         return {"step": step, "steps": steps,
@@ -704,29 +786,24 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
         result.update(step=hit["step"], obstacle=" x ".join(hit["between"]),
                       overlapMm3=hit["overlapMm3"])
 
-    # The second half, once per driven part: a follower that is never touched
-    # is not being driven, and one that is touched says nothing about the next.
     driven_names = [name for name, _, _, driven in placed if driven]
     if driven_names:
-        contacts = {name: sweep_cycle(freeze=frozenset([name]), involving=name)
-                    for name in driven_names}
-        untouched = [name for name, hit_at in contacts.items() if hit_at is None]
+        evidence = sampled_drive_evidence(placed, steps, tol, allow_seated)
+        missing = evidence["unreachedDrivenParts"]
         result["drivenParts"] = driven_names
-        result["transmits"] = not untouched
-        if untouched:
-            result["clear"] = False
-            result["transmitDetail"] = (
-                f"{', '.join(untouched)} never touched over {steps} samples with the "
-                f"drive running ({len(driven_names) - len(untouched)} of "
-                f"{len(driven_names)} driven part(s) are): this transmits no motion. "
-                "If the mechanism does drive it, check that sample 0 is not already at "
-                "the end of that part's travel -- a follower frozen at the top of its "
-                "stroke is never pushed further, and the cycle has to start elsewhere")
+        result["driveEvidence"] = evidence
+        result["driveContactEvidencePassed"] = not missing
+        if missing:
+            # Keep the sampled collision answer truthful. The independent
+            # evidence flag still makes run_condition fail closed.
+            result["driveEvidenceDetail"] = (
+                "No input-connected nominal contact evidence for " + ", ".join(missing)
+                + ("; no independent input was declared" if not evidence["inputParts"] else "")
+                + ". A frozen-pose collision alone does not establish transmission.")
         else:
-            reached = ", ".join(
-                f"{' x '.join(hit_at['between'])} at {hit_at['step']}/{steps}"
-                for hit_at in contacts.values())
-            result["transmitDetail"] = f"drive reaches every driven part -- {reached}"
+            result["driveEvidenceDetail"] = (
+                "Every declared driven part has input-connected sampled contact evidence; "
+                "this is necessary evidence, not a dynamics or physical transmission proof.")
     return result
 
 
@@ -814,13 +891,12 @@ def _run_condition(condition: dict, parts: dict, index: int) -> dict:
     record["expect"] = expect
 
     clear = bool(outcome.get("clear"))
-    if outcome.get("drivenParts") and not outcome.get("transmits"):
-        # A follower nothing ever touches is not a clear path; it is a gap where
-        # the mechanism was supposed to be, and it reads as clear on every other
-        # check in this file.
+    if outcome.get("drivenParts") and not outcome.get("driveContactEvidencePassed"):
+        # Missing required contact evidence cannot be converted into a
+        # successful blocked/retention condition by changing expect.
         record["expect"] = condition.get("expect", "clear")
         record["status"] = "fail"
-        record["detail"] = outcome["transmitDetail"]
+        record["detail"] = outcome["driveEvidenceDetail"]
         return record
     if clear:
         moved = (f"clear across {outcome['steps']} samples" if outcome.get("movers")
@@ -828,8 +904,8 @@ def _run_condition(condition: dict, parts: dict, index: int) -> dict:
                  else "path is clear")
         if outcome.get("stepMm"):
             moved += f" (step {outcome['stepMm']:.3f} mm)"
-        if outcome.get("transmitDetail"):
-            moved = f"{moved}; {outcome['transmitDetail']}"
+        if outcome.get("driveEvidenceDetail"):
+            moved = f"{moved}; {outcome['driveEvidenceDetail']}"
     elif "step" in outcome:
         moved = (f"blocked by {outcome['obstacle']} at step "
                  f"{outcome['step']}/{outcome['steps']} ({outcome['overlapMm3']} mm3)")
@@ -854,9 +930,9 @@ def _run_condition(condition: dict, parts: dict, index: int) -> dict:
 def _self_check() -> int:
     """Fixtures whose answers are known, for the coupled check.
 
-    Each one is built so the naive implementation passes it: a sweep with a gap
-    in it is clear at every sample, and only the frozen pass can tell that
-    nothing was ever driven.
+    Contact controls close their initial gap before following. Missing
+    nominal/input-path evidence, collisions and malformed/coarse paths
+    must not produce a successful contact-evidence condition.
     """
     from build123d import Box, Pos
 
@@ -887,17 +963,26 @@ def _self_check() -> int:
     # 1. The drive never reaches the output. Every sample is clear, and that is
     #    the failure: this is a gap being measured, not a mechanism.
     got = coupled("gap", 5.0, still)
-    hit = got["status"] == "fail" and "transmits no motion" in got["detail"]
+    hit = got["status"] == "fail" and "No input-connected" in got["detail"]
     ok &= hit
     print(f"{'ok  ' if hit else 'FAIL'} a clear sweep with nothing driven fails: {got['detail']}")
 
-    # 2. The same motion, far enough that the frozen output is struck: a real
-    #    drive, clear while both move.
-    following = [[15.0 * i / 10.0, 0.0, 0.0] for i in range(11)]
-    got = coupled("driven", 15.0, following)
-    hit = got["status"] == "pass" and got.get("transmits") is True
+    # Retain the former positive fixture as a negative regression. Both boxes
+    # move by the same offset and remain 10 mm apart for the entire stroke.
+    parallel = [[15.0 * i / 10.0, 0.0, 0.0] for i in range(11)]
+    got = coupled("constant-gap", 15.0, parallel)
+    hit = (got["status"] == "fail" and got["clear"]
+           and got.get("driveContactEvidencePassed") is False)
     ok &= hit
-    print(f"{'ok  ' if hit else 'FAIL'} a following output passes and transmits: {got['detail']}")
+    print(f"{'ok  ' if hit else 'FAIL'} a constant-gap output fails: {got['detail']}")
+
+    # 2. The input closes the initial gap before the output starts moving.
+    #    Their surfaces then remain tangent; this tests geometric contact only.
+    following = [[max(0.0, 15.0 * i / 10.0 - 10.0), 0.0, 0.0] for i in range(11)]
+    got = coupled("driven", 15.0, following)
+    hit = got["status"] == "pass" and got.get("driveContactEvidencePassed") is True
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} a following output has sampled contact evidence: {got['detail']}")
 
     # 3. An output that lags is run into: the pair binds and the cycle fails.
     #    The blocks start 10 mm apart, so the drive has to close more than that
@@ -916,11 +1001,11 @@ def _self_check() -> int:
         "inputs": {"steps": 10, "movers": [
             {"part": "drive", "translation": {"vector": [15.0, 0, 0]}},
             {"part": "output", "driven": True,
-             "translation": {"offsets_mm": [[15.0 * i / 10.0, 0.0, 0.0] for i in range(11)]}},
+             "translation": {"offsets_mm": [[max(0.0, 15.0 * i / 10.0 - 10.0), 0.0, 0.0] for i in range(11)]}},
             {"part": "far", "driven": True,
              "translation": {"offsets_mm": [[0.0, 0.0, 0.0]] * 11}},
         ]}}, parts, 0)
-    hit = two["status"] == "fail" and "far" in two["detail"] and "1 of 2" in two["detail"]
+    hit = two["status"] == "fail" and "far" in two["detail"] and two["driveEvidence"]["unreachedDrivenParts"] == ["far"]
     ok &= hit
     print(f"{'ok  ' if hit else 'FAIL'} one driven part out of two is not enough: {two['detail']}")
     del parts["far"]
@@ -928,7 +1013,7 @@ def _self_check() -> int:
     # 5. Without `driven`, case 1 is just a clear path -- the flag is what asks
     #    the second question, and the file must not answer it uninvited.
     got = coupled("no-claim", 5.0, still, driven=False)
-    hit = got["status"] == "pass" and "transmits" not in got
+    hit = got["status"] == "pass" and "driveContactEvidencePassed" not in got
     ok &= hit
     print(f"{'ok  ' if hit else 'FAIL'} without driven, the same sweep is only a clear path")
 
@@ -940,7 +1025,7 @@ def _self_check() -> int:
         "inputs": {"steps": 2, "movers": [
             {"part": "drive", "translation": {"vector": [15.0, 0, 0]}},
             {"part": "output", "driven": True,
-             "translation": {"offsets_mm": [[15.0 * i / 2.0, 0.0, 0.0] for i in range(3)]}},
+             "translation": {"offsets_mm": [[max(0.0, 15.0 * i / 2.0 - 10.0), 0.0, 0.0] for i in range(3)]}},
         ]},
         "thresholds": {"maxStepMm": 1.0}}, parts, 0)
     hit = coarse["status"] == "inconclusive" and "coarser than" in coarse["detail"]
@@ -952,7 +1037,7 @@ def _self_check() -> int:
         "inputs": {"steps": 30, "movers": [
             {"part": "drive", "translation": {"vector": [15.0, 0, 0]}},
             {"part": "output", "driven": True,
-             "translation": {"offsets_mm": [[15.0 * i / 30.0, 0.0, 0.0] for i in range(31)]}},
+             "translation": {"offsets_mm": [[max(0.0, 15.0 * i / 30.0 - 10.0), 0.0, 0.0] for i in range(31)]}},
         ]},
         "thresholds": {"maxStepMm": 1.0}}, parts, 0)
     hit = fine["status"] == "pass" and fine["stepMm"] <= 1.0
@@ -972,14 +1057,14 @@ def _self_check() -> int:
     #    the mechanism actually runs into was never in the test.
     parts["frame"] = block("frame", 10.0)
     parts["__toplevel__"] = ["drive", "output", "frame"]
-    got = coupled("silent-frame", 20.0, [[i * 2.0, 0.0, 0.0] for i in range(11)])
+    got = coupled("silent-frame", 20.0, [[max(0.0, i * 2.0 - 10.0), 0.0, 0.0] for i in range(11)])
     hit = got["status"] == "inconclusive" and "frame" in got["detail"]
     ok &= hit
     print(f"{'ok  ' if hit else 'FAIL'} a part left out of the sweep is inconclusive: "
           f"{got['detail'][:96]}")
 
     # 10. ... and saying so explicitly is a decision the manifest may record.
-    got = coupled("declared-empty", 20.0, [[i * 2.0, 0.0, 0.0] for i in range(11)],
+    got = coupled("declared-empty", 20.0, [[max(0.0, i * 2.0 - 10.0), 0.0, 0.0] for i in range(11)],
                   extra={"obstacle_parts": []})
     hit = got["status"] == "pass"
     ok &= hit
@@ -987,7 +1072,7 @@ def _self_check() -> int:
           f"{got['status']}")
 
     # 11. Naming it is the other way through, and it catches the collision.
-    got = coupled("named-frame", 20.0, [[i * 2.0, 0.0, 0.0] for i in range(11)],
+    got = coupled("named-frame", 20.0, [[max(0.0, i * 2.0 - 10.0), 0.0, 0.0] for i in range(11)],
                   extra={"obstacle_parts": ["frame"]})
     hit = got["status"] == "fail" and "frame" in got["detail"]
     ok &= hit

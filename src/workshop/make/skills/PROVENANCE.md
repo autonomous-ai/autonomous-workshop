@@ -475,3 +475,25 @@ accepts older failed records; the signature review continues to bind the entire
 report's hash. Final geometry checks and frozen materialized tools are unchanged.
 This corrects report-history validation; it does not establish that a passing
 preflight belongs to the current construction source bytes.
+
+## Sampled contact evidence for driven parts (2026-09-10)
+
+A frozen-output collision could be reported as transmission even when the
+nominally moving parts remained separated. Mutually reaching outputs could
+also pass without a path from an input, and static obstacles could provide the
+only apparent drive contact.
+
+Coupled motion now requires every declared driven output to be reachable from
+an input through mover pairs with both a frozen-output collision and nominal
+surface-contact witness. Static obstacles do not supply these edges. Repeated
+names, aliases of the same occurrence, and overlapping group selections are
+inconclusive. JSON separates the sampled collision result from the required
+contact evidence and records each edge's witnesses; missing evidence fails
+both clear and blocked expectations. The former ten-millimetre-gap positive
+self-check is retained as a negative regression.
+
+These are necessary sampled geometric conditions. They do not prove sustained
+engagement, the declared ratio or phase, force transmission, or physical
+operation. Numerical contact and Boolean consistency tolerances are unchanged.
+Frozen runs keep their exact materialized tools. Private product evidence and
+unqualified gear construction experiments remain outside Git.

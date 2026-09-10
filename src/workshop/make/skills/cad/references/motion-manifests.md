@@ -220,30 +220,50 @@ project already solved that kinematics to place the geometry, so the table is
 that solution written down, not a second guess at it. Every mover is tested
 against every other mover and against the obstacles at every sample.
 
-### The table is a claim, and `driven` is what tests it
+### The table proposes motion; contact evidence has a narrower scope
 
-A pose table that quietly describes two parts drifting past each other with a
-gap between them will sweep perfectly clear. Mark the output side
-`"driven": true` and the gate runs the sweep again **once per driven part**,
-with that one part frozen at sample 0 and only contacts involving it counted.
-Each one must be reached: if the drive completes its stroke without ever
-touching it, that part is not being driven, and the condition fails with that
-finding rather than a clearance.
+Mark each output mover with `"driven": true`. Movers without that flag are
+the declared inputs. Select each assembly occurrence only once among movers:
+repeating a name, using two aliases for the same node, or selecting both a
+group and its descendant is inconclusive. Distinct assembly occurrences remain
+independent selections even when they use the same part design.
 
-Per part, rather than "something collided", because a machine with three
-followers on one cam passes the weaker form while driving only one of them.
+The gate requires every output to be reachable from an
+input through directed contact edges. For each edge from a parent to an output,
+the exact same pair needs both:
 
-Together the passes say what a running machine has to satisfy — the parts clear
-each other through the whole cycle, and every output is actually in contact with
-the drive somewhere in it.
+- A collision above `maxOverlapMm3` when the output is frozen at sample 0 and
+  the parent follows its declared poses.
+- Surface contact in at least one checked **nominal** pose, with both parts at
+  their declared positions. The numerical distance tolerance is 0.000001 mm;
+  it is not a configurable operating clearance.
 
-**Start the cycle away from the ends of the driven part's travel.** The frozen
-pass asks "if this part stood still, would the drive run into it?", and for a
-follower parked at the top of its stroke the honest answer is no — the drive
-only ever falls away from it, and the contact that matters is a support, not a
-push. A cycle that starts there reports the part as undriven however sound the
-mechanism is. Park the assembly mid-stroke; with several outputs, pick a phase
-where none of them is at an extreme.
+Static obstacles cannot supply drive edges. Outputs touching each other in an
+island disconnected from every input fail. Two parts moving together across a
+constant gap also fail, even if freezing one makes the other run into it.
+Every declared output needs its own path; one reached follower is insufficient.
+
+The result separates `clear`, the sampled collision answer, from
+`driveContactEvidencePassed`. Required contact evidence that is missing fails
+the condition even with `"expect": "blocked"`. `driveEvidence` records the
+declared inputs, directed edges, frozen and nominal witness samples, and
+unreached outputs. The result does not expose a `transmits` claim.
+
+**Passing proves only necessary sampled geometric evidence.** A single nominal
+contact can satisfy an edge; it does not prove sustained engagement, the
+prescribed ratio or phase, force transmission, friction, or physical operation.
+Clearance is checked at the declared samples, not at every intervening pose.
+Construction and mechanism-specific verification must establish those remaining
+requirements; an animation or this report alone cannot establish a working toy.
+
+**Start the cycle away from the ends of the driven part's travel.** Freezing a
+follower at its maximum excursion may prevent any parent from intersecting it,
+even in a working mechanism. Choose a phase where the intended drive can reach
+each frozen follower. With `allow_seated_contact`, sample 0 is omitted from
+both nominal collision and nominal contact witnesses.
+
+These output semantics apply to newly materialized tools. Existing runs retain
+their frozen tool bytes.
 
 ### Name the frame, or the cycle never met it
 
