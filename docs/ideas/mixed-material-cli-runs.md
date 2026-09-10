@@ -288,3 +288,26 @@ At this checkpoint no pilot had completed Make or published. Real native
 inspection had repaired pinball mechanism intersections/overhangs and rejected
 a supplier rod whose advertised 75 mm model actually measured 150 mm. Those
 are observed digital checks, not physical manufacture evidence.
+
+### Final installable-wheel check
+
+Built code revision `e39df106` offline using cached pinned build dependencies,
+then reran the full deterministic acceptance against a fresh wheel installation
+with existing declared dependencies appended read-only:
+
+```sh
+UV_CACHE_DIR=/private/tmp/workshop-mixed-material-final-e39df106-uv-cache PYTHONDONTWRITEBYTECODE=1 uv build --offline --no-build-isolation --python /private/tmp/workshop-mixed-material-final-e39df106-build-env/bin/python --wheel --out-dir /private/tmp/workshop-mixed-material-final-e39df106
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 TMPDIR=/private/tmp /Users/ab/code/autonomous-workshop/.venv/bin/python -B /private/tmp/workshop-mixed-material-final-e39df106-acceptance.py
+```
+
+The local wrapper changes dependency installation only. It proves `workshop`,
+`cli` and distribution metadata originate in the new temporary wheel install,
+then runs the unchanged exact-asset, dependency, CLI/catalog, credential
+isolation, frozen-profile, same-session and token-accounting checks. All pass.
+No real model or publication runs in that acceptance fixture.
+
+Wheel: `/private/tmp/workshop-mixed-material-final-e39df106/autonomous_workshop-0.6.0-py3-none-any.whl`.
+SHA-256: `b6126cc7dbb20b29cc541f102909a5f62e5be312b629e4906a5f824df0afd02e`.
+Acceptance log: `/private/tmp/workshop-mixed-material-final-e39df106-acceptance.log`.
+The earlier clean-PyPI-download limitation remains; this successful test used
+local dependencies without global installation changes.
