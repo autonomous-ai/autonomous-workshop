@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import runpy
-import struct
 import subprocess
 import sys
 import tempfile
@@ -39,12 +38,17 @@ def scene(variant):
     ])
 
 
-def write_stl(path, triangles):
-    raw = bytearray(b"exact view fixture".ljust(80, b"\0"))
-    raw.extend(struct.pack("<I", len(triangles)))
-    for triangle in triangles:
-        raw.extend(struct.pack("<12fH", 0, 0, 0, *triangle.ravel(), 0))
-    path.write_bytes(raw)
+def write_step(path, variant):
+    """The same asymmetric scene as ``scene``, as the STEP the CLI now reads."""
+    from build123d import Box, Compound, Pos, export_step
+
+    solids = [
+        Pos(0, 0, 1) * Box(25, 18, 2),
+        Pos(-7, 5, 5 + variant * 1.5) * Box(5, 4, 6 + variant * 3),
+        Pos(6, -4, 9) * Box(3 + variant, 7, 14),
+        Pos(-2, -6 + variant, 3.5) * Box(2, 2, 3),
+    ]
+    export_step(Compound(children=solids), str(path))
 
 
 class ProductViewTests(unittest.TestCase):
@@ -80,15 +84,15 @@ class ProductViewTests(unittest.TestCase):
     def test_rear_cli_is_available_for_product_motion_and_state_sheets(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            first, second = root / "first.stl", root / "second.stl"
-            write_stl(first, scene(0))
-            write_stl(second, scene(2))
+            first, second = root / "first.step", root / "second.step"
+            write_step(first, 0)
+            write_step(second, 2)
             before = (first.read_bytes(), second.read_bytes())
             cases = {
                 "product": ["--view", "rear"],
                 "motion": ["--motion-sheet", str(root / "motion.png"), "--motion-view", "rear"],
                 "state": ["--state-sheet", str(root / "state.png"), "--state-view", "rear",
-                          "--state-stl", str(first), "--state-stl", str(second)],
+                          "--state-source", str(first), "--state-source", str(second)],
             }
             for name, options in cases.items():
                 with self.subTest(name=name):

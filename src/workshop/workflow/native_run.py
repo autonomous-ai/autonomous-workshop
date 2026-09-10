@@ -6143,7 +6143,9 @@ def _read_make_proof_acceptance(
     )
     valid_artifacts = (
         isinstance(proof_artifacts, list)
-        and len(proof_artifacts) == (13 if requires_artifacts else 0)
+        and len(proof_artifacts) == (
+            len(_MAKE_PROOF_ARTIFACT_NAMES) if requires_artifacts else 0
+        )
         and all(
             isinstance(item, Mapping)
             and set(item) == {"path", "sha256"}
@@ -6282,12 +6284,15 @@ def _v13_operator_resume_recovery(
     *,
     first_method: str,
 ) -> bool:
-    """Skip a replayed final-source phase on explicit v13 Make resume."""
+    """Skip a replayed final-source phase on explicit v13+ Make resume."""
 
     return (
         first_method == "resume"
         and checkpoint.stage == "make"
-        and DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+        and (
+            DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V13_CAPABILITY_PATH in checkpoint.input_sha256s
+        )
         and _make_proof_ready(paths, checkpoint)
     )
 
