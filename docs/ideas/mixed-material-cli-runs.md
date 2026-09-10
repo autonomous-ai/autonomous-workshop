@@ -483,3 +483,47 @@ Wheel: `/private/tmp/workshop-mixed-material-final-142d6511/autonomous_workshop-
 SHA-256: `7a52325c3b29662f536262fc0fa7e5473ea882158b62a5a85a573084cf2213f5`.
 Acceptance log: `/private/tmp/workshop-mixed-material-final-142d6511-acceptance.log`.
 Byte identity proof: `/private/tmp/workshop-mixed-material-final-142d6511-wheel-proof.json`.
+
+### Evening continuation after interrupted native turns
+
+The six CLI processes later exited 2 between 17:29:44 and 17:32:52 UTC,
+each reporting a failed native turn with `category=unclassified` and
+`signature=unclassified`. A separate repository-audit helper reported an
+account usage limit at approximately the same time, but the product diagnostics
+do not establish that as the cause of their failures. Make and publication
+remained incomplete; the saved product sessions and artifacts were retained.
+
+After the user requested continuation, the same sessions were resumed from
+revision `90b06c30` through the ordinary CLI. No new Wish, profile override,
+token increase, credential change or tool refresh was used:
+
+```sh
+# 2026-09-10 23:40:38 UTC
+"$workshop_python" -m cli resume wish-20260910-143655-4d851b36
+# 23:41:39 UTC
+"$workshop_python" -m cli resume wish-20260910-143717-dbe8ad47
+# 23:41:46 UTC
+"$workshop_python" -m cli resume wish-20260910-143721-492a87cb
+# 23:41:50 UTC
+"$workshop_python" -m cli resume wish-20260910-143744-c4614e19
+# 23:41:58 UTC
+"$workshop_python" -m cli resume wish-20260910-143749-b20aacdc
+# 23:42:03 UTC
+"$workshop_python" -m cli resume wish-20260910-143753-a2e10997
+```
+
+At 23:43 UTC, ordinary `status <id> --json` calls confirmed all six progressing
+in Make with five native turns, their original root thread ids, Astra, ultra
+and 100,000,000-token limits. Observed cumulative usage was 73,110,712 for
+Harbor, 78,186,226 for Cloudline, 74,420,842 for Switchyard, 79,350,080 for
+Rainmark, 62,569,545 for Liltwing and 83,094,151 for Atlas. These values include
+completed requests across discovered native children; in-flight usage is
+excluded. Publication remained `not-created` for every pilot.
+
+Read-only review of Liltwing's third Make round found four reused passing
+printed-part results and a still-failing shuttle. Its unsupported region
+decreased from 164.9 to 28.6 square millimetres, but measured thin regions of
+0.33 and 0.13 mm remained below the 0.80 +/- 0.07 mm requirement. Round three
+had no motion result and pending visual feedback. Round two's motion log
+recorded only `TIMEOUT after 900s`, with no condition evidence. This proves
+neither a motion collision nor a motion pass; the round correctly failed.
