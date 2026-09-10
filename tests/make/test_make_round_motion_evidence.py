@@ -27,23 +27,19 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             skills = root / "skills"
             cad = skills / "cad" / "scripts"
             cad.mkdir(parents=True)
-            for name in ("check_thickness", "meshlib.py"):
-                (cad / name).write_text("# fake checker identity\n")
+            (cad / "gen").write_text("# fake generator identity\n")
             (skills / "image-to-cad" / "scripts").mkdir(parents=True)
             calls = []
 
             def run(command, *, cwd, log, **kwargs):
                 tool = Path(command[1]).name
                 calls.append(tool)
-                if tool == "export":
-                    Path(command[command.index("--stl") + 1]).write_bytes(b"stable fake part")
-                    return subprocess.CompletedProcess(command, 0, "exported", "")
+                if tool == "gen":
+                    source = Path(command[2])
+                    source.with_name(source.name[:-len(".py")]).write_bytes(b"stable fake part")
+                    return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
                 if tool == "render_review":
                     return fake_visual_render(command)
-                if tool == "check_thickness":
-                    text = "  PASS  wall >= 0.80 mm\nRESULT: printable at this wall\n"
-                    log.write_text(text)
-                    return subprocess.CompletedProcess(command, 0, text, "")
                 if tool == "check_motion":
                     log.write_text(stdout + stderr)
                     return subprocess.CompletedProcess(command, returncode, stdout, stderr)
@@ -51,18 +47,17 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
 
             args = SimpleNamespace(
                 project=str(project), entry=None, out=None, all_parts=False,
-                nozzle=0.4, refs=[], min=0.90, no_motion=False, full=False, json=True, record_visual=None,
+                refs=[], min=0.90, no_motion=False, full=False, json=True, record_visual=None,
             )
             output = io.StringIO()
             with (
                 patch.object(module, "skills_root", return_value=skills),
                 patch.object(module, "run", run),
-                patch.object(module, "package_version", return_value="1.0"),
                 redirect_stdout(output),
             ):
                 code = module.make_round(args)
             self.assertEqual(code, 1)
-            self.assertEqual(calls, ["export", "check_thickness", "check_motion", "render_review"])
+            self.assertEqual(calls, ["gen", "check_motion", "render_review"])
             pending = json.loads(output.getvalue())
             self.assertFalse(pending["ok"])
             self.assertEqual(pending["visual"]["status"], "pending")

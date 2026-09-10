@@ -94,14 +94,12 @@ class DocumentedEntryReferenceTest(unittest.TestCase):
             os.chdir(cwd)
         return code, err.getvalue(), out.getvalue()
 
-    def test_final_and_print_preflight_refuse_before_any_geometry_work(self):
+    def test_final_refuses_before_any_geometry_work(self):
         self.write("README.md", "# Widget\n\n- `part_token.step.py` review entry.\n")
-        for argv in (["proj", "--exports"], ["proj", "--print-preflight"]):
-            with self.subTest(argv=argv):
-                code, err, out = self.run_main(argv)
-                self.assertNotIn(code, (0, None))
-                self.assertIn("does not exist in the project: README.md:3: part_token.step.py", err)
-                self.assertNotIn("check_layout", out)
+        code, err, out = self.run_main(["proj"])
+        self.assertNotIn(code, (0, None))
+        self.assertIn("does not exist in the project: README.md:3: part_token.step.py", err)
+        self.assertNotIn("check_layout", out)
 
     def test_quick_mode_does_not_gate_documentation(self):
         self.write("README.md", "# Widget\n\n- `part_token.step.py` review entry.\n")
@@ -110,7 +108,7 @@ class DocumentedEntryReferenceTest(unittest.TestCase):
 
     def test_final_refusal_is_recorded_in_the_pipeline_report(self):
         self.write("README.md", "# Widget\n\n- `part_token.step.py` review entry.\n")
-        self.run_main(["proj", "--exports"])
+        self.run_main(["proj"])
         report = self.project / "measure" / "verification-pipeline.md"
         self.assertTrue(report.is_file())
         text = report.read_text(encoding="utf-8")

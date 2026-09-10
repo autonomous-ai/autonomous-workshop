@@ -48,22 +48,22 @@ def record_fixture_visual_pass(module, project, summary):
 
 
 class MakeRoundTest(unittest.TestCase):
-    def _round(self, project, *, render_fails=False, wall_fails=False):
+    def _round(self, project, *, render_fails=False, build_fails=False):
         module = load_module()
         (project / "toy.step.py").write_text("def gen_step(): pass\n")
         (project / "part_wheel.step.py").write_text("def gen_step(): pass\n")
         def fake_run(command, **kwargs):
             tool = Path(command[1]).name
-            if tool == "export":
-                Path(command[command.index("--stl") + 1]).write_bytes(b"mesh")
+            if tool == "gen" and not build_fails:
+                Path(command[2]).with_name(Path(command[2]).name[:-3]).write_bytes(b"step")
             if tool == "render_review" and not render_fails:
                 out = Path(command[command.index("-o") + 1])
                 out.mkdir()
                 for view in ("front", "top", "iso"):
                     (out / (view + ".png")).write_bytes(view.encode())
-            failed = (render_fails and tool == "render_review") or (wall_fails and tool == "check_thickness")
+            failed = (render_fails and tool == "render_review") or (build_fails and tool == "gen")
             return subprocess.CompletedProcess(command, 1 if failed else 0,
-                                               "PASS wall\nRESULT: printable at this wall\n", "")
+                                               '{"ok":true}\n', "ValueError: wall must be positive\n" if failed else "")
         with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(module, "skills_root", return_value=project), mock.patch.object(module, "run", side_effect=fake_run):
             self.assertEqual(module.main([str(project)]), 1)
         summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
@@ -176,10 +176,39 @@ class MakeRoundTest(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertEqual(result["full"]["returncode"], 2)
 
+    def test_one_piece_entry_is_built_and_reported_as_the_product(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module = load_module()
+            (project / "toy.step.py").write_text("def gen_step(): pass\n")
+            calls = []
+
+            def fake_run(command, **kwargs):
+                tool = Path(command[1]).name
+                calls.append(tool)
+                if tool == "gen":
+                    source = Path(command[2])
+                    source.with_name(source.name[:-len(".py")]).write_bytes(b"step")
+                if tool == "render_review":
+                    out = Path(command[command.index("-o") + 1])
+                    out.mkdir()
+                    for view in ("front", "top", "iso"):
+                        (out / (view + ".png")).write_bytes(view.encode())
+                return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
+
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    mock.patch.object(module, "skills_root", return_value=project), \
+                    mock.patch.object(module, "run", side_effect=fake_run):
+                self.assertEqual(module.main([str(project)]), 1)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual(summary["parts"], ["toy"])
+            self.assertEqual(summary["build"]["toy"]["verdict"], "PASS")
+            self.assertEqual(calls, ["gen", "render_review"])
+
     def test_visual_pass_cannot_unlock_full_verification_after_numeric_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
-            module, summary = self._round(project, wall_fails=True)
+            module, summary = self._round(project, build_fails=True)
             self.assertFalse(summary["checks_ok"])
             feedback = self._feedback(project, summary)
             with mock.patch.object(module, "run") as runner:
@@ -189,13 +218,13 @@ class MakeRoundTest(unittest.TestCase):
             result = module.record_visual(project, feedback)
             self.assertEqual(result["visual"]["status"], "pass")
             self.assertFalse(result["ok"])
-            self.assertEqual(result["thickness"]["wheel"]["verdict"], "FAIL")
+            self.assertEqual(result["build"]["wheel"]["verdict"], "FAIL")
 
     def test_skill_is_registered_with_its_tool_card(self):
         root = product_run_domain_skill_roots()["make-round"]
         text = (root / "SKILL.md").read_text(encoding="utf-8")
         self.assertTrue(text.startswith("---\nname: make-round\n"))
-        for tool in ("export", "check_thickness", "render_views.py", "check_motion", "verify_project"):
+        for tool in ("gen", "render_views.py", "check_motion", "verify_project"):
             self.assertIn(tool, text)
         self.assertIn("at most once per round", text)
         self.assertTrue(SCRIPT.is_file())
@@ -210,10 +239,12 @@ class MakeRoundTest(unittest.TestCase):
 
     def test_pure_helpers_read_tool_output_and_diff_rounds(self):
         module = load_module()
-        parsed = module.parse_thickness(
-            "  FAIL  wall >= 0.80 mm  9 samples\n        1. [wall ] 0.71 mm at (0, 0, 0)\nRESULT: WALL BELOW MINIMUM\n"
+        parsed = module.parse_build("", "ValueError: wall must be positive\n", 1)
+        self.assertEqual(
+            (parsed["verdict"], parsed["failures"][-1]),
+            ("FAIL", "ValueError: wall must be positive"),
         )
-        self.assertEqual((parsed["verdict"], parsed["thinnest_mm"]), ("FAIL", 0.71))
+        self.assertEqual(module.parse_build("", "", 0)["verdict"], "PASS")
         self.assertEqual(module.diff_parts({"a": "x"}, {"a": "x", "b": "y"}), ["b"])
         self.assertEqual(module.parse_refs(["hero=ref/hero.png"], []), [("hero", "ref/hero.png")])
         # render_views --json prints one pretty-printed object whose ``views`` carry the IoU.
@@ -226,7 +257,7 @@ class MakeRoundTest(unittest.TestCase):
         self.assertIsNone(module.parse_render_views("no json here\n", "hero"))
         summary = {
             "round": 1, "project": "/p", "parts": ["a"], "changed": ["a"], "checked": ["a"],
-            "thickness": {"a": {"verdict": "PASS", "thinnest_mm": None, "failures": []}},
+            "build": {"a": {"verdict": "PASS", "failures": []}},
             "likeness": [], "min": 0.9, "motion": None, "full": None, "ok": True, "out": "/p/measure/rounds/r0001",
         }
         self.assertTrue(module.render_summary(summary).splitlines()[-1].startswith("  PASS"))

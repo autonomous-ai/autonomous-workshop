@@ -40,7 +40,6 @@ from workshop.errors import (
     ReceiptError,
     StateConflict,
 )
-from workshop.make.cad.mesh import inspect_stl_path
 from workshop.make.cad.step_color import read_step_part_colors
 from workshop.make.cad.fe_parts import FePartsError, PartKeying, key_parts
 from workshop.make.cad.posed_occurrences import (
@@ -53,6 +52,7 @@ from workshop.make.assembly_package import (
     is_assembly_package,
     read_assembly_package,
 )
+from workshop.release.renders import HostRenderError, step_triangle_mesh
 from workshop.release.native import (
     DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
     MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
@@ -122,19 +122,8 @@ FACTORY_MODEL_METADATA_PATHS = frozenset(
 )
 FACTORY_MODEL_GEOMETRY_SUFFIXES = frozenset(
     (
-        ".3mf",
-        ".brep",
-        ".brp",
-        ".dxf",
-        ".fcstd",
-        ".iges",
-        ".igs",
-        ".scad",
         ".step",
-        ".stl",
         ".stp",
-        ".x_b",
-        ".x_t",
     )
 )
 FACTORY_MODEL_GENERATOR_SUFFIXES = frozenset((".py",))
@@ -379,21 +368,21 @@ def _sealed_primary(context: Any) -> Mapping[str, str]:
         if project.get("id") != context.wish.product_id:
             raise ContractError("sealed project.json id must equal Wish product_id")
 
-    assembled = root / "assembled.stl"
-    canonical = root / (context.wish.product_id + ".stl")
+    assembled = root / "assembled.step"
+    canonical = root / (context.wish.product_id + ".step")
     for path in (assembled, canonical):
         if path.is_symlink() or path.exists() and not path.is_file():
-            raise ContractError("Factory primary STL must be a sealed regular file")
+            raise ContractError("Factory primary STEP must be a sealed regular file")
     if assembled.is_file() and canonical.is_file():
         if assembled.read_bytes() != canonical.read_bytes():
-            raise ContractError("root primary STL files diverge")
+            raise ContractError("root primary STEP files diverge")
     selected = assembled if assembled.is_file() else canonical if canonical.is_file() else None
     if selected is not None:
         content = selected.read_bytes()
         if not content:
-            raise ContractError("Factory primary STL is empty")
+            raise ContractError("Factory primary STEP is empty")
         return {
-            "kind": "mesh",
+            "kind": "solid",
             "path": selected.name,
             "sha256": hashlib.sha256(content).hexdigest(),
         }
@@ -407,7 +396,7 @@ def _sealed_primary(context: Any) -> Mapping[str, str]:
             generators.append((path, content))
     if len(generators) != 1:
         raise ContractError(
-            "Made requires one root primary STL or one top-level gen_step generator"
+            "Made requires one root primary STEP or one top-level gen_step generator"
         )
     path, content = generators[0]
     return {
@@ -558,33 +547,6 @@ def _read_bound_file(root: Path, manifest: ArtifactManifest, path: str) -> bytes
     if len(content) != entry.bytes or hashlib.sha256(content).hexdigest() != entry.sha256:
         raise ContractError("Made file changed before Factory handoff: %s" % path)
     return content
-
-
-def _inspect_shells(
-    root: Path,
-    manifest: ArtifactManifest,
-    path: str,
-    expected: int,
-    label: str,
-) -> None:
-    entry = _manifest_entry(manifest, path)
-    if entry is None:
-        raise ContractError("Factory %s STL is not sealed" % label)
-    try:
-        result = inspect_stl_path(
-            root.joinpath(*PurePosixPath(path).parts),
-            expected_shell_count=expected,
-            expected_source_sha256=entry.sha256,
-            expected_source_bytes=entry.bytes,
-        )
-    except OSError as exc:
-        raise ContractError("Factory %s STL could not be inspected" % label) from exc
-    if result.status != "passed":
-        reasons = tuple(result.failure_reasons) + tuple(result.hold_reasons)
-        raise ContractError(
-            "Factory %s STL shell count failed: expected=%d observed=%s reasons=%s"
-            % (label, expected, result.observed_shell_count, ",".join(reasons) or "unknown")
-        )
 
 
 def _sealed_part_colors(root: Path, manifest: ArtifactManifest) -> Dict[str, str]:
@@ -892,20 +854,20 @@ def _occurrence_transport(
     if is_assembly_package(sidecar):
         # Make seals the cadgen assembly-package at this path.  Its occurrence
         # names are the transport identity, and the build-group contract
-        # places one production STL per occurrence under parts/.  A single
-        # occurrence is the root mesh itself and needs no occurrence family.
+        # places one production STEP per occurrence under parts/.  A single
+        # occurrence is the root solid itself and needs no occurrence family.
         package = read_assembly_package(sidecar_bytes)
         if not package.is_multipart:
             return None
         parts = []
         for occurrence in package.occurrences:
-            production = occurrence.production_stl_path
+            production = occurrence.production_step_path
             if _manifest_entry(manifest, production) is None:
                 raise ContractError(
-                    "assembly-package occurrence %s lacks its sealed production STL %s"
+                    "assembly-package occurrence %s lacks its sealed production STEP %s"
                     % (occurrence.name, production)
                 )
-            parts.append({"name": occurrence.name, "stlPath": production})
+            parts.append({"name": occurrence.name, "stepPath": production})
         sidecar = {
             "schemaVersion": 1,
             "entryKind": "assembly",
@@ -1018,13 +980,6 @@ def _occurrence_transport(
             cad.get("assembled_step"), "Made assembled STEP", source_step
         ):
             raise ContractError("native assembly STEP bindings differ")
-        mesh_ref = bound_reference(
-            sidecar.get("mesh"), "native assembly mesh", primary_source
-        )
-        if mesh_ref != bound_reference(
-            cad.get("assembled_stl"), "Made assembled STL", primary_source
-        ):
-            raise ContractError("native assembly mesh bindings differ")
 
         derived_parts = []
         derived_names = set()
@@ -1032,9 +987,9 @@ def _occurrence_transport(
         for native_name, native_part in zip(native_names, native_parts):
             if not isinstance(native_part, Mapping):
                 raise ContractError("Made product inventory part is malformed")
-            stl = native_part.get("stl")
+            step = native_part.get("step")
             if (
-                not isinstance(stl, Mapping)
+                not isinstance(step, Mapping)
                 or native_part.get("quantity") != 1
                 or isinstance(native_part.get("quantity"), bool)
                 or not isinstance(native_name, str)
@@ -1043,18 +998,18 @@ def _occurrence_transport(
             ):
                 raise ContractError("Made product inventory part is malformed")
             source_path, _, _ = bound_reference(
-                stl, "Made product inventory STL"
+                step, "Made product inventory STEP"
             )
             pure = PurePosixPath(source_path)
             if (
-                pure.suffix.casefold() != ".stl"
+                pure.suffix.casefold() != ".step"
                 or source_path == primary_source
                 or source_path in source_paths
             ):
-                raise ContractError("Made product inventory STL is malformed")
+                raise ContractError("Made product inventory STEP is malformed")
             derived_names.add(native_name)
             source_paths.add(source_path)
-            derived_parts.append({"name": native_name, "stlPath": source_path})
+            derived_parts.append({"name": native_name, "stepPath": source_path})
         sidecar = {
             "schemaVersion": 1,
             "entryKind": "assembly",
@@ -1070,7 +1025,7 @@ def _occurrence_transport(
         if not isinstance(part, Mapping):
             raise ContractError("Factory occurrence sidecar part is malformed")
         name = part.get("name")
-        source_path = part.get("stlPath")
+        source_path = part.get("stepPath")
         if (
             not isinstance(name, str)
             or not _OCCURRENCE_NAME.fullmatch(name)
@@ -1083,15 +1038,15 @@ def _occurrence_transport(
             pure.is_absolute()
             or pure.as_posix() != source_path
             or any(item in ("", ".", "..") for item in pure.parts)
-            or pure.suffix.casefold() != ".stl"
+            or pure.suffix.casefold() != ".step"
             or source_path == primary_source
         ):
             raise ContractError("Factory occurrence STL path is unsafe")
         content = _read_bound_file(root, manifest, source_path)
         names.add(name)
-        target = "%s/%s.stl" % (parts_directory, name)
+        target = "%s/%s.step" % (parts_directory, name)
         transported = dict(part)
-        transported["stlPath"] = target
+        transported["stepPath"] = target
         transported_parts.append(transported)
         occurrences.append(
             {
@@ -1109,7 +1064,25 @@ def _occurrence_transport(
     # would shift every colour after it.  Key the groups here with the posed
     # occurrence geometry of the sealed STEP so every group, slivers included,
     # is owned by the sealed part it belongs to.
-    assembled_bytes = _read_bound_file(root, manifest, primary_source)
+    # The viewer keys its part groups from triangles, and Make now seals STEP
+    # alone, so tessellate here.  These meshes are in-memory keying scaffolding:
+    # nothing writes them, ships them, or treats them as a printability claim.
+    # A solid the kernel cannot turn into triangles degrades the occurrence
+    # family visibly, exactly as an unposable one does.
+    try:
+        assembled_bytes = step_triangle_mesh(
+            _read_bound_file(root, manifest, primary_source)
+        )
+        part_meshes = {
+            occurrence["name"]: step_triangle_mesh(
+                _read_bound_file(root, manifest, occurrence["source_path"])
+            )
+            for occurrence in occurrences
+        }
+    except HostRenderError as exc:
+        raise ContractError(
+            "Factory occurrence family cannot be tessellated: %s" % exc
+        )
     step_bytes = _read_bound_file(root, manifest, source_step)
     try:
         posed = _posed_provider()(step_bytes)
@@ -1121,10 +1094,7 @@ def _occurrence_transport(
             posed,
             lead=PurePosixPath(transport_primary_name(transport_stem)).name,
             slide_order=[occurrence["name"] for occurrence in occurrences],
-            part_meshes={
-                occurrence["name"]: _read_bound_file(root, manifest, occurrence["source_path"])
-                for occurrence in occurrences
-            },
+            part_meshes=part_meshes,
         )
     except FePartsError as exc:
         raise ContractError("Factory occurrence family cannot be keyed: %s" % exc)
@@ -1153,7 +1123,7 @@ def _occurrence_transport(
 
 
 def transport_primary_name(transport_stem: str) -> str:
-    return transport_stem + ".stl"
+    return transport_stem + ".step"
 
 
 def _validated_occurrence_transport(
@@ -1206,7 +1176,7 @@ def _assert_factory_handoff(content: bytes) -> None:
             primary_kind = primary.get("kind")
             primary_path = primary.get("path")
             if (
-                primary_kind not in ("mesh", "generator")
+                primary_kind not in ("solid", "generator")
                 or not isinstance(primary_path, str)
                 or not _is_factory_handoff_path(
                     primary_path,
@@ -1215,8 +1185,8 @@ def _assert_factory_handoff(content: bytes) -> None:
                 )
                 or len(PurePosixPath(primary_path).parts) != 1
                 or (
-                    primary_kind == "mesh"
-                    and PurePosixPath(primary_path).suffix.casefold() != ".stl"
+                    primary_kind == "solid"
+                    and PurePosixPath(primary_path).suffix.casefold() != ".step"
                 )
                 or (
                     primary_kind == "generator"
@@ -1348,13 +1318,13 @@ def _build_model_handoff(
     if primary_entry is None or primary_entry.sha256 != primary_sha256:
         raise ContractError("Factory primary model is not sealed")
 
-    # Keep assembled.stl at the root when Make provides it. Factory's importer
-    # ranks that conventional name above all part meshes for the product viewer.
+    # Keep assembled.step at the root when Make provides it. Factory's importer
+    # ranks that conventional name above all part solids for the product viewer.
     transport_primary = primary_source
     occurrence: Optional[Mapping[str, Any]] = None
     transport_reason: Optional[str] = None
     make_output = facts.get("release", {}).get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
-    if sealed_primary["kind"] == "mesh" and not make_output:
+    if sealed_primary["kind"] == "solid" and not make_output:
         occurrence, transport_reason = _validated_occurrence_transport(
             root,
             manifest,
@@ -1442,7 +1412,7 @@ def _build_model_handoff(
             },
             "parts_directory": occurrence["parts_directory"],
             "occurrence_count": len(occurrences),
-            "production_stls": [dict(value) for value in occurrences],
+            "production_steps": [dict(value) for value in occurrences],
         }
     facts_payload = _canonical_json(transport_facts) + b"\n"
     assert_packable_content("workshop-product-facts.json", facts_payload)

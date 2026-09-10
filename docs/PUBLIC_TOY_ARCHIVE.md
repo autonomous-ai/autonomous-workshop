@@ -30,8 +30,7 @@ toys/<inventor>-<slug>/
 │   ├── product.json
 │   ├── ATTEMPTS.json
 │   ├── source/cad/
-│   ├── models/assembled.stl
-│   ├── models/print/
+│   ├── models/assembled.step
 │   ├── models/cad/
 │   ├── product/                    # includes every Make-sealed product render
 │   ├── verification/

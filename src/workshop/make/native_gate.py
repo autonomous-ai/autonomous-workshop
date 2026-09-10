@@ -12,7 +12,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 import signal
 import stat
 import subprocess
@@ -39,12 +38,12 @@ NATIVE_MADE_REQUIRED_ROOT_FILES = (
     "product.json",
     "assembled.step",
     "assembled.step.json",
-    "assembled.stl",
 )
-NATIVE_CAD_VERIFIER_MODE = "final-fresh-exports-strict-fit"
-NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE = (
-    "final-fresh-exports-strict-fit-skip-thickness-not-print-ready"
-)
+NATIVE_CAD_VERIFIER_MODE = "final-fresh-strict-fit-not-print-ready"
+# Retained only so a historical receipt still parses; the live gate never
+# produces either value.  The CAD toolchain writes STEP alone and runs no mesh,
+# overhang or wall-thickness gate, so no run can substantiate print readiness.
+NATIVE_CAD_LEGACY_FULL_VERIFIER_MODE = "final-fresh-exports-strict-fit"
 NATIVE_CAD_FULL_TIER = "full-with-thickness"
 NATIVE_CAD_NON_PRINT_READY_TIER = "digitally-verified-not-print-ready"
 DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS = 1_800.0
@@ -306,34 +305,23 @@ class _CadGatePolicy:
     extra_arguments: tuple[str, ...] = ()
 
 
-_FULL_CAD_GATE_POLICY = _CadGatePolicy(
-    tier=NATIVE_CAD_FULL_TIER,
-    verifier_mode=NATIVE_CAD_VERIFIER_MODE,
-)
 _NON_PRINT_READY_CAD_GATE_POLICY = _CadGatePolicy(
     tier=NATIVE_CAD_NON_PRINT_READY_TIER,
-    verifier_mode=NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE,
-    extra_arguments=("--skip-thickness",),
+    verifier_mode=NATIVE_CAD_VERIFIER_MODE,
 )
 _MISSING_CAD_CLAIM = object()
 
 
-class _LegacyFullTierClaimMismatch(ContractError):
-    """The one pre-tier declaration pair eligible for full replay."""
-
-
 def _cad_gate_policy(made: NativeMade, product_root: Path) -> _CadGatePolicy:
-    """Select a gate tier from two agreeing, exact-byte-bound declarations.
+    """Require two agreeing, exact-byte-bound not-print-ready declarations.
 
-    Free-form status alone never weakens the gate.  The lower tier requires the
-    canonical product status *and* a literal false ``print_ready_claim`` in the
-    declared, hash-bound CAD receipt.  A false receipt claim without the status
-    is rejected so a thickness-skipped result cannot coexist with product
-    metadata that may be interpreted as print-ready.
-
-    Historical receipts without this structured claim retain the full gate
-    unless their product status separately requests the lower tier, which is a
-    mismatch rather than a waiver.
+    There is only one tier left.  The CAD toolchain writes STEP alone and has
+    no mesh, overhang or wall-thickness gate, so nothing a run can produce
+    substantiates print readiness.  A Made artifact therefore has to say so
+    twice: the canonical product status *and* a literal false
+    ``print_ready_claim`` in the declared, hash-bound CAD receipt.  Either one
+    missing is a refusal rather than a downgrade, so a product that still
+    claims print readiness cannot pass a gate that can no longer check it.
     """
 
     verification_entry = next(
@@ -378,22 +366,13 @@ def _cad_gate_policy(made: NativeMade, product_root: Path) -> _CadGatePolicy:
             claim = final_pipeline.get("print_ready_claim", _MISSING_CAD_CLAIM)
 
     product_status = made.product.get("status")
-    lower_status = product_status == NATIVE_CAD_NON_PRINT_READY_TIER
-    lower_claim = claim is False
-    if lower_status != lower_claim:
-        if (
-            product_status == "digitally-verified-pending-physical-playtest"
-            and claim is False
-        ):
-            raise _LegacyFullTierClaimMismatch(
-                "legacy pending-physical status predates the CAD claim tier"
-            )
+    if product_status != NATIVE_CAD_NON_PRINT_READY_TIER or claim is not False:
         raise ContractError(
-            "non-print-ready product status and CAD print_ready_claim must agree"
+            "product status and CAD print_ready_claim must both declare "
+            "%s; no gate can substantiate a print-ready claim"
+            % NATIVE_CAD_NON_PRINT_READY_TIER
         )
-    if lower_status:
-        return _NON_PRINT_READY_CAD_GATE_POLICY
-    return _FULL_CAD_GATE_POLICY
+    return _NON_PRINT_READY_CAD_GATE_POLICY
 
 
 def _entries_sha256(entries: Sequence[ArtifactEntry]) -> str:
@@ -444,65 +423,18 @@ def _is_verifier_authored_volatile_report(path: str) -> bool:
     """Return whether ``verify_project`` owns this non-reproducible report.
 
     The fresh verifier records wall-clock timing and the isolated project path
-    in its pipeline report, and ``check_thickness`` records its invocation path
-    in one report per printable part.  Those records are useful during an
-    interactive Make pass, but they are not reproducible CAD deliverables.  Do
-    not broaden this allowlist: source, geometry, JSON evidence, and every
-    other report remain byte-sealed.  Overhang reports are not volatile; the
-    gate compares them exactly apart from their directory-location metadata.
+    in its pipeline report.  That record is useful during an interactive Make
+    pass, but it is not a reproducible CAD deliverable.  Do not broaden this
+    allowlist: source, geometry, JSON evidence, and every other report remain
+    byte-sealed.  The per-part thickness reports this once also covered are
+    gone with the gate that wrote them.
     """
 
-    if path == "measure/verification-pipeline.md":
-        return True
-    suffix = ".md"
-    prefix = "measure/thickness-"
-    if not path.startswith(prefix) or not path.endswith(suffix):
-        return False
-    role = path[len(prefix) : -len(suffix)]
-    return bool(role) and "/" not in role
+    return path == "measure/verification-pipeline.md"
 
 
 def _is_step_exchange_file(path: str) -> bool:
     return path.lower().endswith((".step", ".stp"))
-
-
-def _is_overhang_report(path: str) -> bool:
-    return re.fullmatch(r"measure/overhang-[^/]+\.md", path) is not None
-
-
-def _overhang_report_without_location(content: bytes, relative: str) -> bytes:
-    """Normalize only the two path-bearing metadata lines of a known report.
-
-    Unlike the volatile timing-report exemption, all measurements, options,
-    checks, regions and prose remain exact. Unknown report formats fail closed.
-    The mesh and report must refer to the same project directory and role.
-    """
-    try:
-        lines = content.decode("utf-8").splitlines(keepends=True)
-    except UnicodeError as exc:
-        raise ArtifactError("invalid overhang report encoding") from exc
-    if len(lines) < 7 or lines[:2] != ["# Overhang and support\n", "\n"]:
-        raise ArtifactError("unsupported overhang report format")
-    command = re.fullmatch(
-        r"`([^`\r\n]+) --angle ([0-9]+(?:\.[0-9]+)?) --report ([^`\r\n]+)`\n",
-        lines[2],
-    )
-    if command is None:
-        raise ArtifactError("unsupported overhang report invocation")
-    mesh, angle, report = command.groups()
-    role = relative[len("measure/overhang-"):-len(".md")]
-    mesh_name = PurePosixPath(mesh).name
-    if (
-        mesh_name not in (role + ".stl", "part_" + role + ".stl")
-        or not report.endswith(relative)
-        or mesh[:-len(mesh_name)] != report[:-len(relative)]
-        or lines[3] != "\n"
-        or not lines[4].startswith(mesh + ": ")
-    ):
-        raise ArtifactError("overhang report path bindings differ")
-    lines[2] = f"`{mesh_name} --angle {angle} --report {relative}`\n"
-    lines[4] = mesh_name + lines[4][len(mesh):]
-    return "".join(lines).encode("utf-8")
 
 
 def _assert_copied_inputs_unchanged(
@@ -517,9 +449,8 @@ def _assert_copied_inputs_unchanged(
     graph (``canonical_step_digest``) rather than by bytes: Open CASCADE hands
     out presentation-style entity ids in pointer order, so a faithful fresh
     re-export of the same model can differ byte-for-byte while describing the
-    identical geometry, colours, and assembly. Known overhang reports may change
-    only their directory-location metadata, never measurements or check results.
-    Every other declared file, and a STEP file whose graph changed, still fails
+    identical geometry, colours, and assembly. Every other declared file, and a
+    STEP file whose graph changed, still fails
     closed. ``sealed_root`` is the
     exact sealed project the isolated copy was made from; without it STEP
     files stay byte-compared.
@@ -538,30 +469,6 @@ def _assert_copied_inputs_unchanged(
             if bool(identity.st_mode & stat.S_IXUSR) != entry.executable:
                 raise ArtifactError(
                     "CAD verifier changed a declared report mode: %s" % entry.path
-                )
-            continue
-        if sealed_root is not None and _is_overhang_report(entry.path):
-            content, identity = _read_regular(
-                project_root.joinpath(*relative.parts),
-                "isolated overhang report", MAX_NATIVE_CAD_VOLATILE_REPORT_BYTES,
-            )
-            sealed, _ = _read_regular(
-                sealed_root.joinpath(*relative.parts), "sealed overhang report", entry.bytes,
-            )
-            if (
-                bool(identity.st_mode & stat.S_IXUSR) != entry.executable
-                or len(sealed) != entry.bytes
-                or hashlib.sha256(sealed).hexdigest() != entry.sha256
-            ):
-                raise ArtifactError(
-                    "CAD verifier changed a declared project file: %s" % entry.path
-                )
-            if content != sealed and (
-                _overhang_report_without_location(content, entry.path)
-                != _overhang_report_without_location(sealed, entry.path)
-            ):
-                raise ArtifactError(
-                    "CAD verifier changed a declared project file: %s" % entry.path
                 )
             continue
         if sealed_root is not None and _is_step_exchange_file(entry.path):
@@ -826,8 +733,11 @@ class NativeCadGateEvidence:
             raise ContractError("native CAD gate kind is invalid")
         if type(self.passed) is not bool or type(self.source_tree_unchanged) is not bool:
             raise ContractError("native CAD gate booleans are invalid")
-        if type(self.legacy_full_tier_compatibility) is not bool:
-            raise ContractError("native CAD gate compatibility marker is invalid")
+        if self.legacy_full_tier_compatibility is not False:
+            raise ContractError(
+                "legacy full-tier replay is retired: no gate can rerun a "
+                "thickness-checked verifier that no longer exists"
+            )
         if self.evidence_stage not in ("make", "playtest", "release"):
             raise ContractError("native CAD gate evidence stage is invalid")
         if self.passed != (self.failure_code is None):
@@ -848,18 +758,13 @@ class NativeCadGateEvidence:
         _safe_relative(self.cad_project_path, "native CAD gate project path")
         if self.verifier_path != NATIVE_CAD_VERIFIER_PATH:
             raise ContractError("native CAD gate verifier path is invalid")
-        policy_by_tier = {
-            NATIVE_CAD_FULL_TIER: _FULL_CAD_GATE_POLICY,
-            NATIVE_CAD_NON_PRINT_READY_TIER: _NON_PRINT_READY_CAD_GATE_POLICY,
-        }
-        policy = policy_by_tier.get(self.verification_tier)
+        policy = (
+            _NON_PRINT_READY_CAD_GATE_POLICY
+            if self.verification_tier == NATIVE_CAD_NON_PRINT_READY_TIER
+            else None
+        )
         if policy is None or self.verifier_mode != policy.verifier_mode:
             raise ContractError("native CAD gate verification tier is invalid")
-        if (
-            self.legacy_full_tier_compatibility
-            and self.verification_tier != NATIVE_CAD_FULL_TIER
-        ):
-            raise ContractError("legacy compatibility requires the full CAD tier")
         if not isinstance(self.command, tuple) or not self.command or not all(
             isinstance(item, str) and item for item in self.command
         ):
@@ -869,7 +774,6 @@ class NativeCadGateEvidence:
             NATIVE_CAD_VERIFIER_PATH,
             "<isolated-cad-project>",
             "--fresh",
-            "--exports",
             "--strict-fit",
             *policy.extra_arguments,
         )
@@ -927,16 +831,19 @@ class NativeCadGateEvidence:
 
     @property
     def thickness_gate_required(self) -> bool:
-        return self.verification_tier == NATIVE_CAD_FULL_TIER
+        """No wall is measured anywhere in the toolchain any more."""
+
+        return False
 
     @property
     def print_ready_eligible(self) -> bool:
-        """Whether the deterministic CAD receipt may support print-ready copy."""
+        """Whether the deterministic CAD receipt may support print-ready copy.
 
-        return (
-            self.thickness_gate_required
-            and not self.legacy_full_tier_compatibility
-        )
+        Never.  STEP is the only format written, and no mesh, overhang or
+        wall-thickness gate survives to substantiate the claim.
+        """
+
+        return False
 
 
 class NativeCadGateError(ArtifactError):
@@ -1051,10 +958,11 @@ def verify_native_made_cad(
         or not 1 <= max_output_bytes <= MAX_NATIVE_CAD_OUTPUT_BYTES
     ):
         raise ContractError("native CAD gate output limit is invalid")
-    if legacy_full_tier_validator is not None and not callable(
-        legacy_full_tier_validator
-    ):
-        raise ContractError("legacy full-tier validator must be callable")
+    if legacy_full_tier_validator is not None:
+        raise ContractError(
+            "legacy full-tier replay is retired: the thickness-checked "
+            "verifier it would rerun no longer exists"
+        )
     if type(require_print_ready) is not bool:
         raise ContractError("native CAD print-ready requirement must be boolean")
     if evidence_stage not in ("make", "playtest", "release"):
@@ -1072,19 +980,7 @@ def verify_native_made_cad(
 
     product_root = _validate_exact_product_tree(made, root)
     legacy_full_tier_compatibility = False
-    try:
-        gate_policy = _cad_gate_policy(made, product_root)
-    except _LegacyFullTierClaimMismatch:
-        if legacy_full_tier_validator is None:
-            raise
-        # A Playtest may be resuming a Made revision accepted before the
-        # two-declaration tier contract existed.  The caller must prove that
-        # the authoritative checkpoint accepted this exact artifact under the
-        # historical full verifier.  We then rerun that stronger full gate;
-        # this never enables --skip-thickness.
-        legacy_full_tier_validator()
-        gate_policy = _FULL_CAD_GATE_POLICY
-        legacy_full_tier_compatibility = True
+    gate_policy = _cad_gate_policy(made, product_root)
     project_relative = _safe_relative(made.cad_project_path, "native Made CAD project")
     project_root = _checked_directory(
         product_root, project_relative, "native Made CAD project"
@@ -1121,7 +1017,6 @@ def verify_native_made_cad(
         NATIVE_CAD_VERIFIER_PATH,
         "<isolated-cad-project>",
         "--fresh",
-        "--exports",
         "--strict-fit",
         *gate_policy.extra_arguments,
     )
@@ -1140,7 +1035,6 @@ def verify_native_made_cad(
             str(verifier_path),
             str(isolated_project),
             "--fresh",
-            "--exports",
             "--strict-fit",
             *gate_policy.extra_arguments,
         )
@@ -1186,13 +1080,10 @@ def verify_native_made_cad(
                 failure_code = "verifier-output-limit"
             elif result.returncode != 0:
                 failure_code = "verifier-nonzero"
-            elif require_print_ready and (
-                gate_policy.tier != NATIVE_CAD_FULL_TIER
-                or legacy_full_tier_compatibility
-            ):
-                # A lower-tier verifier may pass its declared digital checks,
-                # but it cannot advance a workflow whose terminal artifact is
-                # explicitly a ready-to-print handoff.
+            elif require_print_ready:
+                # Nothing in the toolchain measures a wall, a mesh or an
+                # overhang any more, so no verifier result can advance a
+                # workflow whose terminal artifact is a ready-to-print handoff.
                 failure_code = "cad-not-print-ready"
 
     if result is None:  # pragma: no cover - guarded above
@@ -1231,7 +1122,7 @@ __all__ = [
     "NATIVE_MADE_REQUIRED_ROOT_FILES",
     "NATIVE_CAD_FULL_TIER",
     "NATIVE_CAD_NON_PRINT_READY_TIER",
-    "NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE",
+    "NATIVE_CAD_LEGACY_FULL_VERIFIER_MODE",
     "NATIVE_CAD_VERIFIER_MODE",
     "NATIVE_CAD_VERIFIER_PATH",
     "NativeCadGateError",

@@ -173,8 +173,12 @@ def posed_occurrences(shape, condition, indices):
         yield sample, occurrences
 
 
-def stl_bytes(occurrences):
-    """Stable binary STL: retain winding, normalize triangle ordering."""
+def state_bytes(occurrences):
+    """Stable canonical triangle encoding for hashing a posed state.
+
+    Binary-STL layout, held in memory only: nothing writes it to disk, because
+    STEP is the only geometry format this toolchain writes.
+    """
     triangles = np.concatenate([p[f] for p, f, _ in occurrences]).astype("<f4")
     if not np.isfinite(triangles).all():
         raise ValueError("motion triangles are not finite")

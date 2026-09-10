@@ -38,14 +38,13 @@ restart, and only then loads the broad CAD skill.
 Replace the bracketed paths from `STAGE.json`; do not invoke help to rediscover
 this interface or configure a cache. The host binds a private writable
 `XDG_CACHE_HOME`. The proof entry defines exactly one module-scope `gen_step()`
-and returns the build123d shape. Generate, export, and render it in this order
-inside one foreground tool call so no agent reasoning cycle separates the
+and returns the build123d shape. Generate and render it in this order inside
+one foreground tool call so no agent reasoning cycle separates the
 deterministic commands:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/cad/scripts/gen <entry.step.py> --write
-"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/export <entry.step> --stl
-"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/render_product <entry.stl> \
+"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/render_product <entry.step> \
   -o <cad-project>/review/early-proof/held.png \
   --motion-sheet <cad-project>/review/early-proof/signature.png \
   --motion-angles=-12,0,12
@@ -56,6 +55,10 @@ When the Wish supplies images or names an existing object, follow
 committing the form: prefer the sealed `wish-references/`, search for one when
 the Wish names an object and attaches none, and label a text-derived
 interpretation as such when neither is reachable rather than stopping the run.
+
+STEP is the only geometry format the toolchain writes. `render_product`
+tessellates the exact STEP in memory; there is no mesh export, and no gate
+measures a wall, a mesh or an overhang, so never call a product print-ready.
 
 ## Ownership and pipeline
 
@@ -85,23 +88,21 @@ are separate. Frozen older runs retain their materialized rules and tools.
 1. Write the smallest viable parametric baseline with exactly one non-part
    combined `*.step.py` entry and one `part_<role>.step.py` per printable part.
 2. Generate explicit source targets with
-   `.agents/skills/cad/scripts/gen <entry.step.py> --write`. Export STL from the
-   fresh STEP with `.agents/skills/cad/scripts/export <entry.step> --stl`.
+   `.agents/skills/cad/scripts/gen <entry.step.py> --write`, which writes the
+   sibling `.step`. That STEP is the only geometry artifact.
 3. Run `make_round` after each source repair and inspect its exact visual packet.
    The Manager records misplaced, missing or extra parts, size/proportion
    mismatches, visible intersections, and form defects with image evidence and
    a concrete repair using `--record-visual`. Inspect the actual views even when
    likeness passes or no reference image exists. Pending or inconclusive visual
    feedback is not a pass. These self-checks do not replace independent review.
-   Run only additional narrow checks affected by an edit. Once the baseline is plausible,
-   run `.agents/skills/cad/scripts/verify_project <cad-project>
-   --print-preflight` without `--fresh`. It must cover every printable at the
-   fixed 0.4 mm nozzle standard.
-4. Render the exact STL to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
+   Run only additional narrow checks affected by an edit. There is no cheap
+   print preflight: nothing in the toolchain measures a wall.
+4. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
    and `<cad-project>/snap/signature.png` (at least 1200×800 RGB). When the
    promise changes product geometry or state, generate distinct exact-state
-   STLs and use `render_product --state-sheet ... --state-stl ...` at one fixed
-   view. `--motion-sheet` rotates one unchanged mesh and is only presentation
+   STEPs and use `render_product --state-sheet ... --state-source ...` at one
+   fixed view. `--motion-sheet` rotates one unchanged shape and is only presentation
    viewpoint evidence; it can never prove a state transition. The signature
    sheet must show the promised states or interaction, not repeated angles.
 5. For a moving mechanism, also produce and review exact-state animation using
@@ -143,10 +144,10 @@ duplicate render families outside the sealed product tree.
 Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
 
 - the exact nonempty root files named by `STAGE.json.required_root_files`:
-  `product.json`, `assembled.step`, `assembled.step.json`, and `assembled.stl`;
+  `product.json`, `assembled.step`, and `assembled.step.json`;
 - for a combined model whose `assembled.step.json` (the cadgen
-  assembly-package) lists two or more occurrences, one printable mesh per
-  occurrence at `parts/<occurrence-name>.stl`, one shell each, named exactly
+  assembly-package) lists two or more occurrences, one production solid per
+  occurrence at `parts/<occurrence-name>.step`, one solid each, named exactly
   as the package names the occurrence (`STAGE.json.production_parts_rule`).
   The host rejects a multi-part Make without them. The shop receives these
   files as its addressable parts and renders each in the colour sealed on it;
@@ -160,19 +161,18 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   of one to four words with no dimensions, part counts, or sentences, and
   neither may use Workshop vocabulary (Wish, Taste, Goal, Make, Release,
   Playtest, Spark, Forge, Quest, artifact, gate);
-- the self-contained CAD project, source, generated STEP/STL, measurements,
-  passing `measure/print-preflight.md`, and final
-  `measure/verification-pipeline.md`;
+- the self-contained CAD project, source, generated STEP, measurements, and
+  final `measure/verification-pipeline.md`;
 - one canonical final render family under `<cad-project>/snap/`;
-- `<cad-project>/snap/SIGNATURE-REVIEW.json` bound to the exact concept,
-  preflight, and images.
+- `<cad-project>/snap/SIGNATURE-REVIEW.json` bound to the exact concept and
+  images.
 
 The root `assembled.*` files are sealed delivery copies of the final combined
 CAD output. They do not replace the self-contained CAD project or its isolated
 verification. Before finalizing, confirm every packet-named root file exists as
 a nonempty regular file; a nested combined export alone is not publishable.
 
-The canonical schema-v6 review contains exactly: `schema_version`, `kind`,
+The canonical schema-v7 review contains exactly: `schema_version`, `kind`,
 `concept_sha256`, `iso_sha256`, `signature_sha256`, `reviewer`,
 `blind_held_read`, `blind_form_read`, `blind_subjects_read`,
 `blind_action_read`, `blind_relationship_read`,
@@ -181,7 +181,7 @@ The canonical schema-v6 review contains exactly: `schema_version`, `kind`,
 `action_matches_wish`, `relationship_matches_wish`,
 `anti_generic_signature_visible`, `signature_experience_unmistakable`,
 `finished_product_desirable`, `review_rounds`, `critical_form_requirements`,
-`blocking_visual_defects`, `print_preflight_sha256`, `largest_risk`, and
+`blocking_visual_defects`, `largest_risk`, and
 `resolution`. Use kind `autonomous-workshop.signature-experience-review`.
 Every boolean is true; `review_rounds` is an integer from one through four; blockers are empty; each
 critical requirement has exactly `requirement`, `blind_evidence`, and

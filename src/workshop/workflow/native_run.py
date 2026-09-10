@@ -87,7 +87,7 @@ from workshop.make.revision import (
     NativeMakeInventRevision,
 )
 from workshop.make.native_gate import (
-    NATIVE_CAD_FULL_TIER,
+    NATIVE_CAD_NON_PRINT_READY_TIER,
     NATIVE_CAD_GATE_KIND,
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
@@ -223,6 +223,7 @@ from workshop.workflow.effort import (
     DEEP_ECONOMICS_V10_CAPABILITY_PATH,
     DEEP_ECONOMICS_V11_CAPABILITY_PATH,
     DEEP_ECONOMICS_V12_CAPABILITY_PATH,
+    DEEP_ECONOMICS_V13_CAPABILITY_PATH,
     DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS,
     DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT,
@@ -301,9 +302,6 @@ _MAKE_PROOF_ARTIFACT_NAMES = (
     "state-0.step",
     "state-1.step",
     "state-2.step",
-    "state-0.stl",
-    "state-1.stl",
-    "state-2.stl",
     "held.png",
     "signature.png",
     "finding.json",
@@ -341,7 +339,7 @@ _FACTORY_PUBLICATION_NEED = (
 _LEGACY_RELEASE_UPGRADE_NEED = (
     "This historical run has an obsolete Release contract. It remains readable, "
     "but it cannot complete today's Workshop until it has a validated MANUAL.pdf "
-    "and full-tier, thickness-checked, print-ready CAD evidence."
+    "and current-tier, digitally verified CAD evidence."
 )
 _PRODUCT_RUN_FINALIZER_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/stage_proposal.py"
@@ -385,8 +383,8 @@ _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
     ),
     "make-production-parts-missing": (
         "The sealed assembled.step.json lists two or more occurrences, so the "
-        "shop needs one printable mesh per occurrence. Export each occurrence "
-        "as parts/<occurrence-name>.stl (one shell each, named exactly as in "
+        "shop needs one production solid per occurrence. Write each occurrence "
+        "as parts/<occurrence-name>.step (one solid each, named exactly as in "
         "the package) inside the product root, then rerun the Make finalizer."
     ),
     "make-part-colours-missing": (
@@ -4095,7 +4093,6 @@ def _prepare_effort_stage_input(
                 "product.json",
                 "assembled.step",
                 "assembled.step.json",
-                "assembled.stl",
             ],
             **({"production_parts_rule": _MAKE_PRODUCTION_PARTS_RULE} if effort.name != "spark" else {}),
         }
@@ -4638,7 +4635,6 @@ def _prepare_stage_input(
                             "product.json",
                             "assembled.step",
                             "assembled.step.json",
-                            "assembled.stl",
                         ],
                         "production_parts_rule": _MAKE_PRODUCTION_PARTS_RULE,
                     }
@@ -4822,6 +4818,7 @@ def _phased_deep_capability_path(
 
     for path in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -4841,7 +4838,8 @@ def _phased_deep_profile_name(checkpoint: AgentRunCheckpoint) -> str:
 
     path = _phased_deep_capability_path(checkpoint)
     names = {
-        DEEP_ECONOMICS_CAPABILITY_PATH: "v13",
+        DEEP_ECONOMICS_CAPABILITY_PATH: "v14",
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH: "v13",
         DEEP_ECONOMICS_V12_CAPABILITY_PATH: "v12",
         DEEP_ECONOMICS_V11_CAPABILITY_PATH: "v11",
         DEEP_ECONOMICS_V10_CAPABILITY_PATH: "v10",
@@ -5255,6 +5253,7 @@ def _native_launcher(
                         DEEP_V8_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS
                         if phased_deep_path in (
                             DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                             DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -5266,6 +5265,7 @@ def _native_launcher(
                 elif (
                     phased_deep_path in (
                         DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -5274,7 +5274,10 @@ def _native_launcher(
                 ):
                     timeout_seconds = (
                         DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
-                        if phased_deep_path == DEEP_ECONOMICS_CAPABILITY_PATH
+                        if phased_deep_path in (
+                            DEEP_ECONOMICS_CAPABILITY_PATH,
+                            DEEP_ECONOMICS_V13_CAPABILITY_PATH,
+                        )
                         else (
                             DEEP_V12_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS
                             if phased_deep_path
@@ -5299,6 +5302,7 @@ def _native_launcher(
                     DEEP_AUTO_COMPACT_TOKEN_LIMIT
                     if phased_deep_path in (
                         DEEP_ECONOMICS_CAPABILITY_PATH,
+                        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -5459,6 +5463,7 @@ def _deep_make_critical_path_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V13_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -5481,6 +5486,7 @@ def _deep_make_critical_path_prompt(
             _phased_deep_capability_path(checkpoint)
             in (
                 DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -5526,6 +5532,7 @@ def _deep_make_critical_path_prompt(
     )
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V13_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -5539,6 +5546,7 @@ def _deep_make_critical_path_prompt(
         return prompt
     if (
         DEEP_ECONOMICS_CAPABILITY_PATH not in checkpoint.input_sha256s
+        and DEEP_ECONOMICS_V13_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V12_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V11_CAPABILITY_PATH not in checkpoint.input_sha256s
         and DEEP_ECONOMICS_V10_CAPABILITY_PATH not in checkpoint.input_sha256s
@@ -5707,16 +5715,18 @@ def _deep_make_critical_path_prompt(
         "plus state-0.step.py, state-1.step.py, and state-2.step.py. The helper "
         "must build three materially different exact product states from shared "
         "parameters; every state entry defines one module-scope gen_step(). "
-        "Generate and export all three states in one foreground call. Then run "
-        "render_product on state-0.stl for held.png with --state-sheet "
-        "signature.png and three --state-stl arguments naming state-0.stl, "
-        "state-1.stl, and state-2.stl. A viewpoint-only motion sheet is not state "
+        "Generate all three states with --write in one foreground call. Then run "
+        "render_product on state-0.step for held.png with --state-sheet "
+        "signature.png and three --state-source arguments naming state-0.step, "
+        "state-1.step, and state-2.step. STEP is the only geometry format the "
+        "toolchain writes; render_product tessellates it in memory and there is "
+        "no mesh export. A viewpoint-only motion sheet is not state "
         "evidence. Inspect the held image and every actual-state frame yourself. "
         "Fail or make one focused source repair if the object is generic, flat, "
         "box-like, exposed, or if the promised action/subjects/relationship are "
         "not unmistakably different across frames. Persist finding.json with the "
-        "root read of each frame. Once proof.py, all three state sources, STEP and "
-        "STL outputs, held.png, signature.png, and finding.json are durable, write "
+        "root read of each frame. Once proof.py, all three state sources, the "
+        "three STEP outputs, held.png, signature.png, and finding.json are durable, write "
         "%s as canonical JSON containing exactly {\"checkpoint_sha256\":\"%s\","
         "\"kind\":\"autonomous-workshop.make-proof-ready\",\"schema_version\":1} "
         "followed by one newline. The marker only resumes the same Goal; the final "
@@ -5737,6 +5747,7 @@ def _deep_make_recovery_prompt(
         and checkpoint.effort in ("forge", "quest")
         and (
             DEEP_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or DEEP_ECONOMICS_V13_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V12_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V11_CAPABILITY_PATH in checkpoint.input_sha256s
             or DEEP_ECONOMICS_V10_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -5757,6 +5768,7 @@ def _deep_make_recovery_prompt(
             _phased_deep_capability_path(checkpoint)
             in (
                 DEEP_ECONOMICS_CAPABILITY_PATH,
+                DEEP_ECONOMICS_V13_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V12_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V11_CAPABILITY_PATH,
                 DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -5766,7 +5778,7 @@ def _deep_make_recovery_prompt(
             targeted_repair = ""
             if (
                 _phased_deep_capability_path(checkpoint)
-                == DEEP_ECONOMICS_CAPABILITY_PATH
+                == DEEP_ECONOMICS_V13_CAPABILITY_PATH
             ):
                 targeted_repair = (
                     " If the current print-preflight failure is wall thickness, "
@@ -5810,6 +5822,7 @@ def _deep_make_recovery_prompt(
         _phased_deep_capability_path(checkpoint)
         in (
             DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V13_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         )
     ):
@@ -5904,6 +5917,7 @@ def _deep_invent_recovery_prompt(checkpoint: AgentRunCheckpoint) -> str:
     if (
         _phased_deep_capability_path(checkpoint) in (
             DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V13_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
         )
@@ -6015,29 +6029,26 @@ def _v10_make_proof_artifact_bindings(
         contents[name] = content
         mtimes[name] = before.st_mtime_ns
     state_hashes = {
-        _sha256(contents["state-%d.stl" % index]) for index in range(3)
+        _sha256(contents["state-%d.step" % index]) for index in range(3)
     }
     if len(state_hashes) != 3:
         return None
     if _phased_deep_capability_path(checkpoint) in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
     ):
         source_time = max(
             mtimes["proof.py"],
             *(mtimes["state-%d.step.py" % index] for index in range(3)),
         )
-        generated = tuple(
-            "state-%d.%s" % (index, suffix)
-            for index in range(3)
-            for suffix in ("step", "stl")
-        )
+        generated = tuple("state-%d.step" % index for index in range(3))
         if any(mtimes[name] < source_time for name in generated):
             return None
-        if mtimes["held.png"] < mtimes["state-0.stl"]:
+        if mtimes["held.png"] < mtimes["state-0.step"]:
             return None
         if mtimes["signature.png"] < max(
-            mtimes["state-%d.stl" % index] for index in range(3)
+            mtimes["state-%d.step" % index] for index in range(3)
         ):
             return None
         if mtimes["finding.json"] < max(
@@ -6125,6 +6136,7 @@ def _read_make_proof_acceptance(
     proof_artifacts = value.get("proof_artifacts")
     requires_artifacts = _phased_deep_capability_path(checkpoint) in (
         DEEP_ECONOMICS_CAPABILITY_PATH,
+        DEEP_ECONOMICS_V13_CAPABILITY_PATH,
         DEEP_ECONOMICS_V12_CAPABILITY_PATH,
         DEEP_ECONOMICS_V11_CAPABILITY_PATH,
         DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -6237,6 +6249,7 @@ def _make_proof_ready(
         valid
         and _phased_deep_capability_path(checkpoint) in (
             DEEP_ECONOMICS_CAPABILITY_PATH,
+            DEEP_ECONOMICS_V13_CAPABILITY_PATH,
             DEEP_ECONOMICS_V12_CAPABILITY_PATH,
             DEEP_ECONOMICS_V11_CAPABILITY_PATH,
             DEEP_ECONOMICS_V10_CAPABILITY_PATH,
@@ -6718,17 +6731,18 @@ def _evaluate_make_invent_revision_stage(
 
 _MAKE_PRODUCTION_PARTS_RULE = (
     "When assembled.step.json (the cadgen assembly-package) lists two or more "
-    "occurrences, export one printable mesh per occurrence as "
-    "parts/<occurrence-name>.stl inside the product root, one shell each, and "
+    "occurrences, write one production solid per occurrence as "
+    "parts/<occurrence-name>.step inside the product root, one solid each, and "
     "seal a surface colour on every leaf part (part.color = Color(r, g, b) with "
     "channels 0..1 taken directly from the sRGB hex the shop should show). The "
     "host rejects a multi-part Make without both; the shop renders and colours "
-    "each part from these files and colours."
+    "each part from these files and colours. STEP is the only geometry format "
+    "the toolchain writes, so never call these parts print-ready."
 )
 
 
 def _validate_made_production_parts(made: NativeMade, run_root: Path) -> int:
-    """Require one sealed production STL per occurrence of a multi-part package.
+    """Require one sealed production STEP per occurrence of a multi-part package.
 
     The cadgen assembly-package is agent-authored metadata; a document that is
     not one, or is malformed, is left to the Factory adapter's visible
@@ -6902,7 +6916,7 @@ def _evaluate_make_stage(
                 run_root=run.run_root,
                 host_state_root=run.host_state_root,
                 expected_verifier_sha256=verifier_sha256,
-                require_print_ready=transition == "release",
+                require_print_ready=False,
                 **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
             )
     except NativeMadeTreeGateError as error:
@@ -7395,143 +7409,6 @@ def _native_token_summary(
     }
 
 
-def _validate_legacy_full_tier_make_gate(
-    *,
-    run: AgentRun,
-    checkpoint: AgentRunCheckpoint,
-    made_artifact: AgentArtifact,
-    made: NativeMade,
-    expected_verifier_sha256: str,
-) -> None:
-    """Validate the exact historical full-tier gate accepted before Playtest.
-
-    Schema-v1 CAD evidence predates named tiers, but it has only one legal
-    command: the full fresh/export/strict-fit verifier with thickness enabled.
-    This compatibility path is restricted to an immediate, history-bound Make
-    predecessor and never applies while evaluating a new Make proposal.
-    """
-
-    if checkpoint.stage != "playtest" or checkpoint.revision <= 0:
-        raise StateConflict("legacy CAD compatibility requires accepted Make state")
-    bound = checkpoint.stage_artifacts.get("make")
-    if not bound or bound[0] != made_artifact:
-        raise StateConflict("legacy CAD compatibility Made binding is stale")
-
-    gate_path = run.host_state_root / "gates" / (
-        "%04d-make.json" % (checkpoint.revision - 1)
-    )
-    gate_document = _read_stable_private_json(
-        gate_path,
-        label="accepted Make gate",
-        maximum_bytes=_MAX_STAGE_INPUT_BYTES,
-    )
-    try:
-        decision = StageGateDecision.from_mapping(gate_document)
-    except ContractError as exc:
-        raise StateConflict("accepted Make gate is invalid") from exc
-    evidence = decision.evidence
-    legacy_checks = {
-        "made_sha256",
-        "product_artifact_sha256",
-        "product_tree_rehashed",
-        "upstream_bindings_valid",
-        "cad_receipt_sha256",
-        "cad_verifier_sha256",
-        "cad_verification_passed",
-    }
-    checks = evidence.checks
-    if (
-        decision.transition != "playtest"
-        or not evidence.passed
-        or evidence.stage != "make"
-        or evidence.gate_id != "make.sealed-revision-v1"
-        or evidence.validator_version != "1.0.0"
-        or evidence.artifact_path != made_artifact.path
-        or evidence.artifact_sha256 != made_artifact.sha256
-        or set(checks) != legacy_checks
-        or checks["made_sha256"] != made.made_sha256
-        or checks["product_artifact_sha256"]
-        != made.product_manifest.artifact_sha256
-        or checks["product_tree_rehashed"] is not True
-        or checks["upstream_bindings_valid"] is not True
-        or checks["cad_verification_passed"] is not True
-        or checks["cad_verifier_sha256"] != expected_verifier_sha256
-    ):
-        raise StateConflict("accepted Make gate does not match the sealed Made artifact")
-    run.assert_predecessor_gate_accepted(
-        decision.receipt,
-        gate_checkpoint_sha256=evidence.checkpoint_sha256,
-    )
-
-    cad_path = (
-        run.host_state_root
-        / "evidence"
-        / "make"
-        / ("r%04d-cad-gate.json" % made.round)
-    )
-    cad_document = _read_stable_private_json(
-        cad_path,
-        label="accepted legacy CAD gate evidence",
-        maximum_bytes=_MAX_LEGACY_CAD_GATE_EVIDENCE_BYTES,
-    )
-    expected_fields = {
-        "schema_version",
-        "kind",
-        "passed",
-        "failure_code",
-        "made_sha256",
-        "product_artifact_sha256",
-        "cad_project_path",
-        "cad_project_sha256",
-        "verifier_path",
-        "verifier_sha256",
-        "verifier_mode",
-        "command",
-        "returncode",
-        "duration_ms",
-        "timed_out",
-        "stdout",
-        "stderr",
-        "source_tree_unchanged",
-        "receipt_sha256",
-    }
-    receipt_sha256 = cad_document.get("receipt_sha256")
-    identity = {
-        key: value for key, value in cad_document.items() if key != "receipt_sha256"
-    }
-    full_command = [
-        "<python>",
-        NATIVE_CAD_VERIFIER_PATH,
-        "<isolated-cad-project>",
-        "--fresh",
-        "--exports",
-        "--strict-fit",
-    ]
-    if (
-        set(cad_document) != expected_fields
-        or cad_document["schema_version"] != 1
-        or cad_document["kind"] != NATIVE_CAD_GATE_KIND
-        or cad_document["passed"] is not True
-        or cad_document["failure_code"] is not None
-        or cad_document["made_sha256"] != made.made_sha256
-        or cad_document["product_artifact_sha256"]
-        != made.product_manifest.artifact_sha256
-        or cad_document["cad_project_path"] != made.cad_project_path
-        or cad_document["verifier_path"] != NATIVE_CAD_VERIFIER_PATH
-        or cad_document["verifier_sha256"] != expected_verifier_sha256
-        or cad_document["verifier_mode"] != NATIVE_CAD_VERIFIER_MODE
-        or cad_document["command"] != full_command
-        or cad_document["returncode"] != 0
-        or cad_document["timed_out"] is not False
-        or cad_document["source_tree_unchanged"] is not True
-        or not isinstance(cad_document["stdout"], Mapping)
-        or not isinstance(cad_document["stderr"], Mapping)
-        or receipt_sha256 != checks["cad_receipt_sha256"]
-        or receipt_sha256 != _sha256(_canonical_json_bytes(identity))
-    ):
-        raise StateConflict("accepted legacy CAD gate evidence is invalid")
-
-
 def _evaluate_playtest_stage(
     proposal: AgentOutcomeProposal,
     *,
@@ -7608,15 +7485,8 @@ def _evaluate_playtest_stage(
         run_root=run.run_root,
         host_state_root=run.host_state_root,
         expected_verifier_sha256=verifier_sha256,
-        legacy_full_tier_validator=lambda: _validate_legacy_full_tier_make_gate(
-            run=run,
-            checkpoint=checkpoint,
-            made_artifact=_stage_primary(checkpoint, "make"),
-            made=made,
-            expected_verifier_sha256=verifier_sha256,
-        ),
         evidence_stage="playtest",
-        require_print_ready=playtested.verdict == "pass",
+        require_print_ready=False,
         **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
     )
     vault = context.get("design_vault")
@@ -8425,12 +8295,18 @@ def _prepare_spark_publication(
     return prepare_make_output_release(run.run_root, made)
 
 
-def _verify_release_print_ready_cad(
+def _verify_release_cad(
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
     made: NativeMade,
 ) -> Any:
-    """Spark preserves Make bytes; other routes retain independent verification."""
+    """Spark preserves Make bytes; other routes retain independent verification.
+
+    Release no longer asks for print-ready CAD evidence, because no gate can
+    produce it: the CAD toolchain writes STEP alone and runs no mesh, overhang
+    or wall-thickness check.  Release publishes a digitally verified exchange
+    solid and says so; printability is unverified.
+    """
 
     if checkpoint.effort == "spark":
         made.validate_product_tree(run.run_root)
@@ -8445,18 +8321,15 @@ def _verify_release_print_ready_cad(
         host_state_root=run.host_state_root,
         expected_verifier_sha256=verifier_sha256,
         evidence_stage="release",
-        require_print_ready=True,
+        require_print_ready=False,
         **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
     )
-    if (
-        not evidence.passed
-        or evidence.verification_tier != NATIVE_CAD_FULL_TIER
-        or not evidence.thickness_gate_required
-        or not evidence.print_ready_eligible
+    if not evidence.passed or evidence.verification_tier != (
+        NATIVE_CAD_NON_PRINT_READY_TIER
     ):
         raise StateConflict(
-            "Release requires full-tier CAD evidence eligible for a "
-            "ready-to-print handoff"
+            "Release requires passing digitally-verified, not-print-ready CAD "
+            "evidence"
         )
     return evidence
 
@@ -8504,7 +8377,7 @@ def _evaluate_release_stage(
         or release.manual_path != NATIVE_RELEASE_MANUAL_PATH
     ):
         raise _LegacyReleaseUpgradeRequired(_LEGACY_RELEASE_UPGRADE_NEED)
-    cad_evidence = _verify_release_print_ready_cad(
+    cad_evidence = _verify_release_cad(
         run, checkpoint, context["made"]
     )
     with wish_run_timing_span(
@@ -9944,7 +9817,7 @@ def _resume_native_run_locked(
                 action="legacy-release-needs-upgrade",
             )
         try:
-            _verify_release_print_ready_cad(run, checkpoint, verified.made)
+            _verify_release_cad(run, checkpoint, verified.made)
         except NativeCadGateError:
             return _native_receipt(
                 checkpoint,

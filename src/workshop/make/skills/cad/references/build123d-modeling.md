@@ -496,4 +496,6 @@ carries `label`/`color`), or fuse before measuring.
 - Joint labels are missing, duplicated, or attached to the wrong local datum.
 - `.connect_to()` fixes the wrong side of the relationship, moving the part intended to remain fixed.
 
-Use `repair-loop.md` when generation or validation fails.
+When generation or validation fails, read the failing gate's own output and
+repair the source; `inspection-and-validation.md` covers how to read a
+`validate` or `interfere` finding.

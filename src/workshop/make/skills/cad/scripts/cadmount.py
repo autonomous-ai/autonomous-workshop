@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Seats for off-the-shelf components, derived from the part's own STEP.
 
-The third sibling. `cadfits` derives the second half of a mate from the first;
-`cadprint` derives a wall from the nozzle; this one derives a **cavity from the
-component that has to sit in it**, so that no dimension of a bought part is
-ever typed into a generator.
+The second sibling. `cadfits` derives the second half of a mate from the first;
+this one derives a **cavity from the component that has to sit in it**, so that
+no dimension of a bought part is ever typed into a generator.
 
     import cadmount
     servo = cadmount.load("ref/sg90_micro_servo.step")
@@ -14,8 +13,8 @@ ever typed into a generator.
 A motor seat sized by hand is the mate `cadfits` warns about, one step worse:
 the nominal lives in a datasheet, a web page or a photograph rather than in the
 project at all, so nothing downstream can even restate it. `validate`,
-`interfere`, `check_fit` and `check_mesh` all pass a bracket whose pocket is
-2 mm too shallow.
+`interfere` and `check_fit` all pass a bracket whose pocket is 2 mm too
+shallow.
 
 Never offset the imported solid
 -------------------------------
@@ -51,7 +50,9 @@ What this cannot answer
 -----------------------
 That the seat is reachable in assembly order, and that the component can travel
 to it through the rest of the model — `scripts/check_motion` with a manifest.
-That the bracket around a thin seat wall can be printed — `check_thickness`.
+That the bracket around a thin seat wall can be printed — nothing here
+measures wall thickness. Keep the wall in the parameter block and justify it
+there; no gate will catch it.
 
     .venv/bin/python "$CAD_SKILL_ROOT/scripts/cadmount.py"      # self-check
 """

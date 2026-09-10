@@ -85,7 +85,7 @@ class NativeMadeTest(unittest.TestCase):
         (product_root / "product.json").write_bytes(product_bytes)
         (project / "moon.step.py").write_text("def gen_step():\n    return None\n")
         (project / "moon.step").write_bytes(b"ISO-10303-21;\n")
-        (project / "moon.stl").write_bytes(b"solid moon\nendsolid moon\n")
+        (project / "moon-detail.step").write_bytes(b"ISO-10303-21;\n")
         verification = b'{"ok":true,"validator":"cad-final"}\n'
         (validation / "cad-build.json").write_bytes(verification)
         manifest = build_artifact_manifest(
@@ -121,7 +121,7 @@ class NativeMadeTest(unittest.TestCase):
 
     def test_tampered_tree_or_context_fails_closed(self):
         made, product_root = self._made()
-        (product_root / "cad/project/moon.stl").write_bytes(b"changed")
+        (product_root / "cad/project/moon-detail.step").write_bytes(b"changed")
         with self.assertRaisesRegex(ArtifactError, "differs from its manifest"):
             made.validate_product_tree(self.run_root)
         with self.assertRaisesRegex(ContractError, "different Workshop inputs"):

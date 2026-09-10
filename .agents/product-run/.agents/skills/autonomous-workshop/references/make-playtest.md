@@ -97,29 +97,23 @@ the design or repeat completed subagent work.
 
 Use one deliberate verification funnel. During source edits, build the smallest
 entry that exposes the changed relationship and run only its relevant narrow
-check. As soon as plausible exact draft geometry exists, run
-`verify_project <cad-project> --print-preflight`. This fixed cheap gate
-generates **every declared printable part**, runs strict bed fit, exports every
-STL, and checks every mesh and wall thickness at the same standard 0.4 mm
-nozzle profile used by the final gate. Do not substitute an assembly-only STL,
-omit a printable, invoke `check_thickness` with a smaller nozzle, or weaken a
-threshold to manufacture a pass. Repair and regenerate until the canonical
-`measure/print-preflight.md` passes. Then render the candidate and perform the blind
+check. As soon as plausible exact draft geometry exists, generate **every declared
+part** with `--write` so each carries a fresh `.step`. There is no cheap print
+preflight and no mesh, overhang or wall-thickness gate anywhere in the
+toolchain, so never call a candidate printable or print-ready. Then render the candidate and perform the blind
 signature review below **before** the expensive integrated final verifier.
 Resolve at most one largest visual defect coherently, rebuild, rerun those two
-narrow artifact checks, and rerender the exact final candidate; then batch
-exports and run the integrated final verifier once. A full verifier must not be
+narrow artifact checks, and rerender the exact final candidate; then run the
+integrated final verifier once. A full verifier must not be
 used as the inner visual-design loop. Do not repeatedly run it or regenerate
-unchanged exports between small edits.
+unchanged geometry between small edits.
 
 The native product-run sandbox owns source and generated files but may protect
 empty generated-cache directories from removal. Do not manually delete
-`__cadgen__` or add `--fresh` to the iterative preflight. Source-closure checks
-regenerate changed entries; the trusted host alone performs the authoritative
-isolated `--fresh --exports --strict-fit` rebuild after the proposal. Generate
-STEP with `scripts/gen <targets...> --write`; `scripts/gen` has no `--stl`
-option. Export mesh formats from the fresh STEP with
-`scripts/export <target.step> --stl`.
+`__cadgen__`. Source-closure checks regenerate changed entries; the trusted
+host alone performs the authoritative isolated `--fresh --strict-fit` rebuild
+after the proposal. Generate STEP with `scripts/gen <targets...> --write`. There
+is no mesh export of any kind: STEP is the only format written.
 
 For Forge and Quest, begin Make by proving the Invented concept's hardest
 causal or kinematic relationship with the smallest exact geometry that can
@@ -183,8 +177,8 @@ evidence-bound `make-revision` route below.
 
 The sealed concept's `build_plan` orders its components into groups. Inside
 the Make Goal, work group by group rather than building the whole tree in one
-pass: build only that group's parts, export each one to
-`<product_root>/parts/<component key>.stl` in print orientation, run the
+pass: build only that group's parts, write each one to
+`<product_root>/parts/<component key>.step` in print orientation, run the
 deterministic checks, inspect the result, then seal the group:
 
 ```bash
@@ -341,7 +335,7 @@ Preserve the final review as canonical JSON at
 
 ```json
 {
-  "schema_version": 6,
+  "schema_version": 7,
   "kind": "autonomous-workshop.signature-experience-review",
   "concept_sha256": "<exact canonical Invented concept hash>",
   "iso_sha256": "<lowercase SHA-256 of final iso.png>",
@@ -371,7 +365,6 @@ Preserve the final review as canonical JSON at
     }
   ],
   "blocking_visual_defects": [],
-  "print_preflight_sha256": "<lowercase SHA-256 of passing measure/print-preflight.md>",
   "largest_risk": "<strongest concrete final finding>",
   "resolution": "<specific geometry, pose, or composition resolution>"
 }
@@ -440,7 +433,9 @@ Each miss requires repair in the same Make session; the host records rejection
 history and token-budget products retain their shared token allowance.
 
 Spark and Forge advance directly to Release and therefore require the full
-verifier, including wall thickness and print-ready eligibility, at Make. They
+verifier at Make. No tier asserts wall thickness or print-ready eligibility any
+more; Release publishes a digitally verified STEP whose printability is
+unverified. They
 must not simulate Playtest; Release records that it was not run. Quest advances
 to the host-authored Playtest stage below.
 

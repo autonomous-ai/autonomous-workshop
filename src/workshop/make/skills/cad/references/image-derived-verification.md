@@ -7,7 +7,7 @@ Geometry soundness and visual fidelity are separate claims. The integrated
 final workflow is:
 
 ```bash
-CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports \
+CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh \
   --image-derived --unpowered \
   --likeness-ref hero=ref/hero.png \
   --likeness-ref side=ref/side.png
@@ -97,7 +97,7 @@ Two numbers behind that, worth knowing before writing a probe at all:
 
 - **`is_inside` scales with face count.** On the same assembly it cost 0.38 ms
   on the 34-face rotor and 2.9–15 ms on the 108-face housing. Adding the
-  fillets that fixed a `check_thickness` failure tripled the housing's faces —
+  fillets added for a thin-wall repair tripled the housing's faces —
   and quadrupled a landmark row that had nothing to do with them.
 - **A bisection is not the fix.** Replacing a 130-step linear walk with a
   9-step bisection cut that row by 5× and left it the slowest thing in the run.

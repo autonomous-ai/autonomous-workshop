@@ -65,15 +65,13 @@ class MakeProductionPartsRuleTest(unittest.TestCase):
         (product_root / "product.json").write_bytes(product_bytes)
         (product_root / "assembled.step").write_bytes(b"ISO-10303-21;\n")
         (product_root / "assembled.step.json").write_bytes(descriptor)
-        (product_root / "assembled.stl").write_bytes(b"solid moon\nendsolid moon\n")
         for name in parts:
             (product_root / "parts").mkdir(exist_ok=True)
-            (product_root / "parts" / ("%s.stl" % name)).write_bytes(
+            (product_root / "parts" / ("%s.step" % name)).write_bytes(
                 b"solid part\nendsolid part\n"
             )
         (project / "moon.step.py").write_text("def build():\n    return None\n")
         (project / "moon.step").write_bytes(b"ISO-10303-21;\n")
-        (project / "moon.stl").write_bytes(b"solid moon\nendsolid moon\n")
         verification = b'{"ok":true}\n'
         (validation / "cad-build.json").write_bytes(verification)
         manifest = build_artifact_manifest(product_root, created_at="content-addressed")
@@ -108,8 +106,8 @@ class MakeProductionPartsRuleTest(unittest.TestCase):
 
         rejection = raised.exception
         self.assertEqual(rejection.failure_code, "make-production-parts-missing")
-        self.assertIn("parts/nest.stl", rejection.feedback)
-        self.assertNotIn("parts/owl.stl", rejection.feedback)
+        self.assertIn("parts/nest.step", rejection.feedback)
+        self.assertNotIn("parts/owl.step", rejection.feedback)
         self.assertTrue(
             rejection.feedback.startswith(
                 _MAKE_PROPOSAL_REJECTION_FEEDBACK["make-production-parts-missing"]

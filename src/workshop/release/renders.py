@@ -1,14 +1,17 @@
 """Trusted-host product renders from sealed Made bytes.
 
 After a Make proposal passes its CAD gate, the host renders the sealed
-``assembled.stl`` (and any exact state meshes Make declares) with a pinned
-three.js renderer under headless Chromium.  The inputs are sealed Made bytes
+``assembled.step`` (and any exact state solids Make declares) with a pinned
+three.js renderer under headless Chromium.  STEP is the only format Make seals,
+so each sealed solid is tessellated here and written as a mesh **into the
+throwaway staging directory alone** — that mesh is renderer scaffolding, never
+a deliverable and never a printability claim.  The inputs are sealed Made bytes
 only; the outputs are bound to the Made product hash in ``renders.json``, whose
 private copy under the host state is the authority the Release stage trusts
 when the manual cites ``renders/<name>.png`` or the Factory cover is shipped.
 
 Colour follows the sealed parts: the shells of a posed mesh are matched to the
-production STLs by volume and painted in the colour the STEP (or the sealed
+production STEPs by volume and painted in the colour the STEP (or the sealed
 assembly-package) carries for that occurrence.  When the renderer is missing
 or fails, the record says ``unavailable`` and every consumer behaves exactly
 as it did before host renders existed.  Rendering never blocks a run.
@@ -67,6 +70,7 @@ DEFAULT_BACKGROUND = "#f5f0e6"
 NEUTRAL_COLOUR = "#9aa5b1"
 MAX_RENDER_OUTPUT_BYTES = 8 * 1024 * 1024
 MAX_RENDER_STL_BYTES = 256 * 1024 * 1024
+STEP_TESSELLATION_TOLERANCE = 0.08
 MAX_RENDER_TRIANGLES = 12_000_000
 MAX_STATES = 5
 MIN_STATES = 2
@@ -242,6 +246,50 @@ def stl_triangles(content: bytes):
         raise HostRenderError("mesh exceeds the render triangle bound")
     for index in range(0, len(vertices) - len(vertices) % 3, 3):
         yield vertices[index], vertices[index + 1], vertices[index + 2]
+
+
+def step_triangle_mesh(content: bytes) -> bytes:
+    """Tessellate one sealed STEP into binary STL bytes for the renderer.
+
+    The result never leaves the caller's temporary staging directory.  STEP is
+    the only geometry format Workshop seals or ships; this mesh exists solely
+    because the pinned three.js renderer consumes triangles, and its existence
+    asserts nothing about printability.
+    """
+
+    if len(content) > MAX_RENDER_STL_BYTES:
+        raise HostRenderError("sealed solid exceeds the render size bound")
+    try:
+        from build123d import import_step
+    except Exception as exc:  # pragma: no cover - optional CAD kernel
+        raise HostRenderError("build123d is unavailable for tessellation") from exc
+    with tempfile.TemporaryDirectory(prefix="workshop-step-tess-") as temporary:
+        source = Path(temporary) / "sealed.step"
+        source.write_bytes(content)
+        try:
+            shape = import_step(str(source))
+        except Exception as exc:
+            raise HostRenderError("sealed solid could not be read") from exc
+    facets: list[tuple[tuple[float, float, float], ...]] = []
+    children = list(getattr(shape, "children", ()) or ()) or [shape]
+    for child in children:
+        try:
+            vertices, triangles = child.tessellate(STEP_TESSELLATION_TOLERANCE)
+        except Exception as exc:
+            raise HostRenderError("sealed solid could not be tessellated") from exc
+        points = [(float(item.X), float(item.Y), float(item.Z)) for item in vertices]
+        for a, b, c in triangles:
+            facets.append((points[a], points[b], points[c]))
+            if len(facets) > MAX_RENDER_TRIANGLES:
+                raise HostRenderError("sealed solid exceeds the render triangle bound")
+    if not facets:
+        raise HostRenderError("sealed solid tessellated to no triangles")
+    out = io.BytesIO()
+    out.write(b"workshop host render staging mesh".ljust(80, b"\0"))
+    out.write(struct.pack("<I", len(facets)))
+    for a, b, c in facets:
+        out.write(struct.pack("<12x9fH", *a, *b, *c, 0))
+    return out.getvalue()
 
 
 def mesh_volume(content: bytes) -> float:
@@ -547,7 +595,7 @@ def _declared_states(made: NativeMade) -> Tuple[str, ...]:
         raise HostRenderError("product.json presentation.states must be a list")
     if not MIN_STATES <= len(states) <= MAX_STATES:
         raise HostRenderError(
-            "product.json presentation.states must name %d to %d sealed STL paths"
+            "product.json presentation.states must name %d to %d sealed STEP paths"
             % (MIN_STATES, MAX_STATES)
         )
     entries = {entry.path for entry in made.product_manifest.entries}
@@ -559,11 +607,11 @@ def _declared_states(made: NativeMade) -> Tuple[str, ...]:
             or pure.is_absolute()
             or ".." in pure.parts
             or pure.as_posix() != item
-            or pure.suffix.casefold() != ".stl"
+            or pure.suffix.casefold() != ".step"
             or item not in entries
             or item in result
         ):
-            raise HostRenderError("presentation state %r is not a sealed STL path" % item)
+            raise HostRenderError("presentation state %r is not a sealed STEP path" % item)
         result.append(item)
     return tuple(result)
 
@@ -590,7 +638,7 @@ def _render_pass(
         inputs.append((path, _sha256(content)))
         return content
 
-    assembled = sealed("assembled.stl")
+    assembled = step_triangle_mesh(sealed("assembled.step"))
     shell_colors: list[dict[str, Any]] = []
     base_colour = NEUTRAL_COLOUR
     if package is not None and package.is_multipart:
@@ -599,7 +647,9 @@ def _render_pass(
             if colour is None:
                 continue
             try:
-                volume = mesh_volume(sealed(occurrence.production_stl_path))
+                volume = mesh_volume(
+                    step_triangle_mesh(sealed(occurrence.production_step_path))
+                )
             except HostRenderError:
                 continue
             if volume > 0:
@@ -626,11 +676,11 @@ def _render_pass(
     except HostRenderError as exc:
         declared = ()
         state_reason = _bounded_reason(exc)
-    state_bytes = [sealed(path) for path in declared]
+    state_bytes = [step_triangle_mesh(sealed(path)) for path in declared]
     states_note["declared"] = list(declared)
 
     views = [_view(HERO_VIEW, 35.0, 26.0, HERO_SIZE, "assembly")]
-    scenes: dict[str, Any] = {"assembly": {"parts": [part_entry("assembled.stl")]}}
+    scenes: dict[str, Any] = {"assembly": {"parts": [part_entry("assembled.stl")]}}  # staging mesh name
     if turnaround:
         for name, azimuth, elevation in TURNAROUND_VIEWS:
             views.append(_view(name, azimuth, elevation, TURNAROUND_SIZE, "assembly"))

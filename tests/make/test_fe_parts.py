@@ -138,9 +138,9 @@ class OwnershipTest(unittest.TestCase):
         self.assertEqual(
             [(key.order, key.part, key.owner, key.color) for key in keying.keys],
             [
-                (0, "frame.stl", "frame", "#2b2b2b"),
-                (1, "wheel_1.stl", "wheel_1", "#8b2323"),
-                (2, "wheel_2.stl", "wheel_2", "#8b2323"),
+                (0, "frame.step", "frame", "#2b2b2b"),
+                (1, "wheel_1.step", "wheel_1", "#8b2323"),
+                (2, "wheel_2.step", "wheel_2", "#8b2323"),
             ],
         )
 
@@ -160,7 +160,7 @@ class OwnershipTest(unittest.TestCase):
         self.assertTrue(keying.complete)
         self.assertEqual(keying.groups.count, 3)
         self.assertEqual([key.owner for key in keying.keys], ["tank", "tank", "bar"])
-        self.assertEqual([key.part for key in keying.keys], ["tank.stl", "bar.stl", "assembled.stl#2"])
+        self.assertEqual([key.part for key in keying.keys], ["tank.step", "bar.step", "assembled.step#2"])
         self.assertEqual(keying.keys[2].color, "#2b2b2b")
 
     def test_a_sliver_only_part_keeps_its_sliver(self):
@@ -187,10 +187,10 @@ class OwnershipTest(unittest.TestCase):
         self.assertEqual(keying.unowned_occurrences, ("ghost",))
 
     def test_slot_keys_and_helpers(self):
-        self.assertEqual(slide_key("assembled.stl", ["a.stl"], 0, 3), "a.stl")
-        self.assertEqual(slide_key("assembled.stl", [], 0, 1), "assembled.stl")
-        self.assertEqual(slide_key("assembled.stl", [], 0, 2), "assembled.stl#0")
-        self.assertEqual(slide_key("assembled.stl", ["a.stl"], 1, 2), "assembled.stl#1")
+        self.assertEqual(slide_key("assembled.step", ["a.step"], 0, 3), "a.step")
+        self.assertEqual(slide_key("assembled.step", [], 0, 1), "assembled.step")
+        self.assertEqual(slide_key("assembled.step", [], 0, 2), "assembled.step#0")
+        self.assertEqual(slide_key("assembled.step", ["a.step"], 1, 2), "assembled.step#1")
         shapes = part_shapes({"tank": binary_stl(cube(2.0) + cube(0.4, at=(2.0, 0.8, 0.8)))})
         self.assertEqual(len(shapes["tank"].shells), 2)
         with self.assertRaises(FePartsError):

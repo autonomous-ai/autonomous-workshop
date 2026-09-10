@@ -24,8 +24,7 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
             skills = root / "skills"
             cad = skills / "cad/scripts"
             cad.mkdir(parents=True)
-            for name in ("check_thickness", "meshlib.py"):
-                (cad / name).write_text("# fake checker\n")
+            (cad / "gen").write_text("# fake generator\n")
             (skills / "image-to-cad/scripts").mkdir(parents=True)
             refs = []
             for label in ("hero", "side"):
@@ -34,7 +33,7 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
                 refs.append(label + "=" + str(ref))
             args = SimpleNamespace(
                 project=str(project), entry=None, out=None, all_parts=False,
-                nozzle=0.4, refs=refs, min=0.9, no_motion=True, full=False, json=True, record_visual=None,
+                refs=refs, min=0.9, no_motion=True, full=False, json=True, record_visual=None,
             )
             cameras = {"hero": {"az": 10.0, "el": 5.0}, "side": {"az": 100.0, "el": 15.0}}
             control = {"replay_iou": 0.95, "search_iou": 0.95}
@@ -43,11 +42,10 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
             def run(command, *, cwd, log, **kwargs):
                 tool = Path(command[1]).name
                 code = 0
-                if tool == "export":
-                    Path(command[command.index("--stl") + 1]).write_bytes(b"same mesh")
-                    stdout = "exported"
-                elif tool == "check_thickness":
-                    stdout = "RESULT: printable at this wall\n"
+                if tool == "gen":
+                    source = Path(command[2])
+                    source.with_name(source.name[:-len(".py")]).write_bytes(b"same solid")
+                    stdout = '{"ok":true}\n'
                 elif tool == "render_review":
                     return fake_visual_render(command)
                 elif tool == "render_views.py":
@@ -80,7 +78,6 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
 
             with (
                 patch.object(module, "skills_root", return_value=skills),
-                patch.object(module, "package_version", return_value="1.0"),
                 patch.object(module, "run", run),
             ):
                 yield module, args, control, calls, cameras

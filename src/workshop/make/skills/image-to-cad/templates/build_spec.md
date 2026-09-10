@@ -220,8 +220,7 @@ where it sits, not how big it is.>
 | <> | <`ref/<file>.step`> | <64 hex> | <`[x,y,z]`, or `{position, rotation}` in deg> `[tag]` | <labelled parts; omit for the whole assembly> | <mm, default 0.10> `[tag]` | <`[0,0,1]`; omit to search any> `[tag]` | <`true`, or `false` for a strapped, glued or captive-screwed part> |
 
 **A derived seat is not proof the model has one**, and `validate`, `interfere`,
-`check_fit`, `check_motion` and `check_mesh` all pass a seat that was never
-cut. `check_mount` is the only gate that reads the component's own STEP back
+`check_fit` and `check_motion` all pass a seat that was never cut. `check_mount` is the only gate that reads the component's own STEP back
 into the assembly.
 
 Insertion is a joint, so a seated component also gets **both** directions in the

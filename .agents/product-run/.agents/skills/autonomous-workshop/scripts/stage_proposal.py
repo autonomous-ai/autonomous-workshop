@@ -80,7 +80,6 @@ MAKE_REQUIRED_ROOT_FILES = (
     "product.json",
     "assembled.step",
     "assembled.step.json",
-    "assembled.stl",
 )
 
 MAX_JSON_BYTES = 2 * 1024 * 1024
@@ -222,7 +221,7 @@ MANUAL_DESIGN_EVIDENCE_KIND = "autonomous-workshop.manual-design-evidence"
 SIGNATURE_REVIEW_PATH = "snap/SIGNATURE-REVIEW.json"
 SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
 MANUAL_VISUAL_SUFFIXES = frozenset(
-    (".3mf", ".glb", ".jpeg", ".jpg", ".obj", ".png", ".step", ".stl", ".svg", ".webp")
+    (".jpeg", ".jpg", ".png", ".step", ".svg", ".webp")
 )
 
 FORBIDDEN_RELEASE_MEDIA_SUFFIXES = frozenset(
@@ -1635,9 +1634,9 @@ def _part_hashes(product_root: Path, concept: Mapping[str, Any]) -> dict[str, st
     hashes: dict[str, str] = {}
     for item in concept.get("components", ()):
         key = item["key"]
-        path = product_root / PARTS_DIRECTORY / ("%s.stl" % key)
+        path = product_root / PARTS_DIRECTORY / ("%s.step" % key)
         if path.is_symlink() or not path.is_file():
-            raise ProposalError("Make product tree lacks part %s at %s/%s.stl" % (key, PARTS_DIRECTORY, key))
+            raise ProposalError("Make product tree lacks part %s at %s/%s.step" % (key, PARTS_DIRECTORY, key))
         content = path.read_bytes()
         if not content:
             raise ProposalError("Make part %s is empty" % key)
@@ -1746,10 +1745,10 @@ def _make_group(
         raise ProposalError("build group %r is not in the sealed build_plan" % group_name)
     files: dict[str, str] = {}
     for key in group["parts"]:
-        path = product_root / PARTS_DIRECTORY / ("%s.stl" % key)
+        path = product_root / PARTS_DIRECTORY / ("%s.step" % key)
         if path.is_symlink() or not path.is_file():
             raise ProposalError(
-                "build group %s part %s is missing at %s/%s.stl" % (group_name, key, PARTS_DIRECTORY, key)
+                "build group %s part %s is missing at %s/%s.step" % (group_name, key, PARTS_DIRECTORY, key)
             )
         content = path.read_bytes()
         if not content:
@@ -1897,7 +1896,6 @@ def _validate_signature_review(
             "review_rounds",
             "critical_form_requirements",
             "blocking_visual_defects",
-            "print_preflight_sha256",
             "largest_risk",
             "resolution",
         },
@@ -1905,7 +1903,7 @@ def _validate_signature_review(
     )
     if (
         type(review["schema_version"]) is not int
-        or review["schema_version"] != 6
+        or review["schema_version"] != 7
         or review["kind"] != SIGNATURE_REVIEW_KIND
         or review["concept_sha256"] != concept_sha256
     ):
@@ -1956,65 +1954,6 @@ def _validate_signature_review(
     )
     if blockers:
         raise ProposalError("Make signature review still has blocking visual defects")
-    expected_preflight = _sha256(
-        review["print_preflight_sha256"],
-        "Make signature review print_preflight_sha256",
-    )
-    preflight_relative = review_relative.parent.parent / "measure/print-preflight.md"
-    actual_preflight, _, _ = _hash_regular(
-        run_root,
-        preflight_relative.as_posix(),
-        "Make print preflight",
-    )
-    if actual_preflight != expected_preflight:
-        raise ProposalError(
-            "Make signature review is not bound to the passing print preflight"
-        )
-    preflight_bytes, _ = _read_regular(
-        run_root,
-        preflight_relative.as_posix(),
-        "Make print preflight",
-        maximum=1_000_000,
-    )
-    try:
-        preflight_text = preflight_bytes.decode("utf-8")
-    except UnicodeError as exc:
-        raise ProposalError("Make print preflight must be UTF-8 text") from exc
-    if (
-        not preflight_text.startswith("# Verification pipeline record\n")
-        or "- Mode: `print-preflight`\n" not in preflight_text
-        or "- Result: **PASS** (exit 0)\n" not in preflight_text
-        or "check_mesh" not in preflight_text
-        or "check_thickness" not in preflight_text
-        or "--nozzle 0.4" not in preflight_text
-    ):
-        raise ProposalError(
-            "Make print preflight must pass mesh and standard 0.4 mm thickness"
-        )
-    project_relative = PurePosixPath(product_root_value) / cad_project_path
-    project_path = run_root.joinpath(*project_relative.parts)
-    printable_names = sorted(
-        path.name.removesuffix(".step.py") + ".stl"
-        for path in project_path.glob("part_*.step.py")
-        if path.is_file() and not path.is_symlink()
-    )
-    preflight_lines = preflight_text.splitlines()
-    for printable_name in printable_names:
-        if not any(
-            "check_mesh" in line
-            and printable_name in line
-            and "| rc=0 |" in line
-            for line in preflight_lines
-        ) or not any(
-            "check_thickness" in line
-            and printable_name in line
-            and "--nozzle 0.4" in line
-            and "| rc=0 |" in line
-            for line in preflight_lines
-        ):
-            raise ProposalError(
-                "Make print preflight does not cover %s" % printable_name
-            )
     for field, label in (
         ("wish_revealed_after_blind_read", "Wish was revealed only after the blind read"),
         ("held_object_unmistakable", "held object is unmistakable"),
@@ -2061,6 +2000,8 @@ def _validate_signature_review(
             raise ProposalError(
                 "Make signature review is not bound to the final %s" % filename
             )
+    project_relative = PurePosixPath(product_root_value) / cad_project_path
+    project_path = run_root.joinpath(*project_relative.parts)
     motion_path = project_path / "measure/motion.json"
     if motion_path.exists() or motion_path.is_symlink():
         helper = run_root / ".agents/skills/cad/scripts/motion_presentation.py"
@@ -2172,15 +2113,9 @@ def _make_contract(
         not current_record.startswith("# Verification pipeline record\n")
         or "- Mode: `final`\n" not in current_record
         or "- Result: **PASS** (exit 0)\n" not in current_record
-        or not any(
-            "check_thickness" in line and "| rc=0 |" in line
-            for line in current_record.splitlines()
-        )
-        or "--skip-thickness" in current_record
     ):
         raise ProposalError(
-            "CAD verification must be the current passing final full-tier report "
-            "with a successful thickness check"
+            "CAD verification must be the current passing final report"
         )
     _prune_empty_directories(product_root, "Make product tree")
     manifest = _tree_manifest(run_root, product_root_value, "Make product tree")
@@ -2204,8 +2139,11 @@ def _make_contract(
         raise ProposalError("Make product manifest lacks CAD verification")
     if not any(path.endswith(".step") for path in paths):
         raise ProposalError("Make product manifest lacks a STEP artifact")
-    if not any(path.endswith(".stl") for path in paths):
-        raise ProposalError("Make product manifest lacks a printable STL")
+    if any(path.endswith((".stl", ".3mf", ".glb")) for path in paths):
+        raise ProposalError(
+            "Make product manifest carries a mesh artifact; STEP is the only "
+            "geometry format the toolchain writes"
+        )
     canonical_snap_paths = {
         (project_relative / "snap" / filename).as_posix()
         for filename in ("iso.png", "signature.png", "SIGNATURE-REVIEW.json")

@@ -1,31 +1,37 @@
 #!/usr/bin/env python3
-"""Render a deterministic, shaded product view from a printable STL.
+"""Render a deterministic, shaded product view from exact CAD state.
 
-This is a presentation renderer, not a geometry gate.  It intentionally reads
-the exact STL that Make already verified and writes a chromatic RGB PNG suitable
-for human review and the public toy snapshot.  `image-to-cad/render_views.py`
-remains the binary-silhouette tool for likeness measurement; its output must not
-be used as product photography.
+This is a presentation renderer, not a geometry gate.  It reads the exact STEP
+that Make already verified — or the `gen_step()` entry that writes it — and
+tessellates it in memory to write a chromatic RGB PNG suitable for human review
+and the public toy snapshot.  The triangles never reach disk: STEP is the only
+deliverable this toolchain writes.  `image-to-cad/render_views.py` remains the
+binary-silhouette tool for likeness measurement; its output must not be used as
+product photography.
 
 Examples:
 
-    render_product assembled.stl -o snap/iso.png --view iso \
+    render_product assembled.step -o snap/iso.png --view iso \
         --base '#53C5C8' --accent '#FFB84A' --background '#FFF6E5'
-    render_product assembled.stl -o snap/front.png --view front
-    render_product assembled.stl -o snap/rear.png --view rear
-    render_product assembled.stl -o snap/iso.png \
+    render_product assembled.step -o snap/front.png --view front
+    render_product assembled.step -o snap/rear.png --view rear
+    render_product assembled.step -o snap/iso.png \
         --motion-sheet snap/signature.png --motion-angles=-14,0,14
-    render_product state-0.stl -o snap/iso.png \
+    render_product state-0.step -o snap/iso.png \
         --state-sheet snap/signature.png \
-        --state-stl state-0.stl --state-stl state-1.stl --state-stl state-2.stl
+        --state-source state-0.step --state-source state-1.step \
+        --state-source state-2.step
     render_product --self-check
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib.util
+import io
 import math
+import sys
 import tempfile
 from pathlib import Path
 
@@ -36,14 +42,70 @@ from PIL import Image, ImageDraw, ImageFilter
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 
-def _load_meshlib():
-    path = SCRIPT_DIR / "meshlib.py"
-    spec = importlib.util.spec_from_file_location("workshop_cad_meshlib", path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("could not load meshlib.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+ENTRY_SUFFIX = ".step.py"
+GEN_FUNC = "gen_" + "step"
+TESSELLATION_TOLERANCE = 0.08
+
+
+def _runtime_paths() -> None:
+    for path in (
+        SCRIPT_DIR,
+        SCRIPT_DIR / "packages",
+        SCRIPT_DIR / "packages" / "cadgen" / "src",
+    ):
+        text = str(path)
+        if path.is_dir() and text not in sys.path:
+            sys.path.insert(0, text)
+
+
+def _build_shape(source: Path):
+    """Return the build123d shape a STEP file or gen_step() entry describes."""
+
+    _runtime_paths()
+    if source.name.endswith(ENTRY_SUFFIX):
+        module_name = "_product_" + source.name.replace(".", "_")
+        spec = importlib.util.spec_from_file_location(module_name, source)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"cannot load {source}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        project = str(source.parent)
+        if project not in sys.path:
+            sys.path.insert(0, project)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                spec.loader.exec_module(module)
+                builder = getattr(module, GEN_FUNC, None)
+                if builder is None:
+                    raise AttributeError(f"{source.name} defines no {GEN_FUNC}()")
+                shape = builder()
+        finally:
+            sys.modules.pop(module_name, None)
+        if shape is None:
+            raise ValueError(f"{source.name} {GEN_FUNC}() returned None")
+        return shape
+    if source.suffix.lower() in {".step", ".stp"}:
+        from build123d import import_step
+
+        return import_step(str(source))
+    raise ValueError(f"{source} is neither a {ENTRY_SUFFIX} entry nor a STEP file")
+
+
+def load_triangles(source: Path) -> np.ndarray:
+    """Tessellate exact CAD state into an (N, 3, 3) triangle vertex array."""
+
+    shape = _build_shape(source)
+    children = list(getattr(shape, "children", ()) or ()) or [shape]
+    facets = []
+    for child in children:
+        vertices, faces = child.tessellate(TESSELLATION_TOLERANCE)
+        if not len(vertices) or not len(faces):
+            continue
+        points = np.asarray([[p.X, p.Y, p.Z] for p in vertices], dtype=np.float64)
+        facets.append(points[np.asarray(faces, dtype=np.int64)])
+    if not facets:
+        raise ValueError(f"{source} tessellated to no triangles")
+    return np.concatenate(facets).reshape(-1, 3, 3)
 
 
 def _hex_color(value: str) -> tuple[int, int, int]:
@@ -142,13 +204,13 @@ def render(
     framing: np.ndarray | None = None,
 ) -> Image.Image:
     if triangles.ndim != 3 or triangles.shape[1:] != (3, 3) or not len(triangles):
-        raise ValueError("STL contains no renderable triangles")
+        raise ValueError("exact CAD state contains no renderable triangles")
     if not np.isfinite(triangles).all():
-        raise ValueError("STL contains non-finite vertices")
+        raise ValueError("exact CAD state contains non-finite vertices")
 
     triangles = _posed_triangles(triangles, pose_degrees)
 
-    # Bound presentation cost without changing the STL or its geometry gates.
+    # Bound presentation cost without changing the STEP or its geometry gates.
     if len(triangles) > 75_000:
         indices = np.linspace(0, len(triangles) - 1, 75_000, dtype=np.int64)
         triangles = triangles[indices]
@@ -428,7 +490,7 @@ def _self_check() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stl", nargs="?", type=Path)
+    parser.add_argument("source", nargs="?", type=Path)
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--view", choices=("iso", "front", "rear", "right", "top"), default="iso")
     parser.add_argument("--size", type=int, default=900)
@@ -448,7 +510,7 @@ def main() -> None:
         default=(-12.0, 0.0, 12.0),
     )
     parser.add_argument("--state-sheet", type=Path)
-    parser.add_argument("--state-stl", action="append", type=Path, default=[])
+    parser.add_argument("--state-source", action="append", type=Path, default=[])
     parser.add_argument(
         "--state-view",
         choices=("iso", "front", "rear", "right", "top"),
@@ -460,8 +522,8 @@ def main() -> None:
     if args.self_check:
         _self_check()
         return
-    if args.stl is None or args.output is None:
-        parser.error("STL and --output are required unless --self-check is used")
+    if args.source is None or args.output is None:
+        parser.error("a STEP source and --output are required unless --self-check is used")
     if not 800 <= args.size <= 2048:
         parser.error("--size must be between 800 and 2048 pixels")
     if (
@@ -471,18 +533,18 @@ def main() -> None:
         parser.error("motion-sheet width must not exceed 4096 pixels")
     if args.motion_sheet is not None and args.state_sheet is not None:
         parser.error("--motion-sheet and --state-sheet are mutually exclusive")
-    if args.state_sheet is None and args.state_stl:
-        parser.error("--state-stl requires --state-sheet")
-    if args.state_sheet is not None and not 2 <= len(args.state_stl) <= 5:
-        parser.error("--state-sheet requires two to five --state-stl inputs")
-    if args.state_sheet is not None and args.size * len(args.state_stl) > 4096:
+    if args.state_sheet is None and args.state_source:
+        parser.error("--state-source requires --state-sheet")
+    if args.state_sheet is not None and not 2 <= len(args.state_source) <= 5:
+        parser.error("--state-sheet requires two to five --state-source inputs")
+    if args.state_sheet is not None and args.size * len(args.state_source) > 4096:
         parser.error("state-sheet width must not exceed 4096 pixels")
     if (
         not math.isfinite(args.min_state_difference)
         or not 0.1 <= args.min_state_difference <= 32.0
     ):
         parser.error("--min-state-difference must be between 0.1 and 32.0")
-    triangles = _load_meshlib().load_stl(args.stl)
+    triangles = load_triangles(args.source)
     product = render(
         triangles,
         size=args.size,
@@ -512,7 +574,7 @@ def main() -> None:
             f"({signature.width}x{signature.height} RGB, {len(args.motion_angles)} poses)"
         )
     if args.state_sheet is not None:
-        state_meshes = tuple(_load_meshlib().load_stl(path) for path in args.state_stl)
+        state_meshes = tuple(load_triangles(path) for path in args.state_source)
         signature, differences = state_sheet(
             state_meshes,
             size=args.size,

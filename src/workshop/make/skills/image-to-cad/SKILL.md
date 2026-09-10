@@ -470,8 +470,8 @@ the pose; `cad` derives the cavity and screw pattern from that file with
 
 Every component the model must physically hold gets a row in spec **6e**, which
 becomes `measure/mounts.json` for `check_mount`. Without it the seat has no gate
-at all — `validate`, `interfere`, `check_fit`, `check_motion` and `check_mesh`
-all pass a bracket whose screw holes were never drilled. Rest:
+at all — `validate`, `interfere`, `check_fit` and `check_motion` all pass a
+bracket whose screw holes were never drilled. Rest:
 `$cad`'s `references/bought-parts.md`.
 
 ### 5d. Research mechanical, electrical and lighting systems before selecting
@@ -529,7 +529,7 @@ than improvised at build time. Three things, in order:
 3. **Write the feasibility condition as an `assert`** for `<name>_lib.py`. A
    four-bar violating Grashof, a slider overrunning its slot, a cam whose
    follower leaves its track: each validates, exports, prints, then jams.
-   `validate`, `interfere`, `check_fit` and `check_mesh` all pass them. That
+   `validate`, `interfere` and `check_fit` all pass them. That
    assert is the only thing that does not.
 
 Then write the motion conditions into the verification checklist — **both**
@@ -706,7 +706,7 @@ integrated form:
 
 ```bash
 CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> \
-    --fresh --exports --image-derived --unpowered \
+    --fresh --image-derived --unpowered \
     --likeness-ref side=ref/03-side.png \
     --likeness-ref front=ref/02-front.png \
     --likeness-ref rear=ref/04-rear.png

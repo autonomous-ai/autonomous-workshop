@@ -107,28 +107,6 @@ def export_assembly_glb_from_scene(
     )
 
 
-def export_native_glb_from_scene(
-    step_path: Path,
-    scene: LoadedStepScene,
-    *,
-    target_path: Path,
-    linear_deflection: float,
-    angular_deflection: float,
-    color: tuple[float, float, float, float] | None = None,
-    occurrence_colors: Mapping[str, ColorRGBA] | None = None,
-) -> Path:
-    # The caller meshes the scene before exporting. Keep the deflection args on
-    # this API so all mesh exporters share one contract.
-    _ = (linear_deflection, angular_deflection)
-    return _HierarchicalGlbWriter(
-        scene,
-        color=color,
-        occurrence_colors=occurrence_colors,
-        native_y_up=True,
-        include_cad_extras=False,
-    ).write(target_path)
-
-
 def write_empty_glb(target_path: Path) -> Path:
     json_chunk = b'{"asset":{"version":"2.0"},"scenes":[{"nodes":[]}],"scene":0,"nodes":[]}'
     json_chunk += b" " * ((4 - (len(json_chunk) % 4)) % 4)

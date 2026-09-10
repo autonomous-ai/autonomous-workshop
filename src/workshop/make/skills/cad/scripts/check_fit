@@ -268,9 +268,9 @@ BED_DECLARATION = re.compile(r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d
 def declared_bed(project: Path) -> tuple[float, float] | None:
     """The bed a project states for itself, read from its own docs.
 
-    Honouring the project's documented `check_mesh --bed ...` declaration keeps
-    one bed size serving both the mesh check and this one, instead of this gate
-    inventing a second, quieter answer.
+    Honouring the project's documented `--bed WxDxH` declaration keeps one bed
+    size serving the runner and this gate, instead of this one inventing a
+    second, quieter answer.
     """
     for name in ("README.md", *sorted(q.name for q in project.glob("*_spec.md"))):
         doc = project / name

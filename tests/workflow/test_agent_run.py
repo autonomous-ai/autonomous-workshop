@@ -375,7 +375,7 @@ class AgentRunTest(unittest.TestCase):
         cad = self.root / "cad-skill"
         (cad / "scripts").mkdir(parents=True)
         (cad / "SKILL.md").write_bytes(b"# CAD skill\n")
-        checker = cad / "scripts" / "check_mesh"
+        checker = cad / "scripts" / "check_fit"
         checker.write_bytes(b"#!/bin/sh\nexit 1\n")
         checker.chmod(0o755)
         obsolete = cad / "scripts" / "obsolete.py"
@@ -399,15 +399,15 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(
             {item["path"] for item in changes},
             {
-                ".agents/skills/cad/scripts/check_mesh",
+                ".agents/skills/cad/scripts/check_fit",
                 ".agents/skills/cad/scripts/helper.py",
                 ".agents/skills/cad/scripts/obsolete.py",
             },
         )
         by_path = {item["path"]: item for item in changes}
         corrected = hashlib.sha256(b"#!/bin/sh\nexit 0\n").hexdigest()
-        self.assertEqual(by_path[".agents/skills/cad/scripts/check_mesh"]["sha256"], corrected)
-        self.assertEqual(by_path[".agents/skills/cad/scripts/check_mesh"]["mode"], 0o500)
+        self.assertEqual(by_path[".agents/skills/cad/scripts/check_fit"]["sha256"], corrected)
+        self.assertEqual(by_path[".agents/skills/cad/scripts/check_fit"]["mode"], 0o500)
         self.assertIsNone(by_path[".agents/skills/cad/scripts/obsolete.py"]["sha256"])
         self.assertIsNone(by_path[".agents/skills/cad/scripts/helper.py"]["previous_sha256"])
 
@@ -416,12 +416,12 @@ class AgentRunTest(unittest.TestCase):
         self.assertNotEqual(after.checkpoint_sha256, before.checkpoint_sha256)
         self.assertEqual(after.stage, before.stage)
         self.assertEqual(after.round_index, before.round_index)
-        self.assertEqual(after.input_sha256s[".agents/skills/cad/scripts/check_mesh"], corrected)
+        self.assertEqual(after.input_sha256s[".agents/skills/cad/scripts/check_fit"], corrected)
         self.assertIn(".agents/skills/cad/scripts/helper.py", after.input_sha256s)
         self.assertNotIn(".agents/skills/cad/scripts/obsolete.py", after.input_sha256s)
         self.assertEqual(after.input_sha256s["WISH.json"], before.input_sha256s["WISH.json"])
 
-        target = run.run_root / ".agents/skills/cad/scripts/check_mesh"
+        target = run.run_root / ".agents/skills/cad/scripts/check_fit"
         self.assertEqual(target.read_bytes(), b"#!/bin/sh\nexit 0\n")
         self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o500)
         helper = run.run_root / ".agents/skills/cad/scripts/helper.py"
@@ -484,7 +484,7 @@ class AgentRunTest(unittest.TestCase):
         cad = self.root / "cad-skill"
         (cad / "scripts").mkdir(parents=True)
         (cad / "SKILL.md").write_bytes(b"# CAD skill\n")
-        checker = cad / "scripts" / "check_mesh"
+        checker = cad / "scripts" / "check_fit"
         checker.write_bytes(b"#!/bin/sh\nexit 0\n")
         checker.chmod(0o755)
 
@@ -541,7 +541,7 @@ class AgentRunTest(unittest.TestCase):
         expected_modes = {
             ".codex/agents/alice.toml": 0o400,
             ".agents/skills/cad/SKILL.md": 0o400,
-            ".agents/skills/cad/scripts/check_mesh": 0o500,
+            ".agents/skills/cad/scripts/check_fit": 0o500,
             ".agents/skills/alice-inventor/SKILL.md": 0o400,
             ".agents/skills/alice-inventor/scripts/custom_tool": 0o500,
         }
@@ -595,7 +595,7 @@ class AgentRunTest(unittest.TestCase):
         agent_file.chmod(0o400)
         run.snapshot()
 
-        run_checker = run.run_root / ".agents/skills/cad/scripts/check_mesh"
+        run_checker = run.run_root / ".agents/skills/cad/scripts/check_fit"
         run_checker.chmod(0o400)
         with self.assertRaisesRegex(StateConflict, "immutable input mode"):
             run.snapshot()

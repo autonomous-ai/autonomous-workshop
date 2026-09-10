@@ -12,7 +12,7 @@ the right tier, one parameter block, one module per part, assembly-is-positionin
 Making it mandatory rather than recommended is a response to how it actually
 fails. Reaching Tier 2 is easy; *outgrowing* Tier 2 is invisible. A 700-line
 library builds, writes its STEP, and passes `validate`, `interfere`,
-`check_motion`, `check_fit` and `check_mesh` exactly like a healthy one — none of
+`check_motion` and `check_fit` exactly like a healthy one — none of
 those gates has an opinion about where code lives. Only a line count catches it,
 so the line count is a gate.
 
@@ -148,14 +148,15 @@ the same way: `scripts/gen` on an explicit entry target.
     no mating features, says so in its docstring, and declares
     `PRINTABLE = False`. A display model that stays one printed piece still gets
     these entries; its combined entry declares `PRINTABLE = True` and is the
-    STL/check target.
+    check target.
 - **`PRINTABLE` is the static print-target contract.** It must be a literal
   module-level boolean when present. Legacy `part_*` entries default to `True`;
   a Tier 1 combined entry with no part entries also defaults to `True`. In a
   split project the combined entry defaults to view-only, so set it `True` only
   when that exact combined geometry is one physical print. `verify_project`
-  passes only the resulting print targets to `check_fit`, STL export,
-  `check_mesh` and `check_thickness`.
+  passes only the resulting print targets to `check_fit`. No mesh is exported and
+  no mesh/overhang/thickness gate exists, so `PRINTABLE` drives the bed datum and
+  the fit check — it is not a printability claim.
 - **A STEP output keeps its generator's basename and directory.** `--write`
   puts `<name>.step` next to `<name>.step.py`.
 
@@ -171,8 +172,8 @@ A reconstruction directory carries more than its generators:
 | `measure/` | probe scripts, image crops, and the measurement ledger they produced | you, during the measuring pass |
 | `__cadgen__/`, `__pycache__/` | build cache and bytecode — gitignored, regenerated on demand | the tooling |
 
-Exported artifacts (`.step`, `.stl`, `.3mf`, `.glb`) sit beside the generator
-that produced them, sharing its basename.
+Exported artifacts (`.step`, and a `.glb` when a view export was requested) sit
+beside the generator that produced them, sharing its basename.
 
 **There is no project manifest.** No `cad_project.json`, no metadata file, and
 nothing to keep in sync with the source. The set of entries is simply whichever
@@ -233,11 +234,7 @@ Two consequences:
 - **Parameter checks run before geometry.** Assert shared dimensions, clearance
   application, connector naming, and other algebraic invariants before building
   so bad numbers fail loudly. Do not rebuild all shapes in a local audit merely
-  to repeat solid/body/volume checks already owned by `check_fit`, `validate`,
-  and `check_mesh`.
-- **Say when an STL is repaired.** `scripts/repair_mesh` writes a mesh the
-  generator does not produce, so a project shipping one has to name it in the
-  README beside the `check_mesh` result. Nothing else compares the two.
+  to repeat solid/body/volume checks already owned by `check_fit` and `validate`.
 - **Record the provenance** of each dimension — `[observed]`, `[inferred]`,
   `[assumed]` — in a comment next to it, and cross-reference the spec section.
 
