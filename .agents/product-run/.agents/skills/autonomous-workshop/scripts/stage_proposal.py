@@ -2123,9 +2123,31 @@ def _validate_manufacturing_manifest(
     _read_regular(run_root, relative, "mixed-material Make validator", maximum=512 * 1024)
     try:
         validator = runpy.run_path(str(run_root / relative))["validate_manifest"]
-        validator(product_root, product, cad_project_path=cad_project_path)
+        manifest = validator(product_root, product, cad_project_path=cad_project_path)
     except (ValueError, OSError, TypeError) as exc:
         raise ProposalError("Make manufacturing manifest is invalid: %s" % exc) from exc
+    # Match the host's public projection selection without importing host code
+    # into the frozen run-local finalizer. Publication only copies these bytes;
+    # Make must bind the chosen customer hero to its existing signature review.
+    images = [
+        item for item in manifest["public_assets"]
+        if PurePosixPath(item["path"]).suffix.casefold()
+        in (".png", ".jpg", ".jpeg", ".webp", ".gif")
+    ]
+    hero = next(
+        (item for item in images if item["path"] == "public/hero.png"),
+        images[0] if images else None,
+    )
+    reviewed_hash, _, _ = _hash_regular(
+        product_root,
+        (PurePosixPath(cad_project_path) / "snap/iso.png").as_posix(),
+        "Make reviewed public hero",
+    )
+    if hero is None or hero["sha256"] != reviewed_hash:
+        raise ProposalError(
+            "Make manufacturing public hero must copy the exact reviewed "
+            "CAD project snap/iso.png bytes"
+        )
 
 
 def _make_contract(

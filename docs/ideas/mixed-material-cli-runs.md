@@ -207,3 +207,18 @@ actual Markdown report. Corrected that guidance and Make-round's old claim
 that every material receives print gates. Instructions now describe the
 implemented printed subset and actual generated evidence. Neither correction
 changes engineering thresholds or the running pilots' frozen tools.
+
+### Make audit: bind the customer hero to the reviewed image
+
+The positive synthetic finalizer fixture exposed an identity gap: it could
+seal a tiny placeholder public hero while its actual reviewed CAD image was a
+different file. Both had valid separate hashes. The Make finalizer now requires
+the selected public hero to copy the exact reviewed `snap/iso.png` bytes.
+Selection matches publication: prefer `public/hero.png`, otherwise use the
+first declared supported image. An alternate public filename still works.
+
+All 47 finalizer tests pass, including resealed unrelated-image rejection,
+selection priority, alternate-name acceptance and rejection of a wrong first
+fallback image. The host still copies Make's bytes; this adds no host render or
+geometry review. Running pilots retain their frozen finalizer until an explicit
+supported tool refresh.

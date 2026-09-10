@@ -20,7 +20,7 @@ from workshop.errors import ContractError
 from workshop.invent.native import NativeInvented
 from tests.invent.test_native_contract import BUILD_PLAN_VIOLATIONS, CONCEPT_VIOLATIONS, v4_concept, v5_concept
 from tests.make.test_build_groups import seal_group, write_parts
-from tests.make.test_manufacturing_manifest import make_mixed_product, seal_manifest
+from tests.make.test_manufacturing_manifest import bind_file, make_mixed_product, seal_manifest
 from tests.invent.test_vault import write_vault
 from tests.playtest.test_native_playtested import DIMS, LEAD_ANSWER_CASES, SCORE_CASES
 from workshop.invent.vault import Vault
@@ -820,6 +820,11 @@ class StageProposalToolTest(unittest.TestCase):
             for binding in component["files"]:
                 if binding["path"].startswith("cad/"):
                     binding["path"] = "cad/project/" + binding["path"][4:]
+        for index, binding in enumerate(manifest["public_assets"]):
+            if binding["path"] == "public/hero.png":
+                manifest["public_assets"][index] = bind_file(
+                    root, "public/hero.png", (root / "cad/project/snap/iso.png").read_bytes()
+                )
         product = seal_manifest(root, manifest)
         helper_root = self.run_root / ".agents/skills/mixed-materials"
         shutil.copytree(REPOSITORY / "src/workshop/make/skills/mixed-materials", helper_root)
@@ -834,19 +839,84 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("internal/manufacturing.json", {row["path"] for row in made["product_manifest"]["entries"]})
 
     def test_spark_make_rejects_changed_internal_manifest_before_sealing(self):
-        root, product, _, _ = self.mixed_product()
+        root, _, _, _ = self.mixed_product()
         (root / "internal/manufacturing.json").write_text("{}\n")
+        result = self.finalize_mixed_make(expected=2)
+        self.assertIn("manufacturing", result.stderr)
+        self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
+
+    def finalize_mixed_make(self, *, expected=0):
         self.write_stage("make", {**self.match_inputs(), "creative_source_required": True,
             "assignment_contract_path": "artifacts/make/r0001/assignment.json",
             "invented_contract_path": "artifacts/make/r0001/invented.json"}, round_index=1)
         self.write_json("drafts/spark-make.json", {
             "selected_inventor_id": "eve", "ranking": [item.to_dict() for item in self.assignment.ranking],
             "concept": self.invented.to_dict()["concept"], "research": self.invented.to_dict()["research"]})
-        result = self.run_tool("make", "--source", "drafts/spark-make.json",
+        return self.run_tool("make", "--source", "drafts/spark-make.json",
             "--product-root", "artifacts/make/r0001/product", "--cad-project-path", "cad/project",
-            "--cad-verification-path", "cad/project/validation/cad-build.json", expected=2)
-        self.assertIn("manufacturing", result.stderr)
+            "--cad-verification-path", "cad/project/validation/cad-build.json", expected=expected)
+
+    def test_spark_make_rejects_unreviewed_public_hero_even_when_resealed(self):
+        root, _, _, _ = self.mixed_product()
+        manifest = json.loads((root / "internal/manufacturing.json").read_bytes())
+        Image.new("RGB", (900, 900), (170, 90, 40)).save(root / "public/hero.png")
+        manifest["public_assets"] = [
+            bind_file(root, item["path"]) if item["path"] == "public/hero.png" else item
+            for item in manifest["public_assets"]
+        ]
+        seal_manifest(root, manifest)
+
+        result = self.finalize_mixed_make(expected=2)
+
+        self.assertIn("public hero must copy the exact reviewed", result.stderr)
         self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_spark_make_prefers_reviewed_public_hero_over_earlier_other_image(self):
+        root, _, _, _ = self.mixed_product()
+        manifest = json.loads((root / "internal/manufacturing.json").read_bytes())
+        manifest["public_assets"].insert(0, bind_file(
+            root, "public/detail.png", (root / "cad/project/snap/signature.png").read_bytes()
+        ))
+        seal_manifest(root, manifest)
+
+        self.finalize_mixed_make()
+
+        self.assertTrue((self.run_root / "artifacts/make/r0001/made.json").is_file())
+
+    def test_spark_make_accepts_reviewed_hero_at_another_public_path(self):
+        root, _, _, _ = self.mixed_product()
+        manifest = json.loads((root / "internal/manufacturing.json").read_bytes())
+        (root / "public/hero.png").rename(root / "public/finished-product.png")
+        for item in manifest["public_assets"]:
+            if item["path"] == "public/hero.png":
+                item["path"] = "public/finished-product.png"
+        manifest["public_assets"].append(bind_file(
+            root, "public/detail.png", (root / "cad/project/snap/signature.png").read_bytes()
+        ))
+        seal_manifest(root, manifest)
+
+        self.finalize_mixed_make()
+
+        self.assertTrue((self.run_root / "artifacts/make/r0001/made.json").is_file())
+
+    def test_spark_make_rejects_unreviewed_first_image_without_preferred_hero(self):
+        root, _, _, _ = self.mixed_product()
+        manifest = json.loads((root / "internal/manufacturing.json").read_bytes())
+        (root / "public/hero.png").rename(root / "public/finished-product.png")
+        for item in manifest["public_assets"]:
+            if item["path"] == "public/hero.png":
+                item["path"] = "public/finished-product.png"
+        manifest["public_assets"].insert(0, bind_file(
+            root, "public/detail.png", (root / "cad/project/snap/signature.png").read_bytes()
+        ))
+        seal_manifest(root, manifest)
+
+        result = self.finalize_mixed_make(expected=2)
+
+        self.assertIn("public hero must copy the exact reviewed", result.stderr)
+        self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_spark_make_requires_creative_source_before_sealing(self):
         self.create_product()
